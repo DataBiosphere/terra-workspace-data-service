@@ -160,7 +160,7 @@ public class EntityDao {
         String sql = "select name, attributes, entity_type, deleted from entity where entity_type = :entityType and name in (:entityNames) " + (excludeDeletedEntities ? "and deleted = false" : "");
         return namedParameterJdbcTemplate.query(sql,
                 new MapSqlParameterSource(Map.of("entityType", entityTypeId, "entityNames", entityNames)),
-                (rs, i) -> new Entity(rs.getString("name"), entityTypeName, getAttributes(rs.getString("attributes")),
+                (rs, i) -> new Entity(rs.getString("name"), new EntityType(entityTypeName), getAttributes(rs.getString("attributes")),
                         rs.getLong("entity_type"), rs.getBoolean("deleted")));
     }
 
@@ -239,7 +239,7 @@ public class EntityDao {
                     if (!CollectionUtils.isEmpty(fields)) {
                         attributes.keySet().retainAll(fields);
                     }
-                    return new Entity(rs.getString("name"), entityTypeName, attributes);
+                    return new Entity(rs.getString("name"), new EntityType(entityTypeName), attributes);
                 });
         watch.stop();
         LOGGER.info("Total time spent was {}s for {}, {}", watch.getTotalTimeSeconds(), builder, params);

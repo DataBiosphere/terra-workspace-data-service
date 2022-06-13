@@ -12,25 +12,25 @@ public class Entity {
 
     private Boolean deleted;
 
-    private String entityType;
+    private EntityType entityType;
 
     private Map<String, Object> attributes;
 
     private Long entityTypeId;
 
-    public Entity(String name, String entityType, Map<String, Object> attributes) {
+    public Entity(String name, EntityType entityType, Map<String, Object> attributes) {
         this.name = name;
         this.entityType = entityType;
         this.attributes = attributes;
     }
 
-    public Entity(String name, String entityType, Map<String, Object> attributes, long entityTypeId) {
+    public Entity(String name, EntityType entityType, Map<String, Object> attributes, long entityTypeId) {
         this(name, entityType, attributes);
         this.entityTypeId = entityTypeId;
         this.deleted = false;
     }
 
-    public Entity(String name, String entityType, Map<String, Object> attributes, long entityTypeId, boolean deleted) {
+    public Entity(String name, EntityType entityType, Map<String, Object> attributes, long entityTypeId, boolean deleted) {
         this(name, entityType, attributes);
         this.entityTypeId = entityTypeId;
         this.deleted = deleted;
@@ -60,12 +60,8 @@ public class Entity {
         this.attributes = attributes;
     }
 
-    public void setEntityType(String entityType) {
-        this.entityType = entityType;
-    }
-
     public String getEntityType() {
-        return entityType;
+        return entityType.getName();
     }
 
     public Boolean getDeleted() {

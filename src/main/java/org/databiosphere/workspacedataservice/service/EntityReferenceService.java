@@ -28,8 +28,7 @@ public class EntityReferenceService {
     }
 
     private Map<String, Entity> handleNewEntityType(UUID workspaceId, List<EntityUpsert> entityUpserts, String entityTypeName) throws AttemptToUpsertDeletedEntity {
-        EntityType entityType = new EntityType();
-        entityType.setName(entityTypeName);
+        EntityType entityType = new EntityType(entityTypeName);
         long newEntityTypeId = dao.loadEntityType(entityType, workspaceId);
         return applyEntityUpserts(entityUpserts, newEntityTypeId, new HashMap<>());
     }
@@ -44,7 +43,7 @@ public class EntityReferenceService {
                 }
                 updateAttributesForEntity(entityUpsert, entity);
             } else {
-                Entity entity = new Entity(entityName, entityUpsert.getEntityType(), new HashMap<>(), entityTypeId);
+                Entity entity = new Entity(entityName, new EntityType(entityUpsert.getEntityType()), new HashMap<>(), entityTypeId);
                 updateAttributesForEntity(entityUpsert, entity);
                 entitiesByName.put(entityName, entity);
             }

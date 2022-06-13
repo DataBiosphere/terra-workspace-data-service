@@ -2,6 +2,10 @@ package org.databiosphere.workspacedataservice.shared.model;
 
 public class EntityType {
 
+    public EntityType(String name) {
+        this.name = name;
+    }
+
     private String name;
 
     public String getName() {
