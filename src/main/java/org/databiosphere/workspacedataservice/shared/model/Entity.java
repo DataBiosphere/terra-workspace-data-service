@@ -1,7 +1,9 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 
@@ -60,7 +62,12 @@ public class Entity {
         this.attributes = attributes;
     }
 
-    public String getEntityType() {
+    public EntityType getEntityType() {
+        return entityType;
+    }
+
+    @JsonGetter("entityType")
+    public String getEntityTypeName() {
         return entityType.getName();
     }
 
@@ -74,10 +81,6 @@ public class Entity {
 
     public Long getEntityTypeId() {
         return entityTypeId;
-    }
-
-    public void setEntityTypeId(Long entityTypeId) {
-        this.entityTypeId = entityTypeId;
     }
 
     @Override
