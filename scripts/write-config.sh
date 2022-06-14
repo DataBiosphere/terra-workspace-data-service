@@ -47,6 +47,22 @@ outputdir=${3:-$default_outputdir}
 default_vaultenv=${WDS_VAULT_ENV:-docker}
 vaultenv=${4:-$default_vaultenv}
 
+# handle special cases for target
+case $target in
+    help | ?)
+        usage
+        exit 0
+        ;;
+
+    clean)
+        rm "${outputdir}"/* &> /dev/null
+        exit 0
+        ;;
+
+    local)
+        target=dev
+        ;;
+esac
 
 # Create the output directory if it doesn't already exist
 mkdir -p "${outputdir}"
