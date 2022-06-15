@@ -9,6 +9,7 @@ import org.databiosphere.workspacedataservice.service.model.EntityReference;
 import org.databiosphere.workspacedataservice.service.model.InvalidEntityReference;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
 import org.databiosphere.workspacedataservice.shared.model.EntityType;
+import org.databiosphere.workspacedataservice.shared.model.secrets.DummySecret;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -39,7 +40,8 @@ public class EntityDao {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EntityDao.class);
 
-    public EntityDao(JdbcTemplate template, NamedParameterJdbcTemplate namedParameterJdbcTemplate, ObjectMapper objectMapper) {
+    public EntityDao(JdbcTemplate template, NamedParameterJdbcTemplate namedParameterJdbcTemplate, ObjectMapper objectMapper, DummySecret dummySecret) {
+        LOGGER.info("Dummy secret: {}", dummySecret.getPassword());
         this.template = template;
         this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
         this.objectMapper = objectMapper;
