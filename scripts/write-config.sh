@@ -104,7 +104,7 @@ function vaultget {
     jq -r .data "${fntmpfile}" > "${filename}"
 }
 
-vaultget "secret/dsde/${target}/workspace-data-service/dummy-secret" "${outputdir}/dummy-secret.json"
+vaultget "secret/dsde/${target}/workspacedata/dummy-secret" "${outputdir}/dummy-secret.json"
 
 # We made it to the end, so record the target and avoid redos TODO do we want to keep this mechanism
 echo "$target" > "${outputdir}/target.txt"
