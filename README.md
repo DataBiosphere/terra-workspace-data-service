@@ -28,11 +28,11 @@ We are using Postgres 13.1.  You do not need to have postgres installed on your 
 Instead use the `run_postgres.sh` script to set up a docker container running postgres (see below).
 
 ## Running
-To build the code, from the root directory run
+To just build the code, from the root directory run
 ```
 ./gradlew build
 ```
-A postgres database must be running for the application to work. To run a local postgres, use:
+To run the application, first a postgres database must be running:
 ```
 ./local-dev/run_postgres.sh start
 ```
@@ -41,7 +41,21 @@ To run WDS locally, you can either use the command line:
 ```
 ./gradlew bootRun
 ```
-Or, from Intellij, run `WorkspaceDataServiceApplication`.
+Or, from Intellij, go to `src/main/java/org.databiosphere.workspacedataservice/WorkspaceDataServiceApplication` and click the green play button.
+This will run liquibase to create the schema and launch the service on port 8080.
+
+At the moment, WDS is only available through this port.  It can be reached from the command line:
+
+To create entities:
+`curl -v -H "Content-type: application/json" -X POST "http://localhost:8080/api/workspaces/default/test/entities/batchUpsert" -d '[{"name": "first_entity", "entityType": "first_entity_type", "operations": [{"op": "AddUpdateAttribute", "attributeName": "col1", "addUpdateAttribute": "Spam"}]}]}]'`
+
+All entities must belong to the workspace `default:test`.
+
+To read entities: 
+`curl http://localhost:8080/api/workspaces/default/test/entityQuery/first_entity_type`
+
+To remove entities:
+`curl -H "Content-type: application/json" "http://localhost:8080/api/workspaces/default/test/entities/delete" -d '[{"entityName": "first_entity", "entityType": "first_entity_type"}]'`
 
 When done, stop postgres:
 ```
