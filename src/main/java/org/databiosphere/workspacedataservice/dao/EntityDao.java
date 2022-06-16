@@ -207,10 +207,9 @@ public class EntityDao {
     public int getFilteredEntityCount(long entityTypeId, String filter){
         StringBuilder sql = new StringBuilder("select count(*) from entity e " +
                 "join entity_attribute_info ea on ea.entity_name = e.name " +
-                "and ea.entity_type = e.entity_type left join ft_search ft on ft.entity_name = ea.entity_name and " +
-                "ft.entity_type = ea.entity_type where e.entity_type = :entityType and e.deleted = false");
+                "and ea.entity_type = e.entity_type where e.entity_type = :entityType and e.deleted = false");
         MapSqlParameterSource params = new MapSqlParameterSource("entityType", entityTypeId);
-        buildFilterSql(filter, sql, params, isFullTextIndexed(entityTypeId));
+        buildFilterSql(filter, sql, params);
         return namedParameterJdbcTemplate.queryForObject(sql.toString(), params, Integer.class);
     }
 
@@ -223,15 +222,14 @@ public class EntityDao {
         params.addValues(Map.of("limit", limit, "offset", offset));
         if(StringUtils.isNotBlank(filter)){
             builder.append("join entity_attribute_info ea on ea.entity_name = e.name " +
-                    "and ea.entity_type = e.entity_type left join ft_search ft " +
-                    "on ft.entity_name = ea.entity_name and ea.entity_type = ft.entity_type " +
+                    "and ea.entity_type = e.entity_type " +
                     "where e.entity_type = :entityType and e.deleted = false");
-            buildFilterSql(filter, builder, params, isFullTextIndexed(entityTypeId));
+            buildFilterSql(filter, builder, params);
         } else {
             builder.append("where e.entity_type = :entityType and e.deleted = false");
         }
         String entityTypeName = getEntityTypeName(entityTypeId);
-        builder.append(getOrderByClause(orderCol, entityTypeId, sortOrder));
+        builder.append(getOrderByClause(orderCol, sortOrder));
         builder.append(" limit :limit offset :offset");
         List<Entity> result = namedParameterJdbcTemplate.query(builder.toString(), params,
                 (rs, i) -> {
@@ -251,44 +249,19 @@ public class EntityDao {
         return template.queryForObject("select name from entity_type where id = ?", String.class, entityTypeId);
     }
 
-    private Map<String, String> getEntityAttributeSortTypes(long entityTypeId) {
-        return template.query("select attr_name, sort_type from entity_type_attribute_sort where entity_type_id = ?", rs -> {
-            Map<String, String> result = new HashMap<>();
-            while(rs.next()){
-                result.put(rs.getString("attr_name"), rs.getString("sort_type"));
-            }
-            return result;
-        }, entityTypeId);
-    }
-
-    private String getOrderByClause(String orderCol, long entityTypeId, String sortOrder){
+    private String getOrderByClause(String orderCol, String sortOrder){
         if(orderCol.equals("name")){
             return " order by name " + sortOrder;
         }
-        //TODO: sql injection prevention
-        Map<String, String> entityAttributeSortTypes = getEntityAttributeSortTypes(entityTypeId);
-        return " order by (attributes->>'"+orderCol+"')::"+entityAttributeSortTypes.getOrDefault(orderCol, "varchar") + " " + sortOrder;
+        return " order by (attributes->>'"+orderCol+"')::varchar " + sortOrder;
     }
 
 
-    public boolean isFullTextIndexed(long entityType) {
-        return Boolean.TRUE.equals(namedParameterJdbcTemplate.queryForObject(
-                "select full_text_indexed from entity_type where id = :entityTypeId",
-                new MapSqlParameterSource("entityTypeId", entityType), Boolean.class));
-    }
-
-    private void buildFilterSql(String filter, StringBuilder builder, MapSqlParameterSource params, boolean useFullText) {
+    private void buildFilterSql(String filter, StringBuilder builder, MapSqlParameterSource params) {
         String[] filters = filter.split(" ");
-        if(useFullText){
-            for (int i = 0; i < filters.length; i++) {
-                builder.append(" and to_tsquery(:filter").append(i).append(") @@ ft.full_text ");
-                params.addValue("filter"+i, filters[i]);
-            }
-        } else {
-            for (int i = 0; i < filters.length; i++) {
-                builder.append(" and ea.entity_attribute_values ilike :filter").append(i);
-                params.addValue("filter" + i, "%" + filters[i] + "%");
-            }
+        for (int i = 0; i < filters.length; i++) {
+            builder.append(" and ea.entity_attribute_values ilike :filter").append(i);
+            params.addValue("filter" + i, "%" + filters[i] + "%");
         }
     }
 
