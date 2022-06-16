@@ -83,7 +83,7 @@ public class EntityReferenceService {
         for (String entityType : entitiesForUpsert.keySet()) {
             ArrayList<Entity> entitiesForType = new ArrayList<>(entitiesForUpsert.get(entityType).values());
             List<EntityReference> updatedReferences = getEntityReferences(entitiesForType, workspaceId);
-            List<EntityReference> existingReferences = dao.getReferencesForEntities(entitiesForType);
+            List<EntityReference> existingReferences = dao.getReferencesForEntities(entitiesForType, dao.getEntityTypeId(workspaceId, entityType));
             HashSet<EntityReference> existingRefsSet = new HashSet<>(existingReferences);
             HashSet<EntityReference> updateRefsSet = new HashSet<>(updatedReferences);
             if(!updateRefsSet.equals(existingRefsSet)){

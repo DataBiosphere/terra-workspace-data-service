@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.dao;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.EntityReference;
@@ -45,13 +46,13 @@ public class EntityDao {
         this.objectMapper = objectMapper;
     }
 
-    public List<EntityReference> getReferencesForEntities(List<Entity> entitiesForType) {
+    public List<EntityReference> getReferencesForEntities(List<Entity> entitiesForType, long entityTypeId) {
         List<List<Entity>> chunks = Lists.partition(entitiesForType, 1_000);
         List<EntityReference> result = new ArrayList<>();
         for (List<Entity> chunk : chunks) {
             result.addAll(namedParameterJdbcTemplate.query("select entity_type, entity_name, referenced_entity_type, " +
                             "referenced_entity_name from entity_reference where entity_type = :entityType and entity_name in (:entityNames)",
-                    new MapSqlParameterSource(Map.of("entityType", chunk.get(0).getEntityTypeId(), "entityNames", chunk.stream().map(Entity::getName).collect(Collectors.toSet()))),
+                    new MapSqlParameterSource(Map.of("entityType", entityTypeId, "entityNames", chunk.stream().map(Entity::getName).collect(Collectors.toSet()))),
                     (rs, rowNum) -> new EntityReference(rs.getString("entity_name"),
                             rs.getLong("entity_type"),
                             rs.getLong("referenced_entity_type"),
