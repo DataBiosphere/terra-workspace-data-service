@@ -59,11 +59,11 @@ public class EntityController {
         ArrayListMultimap<String, String> entitiesByType = ArrayListMultimap.create();
         entitiesToDelete.forEach(e -> entitiesByType.put(e.get("entityType"), e.get("entityName")));
         UUID workspaceId = getWorkspaceId(wsNamespace, wsName);
-        List<Entity> entitiesInDb = new ArrayList<>();
+        List<EntityToDelete> entitiesInDb = new ArrayList<>();
         for(String entityTypeName: entitiesByType.keySet()){
             Long entityTypeId = dao.getEntityTypeId(workspaceId, entityTypeName);
             List<String> entities = entitiesByType.get(entityTypeName);
-            entitiesInDb.addAll(referenceService.getEntities(entityTypeId, entityTypeName, new HashSet<>(entities), true));
+            entitiesInDb.addAll(dao.getEntitiesToDelete(entityTypeId, new HashSet<>(entities), entityTypeName, true));
             if(dao.areEntitiesReferenced(entityTypeId, entities)){
                 return new ResponseEntity<>("Can't delete referenced entities", HttpStatus.CONFLICT);
             }

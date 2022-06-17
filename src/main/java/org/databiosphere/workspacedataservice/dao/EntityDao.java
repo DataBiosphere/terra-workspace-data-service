@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.EntityReference;
 import org.databiosphere.workspacedataservice.service.model.InvalidEntityReference;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
+import org.databiosphere.workspacedataservice.shared.model.EntityToDelete;
 import org.databiosphere.workspacedataservice.shared.model.EntityType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,11 +61,11 @@ public class EntityDao {
         return result;
     }
 
-    public void deleteEntities(List<Entity> entities){
+    public void deleteEntities(List<EntityToDelete> entities){
         template.batchUpdate("update entity set deleted = true where entity_type = ? and name = ?", new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
-                Entity entity = entities.get(i);
+                EntityToDelete entity = entities.get(i);
                 ps.setLong(1, entity.getEntityTypeId());
                 ps.setString(2, entity.getName());
             }
@@ -161,6 +162,13 @@ public class EntityDao {
                 new MapSqlParameterSource(Map.of("entityType", entityTypeId, "entityNames", entityNames)),
                 (rs, i) -> new Entity(rs.getString("name"), new EntityType(entityTypeName), getAttributes(rs.getString("attributes")),
                         rs.getLong("entity_type"), rs.getBoolean("deleted")));
+    }
+
+    public List<EntityToDelete> getEntitiesToDelete(Long entityTypeId, Set<String> entityNames, String entityTypeName, boolean excludeDeletedEntities) {
+        String sql = "select name, entity_type  from entity where entity_type = :entityType and name in (:entityNames) " + (excludeDeletedEntities ? "and deleted = false" : "");
+        return namedParameterJdbcTemplate.query(sql,
+                new MapSqlParameterSource(Map.of("entityType", entityTypeId, "entityNames", entityNames)),
+                (rs, i) -> new EntityToDelete(rs.getString("name"), rs.getLong("entity_type")));
     }
 
     private Map<String,Object> getAttributes(String attrString)  {

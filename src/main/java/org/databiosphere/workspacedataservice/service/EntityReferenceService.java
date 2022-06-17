@@ -113,7 +113,6 @@ public class EntityReferenceService {
     }
 
     public List<Entity> getEntities(long entityTypeId, String entityTypeName, Set<String> entityNames, boolean excludeDeletedEntities) {
-        //TODO: compare entityNames.size to total count of entities for entity type, we don't want to get all entities for a really large entity type
         return dao.getNamedEntities(entityTypeId, entityNames, entityTypeName, excludeDeletedEntities);
     }
 
