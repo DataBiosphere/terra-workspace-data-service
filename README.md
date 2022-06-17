@@ -6,10 +6,9 @@ Design docs and other references may be found [here](https://broadworkbench.atla
 
 ## Setup
 ### Prerequisites
-//TODO: Secrets
+Make sure you have Java 17 installed.  Our favorite way to do this is with [SDKMAN](https://sdkman.io/jdks).  Once it is installed , use `sdk list java` to see available versions, and `sdk install java 17.0.2-tem` to install, for example, the Temurin version of Java 17.
 
-Make sure you have Java 17 installed.  
-We find [jenv](https://www.jenv.be/) helpful for managing active versions.  On a Mac,jenv can be installed and used like so:
+[jenv](https://www.jenv.be/) is also helpful for managing active versions.  On a Mac,jenv can be installed and used like so:
 ```
 brew install jenv
 # follow postinstall instructions to activate jenv...
