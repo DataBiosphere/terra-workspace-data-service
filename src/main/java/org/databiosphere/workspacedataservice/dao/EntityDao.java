@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.dao;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.EntityReference;
@@ -96,16 +95,15 @@ public class EntityDao {
     public void batchUpsert(List<Entity> entities) {
         StopWatch watch = new StopWatch();
         watch.start();
-        template.batchUpdate("insert into entity (name, entity_type, record_version, deleted, attributes)" +
-                "values (?, ?, ?, ?, ? :: jsonb) on conflict (name, entity_type) do update set attributes = excluded.attributes", new BatchPreparedStatementSetter() {
+        template.batchUpdate("insert into entity (name, entity_type, deleted, attributes)" +
+                "values (?, ?, ?, ? :: jsonb) on conflict (name, entity_type) do update set attributes = excluded.attributes", new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
                 Entity entity = entities.get(i);
                 ps.setString(1, entity.getName());
                 ps.setLong(2, entity.getEntityTypeId());
-                ps.setInt(3, 1);
-                ps.setBoolean(4, entity.getDeleted());
-                ps.setObject(5, writeAsJson(entity.getAttributes()));
+                ps.setBoolean(3, entity.getDeleted());
+                ps.setObject(4, writeAsJson(entity.getAttributes()));
             }
 
             @Override
