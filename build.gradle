@@ -3,6 +3,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'org.liquibase.gradle' version '2.1.0'
     id 'java'
+    id "org.sonarqube" version "3.4.0.2513"
 }
 
 group = 'org.databiosphere'
@@ -25,6 +26,13 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
+sonarqube {
+    properties {
+        property "sonar.projectKey", "DataBiosphere_workspace-data-service"
+        property "sonar.organization", "broad-databiosphere"
+        property "sonar.host.url", "https://sonarcloud.io"
+    }
+}
 tasks.named('test') {
     useJUnitPlatform()
 }
