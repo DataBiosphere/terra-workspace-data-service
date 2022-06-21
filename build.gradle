@@ -33,7 +33,6 @@ sonarqube {
         property "sonar.host.url", "https://sonarcloud.io"
     }
 }
-
 tasks.named('test') {
     useJUnitPlatform()
 }
