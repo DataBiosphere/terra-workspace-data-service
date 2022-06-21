@@ -1,4 +1,5 @@
 # Workspace Data Service
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=DataBiosphere_workspace-data-service&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=DataBiosphere_workspace-data-service)
 
 Workspace Data Service provides an API to manage entities in Terra.
 
