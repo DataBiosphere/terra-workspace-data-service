@@ -27,12 +27,14 @@ We are using Postgres 13.1.  You do not need to have postgres installed on your 
 Instead use the `run_postgres.sh` script to set up a docker container running postgres (see below).
 
 ## Running
-Before running WDS, you must populate secrets from Vault.  To do this run
+### Pulling local secrets
+Before running WDS, you must populate secrets from Vault. 
+After [setting up your vault-token](https://docs.google.com/document/d/11pZE-GqeZFeSOG0UpGg_xyTDQpgBRfr0MLxpxvvQgEw) run:
 ```
-./scripts/render-config.sh [env] [execution env]
+./scripts/render-config.sh [wds env] [vault env]
 ```
-Here `env` may be `dev`
-`execution env` can be `docker` or `local`.
+Here `wds env` may be `local`,`dev`,`alpha`,`perf`, or `prod`
+`vault env` can be `docker` or `local`.
 
 To just build the code, from the root directory run
 ```
