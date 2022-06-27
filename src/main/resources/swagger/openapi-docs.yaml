@@ -10,8 +10,8 @@ info:
 paths:
   /{instanceid}/entities/{v}/{type}/{id}:
     get:
-      summary: get single entity
-      description: get single entity
+      summary: Get entity
+      description: Get entity
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -25,8 +25,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Entity'
     put:
-      summary: create single entity
-      description: create single entity
+      summary: Create entity
+      description: Create entity
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -40,8 +40,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Entity'
     patch:
-      summary: update single entity
-      description: update single entity
+      summary: Update entity
+      description: Update entity
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -55,8 +55,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Entity'
     delete:
-      summary: delete single entity
-      description: delete single entity
+      summary: Delete entity
+      description: Delete entity
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -67,10 +67,62 @@ paths:
           description: Success
   /{instanceid}/types/{v}/{type}:
     patch:
+      summary: Update entity type
+      description: |
+        Update entity type. Alpha1 supports renaming a type; future versions will support modifying schema details
+        such as changing the attribute schema for this type.
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/entityTypePathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/EntityTypeDefinition'
     delete:
+      summary: Delete entity type
+      description: Delete entity type. This deletes all entities of this type.
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/entityTypePathParam'
+      responses:
+        204:
+          description: Success
   /{instanceid}/types/{type}/attributes/{v}/{attribute}:
     patch:
+      summary: Update attribute
+      description: |
+        Update attribute. Alpha1 supports renaming an attribute within the specified type;
+        future versions will support modifying schema details
+        such as changing the datatype of this attribute.
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/entityTypePathParam'
+        - $ref: '#/components/parameters/attributePathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/EntityTypeDefinition'
     delete:
+      summary: Delete attribute
+      description: |
+        Delete attribute. This deletes all values for this attribute within the specified type.
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/entityTypePathParam'
+        - $ref: '#/components/parameters/attributePathParam'
+      responses:
+        204:
+          description: Success
   /{instanceid}/search/{v}:
     get:
     post:
@@ -78,6 +130,13 @@ paths:
     post:
 components:
   parameters:
+    attributePathParam:
+      name: attribute
+      in: path
+      description: Attribute name
+      required: true
+      schema:
+        type: string
     entityIdPathParam:
       name: id
       in: path
@@ -123,10 +182,29 @@ components:
           type: string
           description: Entity type
         attributes:
-          type: object
+          $ref: '#/components/schemas/EntityAttributes'
           description: KVPs of entity attributes
         metadata:
-          type: object
+          $ref: '#/components/schemas/EntityMetadata'
           description: Provenance and other entity metadata. May not be present in alpha1.
-
+    EntityAttributes:
+      type: object
+    EntityMetadata:
+      type: object
+    EntityAttributeDefinition:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+          description: Attribute name
+    EntityTypeDefinition:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+          description: Entity type name
 
