@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Workspace Data Service
-  version: 0.1.0
+  version: Alpha1
   description: Workspace Data Service API
   termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
   license:
@@ -21,9 +21,9 @@ paths:
         200:
           $ref: '#/components/responses/EntityResponseBody'
     put:
-      summary: Create or overwrite entity
+      summary: Create or replace entity
       description: |
-        Creates or overwrites the entity using the specified type and id.
+        Creates or replaces the entity using the specified type and id.
         If the entity already exists, its entire set of attributes will be overwritten by
         the attributes in the request body.
         TODO: the type and id are duplicated in the url and the body; change this? Silently ignore the type/id in the body?
@@ -179,10 +179,12 @@ paths:
   /{instanceid}/batch/{v}:
     post:
       summary: Batch write entities
-      description: Perform a batch of create / delete / update operations on multiple entities
+      description: Perform a batch of create / delete / update / replace operations on multiple entities
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
+      requestBody:
+        $ref: '#/components/requestBodies/BatchRequestBody'
       responses:
         200:
           description: Success
@@ -297,15 +299,55 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/EntityRequest'
+    BatchRequestBody:
+      description: A list of batch operations to perform on entities
+      required: true
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/BatchOperation'
   schemas:
+    BatchOperation:
+      type: object
+      required:
+        - operation
+        - entity
+      properties:
+        operation:
+          type: string
+          enum: [create, update, replace, delete]
+        entity:
+          $ref: '#/components/schemas/EntityRequest'
     BatchResponse:
       type: object
+      required:
+        - status
+        - failures
+      properties:
+        status:
+          type: string
+          enum: [Success, Failure]
+        failures:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                $ref: '#/components/schemas/EntityId'
+                description: Entity id
+              type:
+                $ref: '#/components/schemas/EntityType'
+                description: Entity type
+              message:
+                type: string
     EntityRequest:
+      type: object
       required:
         - id
         - type
         - attributes
-      type: object
       properties:
         id:
           $ref: '#/components/schemas/EntityId'
