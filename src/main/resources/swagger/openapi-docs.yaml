@@ -1,0 +1,132 @@
+openapi: 3.0.3
+info:
+  title: Workspace Data Service
+  version: 0.1.0
+  description: Workspace Data Service API
+  termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
+  license:
+    name: BSD
+    url: http://opensource.org/licenses/BSD-3-Clause
+paths:
+  /{instanceid}/entities/{v}/{type}/{id}:
+    get:
+      summary: get single entity
+      description: get single entity
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/entityTypePathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Entity'
+    put:
+      summary: create single entity
+      description: create single entity
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/entityTypePathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
+      responses:
+        201:
+          description: Success
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Entity'
+    patch:
+      summary: update single entity
+      description: update single entity
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/entityTypePathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Entity'
+    delete:
+      summary: delete single entity
+      description: delete single entity
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/entityTypePathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
+      responses:
+        204:
+          description: Success
+  /{instanceid}/types/{v}/{type}:
+    patch:
+    delete:
+  /{instanceid}/types/{type}/attributes/{v}/{attribute}:
+    patch:
+    delete:
+  /{instanceid}/search/{v}:
+    get:
+    post:
+  /{instanceid}/batch/{v}:
+    post:
+components:
+  parameters:
+    entityIdPathParam:
+      name: id
+      in: path
+      description: Entity id
+      required: true
+      schema:
+        type: string
+    entityTypePathParam:
+      name: type
+      in: path
+      description: Entity type
+      required: true
+      schema:
+        type: string
+    instanceIdPathParam:
+      name: instanceid
+      in: path
+      description: WDS instance id
+      required: true
+      schema:
+        type: string
+    versionPathParam:
+      name: v
+      in: path
+      description: API version
+      required: true
+      schema:
+        type: string
+        default: alpha1
+  schemas:
+    Entity:
+      required:
+        - id
+        - type
+        - metadata
+        - attributes
+      type: object
+      properties:
+        id:
+          type: string
+          description: Entity id
+        type:
+          type: string
+          description: Entity type
+        attributes:
+          type: object
+          description: KVPs of entity attributes
+        metadata:
+          type: object
+          description: Provenance and other entity metadata. May not be present in alpha1.
+
+
