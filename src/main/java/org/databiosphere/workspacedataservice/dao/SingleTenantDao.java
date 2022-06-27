@@ -1,8 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Sets;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -11,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Repository
 public class SingleTenantDao {
@@ -37,7 +36,11 @@ public class SingleTenantDao {
 
     public void createEntityType(UUID workspaceId, Map<String, DataTypeMapping> tableInfo, String tableName){
         String columnDefs = genColumnDefs(tableInfo);
-        namedTemplate.getJdbcTemplate().update("create table \"" + workspaceId.toString() + "\"." + tableName + "( " + columnDefs + ")");
+        namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(tableName, workspaceId) + "( " + columnDefs + ")");
+    }
+
+    private String getQualifiedTableName(String entityType, UUID workspaceId){
+        return "\"" + workspaceId.toString() + "\"." + entityType;
     }
 
     public Map<String, DataTypeMapping> getExistingTableSchema(UUID workspaceId, String tableName){
@@ -55,38 +58,44 @@ public class SingleTenantDao {
 
 
     public void addColumn(UUID workspaceId, String tableName, String columnName, DataTypeMapping colType){
-        namedTemplate.getJdbcTemplate().update("alter table \""+ workspaceId.toString() + "\"." + tableName + " add column " + columnName + " " + colType.getPostgresType());
+        namedTemplate.getJdbcTemplate().update("alter table "+ getQualifiedTableName(tableName, workspaceId) + " add column " + columnName + " " + colType.getPostgresType());
     }
 
     public void changeColumn(UUID workspaceId, String tableName, String columnName, DataTypeMapping newColType){
-        namedTemplate.getJdbcTemplate().update("alter table \""+ workspaceId.toString() + "\"." + tableName + " alter column " + columnName + " TYPE " + newColType.getPostgresType());
+        namedTemplate.getJdbcTemplate().update("alter table " + getQualifiedTableName(tableName, workspaceId) + " alter column " + columnName + " TYPE " + newColType.getPostgresType());
     }
 
     private String genColumnDefs(Map<String, DataTypeMapping> tableInfo) {
-        return "name text primary key, " + tableInfo.entrySet().stream().map(e -> e.getKey() + " " + e.getValue().getPostgresType()).collect(Collectors.joining(", "));
+        return "name text primary key, "
+                + tableInfo.entrySet().stream().map(e -> e.getKey() + " " + e.getValue().getPostgresType()).collect(Collectors.joining(", "))
+                + ", all_attribute_values text not null";
     }
 
     public void insertEntities(UUID workspaceId, String entityType, List<Entity> entities, LinkedHashMap<String, DataTypeMapping> existingTableSchema){
         namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(workspaceId, entityType, existingTableSchema),
-                getBatchArgs(entities, existingTableSchema.keySet()));
+                getInsertBatchArgs(entities, existingTableSchema.keySet()));
     }
 
-    public void updateEntities(UUID workspaceId, String entityType, List<Entity> entities, Map<String, DataTypeMapping> typeMapping){
+    public void updateEntities(UUID workspaceId, String entityType, List<Entity> entities, Map<String, DataTypeMapping> allFields){
         ArrayListMultimap<Set<String>, Entity> entitiesByValuesToUpdate = ArrayListMultimap.create();
         for (Entity entity : entities) {
             entitiesByValuesToUpdate.put(entity.getAttributes().keySet(), entity);
         }
         for(Set<String> cols : entitiesByValuesToUpdate.keySet()){
-            namedTemplate.getJdbcTemplate().batchUpdate(generateUpdateSql(cols, entityType, workspaceId, typeMapping), getUpdateBatchArgs(entitiesByValuesToUpdate.get(cols), cols));
+            namedTemplate.getJdbcTemplate().batchUpdate(generateUpdateSql(entityType, workspaceId, cols, allFields),
+                    getUpdateBatchArgs(entitiesByValuesToUpdate.get(cols), cols));
         }
     }
 
     private List<Object[]> getUpdateBatchArgs(List<Entity> entities, Set<String> cols) {
         List<Object[]> result = new ArrayList<>();
         for (Entity entity : entities) {
-            Object[] params = new Object[cols.size()+1];
+            Object[] params = new Object[cols.size()*2+1];
             int i = 0;
             for (String col : cols) {
+                params[i++] = entity.getAttributes().get(col);
+            }
+            for(String col : cols) {
                 params[i++] = entity.getAttributes().get(col);
             }
             params[i] = entity.getName();
@@ -95,8 +104,15 @@ public class SingleTenantDao {
         return result;
     }
 
-    private String generateUpdateSql(Set<String> cols, String entityType, UUID workspaceId, Map<String, DataTypeMapping> typeMapping) {
-        return "update  \""+ workspaceId + "\"." + entityType + " set " + genColUpdates(cols, typeMapping) + " where name = ?";
+    private String generateUpdateSql(String entityType, UUID workspaceId, Set<String> fieldsToUpdate, Map<String, DataTypeMapping> allFields) {
+        return "update " + getQualifiedTableName(entityType, workspaceId) + " set " + genColUpdates(fieldsToUpdate, allFields) + ", " +
+                "all_attribute_values = concat("+getFieldsConcat(allFields.keySet(), fieldsToUpdate)+") where name = ?";
+    }
+
+    private String getFieldsConcat(Set<String> allCols, Set<String> colsToUpdate) {
+        return allCols.stream().filter(c -> !c.equals("all_attribute_values")).map(colName ->
+            colsToUpdate.contains(colName) ? "?" : "coalesce("+colName+",'')"
+        ).collect(Collectors.joining(",' ',"));
     }
 
     private String genColUpdates(Set<String> cols, Map<String, DataTypeMapping> typeMapping) {
@@ -104,19 +120,21 @@ public class SingleTenantDao {
     }
 
     public Set<String> getEntityNames(UUID workspaceId, String entityType){
-        return new HashSet<>(namedTemplate.getJdbcTemplate().queryForList("select name from \"" + workspaceId.toString() + "\"." + entityType, String.class));
+        return new HashSet<>(namedTemplate.getJdbcTemplate().queryForList("select name from " + getQualifiedTableName(entityType, workspaceId), String.class));
     }
 
-    private List<Object[]> getBatchArgs(List<Entity> entities, Set<String> colNames) {
+    private List<Object[]> getInsertBatchArgs(List<Entity> entities, Set<String> colNames) {
         List<Object[]> result = new ArrayList<>();
         for (Entity entity : entities) {
             Object[] row = new Object[colNames.size()];
             int i = 0;
-            for (String attr : colNames) {
-                if(attr.equals("name")){
+            for (String col : colNames) {
+                if(col.equals("name")){
                     row[i++] = entity.getName();
+                } else if (col.equals("all_attribute_values")) {
+                   row[i++] = Stream.concat(Stream.of(entity.getName()), entity.getAttributes().values().stream()).map(Object::toString).collect(Collectors.joining(" "));
                 } else {
-                    row[i++] = entity.getAttributes().get(attr);
+                    row[i++] = entity.getAttributes().get(col);
                 }
             }
             result.add(row);
@@ -125,8 +143,8 @@ public class SingleTenantDao {
     }
 
     private String genInsertStatement(UUID workspaceId, String entityType, Map<String, DataTypeMapping> existingTableSchema) {
-        return "insert into \"" + workspaceId + "\"." + entityType + "(" +
-                getInsertColList(existingTableSchema.keySet()) + ") values (" + getInsertParamList(existingTableSchema.values()) + ")";
+        return "insert into " + getQualifiedTableName(entityType, workspaceId) + "(" +
+                getInsertColList(existingTableSchema.keySet()) + ") values (" + getInsertParamList(existingTableSchema.values()) +")";
     }
 
     private String getInsertParamList(Collection<DataTypeMapping> existingTableSchema) {
@@ -135,5 +153,25 @@ public class SingleTenantDao {
 
     private String getInsertColList(Set<String> existingTableSchema) {
         return String.join(", ", existingTableSchema);
+    }
+
+    public int getEntityCount(String entityType, UUID workspaceId) {
+        return namedTemplate.getJdbcTemplate().queryForObject("select count(*) from " + getQualifiedTableName(entityType, workspaceId), Integer.class);
+    }
+
+    public int getFilteredEntityCount(UUID workspaceId, String entityType, String filterCol, String terms) {
+        return namedTemplate.getJdbcTemplate().queryForObject("select count(*) from " + getQualifiedTableName(entityType, workspaceId) + " where " + filterCol + " = ?", Integer.class, terms);
+    }
+
+    public List<Entity> getSelectedEntities(String entityType, int pageSize, int i, String filterTerms, String sortField,
+                                            String sortDirection, List<String> fields, UUID workspaceId, String filterCol) {
+//        namedTemplate.getJdbcTemplate().query("select " + getFieldList(fields) + " from "
+//                + getQualifiedTableName(entityType, workspaceId) + " where " + filterCol + " = ? order by " + sortField
+//                + " " + sortDirection + " limit " + pageSize + " offset " + i, );
+        return null;
+    }
+
+    private String getFieldList(List<String> fields) {
+        return fields.isEmpty() ? "*" : String.join(", ", fields);
     }
 }

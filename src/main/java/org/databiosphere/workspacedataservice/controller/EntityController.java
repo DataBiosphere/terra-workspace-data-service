@@ -77,10 +77,10 @@ public class EntityController {
         Map<String, Map<String, DataTypeMapping>> schemas = dataTypeInferer.inferTypes(entitiesToUpdate);
         for (String entityType : entityTypes) {
             Map<String, DataTypeMapping> schema = schemas.get(entityType);
-            LinkedHashMap<String, DataTypeMapping> orderedSchema = new LinkedHashMap<>(schema);
+            LinkedHashMap<String, DataTypeMapping> inferredOrderedSchema = new LinkedHashMap<>(schema);
             List<EntityUpsert> upsertsForType = eUpsertsByType.get(entityType);
             if(!singleTenantDao.entityTypeExists(workspaceId, entityType)){
-                createEntityTypeAndAddEntities(workspaceId, entityType, orderedSchema, upsertsForType);
+                createEntityTypeAndAddEntities(workspaceId, entityType, inferredOrderedSchema, upsertsForType);
             } else {
                 //table exists, add columns if needed
                 Map<String, DataTypeMapping> existingTableSchema = addOrUpdateColumnIfNeeded(workspaceId, entityType, schema, singleTenantDao.getExistingTableSchema(workspaceId, entityType));
@@ -97,11 +97,12 @@ public class EntityController {
                         forInsert.add(entity);
                     }
                 }
+                LinkedHashMap<String, DataTypeMapping> orderedFullSchema = new LinkedHashMap<>(existingTableSchema);
                 if(forInsert.size() > 0){
-                    singleTenantDao.insertEntities(workspaceId, entityType, forInsert, new LinkedHashMap<>(existingTableSchema));
+                    singleTenantDao.insertEntities(workspaceId, entityType, forInsert, orderedFullSchema);
                 }
                 if(forUpdates.size() > 0){
-                    singleTenantDao.updateEntities(workspaceId, entityType, forUpdates, orderedSchema);
+                    singleTenantDao.updateEntities(workspaceId, entityType, forUpdates, orderedFullSchema);
                 }
             }
         }
@@ -130,6 +131,7 @@ public class EntityController {
     private void createEntityTypeAndAddEntities(UUID workspaceId, String entityType, LinkedHashMap<String, DataTypeMapping> schema, List<EntityUpsert> upsertsForType) {
         singleTenantDao.createEntityType(workspaceId, schema, entityType);
         schema.put("name", DataTypeMapping.STRING);
+        schema.put("all_attribute_values", DataTypeMapping.STRING);
         singleTenantDao.insertEntities(workspaceId, entityType, convertToEntities(upsertsForType, entityType, schema), schema);
     }
 
@@ -205,6 +207,26 @@ public class EntityController {
         EntityQueryResultMetadata entityQueryResultMetadata = new EntityQueryResultMetadata(totalEntityCount, filteredEntityCount, (int) Math.ceil(filteredEntityCount / (double) pageSize));
         return new EntityQueryResult(queryParameters, entityQueryResultMetadata, filteredEntityCount > 0 ? dao.getSelectedEntities(entityTypeId, pageSize,
                 (page-1) * pageSize, filterTerms, sortField, sortDirection, fields) : Collections.emptyList());
+    }
+
+    @GetMapping("/st/api/workspaces/{workspaceId}/entityQuery/{entityType}")
+    public EntityQueryResult queryForEntities(@PathVariable("workspaceId") UUID workspaceId,
+                                              @PathVariable("entityType") String entityType,
+                                              @RequestParam(defaultValue = "1") int page,
+                                              @RequestParam(defaultValue = "10") int pageSize,
+                                              @RequestParam(defaultValue = "name") String sortField,
+                                              @RequestParam(defaultValue = "asc") String sortDirection,
+                                              @RequestParam(defaultValue = "") String filterCol,
+                                              @RequestParam(defaultValue = "") String filterTerms,
+                                              @RequestParam(required = false) List<String> fields) {
+        Preconditions.checkArgument(Set.of("asc", "desc").contains(sortDirection.toLowerCase(Locale.ROOT)));
+        EntityQueryParameters queryParameters = new EntityQueryParameters(page, pageSize, sortField, sortDirection, filterTerms);
+        int totalEntityCount = singleTenantDao.getEntityCount(entityType, workspaceId);
+        int filteredEntityCount = StringUtils.isNotBlank(filterTerms) ? singleTenantDao.getFilteredEntityCount(workspaceId, entityType, filterCol, filterTerms) : totalEntityCount;
+        EntityQueryResultMetadata entityQueryResultMetadata = new EntityQueryResultMetadata(totalEntityCount, filteredEntityCount, (int) Math.ceil(filteredEntityCount / (double) pageSize));
+//        return new EntityQueryResult(queryParameters, entityQueryResultMetadata, filteredEntityCount > 0 ? singleTenantDao.getSelectedEntities(entityType, pageSize,
+//                (page-1) * pageSize, filterTerms, sortField, sortDirection, fields) : Collections.emptyList());
+        return null;
     }
 
 

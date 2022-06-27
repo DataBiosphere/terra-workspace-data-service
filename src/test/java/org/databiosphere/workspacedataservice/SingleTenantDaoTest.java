@@ -75,7 +75,8 @@ public class SingleTenantDaoTest {
         HashMap<String, Object> toUpdate = new HashMap<>(date_collected);
         toUpdate.put("score", 10000101);
         Entity e = new Entity("huzzah", new EntityType("foo"), toUpdate);
-        dao.updateEntities(workspaceId, "foo", Collections.singletonList(e), dao.getExistingTableSchema(workspaceId, "foo"));
+        Map<String, DataTypeMapping> foo = dao.getExistingTableSchema(workspaceId, "foo");
+        dao.updateEntities(workspaceId, "foo", Collections.singletonList(e), foo);
 //        dao.addColumn(workspaceId, "foo", "bar", DataTypeMapping.JSON);
     }
 
