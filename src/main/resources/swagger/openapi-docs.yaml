@@ -11,7 +11,7 @@ paths:
   /{instanceid}/entities/{v}/{type}/{id}:
     get:
       summary: Get entity
-      description: Get entity
+      description: Retrieves a single entity by its type and id
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -19,44 +19,44 @@ paths:
         - $ref: '#/components/parameters/entityIdPathParam'
       responses:
         200:
-          description: Success
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/Entity'
+          $ref: '#/components/responses/EntityResponseBody'
     put:
-      summary: Create entity
-      description: Create entity
+      summary: Create or overwrite entity
+      description: |
+        Creates or overwrites the entity using the specified type and id.
+        If the entity already exists, its entire set of attributes will be overwritten by
+        the attributes in the request body.
+        TODO: the type and id are duplicated in the url and the body; change this? Silently ignore the type/id in the body?
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
         - $ref: '#/components/parameters/entityTypePathParam'
         - $ref: '#/components/parameters/entityIdPathParam'
+      requestBody:
+        $ref: '#/components/requestBodies/EntityRequestBody'
       responses:
         201:
-          description: Success
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/Entity'
+          $ref: '#/components/responses/EntityResponseBody'
     patch:
       summary: Update entity
-      description: Update entity
+      description: |
+        Updates the entity of the specified type and id.
+        Any attributes included in the request body will be created or overwritten.
+        No attributes will be deleted. To delete attributes, use the PUT api instead.
+        TODO: the type and id are duplicated in the url and the body; change this? Silently ignore the type/id in the body?
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
         - $ref: '#/components/parameters/entityTypePathParam'
         - $ref: '#/components/parameters/entityIdPathParam'
+      requestBody:
+        $ref: '#/components/requestBodies/EntityRequestBody'
       responses:
         200:
-          description: Success
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/Entity'
+          $ref: '#/components/responses/EntityResponseBody'
     delete:
       summary: Delete entity
-      description: Delete entity
+      description: Deletes the entity at the specified type and id.
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -69,8 +69,8 @@ paths:
     patch:
       summary: Update entity type
       description: |
-        Update entity type. Alpha1 supports renaming a type; future versions will support modifying schema details
-        such as changing the attribute schema for this type.
+        Update entity type. Returns the updated type definition.
+        Alpha1 supports renaming a type; future versions may support additional functionality.
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -79,7 +79,7 @@ paths:
         200:
           description: Success
           content:
-            'application/json':
+            application/json:
               schema:
                 $ref: '#/components/schemas/EntityTypeDefinition'
     delete:
@@ -96,9 +96,8 @@ paths:
     patch:
       summary: Update attribute
       description: |
-        Update attribute. Alpha1 supports renaming an attribute within the specified type;
-        future versions will support modifying schema details
-        such as changing the datatype of this attribute.
+        Update attribute. Returns the updated attribute definition.
+        Alpha1 supports renaming an attribute within the specified type; future versions may support additional functionality.
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -108,7 +107,7 @@ paths:
         200:
           description: Success
           content:
-            'application/json':
+            application/json:
               schema:
                 $ref: '#/components/schemas/EntityTypeDefinition'
     delete:
@@ -126,15 +125,24 @@ paths:
   /{instanceid}/search/{v}:
     get:
       summary: Query entities
-      description: Paginated list of entities matching the criteria supplied in url query parameters
+      description: |
+        Paginated list of entities matching the criteria supplied in url query parameters.
+        This API supports a basic subset of search and filtering operations. For full functionality,
+        use the POST api instead.
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/searchLimitQueryParam'
+        - $ref: '#/components/parameters/searchOffsetQueryParam'
+        - $ref: '#/components/parameters/searchSortQueryParam'
+        - $ref: '#/components/parameters/searchTermsQueryParam'
+        - $ref: '#/components/parameters/searchOperatorQueryParam'
+        - $ref: '#/components/parameters/searchQueryQueryParam'
       responses:
         200:
           description: Success
           content:
-            'application/json':
+            application/json:
               schema:
                 $ref: '#/components/schemas/EntityQueryResponse'
     post:
@@ -143,11 +151,29 @@ paths:
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
+      requestBody:
+        description: The search to perform
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                offset:
+                  $ref: '#/components/schemas/SearchOffset'
+                limit:
+                  $ref: '#/components/schemas/SearchLimit'
+                sort:
+                  $ref: '#/components/schemas/SearchSort'
+                query:
+                  $ref: '#/components/schemas/RequestBodySearch'
       responses:
         200:
           description: Success
           content:
-            'application/json':
+            application/json:
               schema:
                 $ref: '#/components/schemas/EntityQueryResponse'
   /{instanceid}/batch/{v}:
@@ -161,7 +187,7 @@ paths:
         200:
           description: Success
           content:
-            'application/json':
+            application/json:
               schema:
                 $ref: '#/components/schemas/BatchResponse'
 components:
@@ -194,6 +220,60 @@ components:
       required: true
       schema:
         type: string
+    searchLimitQueryParam:
+      name: limit
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/SearchLimit'
+    searchOffsetQueryParam:
+      name: offset
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/SearchOffset'
+    searchOperatorQueryParam:
+      name: operator
+      in: query
+      description: |
+        Controls behavior when searching for multiple `terms`.
+        If a `query` value is specified, `terms` and `operator` will be ignored.
+      required: false
+      schema:
+        $ref: '#/components/schemas/SearchOperator'
+    searchQueryQueryParam:
+      name: query
+      in: query
+      description: JSON- and url-encoded structure defining a search query.
+      required: false
+      schema:
+        $ref: '#/components/schemas/QueryStringSearch'
+    searchSortQueryParam:
+      name: sort
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/SearchSort'
+      examples:
+        single attribute:
+          description: Sort by a single attribute ascending
+          value: name
+        directional:
+          description: Sort by a single attribute and specify sort direction
+          value: name desc
+        multiple attributes:
+          description: Specify multiple attributes on which to sort
+          value: name,size desc,color asc
+    searchTermsQueryParam:
+      name: terms
+      in: query
+      description: |
+        Search terms used to filter query results.
+        If a `query` value is specified, `terms` and `operator` will be ignored.
+        Separate multiple terms by a space (%20 url-encoded)
+      required: false
+      schema:
+        type: string
     versionPathParam:
       name: v
       in: path
@@ -202,10 +282,41 @@ components:
       schema:
         type: string
         default: alpha1
+  responses:
+    EntityResponseBody:
+      description: An entity
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/EntityResponse'
+  requestBodies:
+    EntityRequestBody:
+      description: An entity to upload
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/EntityRequest'
   schemas:
     BatchResponse:
       type: object
-    Entity:
+    EntityRequest:
+      required:
+        - id
+        - type
+        - attributes
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/EntityId'
+          description: Entity id
+        type:
+          $ref: '#/components/schemas/EntityType'
+          description: Entity type
+        attributes:
+          $ref: '#/components/schemas/EntityAttributes'
+          description: KVPs of entity attributes
+    EntityResponse:
       required:
         - id
         - type
@@ -214,10 +325,10 @@ components:
       type: object
       properties:
         id:
-          type: string
+          $ref: '#/components/schemas/EntityId'
           description: Entity id
         type:
-          type: string
+          $ref: '#/components/schemas/EntityType'
           description: Entity type
         attributes:
           $ref: '#/components/schemas/EntityAttributes'
@@ -235,10 +346,14 @@ components:
         name:
           type: string
           description: Attribute name
+    EntityId:
+      type: string
     EntityMetadata:
       type: object
     EntityQueryResponse:
       type: object
+    EntityType:
+      type: string
     EntityTypeDefinition:
       required:
         - name
@@ -247,4 +362,52 @@ components:
         name:
           type: string
           description: Entity type name
-
+    RequestBodySearch:
+      required:
+        - terms
+      type: object
+      description: |
+        Alpha1 only supports `terms` and `operator`. Future versions may support additional functionality.
+      properties:
+        terms:
+          $ref: '#/components/schemas/SearchTerms'
+        operator:
+          $ref: '#/components/schemas/SearchOperator'
+    QueryStringSearch:
+      required:
+        - terms
+      type: object
+      description: |
+        Alpha1 only supports `terms` and `operator`. Future versions may support additional functionality.
+      properties:
+        terms:
+          $ref: '#/components/schemas/SearchTerms'
+        operator:
+          $ref: '#/components/schemas/SearchOperator'
+    SearchLimit:
+      type: integer
+      default: 10
+      minimum: 0
+      maximum: 1000
+      description: Pagination limit
+    SearchOffset:
+      type: integer
+      default: 0
+      minimum: 0
+      description: Pagination offset
+    SearchOperator:
+      type: string
+      enum: [and, or]
+      description: Search behavior for multiple filter terms
+    SearchSort:
+      type: string
+      description: |
+        Sort specification for search results.
+        Accepts `attribute` and `direction` separated by a single space (%20 url-encoded).
+        `direction` can be "asc" or "desc". `direction` is optional and defaults to "asc".
+        `attribute` and `direction` must be separated by a single space.
+        Concatenate multiple sort specifications with commas.
+      example: name,size desc,color asc
+    SearchTerms:
+      type: string
+      description: Space-delimited list of terms on which to search
