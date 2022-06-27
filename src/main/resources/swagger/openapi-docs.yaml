@@ -125,9 +125,45 @@ paths:
           description: Success
   /{instanceid}/search/{v}:
     get:
+      summary: Query entities
+      description: Paginated list of entities matching the criteria supplied in url query parameters
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/EntityQueryResponse'
     post:
+      summary: Query entities
+      description: Paginated list of entities matching the criteria supplied in the request body
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/EntityQueryResponse'
   /{instanceid}/batch/{v}:
     post:
+      summary: Batch write entities
+      description: Perform a batch of create / delete / update operations on multiple entities
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
 components:
   parameters:
     attributePathParam:
@@ -167,6 +203,8 @@ components:
         type: string
         default: alpha1
   schemas:
+    BatchResponse:
+      type: object
     Entity:
       required:
         - id
@@ -189,8 +227,6 @@ components:
           description: Provenance and other entity metadata. May not be present in alpha1.
     EntityAttributes:
       type: object
-    EntityMetadata:
-      type: object
     EntityAttributeDefinition:
       required:
         - name
@@ -199,6 +235,10 @@ components:
         name:
           type: string
           description: Attribute name
+    EntityMetadata:
+      type: object
+    EntityQueryResponse:
+      type: object
     EntityTypeDefinition:
       required:
         - name
