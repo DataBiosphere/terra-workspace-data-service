@@ -7,11 +7,18 @@ info:
   license:
     name: BSD
     url: http://opensource.org/licenses/BSD-3-Clause
+tags:
+  - name: Entities
+    description: Entity APIs
+  - name: Schema
+    description: Schema Manipulation APIs (coming soon)
 paths:
   /{instanceid}/entities/{v}/{type}/{id}:
     get:
       summary: Get entity
       description: Retrieves a single entity by its type and id
+      tags:
+        - Entities
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -27,6 +34,8 @@ paths:
         If the entity already exists, its entire set of attributes will be overwritten by
         the attributes in the request body.
         TODO: the type and id are duplicated in the url and the body; change this? Silently ignore the type/id in the body?
+      tags:
+        - Entities
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -44,6 +53,8 @@ paths:
         Any attributes included in the request body will be created or overwritten.
         No attributes will be deleted. To delete attributes, use the PUT api instead.
         TODO: the type and id are duplicated in the url and the body; change this? Silently ignore the type/id in the body?
+      tags:
+        - Entities
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -57,6 +68,8 @@ paths:
     delete:
       summary: Delete entity
       description: Deletes the entity at the specified type and id.
+      tags:
+        - Entities
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -71,6 +84,8 @@ paths:
       description: |
         Update entity type. Returns the updated type definition.
         Alpha1 supports renaming a type; future versions may support additional functionality.
+      tags:
+        - Entities
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -85,6 +100,8 @@ paths:
     delete:
       summary: Delete entity type
       description: Delete entity type. This deletes all entities of this type.
+      tags:
+        - Entities
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -98,6 +115,8 @@ paths:
       description: |
         Update attribute. Returns the updated attribute definition.
         Alpha1 supports renaming an attribute within the specified type; future versions may support additional functionality.
+      tags:
+        - Entities
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -114,6 +133,8 @@ paths:
       summary: Delete attribute
       description: |
         Delete attribute. This deletes all values for this attribute within the specified type.
+      tags:
+        - Entities
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -129,6 +150,8 @@ paths:
         Paginated list of entities matching the criteria supplied in url query parameters.
         This API supports a basic subset of search and filtering operations. For full functionality,
         use the POST api instead.
+      tags:
+        - Entities
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -148,6 +171,8 @@ paths:
     post:
       summary: Query entities
       description: Paginated list of entities matching the criteria supplied in the request body
+      tags:
+        - Entities
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -180,6 +205,8 @@ paths:
     post:
       summary: Batch write entities
       description: Perform a batch of create / delete / update / replace operations on multiple entities
+      tags:
+        - Entities
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
