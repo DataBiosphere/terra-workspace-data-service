@@ -1,12 +1,19 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
+import org.databiosphere.workspacedataservice.shared.model.EntityToDelete;
+import org.databiosphere.workspacedataservice.shared.model.EntityType;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -14,6 +21,7 @@ import java.util.stream.Stream;
 @Repository
 public class SingleTenantDao {
 
+    private static final int CHUNK_SIZE = 1_000;
     private final NamedParameterJdbcTemplate namedTemplate;
 
     public SingleTenantDao(NamedParameterJdbcTemplate namedTemplate) {
@@ -159,19 +167,79 @@ public class SingleTenantDao {
         return namedTemplate.getJdbcTemplate().queryForObject("select count(*) from " + getQualifiedTableName(entityType, workspaceId), Integer.class);
     }
 
-    public int getFilteredEntityCount(UUID workspaceId, String entityType, String filterCol, String terms) {
-        return namedTemplate.getJdbcTemplate().queryForObject("select count(*) from " + getQualifiedTableName(entityType, workspaceId) + " where " + filterCol + " = ?", Integer.class, terms);
+    public int getFilteredEntityCount(UUID workspaceId, String entityType, String filterTerms) {
+        return namedTemplate.queryForObject("select count(*) from " + getQualifiedTableName(entityType, workspaceId)
+                        + " where all_attribute_values ilike :filterTerms",
+                new MapSqlParameterSource("filterTerms", "%"+filterTerms+"%"), Integer.class);
+    }
+
+    public int getEntityCount(String entityTypeName, List<String> entityNamesToDelete, UUID workspaceId) {
+        List<List<String>> chunks = Lists.partition(entityNamesToDelete, CHUNK_SIZE);
+        int result = 0;
+        for (List<String> chunk : chunks) {
+            result += namedTemplate.queryForObject("select count(*) from " + getQualifiedTableName(entityTypeName, workspaceId)
+                            + " where name in (:entities)",
+                    new MapSqlParameterSource("entities", chunk), Integer.class);
+        }
+        return result;
+    }
+
+    public void deleteEntities(String entityTypeName, List<String> entityNamesToDelete, UUID workspaceId){
+        List<List<String>> chunks = Lists.partition(entityNamesToDelete, CHUNK_SIZE);
+        for (List<String> chunk : chunks) {
+            namedTemplate.update("delete from " + getQualifiedTableName(entityTypeName, workspaceId) + " where name in (:entities)",
+                    new MapSqlParameterSource("entities", chunk));
+        }
+    }
+
+
+    private class EntityRowMapper implements RowMapper<Entity> {
+        private final String entityType;
+
+        private EntityRowMapper(String entityType) {
+            this.entityType = entityType;
+        }
+
+        @Override
+        public Entity mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return new Entity(rs.getString("name"), new EntityType(entityType), getAttributes(rs));
+        }
+
+        private Map<String, Object> getAttributes(ResultSet rs) {
+            try {
+                ResultSetMetaData metaData = rs.getMetaData();
+                Map<String, Object> attributes = new HashMap<>();
+                for (int j = 0; j < metaData.getColumnCount(); j++) {
+                    String columnName = metaData.getColumnName(j+1);
+                    if ("name".equals(columnName) || "all_attribute_values".equals(columnName)) {
+                        continue;
+                    }
+                    attributes.put(columnName, rs.getObject(columnName));
+                }
+                return attributes;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public List<Entity> getSelectedEntities(String entityType, int pageSize, int i, String filterTerms, String sortField,
-                                            String sortDirection, List<String> fields, UUID workspaceId, String filterCol) {
-//        namedTemplate.getJdbcTemplate().query("select " + getFieldList(fields) + " from "
-//                + getQualifiedTableName(entityType, workspaceId) + " where " + filterCol + " = ? order by " + sortField
-//                + " " + sortDirection + " limit " + pageSize + " offset " + i, );
-        return null;
+                                            String sortDirection, List<String> fields, UUID workspaceId) {
+        if(filterTerms.isBlank()){
+            return namedTemplate.getJdbcTemplate().query("select " + getFieldList(fields) + " from "
+                    + getQualifiedTableName(entityType, workspaceId) + " order by " + sortField
+                    + " " + sortDirection + " limit " + pageSize + " offset " + i, new EntityRowMapper(entityType));
+        } else {
+            return namedTemplate.query("select " + getFieldList(fields) + " from "
+                    + getQualifiedTableName(entityType, workspaceId) + " where all_attribute_values ilike :filter order by " + sortField
+                    + " " + sortDirection + " limit " + pageSize + " offset " + i, new MapSqlParameterSource("filter", "%"+filterTerms+"%"),
+                    new EntityRowMapper(entityType));
+        }
+
     }
 
     private String getFieldList(List<String> fields) {
-        return fields.isEmpty() ? "*" : String.join(", ", fields);
+        return (fields == null || fields.isEmpty()) ? "*" :
+                Stream.concat(fields.stream(), Stream.of("name")).collect(Collectors.joining(", "));
     }
 }
