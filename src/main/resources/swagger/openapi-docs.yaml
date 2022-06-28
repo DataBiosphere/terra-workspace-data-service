@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Workspace Data Service
-  version: Alpha1
+  version: alpha1
   description: Workspace Data Service API
   termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
   license:
@@ -160,7 +160,6 @@ paths:
         - $ref: '#/components/parameters/searchSortQueryParam'
         - $ref: '#/components/parameters/searchTermsQueryParam'
         - $ref: '#/components/parameters/searchOperatorQueryParam'
-        - $ref: '#/components/parameters/searchQueryQueryParam'
       responses:
         200:
           description: Success
@@ -270,13 +269,6 @@ components:
       required: false
       schema:
         $ref: '#/components/schemas/SearchOperator'
-    searchQueryQueryParam:
-      name: query
-      in: query
-      description: JSON- and url-encoded structure defining a search query.
-      required: false
-      schema:
-        $ref: '#/components/schemas/QueryStringSearch'
     searchSortQueryParam:
       name: sort
       in: query
@@ -432,17 +424,6 @@ components:
           type: string
           description: Entity type name
     RequestBodySearch:
-      required:
-        - terms
-      type: object
-      description: |
-        Alpha1 only supports `terms` and `operator`. Future versions may support additional functionality.
-      properties:
-        terms:
-          $ref: '#/components/schemas/SearchTerms'
-        operator:
-          $ref: '#/components/schemas/SearchOperator'
-    QueryStringSearch:
       required:
         - terms
       type: object
