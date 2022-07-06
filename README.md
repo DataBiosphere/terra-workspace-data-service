@@ -72,3 +72,6 @@ When done, stop postgres:
 ```
 ## Tests
 //TODO: Tests and testing!
+
+## Swagger UI
+When running locally, a Swagger UI is available at http://localhost:8080/swagger/swagger-ui.html.
