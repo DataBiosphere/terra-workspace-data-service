@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Workspace Data Service
-  version: alpha1
+  version: v0.2
   description: Workspace Data Service API
   termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
   license:
@@ -33,7 +33,10 @@ paths:
         Creates or replaces the entity using the specified type and id.
         If the entity already exists, its entire set of attributes will be overwritten by
         the attributes in the request body.
+        
         TODO: the type and id are duplicated in the url and the body; change this? Silently ignore the type/id in the body?
+        
+        TODO: add a query parameter to allow/disallow overwriting existing entities?
       tags:
         - Entities
       parameters:
@@ -51,7 +54,9 @@ paths:
       description: |
         Updates the entity of the specified type and id.
         Any attributes included in the request body will be created or overwritten.
+        Attributes not included in the request body will be untouched in the database.
         No attributes will be deleted. To delete attributes, use the PUT api instead.
+
         TODO: the type and id are duplicated in the url and the body; change this? Silently ignore the type/id in the body?
       tags:
         - Entities
@@ -82,8 +87,10 @@ paths:
     patch:
       summary: Update entity type
       description: |
-        Update entity type. Returns the updated type definition.
-        Alpha1 supports renaming a type; future versions may support additional functionality.
+        Update entity type. All entities of the old type will be updated to the new type.
+        Returns the updated type definition.
+
+        v0.2 supports renaming a type; future versions may support additional functionality.
       tags:
         - Entities
       parameters:
@@ -99,7 +106,7 @@ paths:
                 $ref: '#/components/schemas/EntityTypeDefinition'
     delete:
       summary: Delete entity type
-      description: Delete entity type. This deletes all entities of this type.
+      description: Delete entity type. All entities of this type will be deleted.
       tags:
         - Entities
       parameters:
@@ -113,8 +120,10 @@ paths:
     patch:
       summary: Update attribute
       description: |
-        Update attribute. Returns the updated attribute definition.
-        Alpha1 supports renaming an attribute within the specified type; future versions may support additional functionality.
+        Update attribute. All entities containing the old attribute will now have the new attribute instead.
+        Returns the updated attribute definition.
+
+        v0.2 supports renaming an attribute within the specified type; future versions may support additional functionality.
       tags:
         - Entities
       parameters:
@@ -150,6 +159,8 @@ paths:
         Paginated list of entities matching the criteria supplied in url query parameters.
         This API supports a basic subset of search and filtering operations. For full functionality,
         use the POST api instead.
+
+        TODO: Eliminate this API in favor of POST?
       tags:
         - Entities
       parameters:
@@ -244,7 +255,7 @@ components:
     instanceIdPathParam:
       name: instanceid
       in: path
-      description: WDS instance id
+      description: WDS instance id; by convention equal to workspace id
       required: true
       schema:
         type: string
@@ -302,7 +313,7 @@ components:
       required: true
       schema:
         type: string
-        default: alpha1
+        default: v0.2
   responses:
     EntityResponseBody:
       description: An entity
@@ -396,7 +407,7 @@ components:
           description: KVPs of entity attributes
         metadata:
           $ref: '#/components/schemas/EntityMetadata'
-          description: Provenance and other entity metadata. May not be present in alpha1.
+          description: Provenance and other entity metadata. May not be present in v0.2.
     EntityAttributes:
       type: object
     EntityAttributeDefinition:
@@ -428,7 +439,7 @@ components:
         - terms
       type: object
       description: |
-        Alpha1 only supports `terms` and `operator`. Future versions may support additional functionality.
+        v0.2 only supports `terms` and `operator`. Future versions may support additional functionality.
       properties:
         terms:
           $ref: '#/components/schemas/SearchTerms'
@@ -453,9 +464,11 @@ components:
       type: string
       description: |
         Sort specification for search results.
+
         Accepts `attribute` and `direction` separated by a single space (%20 url-encoded).
         `direction` can be "asc" or "desc". `direction` is optional and defaults to "asc".
         `attribute` and `direction` must be separated by a single space.
+
         Concatenate multiple sort specifications with commas.
       example: name,size desc,color asc
     SearchTerms:
