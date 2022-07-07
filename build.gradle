@@ -24,6 +24,7 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
 }
 
 sonarqube {
@@ -33,6 +34,12 @@ sonarqube {
         property "sonar.host.url", "https://sonarcloud.io"
     }
 }
+
 tasks.named('test') {
     useJUnitPlatform()
+    testLogging {
+        events = ["passed", "failed", "skipped", "started"]
+        exceptionFormat = "full"
+    }
 }
+
