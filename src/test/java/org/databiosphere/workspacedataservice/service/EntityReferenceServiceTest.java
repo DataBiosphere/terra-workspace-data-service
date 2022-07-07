@@ -57,7 +57,7 @@ class EntityReferenceServiceTest {
         entities.add(referencingEntity);
         result = entityReferenceService.getEntityReferences(entities, testWorkspaceUUID);
 
-        assertTrue(result.isEmpty(), "Entities referencing other entities should result in an EntityReference.");
+        assertFalse(result.isEmpty(), "Entities referencing other entities should result in an EntityReference.");
     }
 
 }
