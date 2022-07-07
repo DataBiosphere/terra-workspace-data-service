@@ -71,7 +71,14 @@ When done, stop postgres:
 ./local-dev/run_postgres.sh stop
 ```
 ## Tests
-//TODO: Tests and testing!
+To run unit tests locally, first make sure your local postgres is up and running:
+```
+./local-dev/run_postgres.sh start
+```
+From the command line, run
+```
+./gradlew test
+```
 
 ## Swagger UI
 When running locally, a Swagger UI is available at http://localhost:8080/swagger/swagger-ui.html.
