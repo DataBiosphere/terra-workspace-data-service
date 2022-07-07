@@ -36,6 +36,7 @@ public class EntityController {
         }
     }
 
+    @PatchMapping("/")
 
     @PostMapping("/api/workspaces/{workspaceNamespace}/{workspaceName}/entities/batchUpsert")
     public ResponseEntity<String> batchUpsert(@PathVariable("workspaceNamespace") String wsNamespace,
