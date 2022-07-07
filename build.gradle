@@ -37,5 +37,9 @@ sonarqube {
 
 tasks.named('test') {
     useJUnitPlatform()
+    testLogging {
+        events = ["passed", "failed", "skipped", "started"]
+        exceptionFormat = "full"
+    }
 }
 

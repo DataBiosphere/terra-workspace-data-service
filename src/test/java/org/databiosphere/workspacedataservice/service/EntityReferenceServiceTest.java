@@ -20,15 +20,15 @@ class EntityReferenceServiceTest {
     @MockBean
     EntityDao entityDao;
 
-    EntityReferenceService entityReferenceService;
-    private UUID defaultWorkspaceUUID = UUID.randomUUID();
+    private EntityReferenceService entityReferenceService;
+    private UUID testWorkspaceUUID = UUID.randomUUID();
     private Long entityTypeId = 123456789L;
     private EntityType entityType = new EntityType("testEntityType");
 
     @BeforeEach
     void setup(){
         entityReferenceService = new EntityReferenceService(entityDao);
-        when(entityDao.getEntityTypeId(defaultWorkspaceUUID, "testEntityType")).thenReturn(entityTypeId);
+        when(entityDao.getEntityTypeId(testWorkspaceUUID, "testEntityType")).thenReturn(entityTypeId);
     }
 
     @Test
@@ -45,17 +45,17 @@ class EntityReferenceServiceTest {
         Entity referencingEntity = new Entity("referencingEntity", entityType, referencingAttributes, entityTypeId);
 
         List<Entity> entities = new ArrayList<>();
-        List<EntityReference> result = entityReferenceService.getEntityReferences(entities, defaultWorkspaceUUID);
+        List<EntityReference> result = entityReferenceService.getEntityReferences(entities, testWorkspaceUUID);
 
         assertTrue(result.isEmpty(), "Empty entity list should return an empty list of entity references.");
 
         entities.add(testEntity);
-        result = entityReferenceService.getEntityReferences(entities, defaultWorkspaceUUID);
+        result = entityReferenceService.getEntityReferences(entities, testWorkspaceUUID);
 
         assertTrue(result.isEmpty(), "Entities that do not refer to other entities should result in an empty list of entity references.");
 
         entities.add(referencingEntity);
-        result = entityReferenceService.getEntityReferences(entities, defaultWorkspaceUUID);
+        result = entityReferenceService.getEntityReferences(entities, testWorkspaceUUID);
 
         assertFalse(result.isEmpty(), "Entities referencing other entities should result in an EntityReference.");
     }
