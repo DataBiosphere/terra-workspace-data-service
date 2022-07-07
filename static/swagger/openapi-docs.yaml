@@ -2,7 +2,12 @@ openapi: 3.0.3
 info:
   title: Workspace Data Service
   version: v0.2
-  description: Workspace Data Service API
+  description: |
+    Workspace Data Service API
+
+    This is the proposed API. Endpoints marked (pending) are not yet implemented.
+
+    As of v0.2, all APIs are subject to change without notice.
   termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
   license:
     name: BSD
@@ -15,7 +20,7 @@ tags:
 paths:
   /{instanceid}/entities/{v}/{type}/{id}:
     get:
-      summary: Get entity
+      summary: Get entity (pending)
       description: Retrieves a single entity by its type and id
       tags:
         - Entities
@@ -28,7 +33,7 @@ paths:
         200:
           $ref: '#/components/responses/EntityResponseBody'
     put:
-      summary: Create or replace entity
+      summary: Create or replace entity (pending)
       description: |
         Creates or replaces the entity using the specified type and id.
         If the entity already exists, its entire set of attributes will be overwritten by
@@ -50,7 +55,7 @@ paths:
         201:
           $ref: '#/components/responses/EntityResponseBody'
     patch:
-      summary: Update entity
+      summary: Update entity (pending)
       description: |
         Updates the entity of the specified type and id.
         Any attributes included in the request body will be created or overwritten.
@@ -71,7 +76,7 @@ paths:
         200:
           $ref: '#/components/responses/EntityResponseBody'
     delete:
-      summary: Delete entity
+      summary: Delete entity (pending)
       description: Deletes the entity at the specified type and id.
       tags:
         - Entities
@@ -85,7 +90,7 @@ paths:
           description: Success
   /{instanceid}/types/{v}/{type}:
     patch:
-      summary: Update entity type
+      summary: Update entity type (pending)
       description: |
         Update entity type. All entities of the old type will be updated to the new type.
         Returns the updated type definition.
@@ -105,7 +110,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EntityTypeDefinition'
     delete:
-      summary: Delete entity type
+      summary: Delete entity type (pending)
       description: Delete entity type. All entities of this type will be deleted.
       tags:
         - Entities
@@ -118,7 +123,7 @@ paths:
           description: Success
   /{instanceid}/types/{type}/attributes/{v}/{attribute}:
     patch:
-      summary: Update attribute
+      summary: Update attribute (pending)
       description: |
         Update attribute. All entities containing the old attribute will now have the new attribute instead.
         Returns the updated attribute definition.
@@ -139,7 +144,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EntityTypeDefinition'
     delete:
-      summary: Delete attribute
+      summary: Delete attribute (pending)
       description: |
         Delete attribute. This deletes all values for this attribute within the specified type.
       tags:
@@ -154,7 +159,7 @@ paths:
           description: Success
   /{instanceid}/search/{v}:
     get:
-      summary: Query entities
+      summary: Query entities (pending)
       description: |
         Paginated list of entities matching the criteria supplied in url query parameters.
         This API supports a basic subset of search and filtering operations. For full functionality,
@@ -179,7 +184,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EntityQueryResponse'
     post:
-      summary: Query entities
+      summary: Query entities (pending)
       description: Paginated list of entities matching the criteria supplied in the request body
       tags:
         - Entities
@@ -213,7 +218,7 @@ paths:
                 $ref: '#/components/schemas/EntityQueryResponse'
   /{instanceid}/batch/{v}:
     post:
-      summary: Batch write entities
+      summary: Batch write entities (pending)
       description: Perform a batch of create / delete / update / replace operations on multiple entities
       tags:
         - Entities
