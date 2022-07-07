@@ -22,6 +22,8 @@ dependencies {
     implementation 'org.apache.commons:commons-lang3'
     implementation 'com.google.guava:guava:31.1-jre'
     implementation 'org.postgresql:postgresql'
+    implementation 'org.webjars:webjars-locator-core:0.52'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:4.12.0'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
