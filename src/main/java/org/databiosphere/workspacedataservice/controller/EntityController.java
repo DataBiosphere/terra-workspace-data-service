@@ -121,5 +121,18 @@ public class EntityController {
                 (page-1) * pageSize, filterTerms, sortField, sortDirection, fields) : Collections.emptyList());
     }
 
+    @GetMapping("/{instanceId}/entities/{version}/{entityType}/{id}")
+    public ResponseEntity<EntityResponse> getSingleEntity(@PathVariable("instanceId") UUID instanceId,
+                                              @PathVariable("entityType") EntityType entityType,
+                                              @PathVariable("id") EntityId entityId) {
+        Entity result = dao.getSingleEntity(instanceId, entityType, entityId);
+        if (result == null){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found");
+        }
+        EntityResponse response = new EntityResponse(entityId, entityType, new EntityAttributes(result.getAttributes()),
+                new EntityMetadata("TODO: ENTITYMETADATA"));
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
 
 }
