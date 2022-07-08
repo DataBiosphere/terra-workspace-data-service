@@ -76,6 +76,25 @@ public class EntityReferenceService {
     }
 
 
+    public EntityReferenceAction manageSingleEntityReference(UUID workspaceId, Entity entity) {
+        List<EntityReference> referencesToAdd = new ArrayList<>();
+        List<EntityReference> referencesToRemove = new ArrayList<>();
+        List<EntityReference> updatedReferences = getEntityReferences(Collections.singletonList(entity), workspaceId);
+        List<EntityReference> referencesForEntity = dao.getReferencesForEntities(Collections.singletonList(entity), entity.getEntityTypeId());
+        calculateReferenceOpsForEntityType(referencesToAdd, referencesToRemove, updatedReferences, referencesForEntity);
+        return new EntityReferenceAction(referencesToAdd, referencesToRemove, Collections.singletonList(entity));
+    }
+
+    private void calculateReferenceOpsForEntityType(List<EntityReference> referencesToAdd, List<EntityReference> referencesToRemove, List<EntityReference> updatedReferences, List<EntityReference> referencesForEntity) {
+        HashSet<EntityReference> existingRefsSet = new HashSet<>(referencesForEntity);
+        HashSet<EntityReference> updateRefsSet = new HashSet<>(updatedReferences);
+        if (!updateRefsSet.equals(existingRefsSet)) {
+            //if existing has elements not contained in updated we need to remove
+            referencesToRemove.addAll(Sets.difference(existingRefsSet, updateRefsSet));
+            //if updated has elements not contained in existing we need to add
+            referencesToAdd.addAll(Sets.difference(updateRefsSet, existingRefsSet));
+        }
+    }
 
     public EntityReferenceAction manageReferences(UUID workspaceId, Map<String, Map<String, Entity>> entitiesForUpsert) {
         List<EntityReference> referencesToAdd = new ArrayList<>();
@@ -84,14 +103,7 @@ public class EntityReferenceService {
             ArrayList<Entity> entitiesForType = new ArrayList<>(entitiesForUpsert.get(entityType).values());
             List<EntityReference> updatedReferences = getEntityReferences(entitiesForType, workspaceId);
             List<EntityReference> existingReferences = dao.getReferencesForEntities(entitiesForType, dao.getEntityTypeId(workspaceId, entityType));
-            HashSet<EntityReference> existingRefsSet = new HashSet<>(existingReferences);
-            HashSet<EntityReference> updateRefsSet = new HashSet<>(updatedReferences);
-            if(!updateRefsSet.equals(existingRefsSet)){
-                //if existing has elements not contained in updated we need to remove
-                referencesToRemove.addAll(Sets.difference(existingRefsSet, updateRefsSet));
-                //if updated has elements not contained in existing we need to add
-                referencesToAdd.addAll(Sets.difference(updateRefsSet, existingRefsSet));
-            }
+            calculateReferenceOpsForEntityType(referencesToAdd, referencesToRemove, updatedReferences, existingReferences);
         }
         return new EntityReferenceAction(referencesToAdd, referencesToRemove,
                 entitiesForUpsert.values().stream().flatMap(s -> s.values().stream()).collect(Collectors.toList()));

@@ -44,6 +44,8 @@ public class EntityController {
                                                              @PathVariable("entityType") EntityType entityType,
                                                              @PathVariable("entityId") EntityId entityId,
                                                              @RequestBody EntityRequest entityRequest){
+        //not sure what to do with version path param just yet, thoughts?
+        Preconditions.checkArgument(version.equals("v0.2"));
         Entity singleEntity = dao.getSingleEntity(workspaceId, entityType, entityId);
         if(singleEntity == null){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found");
@@ -51,8 +53,11 @@ public class EntityController {
         Map<String, Object> attributesToUpdate = entityRequest.entityAttributes().attributes();
         Map<String, Object> existingAttributes = singleEntity.getAttributes();
         existingAttributes.putAll(attributesToUpdate);
-        dao.batchUpsert(List.of(singleEntity));
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        EntityReferenceAction entityReferenceAction = referenceService.manageSingleEntityReference(workspaceId, singleEntity);
+        referenceService.saveReferencesAndEntities(entityReferenceAction);
+        EntityResponse response = new EntityResponse(entityId, entityType, new EntityAttributes(singleEntity.getAttributes()),
+                new EntityMetadata("TODO: SUPERFRESH"));
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @PostMapping("/api/workspaces/{workspaceNamespace}/{workspaceName}/entities/batchUpsert")
