@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.EntityReference;
 import org.databiosphere.workspacedataservice.service.model.InvalidEntityReference;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
+import org.databiosphere.workspacedataservice.shared.model.EntityId;
 import org.databiosphere.workspacedataservice.shared.model.EntityToDelete;
 import org.databiosphere.workspacedataservice.shared.model.EntityType;
 import org.slf4j.Logger;
@@ -132,6 +133,18 @@ public class EntityDao {
             LOGGER.error("Could not save entity refs", e);
             throw new InvalidEntityReference("Invalid entity references detected " + toAdd);
         }
+    }
+
+    public Entity getSingleEntity(UUID workspaceId, EntityType entityType, EntityId entityId) {
+        MapSqlParameterSource params = new MapSqlParameterSource("workspaceId", workspaceId);
+        params.addValue("entityTypeName", entityType.getName());
+        params.addValue("entityId", entityId.entityIdentifier());
+        List<Entity> shouldBeSingleEntity = namedParameterJdbcTemplate.query("select e.name, e.attributes, et.id as entity_type_id from entity e join entity_type et " +
+                        "on e.entity_type = et.id where et.workspace_id = :workspaceId and et.name = :entityTypeName " +
+                        "and e.name = :entityId and deleted = false",
+                params, (rs, i) -> new Entity(rs.getString("name"), entityType, getAttributes(rs.getString("attributes")),
+                        rs.getLong("entity_type_id"), false));
+        return shouldBeSingleEntity.isEmpty() ? null : shouldBeSingleEntity.get(0);
     }
 
     private static class EntityReferenceStmtSetter implements BatchPreparedStatementSetter {

@@ -8,6 +8,8 @@ import org.databiosphere.workspacedataservice.service.EntityReferenceService;
 import org.databiosphere.workspacedataservice.service.model.AttemptToUpsertDeletedEntity;
 import org.databiosphere.workspacedataservice.service.model.EntityReferenceAction;
 import org.databiosphere.workspacedataservice.shared.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +38,22 @@ public class EntityController {
         }
     }
 
-    @PatchMapping("/")
+    @PatchMapping("/{workspaceId}/entities/{version}/{entityType}/{entityId}")
+    public ResponseEntity<EntityResponse> updateSingleEntity(@PathVariable("workspaceId") UUID workspaceId,
+                                                             @PathVariable("version") String version,
+                                                             @PathVariable("entityType") EntityType entityType,
+                                                             @PathVariable("entityId") EntityId entityId,
+                                                             @RequestBody EntityRequest entityRequest){
+        Entity singleEntity = dao.getSingleEntity(workspaceId, entityType, entityId);
+        if(singleEntity == null){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found");
+        }
+        Map<String, Object> attributesToUpdate = entityRequest.entityAttributes().attributes();
+        Map<String, Object> existingAttributes = singleEntity.getAttributes();
+        existingAttributes.putAll(attributesToUpdate);
+        dao.batchUpsert(List.of(singleEntity));
+        return new ResponseEntity<>(HttpStatus.CREATED);
+    }
 
     @PostMapping("/api/workspaces/{workspaceNamespace}/{workspaceName}/entities/batchUpsert")
     public ResponseEntity<String> batchUpsert(@PathVariable("workspaceNamespace") String wsNamespace,
