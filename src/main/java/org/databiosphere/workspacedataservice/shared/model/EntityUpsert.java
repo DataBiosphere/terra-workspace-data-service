@@ -7,17 +7,17 @@ import java.util.List;
 
 public class EntityUpsert {
 
-    private String name;
+    private EntityId name;
 
     private String entityType;
 
     private List<UpsertOperation> operations;
 
-    public String getName() {
+    public EntityId getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public void setName(EntityId name) {
         this.name = name;
     }
 

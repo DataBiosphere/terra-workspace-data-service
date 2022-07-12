@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import org.databiosphere.workspacedataservice.dao.EntityDao;
 import org.databiosphere.workspacedataservice.service.model.EntityReference;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
+import org.databiosphere.workspacedataservice.shared.model.EntityId;
 import org.databiosphere.workspacedataservice.shared.model.EntityType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,14 +36,15 @@ class EntityReferenceServiceTest {
     void testGetEntityReferences() {
         Map<String, Object> simpleAttributes = new HashMap<>();
         simpleAttributes.put("attr1", "attr1value");
-        Entity testEntity = new Entity("testEntity", entityType, simpleAttributes, entityTypeId);
+        EntityId testEntityId = new EntityId("testEntity");
+        Entity testEntity = new Entity(testEntityId, entityType, simpleAttributes, entityTypeId);
 
         Map<String, Object> refAttr = new HashMap<>();
         refAttr.put("entityType", "entityType");
-        refAttr.put("entityName", "testEntity");
+        refAttr.put("entityName", testEntityId);
         Map<String, Object> referencingAttributes = new HashMap<>();
         referencingAttributes.put("ref", refAttr);
-        Entity referencingEntity = new Entity("referencingEntity", entityType, referencingAttributes, entityTypeId);
+        Entity referencingEntity = new Entity(new EntityId("referencingEntity"), entityType, referencingAttributes, entityTypeId);
 
         List<Entity> entities = new ArrayList<>();
         List<EntityReference> result = entityReferenceService.getEntityReferences(entities, testWorkspaceUUID);

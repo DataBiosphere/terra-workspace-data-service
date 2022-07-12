@@ -1,23 +1,25 @@
 package org.databiosphere.workspacedataservice.service.model;
 
+import org.databiosphere.workspacedataservice.shared.model.EntityId;
+
 public class EntityReference {
 
-    private final String entityName;
+    private final EntityId entityName;
 
     private final long entityType;
 
     private final long referencedEntityType;
 
-    private final String referencedEntityName;
+    private final EntityId referencedEntityName;
 
-    public EntityReference(String entityName, long entityType, long referencedEntityType, String referencedEntityName) {
+    public EntityReference(EntityId entityName, long entityType, long referencedEntityType, EntityId referencedEntityName) {
         this.entityName = entityName;
         this.entityType = entityType;
         this.referencedEntityType = referencedEntityType;
         this.referencedEntityName = referencedEntityName;
     }
 
-    public String getEntityName() {
+    public EntityId getEntityName() {
         return entityName;
     }
 
@@ -29,7 +31,7 @@ public class EntityReference {
         return referencedEntityType;
     }
 
-    public String getReferencedEntityName() {
+    public EntityId getReferencedEntityName() {
         return referencedEntityName;
     }
 

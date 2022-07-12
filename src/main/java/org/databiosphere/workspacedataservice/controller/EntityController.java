@@ -8,8 +8,6 @@ import org.databiosphere.workspacedataservice.service.EntityReferenceService;
 import org.databiosphere.workspacedataservice.service.model.AttemptToUpsertDeletedEntity;
 import org.databiosphere.workspacedataservice.service.model.EntityReferenceAction;
 import org.databiosphere.workspacedataservice.shared.model.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,26 +36,26 @@ public class EntityController {
         }
     }
 
-    @PatchMapping("/{workspaceId}/entities/{version}/{entityType}/{entityId}")
-    public ResponseEntity<EntityResponse> updateSingleEntity(@PathVariable("workspaceId") UUID workspaceId,
+    @PatchMapping("/{instanceId}/entities/{version}/{entityType}/{entityId}")
+    public ResponseEntity<EntityResponse> updateSingleEntity(@PathVariable("instanceId") UUID instanceId,
                                                              @PathVariable("version") String version,
                                                              @PathVariable("entityType") EntityType entityType,
                                                              @PathVariable("entityId") EntityId entityId,
                                                              @RequestBody EntityRequest entityRequest){
-        //not sure what to do with version path param just yet, thoughts?
         Preconditions.checkArgument(version.equals("v0.2"));
-        Entity singleEntity = dao.getSingleEntity(workspaceId, entityType, entityId);
+        Entity singleEntity = dao.getSingleEntity(instanceId, entityType, entityId);
         if(singleEntity == null){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found");
         }
         Map<String, Object> attributesToUpdate = entityRequest.entityAttributes().attributes();
         Map<String, Object> existingAttributes = singleEntity.getAttributes();
         existingAttributes.putAll(attributesToUpdate);
-        EntityReferenceAction entityReferenceAction = referenceService.manageSingleEntityReference(workspaceId, singleEntity);
+        //TODO: remove entityType/entityName JSON object format for references and move to URIs in the request/response payloads
+        EntityReferenceAction entityReferenceAction = referenceService.manageSingleEntityReference(instanceId, singleEntity);
         referenceService.saveReferencesAndEntities(entityReferenceAction);
         EntityResponse response = new EntityResponse(entityId, entityType, new EntityAttributes(singleEntity.getAttributes()),
                 new EntityMetadata("TODO: SUPERFRESH"));
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @PostMapping("/api/workspaces/{workspaceNamespace}/{workspaceName}/entities/batchUpsert")
@@ -65,7 +63,7 @@ public class EntityController {
                                               @PathVariable("workspaceName") String wsName,
                                               @RequestBody List<EntityUpsert> entitiesToUpdate){
         UUID workspaceId = getWorkspaceId(wsNamespace, wsName);
-        Map<String, Map<String, Entity>> entitiesForUpsert;
+        Map<String, Map<EntityId, Entity>> entitiesForUpsert;
         try {
             entitiesForUpsert = referenceService.convertToUpdatedEntities(entitiesToUpdate, workspaceId);
         } catch (AttemptToUpsertDeletedEntity e) {
@@ -121,12 +119,15 @@ public class EntityController {
                 (page-1) * pageSize, filterTerms, sortField, sortDirection, fields) : Collections.emptyList());
     }
 
-    @GetMapping("/{instanceId}/entities/{version}/{entityType}/{id}")
+    @GetMapping("/{instanceId}/entities/{version}/{entityType}/{entityId}")
     public ResponseEntity<EntityResponse> getSingleEntity(@PathVariable("instanceId") UUID instanceId,
+                                              @PathVariable("version") String version,
                                               @PathVariable("entityType") EntityType entityType,
-                                              @PathVariable("id") EntityId entityId) {
+                                              @PathVariable("entityId") EntityId entityId) {
+        Preconditions.checkArgument(version.equals("v0.2"));
         Entity result = dao.getSingleEntity(instanceId, entityType, entityId);
         if (result == null){
+            //TODO: standard exception classes
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found");
         }
         EntityResponse response = new EntityResponse(entityId, entityType, new EntityAttributes(result.getAttributes()),

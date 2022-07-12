@@ -54,10 +54,10 @@ public class EntityDao {
             result.addAll(namedParameterJdbcTemplate.query("select entity_type, entity_name, referenced_entity_type, " +
                             "referenced_entity_name from entity_reference where entity_type = :entityType and entity_name in (:entityNames)",
                     new MapSqlParameterSource(Map.of("entityType", entityTypeId, "entityNames", chunk.stream().map(Entity::getName).collect(Collectors.toSet()))),
-                    (rs, rowNum) -> new EntityReference(rs.getString("entity_name"),
+                    (rs, rowNum) -> new EntityReference(new EntityId(rs.getString("entity_name")),
                             rs.getLong("entity_type"),
                             rs.getLong("referenced_entity_type"),
-                            rs.getString("referenced_entity_name"))));
+                            new EntityId(rs.getString("referenced_entity_name")))));
         }
         return result;
     }
@@ -102,7 +102,9 @@ public class EntityDao {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
                 Entity entity = entities.get(i);
-                ps.setString(1, entity.getName());
+                //This is an example of a place where we want a string instead of an EntityId
+                //Should there be a more direct way to get entityId as a string?
+                ps.setString(1, entity.getName().entityIdentifier());
                 ps.setLong(2, entity.getEntityTypeId());
                 ps.setBoolean(3, entity.getDeleted());
                 ps.setObject(4, writeAsJson(entity.getAttributes()));
@@ -142,7 +144,7 @@ public class EntityDao {
         List<Entity> shouldBeSingleEntity = namedParameterJdbcTemplate.query("select e.name, e.attributes, et.id as entity_type_id from entity e join entity_type et " +
                         "on e.entity_type = et.id where et.workspace_id = :workspaceId and et.name = :entityTypeName " +
                         "and e.name = :entityId and deleted = false",
-                params, (rs, i) -> new Entity(rs.getString("name"), entityType, getAttributes(rs.getString("attributes")),
+                params, (rs, i) -> new Entity(entityId, entityType, getAttributes(rs.getString("attributes")),
                         rs.getLong("entity_type_id"), false));
         return shouldBeSingleEntity.isEmpty() ? null : shouldBeSingleEntity.get(0);
     }
@@ -158,9 +160,9 @@ public class EntityDao {
         public void setValues(PreparedStatement ps, int i) throws SQLException {
             EntityReference ref = referencesToRemove.get(i);
             ps.setLong(1, ref.getEntityType());
-            ps.setString(2, ref.getEntityName());
+            ps.setString(2, ref.getEntityName().entityIdentifier());
             ps.setLong(3, ref.getReferencedEntityType());
-            ps.setString(4, ref.getReferencedEntityName());
+            ps.setString(4, ref.getReferencedEntityName().entityIdentifier());
         }
 
         @Override
@@ -169,11 +171,11 @@ public class EntityDao {
         }
     }
 
-    public List<Entity> getNamedEntities(Long entityTypeId, Set<String> entityNames, String entityTypeName, boolean excludeDeletedEntities) {
+    public List<Entity> getNamedEntities(Long entityTypeId, Set<EntityId> entityNames, String entityTypeName, boolean excludeDeletedEntities) {
         String sql = "select name, attributes, entity_type, deleted from entity where entity_type = :entityType and name in (:entityNames) " + (excludeDeletedEntities ? "and deleted = false" : "");
         return namedParameterJdbcTemplate.query(sql,
                 new MapSqlParameterSource(Map.of("entityType", entityTypeId, "entityNames", entityNames)),
-                (rs, i) -> new Entity(rs.getString("name"), new EntityType(entityTypeName), getAttributes(rs.getString("attributes")),
+                (rs, i) -> new Entity(new EntityId(rs.getString("name")), new EntityType(entityTypeName), getAttributes(rs.getString("attributes")),
                         rs.getLong("entity_type"), rs.getBoolean("deleted")));
     }
 
@@ -257,7 +259,7 @@ public class EntityDao {
                     if (!CollectionUtils.isEmpty(fields)) {
                         attributes.keySet().retainAll(fields);
                     }
-                    return new Entity(rs.getString("name"), new EntityType(entityTypeName), attributes);
+                    return new Entity(new EntityId(rs.getString("name")), new EntityType(entityTypeName), attributes);
                 });
         watch.stop();
         LOGGER.info("Total time spent was {}s for {}, {}", watch.getTotalTimeSeconds(), builder, params);

@@ -26,7 +26,7 @@ public class PatchSingleEntityTest {
 
     @Test
     void testPatchSingleEntity(){
-        when(entityDao.getSingleEntity(any(), any(), any())).thenReturn(new Entity("test",
+        when(entityDao.getSingleEntity(any(), any(), any())).thenReturn(new Entity(new EntityId("test"),
                 new EntityType("test-type"), new HashMap<>(Map.of("created_at", "2022-10-01")), 1L));
         EntityReferenceService referenceService = new EntityReferenceService(entityDao);
         EntityController controller = new EntityController(referenceService, entityDao);
