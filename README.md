@@ -79,3 +79,6 @@ From the command line, run
 ```
 ./gradlew test
 ```
+
+## Swagger UI
+When running locally, a Swagger UI is available at http://localhost:8080/swagger/swagger-ui.html.
