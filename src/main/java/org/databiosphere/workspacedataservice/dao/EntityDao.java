@@ -137,12 +137,12 @@ public class EntityDao {
         }
     }
 
-    public Entity getSingleEntity(UUID workspaceId, EntityType entityType, EntityId entityId) {
-        MapSqlParameterSource params = new MapSqlParameterSource("workspaceId", workspaceId);
+    public Entity getSingleEntity(UUID instanceId, EntityType entityType, EntityId entityId) {
+        MapSqlParameterSource params = new MapSqlParameterSource("instanceId", instanceId);
         params.addValue("entityTypeName", entityType.getName());
         params.addValue("entityId", entityId.entityIdentifier());
         List<Entity> shouldBeSingleEntity = namedParameterJdbcTemplate.query("select e.name, e.attributes, et.id as entity_type_id from entity e join entity_type et " +
-                        "on e.entity_type = et.id where et.workspace_id = :workspaceId and et.name = :entityTypeName " +
+                        "on e.entity_type = et.id where et.workspace_id = :instanceId and et.name = :entityTypeName " +
                         "and e.name = :entityId and deleted = false",
                 params, (rs, i) -> new Entity(entityId, entityType, getAttributes(rs.getString("attributes")),
                         rs.getLong("entity_type_id"), false));
@@ -201,22 +201,22 @@ public class EntityDao {
         template.update("insert into workspace (id, name, namespace) values (?,?,?)", id, name, namespace);
     }
 
-    public long loadEntityType(EntityType entityType, UUID workspaceId) {
+    public long loadEntityType(EntityType entityType, UUID instanceId) {
         GeneratedKeyHolder generatedKeyHolder = new GeneratedKeyHolder();
         template.update(con -> {
             PreparedStatement ps = con.prepareStatement("insert into entity_type (name, workspace_id) values (?, ?)", Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, entityType.getName());
-            ps.setObject(2, workspaceId);
+            ps.setObject(2, instanceId);
             return ps;
         }, generatedKeyHolder);
         return (long)generatedKeyHolder.getKeys().get("id");
     }
 
-    public Long getEntityTypeId(UUID workspaceId, String entityTypeName){
+    public Long getEntityTypeId(UUID instanceId, String entityTypeName){
         try {
-            LOGGER.info("Querying for {} and {}", workspaceId, entityTypeName);
+            LOGGER.info("Querying for {} and {}", instanceId, entityTypeName);
             return template.queryForObject("select id from entity_type where workspace_id = ? and name = ?",
-                    Long.class, workspaceId, entityTypeName);
+                    Long.class, instanceId, entityTypeName);
         } catch (EmptyResultDataAccessException e) {
             return -1L;
         }
