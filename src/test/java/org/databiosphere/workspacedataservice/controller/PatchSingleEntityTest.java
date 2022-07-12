@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -33,6 +34,6 @@ public class PatchSingleEntityTest {
         ResponseEntity<EntityResponse> response = controller.updateSingleEntity(UUID.randomUUID(), "v0.2", new EntityType("sample"), new EntityId("test"),
                 new EntityRequest(new EntityId("test"), new EntityType("sample"), new EntityAttributes(Map.of("foo", "bar"))));
         assertTrue(response.getBody().entityAttributes().attributes().size() == 2);
-
+        assertEquals(Map.of("created_at", "2022-10-01", "foo", "bar"), response.getBody().entityAttributes().attributes());
     }
 }

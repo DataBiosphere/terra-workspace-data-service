@@ -37,7 +37,7 @@ paths:
           content:
             'application/json':
               schema:
-                $ref: '#/components/schemas/ResponseEntity'
+                $ref: '#/components/schemas/ErrorResponse'
     put:
       summary: Create or replace entity (pending)
       description: |
@@ -86,7 +86,7 @@ paths:
           content:
             'application/json':
               schema:
-                $ref: '#/components/schemas/ResponseEntity'
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       summary: Delete entity (pending)
       description: Deletes the entity at the specified type and id.
@@ -338,12 +338,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/EntityResponse'
-    ResponseEntity:
-      description: Used for error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ResponseEntity'
   requestBodies:
     EntityRequestBody:
       description: An entity to upload
@@ -457,7 +451,7 @@ components:
         name:
           type: string
           description: Entity type name
-    ResponseEntity:
+    ErrorResponse:
       required:
         - status
       type: object
@@ -471,6 +465,8 @@ components:
         trace:
           type: array
           description: stack trace
+          items:
+            $ref: '#/components/schemas/StackTraceElement'
         message:
           type: string
           description: error message
@@ -518,3 +514,24 @@ components:
     SearchTerms:
       type: string
       description: Space-delimited list of terms on which to search
+    StackTraceElement:
+      required:
+        - className
+        - fileName
+        - lineNumber
+        - methodName
+      type: object
+      properties:
+        className:
+          type: string
+          description: class name
+        methodName:
+          type: string
+          description: method name
+        fileName:
+          type: string
+          description: source file name
+        lineNumber:
+          type: integer
+          description: line number
+      description: ""
