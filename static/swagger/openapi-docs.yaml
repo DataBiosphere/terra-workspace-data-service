@@ -344,6 +344,12 @@ components:
             items:
               $ref: '#/components/schemas/BatchOperation'
   schemas:
+    Attribute:
+      type: object
+      properties:
+        value:
+          type: string
+          description: ""
     BatchOperation:
       type: object
       required:
@@ -414,15 +420,22 @@ components:
           $ref: '#/components/schemas/EntityMetadata'
           description: Provenance and other entity metadata. May not be present in v0.2.
     EntityAttributes:
-      type: object
+      type: array
+      description: A list of attributes
+      items:
+        $ref: '#/components/schemas/EntityAttributeDefinition'
     EntityAttributeDefinition:
       required:
         - name
+        - value
       type: object
       properties:
         name:
           type: string
           description: Attribute name
+        value:
+          type: string
+          description: Attribute value
     EntityId:
       type: string
     EntityMetadata:
