@@ -27,9 +27,9 @@ public class EntityReferenceService {
         this.dao = dao;
     }
 
-    private Map<EntityId, Entity> handleNewEntityType(UUID workspaceId, List<EntityUpsert> entityUpserts, String entityTypeName) throws AttemptToUpsertDeletedEntity {
+    private Map<EntityId, Entity> handleNewEntityType(UUID instanceId, List<EntityUpsert> entityUpserts, String entityTypeName) throws AttemptToUpsertDeletedEntity {
         EntityType entityType = new EntityType(entityTypeName);
-        long newEntityTypeId = dao.loadEntityType(entityType, workspaceId);
+        long newEntityTypeId = dao.loadEntityType(entityType, instanceId);
         return applyEntityUpserts(entityUpserts, newEntityTypeId, new HashMap<>());
     }
 
@@ -61,14 +61,14 @@ public class EntityReferenceService {
         }
     }
 
-    public List<EntityReference> getEntityReferences(List<Entity> entities, UUID workspaceId) {
+    public List<EntityReference> getEntityReferences(List<Entity> entities, UUID instanceId) {
         List<EntityReference> result = new ArrayList<>();
         for (Entity entity : entities) {
             List<Map> referencedAttrs = entity.getAttributes().values().stream().filter(Map.class::isInstance).map(Map.class::cast)
                     .filter(map -> map.size() == 2 && map.containsKey(ENTITY_TYPE_KEY) && map.containsKey(ENTITY_NAME_KEY)).collect(Collectors.toList());
             for (Map referencedAttr : referencedAttrs) {
                 result.add(new EntityReference(entity.getName(), entity.getEntityTypeId(),
-                        dao.getEntityTypeId(workspaceId, (String)referencedAttr.get(ENTITY_TYPE_KEY)),
+                        dao.getEntityTypeId(instanceId, referencedAttr.get(ENTITY_TYPE_KEY).toString()),
                         (EntityId)referencedAttr.get(ENTITY_NAME_KEY)));
             }
         }
@@ -76,10 +76,10 @@ public class EntityReferenceService {
     }
 
 
-    public EntityReferenceAction manageSingleEntityReference(UUID workspaceId, Entity entity) {
+    public EntityReferenceAction manageSingleEntityReference(UUID instanceId, Entity entity) {
         List<EntityReference> referencesToAdd = new ArrayList<>();
         List<EntityReference> referencesToRemove = new ArrayList<>();
-        List<EntityReference> updatedReferences = getEntityReferences(Collections.singletonList(entity), workspaceId);
+        List<EntityReference> updatedReferences = getEntityReferences(Collections.singletonList(entity), instanceId);
         List<EntityReference> referencesForEntity = dao.getReferencesForEntities(Collections.singletonList(entity), entity.getEntityTypeId());
         calculateReferenceOpsForEntityType(referencesToAdd, referencesToRemove, updatedReferences, referencesForEntity);
         return new EntityReferenceAction(referencesToAdd, referencesToRemove, Collections.singletonList(entity));
@@ -96,27 +96,27 @@ public class EntityReferenceService {
         }
     }
 
-    public EntityReferenceAction manageReferences(UUID workspaceId, Map<String, Map<EntityId, Entity>> entitiesForUpsert) {
+    public EntityReferenceAction manageReferences(UUID instanceId, Map<String, Map<EntityId, Entity>> entitiesForUpsert) {
         List<EntityReference> referencesToAdd = new ArrayList<>();
         List<EntityReference> referencesToRemove = new ArrayList<>();
         for (String entityType : entitiesForUpsert.keySet()) {
             ArrayList<Entity> entitiesForType = new ArrayList<>(entitiesForUpsert.get(entityType).values());
-            List<EntityReference> updatedReferences = getEntityReferences(entitiesForType, workspaceId);
-            List<EntityReference> existingReferences = dao.getReferencesForEntities(entitiesForType, dao.getEntityTypeId(workspaceId, entityType));
+            List<EntityReference> updatedReferences = getEntityReferences(entitiesForType, instanceId);
+            List<EntityReference> existingReferences = dao.getReferencesForEntities(entitiesForType, dao.getEntityTypeId(instanceId, entityType));
             calculateReferenceOpsForEntityType(referencesToAdd, referencesToRemove, updatedReferences, existingReferences);
         }
         return new EntityReferenceAction(referencesToAdd, referencesToRemove,
                 entitiesForUpsert.values().stream().flatMap(s -> s.values().stream()).collect(Collectors.toList()));
     }
 
-    public Map<String, Map<EntityId, Entity>> convertToUpdatedEntities(List<EntityUpsert> entitiesToUpdate, UUID workspaceId) throws AttemptToUpsertDeletedEntity {
+    public Map<String, Map<EntityId, Entity>> convertToUpdatedEntities(List<EntityUpsert> entitiesToUpdate, UUID instanceId) throws AttemptToUpsertDeletedEntity {
         ArrayListMultimap<String, EntityUpsert> eUpsertsByType = ArrayListMultimap.create();
         entitiesToUpdate.forEach(e -> eUpsertsByType.put(e.getEntityType(), e));
         Map<String, Map<EntityId, Entity>> entitiesByTypeAndName = new HashMap<>();
         for (String entityTypeName : eUpsertsByType.keySet()) {
-            Long entityTypeId = dao.getEntityTypeId(workspaceId, entityTypeName);
+            Long entityTypeId = dao.getEntityTypeId(instanceId, entityTypeName);
             if(entityTypeId == -1){
-                entitiesByTypeAndName.put(entityTypeName, handleNewEntityType(workspaceId, eUpsertsByType.get(entityTypeName), entityTypeName));
+                entitiesByTypeAndName.put(entityTypeName, handleNewEntityType(instanceId, eUpsertsByType.get(entityTypeName), entityTypeName));
             } else {
                 entitiesByTypeAndName.put(entityTypeName, handleExistingEntityType(eUpsertsByType.get(entityTypeName), entityTypeId, entityTypeName));
             }
