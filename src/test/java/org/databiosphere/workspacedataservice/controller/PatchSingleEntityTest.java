@@ -31,7 +31,7 @@ public class PatchSingleEntityTest {
         EntityType testEntityType = new EntityType("test-type");
         EntityId testEntityId = new EntityId("test");
         when(entityDao.getSingleEntity(any(), any(), any())).thenReturn(new Entity(testEntityId,
-                testEntityType, new HashMap<>(Map.of("created_at", "2022-10-01")), 1L));
+                testEntityType, new EntityAttributes(Map.of("created_at", "2022-10-01")), 1L));
         EntityReferenceService referenceService = new EntityReferenceService(entityDao);
         EntityController controller = new EntityController(referenceService, entityDao);
         ResponseEntity<EntityResponse> response = controller.updateSingleEntity(UUID.randomUUID(), "v0.2", testEntityType, testEntityId,
@@ -41,7 +41,7 @@ public class PatchSingleEntityTest {
 
         //Overwriting attribute
         when(entityDao.getSingleEntity(any(), any(), any())).thenReturn(new Entity(testEntityId,
-                testEntityType, new HashMap<>(Map.of("created_at", "2022-10-01", "foo", "bar")), 1L));
+                testEntityType, new EntityAttributes(Map.of("created_at", "2022-10-01", "foo", "bar")), 1L));
         response = controller.updateSingleEntity(UUID.randomUUID(), "v0.2", testEntityType, testEntityId,
                 new EntityRequest(testEntityId, testEntityType, new EntityAttributes(Map.of("foo", "baz"))));
         assertTrue(response.getBody().entityAttributes().attributes().size() == 2);

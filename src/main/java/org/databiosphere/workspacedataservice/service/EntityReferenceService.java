@@ -43,7 +43,7 @@ public class EntityReferenceService {
                 }
                 updateAttributesForEntity(entityUpsert, entity);
             } else {
-                Entity entity = new Entity(entityName, new EntityType(entityUpsert.getEntityType()), new HashMap<>(), entityTypeId);
+                Entity entity = new Entity(entityName, new EntityType(entityUpsert.getEntityType()), new EntityAttributes(new HashMap<>()), entityTypeId);
                 updateAttributesForEntity(entityUpsert, entity);
                 entitiesByName.put(entityName, entity);
             }
@@ -54,9 +54,9 @@ public class EntityReferenceService {
     private void updateAttributesForEntity(EntityUpsert entityUpsert, Entity entity){
         for (UpsertOperation operation : entityUpsert.getOperations()) {
             if(operation.getOp() == UpsertAction.AddUpdateAttribute){
-                entity.getAttributes().put(operation.getAttributeName(), operation.getAddUpdateAttribute());
+                entity.getAttributes().attributes().put(operation.getAttributeName(), operation.getAddUpdateAttribute());
             } else if (operation.getOp() == UpsertAction.RemoveAttribute){
-                entity.getAttributes().remove(operation.getAttributeName());
+                entity.getAttributes().attributes().remove(operation.getAttributeName());
             }
         }
     }
@@ -64,7 +64,7 @@ public class EntityReferenceService {
     public List<EntityReference> getEntityReferences(List<Entity> entities, UUID instanceId) {
         List<EntityReference> result = new ArrayList<>();
         for (Entity entity : entities) {
-            List<Map> referencedAttrs = entity.getAttributes().values().stream().filter(Map.class::isInstance).map(Map.class::cast)
+            List<Map> referencedAttrs = entity.getAttributes().attributes().values().stream().filter(Map.class::isInstance).map(Map.class::cast)
                     .filter(map -> map.size() == 2 && map.containsKey(ENTITY_TYPE_KEY) && map.containsKey(ENTITY_NAME_KEY)).collect(Collectors.toList());
             for (Map referencedAttr : referencedAttrs) {
                 result.add(new EntityReference(entity.getName(), entity.getEntityTypeId(),

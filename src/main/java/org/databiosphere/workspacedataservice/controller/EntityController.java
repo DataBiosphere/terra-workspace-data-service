@@ -47,13 +47,14 @@ public class EntityController {
         if(singleEntity == null){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found");
         }
-        Map<String, Object> attributesToUpdate = entityRequest.entityAttributes().attributes();
-        Map<String, Object> existingAttributes = singleEntity.getAttributes();
-        existingAttributes.putAll(attributesToUpdate);
+        Map<String, Object> attributesToUpdate = new HashMap<>();
+        attributesToUpdate.putAll(singleEntity.getAttributes().attributes());
+        attributesToUpdate.putAll(entityRequest.entityAttributes().attributes());
+        singleEntity.setAttributes(new EntityAttributes(attributesToUpdate));
         //TODO: remove entityType/entityName JSON object format for references and move to URIs in the request/response payloads
         EntityReferenceAction entityReferenceAction = referenceService.manageSingleEntityReference(instanceId, singleEntity);
         referenceService.saveReferencesAndEntities(entityReferenceAction);
-        EntityResponse response = new EntityResponse(entityId, entityType, new EntityAttributes(singleEntity.getAttributes()),
+        EntityResponse response = new EntityResponse(entityId, entityType, singleEntity.getAttributes(),
                 new EntityMetadata("TODO: SUPERFRESH"));
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
@@ -130,7 +131,7 @@ public class EntityController {
             //TODO: standard exception classes
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found");
         }
-        EntityResponse response = new EntityResponse(entityId, entityType, new EntityAttributes(result.getAttributes()),
+        EntityResponse response = new EntityResponse(entityId, entityType, result.getAttributes(),
                 new EntityMetadata("TODO: ENTITYMETADATA"));
         return new ResponseEntity<>(response, HttpStatus.OK);
     }

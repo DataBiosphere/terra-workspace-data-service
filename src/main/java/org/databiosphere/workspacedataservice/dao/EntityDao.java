@@ -7,10 +7,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.EntityReference;
 import org.databiosphere.workspacedataservice.service.model.InvalidEntityReference;
-import org.databiosphere.workspacedataservice.shared.model.Entity;
-import org.databiosphere.workspacedataservice.shared.model.EntityId;
-import org.databiosphere.workspacedataservice.shared.model.EntityToDelete;
-import org.databiosphere.workspacedataservice.shared.model.EntityType;
+import org.databiosphere.workspacedataservice.shared.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -186,12 +183,12 @@ public class EntityDao {
                 (rs, i) -> new EntityToDelete(rs.getString("name"), rs.getLong("entity_type")));
     }
 
-    private Map<String,Object> getAttributes(String attrString)  {
+    private EntityAttributes getAttributes(String attrString)  {
         TypeReference<HashMap<String, Object>> typeRef
                 = new TypeReference<>() {
         };
         try {
-            return objectMapper.readValue(attrString, typeRef);
+            return new EntityAttributes(objectMapper.readValue(attrString, typeRef));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -255,9 +252,9 @@ public class EntityDao {
         builder.append(" limit :limit offset :offset");
         List<Entity> result = namedParameterJdbcTemplate.query(builder.toString(), params,
                 (rs, i) -> {
-                    Map<String, Object> attributes = getAttributes(rs.getString("attributes"));
+                    EntityAttributes attributes = getAttributes(rs.getString("attributes"));
                     if (!CollectionUtils.isEmpty(fields)) {
-                        attributes.keySet().retainAll(fields);
+                        attributes.attributes().keySet().retainAll(fields);
                     }
                     return new Entity(new EntityId(rs.getString("name")), new EntityType(entityTypeName), attributes);
                 });

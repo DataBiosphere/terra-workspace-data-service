@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import org.databiosphere.workspacedataservice.shared.model.Entity;
+import org.databiosphere.workspacedataservice.shared.model.EntityAttributes;
 import org.databiosphere.workspacedataservice.shared.model.EntityId;
 import org.databiosphere.workspacedataservice.shared.model.EntityType;
 import org.junit.jupiter.api.BeforeAll;
@@ -39,7 +40,7 @@ public class EntityDaoTest {
     void testGetSingleEntity(){
         //add entity
         EntityId entityId = new EntityId("testEntity");
-        Entity testEntity = new Entity(entityId, entityType, new HashMap<>(), entityTypeId);
+        Entity testEntity = new Entity(entityId, entityType, new EntityAttributes(new HashMap<>()), entityTypeId);
         entityDao.batchUpsert(List.of(testEntity));
 
         //make sure entity is fetched
