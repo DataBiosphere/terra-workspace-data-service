@@ -6,6 +6,9 @@ public class EntityType {
         this.name = name;
     }
 
+    public EntityType() {
+    }
+
     private String name;
 
     public String getName() {

@@ -10,29 +10,29 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Entity {
 
-    private String name;
+    private EntityId name;
 
     private Boolean deleted;
 
     private EntityType entityType;
 
-    private Map<String, Object> attributes;
+    private EntityAttributes attributes;
 
     private Long entityTypeId;
 
-    public Entity(String name, EntityType entityType, Map<String, Object> attributes) {
+    public Entity(EntityId name, EntityType entityType, EntityAttributes attributes) {
         this.name = name;
         this.entityType = entityType;
         this.attributes = attributes;
     }
 
-    public Entity(String name, EntityType entityType, Map<String, Object> attributes, long entityTypeId) {
+    public Entity(EntityId name, EntityType entityType, EntityAttributes attributes, long entityTypeId) {
         this(name, entityType, attributes);
         this.entityTypeId = entityTypeId;
         this.deleted = false;
     }
 
-    public Entity(String name, EntityType entityType, Map<String, Object> attributes, long entityTypeId, boolean deleted) {
+    public Entity(EntityId name, EntityType entityType, EntityAttributes attributes, long entityTypeId, boolean deleted) {
         this(name, entityType, attributes);
         this.entityTypeId = entityTypeId;
         this.deleted = deleted;
@@ -41,24 +41,24 @@ public class Entity {
     public Entity() {
     }
 
-    public Entity(String entityName, long entityType) {
+    public Entity(EntityId entityName, long entityType) {
         this.name = entityName;
         this.entityTypeId = entityType;
     }
 
-    public String getName() {
+    public EntityId getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public void setName(EntityId name) {
         this.name = name;
     }
 
-    public Map<String, Object> getAttributes() {
+    public EntityAttributes getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(Map<String, Object> attributes) {
+    public void setAttributes(EntityAttributes attributes) {
         this.attributes = attributes;
     }
 

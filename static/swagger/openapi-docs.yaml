@@ -32,6 +32,12 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/EntityResponseBody'
+        404:
+          description: Entity not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     put:
       summary: Create or replace entity (pending)
       description: |
@@ -75,6 +81,12 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/EntityResponseBody'
+        404:
+          description: Entity not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       summary: Delete entity (pending)
       description: Deletes the entity at the specified type and id.
@@ -439,6 +451,29 @@ components:
         name:
           type: string
           description: Entity type name
+    ErrorResponse:
+      required:
+        - status
+      type: object
+      properties:
+        status:
+          type: integer
+          description: HTTP status code
+        error:
+          type: string
+          description: error
+        trace:
+          type: array
+          description: stack trace
+          items:
+            $ref: '#/components/schemas/StackTraceElement'
+        message:
+          type: string
+          description: error message
+        path:
+          type: string
+          description: requested entity path
+      description: ""
     RequestBodySearch:
       required:
         - terms
@@ -479,3 +514,24 @@ components:
     SearchTerms:
       type: string
       description: Space-delimited list of terms on which to search
+    StackTraceElement:
+      required:
+        - className
+        - fileName
+        - lineNumber
+        - methodName
+      type: object
+      properties:
+        className:
+          type: string
+          description: class name
+        methodName:
+          type: string
+          description: method name
+        fileName:
+          type: string
+          description: source file name
+        lineNumber:
+          type: integer
+          description: line number
+      description: ""
