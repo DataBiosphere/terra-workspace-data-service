@@ -20,7 +20,7 @@ tags:
 paths:
   /{instanceid}/entities/{v}/{type}/{id}:
     get:
-      summary: Get entity (pending)
+      summary: Get entity
       description: Retrieves a single entity by its type and id
       tags:
         - Entities
@@ -61,7 +61,7 @@ paths:
         201:
           $ref: '#/components/responses/EntityResponseBody'
     patch:
-      summary: Update entity (pending)
+      summary: Update entity
       description: |
         Updates the entity of the specified type and id.
         Any attributes included in the request body will be created or overwritten.
