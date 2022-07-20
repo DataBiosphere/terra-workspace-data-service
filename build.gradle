@@ -48,12 +48,18 @@ tasks.named('test') {
 }
 
 swaggerSources {
-    server {
+    client {
         inputFile = file('static/swagger/openapi-docs.yaml')
         code {
             language = 'java'
+            library = "jersey2"
+            outputDir = file("$projectDir/generated")
             jvmArgs = ['--add-opens=java.base/java.util=ALL-UNNAMED'] // for Swagger Codegen v3 on Java 16+
-            components = ['models', 'apis']
+            components = [apis: true, apiTests: false, models: true, modelTests: false]
+            additionalProperties = [
+                    modelPackage     : "databiosphere.workspacedataservice.model",
+                    apiPackage       : "databiosphere.workspacedataservice.api"
+                    ]
             // Validate YAML before code generation.
             dependsOn validation
         }
