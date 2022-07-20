@@ -5,6 +5,7 @@ plugins {
     id 'java'
     id 'com.google.cloud.tools.jib' version '3.2.1'
     id "org.sonarqube" version "3.4.0.2513"
+    id 'org.hidetake.swagger.generator' version '2.19.2'
 }
 
 group = 'org.databiosphere'
@@ -39,6 +40,7 @@ dependencies {
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
+    swaggerCodegen 'io.swagger.codegen.v3:swagger-codegen-cli:3.0.34'
 }
 
 sonarqube {
@@ -56,4 +58,19 @@ tasks.named('test') {
         exceptionFormat = "full"
     }
 }
+
+swaggerSources {
+    server {
+        inputFile = file('static/swagger/openapi-docs.yaml')
+        code {
+            language = 'java'
+            jvmArgs = ['--add-opens=java.base/java.util=ALL-UNNAMED'] // for Swagger Codegen v3 on Java 16+
+            components = ['models', 'apis']
+            // Validate YAML before code generation.
+            dependsOn validation
+        }
+    }
+}
+
+compileJava.dependsOn tasks.generateSwaggerCode
 
