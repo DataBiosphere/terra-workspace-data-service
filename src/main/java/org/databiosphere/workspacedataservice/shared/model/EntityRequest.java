@@ -1,3 +1,8 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
-public record EntityRequest(EntityId entityId, EntityType entityType, EntityAttributes entityAttributes) {}
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public record EntityRequest(
+        @JsonProperty("id") EntityId entityId,
+        @JsonProperty("type") EntityType entityType,
+        @JsonProperty("attributes") EntityAttributes entityAttributes) {}
