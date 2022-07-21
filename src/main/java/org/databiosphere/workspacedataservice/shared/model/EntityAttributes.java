@@ -1,11 +1,11 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 
 public class EntityAttributes {
 
@@ -16,9 +16,10 @@ public class EntityAttributes {
         this.attributes = attributes;
     }
 
+    // when serializing to json, sort attribute keys
     @JsonValue
     public Map<String, Object> getAttributes() {
-        return attributes;
+        return new TreeMap<>(attributes);
     }
 
     @Override
