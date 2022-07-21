@@ -50,7 +50,7 @@ public class EntityDao {
         for (List<Entity> chunk : chunks) {
             result.addAll(namedParameterJdbcTemplate.query("select entity_type, entity_name, referenced_entity_type, " +
                             "referenced_entity_name from entity_reference where entity_type = :entityType and entity_name in (:entityNames)",
-                    new MapSqlParameterSource(Map.of("entityType", entityTypeId, "entityNames", chunk.stream().map(Entity::getName).collect(Collectors.toSet()))),
+                    new MapSqlParameterSource(Map.of("entityType", entityTypeId, "entityNames", chunk.stream().map(e -> e.getName().getEntityIdentifier()).collect(Collectors.toSet()))),
                     (rs, rowNum) -> new EntityReference(new EntityId(rs.getString("entity_name")),
                             rs.getLong("entity_type"),
                             rs.getLong("referenced_entity_type"),
@@ -101,7 +101,7 @@ public class EntityDao {
                 Entity entity = entities.get(i);
                 //This is an example of a place where we want a string instead of an EntityId
                 //Should there be a more direct way to get entityId as a string?
-                ps.setString(1, entity.getName().entityIdentifier());
+                ps.setString(1, entity.getName().getEntityIdentifier());
                 ps.setLong(2, entity.getEntityTypeId());
                 ps.setBoolean(3, entity.getDeleted());
                 ps.setObject(4, writeAsJson(entity.getAttributes()));
@@ -137,7 +137,7 @@ public class EntityDao {
     public Entity getSingleEntity(UUID instanceId, EntityType entityType, EntityId entityId) {
         MapSqlParameterSource params = new MapSqlParameterSource("instanceId", instanceId);
         params.addValue("entityTypeName", entityType.getName());
-        params.addValue("entityId", entityId.entityIdentifier());
+        params.addValue("entityId", entityId.getEntityIdentifier());
         List<Entity> shouldBeSingleEntity = namedParameterJdbcTemplate.query("select e.name, e.attributes, et.id as entity_type_id from entity e join entity_type et " +
                         "on e.entity_type = et.id where et.workspace_id = :instanceId and et.name = :entityTypeName " +
                         "and e.name = :entityId and deleted = false",
@@ -157,9 +157,9 @@ public class EntityDao {
         public void setValues(PreparedStatement ps, int i) throws SQLException {
             EntityReference ref = referencesToRemove.get(i);
             ps.setLong(1, ref.getEntityType());
-            ps.setString(2, ref.getEntityName().entityIdentifier());
+            ps.setString(2, ref.getEntityName().getEntityIdentifier());
             ps.setLong(3, ref.getReferencedEntityType());
-            ps.setString(4, ref.getReferencedEntityName().entityIdentifier());
+            ps.setString(4, ref.getReferencedEntityName().getEntityIdentifier());
         }
 
         @Override
@@ -254,7 +254,7 @@ public class EntityDao {
                 (rs, i) -> {
                     EntityAttributes attributes = getAttributes(rs.getString("attributes"));
                     if (!CollectionUtils.isEmpty(fields)) {
-                        attributes.attributes().keySet().retainAll(fields);
+                        attributes.getAttributes().keySet().retainAll(fields);
                     }
                     return new Entity(new EntityId(rs.getString("name")), new EntityType(entityTypeName), attributes);
                 });
