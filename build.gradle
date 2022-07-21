@@ -68,3 +68,10 @@ swaggerSources {
 
 compileJava.dependsOn tasks.generateSwaggerCode
 
+jar {
+    archiveBaseName = "swagger"
+    from "$projectDir/generated/src/main/java"
+    destinationDirectory = file("$projectDir/client")
+}
+
+jar.dependsOn tasks.generateSwaggerCode
