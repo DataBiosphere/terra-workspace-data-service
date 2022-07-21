@@ -1,3 +1,10 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
-public record EntityId(String entityIdentifier) {}
+import com.fasterxml.jackson.annotation.JsonValue;
+
+public record EntityId(String entityIdentifier) {
+    @JsonValue
+    public String jsonRepresentation() {
+        return this.entityIdentifier;
+    }
+}

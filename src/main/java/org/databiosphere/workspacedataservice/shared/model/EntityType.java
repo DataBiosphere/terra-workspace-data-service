@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 public class EntityType {
 
     public EntityType(String name) {
@@ -11,6 +13,7 @@ public class EntityType {
 
     private String name;
 
+    @JsonValue
     public String getName() {
         return name;
     }
