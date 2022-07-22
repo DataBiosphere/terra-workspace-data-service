@@ -3,13 +3,15 @@ package org.databiosphere.workspacedataservice.shared.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
+import java.util.*;
 
 public class EntityAttributes {
 
     private Map<String, Object> attributes;
+
+    public EntityAttributes() {
+        this.attributes = new HashMap<>();
+    }
 
     @JsonCreator
     public EntityAttributes(Map<String, Object> attributes) {
@@ -18,8 +20,32 @@ public class EntityAttributes {
 
     // when serializing to json, sort attribute keys
     @JsonValue
-    public Map<String, Object> getAttributes() {
+    public Map<String, Object> asMap() {
         return new TreeMap<>(attributes);
+    }
+
+    // ========== accessors
+    public void put(String key, Object value) {
+        this.attributes.put(key, value);
+    }
+    public void putAll(EntityAttributes entityAttributes) {
+        this.attributes.putAll(entityAttributes.asMap());
+    }
+
+    public void remove(String key) {
+        this.attributes.remove(key);
+    }
+
+    public int size() {
+        return this.attributes.size();
+    }
+
+    public Set<String> keySet() {
+        return this.attributes.keySet();
+    }
+
+    public Collection<Object> values() {
+        return this.attributes.values();
     }
 
     @Override
