@@ -254,7 +254,7 @@ public class EntityDao {
                 (rs, i) -> {
                     EntityAttributes attributes = getAttributes(rs.getString("attributes"));
                     if (!CollectionUtils.isEmpty(fields)) {
-                        attributes.getAttributes().keySet().retainAll(fields);
+                        attributes.keySet().retainAll(fields);
                     }
                     return new Entity(new EntityId(rs.getString("name")), new EntityType(entityTypeName), attributes);
                 });

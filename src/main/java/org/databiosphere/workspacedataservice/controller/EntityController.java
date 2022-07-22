@@ -47,10 +47,10 @@ public class EntityController {
         if(singleEntity == null){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found");
         }
-        Map<String, Object> attributesToUpdate = new HashMap<>();
-        attributesToUpdate.putAll(singleEntity.getAttributes().getAttributes());
-        attributesToUpdate.putAll(entityRequest.entityAttributes().getAttributes());
-        singleEntity.setAttributes(new EntityAttributes(attributesToUpdate));
+        EntityAttributes attributesToUpdate = new EntityAttributes();
+        attributesToUpdate.putAll(singleEntity.getAttributes());
+        attributesToUpdate.putAll(entityRequest.entityAttributes());
+        singleEntity.setAttributes(attributesToUpdate);
         //TODO: remove entityType/entityName JSON object format for references and move to URIs in the request/response payloads
         EntityReferenceAction entityReferenceAction = referenceService.manageSingleEntityReference(instanceId, singleEntity);
         referenceService.saveReferencesAndEntities(entityReferenceAction);
