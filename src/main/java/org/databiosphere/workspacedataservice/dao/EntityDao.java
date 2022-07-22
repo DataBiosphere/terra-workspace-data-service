@@ -50,7 +50,7 @@ public class EntityDao {
         for (List<Entity> chunk : chunks) {
             result.addAll(namedParameterJdbcTemplate.query("select entity_type, entity_name, referenced_entity_type, " +
                             "referenced_entity_name from entity_reference where entity_type = :entityType and entity_name in (:entityNames)",
-                    new MapSqlParameterSource(Map.of("entityType", entityTypeId, "entityNames", chunk.stream().map(Entity::getName).collect(Collectors.toSet()))),
+                    new MapSqlParameterSource(Map.of("entityType", entityTypeId, "entityNames", chunk.stream().map(e -> e.getName().entityIdentifier()).collect(Collectors.toSet()))),
                     (rs, rowNum) -> new EntityReference(new EntityId(rs.getString("entity_name")),
                             rs.getLong("entity_type"),
                             rs.getLong("referenced_entity_type"),
