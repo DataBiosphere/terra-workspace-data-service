@@ -61,7 +61,7 @@ tasks.named('test') {
 
 swaggerSources {
     client {
-        inputFile = file('static/swagger/openapi-docs.yaml')
+        inputFile = file('src/main/resources/static/swagger/openapi-docs.yaml')
         code {
             language = 'java'
             library = "jersey2"
