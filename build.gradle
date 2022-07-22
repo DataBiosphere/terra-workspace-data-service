@@ -83,3 +83,10 @@ clean {
 }
 
 compileJava.dependsOn tasks.generateSwaggerCode
+
+jar {
+    from "$projectDir/client/src/main/java"
+    destinationDirectory = file("$projectDir/client")
+}
+
+jar.dependsOn tasks.generateSwaggerCode
