@@ -65,7 +65,7 @@ swaggerSources {
         code {
             language = 'java'
             library = "jersey2"
-            outputDir = file("$projectDir/generated")
+            outputDir = file("$projectDir/client")
             jvmArgs = ['--add-opens=java.base/java.util=ALL-UNNAMED'] // for Swagger Codegen v3 on Java 16+
             components = [apis: true, apiTests: false, models: true, modelTests: false]
             additionalProperties = [
@@ -79,11 +79,3 @@ swaggerSources {
 }
 
 compileJava.dependsOn tasks.generateSwaggerCode
-
-jar {
-    archiveBaseName = "swagger"
-    from "$projectDir/generated/src/main/java"
-    destinationDirectory = file("$projectDir/client")
-}
-
-jar.dependsOn tasks.generateSwaggerCode
