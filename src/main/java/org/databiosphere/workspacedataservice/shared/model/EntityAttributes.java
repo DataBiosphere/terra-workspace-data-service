@@ -20,7 +20,7 @@ public class EntityAttributes {
 
     // when serializing to json, sort attribute keys
     @JsonValue
-    public Map<String, Object> asMap() {
+    private Map<String, Object> asMap() {
         return new TreeMap<>(attributes);
     }
 
