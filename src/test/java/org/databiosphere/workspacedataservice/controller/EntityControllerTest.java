@@ -45,8 +45,8 @@ public class EntityControllerTest {
                 testEntityType, new EntityAttributes(Map.of("created_at", "2022-10-01")), 1L));
         ResponseEntity<EntityResponse> response = controller.updateSingleEntity(UUID.randomUUID(), "v0.2", testEntityType, testEntityId,
                 new EntityRequest(testEntityId, testEntityType, new EntityAttributes(Map.of("foo", "bar"))));
-        assertTrue(response.getBody().entityAttributes().attributes().size() == 2);
-        assertEquals(Map.of("created_at", "2022-10-01", "foo", "bar"), response.getBody().entityAttributes().attributes());
+        assertTrue(response.getBody().entityAttributes().getAttributes().size() == 2);
+        assertEquals(Map.of("created_at", "2022-10-01", "foo", "bar"), response.getBody().entityAttributes().getAttributes());
     }
     @Test
     void testPatchSingleEntityOverwriteAttr(){
@@ -54,8 +54,8 @@ public class EntityControllerTest {
                 testEntityType, new EntityAttributes(Map.of("created_at", "2022-10-01", "foo", "bar")), 1L));
         ResponseEntity<EntityResponse> response = controller.updateSingleEntity(UUID.randomUUID(), "v0.2", testEntityType, testEntityId,
                 new EntityRequest(testEntityId, testEntityType, new EntityAttributes(Map.of("foo", "baz"))));
-        assertTrue(response.getBody().entityAttributes().attributes().size() == 2);
-        assertEquals(Map.of("created_at", "2022-10-01", "foo", "baz"), response.getBody().entityAttributes().attributes());
+        assertTrue(response.getBody().entityAttributes().getAttributes().size() == 2);
+        assertEquals(Map.of("created_at", "2022-10-01", "foo", "baz"), response.getBody().entityAttributes().getAttributes());
     }
     @Test
     void testPatchNewSingleEntityWithReference(){
@@ -67,8 +67,8 @@ public class EntityControllerTest {
         EntityAttributes referencingAttributes = new EntityAttributes(Map.of("referencingAttr", refAttr));
         ResponseEntity<EntityResponse> response = controller.updateSingleEntity(UUID.randomUUID(), "v0.2", testEntityType, new EntityId("referencingEntity"),
                 new EntityRequest(testEntityId, testEntityType, referencingAttributes));
-        assertTrue(response.getBody().entityAttributes().attributes().size() == 3);
-        assertEquals(Map.of("created_at", "2022-10-01", "foo", "bar", "referencingAttr", refAttr), response.getBody().entityAttributes().attributes());
+        assertTrue(response.getBody().entityAttributes().getAttributes().size() == 3);
+        assertEquals(Map.of("created_at", "2022-10-01", "foo", "bar", "referencingAttr", refAttr), response.getBody().entityAttributes().getAttributes());
     }
 
     @Test
