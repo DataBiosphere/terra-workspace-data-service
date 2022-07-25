@@ -25,7 +25,8 @@ brew install homebrew/cask-versions/temurin17
 jenv add /Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
 ```
 
-We are using Postgres 13.1.  You do not need to have postgres installed on your system.  
+We are using Postgres 13.1.  
+You do not need to have postgres installed on your system.  
 Instead use the `run_postgres.sh` script to set up a docker container running postgres (see below).
 
 ## Running
