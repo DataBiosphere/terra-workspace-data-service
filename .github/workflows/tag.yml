@@ -20,3 +20,4 @@ jobs:
           VERSION_FILE_PATH: build.gradle
           VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
           VERSION_SUFFIX: SNAPSHOT
+          INITIAL_VERSION: 0.0.1-SNAPSHOT
