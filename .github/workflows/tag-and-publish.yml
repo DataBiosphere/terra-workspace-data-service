@@ -1,7 +1,5 @@
 name: Tag and publish
-on:
-  push:
-    branches: [ aj-449-bump ]
+on: workflow_dispatch
 
 jobs:
   tag-publish-job:
