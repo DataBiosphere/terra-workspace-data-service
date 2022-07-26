@@ -1,5 +1,9 @@
 name: Tag and publish
-on: workflow_dispatch
+on:
+  push:
+    branches:
+    - main
+    - 'hotfix**'
 
 jobs:
   tag-publish-job:
@@ -17,7 +21,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BUMP: patch
-          RELEASE_BRANCHES: aj-449-bump
+          RELEASE_BRANCHES: main
           VERSION_FILE_PATH: build.gradle
           VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
           VERSION_SUFFIX: SNAPSHOT
