@@ -10,12 +10,6 @@ plugins {
 
 repositories { mavenCentral() }
 
-allprojects {
-	dependencyLocking {
-		lockAllConfigurations()
-	}
-}
-
 subprojects {
 	group = 'org.databiosphere'
 	version = '0.0.1-SNAPSHOT'

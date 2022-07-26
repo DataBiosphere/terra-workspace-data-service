@@ -9,7 +9,7 @@ dependencies {
 }
 
 generateSwaggerCode {
-	inputFile = file('../src/main/resources/static/swagger/openapi-docs.yaml')
+	inputFile = file('src/main/resources/static/swagger/openapi-docs.yaml')
 	language = 'spring'
 	components = ['models', 'apis']
 	additionalProperties = [
