@@ -1,92 +1,49 @@
 plugins {
-    id 'org.springframework.boot' version '2.6.8'
-    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
-    id 'org.liquibase.gradle' version '2.1.0'
-    id 'java'
-    id 'com.google.cloud.tools.jib' version '3.2.1'
-    id "org.sonarqube" version "3.4.0.2513"
-    id 'org.hidetake.swagger.generator' version '2.19.2'
+	id 'org.springframework.boot' version '2.6.8' apply false
+	id 'io.spring.dependency-management' version '1.0.11.RELEASE' apply false
+	id 'org.liquibase.gradle' version '2.1.0' apply false
+	id 'com.google.cloud.tools.jib' version '3.2.1' apply false
+	id "org.sonarqube" version "3.4.0.2513" apply false
+	id 'idea'
+	id 'org.hidetake.swagger.generator' version '2.19.2' apply false
 }
 
-group = 'org.databiosphere'
-version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '17'
+repositories { mavenCentral() }
 
-repositories {
-    mavenCentral()
+allprojects {
+	dependencyLocking {
+		lockAllConfigurations()
+	}
 }
 
-jib {
-    from {
-        // see https://github.com/broadinstitute/dsp-appsec-blessed-images/tree/main/jre
-        image = "us.gcr.io/broad-dsp-gcr-public/base/jre:17-distroless"
-    }
+subprojects {
+	group = 'org.databiosphere'
+	version = '0.0.1-SNAPSHOT'
 
-    container {
-        mainClass = 'org.databiosphere.workspacedataservice.WorkspaceDataServiceApplication'
-    }
+	apply plugin: 'idea'
+	apply plugin: 'java'
+
+	ext {
+		artifactGroup = "${group}.${rootProject.name}"
+	}
+
+	apply plugin: 'io.spring.dependency-management'
+
+	dependencyManagement {
+		imports {
+			mavenBom(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES)
+		}
+
+		dependencies {
+			dependency 'io.swagger.core.v3:swagger-annotations:2.1.13'
+			dependency 'io.swagger.codegen.v3:swagger-codegen-cli:3.0.33'
+		}
+	}
+
+	tasks.withType(org.hidetake.gradle.swagger.generator.GenerateSwaggerCode).all {
+		jvmArgs = ['--add-opens=java.base/java.util=ALL-UNNAMED'] // for jvm 16+
+	}
+
 }
 
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter'
-    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.liquibase:liquibase-core'
-    implementation 'org.apache.commons:commons-lang3'
-    implementation 'com.google.guava:guava:31.1-jre'
-    implementation 'org.postgresql:postgresql'
-    implementation 'org.webjars:webjars-locator-core:0.52'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:4.12.0'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
-    swaggerCodegen 'io.swagger.codegen.v3:swagger-codegen-cli:3.0.34'
-}
-
-sonarqube {
-    properties {
-        property "sonar.projectKey", "DataBiosphere_workspace-data-service"
-        property "sonar.organization", "broad-databiosphere"
-        property "sonar.host.url", "https://sonarcloud.io"
-    }
-}
-
-tasks.named('test') {
-    useJUnitPlatform()
-    testLogging {
-        events = ["passed", "failed", "skipped", "started"]
-        exceptionFormat = "full"
-    }
-}
-
-swaggerSources {
-    client {
-        inputFile = file('src/main/resources/static/swagger/openapi-docs.yaml')
-        code {
-            language = 'java'
-            library = "jersey2"
-            outputDir = file("$projectDir/client")
-            jvmArgs = ['--add-opens=java.base/java.util=ALL-UNNAMED'] // needed for Java 16+
-            components = [apiTests: false]
-            additionalProperties = [
-                    modelPackage     : "databiosphere.workspacedataservice.model",
-                    apiPackage       : "databiosphere.workspacedataservice.api"
-                    ]
-            // Validate YAML before code generation.
-            dependsOn validation
-        }
-    }
-}
-
-clean {
-    delete 'client'
-}
-
-compileJava.dependsOn tasks.generateSwaggerCode
-
-jar {
-    from "$projectDir/client/src/main/java"
-    destinationDirectory = file("$projectDir/client")
-}
-
-jar.dependsOn tasks.generateSwaggerCode
+idea.project.jdkName = '17'

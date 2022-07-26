@@ -1,0 +1,33 @@
+// All version controlled by dependency management plugin
+dependencies {
+	api 'org.springframework.boot:spring-boot-starter-json:+'
+
+	implementation 'io.swagger.core.v3:swagger-annotations'
+	swaggerCodegen 'io.swagger.codegen.v3:swagger-codegen-cli'
+}
+
+
+generateSwaggerCode {
+	inputFile = file('../service/src/main/resources/static/swagger/openapi-docs.yaml')
+	language = 'java'
+	library = 'resttemplate'
+
+	components = [
+			apiDocs  : false, apiTests: false,
+			modelDocs: false, modelTests: false
+	]
+
+	additionalProperties = [
+			modelPackage  : "${artifactGroup}.model",
+			apiPackage    : "${artifactGroup}.api",
+			invokerPackage: "${artifactGroup}.client",
+			dateLibrary   : 'java11'
+	]
+
+	rawOptions = ["--ignore-file-override", "${projectDir}/.swagger-codegen-ignore"]
+}
+
+idea.module.generatedSourceDirs = [file("${generateSwaggerCode.outputDir}/src/main/java")]
+sourceSets.main.java.srcDir "${generateSwaggerCode.outputDir}/src/main/java"
+compileJava.dependsOn generateSwaggerCode
+sourcesJar.dependsOn generateSwaggerCode
