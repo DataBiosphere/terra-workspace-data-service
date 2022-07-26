@@ -1,0 +1,48 @@
+name: Tag and publish
+on:
+  push:
+    branches: [ aj-449-bump ]
+
+jobs:
+  tag-publish-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current code
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }} # this allows the push to succeed later
+          
+      - name: Bump the tag to a new version
+        # https://github.com/DataBiosphere/github-actions/tree/master/actions/bumper
+        uses: databiosphere/github-actions/actions/bumper@bumper-0.0.6
+        id: tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BUMP: patch
+          RELEASE_BRANCHES: main
+          VERSION_FILE_PATH: build.gradle
+          VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
+          VERSION_SUFFIX: SNAPSHOT
+          INITIAL_VERSION: 0.0.1-SNAPSHOT
+
+      - uses: actions/checkout@v2
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      - name: Publish API client to Artifactory
+        run: ./gradlew --build-cache :client:artifactoryPublish
+        env:
+          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+          ARTIFACTORY_REPO_KEY: libs-snapshot-local
+
