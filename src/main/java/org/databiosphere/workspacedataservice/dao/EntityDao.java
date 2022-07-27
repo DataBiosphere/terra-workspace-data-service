@@ -7,9 +7,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.EntityReference;
 import org.databiosphere.workspacedataservice.service.model.InvalidEntityReference;
-import org.databiosphere.workspacedataservice.shared.model.Entity;
-import org.databiosphere.workspacedataservice.shared.model.EntityToDelete;
-import org.databiosphere.workspacedataservice.shared.model.EntityType;
+import org.databiosphere.workspacedataservice.shared.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -52,11 +50,11 @@ public class EntityDao {
         for (List<Entity> chunk : chunks) {
             result.addAll(namedParameterJdbcTemplate.query("select entity_type, entity_name, referenced_entity_type, " +
                             "referenced_entity_name from entity_reference where entity_type = :entityType and entity_name in (:entityNames)",
-                    new MapSqlParameterSource(Map.of("entityType", entityTypeId, "entityNames", chunk.stream().map(Entity::getName).collect(Collectors.toSet()))),
-                    (rs, rowNum) -> new EntityReference(rs.getString("entity_name"),
+                    new MapSqlParameterSource(Map.of("entityType", entityTypeId, "entityNames", chunk.stream().map(e -> e.getName().getEntityIdentifier()).collect(Collectors.toSet()))),
+                    (rs, rowNum) -> new EntityReference(new EntityId(rs.getString("entity_name")),
                             rs.getLong("entity_type"),
                             rs.getLong("referenced_entity_type"),
-                            rs.getString("referenced_entity_name"))));
+                            new EntityId(rs.getString("referenced_entity_name")))));
         }
         return result;
     }
@@ -101,7 +99,9 @@ public class EntityDao {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
                 Entity entity = entities.get(i);
-                ps.setString(1, entity.getName());
+                //This is an example of a place where we want a string instead of an EntityId
+                //Should there be a more direct way to get entityId as a string?
+                ps.setString(1, entity.getName().getEntityIdentifier());
                 ps.setLong(2, entity.getEntityTypeId());
                 ps.setBoolean(3, entity.getDeleted());
                 ps.setObject(4, writeAsJson(entity.getAttributes()));
@@ -134,6 +134,18 @@ public class EntityDao {
         }
     }
 
+    public Entity getSingleEntity(UUID instanceId, EntityType entityType, EntityId entityId) {
+        MapSqlParameterSource params = new MapSqlParameterSource("instanceId", instanceId);
+        params.addValue("entityTypeName", entityType.getName());
+        params.addValue("entityId", entityId.getEntityIdentifier());
+        List<Entity> shouldBeSingleEntity = namedParameterJdbcTemplate.query("select e.name, e.attributes, et.id as entity_type_id from entity e join entity_type et " +
+                        "on e.entity_type = et.id where et.workspace_id = :instanceId and et.name = :entityTypeName " +
+                        "and e.name = :entityId and deleted = false",
+                params, (rs, i) -> new Entity(entityId, entityType, getAttributes(rs.getString("attributes")),
+                        rs.getLong("entity_type_id"), false));
+        return shouldBeSingleEntity.isEmpty() ? null : shouldBeSingleEntity.get(0);
+    }
+
     private static class EntityReferenceStmtSetter implements BatchPreparedStatementSetter {
         private final List<EntityReference> referencesToRemove;
 
@@ -145,9 +157,9 @@ public class EntityDao {
         public void setValues(PreparedStatement ps, int i) throws SQLException {
             EntityReference ref = referencesToRemove.get(i);
             ps.setLong(1, ref.getEntityType());
-            ps.setString(2, ref.getEntityName());
+            ps.setString(2, ref.getEntityName().getEntityIdentifier());
             ps.setLong(3, ref.getReferencedEntityType());
-            ps.setString(4, ref.getReferencedEntityName());
+            ps.setString(4, ref.getReferencedEntityName().getEntityIdentifier());
         }
 
         @Override
@@ -156,11 +168,11 @@ public class EntityDao {
         }
     }
 
-    public List<Entity> getNamedEntities(Long entityTypeId, Set<String> entityNames, String entityTypeName, boolean excludeDeletedEntities) {
+    public List<Entity> getNamedEntities(Long entityTypeId, Set<EntityId> entityNames, String entityTypeName, boolean excludeDeletedEntities) {
         String sql = "select name, attributes, entity_type, deleted from entity where entity_type = :entityType and name in (:entityNames) " + (excludeDeletedEntities ? "and deleted = false" : "");
         return namedParameterJdbcTemplate.query(sql,
                 new MapSqlParameterSource(Map.of("entityType", entityTypeId, "entityNames", entityNames)),
-                (rs, i) -> new Entity(rs.getString("name"), new EntityType(entityTypeName), getAttributes(rs.getString("attributes")),
+                (rs, i) -> new Entity(new EntityId(rs.getString("name")), new EntityType(entityTypeName), getAttributes(rs.getString("attributes")),
                         rs.getLong("entity_type"), rs.getBoolean("deleted")));
     }
 
@@ -171,12 +183,12 @@ public class EntityDao {
                 (rs, i) -> new EntityToDelete(rs.getString("name"), rs.getLong("entity_type")));
     }
 
-    private Map<String,Object> getAttributes(String attrString)  {
+    private EntityAttributes getAttributes(String attrString)  {
         TypeReference<HashMap<String, Object>> typeRef
                 = new TypeReference<>() {
         };
         try {
-            return objectMapper.readValue(attrString, typeRef);
+            return new EntityAttributes(objectMapper.readValue(attrString, typeRef));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -186,22 +198,22 @@ public class EntityDao {
         template.update("insert into workspace (id, name, namespace) values (?,?,?)", id, name, namespace);
     }
 
-    public long loadEntityType(EntityType entityType, UUID workspaceId) {
+    public long loadEntityType(EntityType entityType, UUID instanceId) {
         GeneratedKeyHolder generatedKeyHolder = new GeneratedKeyHolder();
         template.update(con -> {
             PreparedStatement ps = con.prepareStatement("insert into entity_type (name, workspace_id) values (?, ?)", Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, entityType.getName());
-            ps.setObject(2, workspaceId);
+            ps.setObject(2, instanceId);
             return ps;
         }, generatedKeyHolder);
         return (long)generatedKeyHolder.getKeys().get("id");
     }
 
-    public Long getEntityTypeId(UUID workspaceId, String entityTypeName){
+    public Long getEntityTypeId(UUID instanceId, String entityTypeName){
         try {
-            LOGGER.info("Querying for {} and {}", workspaceId, entityTypeName);
+            LOGGER.info("Querying for {} and {}", instanceId, entityTypeName);
             return template.queryForObject("select id from entity_type where workspace_id = ? and name = ?",
-                    Long.class, workspaceId, entityTypeName);
+                    Long.class, instanceId, entityTypeName);
         } catch (EmptyResultDataAccessException e) {
             return -1L;
         }
@@ -240,11 +252,11 @@ public class EntityDao {
         builder.append(" limit :limit offset :offset");
         List<Entity> result = namedParameterJdbcTemplate.query(builder.toString(), params,
                 (rs, i) -> {
-                    Map<String, Object> attributes = getAttributes(rs.getString("attributes"));
+                    EntityAttributes attributes = getAttributes(rs.getString("attributes"));
                     if (!CollectionUtils.isEmpty(fields)) {
-                        attributes.keySet().retainAll(fields);
+                        attributes.getAttributes().keySet().retainAll(fields);
                     }
-                    return new Entity(rs.getString("name"), new EntityType(entityTypeName), attributes);
+                    return new Entity(new EntityId(rs.getString("name")), new EntityType(entityTypeName), attributes);
                 });
         watch.stop();
         LOGGER.info("Total time spent was {}s for {}, {}", watch.getTotalTimeSeconds(), builder, params);

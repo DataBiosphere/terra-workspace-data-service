@@ -1,0 +1,538 @@
+openapi: 3.0.3
+info:
+  title: Workspace Data Service
+  version: v0.2
+  description: |
+    Workspace Data Service API
+
+    This is the proposed API. Endpoints marked (pending) are not yet implemented.
+
+    As of v0.2, all APIs are subject to change without notice.
+  termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
+  license:
+    name: BSD
+    url: http://opensource.org/licenses/BSD-3-Clause
+tags:
+  - name: Entities
+    description: Entity APIs
+  - name: Schema
+    description: Schema Manipulation APIs (coming soon)
+paths:
+  /{instanceid}/entities/{v}/{type}/{id}:
+    get:
+      summary: Get entity
+      description: Retrieves a single entity by its type and id
+      tags:
+        - Entities
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/entityTypePathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
+      responses:
+        200:
+          $ref: '#/components/responses/EntityResponseBody'
+        404:
+          description: Entity not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Create or replace entity (pending)
+      description: |
+        Creates or replaces the entity using the specified type and id.
+        If the entity already exists, its entire set of attributes will be overwritten by
+        the attributes in the request body.
+        
+        TODO: the type and id are duplicated in the url and the body; change this? Silently ignore the type/id in the body?
+        
+        TODO: add a query parameter to allow/disallow overwriting existing entities?
+      tags:
+        - Entities
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/entityTypePathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
+      requestBody:
+        $ref: '#/components/requestBodies/EntityRequestBody'
+      responses:
+        201:
+          $ref: '#/components/responses/EntityResponseBody'
+    patch:
+      summary: Update entity
+      description: |
+        Updates the entity of the specified type and id.
+        Any attributes included in the request body will be created or overwritten.
+        Attributes not included in the request body will be untouched in the database.
+        No attributes will be deleted. To delete attributes, use the PUT api instead.
+
+        TODO: the type and id are duplicated in the url and the body; change this? Silently ignore the type/id in the body?
+      tags:
+        - Entities
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/entityTypePathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
+      requestBody:
+        $ref: '#/components/requestBodies/EntityRequestBody'
+      responses:
+        200:
+          $ref: '#/components/responses/EntityResponseBody'
+        404:
+          description: Entity not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete entity (pending)
+      description: Deletes the entity at the specified type and id.
+      tags:
+        - Entities
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/entityTypePathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
+      responses:
+        204:
+          description: Success
+  /{instanceid}/types/{v}/{type}:
+    patch:
+      summary: Update entity type (pending)
+      description: |
+        Update entity type. All entities of the old type will be updated to the new type.
+        Returns the updated type definition.
+
+        v0.2 supports renaming a type; future versions may support additional functionality.
+      tags:
+        - Entities
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/entityTypePathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntityTypeDefinition'
+    delete:
+      summary: Delete entity type (pending)
+      description: Delete entity type. All entities of this type will be deleted.
+      tags:
+        - Entities
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/entityTypePathParam'
+      responses:
+        204:
+          description: Success
+  /{instanceid}/types/{type}/attributes/{v}/{attribute}:
+    patch:
+      summary: Update attribute (pending)
+      description: |
+        Update attribute. All entities containing the old attribute will now have the new attribute instead.
+        Returns the updated attribute definition.
+
+        v0.2 supports renaming an attribute within the specified type; future versions may support additional functionality.
+      tags:
+        - Entities
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/entityTypePathParam'
+        - $ref: '#/components/parameters/attributePathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntityTypeDefinition'
+    delete:
+      summary: Delete attribute (pending)
+      description: |
+        Delete attribute. This deletes all values for this attribute within the specified type.
+      tags:
+        - Entities
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/entityTypePathParam'
+        - $ref: '#/components/parameters/attributePathParam'
+      responses:
+        204:
+          description: Success
+  /{instanceid}/search/{v}:
+    get:
+      summary: Query entities (pending)
+      description: |
+        Paginated list of entities matching the criteria supplied in url query parameters.
+        This API supports a basic subset of search and filtering operations. For full functionality,
+        use the POST api instead.
+
+        TODO: Eliminate this API in favor of POST?
+      tags:
+        - Entities
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/searchLimitQueryParam'
+        - $ref: '#/components/parameters/searchOffsetQueryParam'
+        - $ref: '#/components/parameters/searchSortQueryParam'
+        - $ref: '#/components/parameters/searchTermsQueryParam'
+        - $ref: '#/components/parameters/searchOperatorQueryParam'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntityQueryResponse'
+    post:
+      summary: Query entities (pending)
+      description: Paginated list of entities matching the criteria supplied in the request body
+      tags:
+        - Entities
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+      requestBody:
+        description: The search to perform
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                offset:
+                  $ref: '#/components/schemas/SearchOffset'
+                limit:
+                  $ref: '#/components/schemas/SearchLimit'
+                sort:
+                  $ref: '#/components/schemas/SearchSort'
+                query:
+                  $ref: '#/components/schemas/RequestBodySearch'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntityQueryResponse'
+  /{instanceid}/batch/{v}:
+    post:
+      summary: Batch write entities (pending)
+      description: Perform a batch of create / delete / update / replace operations on multiple entities
+      tags:
+        - Entities
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+      requestBody:
+        $ref: '#/components/requestBodies/BatchRequestBody'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+components:
+  parameters:
+    attributePathParam:
+      name: attribute
+      in: path
+      description: Attribute name
+      required: true
+      schema:
+        type: string
+    entityIdPathParam:
+      name: id
+      in: path
+      description: Entity id
+      required: true
+      schema:
+        type: string
+    entityTypePathParam:
+      name: type
+      in: path
+      description: Entity type
+      required: true
+      schema:
+        type: string
+    instanceIdPathParam:
+      name: instanceid
+      in: path
+      description: WDS instance id; by convention equal to workspace id
+      required: true
+      schema:
+        type: string
+        default: '15f36863-30a5-4cab-91f7-52be439f1175'
+    searchLimitQueryParam:
+      name: limit
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/SearchLimit'
+    searchOffsetQueryParam:
+      name: offset
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/SearchOffset'
+    searchOperatorQueryParam:
+      name: operator
+      in: query
+      description: |
+        Controls behavior when searching for multiple `terms`.
+        If a `query` value is specified, `terms` and `operator` will be ignored.
+      required: false
+      schema:
+        $ref: '#/components/schemas/SearchOperator'
+    searchSortQueryParam:
+      name: sort
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/SearchSort'
+      examples:
+        single attribute:
+          description: Sort by a single attribute ascending
+          value: name
+        directional:
+          description: Sort by a single attribute and specify sort direction
+          value: name desc
+        multiple attributes:
+          description: Specify multiple attributes on which to sort
+          value: name,size desc,color asc
+    searchTermsQueryParam:
+      name: terms
+      in: query
+      description: |
+        Search terms used to filter query results.
+        If a `query` value is specified, `terms` and `operator` will be ignored.
+        Separate multiple terms by a space (%20 url-encoded)
+      required: false
+      schema:
+        type: string
+    versionPathParam:
+      name: v
+      in: path
+      description: API version
+      required: true
+      schema:
+        type: string
+        default: v0.2
+  responses:
+    EntityResponseBody:
+      description: An entity
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/EntityResponse'
+  requestBodies:
+    EntityRequestBody:
+      description: An entity to upload
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/EntityRequest'
+    BatchRequestBody:
+      description: A list of batch operations to perform on entities
+      required: true
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/BatchOperation'
+  schemas:
+    BatchOperation:
+      type: object
+      required:
+        - operation
+        - entity
+      properties:
+        operation:
+          type: string
+          enum: [create, update, replace, delete]
+        entity:
+          $ref: '#/components/schemas/EntityRequest'
+    BatchResponse:
+      type: object
+      required:
+        - status
+        - failures
+      properties:
+        status:
+          type: string
+          enum: [Success, Failure]
+        failures:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                $ref: '#/components/schemas/EntityId'
+                description: Entity id
+              type:
+                $ref: '#/components/schemas/EntityType'
+                description: Entity type
+              message:
+                type: string
+    EntityRequest:
+      type: object
+      required:
+        - id
+        - type
+        - attributes
+      properties:
+        id:
+          $ref: '#/components/schemas/EntityId'
+          description: Entity id
+        type:
+          $ref: '#/components/schemas/EntityType'
+          description: Entity type
+        attributes:
+          $ref: '#/components/schemas/EntityAttributes'
+          description: KVPs of entity attributes
+    EntityResponse:
+      required:
+        - id
+        - type
+        - metadata
+        - attributes
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/EntityId'
+          description: Entity id
+        type:
+          $ref: '#/components/schemas/EntityType'
+          description: Entity type
+        attributes:
+          $ref: '#/components/schemas/EntityAttributes'
+          description: KVPs of entity attributes
+        metadata:
+          $ref: '#/components/schemas/EntityMetadata'
+          description: Provenance and other entity metadata. May not be present in v0.2.
+    EntityAttributes:
+      type: object
+    EntityAttributeDefinition:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+          description: Attribute name
+    EntityId:
+      type: string
+    EntityMetadata:
+      type: object
+    EntityQueryResponse:
+      type: object
+    EntityType:
+      type: string
+    EntityTypeDefinition:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+          description: Entity type name
+    ErrorResponse:
+      required:
+        - status
+      type: object
+      properties:
+        status:
+          type: integer
+          description: HTTP status code
+        error:
+          type: string
+          description: error
+        trace:
+          type: array
+          description: stack trace
+          items:
+            $ref: '#/components/schemas/StackTraceElement'
+        message:
+          type: string
+          description: error message
+        path:
+          type: string
+          description: requested entity path
+      description: ""
+    RequestBodySearch:
+      required:
+        - terms
+      type: object
+      description: |
+        v0.2 only supports `terms` and `operator`. Future versions may support additional functionality.
+      properties:
+        terms:
+          $ref: '#/components/schemas/SearchTerms'
+        operator:
+          $ref: '#/components/schemas/SearchOperator'
+    SearchLimit:
+      type: integer
+      default: 10
+      minimum: 0
+      maximum: 1000
+      description: Pagination limit
+    SearchOffset:
+      type: integer
+      default: 0
+      minimum: 0
+      description: Pagination offset
+    SearchOperator:
+      type: string
+      enum: [and, or]
+      description: Search behavior for multiple filter terms
+    SearchSort:
+      type: string
+      description: |
+        Sort specification for search results.
+
+        Accepts `attribute` and `direction` separated by a single space (%20 url-encoded).
+        `direction` can be "asc" or "desc". `direction` is optional and defaults to "asc".
+        `attribute` and `direction` must be separated by a single space.
+
+        Concatenate multiple sort specifications with commas.
+      example: name,size desc,color asc
+    SearchTerms:
+      type: string
+      description: Space-delimited list of terms on which to search
+    StackTraceElement:
+      required:
+        - className
+        - fileName
+        - lineNumber
+        - methodName
+      type: object
+      properties:
+        className:
+          type: string
+          description: class name
+        methodName:
+          type: string
+          description: method name
+        fileName:
+          type: string
+          description: source file name
+        lineNumber:
+          type: integer
+          description: line number
+      description: ""

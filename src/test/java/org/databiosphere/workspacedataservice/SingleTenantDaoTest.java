@@ -4,6 +4,8 @@ import com.google.common.primitives.Doubles;
 import org.databiosphere.workspacedataservice.dao.SingleTenantDao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
+import org.databiosphere.workspacedataservice.shared.model.EntityAttributes;
+import org.databiosphere.workspacedataservice.shared.model.EntityId;
 import org.databiosphere.workspacedataservice.shared.model.EntityType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +64,8 @@ public class SingleTenantDaoTest {
     void insertEntities(){
         UUID workspaceId = UUID.fromString("53204e0d-2d7a-4c3c-867f-04436e7f3c61");
         Map<String, DataTypeMapping> foo = dao.getExistingTableSchema(workspaceId, "foo");
-        Entity e = new Entity("huzzah", new EntityType("foo"), Map.of("date_collected", LocalDate.of(2001, 12, 1), "score", 99001, "participant", "Drew", "sample", "sample1", "bar", "bazz"));
+        Entity e = new Entity(new EntityId("huzzah"), new EntityType("foo"), new EntityAttributes(Map.of("date_collected", LocalDate.of(2001, 12, 1),
+                "score", 99001, "participant", "Drew", "sample", "sample1", "bar", "bazz")));
         dao.insertEntities(workspaceId, "foo", Collections.singletonList(e), new LinkedHashMap<>(dao.getExistingTableSchema(workspaceId, "foo")));
 //        dao.addColumn(workspaceId, "foo", "bar", DataTypeMapping.JSON);
     }
@@ -74,7 +77,7 @@ public class SingleTenantDaoTest {
         Map<String, Object> date_collected = Map.of("att_list", "{\"list\": [\"a\", \"b\"]}");
         HashMap<String, Object> toUpdate = new HashMap<>(date_collected);
         toUpdate.put("score", 10000101);
-        Entity e = new Entity("huzzah", new EntityType("foo"), toUpdate);
+        Entity e = new Entity(new EntityId("huzzah"), new EntityType("foo"), new EntityAttributes(toUpdate));
         Map<String, DataTypeMapping> foo = dao.getExistingTableSchema(workspaceId, "foo");
         dao.updateEntities(workspaceId, "foo", Collections.singletonList(e), foo);
 //        dao.addColumn(workspaceId, "foo", "bar", DataTypeMapping.JSON);

@@ -31,23 +31,23 @@ Instead use the `run_postgres.sh` script to set up a docker container running po
 ### Pulling local secrets
 Before running WDS, you must populate secrets from Vault. 
 After [setting up your vault-token](https://docs.google.com/document/d/11pZE-GqeZFeSOG0UpGg_xyTDQpgBRfr0MLxpxvvQgEw) run:
-```
+```bash
 ./scripts/render-config.sh [wds env] [vault env]
 ```
 Here `wds env` may be `local`,`dev`,`alpha`,`perf`, or `prod`
 `vault env` can be `docker` or `local`.
 
 To just build the code, from the root directory run
-```
+```bash
 ./gradlew build
 ```
 To run the application, first a postgres database must be running:
-```
+```bash
 ./local-dev/run_postgres.sh start
 ```
 
 To run WDS locally, you can either use the command line:
-```
+```bash
 ./gradlew bootRun
 ```
 Or, from Intellij, go to `src/main/java/org.databiosphere.workspacedataservice/WorkspaceDataServiceApplication` and click the green play button.
@@ -67,15 +67,34 @@ To remove entities:
 `curl -H "Content-type: application/json" "http://localhost:8080/api/workspaces/default/test/entities/delete" -d '[{"entityName": "first_entity", "entityType": "first_entity_type"}]'`
 
 When done, stop postgres:
-```
+```bash
 ./local-dev/run_postgres.sh stop
 ```
 ## Tests
 To run unit tests locally, first make sure your local postgres is up and running:
-```
+```bash
 ./local-dev/run_postgres.sh start
 ```
 From the command line, run
-```
+```bash
 ./gradlew test
+```
+
+## Swagger UI
+When running locally, a Swagger UI is available at http://localhost:8080/swagger/swagger-ui.html.
+
+## Docker
+To build the WDS docker image _(replace "wdsdocker" with your desired image name)_:
+```bash
+./gradlew --build-cache jibDockerBuild --image=wdsdocker -Djib.console=plain
+```
+
+To run the built docker image (_replace "wdsdocker" the image name specified during build_):
+* Docker for Mac:
+```bash
+docker run -e WDS_DB_HOST='host.docker.internal' -p 8080:8080 wdsdocker
+```
+* Docker on Linux:
+```bash
+docker run --network=host -e WDS_DB_HOST='127.0.0.1' -p 8080:8080 wdsdocker
 ```

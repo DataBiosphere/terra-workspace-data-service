@@ -27,11 +27,11 @@ class DataTypeInfererTest {
     private static List<EntityUpsert> getSomeEntityUpserts(){
         List<EntityUpsert> result = new ArrayList<>();
         for (int i = 0; i < 300; i++) {
-            Entity e = new Entity("entity_"+i, new EntityType("participants"), Map.of("int_val", new Random().nextInt(),
-                    "string_val", RandomStringUtils.random(10), "json_val", "[\"a\", \"b\"]", "date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00"));
+            Entity e = new Entity(new EntityId("entity_"+i), new EntityType("participants"), new EntityAttributes(Map.of("int_val", new Random().nextInt(),
+                    "string_val", RandomStringUtils.random(10), "json_val", "[\"a\", \"b\"]", "date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00")));
             result.add(createUpsert(e));
         }
-        result.add(createUpsert(new Entity("entity_wild", new EntityType("participants"), Map.of("json_val", "foo"))));
+        result.add(createUpsert(new Entity(new EntityId("entity_wild"), new EntityType("participants"), new EntityAttributes(Map.of("json_val", "foo")))));
         return result;
     }
 
@@ -39,7 +39,7 @@ class DataTypeInfererTest {
         EntityUpsert upsert = new EntityUpsert();
         upsert.setName(entity.getName());
         upsert.setEntityType(entity.getEntityType().getName());
-        upsert.setOperations(entity.getAttributes().entrySet().stream()
+        upsert.setOperations(entity.getAttributes().getAttributes().entrySet().stream()
                 .map(attr -> new UpsertOperation(UpsertAction.AddUpdateAttribute, attr.getKey(), attr.getValue()))
                 .collect(Collectors.toList()));
         return upsert;

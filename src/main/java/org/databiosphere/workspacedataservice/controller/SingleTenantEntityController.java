@@ -61,9 +61,9 @@ public class SingleTenantEntityController {
         for (UpsertOperation operation : entityUpsert.getOperations()) {
             if(operation.getOp() == UpsertAction.AddUpdateAttribute){
                 DataTypeMapping dataTypeMapping = schema.get(operation.getAttributeName());
-                entity.getAttributes().put(operation.getAttributeName(), convertToType(operation.getAddUpdateAttribute(), dataTypeMapping));
+                entity.getAttributes().getAttributes().put(operation.getAttributeName(), convertToType(operation.getAddUpdateAttribute(), dataTypeMapping));
             } else if (operation.getOp() == UpsertAction.RemoveAttribute){
-                entity.getAttributes().put(operation.getAttributeName(), null);
+                entity.getAttributes().getAttributes().put(operation.getAttributeName(), null);
             }
         }
     }
@@ -71,7 +71,7 @@ public class SingleTenantEntityController {
     private List<Entity> convertToEntities(List<EntityUpsert> entityUpserts, String entityType, Map<String, DataTypeMapping> schema) {
         List<Entity> result = new ArrayList<>();
         for (EntityUpsert entityUpsert : entityUpserts) {
-            Entity entity = new Entity(entityUpsert.getName(), new EntityType(entityType), new HashMap<>());
+            Entity entity = new Entity(entityUpsert.getName(), new EntityType(entityType), new EntityAttributes(new HashMap<>()));
             updateAttributesForEntity(entityUpsert, entity, schema);
             result.add(entity);
         }
@@ -128,7 +128,7 @@ public class SingleTenantEntityController {
                 List<Entity> forUpdates = new ArrayList<>();
                 List<Entity> forInsert = new ArrayList<>();
                 for (EntityUpsert entityUpsert : upsertsForType) {
-                    Entity entity = new Entity(entityUpsert.getName(), new EntityType(entityType), new HashMap<>());
+                    Entity entity = new Entity(entityUpsert.getName(), new EntityType(entityType), new EntityAttributes(new HashMap<>()));
                     updateAttributesForEntity(entityUpsert, entity, existingTableSchema);
                     if(existingEntityNames.contains(entityUpsert.getName())){
                         forUpdates.add(entity);

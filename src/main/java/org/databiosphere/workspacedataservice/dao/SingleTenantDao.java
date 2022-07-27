@@ -3,9 +3,7 @@ package org.databiosphere.workspacedataservice.dao;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.shared.model.Entity;
-import org.databiosphere.workspacedataservice.shared.model.EntityToDelete;
-import org.databiosphere.workspacedataservice.shared.model.EntityType;
+import org.databiosphere.workspacedataservice.shared.model.*;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -87,7 +85,7 @@ public class SingleTenantDao {
     public void updateEntities(UUID workspaceId, String entityType, List<Entity> entities, Map<String, DataTypeMapping> allFields){
         ArrayListMultimap<Set<String>, Entity> entitiesByValuesToUpdate = ArrayListMultimap.create();
         for (Entity entity : entities) {
-            entitiesByValuesToUpdate.put(entity.getAttributes().keySet(), entity);
+            entitiesByValuesToUpdate.put(entity.getAttributes().getAttributes().keySet(), entity);
         }
         for(Set<String> cols : entitiesByValuesToUpdate.keySet()){
             namedTemplate.getJdbcTemplate().batchUpdate(generateUpdateSql(entityType, workspaceId, cols, allFields),
@@ -101,10 +99,10 @@ public class SingleTenantDao {
             Object[] params = new Object[cols.size()*2+1];
             int i = 0;
             for (String col : cols) {
-                params[i++] = entity.getAttributes().get(col);
+                params[i++] = entity.getAttributes().getAttributes().get(col);
             }
             for(String col : cols) {
-                params[i++] = entity.getAttributes().get(col);
+                params[i++] = entity.getAttributes().getAttributes().get(col);
             }
             params[i] = entity.getName();
             result.add(params);
@@ -140,9 +138,9 @@ public class SingleTenantDao {
                 if(col.equals("name")){
                     row[i++] = entity.getName();
                 } else if (col.equals("all_attribute_values")) {
-                   row[i++] = Stream.concat(Stream.of(entity.getName()), entity.getAttributes().values().stream()).map(Object::toString).collect(Collectors.joining(" "));
+                   row[i++] = Stream.concat(Stream.of(entity.getName()), entity.getAttributes().getAttributes().values().stream()).map(Object::toString).collect(Collectors.joining(" "));
                 } else {
-                    row[i++] = entity.getAttributes().get(col);
+                    row[i++] = entity.getAttributes().getAttributes().get(col);
                 }
             }
             result.add(row);
@@ -202,7 +200,7 @@ public class SingleTenantDao {
 
         @Override
         public Entity mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new Entity(rs.getString("name"), new EntityType(entityType), getAttributes(rs));
+            return new Entity(new EntityId(rs.getString("name")), new EntityType(entityType), new EntityAttributes(getAttributes(rs)));
         }
 
         private Map<String, Object> getAttributes(ResultSet rs) {

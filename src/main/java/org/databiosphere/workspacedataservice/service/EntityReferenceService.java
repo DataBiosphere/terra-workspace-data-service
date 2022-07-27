@@ -27,15 +27,15 @@ public class EntityReferenceService {
         this.dao = dao;
     }
 
-    private Map<String, Entity> handleNewEntityType(UUID workspaceId, List<EntityUpsert> entityUpserts, String entityTypeName) throws AttemptToUpsertDeletedEntity {
+    private Map<EntityId, Entity> handleNewEntityType(UUID instanceId, List<EntityUpsert> entityUpserts, String entityTypeName) throws AttemptToUpsertDeletedEntity {
         EntityType entityType = new EntityType(entityTypeName);
-        long newEntityTypeId = dao.loadEntityType(entityType, workspaceId);
+        long newEntityTypeId = dao.loadEntityType(entityType, instanceId);
         return applyEntityUpserts(entityUpserts, newEntityTypeId, new HashMap<>());
     }
 
-    private Map<String, Entity> applyEntityUpserts(List<EntityUpsert> entityUpserts, long entityTypeId, Map<String, Entity> entitiesByName) throws AttemptToUpsertDeletedEntity {
+    private Map<EntityId, Entity> applyEntityUpserts(List<EntityUpsert> entityUpserts, long entityTypeId, Map<EntityId, Entity> entitiesByName) throws AttemptToUpsertDeletedEntity {
         for (EntityUpsert entityUpsert : entityUpserts) {
-            String entityName = entityUpsert.getName();
+            EntityId entityName = entityUpsert.getName();
             if(entitiesByName.containsKey(entityName)){
                 Entity entity = entitiesByName.get(entityName);
                 if(entity.getDeleted()){
@@ -43,7 +43,7 @@ public class EntityReferenceService {
                 }
                 updateAttributesForEntity(entityUpsert, entity);
             } else {
-                Entity entity = new Entity(entityName, new EntityType(entityUpsert.getEntityType()), new HashMap<>(), entityTypeId);
+                Entity entity = new Entity(entityName, new EntityType(entityUpsert.getEntityType()), new EntityAttributes(new HashMap<>()), entityTypeId);
                 updateAttributesForEntity(entityUpsert, entity);
                 entitiesByName.put(entityName, entity);
             }
@@ -54,57 +54,69 @@ public class EntityReferenceService {
     private void updateAttributesForEntity(EntityUpsert entityUpsert, Entity entity){
         for (UpsertOperation operation : entityUpsert.getOperations()) {
             if(operation.getOp() == UpsertAction.AddUpdateAttribute){
-                entity.getAttributes().put(operation.getAttributeName(), operation.getAddUpdateAttribute());
+                entity.getAttributes().getAttributes().put(operation.getAttributeName(), operation.getAddUpdateAttribute());
             } else if (operation.getOp() == UpsertAction.RemoveAttribute){
-                entity.getAttributes().remove(operation.getAttributeName());
+                entity.getAttributes().getAttributes().remove(operation.getAttributeName());
             }
         }
     }
 
-    public List<EntityReference> getEntityReferences(List<Entity> entities, UUID workspaceId) {
+    public List<EntityReference> getEntityReferences(List<Entity> entities, UUID instanceId) {
         List<EntityReference> result = new ArrayList<>();
         for (Entity entity : entities) {
-            List<Map> referencedAttrs = entity.getAttributes().values().stream().filter(Map.class::isInstance).map(Map.class::cast)
+            List<Map> referencedAttrs = entity.getAttributes().getAttributes().values().stream().filter(Map.class::isInstance).map(Map.class::cast)
                     .filter(map -> map.size() == 2 && map.containsKey(ENTITY_TYPE_KEY) && map.containsKey(ENTITY_NAME_KEY)).collect(Collectors.toList());
             for (Map referencedAttr : referencedAttrs) {
                 result.add(new EntityReference(entity.getName(), entity.getEntityTypeId(),
-                        dao.getEntityTypeId(workspaceId, (String)referencedAttr.get(ENTITY_TYPE_KEY)),
-                        (String)referencedAttr.get(ENTITY_NAME_KEY)));
+                        dao.getEntityTypeId(instanceId, referencedAttr.get(ENTITY_TYPE_KEY).toString()),
+                        (EntityId)referencedAttr.get(ENTITY_NAME_KEY)));
             }
         }
         return result;
     }
 
 
+    public EntityReferenceAction manageSingleEntityReference(UUID instanceId, Entity entity) {
+        List<EntityReference> referencesToAdd = new ArrayList<>();
+        List<EntityReference> referencesToRemove = new ArrayList<>();
+        List<EntityReference> updatedReferences = getEntityReferences(Collections.singletonList(entity), instanceId);
+        List<EntityReference> referencesForEntity = dao.getReferencesForEntities(Collections.singletonList(entity), entity.getEntityTypeId());
+        calculateReferenceOpsForEntityType(referencesToAdd, referencesToRemove, updatedReferences, referencesForEntity);
+        return new EntityReferenceAction(referencesToAdd, referencesToRemove, Collections.singletonList(entity));
+    }
 
-    public EntityReferenceAction manageReferences(UUID workspaceId, Map<String, Map<String, Entity>> entitiesForUpsert) {
+    private void calculateReferenceOpsForEntityType(List<EntityReference> referencesToAdd, List<EntityReference> referencesToRemove, List<EntityReference> updatedReferences, List<EntityReference> referencesForEntity) {
+        HashSet<EntityReference> existingRefsSet = new HashSet<>(referencesForEntity);
+        HashSet<EntityReference> updateRefsSet = new HashSet<>(updatedReferences);
+        if (!updateRefsSet.equals(existingRefsSet)) {
+            //if existing has elements not contained in updated we need to remove
+            referencesToRemove.addAll(Sets.difference(existingRefsSet, updateRefsSet));
+            //if updated has elements not contained in existing we need to add
+            referencesToAdd.addAll(Sets.difference(updateRefsSet, existingRefsSet));
+        }
+    }
+
+    public EntityReferenceAction manageReferences(UUID instanceId, Map<String, Map<EntityId, Entity>> entitiesForUpsert) {
         List<EntityReference> referencesToAdd = new ArrayList<>();
         List<EntityReference> referencesToRemove = new ArrayList<>();
         for (String entityType : entitiesForUpsert.keySet()) {
             ArrayList<Entity> entitiesForType = new ArrayList<>(entitiesForUpsert.get(entityType).values());
-            List<EntityReference> updatedReferences = getEntityReferences(entitiesForType, workspaceId);
-            List<EntityReference> existingReferences = dao.getReferencesForEntities(entitiesForType, dao.getEntityTypeId(workspaceId, entityType));
-            HashSet<EntityReference> existingRefsSet = new HashSet<>(existingReferences);
-            HashSet<EntityReference> updateRefsSet = new HashSet<>(updatedReferences);
-            if(!updateRefsSet.equals(existingRefsSet)){
-                //if existing has elements not contained in updated we need to remove
-                referencesToRemove.addAll(Sets.difference(existingRefsSet, updateRefsSet));
-                //if updated has elements not contained in existing we need to add
-                referencesToAdd.addAll(Sets.difference(updateRefsSet, existingRefsSet));
-            }
+            List<EntityReference> updatedReferences = getEntityReferences(entitiesForType, instanceId);
+            List<EntityReference> existingReferences = dao.getReferencesForEntities(entitiesForType, dao.getEntityTypeId(instanceId, entityType));
+            calculateReferenceOpsForEntityType(referencesToAdd, referencesToRemove, updatedReferences, existingReferences);
         }
         return new EntityReferenceAction(referencesToAdd, referencesToRemove,
                 entitiesForUpsert.values().stream().flatMap(s -> s.values().stream()).collect(Collectors.toList()));
     }
 
-    public Map<String, Map<String, Entity>> convertToUpdatedEntities(List<EntityUpsert> entitiesToUpdate, UUID workspaceId) throws AttemptToUpsertDeletedEntity {
+    public Map<String, Map<EntityId, Entity>> convertToUpdatedEntities(List<EntityUpsert> entitiesToUpdate, UUID instanceId) throws AttemptToUpsertDeletedEntity {
         ArrayListMultimap<String, EntityUpsert> eUpsertsByType = ArrayListMultimap.create();
         entitiesToUpdate.forEach(e -> eUpsertsByType.put(e.getEntityType(), e));
-        Map<String, Map<String, Entity>> entitiesByTypeAndName = new HashMap<>();
+        Map<String, Map<EntityId, Entity>> entitiesByTypeAndName = new HashMap<>();
         for (String entityTypeName : eUpsertsByType.keySet()) {
-            Long entityTypeId = dao.getEntityTypeId(workspaceId, entityTypeName);
+            Long entityTypeId = dao.getEntityTypeId(instanceId, entityTypeName);
             if(entityTypeId == -1){
-                entitiesByTypeAndName.put(entityTypeName, handleNewEntityType(workspaceId, eUpsertsByType.get(entityTypeName), entityTypeName));
+                entitiesByTypeAndName.put(entityTypeName, handleNewEntityType(instanceId, eUpsertsByType.get(entityTypeName), entityTypeName));
             } else {
                 entitiesByTypeAndName.put(entityTypeName, handleExistingEntityType(eUpsertsByType.get(entityTypeName), entityTypeId, entityTypeName));
             }
@@ -112,15 +124,15 @@ public class EntityReferenceService {
         return entitiesByTypeAndName;
     }
 
-    public List<Entity> getEntities(long entityTypeId, String entityTypeName, Set<String> entityNames, boolean excludeDeletedEntities) {
+    public List<Entity> getEntities(long entityTypeId, String entityTypeName, Set<EntityId> entityNames, boolean excludeDeletedEntities) {
         return dao.getNamedEntities(entityTypeId, entityNames, entityTypeName, excludeDeletedEntities);
     }
 
-    private Map<String, Entity> handleExistingEntityType(List<EntityUpsert> entityUpserts, long entityTypeId,
-                                                         String entityTypeName) throws AttemptToUpsertDeletedEntity {
-        Set<String> entityNames = entityUpserts.stream().map(EntityUpsert::getName).collect(Collectors.toSet());
+    private Map<EntityId, Entity> handleExistingEntityType(List<EntityUpsert> entityUpserts, long entityTypeId,
+                                                           String entityTypeName) throws AttemptToUpsertDeletedEntity {
+        Set<EntityId> entityNames = entityUpserts.stream().map(EntityUpsert::getName).collect(Collectors.toSet());
         List<Entity> existingEntities = getEntities(entityTypeId, entityTypeName, entityNames, false);
-        Map<String, Entity> entitiesByName = new HashMap<>();
+        Map<EntityId, Entity> entitiesByName = new HashMap<>();
         existingEntities.forEach(e -> entitiesByName.put(e.getName(), e));
 
         return applyEntityUpserts(entityUpserts, entityTypeId, entitiesByName);
