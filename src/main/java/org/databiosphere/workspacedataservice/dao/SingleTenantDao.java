@@ -104,7 +104,7 @@ public class SingleTenantDao {
             for(String col : cols) {
                 params[i++] = entity.getAttributes().getAttributes().get(col);
             }
-            params[i] = entity.getName();
+            params[i] = entity.getName().getEntityIdentifier();
             result.add(params);
         }
         return result;
@@ -117,7 +117,7 @@ public class SingleTenantDao {
 
     private String getFieldsConcat(Set<String> allCols, Set<String> colsToUpdate) {
         return allCols.stream().filter(c -> !c.equals("all_attribute_values")).map(colName ->
-            colsToUpdate.contains(colName) ? "?" : "coalesce("+colName+",'')"
+            colsToUpdate.contains(colName) ? "?" : "coalesce(cast("+colName+" as varchar),'')"
         ).collect(Collectors.joining(",' ',"));
     }
 
@@ -136,7 +136,7 @@ public class SingleTenantDao {
             int i = 0;
             for (String col : colNames) {
                 if(col.equals("name")){
-                    row[i++] = entity.getName();
+                    row[i++] = entity.getName().getEntityIdentifier();
                 } else if (col.equals("all_attribute_values")) {
                    row[i++] = Stream.concat(Stream.of(entity.getName()), entity.getAttributes().getAttributes().values().stream()).map(Object::toString).collect(Collectors.joining(" "));
                 } else {
