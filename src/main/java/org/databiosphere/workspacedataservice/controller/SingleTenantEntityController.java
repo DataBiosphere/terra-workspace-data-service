@@ -19,6 +19,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import static org.databiosphere.workspacedataservice.dao.EntitySystemColumn.ALL_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.dao.EntitySystemColumn.ENTITY_ID;
+
 @RestController
 public class SingleTenantEntityController {
 
@@ -33,7 +36,7 @@ public class SingleTenantEntityController {
                                               @PathVariable("entityType") String entityType,
                                               @RequestParam(defaultValue = "1") int page,
                                               @RequestParam(defaultValue = "10") int pageSize,
-                                              @RequestParam(defaultValue = "name") String sortField,
+                                              @RequestParam(defaultValue = "sys_name") String sortField,
                                               @RequestParam(defaultValue = "asc") String sortDirection,
                                               @RequestParam(defaultValue = "") String filterTerms,
                                               @RequestParam(required = false) List<String> fields) {
@@ -83,8 +86,8 @@ public class SingleTenantEntityController {
 
     private void createEntityTypeAndAddEntities(UUID workspaceId, String entityType, LinkedHashMap<String, DataTypeMapping> schema, List<EntityUpsert> upsertsForType) {
         singleTenantDao.createEntityType(workspaceId, schema, entityType);
-        schema.put("name", DataTypeMapping.STRING);
-        schema.put("all_attribute_values", DataTypeMapping.STRING);
+        schema.put(ENTITY_ID.getColumnName(), DataTypeMapping.STRING);
+        schema.put(ALL_ATTRIBUTES.getColumnName(), DataTypeMapping.STRING);
         singleTenantDao.insertEntities(workspaceId, entityType, convertToEntities(upsertsForType, entityType, schema), schema);
     }
 
@@ -133,7 +136,7 @@ public class SingleTenantEntityController {
                 for (EntityUpsert entityUpsert : upsertsForType) {
                     Entity entity = new Entity(entityUpsert.getName(), new EntityType(entityType), new EntityAttributes(new HashMap<>()));
                     updateAttributesForEntity(entityUpsert, entity, existingTableSchema);
-                    if(existingEntityNames.contains(entityUpsert.getName())){
+                    if(existingEntityNames.contains(entityUpsert.getName().getEntityIdentifier())){
                         forUpdates.add(entity);
                     } else {
                         forInsert.add(entity);

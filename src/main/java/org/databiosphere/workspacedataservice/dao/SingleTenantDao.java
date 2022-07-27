@@ -16,6 +16,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.databiosphere.workspacedataservice.dao.EntitySystemColumn.ALL_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.dao.EntitySystemColumn.ENTITY_ID;
+
 @Repository
 public class SingleTenantDao {
 
@@ -36,7 +39,7 @@ public class SingleTenantDao {
     }
 
     public boolean entityTypeExists(UUID workspaceId, String entityType){
-        return namedTemplate.queryForObject("SELECT EXISTS(SELECT FROM pg_tables WHERE schemaname = :workspaceId AND tablename  = :entityType)",
+        return namedTemplate.queryForObject("select exists(select from pg_tables where schemaname = :workspaceId AND tablename  = :entityType)",
                 new MapSqlParameterSource(Map.of("workspaceId", workspaceId.toString(), "entityType", entityType)), Boolean.class);
     }
 
@@ -46,7 +49,7 @@ public class SingleTenantDao {
     }
 
     private String getQualifiedTableName(String entityType, UUID workspaceId){
-        return "\"" + workspaceId.toString() + "\"." + entityType;
+        return "\"" + workspaceId.toString() + "\".\"" + entityType + "\"";
     }
 
     public Map<String, DataTypeMapping> getExistingTableSchema(UUID workspaceId, String tableName){
@@ -64,17 +67,17 @@ public class SingleTenantDao {
 
 
     public void addColumn(UUID workspaceId, String tableName, String columnName, DataTypeMapping colType){
-        namedTemplate.getJdbcTemplate().update("alter table "+ getQualifiedTableName(tableName, workspaceId) + " add column " + columnName + " " + colType.getPostgresType());
+        namedTemplate.getJdbcTemplate().update("alter table "+ getQualifiedTableName(tableName, workspaceId) + " add column \"" + columnName + "\" " + colType.getPostgresType());
     }
 
     public void changeColumn(UUID workspaceId, String tableName, String columnName, DataTypeMapping newColType){
-        namedTemplate.getJdbcTemplate().update("alter table " + getQualifiedTableName(tableName, workspaceId) + " alter column " + columnName + " TYPE " + newColType.getPostgresType());
+        namedTemplate.getJdbcTemplate().update("alter table " + getQualifiedTableName(tableName, workspaceId) + " alter column \"" + columnName + "\" TYPE " + newColType.getPostgresType());
     }
 
     private String genColumnDefs(Map<String, DataTypeMapping> tableInfo) {
-        return "name text primary key, "
-                + tableInfo.entrySet().stream().map(e -> e.getKey() + " " + e.getValue().getPostgresType()).collect(Collectors.joining(", "))
-                + ", all_attribute_values text not null";
+        return ENTITY_ID.getColumnName() + " text primary key, "
+                + tableInfo.entrySet().stream().map(e -> "\"" + e.getKey() + "\" " + e.getValue().getPostgresType()).collect(Collectors.joining(", "))
+                + ", " + ALL_ATTRIBUTES.getColumnName() + " text not null";
     }
 
     public void insertEntities(UUID workspaceId, String entityType, List<Entity> entities, LinkedHashMap<String, DataTypeMapping> existingTableSchema){
@@ -96,6 +99,8 @@ public class SingleTenantDao {
     private List<Object[]> getUpdateBatchArgs(List<Entity> entities, Set<String> cols) {
         List<Object[]> result = new ArrayList<>();
         for (Entity entity : entities) {
+            //sql looks like update t set a1 = ?, a2 = ?, an = ?, all_attribute_values = concat(?,?,?, existing attributes) where name = ?
+            //so we need 2 params for each field updated +1 for the entity name
             Object[] params = new Object[cols.size()*2+1];
             int i = 0;
             for (String col : cols) {
@@ -112,21 +117,21 @@ public class SingleTenantDao {
 
     private String generateUpdateSql(String entityType, UUID workspaceId, Set<String> fieldsToUpdate, Map<String, DataTypeMapping> allFields) {
         return "update " + getQualifiedTableName(entityType, workspaceId) + " set " + genColUpdates(fieldsToUpdate, allFields) + ", " +
-                "all_attribute_values = concat("+getFieldsConcat(allFields.keySet(), fieldsToUpdate)+") where name = ?";
+                ALL_ATTRIBUTES.getColumnName() + " = concat("+getFieldsConcat(allFields.keySet(), fieldsToUpdate)+") where " + ENTITY_ID.getColumnName() + "= ?";
     }
 
     private String getFieldsConcat(Set<String> allCols, Set<String> colsToUpdate) {
-        return allCols.stream().filter(c -> !c.equals("all_attribute_values")).map(colName ->
-            colsToUpdate.contains(colName) ? "?" : "coalesce(cast("+colName+" as varchar),'')"
+        return allCols.stream().filter(c -> !c.equals(ALL_ATTRIBUTES.getColumnName())).map(colName ->
+            colsToUpdate.contains(colName) ? "?" : "coalesce(cast(\""+colName+"\" as varchar),'')"
         ).collect(Collectors.joining(",' ',"));
     }
 
     private String genColUpdates(Set<String> cols, Map<String, DataTypeMapping> typeMapping) {
-        return cols.stream().map(c -> c + " = ? " + (typeMapping.get(c) == DataTypeMapping.JSON ? ":: jsonb" : "")).collect(Collectors.joining(", "));
+        return cols.stream().map(c -> "\"" + c + "\"" + " = ?" + (typeMapping.get(c) == DataTypeMapping.JSON ? ":: jsonb" : "")).collect(Collectors.joining(", "));
     }
 
     public Set<String> getEntityNames(UUID workspaceId, String entityType){
-        return new HashSet<>(namedTemplate.getJdbcTemplate().queryForList("select name from " + getQualifiedTableName(entityType, workspaceId), String.class));
+        return new HashSet<>(namedTemplate.getJdbcTemplate().queryForList("select " +ENTITY_ID.getColumnName()+" from " + getQualifiedTableName(entityType, workspaceId), String.class));
     }
 
     private List<Object[]> getInsertBatchArgs(List<Entity> entities, Set<String> colNames) {
@@ -135,9 +140,9 @@ public class SingleTenantDao {
             Object[] row = new Object[colNames.size()];
             int i = 0;
             for (String col : colNames) {
-                if(col.equals("name")){
+                if(col.equals(ENTITY_ID.getColumnName())){
                     row[i++] = entity.getName().getEntityIdentifier();
-                } else if (col.equals("all_attribute_values")) {
+                } else if (col.equals(ALL_ATTRIBUTES.getColumnName())) {
                    row[i++] = Stream.concat(Stream.of(entity.getName()), entity.getAttributes().getAttributes().values().stream()).map(Object::toString).collect(Collectors.joining(" "));
                 } else {
                     row[i++] = entity.getAttributes().getAttributes().get(col);
@@ -158,7 +163,7 @@ public class SingleTenantDao {
     }
 
     private String getInsertColList(Set<String> existingTableSchema) {
-        return String.join(", ", existingTableSchema);
+        return existingTableSchema.stream().map(col ->"\"" + col + "\"").collect(Collectors.joining(", "));
     }
 
     public int getEntityCount(String entityType, UUID workspaceId) {
@@ -167,7 +172,7 @@ public class SingleTenantDao {
 
     public int getFilteredEntityCount(UUID workspaceId, String entityType, String filterTerms) {
         return namedTemplate.queryForObject("select count(*) from " + getQualifiedTableName(entityType, workspaceId)
-                        + " where all_attribute_values ilike :filterTerms",
+                        + " where " + ALL_ATTRIBUTES.getColumnName() + " ilike :filterTerms",
                 new MapSqlParameterSource("filterTerms", "%"+filterTerms+"%"), Integer.class);
     }
 
@@ -176,7 +181,7 @@ public class SingleTenantDao {
         int result = 0;
         for (List<String> chunk : chunks) {
             result += namedTemplate.queryForObject("select count(*) from " + getQualifiedTableName(entityTypeName, workspaceId)
-                            + " where name in (:entities)",
+                            + " where " + ENTITY_ID.getColumnName() + " in (:entities)",
                     new MapSqlParameterSource("entities", chunk), Integer.class);
         }
         return result;
@@ -185,7 +190,7 @@ public class SingleTenantDao {
     public void deleteEntities(String entityTypeName, List<String> entityNamesToDelete, UUID workspaceId){
         List<List<String>> chunks = Lists.partition(entityNamesToDelete, CHUNK_SIZE);
         for (List<String> chunk : chunks) {
-            namedTemplate.update("delete from " + getQualifiedTableName(entityTypeName, workspaceId) + " where name in (:entities)",
+            namedTemplate.update("delete from " + getQualifiedTableName(entityTypeName, workspaceId) + " where " + ENTITY_ID.getColumnName() + " in (:entities)",
                     new MapSqlParameterSource("entities", chunk));
         }
     }
@@ -200,7 +205,7 @@ public class SingleTenantDao {
 
         @Override
         public Entity mapRow(ResultSet rs, int rowNum) throws SQLException {
-            Entity entity = new Entity(new EntityId(rs.getString("name")), new EntityType(entityType), new EntityAttributes(getAttributes(rs)));
+            Entity entity = new Entity(new EntityId(rs.getString(ENTITY_ID.getColumnName())), new EntityType(entityType), new EntityAttributes(getAttributes(rs)));
             entity.setDeleted(false);
             return entity;
         }
@@ -209,9 +214,10 @@ public class SingleTenantDao {
             try {
                 ResultSetMetaData metaData = rs.getMetaData();
                 Map<String, Object> attributes = new HashMap<>();
+                Set<String> systemCols = Arrays.stream(EntitySystemColumn.values()).map(EntitySystemColumn::getColumnName).collect(Collectors.toSet());
                 for (int j = 0; j < metaData.getColumnCount(); j++) {
                     String columnName = metaData.getColumnName(j+1);
-                    if ("name".equals(columnName) || "all_attribute_values".equals(columnName)) {
+                    if (systemCols.contains(columnName)) {
                         continue;
                     }
                     attributes.put(columnName, rs.getObject(columnName));
@@ -231,7 +237,7 @@ public class SingleTenantDao {
                     + " " + sortDirection + " limit " + pageSize + " offset " + i, new EntityRowMapper(entityType));
         } else {
             return namedTemplate.query("select " + getFieldList(fields) + " from "
-                    + getQualifiedTableName(entityType, workspaceId) + " where all_attribute_values ilike :filter order by " + sortField
+                    + getQualifiedTableName(entityType, workspaceId) + " where " + ALL_ATTRIBUTES.getColumnName() + " ilike :filter order by " + sortField
                     + " " + sortDirection + " limit " + pageSize + " offset " + i, new MapSqlParameterSource("filter", "%"+filterTerms+"%"),
                     new EntityRowMapper(entityType));
         }
@@ -240,6 +246,6 @@ public class SingleTenantDao {
 
     private String getFieldList(List<String> fields) {
         return (fields == null || fields.isEmpty()) ? "*" :
-                Stream.concat(fields.stream(), Stream.of("name")).collect(Collectors.joining(", "));
+                Stream.concat(fields.stream(), Stream.of(ENTITY_ID.getColumnName())).collect(Collectors.joining(", "));
     }
 }
