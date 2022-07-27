@@ -2,7 +2,7 @@ name: Tag
 on:
   push:
     branches:
-    - aj-449-bump
+    - main
 
 jobs:
   tag-job:
@@ -20,7 +20,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BUMP: patch
-          RELEASE_BRANCHES: aj-449-bump
+          RELEASE_BRANCHES: main
           VERSION_FILE_PATH: build.gradle
           VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
           VERSION_SUFFIX: SNAPSHOT
