@@ -67,6 +67,10 @@ spotless {
         endWithNewline()
     }
 }
+// disable for now. As a developer, re-enable these tasks and then run ./gradlew spotlessCheck
+// to see the results.
+tasks.spotlessJavaCheck.enabled = false
+tasks.spotlessMiscCheck.enabled = false
 
 tasks.named('test') {
     useJUnitPlatform()
