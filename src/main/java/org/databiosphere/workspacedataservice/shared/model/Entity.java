@@ -86,18 +86,24 @@ public class Entity {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Entity)) return false;
-
-        Entity entity = (Entity) o;
+        if (!(o instanceof Entity entity)) return false;
 
         if (!getName().equals(entity.getName())) return false;
-        return getEntityTypeId().equals(entity.getEntityTypeId());
+        if (getDeleted() != null ? !getDeleted().equals(entity.getDeleted()) : entity.getDeleted() != null)
+            return false;
+        if (!getEntityType().equals(entity.getEntityType())) return false;
+        if (getAttributes() != null ? !getAttributes().equals(entity.getAttributes()) : entity.getAttributes() != null)
+            return false;
+        return getEntityTypeId() != null ? getEntityTypeId().equals(entity.getEntityTypeId()) : entity.getEntityTypeId() == null;
     }
 
     @Override
     public int hashCode() {
         int result = getName().hashCode();
-        result = 31 * result + getEntityTypeId().hashCode();
+        result = 31 * result + (getDeleted() != null ? getDeleted().hashCode() : 0);
+        result = 31 * result + getEntityType().hashCode();
+        result = 31 * result + (getAttributes() != null ? getAttributes().hashCode() : 0);
+        result = 31 * result + (getEntityTypeId() != null ? getEntityTypeId().hashCode() : 0);
         return result;
     }
 }

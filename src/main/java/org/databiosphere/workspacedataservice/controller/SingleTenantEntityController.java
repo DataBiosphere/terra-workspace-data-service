@@ -59,11 +59,14 @@ public class SingleTenantEntityController {
 
     private void updateAttributesForEntity(EntityUpsert entityUpsert, Entity entity, Map<String, DataTypeMapping> schema){
         for (UpsertOperation operation : entityUpsert.getOperations()) {
+            Map<String, Object> attributes = entity.getAttributes().getAttributes();
             if(operation.getOp() == UpsertAction.AddUpdateAttribute){
                 DataTypeMapping dataTypeMapping = schema.get(operation.getAttributeName());
-                entity.getAttributes().getAttributes().put(operation.getAttributeName(), convertToType(operation.getAddUpdateAttribute(), dataTypeMapping));
+                attributes.put(operation.getAttributeName(), convertToType(operation.getAddUpdateAttribute(), dataTypeMapping));
+                entity.setAttributes(new EntityAttributes(attributes));
             } else if (operation.getOp() == UpsertAction.RemoveAttribute){
-                entity.getAttributes().getAttributes().put(operation.getAttributeName(), null);
+                attributes.put(operation.getAttributeName(), null);
+                entity.setAttributes(new EntityAttributes(attributes));
             }
         }
     }

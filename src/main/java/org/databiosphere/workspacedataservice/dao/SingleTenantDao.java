@@ -200,7 +200,9 @@ public class SingleTenantDao {
 
         @Override
         public Entity mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new Entity(new EntityId(rs.getString("name")), new EntityType(entityType), new EntityAttributes(getAttributes(rs)));
+            Entity entity = new Entity(new EntityId(rs.getString("name")), new EntityType(entityType), new EntityAttributes(getAttributes(rs)));
+            entity.setDeleted(false);
+            return entity;
         }
 
         private Map<String, Object> getAttributes(ResultSet rs) {
