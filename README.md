@@ -98,3 +98,18 @@ docker run -e WDS_DB_HOST='host.docker.internal' -p 8080:8080 wdsdocker
 ```bash
 docker run --network=host -e WDS_DB_HOST='127.0.0.1' -p 8080:8080 wdsdocker
 ```
+
+## Code Formatting
+This repository uses [Spotless](https://github.com/diffplug/spotless) for code formatting.
+
+To check code formatting without making any changes, run:
+```bash
+./gradlew spotlessCheck
+```
+
+To automatically format your code:
+```bash
+./gradlew spotlessApply
+```
+
+See the Spotless documentation for more information.
