@@ -73,7 +73,7 @@ public class SingeTenantControllerTest {
     public void canUpdateExistingEntityAndType(){
         createOrUpdateEntity("Sub 1", "Submissions", Map.of("submission-time", "2022-07-01"));
         createOrUpdateEntity("Sub 1", "Submissions", Map.of("completion-time", "2022-07-02"));
-        createOrUpdateEntity("Sub 2", "Submissions", Map.of("completion-time", "2022-07-11"));
+        createOrUpdateEntity("Sub 2", "Submissions for Mom", Map.of("completion-time", "2022-07-11"));
     }
 
 }

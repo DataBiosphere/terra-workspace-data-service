@@ -115,6 +115,12 @@ public class SingleTenantDao {
         return result;
     }
 
+    public void addReferenceColumn(String entityType, String referencedEntityType){
+        String addCol = "alter table \"" + entityType + "\" add column \"" + referencedEntityType + "-ref\" text ";
+        String addFk = "alter table \"" + entityType + "\" add foreign key (\"" + referencedEntityType + "-ref\") references \"" + referencedEntityType + "\"";
+        namedTemplate.getJdbcTemplate().execute(addCol + " " + addFk);
+    }
+
     private String generateUpdateSql(String entityType, UUID workspaceId, Set<String> fieldsToUpdate, Map<String, DataTypeMapping> allFields) {
         return "update " + getQualifiedTableName(entityType, workspaceId) + " set " + genColUpdates(fieldsToUpdate, allFields) + ", " +
                 ALL_ATTRIBUTES.getColumnName() + " = concat("+getFieldsConcat(allFields.keySet(), fieldsToUpdate)+") where " + ENTITY_ID.getColumnName() + "= ?";
@@ -143,7 +149,7 @@ public class SingleTenantDao {
                 if(col.equals(ENTITY_ID.getColumnName())){
                     row[i++] = entity.getName().getEntityIdentifier();
                 } else if (col.equals(ALL_ATTRIBUTES.getColumnName())) {
-                   row[i++] = Stream.concat(Stream.of(entity.getName()), entity.getAttributes().getAttributes().values().stream()).map(Object::toString).collect(Collectors.joining(" "));
+                   row[i++] = Stream.concat(Stream.of(entity.getName().getEntityIdentifier()), entity.getAttributes().getAttributes().values().stream()).map(Object::toString).collect(Collectors.joining(" "));
                 } else {
                     row[i++] = entity.getAttributes().getAttributes().get(col);
                 }

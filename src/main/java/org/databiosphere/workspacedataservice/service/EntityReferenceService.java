@@ -18,8 +18,8 @@ import java.util.stream.Collectors;
 @Service
 public class EntityReferenceService {
 
-    private static final String ENTITY_TYPE_KEY = "entityType";
-    private static final String ENTITY_NAME_KEY = "entityName";
+    public static final String ENTITY_TYPE_KEY = "entityType";
+    public static final String ENTITY_NAME_KEY = "entityName";
 
     private final EntityDao dao;
 

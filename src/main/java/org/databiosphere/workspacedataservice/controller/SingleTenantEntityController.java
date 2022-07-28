@@ -7,7 +7,9 @@ import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.DataTypeInferer;
 import org.databiosphere.workspacedataservice.dao.SingleTenantDao;
+import org.databiosphere.workspacedataservice.service.SingleTenantEntityRefService;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.dao.EntitySystemColumn.ALL_ATTRIBUTES;
 import static org.databiosphere.workspacedataservice.dao.EntitySystemColumn.ENTITY_ID;
@@ -27,8 +30,11 @@ public class SingleTenantEntityController {
 
     private final SingleTenantDao singleTenantDao;
 
-    public SingleTenantEntityController(SingleTenantDao singleTenantDao) {
+    private final SingleTenantEntityRefService referenceService;
+
+    public SingleTenantEntityController(SingleTenantDao singleTenantDao, SingleTenantEntityRefService referenceService) {
         this.singleTenantDao = singleTenantDao;
+        this.referenceService = referenceService;
     }
 
     @GetMapping("/st/api/workspaces/{workspaceId}/entityQuery/{entityType}")
@@ -85,10 +91,14 @@ public class SingleTenantEntityController {
     }
 
     private void createEntityTypeAndAddEntities(UUID workspaceId, String entityType, LinkedHashMap<String, DataTypeMapping> schema, List<EntityUpsert> upsertsForType) {
+        List<Entity> entities = convertToEntities(upsertsForType, entityType, schema);
+        List<SingleTenantEntityReference> entityReferences = referenceService.findEntityReferences(entities);
+        Set<EntityType> referencedEntityTypes = entityReferences.stream().map(SingleTenantEntityReference::getReferencedEntityType).collect(Collectors.toSet());
+
         singleTenantDao.createEntityType(workspaceId, schema, entityType);
         schema.put(ENTITY_ID.getColumnName(), DataTypeMapping.STRING);
         schema.put(ALL_ATTRIBUTES.getColumnName(), DataTypeMapping.STRING);
-        singleTenantDao.insertEntities(workspaceId, entityType, convertToEntities(upsertsForType, entityType, schema), schema);
+        singleTenantDao.insertEntities(workspaceId, entityType, entities, schema);
     }
 
     private Map<String, DataTypeMapping> addOrUpdateColumnIfNeeded(UUID workspaceId, String entityType, Map<String, DataTypeMapping> schema, Map<String, DataTypeMapping> existingTableSchema) {
