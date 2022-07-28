@@ -23,8 +23,6 @@ jib {
 	}
 }
 
-apply from: 'generators.gradle'
-
 dependencies {
 
 	implementation 'org.springframework.boot:spring-boot-starter'
