@@ -1,4 +1,5 @@
 openapi: 3.0.3
+
 info:
   title: Workspace Data Service
   version: v0.2
@@ -21,6 +22,7 @@ paths:
   /{instanceid}/entities/{v}/{type}/{id}:
     get:
       summary: Get entity
+      operationId: getEntity
       description: Retrieves a single entity by its type and id
       tags:
         - Entities
@@ -62,6 +64,7 @@ paths:
           $ref: '#/components/responses/EntityResponseBody'
     patch:
       summary: Update entity
+      operationId: addOrUpdateAttributes
       description: |
         Updates the entity of the specified type and id.
         Any attributes included in the request body will be created or overwritten.
@@ -428,6 +431,7 @@ components:
           description: Provenance and other entity metadata. May not be present in v0.2.
     EntityAttributes:
       type: object
+      additionalProperties: true
     EntityAttributeDefinition:
       required:
         - name
