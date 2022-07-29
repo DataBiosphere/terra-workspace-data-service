@@ -1,22 +1,38 @@
-// All version controlled by dependency management plugin
+ext {
+	swagger_annotations_version = "2.0.0"
+	jackson_version = "2.10.1"
+	jersey_version = "2.36"
+}
+
 dependencies {
 	api 'org.springframework.boot:spring-boot-starter-json:+'
 
 	implementation 'io.swagger.core.v3:swagger-annotations'
 	swaggerCodegen 'io.swagger.codegen.v3:swagger-codegen-cli'
+	//Need to include libraries for generated code to work
+	implementation "io.swagger.core.v3:swagger-annotations:$swagger_annotations_version"
+	implementation "org.glassfish.jersey.core:jersey-client:$jersey_version"
+	implementation "org.glassfish.jersey.media:jersey-media-multipart:$jersey_version"
+	implementation "org.glassfish.jersey.media:jersey-media-json-jackson:$jersey_version"
+	implementation "com.fasterxml.jackson.core:jackson-core:$jackson_version"
+	implementation "com.fasterxml.jackson.core:jackson-annotations:$jackson_version"
+	implementation "com.fasterxml.jackson.core:jackson-databind:$jackson_version"
+	implementation "com.brsanthu:migbase64:2.2"
+	implementation "org.glassfish.jersey.inject:jersey-hk2:$jersey_version"
+	implementation "org.glassfish.jersey.connectors:jersey-jdk-connector:$jersey_version"
 }
 
 
 generateSwaggerCode {
 	inputFile = file('../service/src/main/resources/static/swagger/openapi-docs.yaml')
 	language = 'java'
-	library = 'resttemplate'
+	library = 'jersey2'
 
 	components = [
 			apiDocs  : false, apiTests: false,
 			modelDocs: false, modelTests: false
 	]
-
+	templateDir = file("${projectDir}")
 	additionalProperties = [
 			modelPackage  : "${artifactGroup}.model",
 			apiPackage    : "${artifactGroup}.api",
