@@ -98,3 +98,17 @@ docker run -e WDS_DB_HOST='host.docker.internal' -p 8080:8080 wdsdocker
 ```bash
 docker run --network=host -e WDS_DB_HOST='127.0.0.1' -p 8080:8080 wdsdocker
 ```
+
+## Using Workspace Data Service
+A client of WDS is published in the Broad Artifactory.  To include it in your Gradle project, add the following to your `build.gradle` file:
+```
+repositories {
+    maven {
+        url "https://broadinstitute.jfrog.io/broadinstitute/libs-snapshot-local/"
+    }
+}
+
+dependencies {
+    implementation(group: 'org.databiosphere', name: 'workspacedataservice-client', version: 'x.x.x')
+```
+The lastest version can be seen in our `build.gradle` file in the root directory.

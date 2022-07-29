@@ -1,1 +1,11 @@
+pluginManagement {
+    repositories {
+        maven {
+            url 'https://broadinstitute.jfrog.io/artifactory/plugins-snapshot'
+        }
+        gradlePluginPortal()
+    }
+}
+
 rootProject.name = 'workspacedata'
+include 'service', 'client'
