@@ -111,7 +111,6 @@ public class SingleTenantEntityController {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "It looks like you're attempting to assign a reference " +
                     "to an existing column that was not configured for references");
         }
-        //TODO: something about situation where user tries to store a reference value in non-reference column
         Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference.entriesDiffering();
         DataTypeInferer inferer = new DataTypeInferer();
         for (String column : differenceMap.keySet()) {

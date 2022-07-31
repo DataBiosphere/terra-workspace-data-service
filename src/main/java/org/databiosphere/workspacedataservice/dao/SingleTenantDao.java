@@ -147,12 +147,12 @@ public class SingleTenantDao {
 
     public int getFilteredEntityCount(UUID workspaceId, String entityType, String filterTerms, Map<String, DataTypeMapping> schema) {
         return namedTemplate.queryForObject("select count(*) from " + getQualifiedTableName(entityType, workspaceId)
-                        + " where " + buildFilterSql(filterTerms, schema),
+                        + " where " + buildFilterSql(schema.keySet()),
                 new MapSqlParameterSource("filterTerms", "%"+filterTerms+"%"), Integer.class);
     }
 
-    private String buildFilterSql(String filterTerms, Map<String, DataTypeMapping> existingTableSchema) {
-        return null;
+    private String buildFilterSql(Set<String> cols) {
+        return cols.stream().map(c -> c + " ilike :filterTerms").collect(Collectors.joining(" OR "));
     }
 
     public int getEntityCount(String entityTypeName, List<String> entityNamesToDelete, UUID workspaceId) {
@@ -216,8 +216,8 @@ public class SingleTenantDao {
                     + " " + sortDirection + " limit " + pageSize + " offset " + i, new EntityRowMapper(entityType));
         } else {
             return namedTemplate.query("select " + getFieldList(fields) + " from "
-                    + getQualifiedTableName(entityType, workspaceId) + " where " + buildFilterSql(filterTerms, schema) + " order by " + sortField
-                    + " " + sortDirection + " limit " + pageSize + " offset " + i, new MapSqlParameterSource("filter", "%"+filterTerms+"%"),
+                    + getQualifiedTableName(entityType, workspaceId) + " where " + buildFilterSql(schema.keySet()) + " order by " + sortField
+                    + " " + sortDirection + " limit " + pageSize + " offset " + i, new MapSqlParameterSource("filterTerms", "%"+filterTerms+"%"),
                     new EntityRowMapper(entityType));
         }
 
