@@ -22,9 +22,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.databiosphere.workspacedataservice.dao.EntitySystemColumn.ALL_ATTRIBUTES;
-import static org.databiosphere.workspacedataservice.dao.EntitySystemColumn.ENTITY_ID;
-
 @RestController
 public class SingleTenantEntityController {
 
@@ -52,10 +49,11 @@ public class SingleTenantEntityController {
             Preconditions.checkArgument(Set.of("asc", "desc").contains(sortDirection.toLowerCase(Locale.ROOT)));
         EntityQueryParameters queryParameters = new EntityQueryParameters(page, pageSize, sortField, sortDirection, filterTerms);
         int totalEntityCount = singleTenantDao.getEntityCount(entityType, workspaceId);
-        int filteredEntityCount = StringUtils.isNotBlank(filterTerms) ? singleTenantDao.getFilteredEntityCount(workspaceId, entityType, filterTerms) : totalEntityCount;
+        Map<String, DataTypeMapping> schema = singleTenantDao.getExistingTableSchema(workspaceId, entityType);
+        int filteredEntityCount = StringUtils.isNotBlank(filterTerms) ? singleTenantDao.getFilteredEntityCount(workspaceId, entityType, filterTerms, schema) : totalEntityCount;
         EntityQueryResultMetadata entityQueryResultMetadata = new EntityQueryResultMetadata(totalEntityCount, filteredEntityCount, (int) Math.ceil(filteredEntityCount / (double) pageSize));
         return new EntityQueryResult(queryParameters, entityQueryResultMetadata, filteredEntityCount > 0 ? singleTenantDao.getSelectedEntities(entityType, pageSize,
-                (page-1) * pageSize, filterTerms, sortField, sortDirection, fields, workspaceId) : Collections.emptyList());
+                (page-1) * pageSize, filterTerms, sortField, sortDirection, fields, workspaceId, schema) : Collections.emptyList());
     }
 
     private Object convertToType(Object val, DataTypeMapping typeMapping) {
@@ -92,31 +90,35 @@ public class SingleTenantEntityController {
 
     private void createEntityTypeAndAddEntities(UUID workspaceId, String entityType, LinkedHashMap<String, DataTypeMapping> schema, List<EntityUpsert> upsertsForType) {
         List<Entity> entities = convertToEntities(upsertsForType, entityType, schema);
-        List<SingleTenantEntityReference> entityReferences = referenceService.findEntityReferences(entities);
-        Set<EntityType> referencedEntityTypes = entityReferences.stream().map(SingleTenantEntityReference::getReferencedEntityType).collect(Collectors.toSet());
-
-        singleTenantDao.createEntityType(workspaceId, schema, entityType);
-        schema.put(ENTITY_ID.getColumnName(), DataTypeMapping.STRING);
-        schema.put(ALL_ATTRIBUTES.getColumnName(), DataTypeMapping.STRING);
-        singleTenantDao.insertEntities(workspaceId, entityType, entities, schema);
+        Set<SingleTenantEntityReference> entityReferences = referenceService.attachRefValueToEntitiesAndFindReferenceColumns(entities);
+        singleTenantDao.createEntityType(workspaceId, schema, entityType, entityReferences);
+        singleTenantDao.batchUpsert(workspaceId, entityType, entities, schema);
     }
 
-    private Map<String, DataTypeMapping> addOrUpdateColumnIfNeeded(UUID workspaceId, String entityType, Map<String, DataTypeMapping> schema, Map<String, DataTypeMapping> existingTableSchema) {
+    private void addOrUpdateColumnIfNeeded(UUID workspaceId, String entityType, Map<String, DataTypeMapping> schema, Map<String,
+            DataTypeMapping> existingTableSchema, List<Entity> entities) {
         MapDifference<String, DataTypeMapping> difference = Maps.difference(existingTableSchema, schema);
         Map<String, DataTypeMapping> colsToAdd = difference.entriesOnlyOnRight();
+        Set<SingleTenantEntityReference> references = referenceService.attachRefValueToEntitiesAndFindReferenceColumns(entities);
+        Map<String, List<SingleTenantEntityReference>> newRefCols = references.stream().collect(Collectors.groupingBy(SingleTenantEntityReference::getReferenceColName));
         for (String col : colsToAdd.keySet()) {
             singleTenantDao.addColumn(workspaceId, entityType, col, colsToAdd.get(col));
-            existingTableSchema.put(col, colsToAdd.get(col));
+            if(newRefCols.containsKey(col)){
+                singleTenantDao.addForeignKeyForReference(entityType, newRefCols.get(col).get(0).getReferencedEntityType().getName(), workspaceId, col);
+            }
         }
+        if(!singleTenantDao.getReferenceCols(workspaceId, entityType).containsAll(newRefCols.keySet())){
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "It looks like you're attempting to assign a reference " +
+                    "to an existing column that was not configured for references");
+        }
+        //TODO: something about situation where user tries to store a reference value in non-reference column
         Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference.entriesDiffering();
         DataTypeInferer inferer = new DataTypeInferer();
         for (String column : differenceMap.keySet()) {
             MapDifference.ValueDifference<DataTypeMapping> valueDifference = differenceMap.get(column);
             DataTypeMapping updatedColType = inferer.selectBestType(valueDifference.leftValue(), valueDifference.rightValue());
             singleTenantDao.changeColumn(workspaceId, entityType, column, updatedColType);
-            existingTableSchema.put(column, updatedColType);
         }
-        return existingTableSchema;
     }
 
     @PostMapping("/st/api/workspaces/{workspaceId}/entities/batchUpsert")
@@ -132,34 +134,16 @@ public class SingleTenantEntityController {
         Map<String, Map<String, DataTypeMapping>> schemas = dataTypeInferer.inferTypes(entitiesToUpdate);
         for (String entityType : entityTypes) {
             Map<String, DataTypeMapping> schema = schemas.get(entityType);
-            LinkedHashMap<String, DataTypeMapping> inferredOrderedSchema = new LinkedHashMap<>(schema);
+            LinkedHashMap<String, DataTypeMapping> columnsModifiedSchema = new LinkedHashMap<>(schema);
             List<EntityUpsert> upsertsForType = eUpsertsByType.get(entityType);
             if(!singleTenantDao.entityTypeExists(workspaceId, entityType)){
-                createEntityTypeAndAddEntities(workspaceId, entityType, inferredOrderedSchema, upsertsForType);
+                createEntityTypeAndAddEntities(workspaceId, entityType, columnsModifiedSchema, upsertsForType);
             } else {
                 //table exists, add columns if needed
-                Map<String, DataTypeMapping> existingTableSchema = addOrUpdateColumnIfNeeded(workspaceId, entityType, schema, singleTenantDao.getExistingTableSchema(workspaceId, entityType));
-                Set<String> existingEntityNames = singleTenantDao.getEntityNames(workspaceId, entityType);
-                //need to divide up between inserts and updates
-                List<Entity> forUpdates = new ArrayList<>();
-                List<Entity> forInsert = new ArrayList<>();
-                for (EntityUpsert entityUpsert : upsertsForType) {
-                    Entity entity = new Entity(entityUpsert.getName(), new EntityType(entityType), new EntityAttributes(new HashMap<>()));
-                    updateAttributesForEntity(entityUpsert, entity, existingTableSchema);
-                    if(existingEntityNames.contains(entityUpsert.getName().getEntityIdentifier())){
-                        forUpdates.add(entity);
-                    } else {
-                        forInsert.add(entity);
-                    }
-                }
-                LinkedHashMap<String, DataTypeMapping> orderedFullSchema = new LinkedHashMap<>(existingTableSchema);
-                if(forInsert.size() > 0){
-                    singleTenantDao.insertEntities(workspaceId, entityType, forInsert, orderedFullSchema);
-                }
-                if(forUpdates.size() > 0){
-                    singleTenantDao.updateEntities(workspaceId, entityType, forUpdates, orderedFullSchema);
-                }
-            }
+                List<Entity> entities = convertToEntities(upsertsForType, entityType, columnsModifiedSchema);
+                addOrUpdateColumnIfNeeded(workspaceId, entityType, schema,
+                        singleTenantDao.getExistingTableSchema(workspaceId, entityType), entities);
+                singleTenantDao.batchUpsert(workspaceId, entityType, entities, columnsModifiedSchema);            }
         }
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }

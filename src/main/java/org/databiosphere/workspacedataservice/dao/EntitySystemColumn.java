@@ -1,9 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
 public enum EntitySystemColumn {
-    ENTITY_ID("sys_name"),
-    ALL_ATTRIBUTES("sys_all_attribute_values");
-
+    ENTITY_ID("sys_name");
     private final String columnName;
 
     EntitySystemColumn(String columnName){

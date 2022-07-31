@@ -1,38 +1,39 @@
 package org.databiosphere.workspacedataservice.service.model;
 
-import org.databiosphere.workspacedataservice.shared.model.EntityId;
 import org.databiosphere.workspacedataservice.shared.model.EntityType;
 
 public class SingleTenantEntityReference {
 
-    private final EntityId entityName;
-
-    private final EntityType entityType;
+    private final String referenceColName;
 
     private final EntityType referencedEntityType;
 
-    private final EntityId referencedEntityName;
-
-    public SingleTenantEntityReference(EntityId entityName, EntityType entityType, EntityType referencedEntityType, EntityId referencedEntityName) {
-        this.entityName = entityName;
-        this.entityType = entityType;
+    public SingleTenantEntityReference(String referenceColName, EntityType referencedEntityType) {
+        this.referenceColName = referenceColName;
         this.referencedEntityType = referencedEntityType;
-        this.referencedEntityName = referencedEntityName;
     }
 
-    public EntityId getEntityName() {
-        return entityName;
-    }
-
-    public EntityType getEntityType() {
-        return entityType;
+    public String getReferenceColName() {
+        return referenceColName;
     }
 
     public EntityType getReferencedEntityType() {
         return referencedEntityType;
     }
 
-    public EntityId getReferencedEntityName() {
-        return referencedEntityName;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof SingleTenantEntityReference that)) return false;
+
+        if (!getReferenceColName().equals(that.getReferenceColName())) return false;
+        return getReferencedEntityType().equals(that.getReferencedEntityType());
+    }
+
+    @Override
+    public int hashCode() {
+        int result = getReferenceColName().hashCode();
+        result = 31 * result + getReferencedEntityType().hashCode();
+        return result;
     }
 }
