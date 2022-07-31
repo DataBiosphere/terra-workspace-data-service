@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 class DataTypeInfererTest {
 
     DataTypeInferer inferer = new DataTypeInferer();
@@ -18,7 +20,10 @@ class DataTypeInfererTest {
     @Test
     void inferTypes() {
         Map<String, Map<String, DataTypeMapping>> result = inferer.inferTypes(getSomeEntityUpserts());
-        System.out.println("hello");
+        assertThat(result.get("participants")).containsOnlyKeys("string_val", "int_val", "json_val", "date_val", "date_time_val");
+        assertThat(result.get("participants").values())
+                .containsExactlyInAnyOrder(DataTypeMapping.DATE, DataTypeMapping.JSON, DataTypeMapping.STRING, DataTypeMapping.LONG,
+                        DataTypeMapping.DATE_TIME);
     }
 
     private static List<EntityUpsert> getSomeEntityUpserts(){
@@ -28,7 +33,6 @@ class DataTypeInfererTest {
                     "string_val", RandomStringUtils.random(10), "json_val", "[\"a\", \"b\"]", "date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00")));
             result.add(createUpsert(e));
         }
-        result.add(createUpsert(new Entity(new EntityId("entity_wild"), new EntityType("participants"), new EntityAttributes(Map.of("json_val", "foo")))));
         return result;
     }
 
