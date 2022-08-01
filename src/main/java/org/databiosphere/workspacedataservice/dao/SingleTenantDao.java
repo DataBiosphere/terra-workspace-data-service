@@ -147,7 +147,7 @@ public class SingleTenantDao {
     }
 
     private String getInsertParamList(Collection<DataTypeMapping> existingTableSchema) {
-        return existingTableSchema.stream().map(m -> m.getPostgresType().equalsIgnoreCase("jsonb") ? "? :: jsonb" : "?").collect(Collectors.joining(", "));
+        return existingTableSchema.stream().map(m -> m == DataTypeMapping.FOR_ATTRIBUTE_DEL ? "?" : m.getPostgresType().equalsIgnoreCase("jsonb") ? "? :: jsonb" : "?").collect(Collectors.joining(", "));
     }
 
 

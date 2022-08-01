@@ -8,7 +8,7 @@ import java.util.Map;
 public enum DataTypeMapping {
     DATE(LocalDate.class, "date"), DATE_TIME(LocalDateTime.class, "timestamptz"),
     STRING(String.class, "text"), JSON(String.class, "jsonb"), LONG(Long.class, "bigint"),
-    DOUBLE(Double.class, "numeric");
+    DOUBLE(Double.class, "numeric"), FOR_ATTRIBUTE_DEL();
 
     private Class javaType;
 
@@ -28,6 +28,9 @@ public enum DataTypeMapping {
     DataTypeMapping(Class javaType, String postgresType) {
         this.javaType = javaType;
         this.postgresType = postgresType;
+    }
+
+    DataTypeMapping() {
     }
 
     public Class getJavaType() {

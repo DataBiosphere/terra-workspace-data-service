@@ -63,6 +63,7 @@ public class SingleTenantEntityController {
             case DATE -> LocalDate.parse(val.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
             case DATE_TIME -> LocalDateTime.parse(val.toString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
             case LONG, DOUBLE, STRING, JSON -> val;
+            case FOR_ATTRIBUTE_DEL -> throw new IllegalArgumentException("Egad, this should not happen");
         };
     }
 
@@ -132,6 +133,9 @@ public class SingleTenantEntityController {
         DataTypeInferer inferer = new DataTypeInferer();
         for (String column : differenceMap.keySet()) {
             MapDifference.ValueDifference<DataTypeMapping> valueDifference = differenceMap.get(column);
+            if(valueDifference.rightValue() == DataTypeMapping.FOR_ATTRIBUTE_DEL){
+                continue;
+            }
             DataTypeMapping updatedColType = inferer.selectBestType(valueDifference.leftValue(), valueDifference.rightValue());
             singleTenantDao.changeColumn(workspaceId, entityType, column, updatedColType);
         }

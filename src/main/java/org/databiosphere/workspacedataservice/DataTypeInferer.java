@@ -46,7 +46,7 @@ public class DataTypeInferer {
                 Map<String, DataTypeMapping> attributeMappingForType = result.get(entityType);
                 //we need to have the attribute being removed present in the schema or else we won't generate
                 //the proper update
-                attributeMappingForType.put(removeAttr.getAttributeName(), STRING);
+                attributeMappingForType.put(removeAttr.getAttributeName(), FOR_ATTRIBUTE_DEL);
             }
         }
         return result;
