@@ -18,7 +18,7 @@ public enum DataTypeMapping {
 
     static {
         MAPPING_BY_PG_TYPE.put("date", DATE);
-        MAPPING_BY_PG_TYPE.put("timestamptz", DATE_TIME);
+        MAPPING_BY_PG_TYPE.put("timestamp with time zone", DATE_TIME);
         MAPPING_BY_PG_TYPE.put("text", STRING);
         MAPPING_BY_PG_TYPE.put("jsonb", JSON);
         MAPPING_BY_PG_TYPE.put("bigint", LONG);
