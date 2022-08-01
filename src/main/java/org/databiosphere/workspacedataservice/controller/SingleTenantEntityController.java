@@ -6,11 +6,13 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.DataTypeInferer;
+import org.databiosphere.workspacedataservice.MissingReferencedTableException;
 import org.databiosphere.workspacedataservice.dao.SingleTenantDao;
 import org.databiosphere.workspacedataservice.service.SingleTenantEntityRefService;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference;
 import org.databiosphere.workspacedataservice.shared.model.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -91,7 +93,12 @@ public class SingleTenantEntityController {
     private void createEntityTypeAndAddEntities(UUID workspaceId, String entityType, LinkedHashMap<String, DataTypeMapping> schema, List<EntityUpsert> upsertsForType) {
         List<Entity> entities = convertToEntities(upsertsForType, entityType, schema);
         Set<SingleTenantEntityReference> entityReferences = referenceService.attachRefValueToEntitiesAndFindReferenceColumns(entities);
-        singleTenantDao.createEntityType(workspaceId, schema, entityType, entityReferences);
+        try {
+            singleTenantDao.createEntityType(workspaceId, schema, entityType, entityReferences);
+        } catch (MissingReferencedTableException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "It looks like you're attempting to assign a reference " +
+                    "to a table that does not exist");
+        }
         singleTenantDao.batchUpsert(workspaceId, entityType, entities, schema);
     }
 
@@ -101,10 +108,19 @@ public class SingleTenantEntityController {
         Map<String, DataTypeMapping> colsToAdd = difference.entriesOnlyOnRight();
         Set<SingleTenantEntityReference> references = referenceService.attachRefValueToEntitiesAndFindReferenceColumns(entities);
         Map<String, List<SingleTenantEntityReference>> newRefCols = references.stream().collect(Collectors.groupingBy(SingleTenantEntityReference::getReferenceColName));
+        //TODO: better communicate to the user that they're trying to assign multiple entity types to a single column
+        Preconditions.checkArgument(newRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty());
         for (String col : colsToAdd.keySet()) {
             singleTenantDao.addColumn(workspaceId, entityType, col, colsToAdd.get(col));
-            if(newRefCols.containsKey(col)){
-                singleTenantDao.addForeignKeyForReference(entityType, newRefCols.get(col).get(0).getReferencedEntityType().getName(), workspaceId, col);
+            if(newRefCols.containsKey(col)) {
+                String referencedEntityType = null;
+                try {
+                    referencedEntityType = newRefCols.get(col).get(0).getReferencedEntityType().getName();
+                    singleTenantDao.addForeignKeyForReference(entityType, referencedEntityType, workspaceId, col);
+                } catch (MissingReferencedTableException e) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "It looks like you're attempting to assign a reference " +
+                            "to a table, " + referencedEntityType + ", that does not exist");
+                }
             }
         }
         if(!singleTenantDao.getReferenceCols(workspaceId, entityType).stream().map(SingleTenantEntityReference::getReferenceColName)
@@ -131,17 +147,16 @@ public class SingleTenantEntityController {
         entitiesToUpdate.forEach(e -> eUpsertsByType.put(e.getEntityType(), e));
         Set<String> entityTypes = eUpsertsByType.keySet();
         DataTypeInferer dataTypeInferer = new DataTypeInferer();
-        Map<String, Map<String, DataTypeMapping>> schemas = dataTypeInferer.inferTypes(entitiesToUpdate);
+        Map<String, LinkedHashMap<String, DataTypeMapping>> schemas = dataTypeInferer.inferTypes(entitiesToUpdate);
         for (String entityType : entityTypes) {
-            Map<String, DataTypeMapping> schema = schemas.get(entityType);
-            LinkedHashMap<String, DataTypeMapping> columnsModifiedSchema = new LinkedHashMap<>(schema);
+            LinkedHashMap<String, DataTypeMapping> columnsModifiedSchema = schemas.get(entityType) == null ? new LinkedHashMap<>() : schemas.get(entityType);
             List<EntityUpsert> upsertsForType = eUpsertsByType.get(entityType);
             if(!singleTenantDao.entityTypeExists(workspaceId, entityType)){
                 createEntityTypeAndAddEntities(workspaceId, entityType, columnsModifiedSchema, upsertsForType);
             } else {
                 //table exists, add columns if needed
                 List<Entity> entities = convertToEntities(upsertsForType, entityType, columnsModifiedSchema);
-                addOrUpdateColumnIfNeeded(workspaceId, entityType, schema,
+                addOrUpdateColumnIfNeeded(workspaceId, entityType, columnsModifiedSchema,
                         singleTenantDao.getExistingTableSchema(workspaceId, entityType), entities);
                 singleTenantDao.batchUpsert(workspaceId, entityType, entities, columnsModifiedSchema);            }
         }
@@ -162,11 +177,15 @@ public class SingleTenantEntityController {
         }
 
         if(entitiesInDbCount != entitiesToDelete.size()){
-            return new ResponseEntity<>("Not all entities exist", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>("Not all entities exist", HttpStatus.NOT_FOUND);
         }
 
         for(String entityTypeName: entitiesByType.keySet()){
-            singleTenantDao.deleteEntities(entityTypeName,  entitiesByType.get(entityTypeName), workspaceId);
+            try {
+                singleTenantDao.deleteEntities(entityTypeName,  entitiesByType.get(entityTypeName), workspaceId);
+            } catch (DataIntegrityViolationException e) {
+                return new ResponseEntity<>("Can't delete referenced entities", HttpStatus.BAD_REQUEST);
+            }
         }
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }

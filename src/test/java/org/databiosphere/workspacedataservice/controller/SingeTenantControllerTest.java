@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -40,19 +41,6 @@ public class SingeTenantControllerTest {
         assertThat(actual).isEqualTo(expected);
     }
 
-    private EntityUpsert createEntityUpsert(String entityIdentifier, String entityType, Map<String, Object> entityAttributes) {
-        EntityUpsert eu = new EntityUpsert();
-        eu.setName(new EntityId(entityIdentifier));
-        eu.setEntityType(entityType);
-        List<UpsertOperation> ops = new ArrayList<>();
-        for (String attrName : entityAttributes.keySet()) {
-            UpsertOperation operation = new UpsertOperation(UpsertAction.AddUpdateAttribute, attrName, entityAttributes.get(attrName));
-            ops.add(operation);
-        }
-        eu.setOperations(ops);
-        return eu;
-    }
-
     @Test
     public void canCreateAndDeleteNewEntity(){
         String entityName = "participant_1";
@@ -65,7 +53,8 @@ public class SingeTenantControllerTest {
     }
 
     private void createOrUpdateEntity(String entityName, String entityType, Map<String, Object> attributes){
-        ResponseEntity<String> response = controller.batchUpsert(testWorkspace, Collections.singletonList(createEntityUpsert(entityName, entityType, attributes)));
+        ResponseEntity<String> response = controller.batchUpsert(testWorkspace,
+                Collections.singletonList(TestUtils.createEntityUpsert(entityName, entityType, attributes)));
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
 

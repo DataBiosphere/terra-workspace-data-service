@@ -1,12 +1,14 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import com.google.common.collect.Lists;
+import org.databiosphere.workspacedataservice.MissingReferencedTableException;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
 import org.databiosphere.workspacedataservice.shared.model.EntityAttributes;
 import org.databiosphere.workspacedataservice.shared.model.EntityId;
 import org.databiosphere.workspacedataservice.shared.model.EntityType;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -47,7 +49,7 @@ public class SingleTenantDao {
                 new MapSqlParameterSource(Map.of("workspaceId", workspaceId.toString(), "entityType", entityType)), Boolean.class);
     }
 
-    public void createEntityType(UUID workspaceId, Map<String, DataTypeMapping> tableInfo, String tableName, Set<SingleTenantEntityReference> referencedEntityTypes){
+    public void createEntityType(UUID workspaceId, Map<String, DataTypeMapping> tableInfo, String tableName, Set<SingleTenantEntityReference> referencedEntityTypes) throws MissingReferencedTableException {
         String columnDefs = genColumnDefs(tableInfo);
         namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(tableName, workspaceId) + "( " + columnDefs + ")");
         for (SingleTenantEntityReference referencedEntityType : referencedEntityTypes) {
@@ -82,8 +84,8 @@ public class SingleTenantDao {
     }
 
     private String genColumnDefs(Map<String, DataTypeMapping> tableInfo) {
-        return ENTITY_ID.getColumnName() + " text primary key, "
-                + tableInfo.entrySet().stream().map(e -> "\"" + e.getKey() + "\" " + e.getValue().getPostgresType()).collect(Collectors.joining(", "));
+        return ENTITY_ID.getColumnName() + " text primary key "
+                + (tableInfo.size() > 0 ? ", " + tableInfo.entrySet().stream().map(e -> "\"" + e.getKey() + "\" " + e.getValue().getPostgresType()).collect(Collectors.joining(", ")) : "");
     }
 
     public void batchUpsert(UUID workspaceId, String entityType, List<Entity> entities, LinkedHashMap<String, DataTypeMapping> schema){
@@ -92,14 +94,23 @@ public class SingleTenantDao {
                 getInsertBatchArgs(entities, schema.keySet()));
     }
 
-    public void addForeignKeyForReference(String entityType, String referencedEntityType, UUID workspaceId, String referenceColName){
-        String addFk = "alter table " + getQualifiedTableName(entityType, workspaceId) + " add foreign key (\"" + referenceColName + "\") " +
-                "references " + getQualifiedTableName(referencedEntityType, workspaceId);
-        namedTemplate.getJdbcTemplate().execute(addFk);
+    public void addForeignKeyForReference(String entityType, String referencedEntityType, UUID workspaceId, String referenceColName) throws MissingReferencedTableException {
+        try {
+            String addFk = "alter table " + getQualifiedTableName(entityType, workspaceId) + " add foreign key (\"" + referenceColName + "\") " +
+                    "references " + getQualifiedTableName(referencedEntityType, workspaceId);
+            namedTemplate.getJdbcTemplate().execute(addFk);
+        } catch (DataAccessException e) {
+            if(e.getRootCause() instanceof SQLException){
+                SQLException sqlEx = (SQLException) e.getRootCause();
+                if(sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("42P01")){
+                    throw new MissingReferencedTableException();
+                }
+            }
+        }
     }
 
     public List<SingleTenantEntityReference> getReferenceCols(UUID workspaceId, String tableName){
-        return namedTemplate.query("SELECT kcu.column_name, kcu.table_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu " +
+        return namedTemplate.query("SELECT kcu.column_name, ccu.table_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu " +
                         "ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema " +
                         "JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema " +
                         "WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = :workspace AND tc.table_name= :tableName",
@@ -132,7 +143,7 @@ public class SingleTenantDao {
     private String genInsertStatement(UUID workspaceId, String entityType, Map<String, DataTypeMapping> schema) {
         return "insert into " + getQualifiedTableName(entityType, workspaceId) + "(" +
                 getInsertColList(schema.keySet()) + ") values (" + getInsertParamList(schema.values()) +") " +
-                "on conflict (" + ENTITY_ID.getColumnName() +") do update set " + genColUpsertUpdates(schema.keySet());
+                "on conflict (" + ENTITY_ID.getColumnName() +") " + (schema.keySet().size() == 1 ? "do nothing" : "do update set " + genColUpsertUpdates(schema.keySet()));
     }
 
     private String getInsertParamList(Collection<DataTypeMapping> existingTableSchema) {
@@ -155,7 +166,7 @@ public class SingleTenantDao {
     }
 
     private String buildFilterSql(Set<String> cols) {
-        return cols.stream().map(c -> c + " ilike :filterTerms").collect(Collectors.joining(" OR "));
+        return cols.stream().map(c -> "\"" + c + "\"::varchar ilike :filterTerms").collect(Collectors.joining(" OR "));
     }
 
     public int getEntityCount(String entityTypeName, List<String> entityNamesToDelete, UUID workspaceId) {

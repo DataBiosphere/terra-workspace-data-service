@@ -5,10 +5,7 @@ import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,7 +16,7 @@ class DataTypeInfererTest {
 
     @Test
     void inferTypes() {
-        Map<String, Map<String, DataTypeMapping>> result = inferer.inferTypes(getSomeEntityUpserts());
+        Map<String, LinkedHashMap<String, DataTypeMapping>> result = inferer.inferTypes(getSomeEntityUpserts());
         assertThat(result.get("participants")).containsOnlyKeys("string_val", "int_val", "json_val", "date_val", "date_time_val");
         assertThat(result.get("participants").values())
                 .containsExactlyInAnyOrder(DataTypeMapping.DATE, DataTypeMapping.JSON, DataTypeMapping.STRING, DataTypeMapping.LONG,
