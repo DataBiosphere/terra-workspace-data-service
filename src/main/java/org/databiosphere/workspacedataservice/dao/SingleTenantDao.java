@@ -20,6 +20,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.databiosphere.workspacedataservice.dao.EntitySystemColumn.ENTITY_ID;
+import static org.databiosphere.workspacedataservice.service.EntityReferenceService.ENTITY_NAME_KEY;
+import static org.databiosphere.workspacedataservice.service.EntityReferenceService.ENTITY_TYPE_KEY;
 
 @Repository
 public class SingleTenantDao {
@@ -96,12 +98,13 @@ public class SingleTenantDao {
         namedTemplate.getJdbcTemplate().execute(addFk);
     }
 
-    public Set<String> getReferenceCols(UUID workspaceId, String tableName){
-        return new HashSet<>(namedTemplate.queryForList("SELECT kcu.column_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu " +
-                "ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema " +
-                "JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema " +
-                "WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = :workspace AND tc.table_name= :tableName",
-                Map.of("workspace", workspaceId.toString(), "tableName", tableName), String.class));
+    public List<SingleTenantEntityReference> getReferenceCols(UUID workspaceId, String tableName){
+        return namedTemplate.query("SELECT kcu.column_name, kcu.table_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu " +
+                        "ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema " +
+                        "JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema " +
+                        "WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = :workspace AND tc.table_name= :tableName",
+                Map.of("workspace", workspaceId.toString(), "tableName", tableName), (rs, rowNum) ->
+                        new SingleTenantEntityReference(rs.getString("column_name"), new EntityType(rs.getString("table_name"))));
     }
 
 
@@ -178,8 +181,11 @@ public class SingleTenantDao {
     private class EntityRowMapper implements RowMapper<Entity> {
         private final String entityType;
 
-        private EntityRowMapper(String entityType) {
+        private final Map<String, String> referenceColToTable;
+
+        private EntityRowMapper(String entityType, Map<String, String> referenceColToTable) {
             this.entityType = entityType;
+            this.referenceColToTable = referenceColToTable;
         }
 
         @Override
@@ -199,7 +205,14 @@ public class SingleTenantDao {
                     if (systemCols.contains(columnName)) {
                         continue;
                     }
-                    attributes.put(columnName, rs.getObject(columnName));
+                    if(referenceColToTable.size() > 0 && referenceColToTable.containsKey(columnName)){
+                        Map<String, String> refMap = new HashMap<>();
+                        refMap.put(ENTITY_TYPE_KEY, referenceColToTable.get(columnName));
+                        refMap.put(ENTITY_NAME_KEY, rs.getString(columnName));
+                        attributes.put(columnName, refMap);
+                    } else {
+                        attributes.put(columnName, rs.getObject(columnName));
+                    }
                 }
                 return attributes;
             } catch (SQLException e) {
@@ -209,16 +222,19 @@ public class SingleTenantDao {
     }
 
     public List<Entity> getSelectedEntities(String entityType, int pageSize, int i, String filterTerms, String sortField,
-                                            String sortDirection, List<String> fields, UUID workspaceId, Map<String, DataTypeMapping> schema) {
+                                            String sortDirection, List<String> fields, UUID workspaceId,
+                                            Map<String, DataTypeMapping> schema, List<SingleTenantEntityReference> referenceCols) {
+        Map<String, String> refColMapping = new HashMap<>();
+        referenceCols.forEach(rc -> refColMapping.put(rc.getReferenceColName(), rc.getReferencedEntityType().getName()));
         if(filterTerms.isBlank()){
             return namedTemplate.getJdbcTemplate().query("select " + getFieldList(fields) + " from "
                     + getQualifiedTableName(entityType, workspaceId) + " order by " + sortField
-                    + " " + sortDirection + " limit " + pageSize + " offset " + i, new EntityRowMapper(entityType));
+                    + " " + sortDirection + " limit " + pageSize + " offset " + i, new EntityRowMapper(entityType, refColMapping));
         } else {
             return namedTemplate.query("select " + getFieldList(fields) + " from "
                     + getQualifiedTableName(entityType, workspaceId) + " where " + buildFilterSql(schema.keySet()) + " order by " + sortField
                     + " " + sortDirection + " limit " + pageSize + " offset " + i, new MapSqlParameterSource("filterTerms", "%"+filterTerms+"%"),
-                    new EntityRowMapper(entityType));
+                    new EntityRowMapper(entityType, refColMapping));
         }
 
     }

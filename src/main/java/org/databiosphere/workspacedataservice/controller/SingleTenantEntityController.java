@@ -53,7 +53,7 @@ public class SingleTenantEntityController {
         int filteredEntityCount = StringUtils.isNotBlank(filterTerms) ? singleTenantDao.getFilteredEntityCount(workspaceId, entityType, filterTerms, schema) : totalEntityCount;
         EntityQueryResultMetadata entityQueryResultMetadata = new EntityQueryResultMetadata(totalEntityCount, filteredEntityCount, (int) Math.ceil(filteredEntityCount / (double) pageSize));
         return new EntityQueryResult(queryParameters, entityQueryResultMetadata, filteredEntityCount > 0 ? singleTenantDao.getSelectedEntities(entityType, pageSize,
-                (page-1) * pageSize, filterTerms, sortField, sortDirection, fields, workspaceId, schema) : Collections.emptyList());
+                (page-1) * pageSize, filterTerms, sortField, sortDirection, fields, workspaceId, schema, singleTenantDao.getReferenceCols(workspaceId, entityType)) : Collections.emptyList());
     }
 
     private Object convertToType(Object val, DataTypeMapping typeMapping) {
@@ -107,7 +107,8 @@ public class SingleTenantEntityController {
                 singleTenantDao.addForeignKeyForReference(entityType, newRefCols.get(col).get(0).getReferencedEntityType().getName(), workspaceId, col);
             }
         }
-        if(!singleTenantDao.getReferenceCols(workspaceId, entityType).containsAll(newRefCols.keySet())){
+        if(!singleTenantDao.getReferenceCols(workspaceId, entityType).stream().map(SingleTenantEntityReference::getReferenceColName)
+                .collect(Collectors.toSet()).containsAll(newRefCols.keySet())){
             throw new ResponseStatusException(HttpStatus.CONFLICT, "It looks like you're attempting to assign a reference " +
                     "to an existing column that was not configured for references");
         }
