@@ -102,7 +102,7 @@ public class SingleTenantDao {
         } catch (DataAccessException e) {
             if(e.getRootCause() instanceof SQLException){
                 SQLException sqlEx = (SQLException) e.getRootCause();
-                if(sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("42P01")){
+                if(sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("42P01")){
                     throw new MissingReferencedTableException();
                 }
             }
