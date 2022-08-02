@@ -111,4 +111,4 @@ repositories {
 dependencies {
     implementation(group: 'org.databiosphere', name: 'workspacedataservice-client', version: 'x.x.x')
 ```
-The lastest version can be seen in our `build.gradle` file in the root directory.
+The latest version can be seen under [Tags](https://github.com/DataBiosphere/terra-workspace-data-service/tags).
