@@ -10,7 +10,8 @@ Make sure all unit tests pass, including those you wrote for any new functionali
 ## Opening a Pull Request
 
 When you open a pull request, add the JIRA issue number (e.g. `ABC-123`) to the PR title. This will make a reference from JIRA to the GitHub issue. Describe your changes, including instructions on how to reproduce the behavior and any screenshots if applicable. 
-In the comments for one of your PRs, include '#patch', '#minor', or '#major' to increment the version.
+
+By default, each merge to main will be considered a 'patch' and the version will update accordingly.  For larger version updates, include '#minor' or '#major' as appropriate in one of the comments to your PRs to increment the version.
 
 ## PR approval process
 
