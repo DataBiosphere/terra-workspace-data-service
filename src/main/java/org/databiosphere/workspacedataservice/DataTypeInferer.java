@@ -59,6 +59,9 @@ public class DataTypeInferer {
         if(existing == LONG && newMapping == DOUBLE){
             return DOUBLE;
         }
+        if(existing == DOUBLE && newMapping == LONG){
+            return DOUBLE;
+        }
         return STRING;
     }
 
