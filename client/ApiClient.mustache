@@ -1,6 +1,6 @@
 {{!--
-  Copied from the https://github.com/swagger-api/swagger-codegen-generators tagged release 1.0.24:
-  https://github.com/swagger-api/swagger-codegen-generators/blob/v1.0.24/src/main/resources/handlebars/Java/libraries/jersey2/ApiClient.mustache
+  Copied from the https://github.com/swagger-api/swagger-codegen-generators tagged release 1.0.34:
+https://github.com/swagger-api/swagger-codegen-generators/blob/v1.0.34/src/main/resources/handlebars/Java/libraries/jersey2/ApiClient.mustache
 
   Necessary to modify the template for PATCH to work.
 
@@ -10,6 +10,7 @@
   // Code
   {{! End Terra change }}
 --}}
+
 package {{invokerPackage}};
 
 import javax.ws.rs.client.Client;
@@ -27,15 +28,13 @@ import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.client.HttpUrlConnectorProvider;
 import org.glassfish.jersey.jackson.JacksonFeature;
-
+{{^supportJava6}}
+import org.glassfish.jersey.logging.LoggingFeature;
+{{/supportJava6}}
 {{! Begin Terra change }}
 // Import the connector we use to workaround the JDK17 issues in Jersey
 import org.glassfish.jersey.jdk.connector.JdkConnectorProvider;
 {{! End Terra change }}
-
-{{^supportJava6}}
-import org.glassfish.jersey.logging.LoggingFeature;
-{{/supportJava6}}
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.MultiPart;
@@ -46,6 +45,7 @@ import java.io.InputStream;
 
 {{^supportJava6}}
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 {{/supportJava6}}
 {{#supportJava6}}
@@ -669,9 +669,9 @@ public class ApiClient {
     }
 
     if (tempFolderPath == null)
-      return File.createTempFile(prefix, suffix);
+      return Files.createTempFile(prefix, suffix).toFile();
     else
-      return File.createTempFile(prefix, suffix, new File(tempFolderPath));
+      return Files.createTempFile(Paths.get(tempFolderPath), prefix, suffix).toFile();
   }
 
   /**
@@ -810,11 +810,11 @@ public class ApiClient {
   }
 
   protected void performAdditionalClientConfiguration(ClientConfig clientConfig) {
-    {{! Begin Terra change }}
-    // For JDK17, we need to use this connection provider to work around the way Jersey
-    // implements PATCH
-    clientConfig.connectorProvider(new JdkConnectorProvider());
-    {{! End Terra change }}
+        {{! Begin Terra change }}
+        // For JDK17, we need to use this connection provider to work around the way Jersey
+        // implements PATCH
+        clientConfig.connectorProvider(new JdkConnectorProvider());
+        {{! End Terra change }}
   }
 
   protected Map<String, List<String>> buildResponseHeaders(Response response) {
