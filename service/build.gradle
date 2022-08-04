@@ -1,0 +1,56 @@
+plugins {
+	id 'org.springframework.boot'
+
+	id 'com.google.cloud.tools.jib'
+	id 'org.hidetake.swagger.generator'
+	id 'org.sonarqube'
+}
+
+repositories {
+	mavenCentral()
+	maven { url 'https://broadinstitute.jfrog.io/artifactory/libs-snapshot' }
+	maven { url 'https://broadinstitute.jfrog.io/artifactory/libs-release' }
+}
+
+jib {
+	from {
+		// see https://github.com/broadinstitute/dsp-appsec-blessed-images/tree/main/jre
+		image = "us.gcr.io/broad-dsp-gcr-public/base/jre:17-distroless"
+	}
+
+	container {
+		mainClass = 'org.databiosphere.workspacedataservice.WorkspaceDataServiceApplication'
+	}
+}
+
+dependencies {
+
+	implementation 'org.springframework.boot:spring-boot-starter'
+	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.liquibase:liquibase-core'
+	implementation 'org.apache.commons:commons-lang3'
+	implementation 'com.google.guava:guava:31.1-jre'
+	implementation 'org.postgresql:postgresql'
+	implementation 'org.webjars:webjars-locator-core:0.52'
+	runtimeOnly 'org.webjars.npm:swagger-ui-dist:4.12.0'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
+}
+
+sonarqube {
+	properties {
+		property "sonar.projectKey", "DataBiosphere_workspace-data-service"
+		property "sonar.organization", "broad-databiosphere"
+		property "sonar.host.url", "https://sonarcloud.io"
+	}
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+	testLogging {
+		events = ["passed", "failed", "skipped", "started"]
+		exceptionFormat = "full"
+	}
+}
