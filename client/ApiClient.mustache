@@ -547,16 +547,16 @@ public class ApiClient {
   }
 
   /**
-   * Serialize the given Java object into string record according the given
+   * Serialize the given Java object into string entity according the given
    * Content-Type (only JSON is supported for now).
    * @param obj Object
    * @param formParams Form parameters
    * @param contentType Context type
-   * @return Record
+   * @return Entity
    * @throws ApiException API exception
    */
-  public Record<?> serialize(Object obj, Map<String, Object> formParams, String contentType) throws ApiException {
-    Record<?> record;
+  public Entity<?> serialize(Object obj, Map<String, Object> formParams, String contentType) throws ApiException {
+    Entity<?> entity;
     if (contentType.startsWith("multipart/form-data")) {
       MultiPart multiPart = new MultiPart();
       for (Entry<String, Object> param: formParams.entrySet()) {
@@ -570,18 +570,18 @@ public class ApiClient {
           multiPart.bodyPart(new FormDataBodyPart(contentDisp, parameterToString(param.getValue())));
         }
       }
-      record = Record.record(multiPart, MediaType.MULTIPART_FORM_DATA_TYPE);
+      entity = Entity.entity(multiPart, MediaType.MULTIPART_FORM_DATA_TYPE);
     } else if (contentType.startsWith("application/x-www-form-urlencoded")) {
       Form form = new Form();
       for (Entry<String, Object> param: formParams.entrySet()) {
         form.param(param.getKey(), parameterToString(param.getValue()));
       }
-      record = Record.record(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE);
+      entity = Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE);
     } else {
       // We let jersey handle the serialization
-      record = Record.record(obj, contentType);
+      entity = Entity.entity(obj, contentType);
     }
-    return record;
+    return entity;
   }
 
   /**
@@ -600,7 +600,7 @@ public class ApiClient {
 
     if ("byte[]".equals(returnType.toString())) {
       // Handle binary response (byte array).
-      return (T) response.readRecord(byte[].class);
+      return (T) response.readEntity(byte[].class);
     } else if (returnType.getRawType() == File.class) {
       // Handle file downloading.
       T file = (T) downloadFileFromResponse(response);
@@ -614,7 +614,7 @@ public class ApiClient {
     if (contentType == null)
       throw new ApiException(500, "missing Content-Type in response");
 
-    return response.readRecord(returnType);
+    return response.readEntity(returnType);
   }
 
   /**
@@ -627,11 +627,11 @@ public class ApiClient {
     try {
       File file = prepareDownloadFile(response);
 {{^supportJava6}}
-      Files.copy(response.readRecord(InputStream.class), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+      Files.copy(response.readEntity(InputStream.class), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
 {{/supportJava6}}
 {{#supportJava6}}
       // Java6 falls back to commons.io for file copying
-      FileUtils.copyToFile(response.readRecord(InputStream.class), file);
+      FileUtils.copyToFile(response.readEntity(InputStream.class), file);
 {{/supportJava6}}
       return file;
     } catch (IOException e) {
@@ -729,7 +729,7 @@ public class ApiClient {
       }
     }
 
-    Record<?> record = serialize(body, formParams, contentType);
+    Entity<?> entity = serialize(body, formParams, contentType);
 
     Response response = null;
 
@@ -737,13 +737,13 @@ public class ApiClient {
       if ("GET".equals(method)) {
         response = invocationBuilder.get();
       } else if ("POST".equals(method)) {
-        response = invocationBuilder.post(record);
+        response = invocationBuilder.post(entity);
       } else if ("PUT".equals(method)) {
-        response = invocationBuilder.put(record);
+        response = invocationBuilder.put(entity);
       } else if ("DELETE".equals(method)) {
         response = invocationBuilder.delete();
       } else if ("PATCH".equals(method)) {
-        response = invocationBuilder.method("PATCH", record);
+        response = invocationBuilder.method("PATCH", entity);
       } else if ("HEAD".equals(method)) {
         response = invocationBuilder.head();
       } else {
@@ -763,9 +763,9 @@ public class ApiClient {
       } else {
         String message = "error";
         String respBody = null;
-        if (response.hasRecord()) {
+        if (response.hasEntity()) {
           try {
-            respBody = String.valueOf(response.readRecord(String.class));
+            respBody = String.valueOf(response.readEntity(String.class));
             message = respBody;
           } catch (RuntimeException e) {
             // e.printStackTrace();
