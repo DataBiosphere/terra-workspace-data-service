@@ -6,6 +6,8 @@ plugins {
 	id "org.sonarqube" version "3.4.0.2513" apply false
 	id 'idea'
 	id 'org.hidetake.swagger.generator' version '2.19.2' apply false
+    id 'java'
+    id 'com.diffplug.spotless' version '6.8.0'
 }
 
 repositories { mavenCentral() }
@@ -37,7 +39,36 @@ subprojects {
 	tasks.withType(org.hidetake.gradle.swagger.generator.GenerateSwaggerCode).all {
 		jvmArgs = ['--add-opens=java.base/java.util=ALL-UNNAMED'] // for jvm 16+
 	}
-
 }
 
 idea.project.jdkName = '17'
+
+// Spotless configuration
+spotless {
+    java {
+        googleJavaFormat()
+        targetExclude("${buildDir}/**", "**/generated/**")
+    }
+    format 'misc', {
+        // define the files to apply `misc` to
+        target '*.gradle', '*.md', '.gitignore'
+
+        // N.B. checks for tabs vs. spaces but does not check the number of spaces
+        // https://github.com/diffplug/spotless/issues/794
+        indentWithSpaces()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+// disable for now. As a developer, re-enable these tasks and then run ./gradlew spotlessCheck
+// to see the results.
+tasks.spotlessJavaCheck.enabled = false
+tasks.spotlessMiscCheck.enabled = false
+
+tasks.named('test') {
+    useJUnitPlatform()
+    testLogging {
+        events = ["passed", "failed", "skipped", "started"]
+        exceptionFormat = "full"
+    }
+}

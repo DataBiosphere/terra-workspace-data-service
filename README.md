@@ -99,6 +99,7 @@ docker run -e WDS_DB_HOST='host.docker.internal' -p 8080:8080 wdsdocker
 docker run --network=host -e WDS_DB_HOST='127.0.0.1' -p 8080:8080 wdsdocker
 ```
 
+
 ## Using Workspace Data Service
 A client of WDS is published in the Broad Artifactory.  To include it in your Gradle project, add the following to your `build.gradle` file:
 ```
@@ -112,3 +113,18 @@ dependencies {
     implementation(group: 'org.databiosphere', name: 'workspacedataservice-client', version: 'x.x.x')
 ```
 The latest version can be seen under [Tags](https://github.com/DataBiosphere/terra-workspace-data-service/tags).
+
+## Code Formatting
+This repository uses [Spotless](https://github.com/diffplug/spotless) for code formatting.
+
+To check code formatting without making any changes, run:
+```bash
+./gradlew spotlessCheck
+```
+
+To automatically format your code:
+```bash
+./gradlew spotlessApply
+```
+
+See the Spotless documentation for more information.
