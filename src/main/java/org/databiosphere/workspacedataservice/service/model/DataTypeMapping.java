@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum DataTypeMapping {
-    DATE(LocalDate.class, "date"), DATE_TIME(LocalDateTime.class, "timestamptz"),
+    BOOLEAN(Boolean.class, "boolean"), DATE(LocalDate.class, "date"), DATE_TIME(LocalDateTime.class, "timestamptz"),
     STRING(String.class, "text"), JSON(String.class, "jsonb"), LONG(Long.class, "bigint"),
     DOUBLE(Double.class, "numeric"), FOR_ATTRIBUTE_DEL();
 
@@ -23,6 +23,7 @@ public enum DataTypeMapping {
         MAPPING_BY_PG_TYPE.put("jsonb", JSON);
         MAPPING_BY_PG_TYPE.put("bigint", LONG);
         MAPPING_BY_PG_TYPE.put("numeric", DOUBLE);
+        MAPPING_BY_PG_TYPE.put("boolean", BOOLEAN);
     }
 
     DataTypeMapping(Class javaType, String postgresType) {

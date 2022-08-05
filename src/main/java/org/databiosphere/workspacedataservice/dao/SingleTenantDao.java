@@ -8,6 +8,8 @@ import org.databiosphere.workspacedataservice.shared.model.Entity;
 import org.databiosphere.workspacedataservice.shared.model.EntityAttributes;
 import org.databiosphere.workspacedataservice.shared.model.EntityId;
 import org.databiosphere.workspacedataservice.shared.model.EntityType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -30,6 +32,8 @@ public class SingleTenantDao {
 
     private static final int CHUNK_SIZE = 1_000;
     private final NamedParameterJdbcTemplate namedTemplate;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SingleTenantDao.class);
 
     public SingleTenantDao(NamedParameterJdbcTemplate namedTemplate) {
         this.namedTemplate = namedTemplate;
@@ -88,6 +92,9 @@ public class SingleTenantDao {
                 + (tableInfo.size() > 0 ? ", " + tableInfo.entrySet().stream().map(e -> "\"" + e.getKey() + "\" " + e.getValue().getPostgresType()).collect(Collectors.joining(", ")) : "");
     }
 
+    //insert into "53204e0d-2d7a-4c3c-867f-04436e7f3c61"."samples"("participant", "dog-names", "sys_name")
+    // values (?, ?, ?) on conflict (sys_name)
+    // do update set "participant" = excluded."participant", "dog-names" = excluded."dog-names"
     public void batchUpsert(UUID workspaceId, String entityType, List<Entity> entities, LinkedHashMap<String, DataTypeMapping> schema){
         schema.put(ENTITY_ID.getColumnName(), DataTypeMapping.STRING);
         namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(workspaceId, entityType, schema),
@@ -159,9 +166,16 @@ public class SingleTenantDao {
         return namedTemplate.getJdbcTemplate().queryForObject("select count(*) from " + getQualifiedTableName(entityType, workspaceId), Integer.class);
     }
 
+
+    //select count(*) from "53204e0d-2d7a-4c3c-867f-04436e7f3c61"."samples" where "dog-names"::varchar ilike :filterTerms
+    // OR "date-collected"::varchar ilike :filterTerms
+    // OR "sys_name"::varchar ilike :filterTerms OR "json-dog-names"::varchar
+    // ilike :filterTerms OR "participant"::varchar ilike :filterTerms
     public int getFilteredEntityCount(UUID workspaceId, String entityType, String filterTerms, Map<String, DataTypeMapping> schema) {
-        return namedTemplate.queryForObject("select count(*) from " + getQualifiedTableName(entityType, workspaceId)
-                        + " where " + buildFilterSql(schema.keySet()),
+        String sql = "select count(*) from " + getQualifiedTableName(entityType, workspaceId)
+                + " where " + buildFilterSql(schema.keySet());
+        LOGGER.info("Here's the filter sql {}", sql);
+        return namedTemplate.queryForObject(sql,
                 new MapSqlParameterSource("filterTerms", "%"+filterTerms+"%"), Integer.class);
     }
 

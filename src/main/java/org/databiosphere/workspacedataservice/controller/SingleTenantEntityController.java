@@ -30,6 +30,7 @@ public class SingleTenantEntityController {
     private final SingleTenantDao singleTenantDao;
 
     private final SingleTenantEntityRefService referenceService;
+    private final DataTypeInferer inferer = new DataTypeInferer();
 
     public SingleTenantEntityController(SingleTenantDao singleTenantDao, SingleTenantEntityRefService referenceService) {
         this.singleTenantDao = singleTenantDao;
@@ -58,21 +59,12 @@ public class SingleTenantEntityController {
                 (page-1) * pageSize, filterTerms, sortField, sortDirection, fields, workspaceId, schema, singleTenantDao.getReferenceCols(workspaceId, entityType)) : Collections.emptyList());
     }
 
-    private Object convertToType(Object val, DataTypeMapping typeMapping) {
-        return switch (typeMapping){
-            case DATE -> LocalDate.parse(val.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
-            case DATE_TIME -> LocalDateTime.parse(val.toString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-            case LONG, DOUBLE, STRING, JSON -> val;
-            case FOR_ATTRIBUTE_DEL -> throw new IllegalArgumentException("Egad, this should not happen");
-        };
-    }
-
     private void updateAttributesForEntity(EntityUpsert entityUpsert, Entity entity, Map<String, DataTypeMapping> schema){
         for (UpsertOperation operation : entityUpsert.getOperations()) {
             Map<String, Object> attributes = entity.getAttributes().getAttributes();
             if(operation.getOp() == UpsertAction.AddUpdateAttribute){
                 DataTypeMapping dataTypeMapping = schema.get(operation.getAttributeName());
-                attributes.put(operation.getAttributeName(), convertToType(operation.getAddUpdateAttribute(), dataTypeMapping));
+                attributes.put(operation.getAttributeName(), inferer.convertToType(operation.getAddUpdateAttribute(), dataTypeMapping));
                 entity.setAttributes(new EntityAttributes(attributes));
             } else if (operation.getOp() == UpsertAction.RemoveAttribute){
                 attributes.put(operation.getAttributeName(), null);
@@ -130,7 +122,6 @@ public class SingleTenantEntityController {
                     "to an existing column that was not configured for references");
         }
         Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference.entriesDiffering();
-        DataTypeInferer inferer = new DataTypeInferer();
         for (String column : differenceMap.keySet()) {
             MapDifference.ValueDifference<DataTypeMapping> valueDifference = differenceMap.get(column);
             if(valueDifference.rightValue() == DataTypeMapping.FOR_ATTRIBUTE_DEL){
@@ -150,8 +141,7 @@ public class SingleTenantEntityController {
         ArrayListMultimap<String, EntityUpsert> eUpsertsByType = ArrayListMultimap.create();
         entitiesToUpdate.forEach(e -> eUpsertsByType.put(e.getEntityType(), e));
         Set<String> entityTypes = eUpsertsByType.keySet();
-        DataTypeInferer dataTypeInferer = new DataTypeInferer();
-        Map<String, LinkedHashMap<String, DataTypeMapping>> schemas = dataTypeInferer.inferTypes(entitiesToUpdate);
+        Map<String, LinkedHashMap<String, DataTypeMapping>> schemas = inferer.inferTypes(entitiesToUpdate);
         for (String entityType : entityTypes) {
             LinkedHashMap<String, DataTypeMapping> columnsModifiedSchema = schemas.get(entityType) == null ? new LinkedHashMap<>() : schemas.get(entityType);
             List<EntityUpsert> upsertsForType = eUpsertsByType.get(entityType);

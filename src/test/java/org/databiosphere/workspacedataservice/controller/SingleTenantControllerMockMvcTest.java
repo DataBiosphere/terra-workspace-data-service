@@ -187,6 +187,7 @@ public class SingleTenantControllerMockMvcTest {
             entityAttributes.put("attr5", RandomUtils.nextLong());
             entityAttributes.put("attr-dt", "2022-03-01T12:00:03");
             entityAttributes.put("attr-json", "{\"foo\":\"bar\"}");
+            entityAttributes.put("attr-boolean", true);
             upserts.add(TestUtils.createEntityUpsert("entity_"+i, entityType, entityAttributes));
         }
         ObjectMapper mapper = new ObjectMapper();

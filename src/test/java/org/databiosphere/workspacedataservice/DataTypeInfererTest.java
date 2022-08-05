@@ -23,6 +23,26 @@ class DataTypeInfererTest {
                         DataTypeMapping.DATE_TIME);
     }
 
+    @Test
+    void isValidJsonn(){
+        assertThat(inferer.isValidJson(RandomStringUtils.randomNumeric(10))).isTrue();
+        assertThat(inferer.isValidJson("Hello")).isFalse();
+        assertThat(inferer.isValidJson(Boolean.TRUE.toString())).isTrue();
+        assertThat(inferer.isValidJson("True")).isFalse();
+    }
+
+    @Test
+    void inferSomeTypes(){
+        assertThat(inferer.inferType("True")).isEqualTo(DataTypeMapping.BOOLEAN);
+        assertThat(inferer.inferType("Hello")).isEqualTo(DataTypeMapping.STRING);
+        assertThat(inferer.inferType("2020-01-01")).isEqualTo(DataTypeMapping.DATE);
+        assertThat(inferer.inferType("2020-01-01T00:10:00")).isEqualTo(DataTypeMapping.DATE_TIME);
+        assertThat(inferer.inferType("2020-01-01T00:10:00")).isEqualTo(DataTypeMapping.DATE_TIME);
+        assertThat(inferer.inferType("12345")).isEqualTo(DataTypeMapping.LONG);
+        assertThat(inferer.inferType("12345A")).isEqualTo(DataTypeMapping.STRING);
+        assertThat(inferer.inferType("[\"12345\"]")).isEqualTo(DataTypeMapping.JSON);
+    }
+
     private static List<EntityUpsert> getSomeEntityUpserts(){
         List<EntityUpsert> result = new ArrayList<>();
         for (int i = 0; i < 300; i++) {

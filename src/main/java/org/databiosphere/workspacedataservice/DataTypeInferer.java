@@ -2,12 +2,18 @@ package org.databiosphere.workspacedataservice;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.primitives.Doubles;
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
+import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.dao.SingleTenantDao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.EntityUpsert;
 import org.databiosphere.workspacedataservice.shared.model.UpsertOperation;
+import org.postgresql.shaded.com.ongres.scram.common.bouncycastle.pbkdf2.Integers;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
@@ -52,6 +58,15 @@ public class DataTypeInferer {
         return result;
     }
 
+    public Object convertToType(Object val, DataTypeMapping typeMapping) {
+        return switch (typeMapping){
+            case DATE -> LocalDate.parse(val.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
+            case DATE_TIME -> LocalDateTime.parse(val.toString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            case LONG, DOUBLE, STRING, JSON, BOOLEAN -> val;
+            case FOR_ATTRIBUTE_DEL -> throw new IllegalArgumentException("Egad, this should not happen");
+        };
+    }
+
     public DataTypeMapping selectBestType(DataTypeMapping existing, DataTypeMapping newMapping){
         if(existing == newMapping){
             return existing;
@@ -66,6 +81,13 @@ public class DataTypeInferer {
     }
 
 
+    /**
+     * Order matters; we want to choose the most specific type.  "1234" is valid json, but the code
+     * chooses to infer it as a LONG (bigint in the db).  "true" is a string and valid json but the
+     * code is ordered to infer boolean. true is also valid json but we want to infer boolean.
+     * @param val
+     * @return
+     */
     public DataTypeMapping inferType(Object val){
         if(val instanceof Long || val instanceof Integer){
             return LONG;
@@ -82,13 +104,22 @@ public class DataTypeInferer {
         if(isValidDateTime(sVal)){
             return DATE_TIME;
         }
+        if(StringUtils.isNumeric(sVal)){
+            if(Longs.tryParse(sVal) != null){
+                return LONG;
+            }
+            return DOUBLE;
+        }
+        if(sVal.equalsIgnoreCase("true") || sVal.equalsIgnoreCase("false")){
+            return BOOLEAN;
+        }
         if(isValidJson(sVal)){
             return JSON;
         }
         return STRING;
     }
 
-    private boolean isValidJson(String val) {
+    protected boolean isValidJson(String val) {
         try {
             objectMapper.readTree(val);
         } catch (JsonProcessingException e) {
