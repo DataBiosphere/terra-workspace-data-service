@@ -12,13 +12,10 @@ public class Entity {
 
     private EntityId name;
 
-    private Boolean deleted;
-
     private EntityType entityType;
 
     private EntityAttributes attributes;
 
-    private Long entityTypeId;
 
     public Entity(EntityId name, EntityType entityType, EntityAttributes attributes) {
         this.name = name;
@@ -26,24 +23,11 @@ public class Entity {
         this.attributes = attributes;
     }
 
-    public Entity(EntityId name, EntityType entityType, EntityAttributes attributes, long entityTypeId) {
-        this(name, entityType, attributes);
-        this.entityTypeId = entityTypeId;
-        this.deleted = false;
-    }
-
-    public Entity(EntityId name, EntityType entityType, EntityAttributes attributes, long entityTypeId, boolean deleted) {
-        this(name, entityType, attributes);
-        this.entityTypeId = entityTypeId;
-        this.deleted = deleted;
-    }
-
     public Entity() {
     }
 
-    public Entity(EntityId entityName, long entityType) {
+    public Entity(EntityId entityName) {
         this.name = entityName;
-        this.entityTypeId = entityType;
     }
 
     public EntityId getName() {
@@ -71,33 +55,19 @@ public class Entity {
         return entityType.getName();
     }
 
-    public Boolean getDeleted() {
-        return deleted;
-    }
-
-    public void setDeleted(Boolean deleted) {
-        this.deleted = deleted;
-    }
-
-    public Long getEntityTypeId() {
-        return entityTypeId;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Entity)) return false;
-
-        Entity entity = (Entity) o;
+        if (!(o instanceof Entity entity)) return false;
 
         if (!getName().equals(entity.getName())) return false;
-        return getEntityTypeId().equals(entity.getEntityTypeId());
+        return getEntityType().equals(entity.getEntityType());
     }
 
     @Override
     public int hashCode() {
         int result = getName().hashCode();
-        result = 31 * result + getEntityTypeId().hashCode();
+        result = 31 * result + getEntityType().hashCode();
         return result;
     }
 }

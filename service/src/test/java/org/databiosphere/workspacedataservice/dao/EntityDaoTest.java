@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import org.databiosphere.workspacedataservice.service.model.MissingReferencedTableException;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
 import org.databiosphere.workspacedataservice.shared.model.EntityAttributes;
 import org.databiosphere.workspacedataservice.shared.model.EntityId;
@@ -11,9 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -23,16 +22,16 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 public class EntityDaoTest {
 
     @Autowired
-    EntityDao entityDao;
+    SingleTenantDao entityDao;
     UUID workspaceId;
     EntityType entityType;
-    Long entityTypeId;
 
     @BeforeAll
-    void setUp(){
-        workspaceId = entityDao.getWorkspaceId("default", "test");
+    void setUp() throws MissingReferencedTableException {
+        workspaceId = UUID.randomUUID();
         entityType  = new EntityType("testEntityType");
-        entityTypeId = entityDao.loadEntityType(entityType, workspaceId);
+        entityDao.createSchema(workspaceId);
+        entityDao.createEntityType(workspaceId, Collections.emptyMap(), entityType.getName(), Collections.emptySet());
     }
 
     @Test
@@ -40,15 +39,15 @@ public class EntityDaoTest {
     void testGetSingleEntity(){
         //add entity
         EntityId entityId = new EntityId("testEntity");
-        Entity testEntity = new Entity(entityId, entityType, new EntityAttributes(new HashMap<>()), entityTypeId);
-        entityDao.batchUpsert(List.of(testEntity));
+        Entity testEntity = new Entity(entityId, entityType, new EntityAttributes(new HashMap<>()));
+        entityDao.batchUpsert(workspaceId, entityType.getName(), Collections.singletonList(testEntity), new LinkedHashMap<>());
 
         //make sure entity is fetched
-        Entity search = entityDao.getSingleEntity(workspaceId, entityType, entityId);
+        Entity search = entityDao.getSingleEntity(workspaceId, entityType, entityId, Collections.emptyList());
         assertEquals(testEntity, search);
 
         //nonexistent entity should be null
-        Entity none = entityDao.getSingleEntity(workspaceId, entityType, new EntityId("noEntity"));
+        Entity none = entityDao.getSingleEntity(workspaceId, entityType, new EntityId("noEntity"), Collections.emptyList());
         assertNull(none);
     }
 }
