@@ -112,5 +112,55 @@ public class EntityController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+    @PutMapping("/{instanceId}/entities/{version}/{entityType}/{entityId}")
+    public ResponseEntity<EntityResponse> putSingleEntity(@PathVariable("instanceId") UUID instanceId,
+                                                             @PathVariable("version") String version,
+                                                             @PathVariable("entityType") EntityType entityType,
+                                                             @PathVariable("entityId") EntityId entityId,
+                                                             @RequestBody EntityRequest entityRequest) {
+        Preconditions.checkArgument(version.equals("v0.2"));
+        String entityTypeName = entityType.getName();
+        Entity singleEntity = entityDao.getSingleEntity(instanceId, entityType, entityId,
+                entityDao.getReferenceCols(instanceId, entityTypeName));
+        if(singleEntity == null){
+            //make sure entitytype exists
+            Map<String, DataTypeMapping> schema = inferer.inferTypes(entityRequest.entityAttributes().getAttributes());
+            if (!entityDao.entityTypeExists(instanceId, entityTypeName)){
+                try{
+                    entityDao.createEntityType(instanceId, schema, entityTypeName, new HashSet<>());
+                } catch (MissingReferencedTableException e){
+                    return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
+                }
+            }
+            //create new entity
+            entityDao.createSingleEntity(instanceId, entityTypeName, new Entity(entityRequest), new LinkedHashMap<>(schema));
+            EntityResponse response = new EntityResponse(entityId, entityType, entityRequest.entityAttributes(), new EntityMetadata("TODO"));
+            return new ResponseEntity(response, HttpStatus.CREATED);
+        } else {
+            if (compareEntities(singleEntity, entityRequest)){
+                //Nothing to update
+                EntityResponse response = new EntityResponse(entityId, entityType, singleEntity.getAttributes(),
+                        new EntityMetadata("TODO"));
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            }
+            //add any columns that need adding
+            Map<String, DataTypeMapping> existingTableSchema = entityDao.getExistingTableSchema(instanceId, entityTypeName);
+            Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(entityRequest.entityAttributes().getAttributes());
+            addOrUpdateColumnIfNeeded(instanceId, entityType.getName(), typeMapping, existingTableSchema, Collections.singletonList(new Entity(entityRequest)));
+            //remove all attribute values and put new attribute values
+            entityDao.replaceAttributes(entityId.getEntityIdentifier(), entityRequest.entityAttributes(), instanceId);
+            //TODO: Should we get the entity to return or use submitted attributes (as is done in Patch and above)
+            Entity updatedEntity = entityDao.getSingleEntity(instanceId, entityType, entityId, entityDao.getReferenceCols(instanceId, entityType.getName()));
+            EntityResponse response = new EntityResponse(entityId, entityType, updatedEntity.getAttributes(),
+                    new EntityMetadata("TODO"));
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }
+    }
+
+    //todo: compare deleted as well?
+    private boolean compareEntities(Entity oldEntity, EntityRequest newEntity){
+        return oldEntity.getAttributes().equals(newEntity.entityAttributes());
+    }
+
 
 }

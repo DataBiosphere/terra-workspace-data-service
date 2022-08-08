@@ -30,6 +30,12 @@ public class Entity {
         this.name = entityName;
     }
 
+    public Entity(EntityRequest request){
+        this.name = request.entityId();
+        this.entityType = request.entityType();
+        this.attributes = request.entityAttributes();
+    }
+
     public EntityId getName() {
         return name;
     }

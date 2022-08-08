@@ -97,6 +97,12 @@ public class EntityDao {
         namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(workspaceId, entityType, schema),
                 getInsertBatchArgs(entities, schema.keySet()));
     }
+    //The expectation is that the entity type already matches the schema and attributes given, as that's dealt with earlier in the code.
+    public void createSingleEntity(UUID workspaceId, String entityType, Entity entity, LinkedHashMap<String, DataTypeMapping> schema){
+        schema.put(ENTITY_ID.getColumnName(), DataTypeMapping.STRING);
+        namedTemplate.getJdbcTemplate().update(genInsertStatement(workspaceId, entityType, schema),
+                getInsertArgs(entity, schema.keySet()));
+    }
 
     public void addForeignKeyForReference(String entityType, String referencedEntityType, UUID workspaceId, String referenceColName) throws MissingReferencedTableException {
         try {
@@ -130,17 +136,7 @@ public class EntityDao {
     private List<Object[]> getInsertBatchArgs(List<Entity> entities, Set<String> colNames) {
         List<Object[]> result = new ArrayList<>();
         for (Entity entity : entities) {
-            Object[] row = new Object[colNames.size()];
-            int i = 0;
-            for (String col : colNames) {
-                if(col.equals(ENTITY_ID.getColumnName())){
-                    row[i++] = entity.getName().getEntityIdentifier();
-                } else {
-                    Object attVal = entity.getAttributes().getAttributes().get(col);
-                    row[i++] = getValueForSql(attVal);
-                }
-            }
-            result.add(row);
+            result.add(getInsertArgs(entity, colNames));
         }
         return result;
     }
@@ -160,6 +156,20 @@ public class EntityDao {
             }
         }
         return attVal;
+    }
+
+    private Object[] getInsertArgs(Entity entity, Set<String> colNames) {
+            Object[] row = new Object[colNames.size()];
+            int i = 0;
+            for (String col : colNames) {
+                if(col.equals(ENTITY_ID.getColumnName())){
+                    row[i++] = entity.getName().getEntityIdentifier();
+                } else {
+                    Object attVal = entity.getAttributes().getAttributes().get(col);
+                    row[i++] = attVal == null ? null : getValueForSql(attVal);
+                }
+            }
+            return row;
     }
 
     private String genInsertStatement(UUID workspaceId, String entityType, LinkedHashMap<String, DataTypeMapping> schema) {
@@ -230,4 +240,21 @@ public class EntityDao {
             return null;
         }
     }
+
+    public void replaceAttributes(String entityName, EntityAttributes newAttributes, UUID instanceId){
+        String sqltest = "update " + getQualifiedTableName(entityName, instanceId) + "set " +
+                genReplaceAttrUpdates(newAttributes);
+        System.out.println(sqltest);
+        namedTemplate.getJdbcTemplate().update(sqltest);
+
+        //update "53204e0d-2d7a-4c3c-867f-04436e7f3c61"."samples" set ("participant", "dog-names", "sys_name")
+        //insert into "53204e0d-2d7a-4c3c-867f-04436e7f3c61"."samples"("participant", "dog-names", "sys_name")
+        // values (?, ?, ?) on conflict (sys_name)
+        // do update set "participant" = excluded."participant", "dog-names" = excluded."dog-names"
+    }
+
+    private String genReplaceAttrUpdates(EntityAttributes newAttributes) {
+        return newAttributes.getAttributes().entrySet().stream().map(entry ->  entry.getKey() + "='" + entry.getValue() + "'").collect(Collectors.joining(", "));
+    }
+
 }
