@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import com.google.common.collect.Lists;
+import org.databiosphere.workspacedataservice.service.RefUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.EntitySystemColumn;
 import org.databiosphere.workspacedataservice.service.model.MissingReferencedTableException;
@@ -9,6 +10,7 @@ import org.databiosphere.workspacedataservice.shared.model.Entity;
 import org.databiosphere.workspacedataservice.shared.model.EntityAttributes;
 import org.databiosphere.workspacedataservice.shared.model.EntityId;
 import org.databiosphere.workspacedataservice.shared.model.EntityType;
+import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -34,8 +36,6 @@ public class SingleTenantDao {
 
     private static final int CHUNK_SIZE = 1_000;
     private final NamedParameterJdbcTemplate namedTemplate;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SingleTenantDao.class);
 
     public SingleTenantDao(NamedParameterJdbcTemplate namedTemplate) {
         this.namedTemplate = namedTemplate;
@@ -80,7 +80,6 @@ public class SingleTenantDao {
         });
     }
 
-
     public void addColumn(UUID workspaceId, String tableName, String columnName, DataTypeMapping colType){
         namedTemplate.getJdbcTemplate().update("alter table "+ getQualifiedTableName(tableName, workspaceId) + " add column \"" + columnName + "\" " + colType.getPostgresType());
     }
@@ -94,9 +93,6 @@ public class SingleTenantDao {
                 + (tableInfo.size() > 0 ? ", " + tableInfo.entrySet().stream().map(e -> "\"" + e.getKey() + "\" " + e.getValue().getPostgresType()).collect(Collectors.joining(", ")) : "");
     }
 
-    //insert into "53204e0d-2d7a-4c3c-867f-04436e7f3c61"."samples"("participant", "dog-names", "sys_name")
-    // values (?, ?, ?) on conflict (sys_name)
-    // do update set "participant" = excluded."participant", "dog-names" = excluded."dog-names"
     public void batchUpsert(UUID workspaceId, String entityType, List<Entity> entities, LinkedHashMap<String, DataTypeMapping> schema){
         schema.put(ENTITY_ID.getColumnName(), DataTypeMapping.STRING);
         namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(workspaceId, entityType, schema),
@@ -141,7 +137,8 @@ public class SingleTenantDao {
                 if(col.equals(ENTITY_ID.getColumnName())){
                     row[i++] = entity.getName().getEntityIdentifier();
                 } else {
-                    row[i++] = entity.getAttributes().getAttributes().get(col);
+                    Object attVal = entity.getAttributes().getAttributes().get(col);
+                    row[i++] = RefUtils.isReferenceValue(attVal) ? RefUtils.getRefValue(attVal) : attVal;
                 }
             }
             result.add(row);
@@ -149,7 +146,7 @@ public class SingleTenantDao {
         return result;
     }
 
-    private String genInsertStatement(UUID workspaceId, String entityType, Map<String, DataTypeMapping> schema) {
+    private String genInsertStatement(UUID workspaceId, String entityType, LinkedHashMap<String, DataTypeMapping> schema) {
         return "insert into " + getQualifiedTableName(entityType, workspaceId) + "(" +
                 getInsertColList(schema.keySet()) + ") values (" + getInsertParamList(schema.values()) +") " +
                 "on conflict (" + ENTITY_ID.getColumnName() +") " + (schema.keySet().size() == 1 ? "do nothing" : "do update set " + genColUpsertUpdates(schema.keySet()));
@@ -163,47 +160,6 @@ public class SingleTenantDao {
     private String getInsertColList(Set<String> existingTableSchema) {
         return existingTableSchema.stream().map(col ->"\"" + col + "\"").collect(Collectors.joining(", "));
     }
-
-    public int getEntityCount(String entityType, UUID workspaceId) {
-        return namedTemplate.getJdbcTemplate().queryForObject("select count(*) from " + getQualifiedTableName(entityType, workspaceId), Integer.class);
-    }
-
-
-    //select count(*) from "53204e0d-2d7a-4c3c-867f-04436e7f3c61"."samples" where "dog-names"::varchar ilike :filterTerms
-    // OR "date-collected"::varchar ilike :filterTerms
-    // OR "sys_name"::varchar ilike :filterTerms OR "json-dog-names"::varchar
-    // ilike :filterTerms OR "participant"::varchar ilike :filterTerms
-    public int getFilteredEntityCount(UUID workspaceId, String entityType, String filterTerms, Map<String, DataTypeMapping> schema) {
-        String sql = "select count(*) from " + getQualifiedTableName(entityType, workspaceId)
-                + " where " + buildFilterSql(schema.keySet());
-        LOGGER.info("Here's the filter sql {}", sql);
-        return namedTemplate.queryForObject(sql,
-                new MapSqlParameterSource("filterTerms", "%"+filterTerms+"%"), Integer.class);
-    }
-
-    private String buildFilterSql(Set<String> cols) {
-        return cols.stream().map(c -> "\"" + c + "\"::varchar ilike :filterTerms").collect(Collectors.joining(" OR "));
-    }
-
-    public int getEntityCount(String entityTypeName, List<String> entityNamesToDelete, UUID workspaceId) {
-        List<List<String>> chunks = Lists.partition(entityNamesToDelete, CHUNK_SIZE);
-        int result = 0;
-        for (List<String> chunk : chunks) {
-            result += namedTemplate.queryForObject("select count(*) from " + getQualifiedTableName(entityTypeName, workspaceId)
-                            + " where " + ENTITY_ID.getColumnName() + " in (:entities)",
-                    new MapSqlParameterSource("entities", chunk), Integer.class);
-        }
-        return result;
-    }
-
-    public void deleteEntities(String entityTypeName, List<String> entityNamesToDelete, UUID workspaceId){
-        List<List<String>> chunks = Lists.partition(entityNamesToDelete, CHUNK_SIZE);
-        for (List<String> chunk : chunks) {
-            namedTemplate.update("delete from " + getQualifiedTableName(entityTypeName, workspaceId) + " where " + ENTITY_ID.getColumnName() + " in (:entities)",
-                    new MapSqlParameterSource("entities", chunk));
-        }
-    }
-
 
     private class EntityRowMapper implements RowMapper<Entity> {
         private final String entityType;
@@ -236,7 +192,8 @@ public class SingleTenantDao {
                         refMap.put(ENTITY_NAME_KEY, rs.getString(columnName));
                         attributes.put(columnName, refMap);
                     } else {
-                        attributes.put(columnName, rs.getObject(columnName));
+                        Object object = rs.getObject(columnName);
+                        attributes.put(columnName, object instanceof PGobject ? ((PGobject)object).getValue() : object);
                     }
                 }
                 return attributes;
@@ -256,28 +213,5 @@ public class SingleTenantDao {
         } catch (EmptyResultDataAccessException e) {
             return null;
         }
-    }
-
-    public List<Entity> getSelectedEntities(String entityType, int pageSize, int i, String filterTerms, String sortField,
-                                            String sortDirection, List<String> fields, UUID workspaceId,
-                                            Map<String, DataTypeMapping> schema, List<SingleTenantEntityReference> referenceCols) {
-        Map<String, String> refColMapping = new HashMap<>();
-        referenceCols.forEach(rc -> refColMapping.put(rc.getReferenceColName(), rc.getReferencedEntityType().getName()));
-        if(filterTerms.isBlank()){
-            return namedTemplate.getJdbcTemplate().query("select " + getFieldList(fields) + " from "
-                    + getQualifiedTableName(entityType, workspaceId) + " order by " + sortField
-                    + " " + sortDirection + " limit " + pageSize + " offset " + i, new EntityRowMapper(entityType, refColMapping));
-        } else {
-            return namedTemplate.query("select " + getFieldList(fields) + " from "
-                    + getQualifiedTableName(entityType, workspaceId) + " where " + buildFilterSql(schema.keySet()) + " order by " + sortField
-                    + " " + sortDirection + " limit " + pageSize + " offset " + i, new MapSqlParameterSource("filterTerms", "%"+filterTerms+"%"),
-                    new EntityRowMapper(entityType, refColMapping));
-        }
-
-    }
-
-    private String getFieldList(List<String> fields) {
-        return (fields == null || fields.isEmpty()) ? "*" :
-                Stream.concat(fields.stream(), Stream.of(ENTITY_ID.getColumnName())).collect(Collectors.joining(", "));
     }
 }

@@ -5,7 +5,7 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import org.databiosphere.workspacedataservice.dao.SingleTenantDao;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
-import org.databiosphere.workspacedataservice.service.SingleTenantEntityRefService;
+import org.databiosphere.workspacedataservice.service.RefUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.springframework.http.HttpStatus;
@@ -19,13 +19,10 @@ import java.util.stream.Collectors;
 @RestController
 public class EntityController {
 
-    private final SingleTenantEntityRefService referenceService;
-
     private final SingleTenantDao singleTenantDao;
     private DataTypeInferer inferer;
 
-    public EntityController(SingleTenantEntityRefService referenceService, SingleTenantDao singleTenantDao) {
-        this.referenceService = referenceService;
+    public EntityController(SingleTenantDao singleTenantDao) {
         this.singleTenantDao = singleTenantDao;
         this.inferer = new DataTypeInferer();
     }
@@ -44,28 +41,31 @@ public class EntityController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found");
         }
         Map<String, Object> updatedAtts = entityRequest.entityAttributes().getAttributes();
+        Map<String, Object> allAttrs = new HashMap<>(singleEntity.getAttributes().getAttributes());
+        allAttrs.putAll(updatedAtts);
+
         Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(updatedAtts);
         //TODO: remove entityType/entityName JSON object format for references and move to URIs in the request/response payloads
         Map<String, DataTypeMapping> existingTableSchema = singleTenantDao.getExistingTableSchema(instanceId, entityTypeName);
+        singleEntity.setAttributes(new EntityAttributes(allAttrs));
         List<Entity> entities = Collections.singletonList(singleEntity);
-        addOrUpdateColumnIfNeeded(instanceId, entityType.getName(), typeMapping, existingTableSchema, new ArrayList<>(entities));
-        singleTenantDao.batchUpsert(instanceId, entityTypeName, entities, new LinkedHashMap<>(existingTableSchema));
-        Entity updatedEntity = singleTenantDao.getSingleEntity(instanceId, entityType, entityId, singleTenantDao.getReferenceCols(instanceId, entityType.getName()));
-        EntityResponse response = new EntityResponse(entityId, entityType, updatedEntity.getAttributes(),
-                new EntityMetadata("TODO: SUPERFRESH"));
+        Map<String, DataTypeMapping> updatedSchema = addOrUpdateColumnIfNeeded(instanceId, entityType.getName(), typeMapping, existingTableSchema, entities);
+        singleTenantDao.batchUpsert(instanceId, entityTypeName, entities, new LinkedHashMap<>(updatedSchema));
+        EntityResponse response = new EntityResponse(entityId, entityType, singleEntity.getAttributes(), new EntityMetadata("TODO: SUPERFRESH"));
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    private void addOrUpdateColumnIfNeeded(UUID workspaceId, String entityType, Map<String, DataTypeMapping> schema, Map<String,
+    private Map<String, DataTypeMapping> addOrUpdateColumnIfNeeded(UUID workspaceId, String entityType, Map<String, DataTypeMapping> schema, Map<String,
             DataTypeMapping> existingTableSchema, List<Entity> entities) {
         MapDifference<String, DataTypeMapping> difference = Maps.difference(existingTableSchema, schema);
         Map<String, DataTypeMapping> colsToAdd = difference.entriesOnlyOnRight();
-        Set<SingleTenantEntityReference> references = referenceService.attachRefValueToEntitiesAndFindReferenceColumns(entities);
+        Set<SingleTenantEntityReference> references = RefUtils.findEntityReferences(entities);
         Map<String, List<SingleTenantEntityReference>> newRefCols = references.stream().collect(Collectors.groupingBy(SingleTenantEntityReference::getReferenceColName));
         //TODO: better communicate to the user that they're trying to assign multiple entity types to a single column
         Preconditions.checkArgument(newRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty());
         for (String col : colsToAdd.keySet()) {
             singleTenantDao.addColumn(workspaceId, entityType, col, colsToAdd.get(col));
+            schema.put(col, colsToAdd.get(col));
             if(newRefCols.containsKey(col)) {
                 String referencedEntityType = null;
                 try {
@@ -90,7 +90,9 @@ public class EntityController {
             }
             DataTypeMapping updatedColType = inferer.selectBestType(valueDifference.leftValue(), valueDifference.rightValue());
             singleTenantDao.changeColumn(workspaceId, entityType, column, updatedColType);
+            schema.put(column, updatedColType);
         }
+        return schema;
     }
 
 

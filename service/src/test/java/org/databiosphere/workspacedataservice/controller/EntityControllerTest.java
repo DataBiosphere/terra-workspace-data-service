@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import org.databiosphere.workspacedataservice.dao.SingleTenantDao;
-import org.databiosphere.workspacedataservice.service.SingleTenantEntityRefService;
+import org.databiosphere.workspacedataservice.service.RefUtils;
 import org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.junit.jupiter.api.BeforeAll;
@@ -31,14 +31,12 @@ public class EntityControllerTest {
 
     EntityType testEntityType = new EntityType("test-type");
     EntityId testEntityId = new EntityId("test");
-    SingleTenantEntityRefService referenceService;
     //Class under test
     EntityController controller;
 
     @BeforeAll
     void setUp(){
-        referenceService = new SingleTenantEntityRefService();
-        controller = new EntityController(referenceService, entityDao);
+        controller = new EntityController(entityDao);
     }
 
     @Test
