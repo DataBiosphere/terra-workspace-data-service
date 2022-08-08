@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import com.google.common.collect.Lists;
+import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RefUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.EntitySystemColumn;
@@ -11,8 +11,6 @@ import org.databiosphere.workspacedataservice.shared.model.EntityAttributes;
 import org.databiosphere.workspacedataservice.shared.model.EntityId;
 import org.databiosphere.workspacedataservice.shared.model.EntityType;
 import org.postgresql.util.PGobject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.RowMapper;
@@ -23,21 +21,22 @@ import org.springframework.stereotype.Repository;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.databiosphere.workspacedataservice.service.model.EntitySystemColumn.ENTITY_ID;
 import static org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference.ENTITY_NAME_KEY;
 import static org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference.ENTITY_TYPE_KEY;
 
 @Repository
-public class SingleTenantDao {
+public class EntityDao {
 
-    private static final int CHUNK_SIZE = 1_000;
     private final NamedParameterJdbcTemplate namedTemplate;
 
-    public SingleTenantDao(NamedParameterJdbcTemplate namedTemplate) {
+    public EntityDao(NamedParameterJdbcTemplate namedTemplate) {
         this.namedTemplate = namedTemplate;
     }
 
@@ -138,12 +137,29 @@ public class SingleTenantDao {
                     row[i++] = entity.getName().getEntityIdentifier();
                 } else {
                     Object attVal = entity.getAttributes().getAttributes().get(col);
-                    row[i++] = RefUtils.isReferenceValue(attVal) ? RefUtils.getRefValue(attVal) : attVal;
+                    row[i++] = getValueForSql(attVal);
                 }
             }
             result.add(row);
         }
         return result;
+    }
+
+    private Object getValueForSql(Object attVal) {
+        if(RefUtils.isReferenceValue(attVal)) {
+            return RefUtils.getRefValue(attVal);
+        }
+        DataTypeInferer inferer = new DataTypeInferer();
+
+        switch (inferer.inferType(attVal)){
+            case DATE -> {
+                return LocalDate.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
+            }
+            case DATE_TIME -> {
+                return LocalDateTime.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            }
+        }
+        return attVal;
     }
 
     private String genInsertStatement(UUID workspaceId, String entityType, LinkedHashMap<String, DataTypeMapping> schema) {

@@ -3,7 +3,7 @@ package org.databiosphere.workspacedataservice.controller;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import org.databiosphere.workspacedataservice.dao.SingleTenantDao;
+import org.databiosphere.workspacedataservice.dao.EntityDao;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RefUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
@@ -19,11 +19,11 @@ import java.util.stream.Collectors;
 @RestController
 public class EntityController {
 
-    private final SingleTenantDao singleTenantDao;
+    private final EntityDao entityDao;
     private DataTypeInferer inferer;
 
-    public EntityController(SingleTenantDao singleTenantDao) {
-        this.singleTenantDao = singleTenantDao;
+    public EntityController(EntityDao entityDao) {
+        this.entityDao = entityDao;
         this.inferer = new DataTypeInferer();
     }
 
@@ -35,8 +35,8 @@ public class EntityController {
                                                              @RequestBody EntityRequest entityRequest){
         Preconditions.checkArgument(version.equals("v0.2"));
         String entityTypeName = entityType.getName();
-        Entity singleEntity = singleTenantDao.getSingleEntity(instanceId, entityType, entityId,
-                singleTenantDao.getReferenceCols(instanceId, entityTypeName));
+        Entity singleEntity = entityDao.getSingleEntity(instanceId, entityType, entityId,
+                entityDao.getReferenceCols(instanceId, entityTypeName));
         if(singleEntity == null){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found");
         }
@@ -46,11 +46,11 @@ public class EntityController {
 
         Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(updatedAtts);
         //TODO: remove entityType/entityName JSON object format for references and move to URIs in the request/response payloads
-        Map<String, DataTypeMapping> existingTableSchema = singleTenantDao.getExistingTableSchema(instanceId, entityTypeName);
+        Map<String, DataTypeMapping> existingTableSchema = entityDao.getExistingTableSchema(instanceId, entityTypeName);
         singleEntity.setAttributes(new EntityAttributes(allAttrs));
         List<Entity> entities = Collections.singletonList(singleEntity);
         Map<String, DataTypeMapping> updatedSchema = addOrUpdateColumnIfNeeded(instanceId, entityType.getName(), typeMapping, existingTableSchema, entities);
-        singleTenantDao.batchUpsert(instanceId, entityTypeName, entities, new LinkedHashMap<>(updatedSchema));
+        entityDao.batchUpsert(instanceId, entityTypeName, entities, new LinkedHashMap<>(updatedSchema));
         EntityResponse response = new EntityResponse(entityId, entityType, singleEntity.getAttributes(), new EntityMetadata("TODO: SUPERFRESH"));
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
@@ -64,20 +64,20 @@ public class EntityController {
         //TODO: better communicate to the user that they're trying to assign multiple entity types to a single column
         Preconditions.checkArgument(newRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty());
         for (String col : colsToAdd.keySet()) {
-            singleTenantDao.addColumn(workspaceId, entityType, col, colsToAdd.get(col));
+            entityDao.addColumn(workspaceId, entityType, col, colsToAdd.get(col));
             schema.put(col, colsToAdd.get(col));
             if(newRefCols.containsKey(col)) {
                 String referencedEntityType = null;
                 try {
                     referencedEntityType = newRefCols.get(col).get(0).getReferencedEntityType().getName();
-                    singleTenantDao.addForeignKeyForReference(entityType, referencedEntityType, workspaceId, col);
+                    entityDao.addForeignKeyForReference(entityType, referencedEntityType, workspaceId, col);
                 } catch (MissingReferencedTableException e) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "It looks like you're attempting to assign a reference " +
                             "to a table, " + referencedEntityType + ", that does not exist");
                 }
             }
         }
-        if(!singleTenantDao.getReferenceCols(workspaceId, entityType).stream().map(SingleTenantEntityReference::getReferenceColName)
+        if(!entityDao.getReferenceCols(workspaceId, entityType).stream().map(SingleTenantEntityReference::getReferenceColName)
                 .collect(Collectors.toSet()).containsAll(newRefCols.keySet())){
             throw new ResponseStatusException(HttpStatus.CONFLICT, "It looks like you're attempting to assign a reference " +
                     "to an existing column that was not configured for references");
@@ -89,7 +89,7 @@ public class EntityController {
                 continue;
             }
             DataTypeMapping updatedColType = inferer.selectBestType(valueDifference.leftValue(), valueDifference.rightValue());
-            singleTenantDao.changeColumn(workspaceId, entityType, column, updatedColType);
+            entityDao.changeColumn(workspaceId, entityType, column, updatedColType);
             schema.put(column, updatedColType);
         }
         return schema;
@@ -102,7 +102,7 @@ public class EntityController {
                                               @PathVariable("entityType") EntityType entityType,
                                               @PathVariable("entityId") EntityId entityId) {
         Preconditions.checkArgument(version.equals("v0.2"));
-        Entity result = singleTenantDao.getSingleEntity(instanceId, entityType, entityId, singleTenantDao.getReferenceCols(instanceId, entityType.getName()));
+        Entity result = entityDao.getSingleEntity(instanceId, entityType, entityId, entityDao.getReferenceCols(instanceId, entityType.getName()));
         if (result == null){
             //TODO: standard exception classes
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found");

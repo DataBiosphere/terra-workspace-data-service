@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 public class EntityDaoTest {
 
     @Autowired
-    SingleTenantDao entityDao;
+    EntityDao entityDao;
     UUID workspaceId;
     EntityType entityType;
 

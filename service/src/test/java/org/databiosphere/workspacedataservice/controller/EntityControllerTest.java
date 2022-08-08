@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import org.databiosphere.workspacedataservice.dao.SingleTenantDao;
-import org.databiosphere.workspacedataservice.service.RefUtils;
+import org.databiosphere.workspacedataservice.dao.EntityDao;
 import org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.junit.jupiter.api.BeforeAll;
@@ -27,7 +26,7 @@ import static org.mockito.Mockito.when;
 public class EntityControllerTest {
 
     @MockBean
-    SingleTenantDao entityDao;
+    EntityDao entityDao;
 
     EntityType testEntityType = new EntityType("test-type");
     EntityId testEntityId = new EntityId("test");
