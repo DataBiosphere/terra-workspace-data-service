@@ -11,6 +11,8 @@ Make sure all unit tests pass, including those you wrote for any new functionali
 
 When you open a pull request, add the JIRA issue number (e.g. `ABC-123`) to the PR title. This will make a reference from JIRA to the GitHub issue. Describe your changes, including instructions on how to reproduce the behavior and any screenshots if applicable. 
 
+By default, each merge to main will be considered a 'patch' and the version will update accordingly.  For larger version updates, include '#minor' or '#major' as appropriate in one of the comments to your PRs to increment the version.
+
 ## PR approval process
 
 Your PR is ready to merge when all of the following things are true:
