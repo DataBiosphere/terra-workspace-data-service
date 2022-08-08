@@ -171,7 +171,7 @@ public class EntityDao {
     public List<Entity> getNamedEntities(Long entityTypeId, Set<EntityId> entityNames, String entityTypeName, boolean excludeDeletedEntities) {
         String sql = "select name, attributes, entity_type, deleted from entity where entity_type = :entityType and name in (:entityNames) " + (excludeDeletedEntities ? "and deleted = false" : "");
         return namedParameterJdbcTemplate.query(sql,
-                new MapSqlParameterSource(Map.of("entityType", entityTypeId, "entityNames", entityNames)),
+                new MapSqlParameterSource(Map.of("entityType", entityTypeId, "entityNames", entityNames.stream().map(EntityId::getEntityIdentifier).collect(Collectors.toSet()))),
                 (rs, i) -> new Entity(new EntityId(rs.getString("name")), new EntityType(entityTypeName), getAttributes(rs.getString("attributes")),
                         rs.getLong("entity_type"), rs.getBoolean("deleted")));
     }
