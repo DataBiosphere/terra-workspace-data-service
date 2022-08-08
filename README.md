@@ -55,7 +55,24 @@ This will launch the service on port 8080.
 
 At the moment, WDS is only available through this port.  It can be reached from the command line:
 
-TODO: write, read, and update entity curl invocations
+To query for a single entity:
+```bash 
+curl http://localhost:8080/<instanceid>/entities/v0.2/<table/type>/<entity_name>
+```
+
+To add new attribute or update values for existing attributes (this won't create a new entity however):
+``` bash
+curl -H "Content-type: application/json" -X PATCH "http://localhost:8080/<instanceid guid>/entities/v0.2/<table/type>/<entity_name>" -d '{                                            
+"id": "<entity_name>",
+"type": "<entity_type>",
+"attributes": {
+"new-int": -77,
+"new-date-time": "2011-01-11T11:00:50",
+"new-double": -122.45,
+"new-json": "{\"key\": \"Richie\"}"
+}
+}'
+```
 
 When done, stop postgres:
 ```bash
