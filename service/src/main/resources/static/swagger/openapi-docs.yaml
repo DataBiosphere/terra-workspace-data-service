@@ -13,6 +13,9 @@ info:
   license:
     name: BSD
     url: http://opensource.org/licenses/BSD-3-Clause
+servers:
+  - url: ../
+    description: Relative to the current swagger page
 tags:
   - name: Entities
     description: Entity APIs
