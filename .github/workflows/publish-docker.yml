@@ -9,6 +9,9 @@ env:
 
 jobs:
   publish-job:
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
