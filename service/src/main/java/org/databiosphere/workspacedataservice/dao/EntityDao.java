@@ -151,7 +151,13 @@ public class EntityDao {
         }
         DataTypeInferer inferer = new DataTypeInferer();
 
-        switch (inferer.inferType(attVal)){
+        DataTypeMapping dataTypeMapping = inferer.inferType(attVal);
+
+        if(dataTypeMapping == null){
+            return null;
+        }
+
+        switch (dataTypeMapping){
             case DATE -> {
                 return LocalDate.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
             }
