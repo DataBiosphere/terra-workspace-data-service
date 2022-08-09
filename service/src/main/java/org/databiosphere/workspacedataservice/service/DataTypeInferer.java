@@ -51,8 +51,10 @@ public class DataTypeInferer {
      * @return
      */
     public DataTypeMapping inferType(Object val){
+        //if we're looking at a user request and they submit a null value for a new attribute,
+        //this is the best inference we can make about the column type
         if(val == null){
-            return null;
+            return STRING;
         }
 
         if(val instanceof Long || val instanceof Integer){

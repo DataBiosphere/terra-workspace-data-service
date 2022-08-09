@@ -153,10 +153,6 @@ public class EntityDao {
 
         DataTypeMapping dataTypeMapping = inferer.inferType(attVal);
 
-        if(dataTypeMapping == null){
-            return null;
-        }
-
         switch (dataTypeMapping){
             case DATE -> {
                 return LocalDate.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
@@ -175,7 +171,7 @@ public class EntityDao {
     }
 
     private String getInsertParamList(Collection<DataTypeMapping> existingTableSchema) {
-        return existingTableSchema.stream().map(m -> m == DataTypeMapping.FOR_ATTRIBUTE_DEL ? "?" : m.getPostgresType().equalsIgnoreCase("jsonb") ? "? :: jsonb" : "?").collect(Collectors.joining(", "));
+        return existingTableSchema.stream().map(m -> m.getPostgresType().equalsIgnoreCase("jsonb") ? "? :: jsonb" : "?").collect(Collectors.joining(", "));
     }
 
 
