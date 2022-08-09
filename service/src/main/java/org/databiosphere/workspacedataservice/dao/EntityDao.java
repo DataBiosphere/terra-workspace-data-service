@@ -41,8 +41,8 @@ public class EntityDao {
     }
 
     public boolean workspaceSchemaExists(UUID workspaceId){
-        return namedTemplate.queryForObject("select exists(select 1 from information_schema.schemata WHERE schema_name = :workspaceSchema)",
-                new MapSqlParameterSource("workspaceSchema", workspaceId.toString()), Boolean.class);
+        return Boolean.TRUE.equals(namedTemplate.queryForObject("select exists(select from information_schema.schemata WHERE schema_name = :workspaceSchema)",
+                new MapSqlParameterSource("workspaceSchema", workspaceId.toString()), Boolean.class));
     }
 
     public void createSchema(UUID workspaceId){
@@ -50,8 +50,8 @@ public class EntityDao {
     }
 
     public boolean entityTypeExists(UUID workspaceId, String entityType){
-        return namedTemplate.queryForObject("select exists(select from pg_tables where schemaname = :workspaceId AND tablename  = :entityType)",
-                new MapSqlParameterSource(Map.of("workspaceId", workspaceId.toString(), "entityType", entityType)), Boolean.class);
+        return Boolean.TRUE.equals(namedTemplate.queryForObject("select exists(select from pg_tables where schemaname = :workspaceId AND tablename  = :entityType)",
+                new MapSqlParameterSource(Map.of("workspaceId", workspaceId.toString(), "entityType", entityType)), Boolean.class));
     }
 
     public void createEntityType(UUID workspaceId, Map<String, DataTypeMapping> tableInfo, String tableName, Set<SingleTenantEntityReference> referencedEntityTypes) throws MissingReferencedTableException {

@@ -51,6 +51,10 @@ public class DataTypeInferer {
      * @return
      */
     public DataTypeMapping inferType(Object val){
+        if(val == null){
+            return null;
+        }
+
         if(val instanceof Long || val instanceof Integer){
             return LONG;
         }
