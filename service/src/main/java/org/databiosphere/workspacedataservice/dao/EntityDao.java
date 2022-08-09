@@ -109,6 +109,7 @@ public class EntityDao {
                 if(sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("42P01")){
                     throw new MissingReferencedTableException();
                 }
+                throw e;
             }
         }
     }
