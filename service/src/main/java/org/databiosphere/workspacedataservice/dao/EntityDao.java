@@ -41,8 +41,8 @@ public class EntityDao {
     }
 
     public boolean workspaceSchemaExists(UUID workspaceId){
-        return namedTemplate.queryForObject("select exists(select 1 from information_schema.schemata WHERE schema_name = :workspaceSchema)",
-                new MapSqlParameterSource("workspaceSchema", workspaceId.toString()), Boolean.class);
+        return Boolean.TRUE.equals(namedTemplate.queryForObject("select exists(select from information_schema.schemata WHERE schema_name = :workspaceSchema)",
+                new MapSqlParameterSource("workspaceSchema", workspaceId.toString()), Boolean.class));
     }
 
     public void createSchema(UUID workspaceId){
@@ -50,8 +50,8 @@ public class EntityDao {
     }
 
     public boolean entityTypeExists(UUID workspaceId, String entityType){
-        return namedTemplate.queryForObject("select exists(select from pg_tables where schemaname = :workspaceId AND tablename  = :entityType)",
-                new MapSqlParameterSource(Map.of("workspaceId", workspaceId.toString(), "entityType", entityType)), Boolean.class);
+        return Boolean.TRUE.equals(namedTemplate.queryForObject("select exists(select from pg_tables where schemaname = :workspaceId AND tablename  = :entityType)",
+                new MapSqlParameterSource(Map.of("workspaceId", workspaceId.toString(), "entityType", entityType)), Boolean.class));
     }
 
     public void createEntityType(UUID workspaceId, Map<String, DataTypeMapping> tableInfo, String tableName, Set<SingleTenantEntityReference> referencedEntityTypes) throws MissingReferencedTableException {
@@ -115,6 +115,7 @@ public class EntityDao {
                 if(sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("42P01")){
                     throw new MissingReferencedTableException();
                 }
+                throw e;
             }
         }
     }
@@ -146,7 +147,9 @@ public class EntityDao {
         }
         DataTypeInferer inferer = new DataTypeInferer();
 
-        switch (inferer.inferType(attVal)){
+        DataTypeMapping dataTypeMapping = inferer.inferType(attVal);
+
+        switch (dataTypeMapping){
             case DATE -> {
                 return LocalDate.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
             }
@@ -179,7 +182,7 @@ public class EntityDao {
     }
 
     private String getInsertParamList(Collection<DataTypeMapping> existingTableSchema) {
-        return existingTableSchema.stream().map(m -> m == DataTypeMapping.FOR_ATTRIBUTE_DEL ? "?" : m.getPostgresType().equalsIgnoreCase("jsonb") ? "? :: jsonb" : "?").collect(Collectors.joining(", "));
+        return existingTableSchema.stream().map(m -> m.getPostgresType().equalsIgnoreCase("jsonb") ? "? :: jsonb" : "?").collect(Collectors.joining(", "));
     }
 
     private String getInsertColList(Set<String> existingTableSchema) {

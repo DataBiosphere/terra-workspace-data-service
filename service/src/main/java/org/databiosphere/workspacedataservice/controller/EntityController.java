@@ -85,9 +85,6 @@ public class EntityController {
         Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference.entriesDiffering();
         for (String column : differenceMap.keySet()) {
             MapDifference.ValueDifference<DataTypeMapping> valueDifference = differenceMap.get(column);
-            if(valueDifference.rightValue() == DataTypeMapping.FOR_ATTRIBUTE_DEL){
-                continue;
-            }
             DataTypeMapping updatedColType = inferer.selectBestType(valueDifference.leftValue(), valueDifference.rightValue());
             entityDao.changeColumn(workspaceId, entityType, column, updatedColType);
             schema.put(column, updatedColType);
