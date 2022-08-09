@@ -1,8 +1,8 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.MissingReferencedTableException;
+import org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
 import org.databiosphere.workspacedataservice.shared.model.EntityAttributes;
 import org.databiosphere.workspacedataservice.shared.model.EntityId;
@@ -12,12 +12,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -88,13 +88,24 @@ public class EntityDaoTest {
         entityDao.batchUpsert(workspaceId, entityType.getName(), Collections.singletonList(referencedEntity), new LinkedHashMap<>());
 
         EntityId entityId = new EntityId("testEntity");
-        Entity testEntity = new Entity(entityId,entityType, new EntityAttributes(Map.of("testEntityType", "referencedEntity")));
+        Map<String,String> reference = Map.of(SingleTenantEntityReference.ENTITY_TYPE_KEY, "testEntityType", SingleTenantEntityReference.ENTITY_NAME_KEY, "referencedEntity");
+        Entity testEntity = new Entity(entityId,entityType, new EntityAttributes(Map.of("testEntityType", reference)));
         entityDao.createSingleEntity(workspaceId, entityType.getName(), testEntity,
                 new LinkedHashMap<>(Map.of("foo", DataTypeMapping.STRING, "testEntityType", DataTypeMapping.STRING)));
 
-        Entity search = entityDao.getSingleEntity(workspaceId, entityType, entityId, Collections.emptyList());
+        Entity search = entityDao.getSingleEntity(workspaceId, entityType, entityId, entityDao.getReferenceCols(workspaceId, entityType.getName()));
         assertEquals(testEntity, search, "Created entity with references should match entered entity");
-//        System.out.println(search);
+
+        //Create an entity that refers to one that doesn't exist
+        EntityId failingId = new EntityId("failingId");
+        Map<String,String> invalidReference = Map.of(SingleTenantEntityReference.ENTITY_TYPE_KEY, "testEntityType", SingleTenantEntityReference.ENTITY_NAME_KEY, "nonexistentEntity");
+        Entity failingEntity = new Entity(failingId, entityType, new EntityAttributes(Map.of("testEntityType", invalidReference)));
+        //TODO: Do we need to test this or is it just testing the db?
+        assertThrows(DataIntegrityViolationException.class, () -> {
+                    entityDao.createSingleEntity(workspaceId, entityType.getName(), failingEntity,
+                            new LinkedHashMap<>(Map.of("foo", DataTypeMapping.STRING, "testEntityType", DataTypeMapping.STRING)));
+                }
+            );
     }
 
     @Test
@@ -111,11 +122,30 @@ public class EntityDaoTest {
 
         //now we have an entity that overwrites attributes
         Entity replacingEntity = new Entity(attrId, entityType, new EntityAttributes(Map.of("foo", "bat", "attr2", "val2")));
-        entityDao.replaceAttributes(replacingEntity.getEntityTypeName(), new EntityAttributes(Map.of("foo", "bat", "attr2", "val2")),
+        entityDao.replaceAllAttributes(replacingEntity, new EntityAttributes(Map.of("foo", "bat", "attr2", "val2")),
                 workspaceId);
 
         Entity search = entityDao.getSingleEntity(workspaceId, entityType, attrId, entityDao.getReferenceCols(workspaceId, entityType.getName()));
         assertEquals(replacingEntity, search, "Created entity with references should match entered entity");
-//        System.out.println(search);
+
+        //now only overwrite one attribute - this should set the other one blank
+        replacingEntity = new Entity(attrId, entityType, new EntityAttributes(Map.of("attr2", "newVal")));
+        entityDao.replaceAllAttributes(replacingEntity, new EntityAttributes(Map.of("attr2", "newVal")),
+                workspaceId);
+
+        search = entityDao.getSingleEntity(workspaceId, entityType, attrId, entityDao.getReferenceCols(workspaceId, entityType.getName()));
+        assertEquals(replacingEntity, search, "Created entity with references should match entered entity");
+
+    }
+
+    @Test
+    @Transactional
+    void testGetReferenceCols() throws MissingReferencedTableException{
+        entityDao.addColumn(workspaceId, entityType.getName(), "referenceCol", DataTypeMapping.STRING);
+        entityDao.addForeignKeyForReference(entityType.getName(), entityType.getName(), workspaceId, "referenceCol");
+
+        List<SingleTenantEntityReference> refCols = entityDao.getReferenceCols(workspaceId, entityType.getName());
+        assertEquals(1, refCols.size(), "There should be one referenced column");
+        assertEquals("referenceCol", refCols.get(0).getReferenceColName(), "Reference column should be named referenceCol");
     }
 }

@@ -127,7 +127,8 @@ public class EntityController {
             Map<String, DataTypeMapping> schema = inferer.inferTypes(entityRequest.entityAttributes().getAttributes());
             if (!entityDao.entityTypeExists(instanceId, entityTypeName)){
                 try{
-                    entityDao.createEntityType(instanceId, schema, entityTypeName, new HashSet<>());
+                    Set<SingleTenantEntityReference> references = RefUtils.findEntityReferences(Collections.singletonList(new Entity(entityId, entityType, entityRequest.entityAttributes())));
+                    entityDao.createEntityType(instanceId, schema, entityTypeName, references);
                 } catch (MissingReferencedTableException e){
                     return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
                 }
@@ -148,7 +149,7 @@ public class EntityController {
             Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(entityRequest.entityAttributes().getAttributes());
             addOrUpdateColumnIfNeeded(instanceId, entityType.getName(), typeMapping, existingTableSchema, Collections.singletonList(new Entity(entityRequest)));
             //remove all attribute values and put new attribute values
-            entityDao.replaceAttributes(entityId.getEntityIdentifier(), entityRequest.entityAttributes(), instanceId);
+            entityDao.replaceAllAttributes(singleEntity, entityRequest.entityAttributes(), instanceId);
             //TODO: Should we get the entity to return or use submitted attributes (as is done in Patch and above)
             Entity updatedEntity = entityDao.getSingleEntity(instanceId, entityType, entityId, entityDao.getReferenceCols(instanceId, entityType.getName()));
             EntityResponse response = new EntityResponse(entityId, entityType, updatedEntity.getAttributes(),

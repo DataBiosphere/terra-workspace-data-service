@@ -128,7 +128,6 @@ public class EntityDao {
                         new SingleTenantEntityReference(rs.getString("column_name"), new EntityType(rs.getString("table_name"))));
     }
 
-
     private String genColUpsertUpdates(Set<String> cols) {
         return cols.stream().filter(c -> !ENTITY_ID.getColumnName().equals(c)).map(c -> "\"" + c + "\"" + " = excluded.\"" + c + "\"").collect(Collectors.joining(", "));
     }
@@ -167,6 +166,7 @@ public class EntityDao {
                 } else {
                     Object attVal = entity.getAttributes().getAttributes().get(col);
                     row[i++] = attVal == null ? null : getValueForSql(attVal);
+//                    row[i++] = getValueForSql(attVal);
                 }
             }
             return row;
@@ -181,7 +181,6 @@ public class EntityDao {
     private String getInsertParamList(Collection<DataTypeMapping> existingTableSchema) {
         return existingTableSchema.stream().map(m -> m == DataTypeMapping.FOR_ATTRIBUTE_DEL ? "?" : m.getPostgresType().equalsIgnoreCase("jsonb") ? "? :: jsonb" : "?").collect(Collectors.joining(", "));
     }
-
 
     private String getInsertColList(Set<String> existingTableSchema) {
         return existingTableSchema.stream().map(col ->"\"" + col + "\"").collect(Collectors.joining(", "));
@@ -241,20 +240,39 @@ public class EntityDao {
         }
     }
 
-    public void replaceAttributes(String entityName, EntityAttributes newAttributes, UUID instanceId){
-        String sqltest = "update " + getQualifiedTableName(entityName, instanceId) + "set " +
-                genReplaceAttrUpdates(newAttributes);
-        System.out.println(sqltest);
-        namedTemplate.getJdbcTemplate().update(sqltest);
+    /**
+     * Remove all existing attributes on entity and replace with new values
+     * @param entity - which entity to update
+     * @param newAttributes - attribute values to replace
+     * @param instanceId
+     */
+    public void replaceAllAttributes(Entity entity, EntityAttributes newAttributes, UUID instanceId){
+        //first remove any present attribute values
+        removeAllAttributes(entity, instanceId);
+        //then add new values
+        replaceAttributes(entity, newAttributes, instanceId);
+    }
 
-        //update "53204e0d-2d7a-4c3c-867f-04436e7f3c61"."samples" set ("participant", "dog-names", "sys_name")
-        //insert into "53204e0d-2d7a-4c3c-867f-04436e7f3c61"."samples"("participant", "dog-names", "sys_name")
-        // values (?, ?, ?) on conflict (sys_name)
-        // do update set "participant" = excluded."participant", "dog-names" = excluded."dog-names"
+    public void replaceAttributes(Entity entity, EntityAttributes newAttributes, UUID instanceId){
+        namedTemplate.getJdbcTemplate().update("update " + getQualifiedTableName(entity.getEntityTypeName(), instanceId) + "set " +
+                genReplaceAttrUpdates(newAttributes));
+    }
+
+    public void removeAllAttributes(Entity entity, UUID instanceId){
+        //Make sure we get all the attributes
+        Set<String> schema = getExistingTableSchema(instanceId, entity.getEntityTypeName()).keySet();
+        //Except this one!
+        schema.remove(ENTITY_ID.getColumnName());
+        namedTemplate.getJdbcTemplate().update("update " + getQualifiedTableName(entity.getEntityTypeName(), instanceId) + "set " +
+                genRemoveAttrUpdates(schema));
     }
 
     private String genReplaceAttrUpdates(EntityAttributes newAttributes) {
         return newAttributes.getAttributes().entrySet().stream().map(entry ->  entry.getKey() + "='" + entry.getValue() + "'").collect(Collectors.joining(", "));
+    }
+
+    private String genRemoveAttrUpdates(Set<String> attributes) {
+        return attributes.stream().map(attr ->  attr + "=NULL").collect(Collectors.joining(", "));
     }
 
 }

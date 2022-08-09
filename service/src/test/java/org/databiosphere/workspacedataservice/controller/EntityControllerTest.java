@@ -100,6 +100,7 @@ public class EntityControllerTest {
         when(entityDao.entityTypeExists(any(), eq(testEntityType.getName()))).thenReturn(true);
         ResponseEntity<EntityResponse> response = controller.putSingleEntity(UUID.randomUUID(), "v0.2", testEntityType, testEntityId,
                 new EntityRequest(testEntityId, testEntityType, new EntityAttributes(Map.of("created_at", "2022-10-01", "foo", "bar"))));
+        //TODO: This is just checking the mocking.  Is there a better way to test the controller without relying on the dao?
         assertTrue(response.getBody().entityAttributes().getAttributes().size() == 2);
         assertEquals(Map.of("created_at", "2022-10-01", "foo", "bar"), response.getBody().entityAttributes().getAttributes());
     }
@@ -123,8 +124,7 @@ public class EntityControllerTest {
             assertEquals(workspaceId, instanceId, "createEntityType should be called with workspaceId %s".formatted(workspaceId));
             assertEquals(Map.of("created_at", DataTypeMapping.DATE, "foo", DataTypeMapping.STRING), schema, "createEntityType should be called with schema %s".formatted(Map.of("created_at", DataTypeMapping.DATE, "foo", DataTypeMapping.STRING)));
             assertEquals(newEntityType.getName(), entityTypeName, "createEntityType should be called with entityTypeName %s".formatted(newEntityType.getName()));
-            //TODO: should it though?  what should be put here?
-            assertEquals(new HashSet<>(), refs, "createEntityType should be called with an empty HashSet");
+            assertEquals(new HashSet<>(), refs, "createEntityType should be called with an empty reference set");
             return null;
         }).when(entityDao).createEntityType(any(), any(), any(), any());
         ResponseEntity<EntityResponse> response = controller.putSingleEntity(workspaceId, "v0.2", newEntityType, testEntityId,
@@ -137,22 +137,23 @@ public class EntityControllerTest {
     @Test
     void testPutSingleEntityOverwriteAttr(){
         EntityAttributes replacementAttr = new EntityAttributes(Map.of("created_at", "2021-10-01", "bar", "bat"));
-        when(entityDao.getSingleEntity(any(), any(), any(), any())).thenReturn(new Entity(testEntityId,
-                        testEntityType, new EntityAttributes(Map.of("created_at", "2022-10-01", "foo", "bar"))))
+        Entity preexisting = new Entity(testEntityId,
+                testEntityType, new EntityAttributes(Map.of("created_at", "2022-10-01", "foo", "bar")));
+        when(entityDao.getSingleEntity(any(), any(), any(), any())).thenReturn(preexisting)
                 .thenReturn(new Entity(testEntityId,
                         testEntityType, replacementAttr));
         UUID workspaceId = UUID.randomUUID();
-        //make sure replaceAttributes is called
+        //make sure replaceAllAttributes is called
         doAnswer(invocation -> {
-            Object entityName = invocation.getArgument(0);
+            Object entity = invocation.getArgument(0);
             Object attributes = invocation.getArgument(1);
             Object instanceId = invocation.getArgument(2);
 
-            assertEquals(workspaceId, instanceId, "replaceAttributes should be called with workspaceId %s".formatted(workspaceId));
-            assertEquals(replacementAttr, attributes, "replaceAttributes should be called with attributes %s".formatted(replacementAttr));
-            assertEquals(testEntityId.getEntityIdentifier(), entityName, "replaceAttributes should be called with entityTypeName %s".formatted(testEntityId.getEntityIdentifier()));
+            assertEquals(workspaceId, instanceId, "replaceAllAttributes should be called with workspaceId %s".formatted(workspaceId));
+            assertEquals(replacementAttr, attributes, "replaceAllAttributes should be called with attributes %s".formatted(replacementAttr));
+            assertEquals(preexisting, entity, "replaceAllAttributes should be called with entityTypeName %s".formatted(preexisting));
             return null;
-        }).when(entityDao).replaceAttributes(any(), any(), any());
+        }).when(entityDao).replaceAllAttributes(any(), any(), any());
 
         ResponseEntity<EntityResponse> response = controller.putSingleEntity(workspaceId, "v0.2", testEntityType, testEntityId,
                 new EntityRequest(testEntityId, testEntityType, replacementAttr));

@@ -15,6 +15,11 @@ import static org.databiosphere.workspacedataservice.service.model.SingleTenantE
 
 public class RefUtils {
 
+    /**
+     * Determines if any attributes reference another table
+     * @param entities - all entities whose references to check
+     * @return Set of SingleTenantEntityReference for all referencing attributes
+     */
     public static Set<SingleTenantEntityReference> findEntityReferences(List<Entity> entities) {
         Set<SingleTenantEntityReference> result = new HashSet<>();
         for (Entity entity : entities) {
@@ -44,6 +49,11 @@ public class RefUtils {
         throw new IllegalArgumentException("Expected {\"entityType\":<type>, \"entityName\":<name>}");
     }
 
+    /**
+     * Determines whether attribute value matches this expectation
+     * @param obj - attribute value to check
+     * @return true if attribute in form of a map with keys "entityType" and "entityName"
+     */
     public static boolean isReferenceValue(Object obj){
         if(obj instanceof Map) {
             Map map = (Map) obj;
