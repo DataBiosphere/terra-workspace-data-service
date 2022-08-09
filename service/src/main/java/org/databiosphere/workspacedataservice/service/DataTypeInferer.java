@@ -65,6 +65,10 @@ public class DataTypeInferer {
             return DOUBLE;
         }
 
+        if(val instanceof Boolean){
+            return BOOLEAN;
+        }
+
         String sVal = val.toString();
         if(isValidDate(sVal)){
             return DATE;
