@@ -17,8 +17,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
-import static org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference.ENTITY_NAME_KEY;
-import static org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference.ENTITY_TYPE_KEY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -42,7 +40,6 @@ public class EntityControllerTest {
         controller = new EntityController(entityDao);
     }
 
-    //TODO: this test seems invalid, since updateSingleEntity just returns the result of getSingleEntity, which is mocked
     @Test
     void testPatchNewSingleEntity(){
         when(entityDao.getSingleEntity(any(), any(), any(), any())).thenReturn(new Entity(testEntityId,
@@ -166,7 +163,10 @@ public class EntityControllerTest {
         Map<String, Object> refAttr = new HashMap<>();
         refAttr.put("entityType", testEntityType.getName());
         refAttr.put("entityName", testEntityId.getEntityIdentifier());
-        when(entityDao.getSingleEntity(any(), any(), any(), any())).thenReturn(null)
+        when(entityDao.getSingleEntity(any(), eq(testEntityType), eq(testEntityId), any()))
+                .thenReturn(new Entity(testEntityId,
+                        testEntityType, new EntityAttributes(new HashMap<>())));
+        when(entityDao.getSingleEntity(any(), eq(new EntityType("referencingEntityType")), eq(new EntityId("referencingEntity")), any())).thenReturn(null)
                 .thenReturn(new Entity(testEntityId,
                         testEntityType, new EntityAttributes(Map.of("referencingAttr", refAttr))));
         EntityAttributes referencingAttributes = new EntityAttributes(Map.of("referencingAttr", refAttr));

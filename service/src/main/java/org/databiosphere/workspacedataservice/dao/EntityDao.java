@@ -250,28 +250,32 @@ public class EntityDao {
      * @param instanceId
      */
     public void replaceAllAttributes(Entity entity, EntityAttributes newAttributes, UUID instanceId){
-        //first remove any present attribute values
-        removeAllAttributes(entity, instanceId);
-        //then add new values
-        replaceAttributes(entity, newAttributes, instanceId);
-    }
-
-    public void replaceAttributes(Entity entity, EntityAttributes newAttributes, UUID instanceId){
-        namedTemplate.getJdbcTemplate().update("update " + getQualifiedTableName(entity.getEntityTypeName(), instanceId) + "set " +
-                genReplaceAttrUpdates(newAttributes));
-    }
-
-    public void removeAllAttributes(Entity entity, UUID instanceId){
-        //Make sure we get all the attributes
-        Set<String> schema = getExistingTableSchema(instanceId, entity.getEntityTypeName()).keySet();
-        //Except this one!
+        Map<String, DataTypeMapping> schema = getExistingTableSchema(instanceId, entity.getEntityTypeName());
+        //This won't need to be updated
         schema.remove(ENTITY_ID.getColumnName());
-        namedTemplate.getJdbcTemplate().update("update " + getQualifiedTableName(entity.getEntityTypeName(), instanceId) + "set " +
-                genRemoveAttrUpdates(schema));
+        //first remove any present attribute values
+        removeAllAttributes(entity, instanceId, schema);
+        //then add new values
+        replaceAttributes(entity, newAttributes, instanceId, schema);
     }
 
-    private String genReplaceAttrUpdates(EntityAttributes newAttributes) {
-        return newAttributes.getAttributes().entrySet().stream().map(entry ->  entry.getKey() + "='" + entry.getValue() + "'").collect(Collectors.joining(", "));
+    public void replaceAttributes(Entity entity, EntityAttributes newAttributes, UUID instanceId, Map<String, DataTypeMapping> schema){
+        namedTemplate.getJdbcTemplate().update(genUpdateStatement(instanceId, entity.getEntityTypeName(), entity.getName().getEntityIdentifier(), new LinkedHashMap<>(schema)),
+                getInsertArgs(new Entity(entity.getName(), entity.getEntityType(), newAttributes), schema.keySet()));
+    }
+
+    private String genUpdateStatement(UUID workspaceId, String entityType, String entityName, LinkedHashMap<String, DataTypeMapping> schema) {
+        return "update " + getQualifiedTableName(entityType, workspaceId) + "set " +
+                genReplaceAttrUpdates(schema) + " where " + ENTITY_ID.getColumnName() + " = \'" + entityName + "\';";
+    }
+
+    public void removeAllAttributes(Entity entity, UUID instanceId, Map<String, DataTypeMapping> schema){
+        namedTemplate.getJdbcTemplate().update("update " + getQualifiedTableName(entity.getEntityTypeName(), instanceId) + "set " +
+                genRemoveAttrUpdates(schema.keySet()) + " where " + ENTITY_ID.getColumnName() + " = \'" + entity.getName().getEntityIdentifier() + "\';");
+    }
+
+    private String genReplaceAttrUpdates(Map<String, DataTypeMapping> schema) {
+        return schema.entrySet().stream().map(entry ->  "\"" + entry.getKey() + "\" = " + (entry.getValue().getPostgresType().equalsIgnoreCase("jsonb") ? "? :: jsonb" : "?")).collect(Collectors.joining(", "));
     }
 
     private String genRemoveAttrUpdates(Set<String> attributes) {

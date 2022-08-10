@@ -7,7 +7,7 @@ import org.databiosphere.workspacedataservice.shared.model.Entity;
 import org.databiosphere.workspacedataservice.shared.model.EntityAttributes;
 import org.databiosphere.workspacedataservice.shared.model.EntityId;
 import org.databiosphere.workspacedataservice.shared.model.EntityType;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,14 +28,12 @@ public class EntityDaoTest {
     UUID workspaceId;
     EntityType entityType;
 
-    @BeforeAll
+    @BeforeEach
     void setUp() throws MissingReferencedTableException {
         workspaceId = UUID.randomUUID();
         entityType  = new EntityType("testEntityType");
         entityDao.createSchema(workspaceId);
         entityDao.createEntityType(workspaceId, Collections.emptyMap(), entityType.getName(), Collections.emptySet());
-        //add default column to test entity type - trying to add it in multiple tests results in error
-        entityDao.addColumn(workspaceId, entityType.getName(), "foo", DataTypeMapping.STRING);
     }
 
     @Test
@@ -58,6 +56,8 @@ public class EntityDaoTest {
     @Test
     @Transactional
     void testCreateSingleEntity(){
+        entityDao.addColumn(workspaceId, entityType.getName(), "foo", DataTypeMapping.STRING);
+
         //create entity with no attributes
         EntityId entityId = new EntityId("testEntity");
         Entity testEntity = new Entity(entityId, entityType, new EntityAttributes(new HashMap<>()));
@@ -79,6 +79,8 @@ public class EntityDaoTest {
     @Transactional
     void testCreateEntityWithReferences() throws MissingReferencedTableException {
         //make sure columns are in entitytype, as this will be taken care of before we get to the dao
+        entityDao.addColumn(workspaceId, entityType.getName(), "foo", DataTypeMapping.STRING);
+
         entityDao.addColumn(workspaceId, entityType.getName(), "testEntityType", DataTypeMapping.STRING);
         entityDao.addForeignKeyForReference(entityType.getName(), entityType.getName(), workspaceId, "testEntityType");
 
@@ -112,6 +114,7 @@ public class EntityDaoTest {
     @Transactional
     void testReplaceAttributes() {
         //This should be done before replaceAttributes is called
+        entityDao.addColumn(workspaceId, entityType.getName(), "foo", DataTypeMapping.STRING);
         entityDao.addColumn(workspaceId, entityType.getName(), "attr2", DataTypeMapping.STRING);
 
         //first put entity into db
@@ -119,14 +122,13 @@ public class EntityDaoTest {
         Entity entityWithAttr = new Entity(attrId, entityType, new EntityAttributes(Map.of("foo", "bar")));
         entityDao.createSingleEntity(workspaceId, entityType.getName(), entityWithAttr, new LinkedHashMap<>(Map.of("foo", DataTypeMapping.STRING)));
 
-
         //now we have an entity that overwrites attributes
         Entity replacingEntity = new Entity(attrId, entityType, new EntityAttributes(Map.of("foo", "bat", "attr2", "val2")));
         entityDao.replaceAllAttributes(replacingEntity, new EntityAttributes(Map.of("foo", "bat", "attr2", "val2")),
                 workspaceId);
 
         Entity search = entityDao.getSingleEntity(workspaceId, entityType, attrId, entityDao.getReferenceCols(workspaceId, entityType.getName()));
-        assertEquals(replacingEntity, search, "Created entity with references should match entered entity");
+        assertEquals(replacingEntity, search, "Entity should have attributes overwritten");
 
         //now only overwrite one attribute - this should set the other one blank
         replacingEntity = new Entity(attrId, entityType, new EntityAttributes(Map.of("attr2", "newVal")));
@@ -134,8 +136,7 @@ public class EntityDaoTest {
                 workspaceId);
 
         search = entityDao.getSingleEntity(workspaceId, entityType, attrId, entityDao.getReferenceCols(workspaceId, entityType.getName()));
-        assertEquals(replacingEntity, search, "Created entity with references should match entered entity");
-
+        assertEquals(replacingEntity, search, "Entity should have unassigned attributes blank");
     }
 
     @Test

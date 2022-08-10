@@ -44,7 +44,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     put:
-      summary: Create or replace entity (pending)
+      summary: Create or replace entity
       description: |
         Creates or replaces the entity using the specified type and id.
         If the entity already exists, its entire set of attributes will be overwritten by

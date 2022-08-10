@@ -40,6 +40,7 @@ public class EntityController {
         if(singleEntity == null){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found");
         }
+        validateAttributes(instanceId, entityTypeName, entityRequest.entityAttributes());
         Map<String, Object> updatedAtts = entityRequest.entityAttributes().getAttributes();
         Map<String, Object> allAttrs = new HashMap<>(singleEntity.getAttributes().getAttributes());
         allAttrs.putAll(updatedAtts);
@@ -53,6 +54,17 @@ public class EntityController {
         entityDao.batchUpsert(instanceId, entityTypeName, entities, new LinkedHashMap<>(updatedSchema));
         EntityResponse response = new EntityResponse(entityId, entityType, singleEntity.getAttributes(), new EntityMetadata("TODO: SUPERFRESH"));
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    private void validateAttributes(UUID instanceId, String entityTypeName, EntityAttributes attributes){
+        List<SingleTenantEntityReference> refs = entityDao.getReferenceCols(instanceId, entityTypeName);
+        for (Map.Entry<String, Object> entry : attributes.getAttributes().entrySet()){
+            if (RefUtils.isReferenceValue(entry.getValue())){
+                if (entityDao.getSingleEntity(instanceId, new EntityType(RefUtils.getTypeValue(entry.getValue())), new EntityId(RefUtils.getRefValue(entry.getValue())), refs) == null){
+                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Referenced entity %s not found".formatted(RefUtils.getTypeValue(entry.getValue())));
+                }
+            }
+        }
     }
 
     private Map<String, DataTypeMapping> addOrUpdateColumnIfNeeded(UUID workspaceId, String entityType, Map<String, DataTypeMapping> schema, Map<String,
@@ -117,21 +129,22 @@ public class EntityController {
                                                              @RequestBody EntityRequest entityRequest) {
         Preconditions.checkArgument(version.equals("v0.2"));
         String entityTypeName = entityType.getName();
+        Map<String, DataTypeMapping> schema = inferer.inferTypes(entityRequest.entityAttributes().getAttributes());
+        //make sure entitytype exists
+        if (!entityDao.entityTypeExists(instanceId, entityTypeName)){
+            try{
+                Set<SingleTenantEntityReference> references = RefUtils.findEntityReferences(Collections.singletonList(new Entity(entityId, entityType, entityRequest.entityAttributes())));
+                entityDao.createEntityType(instanceId, schema, entityTypeName, references);
+            } catch (MissingReferencedTableException e){
+                return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
+            }
+        }
+        validateAttributes(instanceId, entityTypeName, entityRequest.entityAttributes());
         Entity singleEntity = entityDao.getSingleEntity(instanceId, entityType, entityId,
                 entityDao.getReferenceCols(instanceId, entityTypeName));
         if(singleEntity == null){
-            //make sure entitytype exists
-            Map<String, DataTypeMapping> schema = inferer.inferTypes(entityRequest.entityAttributes().getAttributes());
-            if (!entityDao.entityTypeExists(instanceId, entityTypeName)){
-                try{
-                    Set<SingleTenantEntityReference> references = RefUtils.findEntityReferences(Collections.singletonList(new Entity(entityId, entityType, entityRequest.entityAttributes())));
-                    entityDao.createEntityType(instanceId, schema, entityTypeName, references);
-                } catch (MissingReferencedTableException e){
-                    return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
-                }
-            }
             //create new entity
-            entityDao.createSingleEntity(instanceId, entityTypeName, new Entity(entityRequest), new LinkedHashMap<>(schema));
+            entityDao.createSingleEntity(instanceId, entityTypeName, new Entity(entityId, entityType, entityRequest.entityAttributes()), new LinkedHashMap<>(schema));
             EntityResponse response = new EntityResponse(entityId, entityType, entityRequest.entityAttributes(), new EntityMetadata("TODO"));
             return new ResponseEntity(response, HttpStatus.CREATED);
         } else {

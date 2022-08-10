@@ -33,7 +33,7 @@ public class RefUtils {
         return result;
     }
 
-    private static String getTypeValue(Object obj){
+    public static String getTypeValue(Object obj){
         if(obj instanceof Map){
             Map map = (Map) obj;
             return (String)map.get(ENTITY_TYPE_KEY);
