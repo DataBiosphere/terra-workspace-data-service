@@ -20,8 +20,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -78,7 +77,6 @@ public class EntityControllerTest {
         assertTrue(response.getBody().entityAttributes().getAttributes().size() == 3);
         assertEquals(Map.of("created_at", "2022-10-01", "foo", "bar", "referencingAttr", refAttr), response.getBody().entityAttributes().getAttributes());
     }
-
     @Test
     void testGetSingleEntity(){
         Entity testEntity = new Entity(testEntityId,
@@ -101,31 +99,22 @@ public class EntityControllerTest {
         assertTrue(response.getBody().entityAttributes().getAttributes().size() == 2);
         assertEquals(Map.of("created_at", "2022-10-01", "foo", "bar"), response.getBody().entityAttributes().getAttributes());
     }
-
     @Test
     void testPutNewSingleEntityWithNewEntityType() throws MissingReferencedTableException {
         EntityType newEntityType = new EntityType("newEntityType");
+        EntityAttributes newAttributes = new EntityAttributes(Map.of("created_at", "2022-10-01", "foo", "bar"));
         when(entityDao.getSingleEntity(any(), any(), any(), any())).thenReturn(null)
                 .thenReturn(new Entity(testEntityId,
-                        newEntityType, new EntityAttributes(Map.of("created_at", "2022-10-01", "foo", "bar"))));
+                        newEntityType, newAttributes));
         when(entityDao.entityTypeExists(any(), eq(newEntityType.getName()))).thenReturn(false);
         UUID workspaceId = UUID.randomUUID();
 
-        //make sure createEntityType is called
-        doAnswer(invocation -> {
-            Object instanceId = invocation.getArgument(0);
-            Object schema = invocation.getArgument(1);
-            Object entityTypeName = invocation.getArgument(2);
-            Object refs = invocation.getArgument(3);
-
-            assertEquals(workspaceId, instanceId, "createEntityType should be called with workspaceId %s".formatted(workspaceId));
-            assertEquals(Map.of("created_at", DataTypeMapping.DATE, "foo", DataTypeMapping.STRING), schema, "createEntityType should be called with schema %s".formatted(Map.of("created_at", DataTypeMapping.DATE, "foo", DataTypeMapping.STRING)));
-            assertEquals(newEntityType.getName(), entityTypeName, "createEntityType should be called with entityTypeName %s".formatted(newEntityType.getName()));
-            assertEquals(new HashSet<>(), refs, "createEntityType should be called with an empty reference set");
-            return null;
-        }).when(entityDao).createEntityType(any(), any(), any(), any());
         ResponseEntity<EntityResponse> response = controller.putSingleEntity(workspaceId, "v0.2", newEntityType, testEntityId,
-                new EntityRequest(testEntityId, newEntityType, new EntityAttributes(Map.of("created_at", "2022-10-01", "foo", "bar"))));
+                new EntityRequest(testEntityId, newEntityType, newAttributes));
+
+        //make sure createEntityType is called
+        verify(entityDao).createEntityType(workspaceId, Map.of("created_at", DataTypeMapping.DATE, "foo", DataTypeMapping.STRING), newEntityType.getName(), new HashSet<>());
+        verify(entityDao).createSingleEntity(workspaceId, newEntityType.getName(), new Entity(testEntityId, newEntityType, newAttributes), new LinkedHashMap<>(Map.of("created_at", DataTypeMapping.DATE, "foo", DataTypeMapping.STRING)));
 
         assertTrue(response.getBody().entityAttributes().getAttributes().size() == 2, "EntityAttributes should contain two items");
         assertEquals(Map.of("created_at", "2022-10-01", "foo", "bar"), response.getBody().entityAttributes().getAttributes(), "EntityAttributes should contain created_at and foo");
@@ -140,47 +129,86 @@ public class EntityControllerTest {
                 .thenReturn(new Entity(testEntityId,
                         testEntityType, replacementAttr));
         UUID workspaceId = UUID.randomUUID();
-        //make sure replaceAllAttributes is called
-        doAnswer(invocation -> {
-            Object entity = invocation.getArgument(0);
-            Object attributes = invocation.getArgument(1);
-            Object instanceId = invocation.getArgument(2);
-
-            assertEquals(workspaceId, instanceId, "replaceAllAttributes should be called with workspaceId %s".formatted(workspaceId));
-            assertEquals(replacementAttr, attributes, "replaceAllAttributes should be called with attributes %s".formatted(replacementAttr));
-            assertEquals(preexisting, entity, "replaceAllAttributes should be called with entityTypeName %s".formatted(preexisting));
-            return null;
-        }).when(entityDao).replaceAllAttributes(any(), any(), any());
 
         ResponseEntity<EntityResponse> response = controller.putSingleEntity(workspaceId, "v0.2", testEntityType, testEntityId,
                 new EntityRequest(testEntityId, testEntityType, replacementAttr));
+        verify(entityDao).replaceAllAttributes(preexisting, replacementAttr, workspaceId);
+
         assertTrue(response.getBody().entityAttributes().getAttributes().size() == 2);
         assertEquals(replacementAttr, response.getBody().entityAttributes());
     }
     @Test
-    void testPutNewSingleEntityWithReference(){
+    void testPutNewSingleEntityWithReference() throws MissingReferencedTableException{
         when(entityDao.getReferenceCols(any(), any())).thenReturn(Collections.singletonList(new SingleTenantEntityReference("referencingAttr", testEntityType)));
         Map<String, Object> refAttr = new HashMap<>();
         refAttr.put("entityType", testEntityType.getName());
         refAttr.put("entityName", testEntityId.getEntityIdentifier());
-        when(entityDao.getSingleEntity(any(), eq(testEntityType), eq(testEntityId), any()))
-                .thenReturn(new Entity(testEntityId,
-                        testEntityType, new EntityAttributes(new HashMap<>())));
         when(entityDao.getSingleEntity(any(), eq(new EntityType("referencingEntityType")), eq(new EntityId("referencingEntity")), any())).thenReturn(null)
                 .thenReturn(new Entity(testEntityId,
                         testEntityType, new EntityAttributes(Map.of("referencingAttr", refAttr))));
+        when(entityDao.getSingleEntity(any(), eq(testEntityType), eq(testEntityId), any()))
+                .thenReturn(new Entity(testEntityId,
+                        testEntityType, new EntityAttributes(new HashMap<>())));
+
         EntityAttributes referencingAttributes = new EntityAttributes(Map.of("referencingAttr", refAttr));
 
         EntityType referencingEntityType = new EntityType("referencingEntityType");
         EntityId referencingEntity = new EntityId("referencingEntity");
 
-        ResponseEntity<EntityResponse> response = controller.putSingleEntity(UUID.randomUUID(), "v0.2", referencingEntityType, referencingEntity,
+        UUID workspaceId = UUID.randomUUID();
+        ResponseEntity<EntityResponse> response = controller.putSingleEntity(workspaceId, "v0.2", referencingEntityType, referencingEntity,
                 new EntityRequest(referencingEntity, referencingEntityType, referencingAttributes));
+
+        verify(entityDao).createEntityType(workspaceId, Map.of("referencingAttr", DataTypeMapping.STRING), referencingEntityType.getName(), Set.of(new SingleTenantEntityReference("referencingAttr", testEntityType)));
+        verify(entityDao).createSingleEntity(workspaceId, referencingEntityType.getName(), new Entity(referencingEntity, referencingEntityType, referencingAttributes), new LinkedHashMap<>(Map.of("referencingAttr", DataTypeMapping.STRING)));
+
         assertTrue(response.getBody().entityAttributes().getAttributes().size() == 1, "Entity attributes should have 1 item");
         assertEquals(Map.of("referencingAttr", refAttr), response.getBody().entityAttributes().getAttributes(),
                 "Entity attributes should contain referencingAttr");
+
+        //Test Reference to Non-existent table
+        doThrow(MissingReferencedTableException.class)
+                .when(entityDao)
+                .createEntityType(any(), any(), any(), any());
+        response = controller.putSingleEntity(UUID.randomUUID(), "v0.2", referencingEntityType, referencingEntity,
+                new EntityRequest(referencingEntity, referencingEntityType, referencingAttributes));
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode(), "Reference to non-existent table should return BAD_REQUEST");
     }
 
+    @Test
+    void testPutSingleEntityWithReference() throws MissingReferencedTableException{
+        when(entityDao.getReferenceCols(any(), any())).thenReturn(Collections.singletonList(new SingleTenantEntityReference("referencingAttr", testEntityType)));
+        Map<String, Object> refAttr = new HashMap<>();
+        refAttr.put("entityType", testEntityType.getName());
+        refAttr.put("entityName", testEntityId.getEntityIdentifier());
+        when(entityDao.getSingleEntity(any(), eq(new EntityType("referencingEntityType")), eq(new EntityId("referencingEntity")), any()))
+                .thenReturn(new Entity(testEntityId,
+                        testEntityType, new EntityAttributes(Map.of("foo", "bar"))));
+        when(entityDao.getSingleEntity(any(), eq(testEntityType), eq(testEntityId), any()))
+                .thenReturn(new Entity(testEntityId,
+                        testEntityType, new EntityAttributes(new HashMap<>())));
+
+        EntityAttributes referencingAttributes = new EntityAttributes(Map.of("referencingAttr", refAttr));
+
+        EntityType referencingEntityType = new EntityType("referencingEntityType");
+        EntityId referencingEntity = new EntityId("referencingEntity");
+
+        UUID workspaceId = UUID.randomUUID();
+        ResponseEntity<EntityResponse> response = controller.putSingleEntity(workspaceId, "v0.2", referencingEntityType, referencingEntity,
+                new EntityRequest(referencingEntity, referencingEntityType, referencingAttributes));
+
+        //Should add column and foreign key for the new column
+        verify(entityDao).addColumn(workspaceId, referencingEntityType.getName(), "referencingAttr", DataTypeMapping.STRING);
+        verify(entityDao).addForeignKeyForReference(referencingEntityType.getName(), testEntityType.getName(), workspaceId, "referencingAttr");
+
+        //Test Reference to Non-existent entity
+        when(entityDao.getSingleEntity(any(), eq(testEntityType), eq(testEntityId), any()))
+                .thenReturn(null);
+        assertThrows(ResponseStatusException.class, () -> {
+            controller.putSingleEntity(UUID.randomUUID(), "v0.2", referencingEntityType, referencingEntity,
+                    new EntityRequest(referencingEntity, referencingEntityType, referencingAttributes));
+        });
+    }
     @Test
     @Transactional
     void testPutEntityWithNoChanges(){

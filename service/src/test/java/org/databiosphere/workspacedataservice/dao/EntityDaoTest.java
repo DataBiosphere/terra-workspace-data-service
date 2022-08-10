@@ -86,7 +86,7 @@ public class EntityDaoTest {
 
         EntityId refEntityId = new EntityId("referencedEntity");
         Entity referencedEntity = new Entity(refEntityId, entityType, new EntityAttributes(Map.of("foo", "bar")));
-        //avoid using method under test to prepare db - may want to change to creating as part of setup
+        //avoid using method under test to prepare db - may want to change to creating this entity during setup
         entityDao.batchUpsert(workspaceId, entityType.getName(), Collections.singletonList(referencedEntity), new LinkedHashMap<>());
 
         EntityId entityId = new EntityId("testEntity");
@@ -97,23 +97,12 @@ public class EntityDaoTest {
 
         Entity search = entityDao.getSingleEntity(workspaceId, entityType, entityId, entityDao.getReferenceCols(workspaceId, entityType.getName()));
         assertEquals(testEntity, search, "Created entity with references should match entered entity");
-
-        //Create an entity that refers to one that doesn't exist
-        EntityId failingId = new EntityId("failingId");
-        Map<String,String> invalidReference = Map.of(SingleTenantEntityReference.ENTITY_TYPE_KEY, "testEntityType", SingleTenantEntityReference.ENTITY_NAME_KEY, "nonexistentEntity");
-        Entity failingEntity = new Entity(failingId, entityType, new EntityAttributes(Map.of("testEntityType", invalidReference)));
-        //TODO: Do we need to test this or is it just testing the db?
-        assertThrows(DataIntegrityViolationException.class, () -> {
-                    entityDao.createSingleEntity(workspaceId, entityType.getName(), failingEntity,
-                            new LinkedHashMap<>(Map.of("foo", DataTypeMapping.STRING, "testEntityType", DataTypeMapping.STRING)));
-                }
-            );
     }
 
     @Test
     @Transactional
-    void testReplaceAttributes() {
-        //This should be done before replaceAttributes is called
+    void testReplaceAllAttributes() {
+        //This should be done before replaceAllAttributes is called
         entityDao.addColumn(workspaceId, entityType.getName(), "foo", DataTypeMapping.STRING);
         entityDao.addColumn(workspaceId, entityType.getName(), "attr2", DataTypeMapping.STRING);
 
