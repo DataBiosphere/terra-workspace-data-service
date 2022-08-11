@@ -2,10 +2,7 @@ package org.databiosphere.workspacedataservice.dao;
 
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RefUtils;
-import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.EntitySystemColumn;
-import org.databiosphere.workspacedataservice.service.model.MissingReferencedTableException;
-import org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference;
+import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
 import org.databiosphere.workspacedataservice.shared.model.EntityAttributes;
 import org.databiosphere.workspacedataservice.shared.model.EntityId;
@@ -13,10 +10,12 @@ import org.databiosphere.workspacedataservice.shared.model.EntityType;
 import org.postgresql.util.PGobject;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -98,10 +97,20 @@ public class EntityDao {
                 getInsertBatchArgs(entities, schema.keySet()));
     }
     //The expectation is that the entity type already matches the schema and attributes given, as that's dealt with earlier in the code.
-    public void createSingleEntity(UUID workspaceId, String entityType, Entity entity, LinkedHashMap<String, DataTypeMapping> schema){
+    public void createSingleEntity(UUID workspaceId, String entityType, Entity entity, LinkedHashMap<String, DataTypeMapping> schema) throws InvalidEntityReference {
         schema.put(ENTITY_ID.getColumnName(), DataTypeMapping.STRING);
-        namedTemplate.getJdbcTemplate().update(genInsertStatement(workspaceId, entityType, schema),
-                getInsertArgs(entity, schema.keySet()));
+        try {
+            namedTemplate.getJdbcTemplate().update(genInsertStatement(workspaceId, entityType, schema),
+                    getInsertArgs(entity, schema.keySet()));
+        } catch (DataAccessException e) {
+            if(e.getRootCause() instanceof SQLException){
+                SQLException sqlEx = (SQLException) e.getRootCause();
+                if(sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")){
+                    throw new InvalidEntityReference("It looks like you're trying to reference an entity that does not exist.");
+                }
+                throw e;
+            }
+        }
     }
 
     public void addForeignKeyForReference(String entityType, String referencedEntityType, UUID workspaceId, String referenceColName) throws MissingReferencedTableException {

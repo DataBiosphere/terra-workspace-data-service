@@ -124,29 +124,34 @@ public class EntityController {
         if(!entityDao.workspaceSchemaExists(instanceId)){
             entityDao.createSchema(instanceId);
         }
-        if (!entityDao.entityTypeExists(instanceId, entityTypeName)) {
-            createEntityTypeAndInsertEntities(instanceId, entityRequest, entityTypeName, requestSchema);
-        } else {
-            Map<String, DataTypeMapping> existingTableSchema = entityDao.getExistingTableSchema(instanceId, entityTypeName);
-            //null out any attributes that already exist but aren't in the request
-            existingTableSchema.keySet().forEach(attr -> attributesInRequest.putIfAbsent(attr, null));
-            Entity entity = new Entity(entityId, entityType, entityRequest.entityAttributes());
-            List<Entity> entities = Collections.singletonList(entity);
-            addOrUpdateColumnIfNeeded(instanceId, entityType.getName(), requestSchema, existingTableSchema, entities);
-            LinkedHashMap<String, DataTypeMapping> combinedSchema = new LinkedHashMap<>(requestSchema);
-            combinedSchema.putAll(existingTableSchema);
-            entityDao.createSingleEntity(instanceId, entityTypeName, entity, combinedSchema);
-        }
-        EntityResponse response = new EntityResponse(entityId, entityType, entityRequest.entityAttributes(), new EntityMetadata("TODO"));
-        return new ResponseEntity(response, HttpStatus.CREATED);
+        try {
+            if(!entityDao.entityTypeExists(instanceId, entityTypeName)){
+                createEntityTypeAndInsertEntity(instanceId, entityRequest, entityTypeName, requestSchema);
+            } else {
+                Map<String, DataTypeMapping> existingTableSchema = entityDao.getExistingTableSchema(instanceId, entityTypeName);
+                //null out any attributes that already exist but aren't in the request
+                existingTableSchema.keySet().forEach(attr -> attributesInRequest.putIfAbsent(attr, null));
+                Entity entity = new Entity(entityId, entityType, entityRequest.entityAttributes());
+                List<Entity> entities = Collections.singletonList(entity);
+                addOrUpdateColumnIfNeeded(instanceId, entityType.getName(), requestSchema, existingTableSchema, entities);
+                LinkedHashMap<String, DataTypeMapping> combinedSchema = new LinkedHashMap<>(requestSchema);
+                combinedSchema.putAll(existingTableSchema);
+                entityDao.createSingleEntity(instanceId, entityTypeName, entity, combinedSchema);
+            }
+            EntityResponse response = new EntityResponse(entityId, entityType, entityRequest.entityAttributes(), new EntityMetadata("TODO"));
+            return new ResponseEntity(response, HttpStatus.CREATED);
+        } catch (ResponseStatusException | InvalidEntityReference e){
+                return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
+            }
     }
 
-    private void createEntityTypeAndInsertEntities(UUID instanceId, EntityRequest entityRequest, String entityTypeName, Map<String, DataTypeMapping> requestSchema) {
+    private void createEntityTypeAndInsertEntity(UUID instanceId, EntityRequest entityRequest, String entityTypeName, Map<String, DataTypeMapping> requestSchema) throws InvalidEntityReference {
         try {
-            List<Entity> entities = Collections.singletonList(new Entity(entityRequest.entityId(), entityRequest.entityType(), entityRequest.entityAttributes()));
+            Entity newEntity = new Entity(entityRequest.entityId(), entityRequest.entityType(), entityRequest.entityAttributes());
+            List<Entity> entities = Collections.singletonList(newEntity);
             entityDao.createEntityType(instanceId, requestSchema, entityTypeName,
                     RefUtils.findEntityReferences(entities));
-            entityDao.batchUpsert(instanceId, entityTypeName, entities, new LinkedHashMap<>(requestSchema));
+            entityDao.createSingleEntity(instanceId, entityTypeName, newEntity, new LinkedHashMap<>(requestSchema));
         } catch (MissingReferencedTableException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "It looks like you're attempting to assign a reference " +
                     "to a table that does not exist", e);

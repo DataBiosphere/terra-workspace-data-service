@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.InvalidEntityReference;
 import org.databiosphere.workspacedataservice.service.model.MissingReferencedTableException;
 import org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
@@ -55,7 +56,7 @@ public class EntityDaoTest {
 
     @Test
     @Transactional
-    void testCreateSingleEntity(){
+    void testCreateSingleEntity() throws InvalidEntityReference {
         entityDao.addColumn(workspaceId, entityType.getName(), "foo", DataTypeMapping.STRING);
 
         //create entity with no attributes
@@ -77,7 +78,7 @@ public class EntityDaoTest {
 
     @Test
     @Transactional
-    void testCreateEntityWithReferences() throws MissingReferencedTableException {
+    void testCreateEntityWithReferences() throws MissingReferencedTableException, InvalidEntityReference {
         //make sure columns are in entitytype, as this will be taken care of before we get to the dao
         entityDao.addColumn(workspaceId, entityType.getName(), "foo", DataTypeMapping.STRING);
 
