@@ -92,13 +92,15 @@ public class EntityController {
         return schema;
     }
 
-
     @GetMapping("/{instanceId}/entities/{version}/{entityType}/{entityId}")
     public ResponseEntity<EntityResponse> getSingleEntity(@PathVariable("instanceId") UUID instanceId,
                                               @PathVariable("version") String version,
                                               @PathVariable("entityType") EntityType entityType,
                                               @PathVariable("entityId") EntityId entityId) {
         Preconditions.checkArgument(version.equals("v0.2"));
+        if(!entityDao.workspaceSchemaExists(instanceId) || !entityDao.entityTypeExists(instanceId, entityType.getName())){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Instance or table don't exist");
+        }
         Entity result = entityDao.getSingleEntity(instanceId, entityType, entityId, entityDao.getReferenceCols(instanceId, entityType.getName()));
         if (result == null){
             //TODO: standard exception classes
@@ -119,6 +121,9 @@ public class EntityController {
         String entityTypeName = entityType.getName();
         Map<String, Object> attributesInRequest = entityRequest.entityAttributes().getAttributes();
         Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
+        if(!entityDao.workspaceSchemaExists(instanceId)){
+            entityDao.createSchema(instanceId);
+        }
         try {
             if(!entityDao.entityTypeExists(instanceId, entityTypeName)){
                 createEntityTypeAndInsertEntity(instanceId, entityRequest, entityTypeName, requestSchema);
@@ -152,5 +157,4 @@ public class EntityController {
                     "to a table that does not exist", e);
         }
     }
-
 }
