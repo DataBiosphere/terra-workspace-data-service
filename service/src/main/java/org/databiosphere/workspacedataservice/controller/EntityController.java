@@ -114,7 +114,7 @@ public class EntityController {
                                                @PathVariable("version") String version){
         Preconditions.checkArgument(version.equals("v0.2"));
         if (entityDao.workspaceSchemaExists(instanceId)){
-            return new ResponseEntity("This schema already exists.", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity("This schema already exists.", HttpStatus.CONFLICT);
         }
         entityDao.createSchema(instanceId);
         return new ResponseEntity<>(HttpStatus.CREATED);
