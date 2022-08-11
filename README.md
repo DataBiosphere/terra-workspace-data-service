@@ -79,13 +79,6 @@ When done, stop postgres:
 ./local-dev/run_postgres.sh stop
 ```
 
-###Debugging in Intellij
-To debug in intellij, use
-```bash
-./gradlew bootRun --debug-jvm
-```
-Then in Intellij, go to Run -> Attach to Process.  Select `org.databiosphere.workspacedataservice.WorkspaceDataServiceApplication`.
-
 ## Tests
 To run unit tests locally, first make sure your local postgres is up and running:
 ```bash
