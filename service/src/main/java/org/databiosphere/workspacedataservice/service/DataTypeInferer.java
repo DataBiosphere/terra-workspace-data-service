@@ -69,6 +69,10 @@ public class DataTypeInferer {
             return BOOLEAN;
         }
 
+        if(RefUtils.isReferenceValue(val)){
+            return STRING;
+        }
+
         String sVal = val.toString();
         if(isValidDate(sVal)){
             return DATE;
