@@ -101,35 +101,6 @@ public class EntityDaoTest {
 
     @Test
     @Transactional
-    void testReplaceAllAttributes() {
-        //This should be done before replaceAllAttributes is called
-        entityDao.addColumn(workspaceId, entityType.getName(), "foo", DataTypeMapping.STRING);
-        entityDao.addColumn(workspaceId, entityType.getName(), "attr2", DataTypeMapping.STRING);
-
-        //first put entity into db
-        EntityId attrId = new EntityId("entityWithAttr");
-        Entity entityWithAttr = new Entity(attrId, entityType, new EntityAttributes(Map.of("foo", "bar")));
-        entityDao.createSingleEntity(workspaceId, entityType.getName(), entityWithAttr, new LinkedHashMap<>(Map.of("foo", DataTypeMapping.STRING)));
-
-        //now we have an entity that overwrites attributes
-        Entity replacingEntity = new Entity(attrId, entityType, new EntityAttributes(Map.of("foo", "bat", "attr2", "val2")));
-        entityDao.replaceAllAttributes(replacingEntity, new EntityAttributes(Map.of("foo", "bat", "attr2", "val2")),
-                workspaceId);
-
-        Entity search = entityDao.getSingleEntity(workspaceId, entityType, attrId, entityDao.getReferenceCols(workspaceId, entityType.getName()));
-        assertEquals(replacingEntity, search, "Entity should have attributes overwritten");
-
-        //now only overwrite one attribute - this should set the other one blank
-        replacingEntity = new Entity(attrId, entityType, new EntityAttributes(Map.of("attr2", "newVal")));
-        entityDao.replaceAllAttributes(replacingEntity, new EntityAttributes(Map.of("attr2", "newVal")),
-                workspaceId);
-
-        search = entityDao.getSingleEntity(workspaceId, entityType, attrId, entityDao.getReferenceCols(workspaceId, entityType.getName()));
-        assertEquals(replacingEntity, search, "Entity should have unassigned attributes blank");
-    }
-
-    @Test
-    @Transactional
     void testGetReferenceCols() throws MissingReferencedTableException{
         entityDao.addColumn(workspaceId, entityType.getName(), "referenceCol", DataTypeMapping.STRING);
         entityDao.addForeignKeyForReference(entityType.getName(), entityType.getName(), workspaceId, "referenceCol");
