@@ -109,12 +109,15 @@ public class EntityController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @PostMapping("/{version}/instance")
-    public ResponseEntity<UUID> createInstance(@PathVariable("version") String version){
+    @PostMapping("/{instanceId}/{version}/")
+    public ResponseEntity<String> createInstance(@PathVariable("instanceId") UUID instanceId,
+                                               @PathVariable("version") String version){
         Preconditions.checkArgument(version.equals("v0.2"));
-        UUID newInstanceId = UUID.randomUUID();
-        entityDao.createSchema(newInstanceId);
-        return new ResponseEntity<>(newInstanceId, HttpStatus.CREATED);
+        if (entityDao.workspaceSchemaExists(instanceId)){
+            return new ResponseEntity("This schema already exists.", HttpStatus.BAD_REQUEST);
+        }
+        entityDao.createSchema(instanceId);
+        return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
 
