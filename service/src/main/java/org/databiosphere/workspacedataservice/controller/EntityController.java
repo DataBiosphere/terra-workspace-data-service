@@ -1,39 +1,30 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ArrayListMultimap;
-import org.apache.commons.lang3.StringUtils;
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
 import org.databiosphere.workspacedataservice.dao.EntityDao;
-import org.databiosphere.workspacedataservice.service.EntityReferenceService;
-import org.databiosphere.workspacedataservice.service.model.AttemptToUpsertDeletedEntity;
-import org.databiosphere.workspacedataservice.service.model.EntityReferenceAction;
+import org.databiosphere.workspacedataservice.service.DataTypeInferer;
+import org.databiosphere.workspacedataservice.service.RefUtils;
+import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.shared.model.*;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 public class EntityController {
 
-    private final EntityReferenceService referenceService;
+    private final EntityDao entityDao;
+    private DataTypeInferer inferer;
 
-    private final EntityDao dao;
-
-    public EntityController(EntityReferenceService referenceService, EntityDao dao) {
-        this.referenceService = referenceService;
-        this.dao = dao;
-    }
-
-    private UUID getWorkspaceId(String wsNamespace, String wsName) {
-        try {
-            return dao.getWorkspaceId(wsNamespace, wsName);
-        } catch (EmptyResultDataAccessException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace not found");
-        }
+    public EntityController(EntityDao entityDao) {
+        this.entityDao = entityDao;
+        this.inferer = new DataTypeInferer();
     }
 
     @PatchMapping("/{instanceId}/entities/{version}/{entityType}/{entityId}")
@@ -43,82 +34,64 @@ public class EntityController {
                                                              @PathVariable("entityId") EntityId entityId,
                                                              @RequestBody EntityRequest entityRequest){
         Preconditions.checkArgument(version.equals("v0.2"));
-        Entity singleEntity = dao.getSingleEntity(instanceId, entityType, entityId);
+        String entityTypeName = entityType.getName();
+        Entity singleEntity = entityDao.getSingleEntity(instanceId, entityType, entityId,
+                entityDao.getReferenceCols(instanceId, entityTypeName));
         if(singleEntity == null){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found");
         }
-        Map<String, Object> attributesToUpdate = new HashMap<>();
-        attributesToUpdate.putAll(singleEntity.getAttributes().getAttributes());
-        attributesToUpdate.putAll(entityRequest.entityAttributes().getAttributes());
-        singleEntity.setAttributes(new EntityAttributes(attributesToUpdate));
+        Map<String, Object> updatedAtts = entityRequest.entityAttributes().getAttributes();
+        Map<String, Object> allAttrs = new HashMap<>(singleEntity.getAttributes().getAttributes());
+        allAttrs.putAll(updatedAtts);
+
+        Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(updatedAtts);
         //TODO: remove entityType/entityName JSON object format for references and move to URIs in the request/response payloads
-        EntityReferenceAction entityReferenceAction = referenceService.manageSingleEntityReference(instanceId, singleEntity);
-        referenceService.saveReferencesAndEntities(entityReferenceAction);
-        EntityResponse response = new EntityResponse(entityId, entityType, singleEntity.getAttributes(),
-                new EntityMetadata("TODO: SUPERFRESH"));
+        Map<String, DataTypeMapping> existingTableSchema = entityDao.getExistingTableSchema(instanceId, entityTypeName);
+        singleEntity.setAttributes(new EntityAttributes(allAttrs));
+        List<Entity> entities = Collections.singletonList(singleEntity);
+        Map<String, DataTypeMapping> updatedSchema = addOrUpdateColumnIfNeeded(instanceId, entityType.getName(), typeMapping, existingTableSchema, entities);
+        entityDao.batchUpsert(instanceId, entityTypeName, entities, new LinkedHashMap<>(updatedSchema));
+        EntityResponse response = new EntityResponse(entityId, entityType, singleEntity.getAttributes(), new EntityMetadata("TODO: SUPERFRESH"));
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @PostMapping("/api/workspaces/{workspaceNamespace}/{workspaceName}/entities/batchUpsert")
-    public ResponseEntity<String> batchUpsert(@PathVariable("workspaceNamespace") String wsNamespace,
-                                              @PathVariable("workspaceName") String wsName,
-                                              @RequestBody List<EntityUpsert> entitiesToUpdate){
-        UUID workspaceId = getWorkspaceId(wsNamespace, wsName);
-        Map<String, Map<EntityId, Entity>> entitiesForUpsert;
-        try {
-            entitiesForUpsert = referenceService.convertToUpdatedEntities(entitiesToUpdate, workspaceId);
-        } catch (AttemptToUpsertDeletedEntity e) {
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
-        }
-        EntityReferenceAction entityReferenceAction = referenceService.manageReferences(workspaceId, entitiesForUpsert);
-        referenceService.saveReferencesAndEntities(entityReferenceAction);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
-
-    @PostMapping("/api/workspaces/{workspaceNamespace}/{workspaceName}/entities/delete")
-    public ResponseEntity<String> deleteEntities(@PathVariable("workspaceNamespace") String wsNamespace,
-                                                 @PathVariable("workspaceName") String wsName, @RequestBody List<Map<String, String>> entitiesToDelete){
-        ArrayListMultimap<String, String> entitiesByType = ArrayListMultimap.create();
-        entitiesToDelete.forEach(e -> entitiesByType.put(e.get("entityType"), e.get("entityName")));
-        UUID workspaceId = getWorkspaceId(wsNamespace, wsName);
-        List<EntityToDelete> entitiesInDb = new ArrayList<>();
-        for(String entityTypeName: entitiesByType.keySet()){
-            Long entityTypeId = dao.getEntityTypeId(workspaceId, entityTypeName);
-            List<String> entities = entitiesByType.get(entityTypeName);
-            entitiesInDb.addAll(dao.getEntitiesToDelete(entityTypeId, new HashSet<>(entities), entityTypeName, true));
-            if(dao.areEntitiesReferenced(entityTypeId, entities)){
-                return new ResponseEntity<>("Can't delete referenced entities", HttpStatus.CONFLICT);
+    private Map<String, DataTypeMapping> addOrUpdateColumnIfNeeded(UUID workspaceId, String entityType, Map<String, DataTypeMapping> schema, Map<String,
+            DataTypeMapping> existingTableSchema, List<Entity> entities) {
+        MapDifference<String, DataTypeMapping> difference = Maps.difference(existingTableSchema, schema);
+        Map<String, DataTypeMapping> colsToAdd = difference.entriesOnlyOnRight();
+        Set<SingleTenantEntityReference> references = RefUtils.findEntityReferences(entities);
+        Map<String, List<SingleTenantEntityReference>> newRefCols = references.stream().collect(Collectors.groupingBy(SingleTenantEntityReference::getReferenceColName));
+        //TODO: better communicate to the user that they're trying to assign multiple entity types to a single column
+        Preconditions.checkArgument(newRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty());
+        for (String col : colsToAdd.keySet()) {
+            entityDao.addColumn(workspaceId, entityType, col, colsToAdd.get(col));
+            schema.put(col, colsToAdd.get(col));
+            if(newRefCols.containsKey(col)) {
+                String referencedEntityType = null;
+                try {
+                    referencedEntityType = newRefCols.get(col).get(0).getReferencedEntityType().getName();
+                    entityDao.addForeignKeyForReference(entityType, referencedEntityType, workspaceId, col);
+                } catch (MissingReferencedTableException e) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "It looks like you're attempting to assign a reference " +
+                            "to a table, " + referencedEntityType + ", that does not exist");
+                }
             }
         }
-        if(entitiesInDb.size() != entitiesToDelete.size()){
-            return new ResponseEntity<>("Not all entities exist", HttpStatus.BAD_REQUEST);
+        if(!entityDao.getReferenceCols(workspaceId, entityType).stream().map(SingleTenantEntityReference::getReferenceColName)
+                .collect(Collectors.toSet()).containsAll(newRefCols.keySet())){
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "It looks like you're attempting to assign a reference " +
+                    "to an existing column that was not configured for references");
         }
-
-        dao.deleteEntities(entitiesInDb);
-
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference.entriesDiffering();
+        for (String column : differenceMap.keySet()) {
+            MapDifference.ValueDifference<DataTypeMapping> valueDifference = differenceMap.get(column);
+            DataTypeMapping updatedColType = inferer.selectBestType(valueDifference.leftValue(), valueDifference.rightValue());
+            entityDao.changeColumn(workspaceId, entityType, column, updatedColType);
+            schema.put(column, updatedColType);
+        }
+        return schema;
     }
 
-    @GetMapping("/api/workspaces/{workspaceNamespace}/{workspaceName}/entityQuery/{entityType}")
-    public EntityQueryResult queryForEntities(@PathVariable("workspaceNamespace") String wsNamespace,
-                                              @PathVariable("workspaceName") String wsName,
-                                              @PathVariable("entityType") String entityType,
-                                              @RequestParam(defaultValue = "1") int page,
-                                              @RequestParam(defaultValue = "10") int pageSize,
-                                              @RequestParam(defaultValue = "name") String sortField,
-                                              @RequestParam(defaultValue = "asc") String sortDirection,
-                                              @RequestParam(defaultValue = "") String filterTerms,
-                                              @RequestParam(required = false) List<String> fields) {
-        Preconditions.checkArgument(Set.of("asc", "desc").contains(sortDirection.toLowerCase(Locale.ROOT)));
-        EntityQueryParameters queryParameters = new EntityQueryParameters(page, pageSize, sortField, sortDirection, filterTerms);
-        UUID workspaceId = getWorkspaceId(wsNamespace, wsName);
-        Long entityTypeId = dao.getEntityTypeId(workspaceId, entityType);
-        int totalEntityCount = dao.getTotalEntityCount(entityTypeId);
-        int filteredEntityCount = StringUtils.isNotBlank(filterTerms) ? dao.getFilteredEntityCount(entityTypeId, filterTerms) : totalEntityCount;
-        EntityQueryResultMetadata entityQueryResultMetadata = new EntityQueryResultMetadata(totalEntityCount, filteredEntityCount, (int) Math.ceil(filteredEntityCount / (double) pageSize));
-        return new EntityQueryResult(queryParameters, entityQueryResultMetadata, filteredEntityCount > 0 ? dao.getSelectedEntities(entityTypeId, pageSize,
-                (page-1) * pageSize, filterTerms, sortField, sortDirection, fields) : Collections.emptyList());
-    }
 
     @GetMapping("/{instanceId}/entities/{version}/{entityType}/{entityId}")
     public ResponseEntity<EntityResponse> getSingleEntity(@PathVariable("instanceId") UUID instanceId,
@@ -126,7 +99,7 @@ public class EntityController {
                                               @PathVariable("entityType") EntityType entityType,
                                               @PathVariable("entityId") EntityId entityId) {
         Preconditions.checkArgument(version.equals("v0.2"));
-        Entity result = dao.getSingleEntity(instanceId, entityType, entityId);
+        Entity result = entityDao.getSingleEntity(instanceId, entityType, entityId, entityDao.getReferenceCols(instanceId, entityType.getName()));
         if (result == null){
             //TODO: standard exception classes
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found");
