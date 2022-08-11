@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.controller;
 
 import org.databiosphere.workspacedataservice.dao.EntityDao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.InvalidEntityReference;
 import org.databiosphere.workspacedataservice.service.model.MissingReferencedTableException;
 import org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference;
 import org.databiosphere.workspacedataservice.shared.model.*;
@@ -82,6 +83,8 @@ public class EntityControllerTest {
         Entity testEntity = new Entity(testEntityId,
                 testEntityType, new EntityAttributes(Map.of("created_at", "2022-10-01", "foo", "bar")));
         when(entityDao.getSingleEntity(any(), any(), any(), any())).thenReturn(testEntity);
+        when(entityDao.workspaceSchemaExists(any())).thenReturn(true);
+        when(entityDao.entityTypeExists(any(), any())).thenReturn(true);
         ResponseEntity<EntityResponse> response = controller.getSingleEntity(UUID.randomUUID(), "v0.2", testEntityType, testEntityId);
         assertEquals(testEntity.getAttributes(), response.getBody().entityAttributes());
         assertEquals(testEntity.getName(), response.getBody().entityId());
@@ -100,7 +103,7 @@ public class EntityControllerTest {
         assertEquals(Map.of("created_at", "2022-10-01", "foo", "bar"), response.getBody().entityAttributes().getAttributes());
     }
     @Test
-    void testPutNewSingleEntityWithNewEntityType() throws MissingReferencedTableException {
+    void testPutNewSingleEntityWithNewEntityType() {
         EntityType newEntityType = new EntityType("newEntityType");
         EntityAttributes newAttributes = new EntityAttributes(Map.of("created_at", "2022-10-01", "foo", "bar"));
         when(entityDao.getSingleEntity(any(), any(), any(), any())).thenReturn(null)
@@ -176,7 +179,7 @@ public class EntityControllerTest {
     }
 
     @Test
-    void testPutSingleEntityWithReference() throws MissingReferencedTableException{
+    void testPutSingleEntityWithReference() throws MissingReferencedTableException, InvalidEntityReference {
         when(entityDao.getReferenceCols(any(), any())).thenReturn(Collections.singletonList(new SingleTenantEntityReference("referencingAttr", testEntityType)));
         when(entityDao.entityTypeExists(any(),any())).thenReturn(true);
         Map<String, Object> refAttr = new HashMap<>();
@@ -195,7 +198,7 @@ public class EntityControllerTest {
         EntityId referencingEntity = new EntityId("referencingEntity");
 
         UUID workspaceId = UUID.randomUUID();
-        ResponseEntity<EntityResponse> response = controller.putSingleEntity(workspaceId, "v0.2", referencingEntityType, referencingEntity,
+        controller.putSingleEntity(workspaceId, "v0.2", referencingEntityType, referencingEntity,
                 new EntityRequest(referencingEntity, referencingEntityType, referencingAttributes));
 
         //Should add column and foreign key for the new column
@@ -203,12 +206,14 @@ public class EntityControllerTest {
         verify(entityDao).addForeignKeyForReference(referencingEntityType.getName(), testEntityType.getName(), workspaceId, "referencingAttr");
 
         //Test Reference to Non-existent entity
-//        when(entityDao.getSingleEntity(any(), eq(testEntityType), eq(testEntityId), any()))
-//                .thenReturn(null);
-//        assertThrows(ResponseStatusException.class, () -> {
-//            controller.putSingleEntity(UUID.randomUUID(), "v0.2", referencingEntityType, referencingEntity,
-//                    new EntityRequest(referencingEntity, referencingEntityType, referencingAttributes));
-//        });
+        when(entityDao.getSingleEntity(any(), eq(testEntityType), eq(testEntityId), any()))
+                .thenReturn(null);
+        doThrow(InvalidEntityReference.class)
+                .when(entityDao)
+                .createSingleEntity(any(), any(), any(), any());
+        ResponseEntity<EntityResponse> response = controller.putSingleEntity(UUID.randomUUID(), "v0.2", referencingEntityType, referencingEntity,
+                    new EntityRequest(referencingEntity, referencingEntityType, referencingAttributes));
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode(), "Reference to Non-existent entity should return BAD_REQUEST");
     }
     @Test
     @Transactional
@@ -224,6 +229,9 @@ public class EntityControllerTest {
 
     @Test
     void testGetNonexistentSingleEntity(){
+        when(entityDao.workspaceSchemaExists(any())).thenReturn(true);
+        when(entityDao.entityTypeExists(any(), any())).thenReturn(true);
+
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
             controller.getSingleEntity(UUID.randomUUID(), "v0.2", testEntityType, testEntityId);
         });
