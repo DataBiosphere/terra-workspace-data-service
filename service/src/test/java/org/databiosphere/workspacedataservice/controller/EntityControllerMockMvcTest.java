@@ -1,5 +1,12 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.RandomUtils;
+import org.databiosphere.workspacedataservice.shared.model.EntityAttributes;
+import org.databiosphere.workspacedataservice.shared.model.EntityId;
+import org.databiosphere.workspacedataservice.shared.model.EntityRequest;
+import org.databiosphere.workspacedataservice.shared.model.EntityType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,16 +15,20 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference.ENTITY_NAME_KEY;
+import static org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference.ENTITY_TYPE_KEY;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 public class EntityControllerMockMvcTest {
 
+    private final ObjectMapper mapper = new ObjectMapper();
     @Autowired
     private MockMvc mockMvc;
 
@@ -45,16 +56,27 @@ public class EntityControllerMockMvcTest {
 
     @Test
     public void createAndRetrieveEntity() throws Exception {
-        mockMvc.perform(put("/{instanceId}/entities/{version}/{entityType}/{entityId}", instanceId, versionId, "samples", "sample-1")
-                        .content("{\"id\": \"sample-1\", " +
-                                "  \"type\": \"samples\", " +
-                                "  \"attributes\": { " +
-                                "    \"new-int\": 9999" +
-                                "  }" +
-                                "}")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isCreated());
-        mockMvc.perform(get("/{instanceId}/entities/{version}/{entityType}/{entityId}", instanceId, versionId, "samples", "sample-1"))
+        String entityType = "samples";
+        createSomeEntities(entityType, 1);
+        mockMvc.perform(get("/{instanceId}/entities/{version}/{entityType}/{entityId}", instanceId, versionId, entityType, "entity_0"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void createEntityWithReferences() throws Exception {
+        String referencedType = "ref_participants";
+        String referringType = "ref_samples";
+        createSomeEntities(referencedType, 3);
+        createSomeEntities(referringType, 1);
+        Map<String, Object> attributes = new HashMap<>();
+        Map<String, Object> ref = new HashMap<>();
+        ref.put(ENTITY_TYPE_KEY, referencedType);
+        ref.put(ENTITY_NAME_KEY, "entity_0");
+        attributes.put("sample-ref", ref);
+        mockMvc.perform(patch("/{instanceId}/entities/{version}/{entityType}/{entityId}", instanceId, versionId, referringType, "entity_0")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(
+                                new EntityRequest(new EntityId("entity_0"), new EntityType(referringType), new EntityAttributes(attributes)))))
                 .andExpect(status().isOk());
     }
 
@@ -80,7 +102,7 @@ public class EntityControllerMockMvcTest {
 //        String entityType = "add-ref";
 //        createSomeEntities(entityType, 1);
 //
-//        //try to supply new entity that has reference in attr1
+//        try to supply new entity that has reference in attr1
 //        mockMvc.perform(post("/st/api/workspaces/{workspaceId}/entities/batchUpsert", workspaceId)
 //                        .content("[{\"name\": \"entity_0\", \"entityType\": \"add-ref\", \"operations\": [{\"op\": \"AddUpdateAttribute\", \"attributeName\": \"attr1\", \"addUpdateAttribute\": {\"entityType\": \"sample-references\", \"entityName\": \"entity_1\"}}]}]")
 //                        .contentType(MediaType.APPLICATION_JSON))
@@ -162,26 +184,22 @@ public class EntityControllerMockMvcTest {
 //                .andExpect(status().isNoContent());
 //    }
 //
-//    private void createSomeEntities(String entityType, int numEntities) throws Exception {
-//        List<EntityUpsert> upserts = new ArrayList<>();
-//        for (int i = 0; i < numEntities; i++) {
-//            Map<String, Object> entityAttributes = new HashMap<>();
-//            entityAttributes.put("attr1", RandomStringUtils.randomAlphabetic(6));
-//            entityAttributes.put("attr2", RandomUtils.nextFloat());
-//            entityAttributes.put("attr3", "2022-11-01");
-//            entityAttributes.put("attr4", RandomStringUtils.randomNumeric(5));
-//            entityAttributes.put("attr5", RandomUtils.nextLong());
-//            entityAttributes.put("attr-dt", "2022-03-01T12:00:03");
-//            entityAttributes.put("attr-json", "{\"foo\":\"bar\"}");
-//            entityAttributes.put("attr-boolean", true);
-//            upserts.add(TestUtils.createEntityUpsert("entity_"+i, entityType, entityAttributes));
-//        }
-//        ObjectMapper mapper = new ObjectMapper();
-//        //create some entities to reference later
-//        mockMvc.perform(post("/st/api/workspaces/{workspaceId}/entities/batchUpsert", workspaceId)
-//                .content(mapper.writeValueAsString(upserts))
-//                .contentType(MediaType.APPLICATION_JSON))
-//                .andDo(print())
-//                .andExpect(status().isNoContent());
-//    }
+    private void createSomeEntities(String entityType, int numEntities) throws Exception {
+        for (int i = 0; i < numEntities; i++) {
+            String entityId = "entity_" + i;
+            Map<String, Object> entityAttributes = new HashMap<>();
+            entityAttributes.put("attr1", RandomStringUtils.randomAlphabetic(6));
+            entityAttributes.put("attr2", RandomUtils.nextFloat());
+            entityAttributes.put("attr3", "2022-11-01");
+            entityAttributes.put("attr4", RandomStringUtils.randomNumeric(5));
+            entityAttributes.put("attr5", RandomUtils.nextLong());
+            entityAttributes.put("attr-dt", "2022-03-01T12:00:03");
+            entityAttributes.put("attr-json", "{\"foo\":\"bar\"}");
+            entityAttributes.put("attr-boolean", true);
+            mockMvc.perform(put("/{instanceId}/entities/{version}/{entityType}/{entityId}", instanceId, versionId, entityType, entityId)
+                            .content(mapper.writeValueAsString(new EntityRequest(new EntityId(entityId), new EntityType(entityType), new EntityAttributes(entityAttributes))))
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isCreated());
+        }
+    }
 }

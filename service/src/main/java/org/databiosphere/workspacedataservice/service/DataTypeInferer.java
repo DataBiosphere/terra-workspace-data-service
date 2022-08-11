@@ -80,12 +80,6 @@ public class DataTypeInferer {
         if(isValidDateTime(sVal)){
             return DATE_TIME;
         }
-        if(StringUtils.isNumeric(sVal)){
-            if(Longs.tryParse(sVal) != null){
-                return LONG;
-            }
-            return DOUBLE;
-        }
         if(sVal.equalsIgnoreCase("true") || sVal.equalsIgnoreCase("false")){
             return BOOLEAN;
         }
