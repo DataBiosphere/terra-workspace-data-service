@@ -92,13 +92,15 @@ public class EntityController {
         return schema;
     }
 
-
     @GetMapping("/{instanceId}/entities/{version}/{entityType}/{entityId}")
     public ResponseEntity<EntityResponse> getSingleEntity(@PathVariable("instanceId") UUID instanceId,
                                               @PathVariable("version") String version,
                                               @PathVariable("entityType") EntityType entityType,
                                               @PathVariable("entityId") EntityId entityId) {
         Preconditions.checkArgument(version.equals("v0.2"));
+        if(!entityDao.workspaceSchemaExists(instanceId) || !entityDao.entityTypeExists(instanceId, entityType.getName())){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Instance or table don't exist");
+        }
         Entity result = entityDao.getSingleEntity(instanceId, entityType, entityId, entityDao.getReferenceCols(instanceId, entityType.getName()));
         if (result == null){
             //TODO: standard exception classes
@@ -119,26 +121,24 @@ public class EntityController {
         String entityTypeName = entityType.getName();
         Map<String, Object> attributesInRequest = entityRequest.entityAttributes().getAttributes();
         Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
-        try {
-            if(!entityDao.entityTypeExists(instanceId, entityTypeName)){
-                createEntityTypeAndInsertEntities(instanceId, entityRequest, entityTypeName, requestSchema);
-            } else {
-                Map<String, DataTypeMapping> existingTableSchema = entityDao.getExistingTableSchema(instanceId, entityTypeName);
-                //null out any attributes that already exist but aren't in the request
-                existingTableSchema.keySet().forEach(attr -> attributesInRequest.putIfAbsent(attr, null));
-                Entity entity = new Entity(entityId, entityType, entityRequest.entityAttributes());
-                List<Entity> entities = Collections.singletonList(entity);
-                addOrUpdateColumnIfNeeded(instanceId, entityType.getName(), requestSchema, existingTableSchema, entities);
-                LinkedHashMap<String, DataTypeMapping> combinedSchema = new LinkedHashMap<>(requestSchema);
-                combinedSchema.putAll(existingTableSchema);
-                entityDao.createSingleEntity(instanceId, entityTypeName, entity, combinedSchema);
-            }
-            EntityResponse response = new EntityResponse(entityId, entityType, entityRequest.entityAttributes(), new EntityMetadata("TODO"));
-            return new ResponseEntity(response, HttpStatus.CREATED);
-        } catch (ResponseStatusException e){
-                return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
-            }
-
+        if(!entityDao.workspaceSchemaExists(instanceId)){
+            entityDao.createSchema(instanceId);
+        }
+        if (!entityDao.entityTypeExists(instanceId, entityTypeName)) {
+            createEntityTypeAndInsertEntities(instanceId, entityRequest, entityTypeName, requestSchema);
+        } else {
+            Map<String, DataTypeMapping> existingTableSchema = entityDao.getExistingTableSchema(instanceId, entityTypeName);
+            //null out any attributes that already exist but aren't in the request
+            existingTableSchema.keySet().forEach(attr -> attributesInRequest.putIfAbsent(attr, null));
+            Entity entity = new Entity(entityId, entityType, entityRequest.entityAttributes());
+            List<Entity> entities = Collections.singletonList(entity);
+            addOrUpdateColumnIfNeeded(instanceId, entityType.getName(), requestSchema, existingTableSchema, entities);
+            LinkedHashMap<String, DataTypeMapping> combinedSchema = new LinkedHashMap<>(requestSchema);
+            combinedSchema.putAll(existingTableSchema);
+            entityDao.createSingleEntity(instanceId, entityTypeName, entity, combinedSchema);
+        }
+        EntityResponse response = new EntityResponse(entityId, entityType, entityRequest.entityAttributes(), new EntityMetadata("TODO"));
+        return new ResponseEntity(response, HttpStatus.CREATED);
     }
 
     private void createEntityTypeAndInsertEntities(UUID instanceId, EntityRequest entityRequest, String entityTypeName, Map<String, DataTypeMapping> requestSchema) {
@@ -152,18 +152,4 @@ public class EntityController {
                     "to a table that does not exist", e);
         }
     }
-//            //TODO: Should we get the entity to return or use submitted attributes (as is done in Patch and above)
-//            Entity updatedEntity = entityDao.getSingleEntity(instanceId, entityType, entityId, entityDao.getReferenceCols(instanceId, entityType.getName()));
-//            EntityResponse response = new EntityResponse(entityId, entityType, updatedEntity.getAttributes(),
-//                    new EntityMetadata("TODO"));
-//            return new ResponseEntity<>(response, HttpStatus.OK);
-//        }
-//    }
-
-//    //todo: compare deleted as well?
-//    private boolean compareEntities(Entity oldEntity, EntityRequest newEntity){
-//        return oldEntity.getAttributes().equals(newEntity.entityAttributes());
-//    }
-
-
 }
