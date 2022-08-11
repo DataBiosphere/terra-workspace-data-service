@@ -109,5 +109,13 @@ public class EntityController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+    @PostMapping("/{version}/instance")
+    public ResponseEntity<UUID> createInstance(@PathVariable("version") String version){
+        Preconditions.checkArgument(version.equals("v0.2"));
+        UUID newInstanceId = UUID.randomUUID();
+        entityDao.createSchema(newInstanceId);
+        return new ResponseEntity<>(newInstanceId, HttpStatus.CREATED);
+    }
+
 
 }

@@ -19,6 +19,8 @@ servers:
 tags:
   - name: Entities
     description: Entity APIs
+  - name: Instances
+  - description: Instance APIs
   - name: Schema
     description: Schema Manipulation APIs (coming soon)
 paths:
@@ -252,6 +254,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BatchResponse'
+  /{v}/instance:
+    post:
+      summary: Create an instance (unstable)
+      description: Create an instance - this API is liable to change
+      tags:
+        - Instances
+      parameters:
+        - $ref: '#/components/parameters/versionPathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: 15f36863-30a5-4cab-91f7-52be439f1175
 components:
   parameters:
     attributePathParam:
