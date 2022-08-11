@@ -121,7 +121,7 @@ public class EntityController {
         Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
         try {
             if(!entityDao.entityTypeExists(instanceId, entityTypeName)){
-                createEntityTypeAndInsertEntities(instanceId, entityRequest, entityTypeName, requestSchema);
+                createEntityTypeAndInsertEntity(instanceId, entityRequest, entityTypeName, requestSchema);
             } else {
                 Map<String, DataTypeMapping> existingTableSchema = entityDao.getExistingTableSchema(instanceId, entityTypeName);
                 //null out any attributes that already exist but aren't in the request
@@ -135,35 +135,22 @@ public class EntityController {
             }
             EntityResponse response = new EntityResponse(entityId, entityType, entityRequest.entityAttributes(), new EntityMetadata("TODO"));
             return new ResponseEntity(response, HttpStatus.CREATED);
-        } catch (ResponseStatusException e){
+        } catch (ResponseStatusException | InvalidEntityReference e){
                 return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
             }
-
     }
 
-    private void createEntityTypeAndInsertEntities(UUID instanceId, EntityRequest entityRequest, String entityTypeName, Map<String, DataTypeMapping> requestSchema) {
+    private void createEntityTypeAndInsertEntity(UUID instanceId, EntityRequest entityRequest, String entityTypeName, Map<String, DataTypeMapping> requestSchema) throws InvalidEntityReference {
         try {
-            List<Entity> entities = Collections.singletonList(new Entity(entityRequest.entityId(), entityRequest.entityType(), entityRequest.entityAttributes()));
+            Entity newEntity = new Entity(entityRequest.entityId(), entityRequest.entityType(), entityRequest.entityAttributes());
+            List<Entity> entities = Collections.singletonList(newEntity);
             entityDao.createEntityType(instanceId, requestSchema, entityTypeName,
                     RefUtils.findEntityReferences(entities));
-            entityDao.batchUpsert(instanceId, entityTypeName, entities, new LinkedHashMap<>(requestSchema));
+            entityDao.createSingleEntity(instanceId, entityTypeName, newEntity, new LinkedHashMap<>(requestSchema));
         } catch (MissingReferencedTableException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "It looks like you're attempting to assign a reference " +
                     "to a table that does not exist", e);
         }
     }
-//            //TODO: Should we get the entity to return or use submitted attributes (as is done in Patch and above)
-//            Entity updatedEntity = entityDao.getSingleEntity(instanceId, entityType, entityId, entityDao.getReferenceCols(instanceId, entityType.getName()));
-//            EntityResponse response = new EntityResponse(entityId, entityType, updatedEntity.getAttributes(),
-//                    new EntityMetadata("TODO"));
-//            return new ResponseEntity<>(response, HttpStatus.OK);
-//        }
-//    }
-
-//    //todo: compare deleted as well?
-//    private boolean compareEntities(Entity oldEntity, EntityRequest newEntity){
-//        return oldEntity.getAttributes().equals(newEntity.entityAttributes());
-//    }
-
 
 }
