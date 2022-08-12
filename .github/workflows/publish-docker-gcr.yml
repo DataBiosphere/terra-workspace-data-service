@@ -6,6 +6,7 @@ on:
 env:
   SERVICE_NAME: ${{ github.event.repository.name }}
   GCR_REGISTRY: gcr.io
+  ACR_REGISTRY: terradevacrpublic.azurecr.io
   GOOGLE_PROJECT: broad-dsp-gcr-public
 
 jobs:
@@ -28,9 +29,13 @@ jobs:
           git_short_sha=$(git rev-parse --short HEAD)
           echo $git_short_sha
           echo "::set-output name=git_short_sha::${git_short_sha}"
-      - name: Construct docker image name and tag
-        id: image-name
+      - name: Construct GCR docker image name and tag
+        id: gcr-image-name
         run: echo ::set-output name=name::${GCR_REGISTRY}/${GOOGLE_PROJECT}/${SERVICE_NAME}:${{ steps.setHash.outputs.git_short_sha }}
+
+      - name: Construct ACR docker image name and tag
+        id: acr-image-name
+        run: echo ::set-output name=name::${ACR_REGISTRY}/${SERVICE_NAME}:${{ steps.setHash.outputs.git_short_sha }}
 
       - name: Build image locally with jib
         run: |
@@ -57,4 +62,11 @@ jobs:
         run: gcloud auth configure-docker --quiet
 
       - name: Push GCR image
-        run: docker push  ${{ steps.image-name.outputs.name }}
+        run: docker push  ${{ steps.gcr-image-name.outputs.name }}
+
+      - name: Push image to Azure
+        run: |
+          echo ${{ secrets.ACR_SP_PASSWORD }} | docker login ${ACR_REGISTRY} \
+          --username ${{ secrets.ACR_SP_USER }} \
+          --password-stdin
+          docker push ${{ steps.acr-image-name.outputs.name }}
