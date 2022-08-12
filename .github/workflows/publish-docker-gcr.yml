@@ -1,4 +1,4 @@
-name: Publish and deploy
+name: Publish and deploy (GCR)
 on:
   push:
   workflow_dispatch:
