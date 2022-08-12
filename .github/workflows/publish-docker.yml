@@ -5,7 +5,7 @@ on:
 
 env:
   SERVICE_NAME: ${{ github.event.repository.name }}
-  GCR_REGISTRY: us.gcr.io
+  GCR_REGISTRY: gcr.io
   GOOGLE_PROJECT: broad-dsp-gcr-public
 
 jobs:
