@@ -139,9 +139,9 @@ public class EntityController {
             }
             EntityResponse response = new EntityResponse(entityId, entityType, entityRequest.entityAttributes(), new EntityMetadata("TODO"));
             return new ResponseEntity(response, HttpStatus.CREATED);
-        } catch (ResponseStatusException | InvalidEntityReference e){
-                return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
-            }
+        } catch (ResponseStatusException | InvalidEntityReference e) {
+            return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
     @PostMapping("/{instanceId}/{version}/")
     public ResponseEntity<String> createInstance(@PathVariable("instanceId") UUID instanceId,

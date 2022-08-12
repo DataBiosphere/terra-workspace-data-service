@@ -22,6 +22,8 @@ import java.util.UUID;
 import static org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference.ENTITY_NAME_KEY;
 import static org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference.ENTITY_TYPE_KEY;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -129,7 +131,20 @@ public class EntityControllerMockMvcTest {
                         .content(mapper.writeValueAsString(
                                 new EntityRequest(new EntityId("entity_0"), new EntityType(referringType), new EntityAttributes(attributes)))))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("It looks like you're trying to reference an entity that does not exist.")));;
+                .andExpect(content().string(containsString("It looks like you're trying to reference an entity that does not exist.")));
+    }
+
+    @Test
+    public void expandColumnDefForNewData() throws Exception {
+        String entityType = "to-alter";
+        createSomeEntities(entityType, 1);
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("attr3", "convert this column from date to text");
+        mockMvc.perform(put("/{instanceId}/entities/{version}/{entityType}/{entityId}", instanceId, versionId, entityType, "entity_1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(
+                                new EntityRequest(new EntityId("entity_0"), new EntityType(entityType), new EntityAttributes(attributes)))))
+                .andExpect(status().isCreated());
     }
 
     @Test
@@ -160,6 +175,22 @@ public class EntityControllerMockMvcTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("assign a reference to a table that does not exist")));
+    }
+
+    @Test
+    public void tryToAssignReferenceToNonRefColumn() throws Exception {
+        String entityType = "ref-alter";
+        createSomeEntities(entityType, 1);
+        Map<String, Object> entityAttributes = new HashMap<>();
+        Map<String, Object> ref = new HashMap<>();
+        ref.put(ENTITY_TYPE_KEY, "missing");
+        ref.put(ENTITY_NAME_KEY, "missing_also");
+        entityAttributes.put("attr1", ref);
+        mockMvc.perform(patch("/{instanceId}/entities/{version}/{entityType}/{entityId}", instanceId, versionId, entityType, "entity_0")
+                .content(mapper.writeValueAsString(new EntityRequest(new EntityId("entity_0"), new EntityType(entityType), new EntityAttributes(entityAttributes))))
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isConflict())
+                .andExpect(result -> assertTrue(result.getResolvedException().getMessage().contains("reference to an existing column that was not configured for references")));
     }
 
     private void createSomeEntities(String entityType, int numEntities) throws Exception {
