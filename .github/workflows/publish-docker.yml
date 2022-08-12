@@ -46,7 +46,7 @@ jobs:
         # Link to the github location of the action https://github.com/broadinstitute/dsp-appsec-trivy-action
         uses: broadinstitute/dsp-appsec-trivy-action@v1
         with:
-          image: ${{ steps.image-name.outputs.name }}
+          image: ${{ steps.gcr-image-name.outputs.name }}
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v0
@@ -63,6 +63,9 @@ jobs:
 
       - name: Push GCR image
         run: docker push  ${{ steps.gcr-image-name.outputs.name }}
+
+      - name: Re-tag image for CCR
+        run: docker tag ${{ steps.gcr-image-name.outputs.name }} ${{ steps.acr-image-name.outputs.name }}
 
       - name: Push image to Azure
         run: |
