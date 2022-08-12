@@ -1,6 +1,8 @@
-name: Publish and deploy (gcr)
+name: Publish Docker Images to GCR and ACR
 on:
   push:
+    branches:
+      - main
   workflow_dispatch:
 
 env:
