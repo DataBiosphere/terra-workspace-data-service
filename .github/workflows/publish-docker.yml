@@ -6,6 +6,7 @@ on:
 env:
   SERVICE_NAME: ${{ github.event.repository.name }}
   GCR_REGISTRY: us.gcr.io
+  GOOGLE_PROJECT: broad-dsp-gcr-public
 
 jobs:
   publish-job:
@@ -29,7 +30,7 @@ jobs:
           echo "::set-output name=git_short_sha::${git_short_sha}"
       - name: Construct docker image name and tag
         id: image-name
-        run: echo ::set-output name=name::${GCR_REGISTRY}/${SERVICE_NAME}:${{ steps.setHash.outputs.git_short_sha }}
+        run: echo ::set-output name=name::${GCR_REGISTRY}/${GOOGLE_PROJECT}/${SERVICE_NAME}:${{ steps.setHash.outputs.git_short_sha }}
 
       - name: Build image locally with jib
         run: |
