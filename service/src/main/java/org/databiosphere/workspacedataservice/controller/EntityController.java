@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 public class EntityController {
 
     private final EntityDao entityDao;
-    private DataTypeInferer inferer;
+    private final DataTypeInferer inferer;
 
     public EntityController(EntityDao entityDao) {
         this.entityDao = entityDao;
@@ -33,7 +33,7 @@ public class EntityController {
                                                              @PathVariable("entityType") EntityType entityType,
                                                              @PathVariable("entityId") EntityId entityId,
                                                              @RequestBody EntityRequest entityRequest){
-        Preconditions.checkArgument(version.equals("v0.2"));
+        checkValidVersion(version);
         String entityTypeName = entityType.getName();
         Entity singleEntity = entityDao.getSingleEntity(instanceId, entityType, entityId,
                 entityDao.getReferenceCols(instanceId, entityTypeName));
@@ -97,7 +97,7 @@ public class EntityController {
                                               @PathVariable("version") String version,
                                               @PathVariable("entityType") EntityType entityType,
                                               @PathVariable("entityId") EntityId entityId) {
-        Preconditions.checkArgument(version.equals("v0.2"));
+        checkValidVersion(version);
         if(!entityDao.workspaceSchemaExists(instanceId) || !entityDao.entityTypeExists(instanceId, entityType.getName())){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Instance or table don't exist");
         }
@@ -116,7 +116,7 @@ public class EntityController {
                                                              @PathVariable("entityType") EntityType entityType,
                                                              @PathVariable("entityId") EntityId entityId,
                                                              @RequestBody EntityRequest entityRequest) {
-        Preconditions.checkArgument(version.equals("v0.2"));
+        checkValidVersion(version);
         String entityTypeName = entityType.getName();
         Map<String, Object> attributesInRequest = entityRequest.entityAttributes().getAttributes();
         Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
@@ -146,12 +146,16 @@ public class EntityController {
     @PostMapping("/{instanceId}/{version}/")
     public ResponseEntity<String> createInstance(@PathVariable("instanceId") UUID instanceId,
                                                @PathVariable("version") String version){
-        Preconditions.checkArgument(version.equals("v0.2"));
+        checkValidVersion(version);
         if (entityDao.workspaceSchemaExists(instanceId)){
             return new ResponseEntity("This schema already exists.", HttpStatus.CONFLICT);
         }
         entityDao.createSchema(instanceId);
         return new ResponseEntity<>(HttpStatus.CREATED);
+    }
+
+    private static void checkValidVersion(String version) {
+        Preconditions.checkArgument(version.equals("v0.2"));
     }
 
     private void createEntityTypeAndInsertEntity(UUID instanceId, EntityRequest entityRequest, String entityTypeName, Map<String, DataTypeMapping> requestSchema) throws InvalidEntityReference {

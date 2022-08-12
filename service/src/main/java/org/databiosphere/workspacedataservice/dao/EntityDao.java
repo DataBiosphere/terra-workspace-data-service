@@ -103,13 +103,12 @@ public class EntityDao {
             namedTemplate.getJdbcTemplate().update(genInsertStatement(workspaceId, entityType, schema),
                     getInsertArgs(entity, schema.keySet()));
         } catch (DataAccessException e) {
-            if(e.getRootCause() instanceof SQLException){
-                SQLException sqlEx = (SQLException) e.getRootCause();
-                if(sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")){
+            if(e.getRootCause() instanceof SQLException sqlEx){
+                if(sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")){
                     throw new InvalidEntityReference("It looks like you're trying to reference an entity that does not exist.");
                 }
-                throw e;
             }
+            throw e;
         }
     }
 
