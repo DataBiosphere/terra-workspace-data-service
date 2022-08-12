@@ -78,6 +78,7 @@ When done, stop postgres:
 ```bash
 ./local-dev/run_postgres.sh stop
 ```
+
 ## Tests
 To run unit tests locally, first make sure your local postgres is up and running:
 ```bash

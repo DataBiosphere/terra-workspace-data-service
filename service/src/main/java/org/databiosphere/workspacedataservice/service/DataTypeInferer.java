@@ -1,18 +1,14 @@
 package org.databiosphere.workspacedataservice.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.primitives.Longs;
-import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
@@ -80,12 +76,6 @@ public class DataTypeInferer {
         if(isValidDateTime(sVal)){
             return DATE_TIME;
         }
-        if(StringUtils.isNumeric(sVal)){
-            if(Longs.tryParse(sVal) != null){
-                return LONG;
-            }
-            return DOUBLE;
-        }
         if(sVal.equalsIgnoreCase("true") || sVal.equalsIgnoreCase("false")){
             return BOOLEAN;
         }
@@ -95,13 +85,13 @@ public class DataTypeInferer {
         return STRING;
     }
 
-    protected boolean isValidJson(String val) {
+    public boolean isValidJson(String val) {
         try {
-            objectMapper.readTree(val);
+            JsonNode jsonNode = objectMapper.readTree(val);
+            return jsonNode.isArray() || jsonNode.isObject();
         } catch (JsonProcessingException e) {
             return false;
         }
-        return true;
     }
 
     private boolean isValidDateTime(String val) {

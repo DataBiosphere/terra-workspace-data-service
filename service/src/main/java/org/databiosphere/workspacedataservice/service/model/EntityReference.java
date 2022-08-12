@@ -1,66 +1,42 @@
 package org.databiosphere.workspacedataservice.service.model;
 
-import org.databiosphere.workspacedataservice.shared.model.EntityId;
+import org.databiosphere.workspacedataservice.shared.model.EntityType;
 
 public class EntityReference {
 
-    private final EntityId entityName;
+    public static final String ENTITY_TYPE_KEY = "entityType";
+    public static final String ENTITY_NAME_KEY = "entityName";
 
-    private final long entityType;
+    private final String referenceColName;
 
-    private final long referencedEntityType;
+    private final EntityType referencedEntityType;
 
-    private final EntityId referencedEntityName;
-
-    public EntityReference(EntityId entityName, long entityType, long referencedEntityType, EntityId referencedEntityName) {
-        this.entityName = entityName;
-        this.entityType = entityType;
+    public EntityReference(String referenceColName, EntityType referencedEntityType) {
+        this.referenceColName = referenceColName;
         this.referencedEntityType = referencedEntityType;
-        this.referencedEntityName = referencedEntityName;
     }
 
-    public EntityId getEntityName() {
-        return entityName;
+    public String getReferenceColName() {
+        return referenceColName;
     }
 
-    public long getEntityType() {
-        return entityType;
-    }
-
-    public long getReferencedEntityType() {
+    public EntityType getReferencedEntityType() {
         return referencedEntityType;
-    }
-
-    public EntityId getReferencedEntityName() {
-        return referencedEntityName;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof EntityReference)) return false;
+        if (!(o instanceof EntityReference that)) return false;
 
-        EntityReference that = (EntityReference) o;
-
-        if (getEntityType() != that.getEntityType()) return false;
-        if (getReferencedEntityType() != that.getReferencedEntityType()) return false;
-        if (!getEntityName().equals(that.getEntityName())) return false;
-        return getReferencedEntityName().equals(that.getReferencedEntityName());
+        if (!getReferenceColName().equals(that.getReferenceColName())) return false;
+        return getReferencedEntityType().equals(that.getReferencedEntityType());
     }
 
     @Override
     public int hashCode() {
-        int result = getEntityName().hashCode();
-        result = 31 * result + (int) (getEntityType() ^ (getEntityType() >>> 32));
-        result = 31 * result + (int) (getReferencedEntityType() ^ (getReferencedEntityType() >>> 32));
-        result = 31 * result + getReferencedEntityName().hashCode();
+        int result = getReferenceColName().hashCode();
+        result = 31 * result + getReferencedEntityType().hashCode();
         return result;
-    }
-
-    @Override
-    public String toString() {
-        return "EntityReference{" +
-                "referencedEntityName='" + referencedEntityName + '\'' +
-                '}';
     }
 }

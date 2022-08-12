@@ -2,10 +2,7 @@ package org.databiosphere.workspacedataservice.dao;
 
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RefUtils;
-import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.EntitySystemColumn;
-import org.databiosphere.workspacedataservice.service.model.MissingReferencedTableException;
-import org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference;
+import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
 import org.databiosphere.workspacedataservice.shared.model.EntityAttributes;
 import org.databiosphere.workspacedataservice.shared.model.EntityId;
@@ -28,8 +25,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.service.model.EntitySystemColumn.ENTITY_ID;
-import static org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference.ENTITY_NAME_KEY;
-import static org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference.ENTITY_TYPE_KEY;
+import static org.databiosphere.workspacedataservice.service.model.EntityReference.ENTITY_NAME_KEY;
+import static org.databiosphere.workspacedataservice.service.model.EntityReference.ENTITY_TYPE_KEY;
 
 @Repository
 public class EntityDao {
@@ -54,10 +51,10 @@ public class EntityDao {
                 new MapSqlParameterSource(Map.of("workspaceId", workspaceId.toString(), "entityType", entityType)), Boolean.class));
     }
 
-    public void createEntityType(UUID workspaceId, Map<String, DataTypeMapping> tableInfo, String tableName, Set<SingleTenantEntityReference> referencedEntityTypes) throws MissingReferencedTableException {
+    public void createEntityType(UUID workspaceId, Map<String, DataTypeMapping> tableInfo, String tableName, Set<EntityReference> referencedEntityTypes) throws MissingReferencedTableException {
         String columnDefs = genColumnDefs(tableInfo);
         namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(tableName, workspaceId) + "( " + columnDefs + ")");
-        for (SingleTenantEntityReference referencedEntityType : referencedEntityTypes) {
+        for (EntityReference referencedEntityType : referencedEntityTypes) {
             addForeignKeyForReference(tableName, referencedEntityType.getReferencedEntityType().getName(), workspaceId, referencedEntityType.getReferenceColName());
         }
     }
@@ -92,10 +89,20 @@ public class EntityDao {
                 + (tableInfo.size() > 0 ? ", " + tableInfo.entrySet().stream().map(e -> "\"" + e.getKey() + "\" " + e.getValue().getPostgresType()).collect(Collectors.joining(", ")) : "");
     }
 
-    public void batchUpsert(UUID workspaceId, String entityType, List<Entity> entities, LinkedHashMap<String, DataTypeMapping> schema){
+    //The expectation is that the entity type already matches the schema and attributes given, as that's dealt with earlier in the code.
+    public void batchUpsert(UUID workspaceId, String entityType, List<Entity> entities, LinkedHashMap<String, DataTypeMapping> schema) throws InvalidEntityReference {
         schema.put(ENTITY_ID.getColumnName(), DataTypeMapping.STRING);
+        try {
         namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(workspaceId, entityType, schema),
                 getInsertBatchArgs(entities, schema.keySet()));
+        } catch (DataAccessException e) {
+            if(e.getRootCause() instanceof SQLException sqlEx){
+                if(sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")){
+                    throw new InvalidEntityReference("It looks like you're trying to reference an entity that does not exist.");
+                }
+            }
+            throw e;
+        }
     }
 
     public void addForeignKeyForReference(String entityType, String referencedEntityType, UUID workspaceId, String referenceColName) throws MissingReferencedTableException {
@@ -114,15 +121,14 @@ public class EntityDao {
         }
     }
 
-    public List<SingleTenantEntityReference> getReferenceCols(UUID workspaceId, String tableName){
+    public List<EntityReference> getReferenceCols(UUID workspaceId, String tableName){
         return namedTemplate.query("SELECT kcu.column_name, ccu.table_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu " +
                         "ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema " +
                         "JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema " +
                         "WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = :workspace AND tc.table_name= :tableName",
                 Map.of("workspace", workspaceId.toString(), "tableName", tableName), (rs, rowNum) ->
-                        new SingleTenantEntityReference(rs.getString("column_name"), new EntityType(rs.getString("table_name"))));
+                        new EntityReference(rs.getString("column_name"), new EntityType(rs.getString("table_name"))));
     }
-
 
     private String genColUpsertUpdates(Set<String> cols) {
         return cols.stream().filter(c -> !ENTITY_ID.getColumnName().equals(c)).map(c -> "\"" + c + "\"" + " = excluded.\"" + c + "\"").collect(Collectors.joining(", "));
@@ -131,17 +137,7 @@ public class EntityDao {
     private List<Object[]> getInsertBatchArgs(List<Entity> entities, Set<String> colNames) {
         List<Object[]> result = new ArrayList<>();
         for (Entity entity : entities) {
-            Object[] row = new Object[colNames.size()];
-            int i = 0;
-            for (String col : colNames) {
-                if(col.equals(ENTITY_ID.getColumnName())){
-                    row[i++] = entity.getName().getEntityIdentifier();
-                } else {
-                    Object attVal = entity.getAttributes().getAttributes().get(col);
-                    row[i++] = getValueForSql(attVal);
-                }
-            }
-            result.add(row);
+            result.add(getInsertArgs(entity, colNames));
         }
         return result;
     }
@@ -165,6 +161,20 @@ public class EntityDao {
         return attVal;
     }
 
+    private Object[] getInsertArgs(Entity entity, Set<String> colNames) {
+            Object[] row = new Object[colNames.size()];
+            int i = 0;
+            for (String col : colNames) {
+                if(col.equals(ENTITY_ID.getColumnName())){
+                    row[i++] = entity.getName().getEntityIdentifier();
+                } else {
+                    Object attVal = entity.getAttributes().getAttributes().get(col);
+                    row[i++] = getValueForSql(attVal);
+                }
+            }
+            return row;
+    }
+
     private String genInsertStatement(UUID workspaceId, String entityType, LinkedHashMap<String, DataTypeMapping> schema) {
         return "insert into " + getQualifiedTableName(entityType, workspaceId) + "(" +
                 getInsertColList(schema.keySet()) + ") values (" + getInsertParamList(schema.values()) +") " +
@@ -174,7 +184,6 @@ public class EntityDao {
     private String getInsertParamList(Collection<DataTypeMapping> existingTableSchema) {
         return existingTableSchema.stream().map(m -> m.getPostgresType().equalsIgnoreCase("jsonb") ? "? :: jsonb" : "?").collect(Collectors.joining(", "));
     }
-
 
     private String getInsertColList(Set<String> existingTableSchema) {
         return existingTableSchema.stream().map(col ->"\"" + col + "\"").collect(Collectors.joining(", "));
@@ -222,7 +231,7 @@ public class EntityDao {
         }
     }
 
-    public Entity getSingleEntity(UUID instanceId, EntityType entityType, EntityId entityId, List<SingleTenantEntityReference> referenceCols){
+    public Entity getSingleEntity(UUID instanceId, EntityType entityType, EntityId entityId, List<EntityReference> referenceCols){
         Map<String, String> refColMapping = new HashMap<>();
         referenceCols.forEach(rc -> refColMapping.put(rc.getReferenceColName(), rc.getReferencedEntityType().getName()));
         try {
@@ -233,4 +242,5 @@ public class EntityDao {
             return null;
         }
     }
+
 }
