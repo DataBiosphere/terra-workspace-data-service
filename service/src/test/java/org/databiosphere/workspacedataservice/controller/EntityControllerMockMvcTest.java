@@ -14,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,6 +47,7 @@ public class EntityControllerMockMvcTest {
 
 
     @Test
+    @Transactional
     public void createInstanceAndTryToCreateAgain() throws Exception {
         UUID uuid = UUID.randomUUID();
         mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId))
@@ -56,12 +58,14 @@ public class EntityControllerMockMvcTest {
 
 
     @Test
+    @Transactional
     public void tryFetchingMissingEntityType() throws Exception {
         mockMvc.perform(get("/{instanceId}/entities/{versionId}/{entityType}/{entityId}", instanceId, versionId, "missing", "missing-2"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
+    @Transactional
     public void tryFetchingMissingEntity() throws Exception {
         String entityType1 = "entityType1";
         createSomeEntities(entityType1, 1);
@@ -70,6 +74,7 @@ public class EntityControllerMockMvcTest {
     }
 
     @Test
+    @Transactional
     public void createAndRetrieveEntity() throws Exception {
         String entityType = "samples";
         createSomeEntities(entityType, 1);
@@ -78,6 +83,7 @@ public class EntityControllerMockMvcTest {
     }
 
     @Test
+    @Transactional
     public void createEntityWithReferences() throws Exception {
         String referencedType = "ref_participants";
         String referringType = "ref_samples";
@@ -97,6 +103,7 @@ public class EntityControllerMockMvcTest {
     }
 
     @Test
+    @Transactional
     public void referencingMissingTableFails() throws Exception {
         String referencedType = "missing";
         String referringType = "ref_samples-2";
@@ -115,6 +122,7 @@ public class EntityControllerMockMvcTest {
     }
 
     @Test
+    @Transactional
     public void referencingMissingEntityFails() throws Exception {
         String referencedType = "ref_participants-2";
         String referringType = "ref_samples-3";
@@ -134,6 +142,7 @@ public class EntityControllerMockMvcTest {
     }
 
     @Test
+    @Transactional
     public void expandColumnDefForNewData() throws Exception {
         String entityType = "to-alter";
         createSomeEntities(entityType, 1);
@@ -143,10 +152,11 @@ public class EntityControllerMockMvcTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(
                                 new EntityRequest(new EntityId("entity_0"), new EntityType(entityType), new EntityAttributes(attributes)))))
-                .andExpect(status().isCreated());
+                .andExpect(status().isOk());
     }
 
     @Test
+    @Transactional
     public void patchMissingEntity() throws Exception {
         String entityType = "to-patch";
         createSomeEntities(entityType, 1);
@@ -160,6 +170,7 @@ public class EntityControllerMockMvcTest {
     }
 
     @Test
+    @Transactional
     public void putEntityWithMissingTableReference() throws Exception{
         String entityType = "entity-type-missing-table-ref";
         String entityId = "entity_0";
@@ -177,6 +188,7 @@ public class EntityControllerMockMvcTest {
     }
 
     @Test
+    @Transactional
     public void tryToAssignReferenceToNonRefColumn() throws Exception {
         String entityType = "ref-alter";
         createSomeEntities(entityType, 1);
@@ -207,7 +219,7 @@ public class EntityControllerMockMvcTest {
             mockMvc.perform(put("/{instanceId}/entities/{version}/{entityType}/{entityId}", instanceId, versionId, entityType, entityId)
                             .content(mapper.writeValueAsString(new EntityRequest(new EntityId(entityId), new EntityType(entityType), new EntityAttributes(entityAttributes))))
                             .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isCreated());
+                    .andExpect(status().is2xxSuccessful());
         }
     }
 }

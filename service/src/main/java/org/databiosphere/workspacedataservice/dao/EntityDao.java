@@ -89,17 +89,12 @@ public class EntityDao {
                 + (tableInfo.size() > 0 ? ", " + tableInfo.entrySet().stream().map(e -> "\"" + e.getKey() + "\" " + e.getValue().getPostgresType()).collect(Collectors.joining(", ")) : "");
     }
 
-    public void batchUpsert(UUID workspaceId, String entityType, List<Entity> entities, LinkedHashMap<String, DataTypeMapping> schema){
-        schema.put(ENTITY_ID.getColumnName(), DataTypeMapping.STRING);
-        namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(workspaceId, entityType, schema),
-                getInsertBatchArgs(entities, schema.keySet()));
-    }
     //The expectation is that the entity type already matches the schema and attributes given, as that's dealt with earlier in the code.
-    public void createSingleEntity(UUID workspaceId, String entityType, Entity entity, LinkedHashMap<String, DataTypeMapping> schema) throws InvalidEntityReference {
+    public void batchUpsert(UUID workspaceId, String entityType, List<Entity> entities, LinkedHashMap<String, DataTypeMapping> schema) throws InvalidEntityReference {
         schema.put(ENTITY_ID.getColumnName(), DataTypeMapping.STRING);
         try {
-            namedTemplate.getJdbcTemplate().update(genInsertStatement(workspaceId, entityType, schema),
-                    getInsertArgs(entity, schema.keySet()));
+        namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(workspaceId, entityType, schema),
+                getInsertBatchArgs(entities, schema.keySet()));
         } catch (DataAccessException e) {
             if(e.getRootCause() instanceof SQLException sqlEx){
                 if(sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")){

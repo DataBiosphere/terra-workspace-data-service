@@ -13,6 +13,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DataTypeInfererTest {
 
@@ -21,14 +22,18 @@ class DataTypeInfererTest {
     @Test
     void inferTypes() {
         Map<String, DataTypeMapping> result = inferer.inferTypes(getSomeAttrs());
-        assertThat(result).containsOnlyKeys("string_val", "int_val", "json_val", "date_val", "date_time_val");
-        assertThat(result.values())
-                .containsExactlyInAnyOrder(DataTypeMapping.DATE, DataTypeMapping.JSON, DataTypeMapping.STRING, DataTypeMapping.LONG,
-                        DataTypeMapping.DATE_TIME);
+        Map<String, DataTypeMapping> expected = new HashMap<>();
+        expected.put("string_val", DataTypeMapping.STRING);
+        expected.put("int_val", DataTypeMapping.LONG);
+        expected.put("json_val", DataTypeMapping.JSON);
+        expected.put("date_val", DataTypeMapping.DATE);
+        expected.put("date_time_val", DataTypeMapping.DATE_TIME);
+
+        assertEquals(expected, result);
     }
 
     @Test
-    void isValidJsonn(){
+    void isValidJson(){
         assertThat(inferer.isValidJson(RandomStringUtils.randomNumeric(10))).isFalse();
         assertThat(inferer.isValidJson("Hello")).isFalse();
         assertThat(inferer.isValidJson(Boolean.TRUE.toString())).isFalse();

@@ -38,7 +38,7 @@ public class EntityDaoTest {
 
     @Test
     @Transactional
-    void testGetSingleEntity(){
+    void testGetSingleEntity() throws InvalidEntityReference {
         //add entity
         EntityId entityId = new EntityId("testEntity");
         Entity testEntity = new Entity(entityId, entityType, new EntityAttributes(new HashMap<>()));
@@ -61,7 +61,7 @@ public class EntityDaoTest {
         //create entity with no attributes
         EntityId entityId = new EntityId("testEntity");
         Entity testEntity = new Entity(entityId, entityType, new EntityAttributes(new HashMap<>()));
-        entityDao.createSingleEntity(workspaceId, entityType.getName(), testEntity, new LinkedHashMap<>());
+        entityDao.batchUpsert(workspaceId, entityType.getName(), Collections.singletonList(testEntity), new LinkedHashMap<>());
 
         Entity search = entityDao.getSingleEntity(workspaceId, entityType, entityId, Collections.emptyList());
         assertEquals(testEntity, search, "Created entity should match entered entity");
@@ -69,7 +69,7 @@ public class EntityDaoTest {
         //create entity with attributes
         EntityId attrId = new EntityId("entityWithAttr");
         Entity entityWithAttr = new Entity(attrId, entityType, new EntityAttributes(Map.of("foo", "bar")));
-        entityDao.createSingleEntity(workspaceId, entityType.getName(), entityWithAttr, new LinkedHashMap<>(Map.of("foo", DataTypeMapping.STRING)));
+        entityDao.batchUpsert(workspaceId, entityType.getName(), Collections.singletonList(entityWithAttr), new LinkedHashMap<>(Map.of("foo", DataTypeMapping.STRING)));
 
         search = entityDao.getSingleEntity(workspaceId, entityType, attrId, Collections.emptyList());
         assertEquals(entityWithAttr, search, "Created entity with attributes should match entered entity");
@@ -86,13 +86,12 @@ public class EntityDaoTest {
 
         EntityId refEntityId = new EntityId("referencedEntity");
         Entity referencedEntity = new Entity(refEntityId, entityType, new EntityAttributes(Map.of("foo", "bar")));
-        //avoid using method under test to prepare db - may want to change to creating this entity during setup
         entityDao.batchUpsert(workspaceId, entityType.getName(), Collections.singletonList(referencedEntity), new LinkedHashMap<>());
 
         EntityId entityId = new EntityId("testEntity");
         Map<String,String> reference = Map.of(EntityReference.ENTITY_TYPE_KEY, "testEntityType", EntityReference.ENTITY_NAME_KEY, "referencedEntity");
         Entity testEntity = new Entity(entityId,entityType, new EntityAttributes(Map.of("testEntityType", reference)));
-        entityDao.createSingleEntity(workspaceId, entityType.getName(), testEntity,
+        entityDao.batchUpsert(workspaceId, entityType.getName(), Collections.singletonList(testEntity),
                 new LinkedHashMap<>(Map.of("foo", DataTypeMapping.STRING, "testEntityType", DataTypeMapping.STRING)));
 
         Entity search = entityDao.getSingleEntity(workspaceId, entityType, entityId, entityDao.getReferenceCols(workspaceId, entityType.getName()));

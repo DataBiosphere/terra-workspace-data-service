@@ -65,8 +65,18 @@ paths:
       requestBody:
         $ref: '#/components/requestBodies/EntityRequestBody'
       responses:
-        201:
+        200:
+          description: Entity updated
           $ref: '#/components/responses/EntityResponseBody'
+        201:
+          description: Entity created
+          $ref: '#/components/responses/EntityResponseBody'
+        400:
+          description: Bad request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     patch:
       summary: Update entity
       operationId: addOrUpdateAttributes
