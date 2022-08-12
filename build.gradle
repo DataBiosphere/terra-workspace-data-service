@@ -1,10 +1,13 @@
+import org.hidetake.gradle.swagger.generator.GenerateSwaggerCode
+import org.springframework.boot.gradle.plugin.SpringBootPlugin
+
 plugins {
-	id 'org.springframework.boot' version '2.6.8' apply false
-	id 'io.spring.dependency-management' version '1.0.11.RELEASE' apply false
-	id 'com.google.cloud.tools.jib' version '3.2.1' apply false
-	id "org.sonarqube" version "3.4.0.2513" apply false
-	id 'idea'
-	id 'org.hidetake.swagger.generator' version '2.19.2' apply false
+    id 'org.springframework.boot' version '2.6.8' apply false
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE' apply false
+    id 'com.google.cloud.tools.jib' version '3.2.1' apply false
+    id "org.sonarqube" version "3.4.0.2513" apply false
+    id 'idea'
+    id 'org.hidetake.swagger.generator' version '2.19.2' apply false
     id 'java'
     id 'com.diffplug.spotless' version '6.8.0'
 }
@@ -12,32 +15,34 @@ plugins {
 repositories { mavenCentral() }
 
 subprojects {
-	group = 'org.databiosphere'
-	version = '0.0.1-SNAPSHOT'
+    group = 'org.databiosphere'
+    version = '0.0.1-SNAPSHOT'
 
-	apply plugin: 'idea'
-	apply plugin: 'java'
+    apply plugin: 'idea'
+    apply plugin: 'java'
+    apply plugin: 'com.diffplug.spotless'
+    apply plugin: 'org.hidetake.swagger.generator'
 
-	ext {
-		artifactGroup = "${group}.${rootProject.name}"
-	}
+    ext {
+        artifactGroup = "${group}.${rootProject.name}"
+    }
 
-	apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'io.spring.dependency-management'
 
-	dependencyManagement {
-		imports {
-			mavenBom(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES)
-		}
+    dependencyManagement {
+        imports {
+            mavenBom(SpringBootPlugin.BOM_COORDINATES)
+        }
 
-		dependencies {
-			dependency 'io.swagger.core.v3:swagger-annotations:2.1.13'
-			dependency 'io.swagger.codegen.v3:swagger-codegen-cli:3.0.34'
-		}
-	}
+        dependencies {
+            dependency 'io.swagger.core.v3:swagger-annotations:2.1.13'
+            dependency 'io.swagger.codegen.v3:swagger-codegen-cli:3.0.34'
+        }
+    }
 
-	tasks.withType(org.hidetake.gradle.swagger.generator.GenerateSwaggerCode).all {
-		jvmArgs = ['--add-opens=java.base/java.util=ALL-UNNAMED'] // for jvm 16+
-	}
+    tasks.withType(GenerateSwaggerCode).all {
+        jvmArgs = ['--add-opens=java.base/java.util=ALL-UNNAMED'] // for jvm 16+
+    }
 }
 
 idea.project.jdkName = '17'
@@ -46,6 +51,7 @@ idea.project.jdkName = '17'
 spotless {
     java {
         googleJavaFormat()
+        target '**/*.java'
         targetExclude("${buildDir}/**", "**/generated/**")
     }
     format 'misc', {
@@ -59,10 +65,8 @@ spotless {
         endWithNewline()
     }
 }
-// disable for now. As a developer, re-enable these tasks and then run ./gradlew spotlessCheck
-// to see the results.
-tasks.spotlessJavaCheck.enabled = false
-tasks.spotlessMiscCheck.enabled = false
+
+build.dependsOn spotlessApply
 
 tasks.named('test') {
     useJUnitPlatform()

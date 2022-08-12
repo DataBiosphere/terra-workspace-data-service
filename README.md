@@ -24,12 +24,12 @@ brew install homebrew/cask-versions/temurin17
 jenv add /Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
 ```
 
-We are using Postgres 13.1.  You do not need to have postgres installed on your system.  
+We are using Postgres 13.1.  You do not need to have postgres installed on your system.
 Instead use the `run_postgres.sh` script to set up a docker container running postgres (see below).
 
 ## Running
 ### Pulling local secrets
-Before running WDS, you must populate secrets from Vault. 
+Before running WDS, you must populate secrets from Vault.
 After [setting up your vault-token](https://docs.google.com/document/d/11pZE-GqeZFeSOG0UpGg_xyTDQpgBRfr0MLxpxvvQgEw) run:
 ```bash
 ./scripts/render-config.sh [wds env] [vault env]
@@ -56,13 +56,13 @@ This will launch the service on port 8080.
 At the moment, WDS is only available through this port.  It can be reached from the command line:
 
 To query for a single entity:
-```bash 
+```bash
 curl http://localhost:8080/<instanceid>/entities/v0.2/<table/type>/<entity_name>
 ```
 
 To add new attribute or update values for existing attributes (this won't create a new entity however):
 ``` bash
-curl -H "Content-type: application/json" -X PATCH "http://localhost:8080/<instanceid guid>/entities/v0.2/<table/type>/<entity_name>" -d '{                                            
+curl -H "Content-type: application/json" -X PATCH "http://localhost:8080/<instanceid guid>/entities/v0.2/<table/type>/<entity_name>" -d '{
 "id": "<entity_name>",
 "type": "<entity_type>",
 "attributes": {
