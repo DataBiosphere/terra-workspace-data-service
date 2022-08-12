@@ -1,103 +1,73 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
-
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.util.Map;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Entity {
 
-    private EntityId name;
+  private EntityId name;
 
-    private Boolean deleted;
+  private EntityType entityType;
 
-    private EntityType entityType;
+  private EntityAttributes attributes;
 
-    private EntityAttributes attributes;
+  public Entity(EntityId name, EntityType entityType, EntityAttributes attributes) {
+    this.name = name;
+    this.entityType = entityType;
+    this.attributes = attributes;
+  }
 
-    private Long entityTypeId;
+  public Entity() {}
 
-    public Entity(EntityId name, EntityType entityType, EntityAttributes attributes) {
-        this.name = name;
-        this.entityType = entityType;
-        this.attributes = attributes;
-    }
+  public Entity(EntityId entityName) {
+    this.name = entityName;
+  }
 
-    public Entity(EntityId name, EntityType entityType, EntityAttributes attributes, long entityTypeId) {
-        this(name, entityType, attributes);
-        this.entityTypeId = entityTypeId;
-        this.deleted = false;
-    }
+  public Entity(EntityRequest request) {
+    this.name = request.entityId();
+    this.entityType = request.entityType();
+    this.attributes = request.entityAttributes();
+  }
 
-    public Entity(EntityId name, EntityType entityType, EntityAttributes attributes, long entityTypeId, boolean deleted) {
-        this(name, entityType, attributes);
-        this.entityTypeId = entityTypeId;
-        this.deleted = deleted;
-    }
+  public EntityId getName() {
+    return name;
+  }
 
-    public Entity() {
-    }
+  public void setName(EntityId name) {
+    this.name = name;
+  }
 
-    public Entity(EntityId entityName, long entityType) {
-        this.name = entityName;
-        this.entityTypeId = entityType;
-    }
+  public EntityAttributes getAttributes() {
+    return attributes;
+  }
 
-    public EntityId getName() {
-        return name;
-    }
+  public void setAttributes(EntityAttributes attributes) {
+    this.attributes = attributes;
+  }
 
-    public void setName(EntityId name) {
-        this.name = name;
-    }
+  public EntityType getEntityType() {
+    return entityType;
+  }
 
-    public EntityAttributes getAttributes() {
-        return attributes;
-    }
+  @JsonGetter("entityType")
+  public String getEntityTypeName() {
+    return entityType.getName();
+  }
 
-    public void setAttributes(EntityAttributes attributes) {
-        this.attributes = attributes;
-    }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Entity entity)) return false;
 
-    public EntityType getEntityType() {
-        return entityType;
-    }
+    if (!getName().equals(entity.getName())) return false;
+    return getEntityType().equals(entity.getEntityType());
+  }
 
-    @JsonGetter("entityType")
-    public String getEntityTypeName() {
-        return entityType.getName();
-    }
-
-    public Boolean getDeleted() {
-        return deleted;
-    }
-
-    public void setDeleted(Boolean deleted) {
-        this.deleted = deleted;
-    }
-
-    public Long getEntityTypeId() {
-        return entityTypeId;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Entity)) return false;
-
-        Entity entity = (Entity) o;
-
-        if (!getName().equals(entity.getName())) return false;
-        return getEntityTypeId().equals(entity.getEntityTypeId());
-    }
-
-    @Override
-    public int hashCode() {
-        int result = getName().hashCode();
-        result = 31 * result + getEntityTypeId().hashCode();
-        return result;
-    }
+  @Override
+  public int hashCode() {
+    int result = getName().hashCode();
+    result = 31 * result + getEntityType().hashCode();
+    return result;
+  }
 }

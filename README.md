@@ -24,12 +24,12 @@ brew install homebrew/cask-versions/temurin17
 jenv add /Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
 ```
 
-We are using Postgres 13.1.  You do not need to have postgres installed on your system.  
+We are using Postgres 13.1.  You do not need to have postgres installed on your system.
 Instead use the `run_postgres.sh` script to set up a docker container running postgres (see below).
 
 ## Running
 ### Pulling local secrets
-Before running WDS, you must populate secrets from Vault. 
+Before running WDS, you must populate secrets from Vault.
 After [setting up your vault-token](https://docs.google.com/document/d/11pZE-GqeZFeSOG0UpGg_xyTDQpgBRfr0MLxpxvvQgEw) run:
 ```bash
 ./scripts/render-config.sh [wds env] [vault env]
@@ -51,25 +51,34 @@ To run WDS locally, you can either use the command line:
 ./gradlew bootRun
 ```
 Or, from Intellij, go to `src/main/java/org.databiosphere.workspacedataservice/WorkspaceDataServiceApplication` and click the green play button.
-This will run liquibase to create the schema and launch the service on port 8080.
+This will launch the service on port 8080.
 
 At the moment, WDS is only available through this port.  It can be reached from the command line:
 
-To create entities:
-`curl -v -H "Content-type: application/json" -X POST "http://localhost:8080/api/workspaces/default/test/entities/batchUpsert" -d '[{"name": "first_entity", "entityType": "first_entity_type", "operations": [{"op": "AddUpdateAttribute", "attributeName": "col1", "addUpdateAttribute": "Spam"}]}]}]'`
+To query for a single entity:
+```bash
+curl http://localhost:8080/<instanceid>/entities/v0.2/<table/type>/<entity_name>
+```
 
-All entities must belong to the workspace `default:test`.
-
-To read entities: 
-`curl http://localhost:8080/api/workspaces/default/test/entityQuery/first_entity_type`
-
-To remove entities:
-`curl -H "Content-type: application/json" "http://localhost:8080/api/workspaces/default/test/entities/delete" -d '[{"entityName": "first_entity", "entityType": "first_entity_type"}]'`
+To add new attribute or update values for existing attributes (this won't create a new entity however):
+``` bash
+curl -H "Content-type: application/json" -X PATCH "http://localhost:8080/<instanceid guid>/entities/v0.2/<table/type>/<entity_name>" -d '{
+"id": "<entity_name>",
+"type": "<entity_type>",
+"attributes": {
+"new-int": -77,
+"new-date-time": "2011-01-11T11:00:50",
+"new-double": -122.45,
+"new-json": "{\"key\": \"Richie\"}"
+}
+}'
+```
 
 When done, stop postgres:
 ```bash
 ./local-dev/run_postgres.sh stop
 ```
+
 ## Tests
 To run unit tests locally, first make sure your local postgres is up and running:
 ```bash

@@ -13,9 +13,14 @@ info:
   license:
     name: BSD
     url: http://opensource.org/licenses/BSD-3-Clause
+servers:
+  - url: ../
+    description: Relative to the current swagger page
 tags:
   - name: Entities
     description: Entity APIs
+  - name: Instances
+  - description: Instance APIs
   - name: Schema
     description: Schema Manipulation APIs (coming soon)
 paths:
@@ -41,7 +46,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     put:
-      summary: Create or replace entity (pending)
+      summary: Create or replace entity
       description: |
         Creates or replaces the entity using the specified type and id.
         If the entity already exists, its entire set of attributes will be overwritten by
@@ -60,8 +65,18 @@ paths:
       requestBody:
         $ref: '#/components/requestBodies/EntityRequestBody'
       responses:
-        201:
+        200:
+          description: Entity updated
           $ref: '#/components/responses/EntityResponseBody'
+        201:
+          description: Entity created
+          $ref: '#/components/responses/EntityResponseBody'
+        400:
+          description: Bad request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     patch:
       summary: Update entity
       operationId: addOrUpdateAttributes
@@ -249,6 +264,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BatchResponse'
+  /{instanceid}/{v}/:
+    post:
+      summary: Create an instance (unstable)
+      description: Create an instance with the given UUID. This API is liable to change.
+      tags:
+        - Instances
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+      responses:
+        201:
+          description: Success
+        409:
+          description: Conflict - schema already exists.
 components:
   parameters:
     attributePathParam:
