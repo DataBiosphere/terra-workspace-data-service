@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference;
+import org.databiosphere.workspacedataservice.service.model.EntityReference;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
 import org.databiosphere.workspacedataservice.shared.model.EntityType;
 
@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference.ENTITY_NAME_KEY;
-import static org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference.ENTITY_TYPE_KEY;
+import static org.databiosphere.workspacedataservice.service.model.EntityReference.ENTITY_NAME_KEY;
+import static org.databiosphere.workspacedataservice.service.model.EntityReference.ENTITY_TYPE_KEY;
 
 
 public class RefUtils {
@@ -20,13 +20,13 @@ public class RefUtils {
      * @param entities - all entities whose references to check
      * @return Set of SingleTenantEntityReference for all referencing attributes
      */
-    public static Set<SingleTenantEntityReference> findEntityReferences(List<Entity> entities) {
-        Set<SingleTenantEntityReference> result = new HashSet<>();
+    public static Set<EntityReference> findEntityReferences(List<Entity> entities) {
+        Set<EntityReference> result = new HashSet<>();
         for (Entity entity : entities) {
             Map<String, Object> attributes = entity.getAttributes().getAttributes();
             for (String attr : attributes.keySet()) {
                 if(isReferenceValue(attributes.get(attr))){
-                    result.add(new SingleTenantEntityReference(attr, new EntityType(getTypeValue(attributes.get(attr)))));
+                    result.add(new EntityReference(attr, new EntityType(getTypeValue(attributes.get(attr)))));
                 }
             }
         }

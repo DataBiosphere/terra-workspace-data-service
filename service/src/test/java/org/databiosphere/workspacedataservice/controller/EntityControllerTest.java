@@ -4,7 +4,7 @@ import org.databiosphere.workspacedataservice.dao.EntityDao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.InvalidEntityReference;
 import org.databiosphere.workspacedataservice.service.model.MissingReferencedTableException;
-import org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference;
+import org.databiosphere.workspacedataservice.service.model.EntityReference;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -64,7 +64,7 @@ public class EntityControllerTest {
     }
     @Test
     void testPatchNewSingleEntityWithReference(){
-        when(entityDao.getReferenceCols(any(), any())).thenReturn(Collections.singletonList(new SingleTenantEntityReference("referencingAttr", testEntityType)));
+        when(entityDao.getReferenceCols(any(), any())).thenReturn(Collections.singletonList(new EntityReference("referencingAttr", testEntityType)));
         Map<String, Object> refAttr = new HashMap<>();
         refAttr.put("entityType", testEntityType.getName());
         refAttr.put("entityName", testEntityId.getEntityIdentifier());
@@ -142,7 +142,7 @@ public class EntityControllerTest {
     }
     @Test
     void testPutNewSingleEntityWithReference() throws MissingReferencedTableException{
-        when(entityDao.getReferenceCols(any(), any())).thenReturn(Collections.singletonList(new SingleTenantEntityReference("referencingAttr", testEntityType)));
+        when(entityDao.getReferenceCols(any(), any())).thenReturn(Collections.singletonList(new EntityReference("referencingAttr", testEntityType)));
         Map<String, Object> refAttr = new HashMap<>();
         refAttr.put("entityType", testEntityType.getName());
         refAttr.put("entityName", testEntityId.getEntityIdentifier());
@@ -180,7 +180,7 @@ public class EntityControllerTest {
 
     @Test
     void testPutSingleEntityWithReference() throws MissingReferencedTableException, InvalidEntityReference {
-        when(entityDao.getReferenceCols(any(), any())).thenReturn(Collections.singletonList(new SingleTenantEntityReference("referencingAttr", testEntityType)));
+        when(entityDao.getReferenceCols(any(), any())).thenReturn(Collections.singletonList(new EntityReference("referencingAttr", testEntityType)));
         when(entityDao.entityTypeExists(any(),any())).thenReturn(true);
         Map<String, Object> refAttr = new HashMap<>();
         refAttr.put("entityType", testEntityType.getName());

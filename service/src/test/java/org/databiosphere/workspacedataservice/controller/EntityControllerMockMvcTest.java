@@ -19,8 +19,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference.ENTITY_NAME_KEY;
-import static org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference.ENTITY_TYPE_KEY;
+import static org.databiosphere.workspacedataservice.service.model.EntityReference.ENTITY_NAME_KEY;
+import static org.databiosphere.workspacedataservice.service.model.EntityReference.ENTITY_TYPE_KEY;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;

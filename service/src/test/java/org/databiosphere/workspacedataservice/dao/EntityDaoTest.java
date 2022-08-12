@@ -3,7 +3,7 @@ package org.databiosphere.workspacedataservice.dao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.InvalidEntityReference;
 import org.databiosphere.workspacedataservice.service.model.MissingReferencedTableException;
-import org.databiosphere.workspacedataservice.service.model.SingleTenantEntityReference;
+import org.databiosphere.workspacedataservice.service.model.EntityReference;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
 import org.databiosphere.workspacedataservice.shared.model.EntityAttributes;
 import org.databiosphere.workspacedataservice.shared.model.EntityId;
@@ -90,7 +90,7 @@ public class EntityDaoTest {
         entityDao.batchUpsert(workspaceId, entityType.getName(), Collections.singletonList(referencedEntity), new LinkedHashMap<>());
 
         EntityId entityId = new EntityId("testEntity");
-        Map<String,String> reference = Map.of(SingleTenantEntityReference.ENTITY_TYPE_KEY, "testEntityType", SingleTenantEntityReference.ENTITY_NAME_KEY, "referencedEntity");
+        Map<String,String> reference = Map.of(EntityReference.ENTITY_TYPE_KEY, "testEntityType", EntityReference.ENTITY_NAME_KEY, "referencedEntity");
         Entity testEntity = new Entity(entityId,entityType, new EntityAttributes(Map.of("testEntityType", reference)));
         entityDao.createSingleEntity(workspaceId, entityType.getName(), testEntity,
                 new LinkedHashMap<>(Map.of("foo", DataTypeMapping.STRING, "testEntityType", DataTypeMapping.STRING)));
@@ -105,7 +105,7 @@ public class EntityDaoTest {
         entityDao.addColumn(workspaceId, entityType.getName(), "referenceCol", DataTypeMapping.STRING);
         entityDao.addForeignKeyForReference(entityType.getName(), entityType.getName(), workspaceId, "referenceCol");
 
-        List<SingleTenantEntityReference> refCols = entityDao.getReferenceCols(workspaceId, entityType.getName());
+        List<EntityReference> refCols = entityDao.getReferenceCols(workspaceId, entityType.getName());
         assertEquals(1, refCols.size(), "There should be one referenced column");
         assertEquals("referenceCol", refCols.get(0).getReferenceColName(), "Reference column should be named referenceCol");
     }

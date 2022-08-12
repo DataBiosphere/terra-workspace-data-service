@@ -33,7 +33,7 @@ public class EntityController {
                                                              @PathVariable("entityType") EntityType entityType,
                                                              @PathVariable("entityId") EntityId entityId,
                                                              @RequestBody EntityRequest entityRequest){
-        checkValidVersion(version);
+        validateVersion(version);
         String entityTypeName = entityType.getName();
         Entity singleEntity = entityDao.getSingleEntity(instanceId, entityType, entityId,
                 entityDao.getReferenceCols(instanceId, entityTypeName));
@@ -59,8 +59,8 @@ public class EntityController {
             DataTypeMapping> existingTableSchema, List<Entity> entities) {
         MapDifference<String, DataTypeMapping> difference = Maps.difference(existingTableSchema, schema);
         Map<String, DataTypeMapping> colsToAdd = difference.entriesOnlyOnRight();
-        Set<SingleTenantEntityReference> references = RefUtils.findEntityReferences(entities);
-        Map<String, List<SingleTenantEntityReference>> newRefCols = references.stream().collect(Collectors.groupingBy(SingleTenantEntityReference::getReferenceColName));
+        Set<EntityReference> references = RefUtils.findEntityReferences(entities);
+        Map<String, List<EntityReference>> newRefCols = references.stream().collect(Collectors.groupingBy(EntityReference::getReferenceColName));
         //TODO: better communicate to the user that they're trying to assign multiple entity types to a single column
         Preconditions.checkArgument(newRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty());
         for (String col : colsToAdd.keySet()) {
@@ -77,7 +77,7 @@ public class EntityController {
                 }
             }
         }
-        if(!entityDao.getReferenceCols(workspaceId, entityType).stream().map(SingleTenantEntityReference::getReferenceColName)
+        if(!entityDao.getReferenceCols(workspaceId, entityType).stream().map(EntityReference::getReferenceColName)
                 .collect(Collectors.toSet()).containsAll(newRefCols.keySet())){
             throw new ResponseStatusException(HttpStatus.CONFLICT, "It looks like you're attempting to assign a reference " +
                     "to an existing column that was not configured for references");
@@ -97,7 +97,7 @@ public class EntityController {
                                               @PathVariable("version") String version,
                                               @PathVariable("entityType") EntityType entityType,
                                               @PathVariable("entityId") EntityId entityId) {
-        checkValidVersion(version);
+        validateVersion(version);
         if(!entityDao.workspaceSchemaExists(instanceId) || !entityDao.entityTypeExists(instanceId, entityType.getName())){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Instance or table don't exist");
         }
@@ -116,7 +116,7 @@ public class EntityController {
                                                              @PathVariable("entityType") EntityType entityType,
                                                              @PathVariable("entityId") EntityId entityId,
                                                              @RequestBody EntityRequest entityRequest) {
-        checkValidVersion(version);
+        validateVersion(version);
         String entityTypeName = entityType.getName();
         Map<String, Object> attributesInRequest = entityRequest.entityAttributes().getAttributes();
         Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
@@ -146,7 +146,7 @@ public class EntityController {
     @PostMapping("/{instanceId}/{version}/")
     public ResponseEntity<String> createInstance(@PathVariable("instanceId") UUID instanceId,
                                                @PathVariable("version") String version){
-        checkValidVersion(version);
+        validateVersion(version);
         if (entityDao.workspaceSchemaExists(instanceId)){
             return new ResponseEntity("This schema already exists.", HttpStatus.CONFLICT);
         }
@@ -154,7 +154,7 @@ public class EntityController {
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
-    private static void checkValidVersion(String version) {
+    private static void validateVersion(String version) {
         Preconditions.checkArgument(version.equals("v0.2"));
     }
 
