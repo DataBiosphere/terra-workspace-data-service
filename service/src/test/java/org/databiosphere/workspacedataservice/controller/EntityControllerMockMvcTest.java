@@ -46,7 +46,7 @@ public class EntityControllerMockMvcTest {
 
 
     @Test
-    public void createInstanceAndTryToFetchMissingEntity() throws Exception {
+    public void createInstanceAndTryToCreateAgain() throws Exception {
         UUID uuid = UUID.randomUUID();
         mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId))
                 .andExpect(status().isCreated());
