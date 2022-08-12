@@ -1,4 +1,4 @@
-name: Publish and deploy (GCR)
+name: Publish and deploy (gcr)
 on:
   push:
   workflow_dispatch:
@@ -43,21 +43,18 @@ jobs:
         with:
           image: ${{ steps.image-name.outputs.name }}
 
-      - id: 'auth'
-        name: Authenticate to Google Cloud
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v0
+
+      - name: Authenticate to Google Cloud
         uses: 'google-github-actions/auth@v0'
         with:
-          token_format: 'access_token'
           # Centralized in dsp-tools-k8s; ask in #dsp-devops-champions for help troubleshooting
           workload_identity_provider: 'projects/1038484894585/locations/global/workloadIdentityPools/github-wi-pool/providers/github-wi-provider'
           service_account: 'gcr-publish@broad-dsp-gcr-public.iam.gserviceaccount.com'
 
-      
-      - uses: 'docker/login-action@v1'
-        with:
-          registry: 'gcr.io'
-          username: 'oauth2accesstoken'
-          password: '${{ steps.auth.outputs.access_token }}'
+      - name: Explicitly auth Docker for GCR
+        run: gcloud auth configure-docker --quiet
 
       - name: Push GCR image
         run: docker push  ${{ steps.image-name.outputs.name }}
