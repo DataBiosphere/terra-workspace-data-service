@@ -1,0 +1,63 @@
+name: Publish and deploy
+on:
+  push:
+  workflow_dispatch:
+
+env:
+  SERVICE_NAME: ${{ github.event.repository.name }}
+  GCR_REGISTRY: gcr.io
+  GOOGLE_PROJECT: broad-dsp-gcr-public
+
+jobs:
+  publish-job:
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set commit short hash
+        id: setHash
+        run: |
+          git_short_sha=$(git rev-parse --short HEAD)
+          echo $git_short_sha
+          echo "::set-output name=git_short_sha::${git_short_sha}"
+      - name: Construct docker image name and tag
+        id: image-name
+        run: echo ::set-output name=name::${GCR_REGISTRY}/${GOOGLE_PROJECT}/${SERVICE_NAME}:${{ steps.setHash.outputs.git_short_sha }}
+
+      - name: Build image locally with jib
+        run: |
+          ./gradlew --build-cache jibDockerBuild \
+          --image=${{ steps.image-name.outputs.name }} \
+          -Djib.console=plain
+      - name: Run Trivy vulnerability scanner
+        # Link to the github location of the action https://github.com/broadinstitute/dsp-appsec-trivy-action
+        uses: broadinstitute/dsp-appsec-trivy-action@v1
+        with:
+          image: ${{ steps.image-name.outputs.name }}
+
+      - id: 'auth'
+        name: Authenticate to Google Cloud
+        uses: 'google-github-actions/auth@v0'
+        with:
+          token_format: 'access_token'
+          # Centralized in dsp-tools-k8s; ask in #dsp-devops-champions for help troubleshooting
+          workload_identity_provider: 'projects/1038484894585/locations/global/workloadIdentityPools/github-wi-pool/providers/github-wi-provider'
+          service_account: 'gcr-publish@broad-dsp-gcr-public.iam.gserviceaccount.com'
+
+      
+      - uses: 'docker/login-action@v1'
+        with:
+          registry: 'gcr.io'
+          username: 'oauth2accesstoken'
+          password: '${{ steps.auth.outputs.access_token }}'
+
+      - name: Push GCR image
+        run: docker push  ${{ steps.image-name.outputs.name }}
