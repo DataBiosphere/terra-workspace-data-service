@@ -19,6 +19,8 @@ servers:
 tags:
   - name: Entities
     description: Entity APIs
+  - name: Instances
+  - description: Instance APIs
   - name: Schema
     description: Schema Manipulation APIs (coming soon)
 paths:
@@ -252,6 +254,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BatchResponse'
+  /{instanceid}/{v}/:
+    post:
+      summary: Create an instance (unstable)
+      description: Create an instance with the given UUID. This API is liable to change.
+      tags:
+        - Instances
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+      responses:
+        201:
+          description: Success
+        409:
+          description: Conflict - schema already exists.
 components:
   parameters:
     attributePathParam:
