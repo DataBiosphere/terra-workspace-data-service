@@ -1,7 +1,5 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import static org.databiosphere.workspacedataservice.service.model.EntityReference.ENTITY_NAME_KEY;
-import static org.databiosphere.workspacedataservice.service.model.EntityReference.ENTITY_TYPE_KEY;
 import static org.databiosphere.workspacedataservice.service.model.EntitySystemColumn.ENTITY_ID;
 
 import java.sql.ResultSet;
@@ -310,16 +308,9 @@ public class EntityDao {
           if (systemCols.contains(columnName)) {
             continue;
           }
-          if (referenceColToTable.size() > 0 && referenceColToTable.containsKey(columnName)) {
-            Map<String, String> refMap = new HashMap<>();
-            refMap.put(ENTITY_TYPE_KEY, referenceColToTable.get(columnName));
-            refMap.put(ENTITY_NAME_KEY, rs.getString(columnName));
-            attributes.put(columnName, refMap);
-          } else {
-            Object object = rs.getObject(columnName);
-            attributes.put(
-                columnName, object instanceof PGobject ? ((PGobject) object).getValue() : object);
-          }
+          Object object = rs.getObject(columnName);
+          attributes.put(
+              columnName, object instanceof PGobject ? ((PGobject) object).getValue() : object);
         }
         return attributes;
       } catch (SQLException e) {

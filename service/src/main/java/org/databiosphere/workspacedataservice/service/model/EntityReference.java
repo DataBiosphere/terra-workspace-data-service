@@ -4,9 +4,6 @@ import org.databiosphere.workspacedataservice.shared.model.EntityType;
 
 public class EntityReference {
 
-  public static final String ENTITY_TYPE_KEY = "entityType";
-  public static final String ENTITY_NAME_KEY = "entityName";
-
   private final String referenceColName;
 
   private final EntityType referencedEntityType;

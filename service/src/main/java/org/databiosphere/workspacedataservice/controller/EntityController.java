@@ -49,8 +49,6 @@ public class EntityController {
     allAttrs.putAll(updatedAtts);
 
     Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(updatedAtts);
-    // TODO: remove entityType/entityName JSON object format for references and move to URIs in the
-    // request/response payloads
     Map<String, DataTypeMapping> existingTableSchema =
         entityDao.getExistingTableSchema(instanceId, entityTypeName);
     singleEntity.setAttributes(new EntityAttributes(allAttrs));
@@ -59,7 +57,7 @@ public class EntityController {
         addOrUpdateColumnIfNeeded(
             instanceId, entityType.getName(), typeMapping, existingTableSchema, entities);
     try {
-      entityDao.batchUpsert(
+      convertRefsAndUpsert(
           instanceId, entityTypeName, entities, new LinkedHashMap<>(updatedSchema));
       EntityResponse response =
           new EntityResponse(
@@ -192,7 +190,7 @@ public class EntityController {
         LinkedHashMap<String, DataTypeMapping> combinedSchema =
             new LinkedHashMap<>(existingTableSchema);
         combinedSchema.putAll(requestSchema);
-        entityDao.batchUpsert(instanceId, entityTypeName, entities, combinedSchema);
+        convertRefsAndUpsert(instanceId, entityTypeName, entities, combinedSchema);
         return new ResponseEntity(response, HttpStatus.OK);
       }
     } catch (ResponseStatusException | InvalidEntityReference e) {
@@ -230,7 +228,7 @@ public class EntityController {
       List<Entity> entities = Collections.singletonList(newEntity);
       entityDao.createEntityType(
           instanceId, requestSchema, entityTypeName, RefUtils.findEntityReferences(entities));
-      entityDao.batchUpsert(
+      convertRefsAndUpsert(
           instanceId, entityTypeName, entities, new LinkedHashMap<>(requestSchema));
     } catch (MissingReferencedTableException e) {
       throw new ResponseStatusException(
@@ -239,5 +237,17 @@ public class EntityController {
               + "to a table that does not exist",
           e);
     }
+  }
+
+  private void convertRefsAndUpsert(UUID workspaceId,
+                                    String entityType,
+                                    List<Entity> entities,
+                                    LinkedHashMap<String, DataTypeMapping> schema) throws InvalidEntityReference{
+    for (Entity e: entities){
+      e.setAttributes(new EntityAttributes(e.getAttributes().getAttributes().entrySet().stream()
+              .map(entry -> RefUtils.isReferenceValue(entry.getValue()) ? new AbstractMap.SimpleEntry<>(entry.getKey(), RefUtils.getRefValue(entry.getValue())) : entry)
+              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))));
+    }
+    entityDao.batchUpsert(workspaceId, entityType, entities, schema);
   }
 }
