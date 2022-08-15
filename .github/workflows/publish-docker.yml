@@ -1,13 +1,14 @@
 name: Publish Docker Images to GCR and ACR
 on:
-  push:
-    branches:
-      - main
+#  temporary to test
+#  push:
+#    branches:
+#      - main
   workflow_dispatch:
 
 env:
   SERVICE_NAME: ${{ github.event.repository.name }}
-  GCR_REGISTRY: gcr.io
+  GCR_REGISTRY: us.gcr.io
   ACR_REGISTRY: terradevacrpublic.azurecr.io
   GOOGLE_PROJECT: broad-dsp-gcr-public
 
