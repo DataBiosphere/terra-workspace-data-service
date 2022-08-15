@@ -1,7 +1,6 @@
 name: Publish Docker Images to GCR and ACR
 on:
-#  temporary to test
-#  push:
+  push:
 #    branches:
 #      - main
   workflow_dispatch:
