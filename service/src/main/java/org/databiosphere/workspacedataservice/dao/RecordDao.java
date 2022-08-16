@@ -34,11 +34,11 @@ public class RecordDao {
     this.namedTemplate = namedTemplate;
   }
 
-  public boolean workspaceSchemaExists(UUID workspaceId) {
+  public boolean workspaceSchemaExists(UUID instanceId) {
     return Boolean.TRUE.equals(
         namedTemplate.queryForObject(
             "select exists(select from information_schema.schemata WHERE schema_name = :workspaceSchema)",
-            new MapSqlParameterSource("workspaceSchema", workspaceId.toString()),
+            new MapSqlParameterSource("workspaceSchema", instanceId.toString()),
             Boolean.class));
   }
 
@@ -49,7 +49,7 @@ public class RecordDao {
   public boolean recordTypeExists(UUID instanceId, String recordType) {
     return Boolean.TRUE.equals(
         namedTemplate.queryForObject(
-            "select exists(select from pg_tables where schemaname = :workspaceId AND tablename  = :recorType)",
+            "select exists(select from pg_tables where schemaname = :instanceId AND tablename  = :recordType)",
             new MapSqlParameterSource(
                 Map.of("instanceId", instanceId.toString(), "recordType", recordType)),
             Boolean.class));
@@ -157,7 +157,7 @@ public class RecordDao {
       if (e.getRootCause() instanceof SQLException sqlEx) {
         if (sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")) {
           throw new InvalidRelation(
-              "It looks like you're trying to reference an record that does not exist.");
+              "It looks like you're trying to reference a record that does not exist.");
         }
       }
       throw e;

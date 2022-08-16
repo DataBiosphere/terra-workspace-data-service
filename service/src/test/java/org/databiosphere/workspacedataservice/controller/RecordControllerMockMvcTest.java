@@ -192,7 +192,7 @@ public class RecordControllerMockMvcTest {
             content()
                 .string(
                     containsString(
-                        "It looks like you're trying to reference an entity that does not exist.")));
+                        "It looks like you're trying to reference a record that does not exist.")));
   }
 
   @Test
