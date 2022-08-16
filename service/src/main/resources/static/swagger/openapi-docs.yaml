@@ -24,53 +24,53 @@ tags:
   - name: Schema
     description: Schema Manipulation APIs (coming soon)
 paths:
-  /{instanceid}/entities/{v}/{type}/{id}:
+  /{instanceid}/records/{v}/{recordtype}/{id}:
     get:
-      summary: Get entity
-      operationId: getEntity
-      description: Retrieves a single entity by its type and id
+      summary: Get record
+      operationId: getSingleRecord
+      description: Retrieves a single record by its type and id
       tags:
-        - Entities
+        - Records
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/entityTypePathParam'
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+        - $ref: '#/components/parameters/recordIdPathParam'
       responses:
         200:
-          $ref: '#/components/responses/EntityResponseBody'
+          $ref: '#/components/responses/RecordResponseBody'
         404:
-          description: Entity not found
+          description: Record not found
           content:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     put:
-      summary: Create or replace entity
+      summary: Create or replace record
       description: |
-        Creates or replaces the entity using the specified type and id.
-        If the entity already exists, its entire set of attributes will be overwritten by
+        Creates or replaces the record using the specified type and id.
+        If the record already exists, its entire set of attributes will be overwritten by
         the attributes in the request body.
         
         TODO: the type and id are duplicated in the url and the body; change this? Silently ignore the type/id in the body?
         
-        TODO: add a query parameter to allow/disallow overwriting existing entities?
+        TODO: add a query parameter to allow/disallow overwriting existing records?
       tags:
-        - Entities
+        - Records
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/entityTypePathParam'
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+        - $ref: '#/components/parameters/recordIdPathParam'
       requestBody:
-        $ref: '#/components/requestBodies/EntityRequestBody'
+        $ref: '#/components/requestBodies/RecordRequestBody'
       responses:
         200:
-          description: Entity updated
-          $ref: '#/components/responses/EntityResponseBody'
+          description: Record updated
+          $ref: '#/components/responses/RecordResponseBody'
         201:
-          description: Entity created
-          $ref: '#/components/responses/EntityResponseBody'
+          description: Record created
+          $ref: '#/components/responses/RecordResponseBody'
         400:
           description: Bad request
           content:
@@ -78,76 +78,76 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      summary: Update entity
+      summary: Update record
       operationId: addOrUpdateAttributes
       description: |
-        Updates the entity of the specified type and id.
+        Updates the record of the specified type and id.
         Any attributes included in the request body will be created or overwritten.
         Attributes not included in the request body will be untouched in the database.
         No attributes will be deleted. To delete attributes, use the PUT api instead.
 
         TODO: the type and id are duplicated in the url and the body; change this? Silently ignore the type/id in the body?
       tags:
-        - Entities
+        - Records
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/entityTypePathParam'
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+        - $ref: '#/components/parameters/recordIdPathParam'
       requestBody:
-        $ref: '#/components/requestBodies/EntityRequestBody'
+        $ref: '#/components/requestBodies/RecordRequestBody'
       responses:
         200:
-          $ref: '#/components/responses/EntityResponseBody'
+          $ref: '#/components/responses/RecordResponseBody'
         404:
-          description: Entity not found
+          description: Record not found
           content:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      summary: Delete entity (pending)
-      description: Deletes the entity at the specified type and id.
+      summary: Delete record (pending)
+      description: Deletes the record at the specified type and id.
       tags:
-        - Entities
+        - Records
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/entityTypePathParam'
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+        - $ref: '#/components/parameters/recordIdPathParam'
       responses:
         204:
           description: Success
   /{instanceid}/types/{v}/{type}:
     patch:
-      summary: Update entity type (pending)
+      summary: Update record type (pending)
       description: |
-        Update entity type. All entities of the old type will be updated to the new type.
+        Update record type. All records of the old type will be updated to the new type.
         Returns the updated type definition.
 
         v0.2 supports renaming a type; future versions may support additional functionality.
       tags:
-        - Entities
+        - Records
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/entityTypePathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
       responses:
         200:
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EntityTypeDefinition'
+                $ref: '#/components/schemas/RecordTypeDefinition'
     delete:
-      summary: Delete entity type (pending)
-      description: Delete entity type. All entities of this type will be deleted.
+      summary: Delete record type (pending)
+      description: Delete record type. All records of this type will be deleted.
       tags:
-        - Entities
+        - Records
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/entityTypePathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
       responses:
         204:
           description: Success
@@ -155,16 +155,16 @@ paths:
     patch:
       summary: Update attribute (pending)
       description: |
-        Update attribute. All entities containing the old attribute will now have the new attribute instead.
+        Update attribute. All records containing the old attribute will now have the new attribute instead.
         Returns the updated attribute definition.
 
         v0.2 supports renaming an attribute within the specified type; future versions may support additional functionality.
       tags:
-        - Entities
+        - Records
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/entityTypePathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
         - $ref: '#/components/parameters/attributePathParam'
       responses:
         200:
@@ -172,32 +172,32 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EntityTypeDefinition'
+                $ref: '#/components/schemas/RecordTypeDefinition'
     delete:
       summary: Delete attribute (pending)
       description: |
         Delete attribute. This deletes all values for this attribute within the specified type.
       tags:
-        - Entities
+        - Records
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/entityTypePathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
         - $ref: '#/components/parameters/attributePathParam'
       responses:
         204:
           description: Success
   /{instanceid}/search/{v}:
     get:
-      summary: Query entities (pending)
+      summary: Query records (pending)
       description: |
-        Paginated list of entities matching the criteria supplied in url query parameters.
+        Paginated list of records matching the criteria supplied in url query parameters.
         This API supports a basic subset of search and filtering operations. For full functionality,
         use the POST api instead.
 
         TODO: Eliminate this API in favor of POST?
       tags:
-        - Entities
+        - Records
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -212,12 +212,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EntityQueryResponse'
+                $ref: '#/components/schemas/RecordQueryResponse'
     post:
-      summary: Query entities (pending)
-      description: Paginated list of entities matching the criteria supplied in the request body
+      summary: Query records (pending)
+      description: Paginated list of records matching the criteria supplied in the request body
       tags:
-        - Entities
+        - Records
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -245,13 +245,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EntityQueryResponse'
+                $ref: '#/components/schemas/RecordQueryResponse'
   /{instanceid}/batch/{v}:
     post:
-      summary: Batch write entities (pending)
-      description: Perform a batch of create / delete / update / replace operations on multiple entities
+      summary: Batch write records (pending)
+      description: Perform a batch of create / delete / update / replace operations on multiple records
       tags:
-        - Entities
+        - Records
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -287,17 +287,17 @@ components:
       required: true
       schema:
         type: string
-    entityIdPathParam:
+    recordIdPathParam:
       name: id
       in: path
-      description: Entity id
+      description: Record id
       required: true
       schema:
         type: string
-    entityTypePathParam:
+    recordTypePathParam:
       name: type
       in: path
-      description: Entity type
+      description: Record type
       required: true
       schema:
         type: string
@@ -365,22 +365,22 @@ components:
         type: string
         default: v0.2
   responses:
-    EntityResponseBody:
-      description: An entity
+    RecordResponseBody:
+      description: A record
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/EntityResponse'
+            $ref: '#/components/schemas/RecordResponse'
   requestBodies:
-    EntityRequestBody:
-      description: An entity to upload
+    RecordRequestBody:
+      description: An record to upload
       required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/EntityRequest'
+            $ref: '#/components/schemas/RecordRequest'
     BatchRequestBody:
-      description: A list of batch operations to perform on entities
+      description: A list of batch operations to perform on records
       required: true
       content:
         application/json:
@@ -399,7 +399,7 @@ components:
           type: string
           enum: [create, update, replace, delete]
         entity:
-          $ref: '#/components/schemas/EntityRequest'
+          $ref: '#/components/schemas/RecordRequest'
     BatchResponse:
       type: object
       required:
@@ -415,14 +415,14 @@ components:
             type: object
             properties:
               id:
-                $ref: '#/components/schemas/EntityId'
-                description: Entity id
+                $ref: '#/components/schemas/RecordId'
+                description: Record id
               type:
-                $ref: '#/components/schemas/EntityType'
-                description: Entity type
+                $ref: '#/components/schemas/RecordType'
+                description: Record type
               message:
                 type: string
-    EntityRequest:
+    RecordRequest:
       type: object
       required:
         - id
@@ -430,15 +430,15 @@ components:
         - attributes
       properties:
         id:
-          $ref: '#/components/schemas/EntityId'
-          description: Entity id
+          $ref: '#/components/schemas/RecordId'
+          description: Record id
         type:
-          $ref: '#/components/schemas/EntityType'
-          description: Entity type
+          $ref: '#/components/schemas/RecordType'
+          description: Record type
         attributes:
-          $ref: '#/components/schemas/EntityAttributes'
-          description: KVPs of entity attributes
-    EntityResponse:
+          $ref: '#/components/schemas/RecordAttributes'
+          description: KVPs of record attributes
+    RecordResponse:
       required:
         - id
         - type
@@ -447,21 +447,21 @@ components:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/EntityId'
-          description: Entity id
+          $ref: '#/components/schemas/RecordId'
+          description: Record id
         type:
-          $ref: '#/components/schemas/EntityType'
-          description: Entity type
+          $ref: '#/components/schemas/RecordType'
+          description: Record type
         attributes:
-          $ref: '#/components/schemas/EntityAttributes'
-          description: KVPs of entity attributes
+          $ref: '#/components/schemas/RecordAttributes'
+          description: KVPs of record attributes
         metadata:
-          $ref: '#/components/schemas/EntityMetadata'
-          description: Provenance and other entity metadata. May not be present in v0.2.
-    EntityAttributes:
+          $ref: '#/components/schemas/RecordMetadata'
+          description: Provenance and other record metadata. May not be present in v0.2.
+    RecordAttributes:
       type: object
       additionalProperties: true
-    EntityAttributeDefinition:
+    RecordAttributeDefinition:
       required:
         - name
       type: object
@@ -469,22 +469,22 @@ components:
         name:
           type: string
           description: Attribute name
-    EntityId:
+    RecordId:
       type: string
-    EntityMetadata:
+    RecordMetadata:
       type: object
-    EntityQueryResponse:
+    RecordQueryResponse:
       type: object
-    EntityType:
+    RecordType:
       type: string
-    EntityTypeDefinition:
+    RecordTypeDefinition:
       required:
         - name
       type: object
       properties:
         name:
           type: string
-          description: Entity type name
+          description: Record type name
     ErrorResponse:
       required:
         - status
@@ -506,7 +506,7 @@ components:
           description: error message
         path:
           type: string
-          description: requested entity path
+          description: requested record path
       description: ""
     RequestBodySearch:
       required:
