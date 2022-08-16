@@ -547,7 +547,7 @@ public class ApiClient {
   }
 
   /**
-   * Serialize the given Java object into string entity according the given
+   * Serialize the given Java object into string record according the given
    * Content-Type (only JSON is supported for now).
    * @param obj Object
    * @param formParams Form parameters
@@ -556,7 +556,7 @@ public class ApiClient {
    * @throws ApiException API exception
    */
   public Entity<?> serialize(Object obj, Map<String, Object> formParams, String contentType) throws ApiException {
-    Entity<?> entity;
+    Entity<?> record;
     if (contentType.startsWith("multipart/form-data")) {
       MultiPart multiPart = new MultiPart();
       for (Entry<String, Object> param: formParams.entrySet()) {
@@ -570,18 +570,18 @@ public class ApiClient {
           multiPart.bodyPart(new FormDataBodyPart(contentDisp, parameterToString(param.getValue())));
         }
       }
-      entity = Entity.entity(multiPart, MediaType.MULTIPART_FORM_DATA_TYPE);
+      record = Entity.record(multiPart, MediaType.MULTIPART_FORM_DATA_TYPE);
     } else if (contentType.startsWith("application/x-www-form-urlencoded")) {
       Form form = new Form();
       for (Entry<String, Object> param: formParams.entrySet()) {
         form.param(param.getKey(), parameterToString(param.getValue()));
       }
-      entity = Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE);
+      record = Entity.record(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE);
     } else {
       // We let jersey handle the serialization
-      entity = Entity.entity(obj, contentType);
+      record = Entity.record(obj, contentType);
     }
-    return entity;
+    return record;
   }
 
   /**
@@ -729,7 +729,7 @@ public class ApiClient {
       }
     }
 
-    Entity<?> entity = serialize(body, formParams, contentType);
+    Entity<?> record = serialize(body, formParams, contentType);
 
     Response response = null;
 
@@ -737,13 +737,13 @@ public class ApiClient {
       if ("GET".equals(method)) {
         response = invocationBuilder.get();
       } else if ("POST".equals(method)) {
-        response = invocationBuilder.post(entity);
+        response = invocationBuilder.post(record);
       } else if ("PUT".equals(method)) {
-        response = invocationBuilder.put(entity);
+        response = invocationBuilder.put(record);
       } else if ("DELETE".equals(method)) {
         response = invocationBuilder.delete();
       } else if ("PATCH".equals(method)) {
-        response = invocationBuilder.method("PATCH", entity);
+        response = invocationBuilder.method("PATCH", record);
       } else if ("HEAD".equals(method)) {
         response = invocationBuilder.head();
       } else {

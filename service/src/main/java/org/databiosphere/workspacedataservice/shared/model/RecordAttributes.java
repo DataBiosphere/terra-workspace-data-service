@@ -6,12 +6,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 
-public class EntityAttributes {
+public class RecordAttributes {
 
   private Map<String, Object> attributes;
 
   @JsonCreator
-  public EntityAttributes(Map<String, Object> attributes) {
+  public RecordAttributes(Map<String, Object> attributes) {
     this.attributes = attributes;
   }
 
@@ -30,7 +30,7 @@ public class EntityAttributes {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    EntityAttributes that = (EntityAttributes) o;
+    RecordAttributes that = (RecordAttributes) o;
     return Objects.equals(attributes, that.attributes);
   }
 

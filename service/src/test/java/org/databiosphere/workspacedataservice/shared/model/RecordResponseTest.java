@@ -13,23 +13,23 @@ import org.springframework.util.StringUtils;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class EntityResponseTest {
+public class RecordResponseTest {
 
   @Autowired private ObjectMapper jacksonObjectMapper;
 
   @Test
   void testJsonSerialization() throws JsonProcessingException {
-    EntityId entityId = new EntityId("test-id");
-    EntityType entityType = new EntityType("test-type");
-    EntityAttributes entityAttributes =
-        new EntityAttributes(
+    RecordId recordId = new RecordId("test-id");
+    RecordType recordType = new RecordType("test-type");
+    RecordAttributes recordAttributes =
+        new RecordAttributes(
             Map.of("foo", "bar", "num", 123, "bool", true, "anotherstring", "hello world"));
-    EntityMetadata entityMetadata = new EntityMetadata("test-provenance");
+    RecordMetadata recordMetadata = new RecordMetadata("test-provenance");
 
-    EntityResponse entityResponse =
-        new EntityResponse(entityId, entityType, entityAttributes, entityMetadata);
+    RecordResponse recordResponse =
+        new RecordResponse(recordId, recordType, recordAttributes, recordMetadata);
 
-    String actual = jacksonObjectMapper.writeValueAsString(entityResponse);
+    String actual = jacksonObjectMapper.writeValueAsString(recordResponse);
 
     // N.B. keys inside attributes will be sorted
     String expectedJsonString =

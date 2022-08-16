@@ -1,3 +1,3 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
-public record EntityMetadata(String provenance) {}
+public record RecordMetadata(String provenance) {}

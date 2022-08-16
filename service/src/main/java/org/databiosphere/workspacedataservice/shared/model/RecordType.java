@@ -3,13 +3,13 @@ package org.databiosphere.workspacedataservice.shared.model;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Objects;
 
-public class EntityType {
+public class RecordType {
 
-  public EntityType(String name) {
+  public RecordType(String name) {
     this.name = name;
   }
 
-  public EntityType() {}
+  public RecordType() {}
 
   private String name;
 
@@ -31,7 +31,7 @@ public class EntityType {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    EntityType that = (EntityType) o;
+    RecordType that = (RecordType) o;
     return Objects.equals(name, that.name);
   }
 

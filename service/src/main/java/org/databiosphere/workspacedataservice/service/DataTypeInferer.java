@@ -64,7 +64,7 @@ public class DataTypeInferer {
       return BOOLEAN;
     }
 
-    if (RefUtils.isReferenceValue(val)) {
+    if (RelationUtils.isRelationValue(val)) {
       return STRING;
     }
 

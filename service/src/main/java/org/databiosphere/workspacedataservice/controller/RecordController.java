@@ -5,97 +5,98 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import java.util.*;
 import java.util.stream.Collectors;
-import org.databiosphere.workspacedataservice.dao.EntityDao;
+import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
-import org.databiosphere.workspacedataservice.service.RefUtils;
+import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.shared.model.*;
+import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-public class EntityController {
+public class RecordController {
 
-  private final EntityDao entityDao;
+  private final RecordDao recordDao;
   private final DataTypeInferer inferer;
 
-  public EntityController(EntityDao entityDao) {
-    this.entityDao = entityDao;
+  public RecordController(RecordDao recordDao) {
+    this.recordDao = recordDao;
     this.inferer = new DataTypeInferer();
   }
 
   @PatchMapping("/{instanceId}/entities/{version}/{entityType}/{entityId}")
-  public ResponseEntity<EntityResponse> updateSingleEntity(
+  public ResponseEntity<RecordResponse> updateSingleEntity(
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("version") String version,
-      @PathVariable("entityType") EntityType entityType,
-      @PathVariable("entityId") EntityId entityId,
-      @RequestBody EntityRequest entityRequest) {
+      @PathVariable("entityType") RecordType recordType,
+      @PathVariable("entityId") RecordId recordId,
+      @RequestBody RecordRequest recordRequest) {
     validateVersion(version);
-    String entityTypeName = entityType.getName();
-    Entity singleEntity =
-        entityDao.getSingleEntity(
+    String recordTypeName = recordType.getName();
+    Record singleRecord =
+        recordDao.getSingleEntity(
             instanceId,
-            entityType,
-            entityId,
-            entityDao.getReferenceCols(instanceId, entityTypeName));
-    if (singleEntity == null) {
+                recordType,
+                recordId,
+            recordDao.getReferenceCols(instanceId, recordTypeName));
+    if (singleRecord == null) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found");
     }
-    Map<String, Object> updatedAtts = entityRequest.entityAttributes().getAttributes();
-    Map<String, Object> allAttrs = new HashMap<>(singleEntity.getAttributes().getAttributes());
+    Map<String, Object> updatedAtts = recordRequest.recordAttributes().getAttributes();
+    Map<String, Object> allAttrs = new HashMap<>(singleRecord.getAttributes().getAttributes());
     allAttrs.putAll(updatedAtts);
 
     Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(updatedAtts);
     Map<String, DataTypeMapping> existingTableSchema =
-        entityDao.getExistingTableSchema(instanceId, entityTypeName);
-    singleEntity.setAttributes(new EntityAttributes(allAttrs));
-    List<Entity> entities = Collections.singletonList(singleEntity);
+        recordDao.getExistingTableSchema(instanceId, recordTypeName);
+    singleRecord.setAttributes(new RecordAttributes(allAttrs));
+    List<Record> entities = Collections.singletonList(singleRecord);
     Map<String, DataTypeMapping> updatedSchema =
         addOrUpdateColumnIfNeeded(
-            instanceId, entityType.getName(), typeMapping, existingTableSchema, entities);
+            instanceId, recordType.getName(), typeMapping, existingTableSchema, entities);
     try {
-      entityDao.batchUpsert(
-          instanceId, entityTypeName, entities, new LinkedHashMap<>(updatedSchema));
-      EntityResponse response =
-          new EntityResponse(
-              entityId,
-              entityType,
-              singleEntity.getAttributes(),
-              new EntityMetadata("TODO: SUPERFRESH"));
+      recordDao.batchUpsert(
+          instanceId, recordTypeName, entities, new LinkedHashMap<>(updatedSchema));
+      RecordResponse response =
+          new RecordResponse(
+                  recordId,
+                  recordType,
+              singleRecord.getAttributes(),
+              new RecordMetadata("TODO: SUPERFRESH"));
       return new ResponseEntity<>(response, HttpStatus.OK);
 
-    } catch (InvalidEntityReference e) {
+    } catch (InvalidRelation e) {
       return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
     }
   }
 
   private Map<String, DataTypeMapping> addOrUpdateColumnIfNeeded(
-      UUID workspaceId,
-      String entityType,
+      UUID instanceId,
+      String recordType,
       Map<String, DataTypeMapping> schema,
       Map<String, DataTypeMapping> existingTableSchema,
-      List<Entity> entities) {
+      List<Record> records) {
     MapDifference<String, DataTypeMapping> difference =
         Maps.difference(existingTableSchema, schema);
     Map<String, DataTypeMapping> colsToAdd = difference.entriesOnlyOnRight();
-    Set<EntityReference> references = RefUtils.findEntityReferences(entities);
-    Map<String, List<EntityReference>> newRefCols =
-        references.stream().collect(Collectors.groupingBy(EntityReference::getReferenceColName));
+    Set<Relation> references = RelationUtils.findRelations(records);
+    Map<String, List<Relation>> newRefCols =
+        references.stream().collect(Collectors.groupingBy(Relation::referenceColName));
     // TODO: better communicate to the user that they're trying to assign multiple entity types to a
     // single column
     Preconditions.checkArgument(
         newRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty());
     for (String col : colsToAdd.keySet()) {
-      entityDao.addColumn(workspaceId, entityType, col, colsToAdd.get(col));
+      recordDao.addColumn(instanceId, recordType, col, colsToAdd.get(col));
       schema.put(col, colsToAdd.get(col));
       if (newRefCols.containsKey(col)) {
         String referencedEntityType = null;
         try {
-          referencedEntityType = newRefCols.get(col).get(0).getReferencedEntityType().getName();
-          entityDao.addForeignKeyForReference(entityType, referencedEntityType, workspaceId, col);
+          referencedEntityType = newRefCols.get(col).get(0).referencedRecordType().getName();
+          recordDao.addForeignKeyForReference(recordType, referencedEntityType, instanceId, col);
         } catch (MissingReferencedTableException e) {
           throw new ResponseStatusException(
               HttpStatus.BAD_REQUEST,
@@ -106,8 +107,8 @@ public class EntityController {
         }
       }
     }
-    if (!entityDao.getReferenceCols(workspaceId, entityType).stream()
-        .map(EntityReference::getReferenceColName)
+    if (!recordDao.getReferenceCols(instanceId, recordType).stream()
+        .map(Relation::referenceColName)
         .collect(Collectors.toSet())
         .containsAll(newRefCols.keySet())) {
       throw new ResponseStatusException(
@@ -121,79 +122,79 @@ public class EntityController {
       MapDifference.ValueDifference<DataTypeMapping> valueDifference = differenceMap.get(column);
       DataTypeMapping updatedColType =
           inferer.selectBestType(valueDifference.leftValue(), valueDifference.rightValue());
-      entityDao.changeColumn(workspaceId, entityType, column, updatedColType);
+      recordDao.changeColumn(instanceId, recordType, column, updatedColType);
       schema.put(column, updatedColType);
     }
     return schema;
   }
 
   @GetMapping("/{instanceId}/entities/{version}/{entityType}/{entityId}")
-  public ResponseEntity<EntityResponse> getSingleEntity(
+  public ResponseEntity<RecordResponse> getSingleEntity(
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("version") String version,
-      @PathVariable("entityType") EntityType entityType,
-      @PathVariable("entityId") EntityId entityId) {
+      @PathVariable("entityType") RecordType recordType,
+      @PathVariable("entityId") RecordId recordId) {
     validateVersion(version);
-    if (!entityDao.workspaceSchemaExists(instanceId)
-        || !entityDao.entityTypeExists(instanceId, entityType.getName())) {
+    if (!recordDao.workspaceSchemaExists(instanceId)
+        || !recordDao.entityTypeExists(instanceId, recordType.getName())) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Instance or table don't exist");
     }
-    Entity result =
-        entityDao.getSingleEntity(
+    Record result =
+        recordDao.getSingleEntity(
             instanceId,
-            entityType,
-            entityId,
-            entityDao.getReferenceCols(instanceId, entityType.getName()));
+                recordType,
+                recordId,
+            recordDao.getReferenceCols(instanceId, recordType.getName()));
     if (result == null) {
       // TODO: standard exception classes
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found");
     }
-    EntityResponse response =
-        new EntityResponse(
-            entityId,
-            entityType,
+    RecordResponse response =
+        new RecordResponse(
+                recordId,
+                recordType,
             result.getAttributes(),
-            new EntityMetadata("TODO: ENTITYMETADATA"));
+            new RecordMetadata("TODO: ENTITYMETADATA"));
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   @PutMapping("/{instanceId}/entities/{version}/{entityType}/{entityId}")
-  public ResponseEntity<EntityResponse> putSingleEntity(
+  public ResponseEntity<RecordResponse> putSingleEntity(
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("version") String version,
-      @PathVariable("entityType") EntityType entityType,
-      @PathVariable("entityId") EntityId entityId,
-      @RequestBody EntityRequest entityRequest) {
+      @PathVariable("entityType") RecordType recordType,
+      @PathVariable("entityId") RecordId recordId,
+      @RequestBody RecordRequest recordRequest) {
     validateVersion(version);
-    String entityTypeName = entityType.getName();
-    Map<String, Object> attributesInRequest = entityRequest.entityAttributes().getAttributes();
+    String entityTypeName = recordType.getName();
+    Map<String, Object> attributesInRequest = recordRequest.recordAttributes().getAttributes();
     Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
-    if (!entityDao.workspaceSchemaExists(instanceId)) {
-      entityDao.createSchema(instanceId);
+    if (!recordDao.workspaceSchemaExists(instanceId)) {
+      recordDao.createSchema(instanceId);
     }
     try {
-      EntityResponse response =
-          new EntityResponse(
-              entityId, entityType, entityRequest.entityAttributes(), new EntityMetadata("TODO"));
-      if (!entityDao.entityTypeExists(instanceId, entityTypeName)) {
-        createEntityTypeAndInsertEntities(instanceId, entityRequest, entityTypeName, requestSchema);
+      RecordResponse response =
+          new RecordResponse(
+                  recordId, recordType, recordRequest.recordAttributes(), new RecordMetadata("TODO"));
+      if (!recordDao.entityTypeExists(instanceId, entityTypeName)) {
+        createEntityTypeAndInsertEntities(instanceId, recordRequest, entityTypeName, requestSchema);
         return new ResponseEntity(response, HttpStatus.CREATED);
       } else {
         Map<String, DataTypeMapping> existingTableSchema =
-            entityDao.getExistingTableSchema(instanceId, entityTypeName);
+            recordDao.getExistingTableSchema(instanceId, entityTypeName);
         // null out any attributes that already exist but aren't in the request
         existingTableSchema.keySet().forEach(attr -> attributesInRequest.putIfAbsent(attr, null));
-        Entity entity = new Entity(entityId, entityType, entityRequest.entityAttributes());
-        List<Entity> entities = Collections.singletonList(entity);
+        Record record = new Record(recordId, recordType, recordRequest.recordAttributes());
+        List<Record> entities = Collections.singletonList(record);
         addOrUpdateColumnIfNeeded(
-            instanceId, entityType.getName(), requestSchema, existingTableSchema, entities);
+            instanceId, recordType.getName(), requestSchema, existingTableSchema, entities);
         LinkedHashMap<String, DataTypeMapping> combinedSchema =
             new LinkedHashMap<>(existingTableSchema);
         combinedSchema.putAll(requestSchema);
-        entityDao.batchUpsert(instanceId, entityTypeName, entities, combinedSchema);
+        recordDao.batchUpsert(instanceId, entityTypeName, entities, combinedSchema);
         return new ResponseEntity(response, HttpStatus.OK);
       }
-    } catch (ResponseStatusException | InvalidEntityReference e) {
+    } catch (ResponseStatusException | InvalidRelation e) {
       return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
     }
   }
@@ -202,10 +203,10 @@ public class EntityController {
   public ResponseEntity<String> createInstance(
       @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {
     validateVersion(version);
-    if (entityDao.workspaceSchemaExists(instanceId)) {
+    if (recordDao.workspaceSchemaExists(instanceId)) {
       return new ResponseEntity("This schema already exists.", HttpStatus.CONFLICT);
     }
-    entityDao.createSchema(instanceId);
+    recordDao.createSchema(instanceId);
     return new ResponseEntity<>(HttpStatus.CREATED);
   }
 
@@ -215,20 +216,20 @@ public class EntityController {
 
   private void createEntityTypeAndInsertEntities(
       UUID instanceId,
-      EntityRequest entityRequest,
+      RecordRequest recordRequest,
       String entityTypeName,
       Map<String, DataTypeMapping> requestSchema)
-      throws InvalidEntityReference {
+      throws InvalidRelation {
     try {
-      Entity newEntity =
-          new Entity(
-              entityRequest.entityId(),
-              entityRequest.entityType(),
-              entityRequest.entityAttributes());
-      List<Entity> entities = Collections.singletonList(newEntity);
-      entityDao.createEntityType(
-          instanceId, requestSchema, entityTypeName, RefUtils.findEntityReferences(entities));
-      entityDao.batchUpsert(
+      Record newRecord =
+          new Record(
+              recordRequest.recordId(),
+              recordRequest.recordType(),
+              recordRequest.recordAttributes());
+      List<Record> entities = Collections.singletonList(newRecord);
+      recordDao.createEntityType(
+          instanceId, requestSchema, entityTypeName, RelationUtils.findRelations(entities));
+      recordDao.batchUpsert(
           instanceId, entityTypeName, entities, new LinkedHashMap<>(requestSchema));
     } catch (MissingReferencedTableException e) {
       throw new ResponseStatusException(

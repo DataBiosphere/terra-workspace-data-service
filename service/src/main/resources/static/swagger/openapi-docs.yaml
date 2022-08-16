@@ -17,8 +17,8 @@ servers:
   - url: ../
     description: Relative to the current swagger page
 tags:
-  - name: Entities
-    description: Entity APIs
+  - name: Records
+    description: Record APIs
   - name: Instances
   - description: Instance APIs
   - name: Schema

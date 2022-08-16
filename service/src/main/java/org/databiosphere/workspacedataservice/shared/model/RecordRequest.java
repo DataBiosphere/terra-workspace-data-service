@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonPropertyOrder({"id", "type", "attributes"})
-public record EntityRequest(
-    @JsonProperty("id") EntityId entityId,
-    @JsonProperty("type") EntityType entityType,
-    @JsonProperty("attributes") EntityAttributes entityAttributes) {}
+public record RecordRequest(
+    @JsonProperty("id") RecordId recordId,
+    @JsonProperty("type") RecordType recordType,
+    @JsonProperty("attributes") RecordAttributes recordAttributes) {}

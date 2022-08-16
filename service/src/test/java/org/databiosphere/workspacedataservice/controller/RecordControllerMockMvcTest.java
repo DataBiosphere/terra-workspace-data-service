@@ -12,11 +12,11 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.databiosphere.workspacedataservice.service.RefUtils;
-import org.databiosphere.workspacedataservice.shared.model.EntityAttributes;
-import org.databiosphere.workspacedataservice.shared.model.EntityId;
-import org.databiosphere.workspacedataservice.shared.model.EntityRequest;
-import org.databiosphere.workspacedataservice.shared.model.EntityType;
+import org.databiosphere.workspacedataservice.service.RelationUtils;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.RecordId;
+import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-public class EntityControllerMockMvcTest {
+public class RecordControllerMockMvcTest {
 
   private final ObjectMapper mapper = new ObjectMapper();
   @Autowired private MockMvc mockMvc;
@@ -108,7 +108,7 @@ public class EntityControllerMockMvcTest {
     createSomeEntities(referencedType, 3);
     createSomeEntities(referringType, 1);
     Map<String, Object> attributes = new HashMap<>();
-    String ref = RefUtils.createReferenceString(referencedType, "entity_0");
+    String ref = RelationUtils.createRelationString(referencedType, "entity_0");
     attributes.put("sample-ref", ref);
     mockMvc
         .perform(
@@ -121,10 +121,10 @@ public class EntityControllerMockMvcTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     mapper.writeValueAsString(
-                        new EntityRequest(
-                            new EntityId("entity_0"),
-                            new EntityType(referringType),
-                            new EntityAttributes(attributes)))))
+                        new RecordRequest(
+                            new RecordId("entity_0"),
+                            new RecordType(referringType),
+                            new RecordAttributes(attributes)))))
         .andExpect(status().isOk())
         .andExpect(content().string(containsString(ref)));
   }
@@ -136,7 +136,7 @@ public class EntityControllerMockMvcTest {
     String referringType = "ref_samples-2";
     createSomeEntities(referringType, 1);
     Map<String, Object> attributes = new HashMap<>();
-    String ref = RefUtils.createReferenceString(referencedType, "entity_0");
+    String ref = RelationUtils.createRelationString(referencedType, "entity_0");
     attributes.put("sample-ref", ref);
     mockMvc
         .perform(
@@ -149,10 +149,10 @@ public class EntityControllerMockMvcTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     mapper.writeValueAsString(
-                        new EntityRequest(
-                            new EntityId("entity_0"),
-                            new EntityType(referringType),
-                            new EntityAttributes(attributes)))))
+                        new RecordRequest(
+                            new RecordId("entity_0"),
+                            new RecordType(referringType),
+                            new RecordAttributes(attributes)))))
         .andExpect(status().isBadRequest())
         .andExpect(
             content()
@@ -170,7 +170,7 @@ public class EntityControllerMockMvcTest {
     createSomeEntities(referencedType, 3);
     createSomeEntities(referringType, 1);
     Map<String, Object> attributes = new HashMap<>();
-    String ref = RefUtils.createReferenceString(referencedType, "entity_99");
+    String ref = RelationUtils.createRelationString(referencedType, "entity_99");
     attributes.put("sample-ref", ref);
     mockMvc
         .perform(
@@ -183,10 +183,10 @@ public class EntityControllerMockMvcTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     mapper.writeValueAsString(
-                        new EntityRequest(
-                            new EntityId("entity_0"),
-                            new EntityType(referringType),
-                            new EntityAttributes(attributes)))))
+                        new RecordRequest(
+                            new RecordId("entity_0"),
+                            new RecordType(referringType),
+                            new RecordAttributes(attributes)))))
         .andExpect(status().isBadRequest())
         .andExpect(
             content()
@@ -213,10 +213,10 @@ public class EntityControllerMockMvcTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     mapper.writeValueAsString(
-                        new EntityRequest(
-                            new EntityId("entity_0"),
-                            new EntityType(entityType),
-                            new EntityAttributes(attributes)))))
+                        new RecordRequest(
+                            new RecordId("entity_0"),
+                            new RecordType(entityType),
+                            new RecordAttributes(attributes)))))
         .andExpect(status().isOk());
   }
 
@@ -238,10 +238,10 @@ public class EntityControllerMockMvcTest {
                     entityId)
                 .content(
                     mapper.writeValueAsString(
-                        new EntityRequest(
-                            new EntityId(entityId),
-                            new EntityType(entityType),
-                            new EntityAttributes(entityAttributes))))
+                        new RecordRequest(
+                            new RecordId(entityId),
+                            new RecordType(entityType),
+                            new RecordAttributes(entityAttributes))))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound());
   }
@@ -252,7 +252,7 @@ public class EntityControllerMockMvcTest {
     String entityType = "entity-type-missing-table-ref";
     String entityId = "entity_0";
     Map<String, Object> entityAttributes = new HashMap<>();
-    String ref = RefUtils.createReferenceString("missing", "missing_also");
+    String ref = RelationUtils.createRelationString("missing", "missing_also");
     entityAttributes.put("sample-ref", ref);
 
     mockMvc
@@ -265,10 +265,10 @@ public class EntityControllerMockMvcTest {
                     entityId)
                 .content(
                     mapper.writeValueAsString(
-                        new EntityRequest(
-                            new EntityId(entityId),
-                            new EntityType(entityType),
-                            new EntityAttributes(entityAttributes))))
+                        new RecordRequest(
+                            new RecordId(entityId),
+                            new RecordType(entityType),
+                            new RecordAttributes(entityAttributes))))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isBadRequest())
         .andExpect(
@@ -281,7 +281,7 @@ public class EntityControllerMockMvcTest {
     String entityType = "ref-alter";
     createSomeEntities(entityType, 1);
     Map<String, Object> entityAttributes = new HashMap<>();
-    String ref = RefUtils.createReferenceString("missing", "missing_also");
+    String ref = RelationUtils.createRelationString("missing", "missing_also");
     entityAttributes.put("attr1", ref);
     mockMvc
         .perform(
@@ -293,10 +293,10 @@ public class EntityControllerMockMvcTest {
                     "entity_0")
                 .content(
                     mapper.writeValueAsString(
-                        new EntityRequest(
-                            new EntityId("entity_0"),
-                            new EntityType(entityType),
-                            new EntityAttributes(entityAttributes))))
+                        new RecordRequest(
+                            new RecordId("entity_0"),
+                            new RecordType(entityType),
+                            new RecordAttributes(entityAttributes))))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isConflict())
         .andExpect(
@@ -331,10 +331,10 @@ public class EntityControllerMockMvcTest {
                       entityId)
                   .content(
                       mapper.writeValueAsString(
-                          new EntityRequest(
-                              new EntityId(entityId),
-                              new EntityType(entityType),
-                              new EntityAttributes(entityAttributes))))
+                          new RecordRequest(
+                              new RecordId(entityId),
+                              new RecordType(entityType),
+                              new RecordAttributes(entityAttributes))))
                   .contentType(MediaType.APPLICATION_JSON))
           .andExpect(status().is2xxSuccessful());
     }

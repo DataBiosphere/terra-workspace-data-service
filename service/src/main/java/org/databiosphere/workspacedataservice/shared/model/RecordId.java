@@ -4,12 +4,12 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Objects;
 
-public class EntityId {
+public class RecordId {
 
   private String entityIdentifier;
 
   @JsonCreator
-  public EntityId(String entityIdentifier) {
+  public RecordId(String entityIdentifier) {
     this.entityIdentifier = entityIdentifier;
   }
 
@@ -27,8 +27,8 @@ public class EntityId {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    EntityId entityId = (EntityId) o;
-    return Objects.equals(entityIdentifier, entityId.entityIdentifier);
+    RecordId recordId = (RecordId) o;
+    return Objects.equals(entityIdentifier, recordId.entityIdentifier);
   }
 
   @Override
