@@ -126,7 +126,7 @@ public class EntityControllerMockMvcTest {
                             new EntityType(referringType),
                             new EntityAttributes(attributes)))))
         .andExpect(status().isOk())
-        .andExpect(content().string(containsString("\"sample-ref\":\"entity_0\"")));
+        .andExpect(content().string(containsString(ref)));
     ;
   }
 

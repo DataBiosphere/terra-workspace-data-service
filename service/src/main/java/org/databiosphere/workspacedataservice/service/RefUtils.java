@@ -4,6 +4,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.google.common.base.Preconditions;
 import org.databiosphere.workspacedataservice.service.model.EntityReference;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
 import org.databiosphere.workspacedataservice.shared.model.EntityType;
@@ -32,25 +34,19 @@ public class RefUtils {
   }
 
   public static String getTypeValue(Object obj) {
-    if (obj != null){
-      String sVal = obj.toString();
-      int index = sVal.indexOf("/");
-      if (index >= 0){
-        return sVal.substring(REFERENCE_IDENTIFIER.length(), index);
-      }
-    }
-    throw new IllegalArgumentException("Expected " + REFERENCE_IDENTIFIER + "<entityType>/<entityName>");
+    return splitReferenceString(obj)[0];
+  }
+
+  private static String[] splitReferenceString(Object obj) {
+    String errorMessage = "Expected " + REFERENCE_IDENTIFIER + "<entityType>/<entityName>";
+    Preconditions.checkNotNull(obj, errorMessage);
+    String[] parts = obj.toString().substring(REFERENCE_IDENTIFIER.length()).split("/");
+    Preconditions.checkArgument(parts.length == 2, errorMessage);
+    return parts;
   }
 
   public static String getRefValue(Object obj) {
-    if (obj != null){
-      String sVal = obj.toString();
-      int index = sVal.indexOf("/");
-      if (index >= 0){
-        return sVal.substring(index+1);
-      }
-    }
-    throw new IllegalArgumentException("Expected " + REFERENCE_IDENTIFIER + "<entityType>/<entityName>");
+    return splitReferenceString(obj)[1];
   }
 
   /**

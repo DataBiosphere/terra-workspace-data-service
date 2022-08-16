@@ -308,9 +308,13 @@ public class EntityDao {
           if (systemCols.contains(columnName)) {
             continue;
           }
-          Object object = rs.getObject(columnName);
-          attributes.put(
-              columnName, object instanceof PGobject ? ((PGobject) object).getValue() : object);
+          if (referenceColToTable.size() > 0 && referenceColToTable.containsKey(columnName)) {
+            attributes.put(columnName, RefUtils.createReferenceString(referenceColToTable.get(columnName), rs.getString(columnName)));
+        } else {
+            Object object = rs.getObject(columnName);
+            attributes.put(
+                    columnName, object instanceof PGobject ? ((PGobject) object).getValue() : object);
+          }
         }
         return attributes;
       } catch (SQLException e) {
