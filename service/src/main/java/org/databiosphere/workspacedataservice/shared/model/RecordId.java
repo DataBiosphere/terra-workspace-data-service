@@ -6,21 +6,21 @@ import java.util.Objects;
 
 public class RecordId {
 
-  private String entityIdentifier;
+  private String recordIdentifier;
 
   @JsonCreator
   public RecordId(String entityIdentifier) {
-    this.entityIdentifier = entityIdentifier;
+    this.recordIdentifier = entityIdentifier;
   }
 
   @JsonValue
-  public String getEntityIdentifier() {
-    return entityIdentifier;
+  public String getRecordIdentifier() {
+    return recordIdentifier;
   }
 
   @Override
   public String toString() {
-    return "EntityId{" + "entityIdentifier='" + entityIdentifier + '\'' + '}';
+    return "EntityId{" + "entityIdentifier='" + recordIdentifier + '\'' + '}';
   }
 
   @Override
@@ -28,11 +28,11 @@ public class RecordId {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     RecordId recordId = (RecordId) o;
-    return Objects.equals(entityIdentifier, recordId.entityIdentifier);
+    return Objects.equals(recordIdentifier, recordId.recordIdentifier);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityIdentifier);
+    return Objects.hash(recordIdentifier);
   }
 }

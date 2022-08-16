@@ -34,7 +34,7 @@ public class RecordDaoTest {
     workspaceId = UUID.randomUUID();
     recordType = new RecordType("testEntityType");
     entityDao.createSchema(workspaceId);
-    entityDao.createEntityType(
+    entityDao.createReccordType(
         workspaceId, Collections.emptyMap(), recordType.getName(), Collections.emptySet());
   }
 
@@ -52,12 +52,12 @@ public class RecordDaoTest {
 
     // make sure entity is fetched
     Record search =
-        entityDao.getSingleEntity(workspaceId, recordType, recordId, Collections.emptyList());
+        entityDao.getSingleRecord(workspaceId, recordType, recordId, Collections.emptyList());
     assertEquals(testRecord, search);
 
     // nonexistent entity should be null
     Record none =
-        entityDao.getSingleEntity(
+        entityDao.getSingleRecord(
             workspaceId, recordType, new RecordId("noEntity"), Collections.emptyList());
     assertNull(none);
   }
@@ -77,7 +77,7 @@ public class RecordDaoTest {
         new LinkedHashMap<>());
 
     Record search =
-        entityDao.getSingleEntity(workspaceId, recordType, recordId, Collections.emptyList());
+        entityDao.getSingleRecord(workspaceId, recordType, recordId, Collections.emptyList());
     assertEquals(testRecord, search, "Created entity should match entered entity");
 
     // create entity with attributes
@@ -90,7 +90,7 @@ public class RecordDaoTest {
         Collections.singletonList(recordWithAttr),
         new LinkedHashMap<>(Map.of("foo", DataTypeMapping.STRING)));
 
-    search = entityDao.getSingleEntity(workspaceId, recordType, attrId, Collections.emptyList());
+    search = entityDao.getSingleRecord(workspaceId, recordType, attrId, Collections.emptyList());
     assertEquals(
             recordWithAttr, search, "Created entity with attributes should match entered entity");
   }
@@ -128,7 +128,7 @@ public class RecordDaoTest {
             Map.of("foo", DataTypeMapping.STRING, "testEntityType", DataTypeMapping.STRING)));
 
     Record search =
-        entityDao.getSingleEntity(
+        entityDao.getSingleRecord(
             workspaceId,
                 recordType,
                 recordId,

@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.service.model;
 
 public enum SystemColumn {
-  ENTITY_ID("sys_name");
+  RECORD_ID("sys_name");
   private final String columnName;
 
   SystemColumn(String columnName) {
