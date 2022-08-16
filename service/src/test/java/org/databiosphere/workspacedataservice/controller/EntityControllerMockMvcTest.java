@@ -127,7 +127,6 @@ public class EntityControllerMockMvcTest {
                             new EntityAttributes(attributes)))))
         .andExpect(status().isOk())
         .andExpect(content().string(containsString(ref)));
-    ;
   }
 
   @Test
