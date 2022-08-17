@@ -50,7 +50,7 @@ idea.project.jdkName = '17'
 // Spotless configuration
 spotless {
     java {
-        palantirJavaFormat()
+        eclipse()
         target '**/*.java'
         targetExclude("${buildDir}/**", "**/generated/**")
     }
