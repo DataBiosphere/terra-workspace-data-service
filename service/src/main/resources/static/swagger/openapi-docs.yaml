@@ -20,7 +20,7 @@ tags:
   - name: Records
     description: Record APIs
   - name: Instances
-  - description: Instance APIs
+    description: Instance APIs
   - name: Schema
     description: Schema Manipulation APIs (coming soon)
 paths:
