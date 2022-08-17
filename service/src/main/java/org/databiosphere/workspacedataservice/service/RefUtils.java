@@ -9,10 +9,12 @@ import com.google.common.base.Preconditions;
 import org.databiosphere.workspacedataservice.service.model.EntityReference;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
 import org.databiosphere.workspacedataservice.shared.model.EntityType;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
 public class RefUtils {
 
-  public static final String REFERENCE_IDENTIFIER = "terra-wds:";
+  public static final String REFERENCE_IDENTIFIER = "terra-wds";
 
   /**
    * Determines if any attributes reference another table
@@ -40,9 +42,22 @@ public class RefUtils {
   private static String[] splitReferenceString(Object obj) {
     String errorMessage = "Expected " + REFERENCE_IDENTIFIER + "<entityType>/<entityName>";
     Preconditions.checkNotNull(obj, errorMessage);
-    String[] parts = obj.toString().substring(REFERENCE_IDENTIFIER.length()).split("/");
-    Preconditions.checkArgument(parts.length == 2, errorMessage);
-    return parts;
+    Preconditions.checkArgument(obj instanceof String, errorMessage);
+    String ref = (String)obj;
+
+    // parse the string as a uri
+    UriComponents uric = UriComponentsBuilder.fromUriString(ref).build();
+
+    // uri scheme should be "terra-wds"
+    Preconditions.checkArgument(REFERENCE_IDENTIFIER.equals(uric.getScheme()), errorMessage);
+
+    // record type is the first segment of the uri path;
+    // record id is the second segment of the uri path
+    List<String> pathSegments = uric.getPathSegments();
+    Preconditions.checkArgument(pathSegments.size() == 2, errorMessage);
+
+    return pathSegments.toArray(new String[0]); // or have this method return List<String> instead of array
+//    return parts;
   }
 
   public static String getRefValue(Object obj) {
