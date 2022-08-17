@@ -555,8 +555,8 @@ public class ApiClient {
    * @return Entity
    * @throws ApiException API exception
    */
-  public Entity<?> serialize(Object obj, Map<String, Object> formParams, String contentType) throws ApiException {
-    Entity<?> record;
+  public Record<?> serialize(Object obj, Map<String, Object> formParams, String contentType) throws ApiException {
+    Record<?> record;
     if (contentType.startsWith("multipart/form-data")) {
       MultiPart multiPart = new MultiPart();
       for (Entry<String, Object> param: formParams.entrySet()) {
@@ -570,13 +570,13 @@ public class ApiClient {
           multiPart.bodyPart(new FormDataBodyPart(contentDisp, parameterToString(param.getValue())));
         }
       }
-      record = Entity.record(multiPart, MediaType.MULTIPART_FORM_DATA_TYPE);
+      record = Record.record(multiPart, MediaType.MULTIPART_FORM_DATA_TYPE);
     } else if (contentType.startsWith("application/x-www-form-urlencoded")) {
       Form form = new Form();
       for (Entry<String, Object> param: formParams.entrySet()) {
         form.param(param.getKey(), parameterToString(param.getValue()));
       }
-      record = Entity.record(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE);
+      record = Record.record(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE);
     } else {
       // We let jersey handle the serialization
       record = Entity.record(obj, contentType);
@@ -600,7 +600,7 @@ public class ApiClient {
 
     if ("byte[]".equals(returnType.toString())) {
       // Handle binary response (byte array).
-      return (T) response.readEntity(byte[].class);
+      return (T) response.readRecord(byte[].class);
     } else if (returnType.getRawType() == File.class) {
       // Handle file downloading.
       T file = (T) downloadFileFromResponse(response);
@@ -614,7 +614,7 @@ public class ApiClient {
     if (contentType == null)
       throw new ApiException(500, "missing Content-Type in response");
 
-    return response.readEntity(returnType);
+    return response.readRecord(returnType);
   }
 
   /**
@@ -627,11 +627,11 @@ public class ApiClient {
     try {
       File file = prepareDownloadFile(response);
 {{^supportJava6}}
-      Files.copy(response.readEntity(InputStream.class), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+      Files.copy(response.readRecord(InputStream.class), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
 {{/supportJava6}}
 {{#supportJava6}}
       // Java6 falls back to commons.io for file copying
-      FileUtils.copyToFile(response.readEntity(InputStream.class), file);
+      FileUtils.copyToFile(response.readRecord(InputStream.class), file);
 {{/supportJava6}}
       return file;
     } catch (IOException e) {
@@ -729,7 +729,7 @@ public class ApiClient {
       }
     }
 
-    Entity<?> record = serialize(body, formParams, contentType);
+    Record<?> record = serialize(body, formParams, contentType);
 
     Response response = null;
 
@@ -763,9 +763,9 @@ public class ApiClient {
       } else {
         String message = "error";
         String respBody = null;
-        if (response.hasEntity()) {
+        if (response.hasRecord()) {
           try {
-            respBody = String.valueOf(response.readEntity(String.class));
+            respBody = String.valueOf(response.readRecord(String.class));
             message = respBody;
           } catch (RuntimeException e) {
             // e.printStackTrace();
