@@ -27,7 +27,7 @@ paths:
   /{instanceid}/records/{v}/{type}/{id}:
     get:
       summary: Get record
-      operationId: getSingleRecord
+      operationId: getRecord
       description: Retrieves a single record by its type and id
       tags:
         - Records
@@ -55,6 +55,7 @@ paths:
         TODO: the type and id are duplicated in the url and the body; change this? Silently ignore the type/id in the body?
         
         TODO: add a query parameter to allow/disallow overwriting existing records?
+      operationId: createOrReplaceRecord
       tags:
         - Records
       parameters:
@@ -79,7 +80,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
       summary: Update record
-      operationId: addOrUpdateAttributes
+      operationId: updateRecord
       description: |
         Updates the record of the specified type and id.
         Any attributes included in the request body will be created or overwritten.
@@ -108,6 +109,7 @@ paths:
     delete:
       summary: Delete record (pending)
       description: Deletes the record at the specified type and id.
+      operationId: deleteRecord
       tags:
         - Records
       parameters:
@@ -115,75 +117,6 @@ paths:
         - $ref: '#/components/parameters/versionPathParam'
         - $ref: '#/components/parameters/recordTypePathParam'
         - $ref: '#/components/parameters/recordIdPathParam'
-      responses:
-        204:
-          description: Success
-  /{instanceid}/types/{v}/{type}:
-    patch:
-      summary: Update record type (pending)
-      description: |
-        Update record type. All records of the old type will be updated to the new type.
-        Returns the updated type definition.
-
-        v0.2 supports renaming a type; future versions may support additional functionality.
-      tags:
-        - Records
-      parameters:
-        - $ref: '#/components/parameters/instanceIdPathParam'
-        - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/recordTypePathParam'
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RecordTypeDefinition'
-    delete:
-      summary: Delete record type (pending)
-      description: Delete record type. All records of this type will be deleted.
-      tags:
-        - Records
-      parameters:
-        - $ref: '#/components/parameters/instanceIdPathParam'
-        - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/recordTypePathParam'
-      responses:
-        204:
-          description: Success
-  /{instanceid}/types/{type}/attributes/{v}/{attribute}:
-    patch:
-      summary: Update attribute (pending)
-      description: |
-        Update attribute. All records containing the old attribute will now have the new attribute instead.
-        Returns the updated attribute definition.
-
-        v0.2 supports renaming an attribute within the specified type; future versions may support additional functionality.
-      tags:
-        - Records
-      parameters:
-        - $ref: '#/components/parameters/instanceIdPathParam'
-        - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/recordTypePathParam'
-        - $ref: '#/components/parameters/attributePathParam'
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RecordTypeDefinition'
-    delete:
-      summary: Delete attribute (pending)
-      description: |
-        Delete attribute. This deletes all values for this attribute within the specified type.
-      tags:
-        - Records
-      parameters:
-        - $ref: '#/components/parameters/instanceIdPathParam'
-        - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/recordTypePathParam'
-        - $ref: '#/components/parameters/attributePathParam'
       responses:
         204:
           description: Success
@@ -196,6 +129,7 @@ paths:
         use the POST api instead.
 
         TODO: Eliminate this API in favor of POST?
+      operationId: basicQueryRecords
       tags:
         - Records
       parameters:
@@ -216,6 +150,7 @@ paths:
     post:
       summary: Query records (pending)
       description: Paginated list of records matching the criteria supplied in the request body
+      operationId: queryRecords
       tags:
         - Records
       parameters:
@@ -250,6 +185,7 @@ paths:
     post:
       summary: Batch write records (pending)
       description: Perform a batch of create / delete / update / replace operations on multiple records
+      operationId: batchWriteRecords
       tags:
         - Records
       parameters:
@@ -268,6 +204,7 @@ paths:
     post:
       summary: Create an instance (unstable)
       description: Create an instance with the given UUID. This API is liable to change.
+      operationId: createWDSInstance
       tags:
         - Instances
       parameters:
@@ -278,6 +215,128 @@ paths:
           description: Success
         409:
           description: Conflict - schema already exists.
+  /{instanceid}/types/{v}/{type}:
+    get:
+      summary: Describe record type (pending)
+      description: |
+        Returns the schema definition for this type, including all of its attributes.
+      operationId: describeRecordType
+      tags:
+        - Schema
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordTypeSchema'
+    patch:
+      summary: Update record type (pending)
+      description: |
+        Update record type. All records of the old type will be updated to the new type.
+        This API can be used to rename a record type and/or to perform batch updates to
+        this type's attributes. See also the updateAttribute API.
+        This API cannot be used to delete attributes; use deleteAttribute instead.
+        Returns the updated type definition.
+      operationId: updateRecordType
+      tags:
+        - Schema
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordTypeSchema'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordTypeSchema'
+    delete:
+      summary: Delete record type (pending)
+      description: Delete record type. All records of this type will be deleted.
+      operationId: deleteRecordType
+      tags:
+        - Schema
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+      responses:
+        204:
+          description: Success
+  /{instanceid}/types/{type}/attributes/{v}/{attribute}:
+    get:
+      summary: Describe attribute (pending)
+      description: |
+        Returns the schema definition for this attribute.
+      operationId: describeAttribute
+      tags:
+        - Schema
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+        - $ref: '#/components/parameters/attributePathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttributeSchema'
+    patch:
+      summary: Update attribute (pending)
+      description: |
+        Update attribute. All records of the specified type that contain the old attribute will now have the new attribute instead.
+        When changing datatypes, WDS will make a best effort to cast the existing values into the new datatype.
+        Any values that cannot be successfully cast will be changed to null.
+        Returns the updated attribute definition.
+      operationId: updateAttribute
+      tags:
+        - Schema
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+        - $ref: '#/components/parameters/attributePathParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttributeSchema'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttributeSchema'
+    delete:
+      summary: Delete attribute (pending)
+      description: |
+        Delete attribute. This deletes all values for this attribute within the specified type.
+      operationId: deleteAttribute
+      tags:
+        - Schema
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+        - $ref: '#/components/parameters/attributePathParam'
+      responses:
+        204:
+          description: Success
+
 components:
   parameters:
     attributePathParam:
@@ -388,6 +447,19 @@ components:
             items:
               $ref: '#/components/schemas/BatchOperation'
   schemas:
+    AttributeSchema:
+      type: object
+      required:
+        - name
+        - datatype
+      properties:
+        name:
+          type: string
+          description: name of this attribute.
+        datatype:
+          type: string
+          enum: [boolean, date, datetime, string, json, long, double]
+          description: datatype of this attribute. The enum of datatypes is subject to change.
     BatchOperation:
       type: object
       required:
@@ -476,14 +548,19 @@ components:
       type: object
     RecordType:
       type: string
-    RecordTypeDefinition:
+    RecordTypeSchema:
       required:
         - name
+        - attributes
       type: object
       properties:
         name:
           type: string
           description: Record type name
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttributeSchema'
     ErrorResponse:
       required:
         - status
