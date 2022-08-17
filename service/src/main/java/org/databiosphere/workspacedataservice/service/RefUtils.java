@@ -1,11 +1,10 @@
 package org.databiosphere.workspacedataservice.service;
 
+import com.google.common.base.Preconditions;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import com.google.common.base.Preconditions;
 import org.databiosphere.workspacedataservice.service.model.EntityReference;
 import org.databiosphere.workspacedataservice.shared.model.Entity;
 import org.databiosphere.workspacedataservice.shared.model.EntityType;
@@ -43,7 +42,7 @@ public class RefUtils {
     String errorMessage = "Expected " + REFERENCE_IDENTIFIER + "<entityType>/<entityName>";
     Preconditions.checkNotNull(obj, errorMessage);
     Preconditions.checkArgument(obj instanceof String, errorMessage);
-    String ref = (String)obj;
+    String ref = (String) obj;
 
     // parse the string as a uri
     UriComponents uric = UriComponentsBuilder.fromUriString(ref).build();
@@ -56,8 +55,7 @@ public class RefUtils {
     List<String> pathSegments = uric.getPathSegments();
     Preconditions.checkArgument(pathSegments.size() == 2, errorMessage);
 
-    return pathSegments.toArray(new String[0]); // or have this method return List<String> instead of array
-//    return parts;
+    return pathSegments.toArray(new String[0]);
   }
 
   public static String getRefValue(Object obj) {
@@ -74,7 +72,11 @@ public class RefUtils {
     return obj != null && obj.toString().startsWith(REFERENCE_IDENTIFIER);
   }
 
-  public static String createReferenceString(String entityTypeName, String entityId){
-    return REFERENCE_IDENTIFIER + entityTypeName + "/" + entityId;
+  public static String createReferenceString(String entityTypeName, String entityId) {
+    return UriComponentsBuilder.newInstance()
+        .scheme(REFERENCE_IDENTIFIER)
+        .pathSegment(entityTypeName, entityId)
+        .build()
+        .toUriString();
   }
 }
