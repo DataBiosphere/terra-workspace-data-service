@@ -9,6 +9,8 @@ import com.google.common.base.Preconditions;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
 public class RelationUtils {
 
@@ -38,11 +40,23 @@ public class RelationUtils {
   }
 
   private static String[] splitRelationIdentifier(Object obj) {
-    String errorMessage = "Expected " + RELATION_IDENTIFIER + "<recordType>/<recordName>";
+    String errorMessage = "Expected " + RELATION_IDENTIFIER + "<recordType>/<recordId>";
     Preconditions.checkNotNull(obj, errorMessage);
-    String[] parts = obj.toString().substring(RELATION_IDENTIFIER.length()).split("/");
-    Preconditions.checkArgument(parts.length == 2, errorMessage);
-    return parts;
+    Preconditions.checkArgument(obj instanceof String, errorMessage);
+    String ref = (String) obj;
+
+    // parse the string as a uri
+    UriComponents uric = UriComponentsBuilder.fromUriString(ref).build();
+
+    // uri scheme should be "terra-wds"
+    Preconditions.checkArgument(RELATION_IDENTIFIER.equals(uric.getScheme()), errorMessage);
+
+    // record type is the first segment of the uri path;
+    // record id is the second segment of the uri path
+    List<String> pathSegments = uric.getPathSegments();
+    Preconditions.checkArgument(pathSegments.size() == 2, errorMessage);
+
+    return pathSegments.toArray(new String[0]);
   }
 
   public static String getRelationValue(Object obj) {
