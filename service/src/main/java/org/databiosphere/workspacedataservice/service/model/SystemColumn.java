@@ -1,10 +1,10 @@
 package org.databiosphere.workspacedataservice.service.model;
 
-public enum EntitySystemColumn {
-  ENTITY_ID("sys_name");
+public enum SystemColumn {
+  RECORD_ID("sys_name");
   private final String columnName;
 
-  EntitySystemColumn(String columnName) {
+  SystemColumn(String columnName) {
     this.columnName = columnName;
   }
 

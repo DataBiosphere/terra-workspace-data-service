@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import static org.databiosphere.workspacedataservice.service.model.EntitySystemColumn.ENTITY_ID;
+import static org.databiosphere.workspacedataservice.service.model.SystemColumn.RECORD_ID;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -11,12 +11,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
-import org.databiosphere.workspacedataservice.service.RefUtils;
+import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
-import org.databiosphere.workspacedataservice.shared.model.Entity;
-import org.databiosphere.workspacedataservice.shared.model.EntityAttributes;
-import org.databiosphere.workspacedataservice.shared.model.EntityId;
-import org.databiosphere.workspacedataservice.shared.model.EntityType;
+import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.RecordId;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.postgresql.util.PGobject;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -26,68 +26,68 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class EntityDao {
+public class RecordDao {
 
   private final NamedParameterJdbcTemplate namedTemplate;
 
-  public EntityDao(NamedParameterJdbcTemplate namedTemplate) {
+  public RecordDao(NamedParameterJdbcTemplate namedTemplate) {
     this.namedTemplate = namedTemplate;
   }
 
-  public boolean workspaceSchemaExists(UUID workspaceId) {
+  public boolean instanceSchemaExists(UUID instanceId) {
     return Boolean.TRUE.equals(
         namedTemplate.queryForObject(
             "select exists(select from information_schema.schemata WHERE schema_name = :workspaceSchema)",
-            new MapSqlParameterSource("workspaceSchema", workspaceId.toString()),
+            new MapSqlParameterSource("workspaceSchema", instanceId.toString()),
             Boolean.class));
   }
 
-  public void createSchema(UUID workspaceId) {
-    namedTemplate.getJdbcTemplate().update("create schema \"" + workspaceId.toString() + "\"");
+  public void createSchema(UUID instanceId) {
+    namedTemplate.getJdbcTemplate().update("create schema \"" + instanceId.toString() + "\"");
   }
 
-  public boolean entityTypeExists(UUID workspaceId, String entityType) {
+  public boolean recordTypeExists(UUID instanceId, String recordType) {
     return Boolean.TRUE.equals(
         namedTemplate.queryForObject(
-            "select exists(select from pg_tables where schemaname = :workspaceId AND tablename  = :entityType)",
+            "select exists(select from pg_tables where schemaname = :instanceId AND tablename  = :recordType)",
             new MapSqlParameterSource(
-                Map.of("workspaceId", workspaceId.toString(), "entityType", entityType)),
+                Map.of("instanceId", instanceId.toString(), "recordType", recordType)),
             Boolean.class));
   }
 
-  public void createEntityType(
-      UUID workspaceId,
+  public void createRecordType(
+      UUID instanceId,
       Map<String, DataTypeMapping> tableInfo,
       String tableName,
-      Set<EntityReference> referencedEntityTypes)
+      Set<Relation> relations)
       throws MissingReferencedTableException {
     String columnDefs = genColumnDefs(tableInfo);
     namedTemplate
         .getJdbcTemplate()
         .update(
             "create table "
-                + getQualifiedTableName(tableName, workspaceId)
+                + getQualifiedTableName(tableName, instanceId)
                 + "( "
                 + columnDefs
                 + ")");
-    for (EntityReference referencedEntityType : referencedEntityTypes) {
+    for (Relation relation : relations) {
       addForeignKeyForReference(
           tableName,
-          referencedEntityType.getReferencedEntityType().getName(),
-          workspaceId,
-          referencedEntityType.getReferenceColName());
+          relation.relationRecordType().getName(),
+          instanceId,
+          relation.relationColName());
     }
   }
 
-  private String getQualifiedTableName(String entityType, UUID workspaceId) {
-    return "\"" + workspaceId.toString() + "\".\"" + entityType + "\"";
+  private String getQualifiedTableName(String recordType, UUID instanceId) {
+    return "\"" + instanceId.toString() + "\".\"" + recordType + "\"";
   }
 
-  public Map<String, DataTypeMapping> getExistingTableSchema(UUID workspaceId, String tableName) {
-    MapSqlParameterSource params = new MapSqlParameterSource("workspaceId", workspaceId.toString());
+  public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, String tableName) {
+    MapSqlParameterSource params = new MapSqlParameterSource("instanceId", instanceId.toString());
     params.addValue("tableName", tableName);
     return namedTemplate.query(
-        "select column_name, data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :workspaceId "
+        "select column_name, data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
             + "and table_name = :tableName",
         params,
         rs -> {
@@ -102,12 +102,12 @@ public class EntityDao {
   }
 
   public void addColumn(
-      UUID workspaceId, String tableName, String columnName, DataTypeMapping colType) {
+      UUID instanceId, String tableName, String columnName, DataTypeMapping colType) {
     namedTemplate
         .getJdbcTemplate()
         .update(
             "alter table "
-                + getQualifiedTableName(tableName, workspaceId)
+                + getQualifiedTableName(tableName, instanceId)
                 + " add column \""
                 + columnName
                 + "\" "
@@ -115,12 +115,12 @@ public class EntityDao {
   }
 
   public void changeColumn(
-      UUID workspaceId, String tableName, String columnName, DataTypeMapping newColType) {
+      UUID instanceId, String tableName, String columnName, DataTypeMapping newColType) {
     namedTemplate
         .getJdbcTemplate()
         .update(
             "alter table "
-                + getQualifiedTableName(tableName, workspaceId)
+                + getQualifiedTableName(tableName, instanceId)
                 + " alter column \""
                 + columnName
                 + "\" TYPE "
@@ -128,7 +128,7 @@ public class EntityDao {
   }
 
   private String genColumnDefs(Map<String, DataTypeMapping> tableInfo) {
-    return ENTITY_ID.getColumnName()
+    return RECORD_ID.getColumnName()
         + " text primary key "
         + (tableInfo.size() > 0
             ? ", "
@@ -138,26 +138,26 @@ public class EntityDao {
             : "");
   }
 
-  // The expectation is that the entity type already matches the schema and attributes given, as
+  // The expectation is that the record type already matches the schema and attributes given, as
   // that's dealt with earlier in the code.
   public void batchUpsert(
-      UUID workspaceId,
-      String entityType,
-      List<Entity> entities,
+      UUID instanceId,
+      String recordType,
+      List<Record> records,
       LinkedHashMap<String, DataTypeMapping> schema)
-      throws InvalidEntityReference {
-    schema.put(ENTITY_ID.getColumnName(), DataTypeMapping.STRING);
+      throws InvalidRelation {
+    schema.put(RECORD_ID.getColumnName(), DataTypeMapping.STRING);
     try {
       namedTemplate
           .getJdbcTemplate()
           .batchUpdate(
-              genInsertStatement(workspaceId, entityType, schema),
-              getInsertBatchArgs(entities, schema.keySet()));
+              genInsertStatement(instanceId, recordType, schema),
+              getInsertBatchArgs(records, schema.keySet()));
     } catch (DataAccessException e) {
       if (e.getRootCause() instanceof SQLException sqlEx) {
         if (sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")) {
-          throw new InvalidEntityReference(
-              "It looks like you're trying to reference an entity that does not exist.");
+          throw new InvalidRelation(
+              "It looks like you're trying to reference a record that does not exist.");
         }
       }
       throw e;
@@ -165,17 +165,17 @@ public class EntityDao {
   }
 
   public void addForeignKeyForReference(
-      String entityType, String referencedEntityType, UUID workspaceId, String referenceColName)
+      String recordType, String referencedRecordType, UUID instanceId, String relationColName)
       throws MissingReferencedTableException {
     try {
       String addFk =
           "alter table "
-              + getQualifiedTableName(entityType, workspaceId)
+              + getQualifiedTableName(recordType, instanceId)
               + " add foreign key (\""
-              + referenceColName
+              + relationColName
               + "\") "
               + "references "
-              + getQualifiedTableName(referencedEntityType, workspaceId);
+              + getQualifiedTableName(referencedRecordType, instanceId);
       namedTemplate.getJdbcTemplate().execute(addFk);
     } catch (DataAccessException e) {
       if (e.getRootCause() instanceof SQLException) {
@@ -188,36 +188,36 @@ public class EntityDao {
     }
   }
 
-  public List<EntityReference> getReferenceCols(UUID workspaceId, String tableName) {
+  public List<Relation> getRelationCols(UUID instanceId, String tableName) {
     return namedTemplate.query(
         "SELECT kcu.column_name, ccu.table_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu "
             + "ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema "
             + "JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema "
             + "WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = :workspace AND tc.table_name= :tableName",
-        Map.of("workspace", workspaceId.toString(), "tableName", tableName),
+        Map.of("workspace", instanceId.toString(), "tableName", tableName),
         (rs, rowNum) ->
-            new EntityReference(
-                rs.getString("column_name"), new EntityType(rs.getString("table_name"))));
+            new Relation(
+                rs.getString("column_name"), new RecordType(rs.getString("table_name"))));
   }
 
   private String genColUpsertUpdates(Set<String> cols) {
     return cols.stream()
-        .filter(c -> !ENTITY_ID.getColumnName().equals(c))
+        .filter(c -> !RECORD_ID.getColumnName().equals(c))
         .map(c -> "\"" + c + "\"" + " = excluded.\"" + c + "\"")
         .collect(Collectors.joining(", "));
   }
 
-  private List<Object[]> getInsertBatchArgs(List<Entity> entities, Set<String> colNames) {
+  private List<Object[]> getInsertBatchArgs(List<Record> records, Set<String> colNames) {
     List<Object[]> result = new ArrayList<>();
-    for (Entity entity : entities) {
-      result.add(getInsertArgs(entity, colNames));
+    for (Record record : records) {
+      result.add(getInsertArgs(record, colNames));
     }
     return result;
   }
 
   private Object getValueForSql(Object attVal) {
-    if (RefUtils.isReferenceValue(attVal)) {
-      return RefUtils.getRefValue(attVal);
+    if (RelationUtils.isRelationValue(attVal)) {
+      return RelationUtils.getRelationValue(attVal);
     }
     DataTypeInferer inferer = new DataTypeInferer();
 
@@ -234,14 +234,14 @@ public class EntityDao {
     return attVal;
   }
 
-  private Object[] getInsertArgs(Entity entity, Set<String> colNames) {
+  private Object[] getInsertArgs(Record record, Set<String> colNames) {
     Object[] row = new Object[colNames.size()];
     int i = 0;
     for (String col : colNames) {
-      if (col.equals(ENTITY_ID.getColumnName())) {
-        row[i++] = entity.getName().getEntityIdentifier();
+      if (col.equals(RECORD_ID.getColumnName())) {
+        row[i++] = record.getName().getRecordIdentifier();
       } else {
-        Object attVal = entity.getAttributes().getAttributes().get(col);
+        Object attVal = record.getAttributes().getAttributes().get(col);
         row[i++] = getValueForSql(attVal);
       }
     }
@@ -249,16 +249,16 @@ public class EntityDao {
   }
 
   private String genInsertStatement(
-      UUID workspaceId, String entityType, LinkedHashMap<String, DataTypeMapping> schema) {
+      UUID instanceId, String recordType, LinkedHashMap<String, DataTypeMapping> schema) {
     return "insert into "
-        + getQualifiedTableName(entityType, workspaceId)
+        + getQualifiedTableName(recordType, instanceId)
         + "("
         + getInsertColList(schema.keySet())
         + ") values ("
         + getInsertParamList(schema.values())
         + ") "
         + "on conflict ("
-        + ENTITY_ID.getColumnName()
+        + RECORD_ID.getColumnName()
         + ") "
         + (schema.keySet().size() == 1
             ? "do nothing"
@@ -277,22 +277,22 @@ public class EntityDao {
         .collect(Collectors.joining(", "));
   }
 
-  private class EntityRowMapper implements RowMapper<Entity> {
-    private final String entityType;
+  private class RecordRowMapper implements RowMapper<Record> {
+    private final String recordType;
 
     private final Map<String, String> referenceColToTable;
 
-    private EntityRowMapper(String entityType, Map<String, String> referenceColToTable) {
-      this.entityType = entityType;
+    private RecordRowMapper(String recordType, Map<String, String> referenceColToTable) {
+      this.recordType = recordType;
       this.referenceColToTable = referenceColToTable;
     }
 
     @Override
-    public Entity mapRow(ResultSet rs, int rowNum) throws SQLException {
-      return new Entity(
-          new EntityId(rs.getString(ENTITY_ID.getColumnName())),
-          new EntityType(entityType),
-          new EntityAttributes(getAttributes(rs)));
+    public Record mapRow(ResultSet rs, int rowNum) throws SQLException {
+      return new Record(
+          new RecordId(rs.getString(RECORD_ID.getColumnName())),
+          new RecordType(recordType),
+          new RecordAttributes(getAttributes(rs)));
     }
 
     private Map<String, Object> getAttributes(ResultSet rs) {
@@ -300,8 +300,8 @@ public class EntityDao {
         ResultSetMetaData metaData = rs.getMetaData();
         Map<String, Object> attributes = new HashMap<>();
         Set<String> systemCols =
-            Arrays.stream(EntitySystemColumn.values())
-                .map(EntitySystemColumn::getColumnName)
+            Arrays.stream(SystemColumn.values())
+                .map(SystemColumn::getColumnName)
                 .collect(Collectors.toSet());
         for (int j = 0; j < metaData.getColumnCount(); j++) {
           String columnName = metaData.getColumnName(j + 1);
@@ -309,7 +309,7 @@ public class EntityDao {
             continue;
           }
           if (referenceColToTable.size() > 0 && referenceColToTable.containsKey(columnName)) {
-            attributes.put(columnName, RefUtils.createReferenceString(referenceColToTable.get(columnName), rs.getString(columnName)));
+            attributes.put(columnName, RelationUtils.createRelationString(referenceColToTable.get(columnName), rs.getString(columnName)));
         } else {
             Object object = rs.getObject(columnName);
             attributes.put(
@@ -323,23 +323,23 @@ public class EntityDao {
     }
   }
 
-  public Entity getSingleEntity(
+  public Record getSingleRecord(
       UUID instanceId,
-      EntityType entityType,
-      EntityId entityId,
-      List<EntityReference> referenceCols) {
+      RecordType recordType,
+      RecordId recordId,
+      List<Relation> referenceCols) {
     Map<String, String> refColMapping = new HashMap<>();
     referenceCols.forEach(
-        rc -> refColMapping.put(rc.getReferenceColName(), rc.getReferencedEntityType().getName()));
+        rc -> refColMapping.put(rc.relationColName(), rc.relationRecordType().getName()));
     try {
       return namedTemplate.queryForObject(
           "select * from "
-              + getQualifiedTableName(entityType.getName(), instanceId)
+              + getQualifiedTableName(recordType.getName(), instanceId)
               + " where "
-              + ENTITY_ID.getColumnName()
-              + " = :entityId",
-          new MapSqlParameterSource("entityId", entityId.getEntityIdentifier()),
-          new EntityRowMapper(entityType.getName(), refColMapping));
+              + RECORD_ID.getColumnName()
+              + " = :recordId",
+          new MapSqlParameterSource("recordId", recordId.getRecordIdentifier()),
+          new RecordRowMapper(recordType.getName(), refColMapping));
     } catch (EmptyResultDataAccessException e) {
       return null;
     }

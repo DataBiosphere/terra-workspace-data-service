@@ -12,19 +12,19 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class EntityRequestTest {
+public class RecordRequestTest {
 
   @Autowired private ObjectMapper jacksonObjectMapper;
 
   @Test
   void testJsonDeserialization() throws JsonProcessingException {
-    EntityId entityId = new EntityId("test-id");
-    EntityType entityType = new EntityType("test-type");
-    EntityAttributes entityAttributes =
-        new EntityAttributes(
+    RecordId recordId = new RecordId("test-id");
+    RecordType recordType = new RecordType("test-type");
+    RecordAttributes recordAttributes =
+        new RecordAttributes(
             Map.of("foo", "bar", "num", 123, "bool", true, "anotherstring", "hello world"));
 
-    EntityRequest expected = new EntityRequest(entityId, entityType, entityAttributes);
+    RecordRequest expected = new RecordRequest(recordId, recordType, recordAttributes);
 
     String inputJsonString =
         """
@@ -39,8 +39,8 @@ public class EntityRequestTest {
                   }
                 }""";
 
-    EntityRequest actual = jacksonObjectMapper.readValue(inputJsonString, EntityRequest.class);
+    RecordRequest actual = jacksonObjectMapper.readValue(inputJsonString, RecordRequest.class);
 
-    assertEquals(expected, actual, "EntityRequest did not deserialize from json as expected.");
+    assertEquals(expected, actual, "RecordRequest did not deserialize from json as expected.");
   }
 }
