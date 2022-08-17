@@ -56,11 +56,11 @@ public class RecordControllerMockMvcTest {
 
   @Test
   @Transactional
-  public void tryFetchingMissingEntityType() throws Exception {
+  public void tryFetchingMissingRecordType() throws Exception {
     mockMvc
         .perform(
             get(
-                "/{instanceId}/entities/{versionId}/{recordType}/{entityId}",
+                "/{instanceId}/records/{versionId}/{recordType}/{recordId}",
                 instanceId,
                 versionId,
                 "missing",
@@ -70,13 +70,13 @@ public class RecordControllerMockMvcTest {
 
   @Test
   @Transactional
-  public void tryFetchingMissingEntity() throws Exception {
+  public void tryFetchingMissingRecord() throws Exception {
     String recordType1 = "recordType1";
     createSomeRecords(recordType1, 1);
     mockMvc
         .perform(
             get(
-                "/{instanceId}/entities/{versionId}/{recordType}/{entityId}",
+                "/{instanceId}/records/{versionId}/{recordType}/{recordId}",
                 instanceId,
                 versionId,
                 recordType1,
@@ -92,7 +92,7 @@ public class RecordControllerMockMvcTest {
     mockMvc
         .perform(
             get(
-                "/{instanceId}/records/{version}/{recordType}/{entityId}",
+                "/{instanceId}/records/{version}/{recordType}/{recordId}",
                 instanceId,
                 versionId,
                 recordType,
@@ -102,7 +102,7 @@ public class RecordControllerMockMvcTest {
 
   @Test
   @Transactional
-  public void createEntityWithReferences() throws Exception {
+  public void createRecordWithReferences() throws Exception {
     String referencedType = "ref_participants";
     String referringType = "ref_samples";
     createSomeRecords(referencedType, 3);
@@ -113,7 +113,7 @@ public class RecordControllerMockMvcTest {
     mockMvc
         .perform(
             patch(
-                    "/{instanceId}/records/{version}/{recordType}/{entityId}",
+                    "/{instanceId}/records/{version}/{recordType}/{recordId}",
                     instanceId,
                     versionId,
                     referringType,
@@ -141,7 +141,7 @@ public class RecordControllerMockMvcTest {
     mockMvc
         .perform(
             put(
-                    "/{instanceId}/records/{version}/{recordType}/{entityId}",
+                    "/{instanceId}/records/{version}/{recordType}/{recordId}",
                     instanceId,
                     versionId,
                     referringType,
@@ -164,7 +164,7 @@ public class RecordControllerMockMvcTest {
 
   @Test
   @Transactional
-  public void referencingMissingEntityFails() throws Exception {
+  public void referencingMissingRecordFails() throws Exception {
     String referencedType = "ref_participants-2";
     String referringType = "ref_samples-3";
     createSomeRecords(referencedType, 3);
@@ -175,7 +175,7 @@ public class RecordControllerMockMvcTest {
     mockMvc
         .perform(
             put(
-                    "/{instanceId}/records/{version}/{recordType}/{entityId}",
+                    "/{instanceId}/records/{version}/{recordType}/{recordId}",
                     instanceId,
                     versionId,
                     referringType,
@@ -184,7 +184,7 @@ public class RecordControllerMockMvcTest {
                 .content(
                     mapper.writeValueAsString(
                         new RecordRequest(
-                            new RecordId("entity_0"),
+                            new RecordId("record_0"),
                             new RecordType(referringType),
                             new RecordAttributes(attributes)))))
         .andExpect(status().isBadRequest())
@@ -198,77 +198,77 @@ public class RecordControllerMockMvcTest {
   @Test
   @Transactional
   public void expandColumnDefForNewData() throws Exception {
-    String entityType = "to-alter";
-    createSomeRecords(entityType, 1);
+    String recordType = "to-alter";
+    createSomeRecords(recordType, 1);
     Map<String, Object> attributes = new HashMap<>();
     attributes.put("attr3", "convert this column from date to text");
     mockMvc
         .perform(
             put(
-                    "/{instanceId}/records/{version}/{recordType}/{entityId}",
+                    "/{instanceId}/records/{version}/{recordType}/{recordId}",
                     instanceId,
                     versionId,
-                    entityType,
-                    "entity_1")
+                    recordType,
+                    "record_1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     mapper.writeValueAsString(
                         new RecordRequest(
-                            new RecordId("entity_0"),
-                            new RecordType(entityType),
+                            new RecordId("record_0"),
+                            new RecordType(recordType),
                             new RecordAttributes(attributes)))))
         .andExpect(status().isOk());
   }
 
   @Test
   @Transactional
-  public void patchMissingEntity() throws Exception {
-    String entityType = "to-patch";
-    createSomeRecords(entityType, 1);
-    Map<String, Object> entityAttributes = new HashMap<>();
-    entityAttributes.put("attr-boolean", true);
-    String entityId = "entity_missing";
+  public void patchMissingRecord() throws Exception {
+    String recordType = "to-patch";
+    createSomeRecords(recordType, 1);
+    Map<String, Object> attributes = new HashMap<>();
+    attributes.put("attr-boolean", true);
+    String recordId = "record_missing";
     mockMvc
         .perform(
             patch(
-                    "/{instanceId}/records/{version}/{recordType}/{entityId}",
+                    "/{instanceId}/records/{version}/{recordType}/{recordId}",
                     instanceId,
                     versionId,
-                    entityType,
-                    entityId)
+                    recordType,
+                    recordId)
                 .content(
                     mapper.writeValueAsString(
                         new RecordRequest(
-                            new RecordId(entityId),
-                            new RecordType(entityType),
-                            new RecordAttributes(entityAttributes))))
+                            new RecordId(recordId),
+                            new RecordType(recordType),
+                            new RecordAttributes(attributes))))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound());
   }
 
   @Test
   @Transactional
-  public void putEntityWithMissingTableReference() throws Exception {
-    String entityType = "entity-type-missing-table-ref";
-    String entityId = "entity_0";
-    Map<String, Object> entityAttributes = new HashMap<>();
+  public void putRecordWithMissingTableReference() throws Exception {
+    String recordType = "record-type-missing-table-ref";
+    String recordId = "record_0";
+    Map<String, Object> attributes = new HashMap<>();
     String ref = RelationUtils.createRelationString("missing", "missing_also");
-    entityAttributes.put("sample-ref", ref);
+    attributes.put("sample-ref", ref);
 
     mockMvc
         .perform(
             put(
-                    "/{instanceId}/records/{version}/{recordType}/{entityId}",
+                    "/{instanceId}/records/{version}/{recordType}/{recordId}",
                     instanceId,
                     versionId,
-                    entityType,
-                    entityId)
+                    recordType,
+                    recordId)
                 .content(
                     mapper.writeValueAsString(
                         new RecordRequest(
-                            new RecordId(entityId),
-                            new RecordType(entityType),
-                            new RecordAttributes(entityAttributes))))
+                            new RecordId(recordId),
+                            new RecordType(recordType),
+                            new RecordAttributes(attributes))))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isBadRequest())
         .andExpect(
@@ -286,7 +286,7 @@ public class RecordControllerMockMvcTest {
     mockMvc
         .perform(
             patch(
-                    "/{instanceId}/records/{version}/{recordType}/{entityId}",
+                    "/{instanceId}/records/{version}/{recordType}/{recordId}",
                     instanceId,
                     versionId,
                     recordType,
@@ -324,7 +324,7 @@ public class RecordControllerMockMvcTest {
       mockMvc
           .perform(
               put(
-                      "/{instanceId}/records/{version}/{recordType}/{entityId}",
+                      "/{instanceId}/records/{version}/{recordType}/{recordId}",
                       instanceId,
                       versionId,
                       recordType,

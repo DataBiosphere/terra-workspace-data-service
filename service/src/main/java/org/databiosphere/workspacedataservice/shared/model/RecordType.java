@@ -24,7 +24,7 @@ public class RecordType {
 
   @Override
   public String toString() {
-    return "EntityType{" + "name='" + name + '\'' + '}';
+    return "RecordType{" + "name='" + name + '\'' + '}';
   }
 
   @Override

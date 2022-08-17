@@ -25,125 +25,125 @@ import org.springframework.transaction.annotation.Transactional;
 public class RecordDaoTest {
 
   @Autowired
-  RecordDao entityDao;
+  RecordDao recordDao;
   UUID workspaceId;
   RecordType recordType;
 
   @BeforeEach
   void setUp() throws MissingReferencedTableException {
     workspaceId = UUID.randomUUID();
-    recordType = new RecordType("testEntityType");
-    entityDao.createSchema(workspaceId);
-    entityDao.createReccordType(
+    recordType = new RecordType("testRecordType");
+    recordDao.createSchema(workspaceId);
+    recordDao.createReccordType(
         workspaceId, Collections.emptyMap(), recordType.getName(), Collections.emptySet());
   }
 
   @Test
   @Transactional
-  void testGetSingleEntity() throws InvalidRelation {
-    // add entity
-    RecordId recordId = new RecordId("testEntity");
+  void testGetSingleRecord() throws InvalidRelation {
+    // add record
+    RecordId recordId = new RecordId("testRecord");
     Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
-    entityDao.batchUpsert(
+    recordDao.batchUpsert(
         workspaceId,
         recordType.getName(),
         Collections.singletonList(testRecord),
         new LinkedHashMap<>());
 
-    // make sure entity is fetched
+    // make sure record is fetched
     Record search =
-        entityDao.getSingleRecord(workspaceId, recordType, recordId, Collections.emptyList());
+        recordDao.getSingleRecord(workspaceId, recordType, recordId, Collections.emptyList());
     assertEquals(testRecord, search);
 
-    // nonexistent entity should be null
+    // nonexistent record should be null
     Record none =
-        entityDao.getSingleRecord(
-            workspaceId, recordType, new RecordId("noEntity"), Collections.emptyList());
+        recordDao.getSingleRecord(
+            workspaceId, recordType, new RecordId("noRecord"), Collections.emptyList());
     assertNull(none);
   }
 
   @Test
   @Transactional
-  void testCreateSingleEntity() throws InvalidRelation {
-    entityDao.addColumn(workspaceId, recordType.getName(), "foo", DataTypeMapping.STRING);
+  void testCreateSingleRecord() throws InvalidRelation {
+    recordDao.addColumn(workspaceId, recordType.getName(), "foo", DataTypeMapping.STRING);
 
-    // create entity with no attributes
-    RecordId recordId = new RecordId("testEntity");
+    // create record with no attributes
+    RecordId recordId = new RecordId("testRecord");
     Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
-    entityDao.batchUpsert(
+    recordDao.batchUpsert(
         workspaceId,
         recordType.getName(),
         Collections.singletonList(testRecord),
         new LinkedHashMap<>());
 
     Record search =
-        entityDao.getSingleRecord(workspaceId, recordType, recordId, Collections.emptyList());
-    assertEquals(testRecord, search, "Created entity should match entered entity");
+        recordDao.getSingleRecord(workspaceId, recordType, recordId, Collections.emptyList());
+    assertEquals(testRecord, search, "Created record should match entered record");
 
-    // create entity with attributes
-    RecordId attrId = new RecordId("entityWithAttr");
+    // create record with attributes
+    RecordId attrId = new RecordId("recordWithAttr");
     Record recordWithAttr =
         new Record(attrId, recordType, new RecordAttributes(Map.of("foo", "bar")));
-    entityDao.batchUpsert(
+    recordDao.batchUpsert(
         workspaceId,
         recordType.getName(),
         Collections.singletonList(recordWithAttr),
         new LinkedHashMap<>(Map.of("foo", DataTypeMapping.STRING)));
 
-    search = entityDao.getSingleRecord(workspaceId, recordType, attrId, Collections.emptyList());
+    search = recordDao.getSingleRecord(workspaceId, recordType, attrId, Collections.emptyList());
     assertEquals(
-            recordWithAttr, search, "Created entity with attributes should match entered entity");
+            recordWithAttr, search, "Created record with attributes should match entered record");
   }
 
   @Test
   @Transactional
-  void testCreateEntityWithReferences()
+  void testCreateRecordWithReferences()
       throws MissingReferencedTableException, InvalidRelation {
-    // make sure columns are in entitytype, as this will be taken care of before we get to the dao
-    entityDao.addColumn(workspaceId, recordType.getName(), "foo", DataTypeMapping.STRING);
+    // make sure columns are in recordType, as this will be taken care of before we get to the dao
+    recordDao.addColumn(workspaceId, recordType.getName(), "foo", DataTypeMapping.STRING);
 
-    entityDao.addColumn(
-        workspaceId, recordType.getName(), "testEntityType", DataTypeMapping.STRING);
-    entityDao.addForeignKeyForReference(
-        recordType.getName(), recordType.getName(), workspaceId, "testEntityType");
+    recordDao.addColumn(
+        workspaceId, recordType.getName(), "testRecordType", DataTypeMapping.STRING);
+    recordDao.addForeignKeyForReference(
+        recordType.getName(), recordType.getName(), workspaceId, "testRecordType");
 
-    RecordId refRecordId = new RecordId("referencedEntity");
+    RecordId refRecordId = new RecordId("referencedRecord");
     Record referencedRecord =
         new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
-    entityDao.batchUpsert(
+    recordDao.batchUpsert(
         workspaceId,
         recordType.getName(),
         Collections.singletonList(referencedRecord),
         new LinkedHashMap<>());
 
-    RecordId recordId = new RecordId("testEntity");
-    String reference = RelationUtils.createRelationString("testEntityType", "referencedEntity");
+    RecordId recordId = new RecordId("testRecord");
+    String reference = RelationUtils.createRelationString("testRecordType", "referencedRecord");
     Record testRecord =
-        new Record(recordId, recordType, new RecordAttributes(Map.of("testEntityType", reference)));
-    entityDao.batchUpsert(
+        new Record(recordId, recordType, new RecordAttributes(Map.of("testRecordType", reference)));
+    recordDao.batchUpsert(
         workspaceId,
         recordType.getName(),
         Collections.singletonList(testRecord),
         new LinkedHashMap<>(
-            Map.of("foo", DataTypeMapping.STRING, "testEntityType", DataTypeMapping.STRING)));
+            Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.STRING)));
 
     Record search =
-        entityDao.getSingleRecord(
+        recordDao.getSingleRecord(
             workspaceId,
                 recordType,
                 recordId,
-            entityDao.getReferenceCols(workspaceId, recordType.getName()));
-    assertEquals(testRecord, search, "Created entity with references should match entered entity");
+            recordDao.getReferenceCols(workspaceId, recordType.getName()));
+    assertEquals(testRecord, search, "Created record with references should match entered record");
   }
 
   @Test
   @Transactional
   void testGetReferenceCols() throws MissingReferencedTableException {
-    entityDao.addColumn(workspaceId, recordType.getName(), "referenceCol", DataTypeMapping.STRING);
-    entityDao.addForeignKeyForReference(
+    recordDao.addColumn(workspaceId, recordType.getName(), "referenceCol", DataTypeMapping.STRING);
+    recordDao.addForeignKeyForReference(
         recordType.getName(), recordType.getName(), workspaceId, "referenceCol");
 
-    List<Relation> refCols = entityDao.getReferenceCols(workspaceId, recordType.getName());
+    List<Relation> refCols = recordDao.getReferenceCols(workspaceId, recordType.getName());
     assertEquals(1, refCols.size(), "There should be one referenced column");
     assertEquals(
         "referenceCol",

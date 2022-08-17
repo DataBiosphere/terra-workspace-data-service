@@ -9,8 +9,8 @@ public class RecordId {
   private String recordIdentifier;
 
   @JsonCreator
-  public RecordId(String entityIdentifier) {
-    this.recordIdentifier = entityIdentifier;
+  public RecordId(String recordIdentifier) {
+    this.recordIdentifier = recordIdentifier;
   }
 
   @JsonValue
@@ -20,7 +20,7 @@ public class RecordId {
 
   @Override
   public String toString() {
-    return "EntityId{" + "entityIdentifier='" + recordIdentifier + '\'' + '}';
+    return "RecordId{" + "recordIdentifier='" + recordIdentifier + '\'' + '}';
   }
 
   @Override

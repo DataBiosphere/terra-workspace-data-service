@@ -20,8 +20,8 @@ public class Record {
 
   public Record() {}
 
-  public Record(RecordId entityName) {
-    this.name = entityName;
+  public Record(RecordId recordName) {
+    this.name = recordName;
   }
 
   public Record(RecordRequest request) {
@@ -46,12 +46,12 @@ public class Record {
     this.attributes = attributes;
   }
 
-  public RecordType getEntityType() {
+  public RecordType getRecordType() {
     return recordType;
   }
 
-  @JsonGetter("entityType")
-  public String getEntityTypeName() {
+  @JsonGetter("recordType")
+  public String getRecordTypeName() {
     return recordType.getName();
   }
 
@@ -61,13 +61,13 @@ public class Record {
     if (!(o instanceof Record record)) return false;
 
     if (!getName().equals(record.getName())) return false;
-    return getEntityType().equals(record.getEntityType());
+    return getRecordType().equals(record.getRecordType());
   }
 
   @Override
   public int hashCode() {
     int result = getName().hashCode();
-    result = 31 * result + getEntityType().hashCode();
+    result = 31 * result + getRecordType().hashCode();
     return result;
   }
 }

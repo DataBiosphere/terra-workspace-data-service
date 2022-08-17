@@ -23,7 +23,7 @@ public class RecordAttributes {
 
   @Override
   public String toString() {
-    return "EntityAttributes{" + "attributes=" + attributes + '}';
+    return "RecordAttributes{" + "attributes=" + attributes + '}';
   }
 
   @Override

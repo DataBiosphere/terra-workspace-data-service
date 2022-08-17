@@ -17,12 +17,12 @@ public class RelationUtils {
   /**
    * Determines if any attributes reference another table
    *
-   * @param entities - all entities whose references to check
-   * @return Set of EntityReference for all referencing attributes
+   * @param records - all records whose references to check
+   * @return Set of Relation for all referencing attributes
    */
-  public static Set<Relation> findRelations(List<Record> entities) {
+  public static Set<Relation> findRelations(List<Record> records) {
     Set<Relation> result = new HashSet<>();
-    for (Record record : entities) {
+    for (Record record : records) {
       Map<String, Object> attributes = record.getAttributes().getAttributes();
       for (String attr : attributes.keySet()) {
         if (isRelationValue(attributes.get(attr))) {

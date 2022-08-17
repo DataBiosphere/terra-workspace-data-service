@@ -207,9 +207,9 @@ public class RecordDao {
         .collect(Collectors.joining(", "));
   }
 
-  private List<Object[]> getInsertBatchArgs(List<Record> entities, Set<String> colNames) {
+  private List<Object[]> getInsertBatchArgs(List<Record> records, Set<String> colNames) {
     List<Object[]> result = new ArrayList<>();
-    for (Record record : entities) {
+    for (Record record : records) {
       result.add(getInsertArgs(record, colNames));
     }
     return result;

@@ -52,6 +52,6 @@ public class RecordResponseTest {
     assertEquals(
         StringUtils.trimAllWhitespace(expectedJsonString),
         StringUtils.trimAllWhitespace(actual),
-        "EntityResponse did not serialize to json as expected.");
+        "RecordResponse did not serialize to json as expected.");
   }
 }
