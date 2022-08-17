@@ -49,8 +49,6 @@ public class EntityController {
     allAttrs.putAll(updatedAtts);
 
     Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(updatedAtts);
-    // TODO: remove entityType/entityName JSON object format for references and move to URIs in the
-    // request/response payloads
     Map<String, DataTypeMapping> existingTableSchema =
         entityDao.getExistingTableSchema(instanceId, entityTypeName);
     singleEntity.setAttributes(new EntityAttributes(allAttrs));
@@ -240,4 +238,5 @@ public class EntityController {
           e);
     }
   }
+
 }

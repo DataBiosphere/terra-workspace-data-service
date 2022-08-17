@@ -3,6 +3,8 @@ package org.databiosphere.workspacedataservice.dao;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.*;
+
+import org.databiosphere.workspacedataservice.service.RefUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.EntityReference;
 import org.databiosphere.workspacedataservice.service.model.InvalidEntityReference;
@@ -114,12 +116,7 @@ public class EntityDaoTest {
         new LinkedHashMap<>());
 
     EntityId entityId = new EntityId("testEntity");
-    Map<String, String> reference =
-        Map.of(
-            EntityReference.ENTITY_TYPE_KEY,
-            "testEntityType",
-            EntityReference.ENTITY_NAME_KEY,
-            "referencedEntity");
+    String reference = RefUtils.createReferenceString("testEntityType", "referencedEntity");
     Entity testEntity =
         new Entity(entityId, entityType, new EntityAttributes(Map.of("testEntityType", reference)));
     entityDao.batchUpsert(

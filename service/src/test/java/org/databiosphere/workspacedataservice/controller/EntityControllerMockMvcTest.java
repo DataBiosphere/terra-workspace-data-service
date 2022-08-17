@@ -1,7 +1,5 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import static org.databiosphere.workspacedataservice.service.model.EntityReference.ENTITY_NAME_KEY;
-import static org.databiosphere.workspacedataservice.service.model.EntityReference.ENTITY_TYPE_KEY;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -14,6 +12,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.databiosphere.workspacedataservice.service.RefUtils;
 import org.databiosphere.workspacedataservice.shared.model.EntityAttributes;
 import org.databiosphere.workspacedataservice.shared.model.EntityId;
 import org.databiosphere.workspacedataservice.shared.model.EntityRequest;
@@ -109,9 +108,7 @@ public class EntityControllerMockMvcTest {
     createSomeEntities(referencedType, 3);
     createSomeEntities(referringType, 1);
     Map<String, Object> attributes = new HashMap<>();
-    Map<String, Object> ref = new HashMap<>();
-    ref.put(ENTITY_TYPE_KEY, referencedType);
-    ref.put(ENTITY_NAME_KEY, "entity_0");
+    String ref = RefUtils.createReferenceString(referencedType, "entity_0");
     attributes.put("sample-ref", ref);
     mockMvc
         .perform(
@@ -129,8 +126,7 @@ public class EntityControllerMockMvcTest {
                             new EntityType(referringType),
                             new EntityAttributes(attributes)))))
         .andExpect(status().isOk())
-        .andExpect(content().string(containsString("\"" + ENTITY_NAME_KEY + "\":\"entity_0\"")));
-    ;
+        .andExpect(content().string(containsString(ref)));
   }
 
   @Test
@@ -140,9 +136,7 @@ public class EntityControllerMockMvcTest {
     String referringType = "ref_samples-2";
     createSomeEntities(referringType, 1);
     Map<String, Object> attributes = new HashMap<>();
-    Map<String, Object> ref = new HashMap<>();
-    ref.put(ENTITY_TYPE_KEY, referencedType);
-    ref.put(ENTITY_NAME_KEY, "entity_0");
+    String ref = RefUtils.createReferenceString(referencedType, "entity_0");
     attributes.put("sample-ref", ref);
     mockMvc
         .perform(
@@ -176,9 +170,7 @@ public class EntityControllerMockMvcTest {
     createSomeEntities(referencedType, 3);
     createSomeEntities(referringType, 1);
     Map<String, Object> attributes = new HashMap<>();
-    Map<String, Object> ref = new HashMap<>();
-    ref.put(ENTITY_TYPE_KEY, referencedType);
-    ref.put(ENTITY_NAME_KEY, "entity_99");
+    String ref = RefUtils.createReferenceString(referencedType, "entity_99");
     attributes.put("sample-ref", ref);
     mockMvc
         .perform(
@@ -260,9 +252,7 @@ public class EntityControllerMockMvcTest {
     String entityType = "entity-type-missing-table-ref";
     String entityId = "entity_0";
     Map<String, Object> entityAttributes = new HashMap<>();
-    Map<String, Object> ref = new HashMap<>();
-    ref.put(ENTITY_TYPE_KEY, "missing");
-    ref.put(ENTITY_NAME_KEY, "missing_also");
+    String ref = RefUtils.createReferenceString("missing", "missing_also");
     entityAttributes.put("sample-ref", ref);
 
     mockMvc
@@ -291,9 +281,7 @@ public class EntityControllerMockMvcTest {
     String entityType = "ref-alter";
     createSomeEntities(entityType, 1);
     Map<String, Object> entityAttributes = new HashMap<>();
-    Map<String, Object> ref = new HashMap<>();
-    ref.put(ENTITY_TYPE_KEY, "missing");
-    ref.put(ENTITY_NAME_KEY, "missing_also");
+    String ref = RefUtils.createReferenceString("missing", "missing_also");
     entityAttributes.put("attr1", ref);
     mockMvc
         .perform(
