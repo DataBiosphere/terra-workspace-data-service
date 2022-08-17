@@ -468,8 +468,11 @@ components:
           description: name of this attribute.
         datatype:
           type: string
-          enum: [boolean, date, datetime, string, json, long, double]
+          enum: [boolean, date, datetime, string, json, long, double, relation]
           description: datatype of this attribute. The enum of datatypes is subject to change.
+        relatesTo:
+          type: string
+          description: Name of type to which this attribute relates. Only present if this is a relation attribute.
     BatchOperation:
       type: object
       required:
