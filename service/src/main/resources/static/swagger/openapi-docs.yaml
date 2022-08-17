@@ -6,7 +6,7 @@ info:
   description: |
     Workspace Data Service API
 
-    This is the proposed API. Endpoints marked (pending) are not yet implemented.
+    This is the proposed API. Endpoints marked as deprecated are not yet implemented.
 
     As of v0.2, all APIs are subject to change without notice.
   termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
@@ -107,6 +107,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
+      deprecated: true
       summary: Delete record (pending)
       description: Deletes the record at the specified type and id.
       operationId: deleteRecord
@@ -122,6 +123,7 @@ paths:
           description: Success
   /{instanceid}/search/{v}:
     get:
+      deprecated: true
       summary: Query records (pending)
       description: |
         Paginated list of records matching the criteria supplied in url query parameters.
@@ -148,6 +150,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/RecordQueryResponse'
     post:
+      deprecated: true
       summary: Query records (pending)
       description: Paginated list of records matching the criteria supplied in the request body
       operationId: queryRecords
@@ -183,6 +186,7 @@ paths:
                 $ref: '#/components/schemas/RecordQueryResponse'
   /{instanceid}/batch/{v}:
     post:
+      deprecated: true
       summary: Batch write records (pending)
       description: Perform a batch of create / delete / update / replace operations on multiple records
       operationId: batchWriteRecords
@@ -217,6 +221,7 @@ paths:
           description: Conflict - schema already exists.
   /{instanceid}/types/{v}/{type}:
     get:
+      deprecated: true
       summary: Describe record type (pending)
       description: |
         Returns the schema definition for this type, including all of its attributes.
@@ -235,6 +240,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/RecordTypeSchema'
     patch:
+      deprecated: true
       summary: Update record type (pending)
       description: |
         Update record type. All records of the old type will be updated to the new type.
@@ -262,6 +268,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/RecordTypeSchema'
     delete:
+      deprecated: true
       summary: Delete record type (pending)
       description: Delete record type. All records of this type will be deleted.
       operationId: deleteRecordType
@@ -276,6 +283,7 @@ paths:
           description: Success
   /{instanceid}/types/{type}/attributes/{v}/{attribute}:
     get:
+      deprecated: true
       summary: Describe attribute (pending)
       description: |
         Returns the schema definition for this attribute.
@@ -295,6 +303,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AttributeSchema'
     patch:
+      deprecated: true
       summary: Update attribute (pending)
       description: |
         Update attribute. All records of the specified type that contain the old attribute will now have the new attribute instead.
@@ -322,6 +331,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AttributeSchema'
     delete:
+      deprecated: true
       summary: Delete attribute (pending)
       description: |
         Delete attribute. This deletes all values for this attribute within the specified type.
