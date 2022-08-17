@@ -12,7 +12,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
 public class RelationUtils {
 
-  public static final String REFERENCE_IDENTIFIER = "terra-wds:";
+  public static final String RELATION_IDENTIFIER = "terra-wds:";
 
   /**
    * Determines if any attributes reference another table
@@ -38,9 +38,9 @@ public class RelationUtils {
   }
 
   private static String[] splitRelationIdentifier(Object obj) {
-    String errorMessage = "Expected " + REFERENCE_IDENTIFIER + "<recordType>/<recordName>";
+    String errorMessage = "Expected " + RELATION_IDENTIFIER + "<recordType>/<recordName>";
     Preconditions.checkNotNull(obj, errorMessage);
-    String[] parts = obj.toString().substring(REFERENCE_IDENTIFIER.length()).split("/");
+    String[] parts = obj.toString().substring(RELATION_IDENTIFIER.length()).split("/");
     Preconditions.checkArgument(parts.length == 2, errorMessage);
     return parts;
   }
@@ -56,10 +56,10 @@ public class RelationUtils {
    * @return true if attribute begins with the REFERENCE_IDENTIFIER
    */
   public static boolean isRelationValue(Object obj) {
-    return obj != null && obj.toString().startsWith(REFERENCE_IDENTIFIER);
+    return obj != null && obj.toString().startsWith(RELATION_IDENTIFIER);
   }
 
   public static String createRelationString(String recordTypeName, String recordId){
-    return REFERENCE_IDENTIFIER + recordTypeName + "/" + recordId;
+    return RELATION_IDENTIFIER + recordTypeName + "/" + recordId;
   }
 }
