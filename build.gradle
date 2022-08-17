@@ -16,7 +16,7 @@ repositories { mavenCentral() }
 
 subprojects {
     group = 'org.databiosphere'
-    version = '0.0.1-SNAPSHOT'
+    version = '0.1.11-SNAPSHOT'
 
     apply plugin: 'idea'
     apply plugin: 'java'
@@ -50,7 +50,7 @@ idea.project.jdkName = '17'
 // Spotless configuration
 spotless {
     java {
-        googleJavaFormat()
+        eclipse()
         target '**/*.java'
         targetExclude("${buildDir}/**", "**/generated/**")
     }
