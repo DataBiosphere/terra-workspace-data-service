@@ -41,6 +41,6 @@ public class RecordRequestTest {
 
     RecordRequest actual = jacksonObjectMapper.readValue(inputJsonString, RecordRequest.class);
 
-    assertEquals(expected, actual, "EntityRequest did not deserialize from json as expected.");
+    assertEquals(expected, actual, "RecordRequest did not deserialize from json as expected.");
   }
 }

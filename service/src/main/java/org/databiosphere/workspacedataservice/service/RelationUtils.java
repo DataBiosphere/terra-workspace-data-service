@@ -59,7 +59,7 @@ public class RelationUtils {
     return obj != null && obj.toString().startsWith(REFERENCE_IDENTIFIER);
   }
 
-  public static String createRelationString(String entityTypeName, String entityId){
-    return REFERENCE_IDENTIFIER + entityTypeName + "/" + entityId;
+  public static String createRelationString(String recordTypeName, String recordId){
+    return REFERENCE_IDENTIFIER + recordTypeName + "/" + recordId;
   }
 }

@@ -1,7 +1,7 @@
 # Workspace Data Service
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=DataBiosphere_workspace-data-service&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=DataBiosphere_workspace-data-service)
 
-Workspace Data Service provides an API to manage entities in Terra.
+Workspace Data Service provides an API to manage records in Terra.
 
 Design docs and other references may be found [here](https://broadworkbench.atlassian.net/wiki/spaces/AS/pages/2437742606/Workspace+Data+Service).
 
@@ -57,14 +57,14 @@ At the moment, WDS is only available through this port.  It can be reached from 
 
 To query for a single record:
 ```bash
-curl http://localhost:8080/<instanceid>/entities/v0.2/<table/type>/<entity_name>
+curl http://localhost:8080/<instanceid>/records/v0.2/<table/type>/<record_name>
 ```
 
 To add new attribute or update values for existing attributes (this won't create a new record however):
 ``` bash
-curl -H "Content-type: application/json" -X PATCH "http://localhost:8080/<instanceid guid>/entities/v0.2/<table/type>/<entity_name>" -d '{
-"id": "<entity_name>",
-"type": "<entity_type>",
+curl -H "Content-type: application/json" -X PATCH "http://localhost:8080/<instanceid guid>/records/v0.2/<table/type>/<record_name>" -d '{
+"id": "<record_name>",
+"type": "<record_type>",
 "attributes": {
 "new-int": -77,
 "new-date-time": "2011-01-11T11:00:50",

@@ -27,7 +27,7 @@ public class RecordController {
     this.inferer = new DataTypeInferer();
   }
 
-  @PatchMapping("/{instanceId}/entities/{version}/{recordType}/{recordId}")
+  @PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
   public ResponseEntity<RecordResponse> updateSingleRecord(
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("version") String version,
@@ -53,13 +53,13 @@ public class RecordController {
     Map<String, DataTypeMapping> existingTableSchema =
         recordDao.getExistingTableSchema(instanceId, recordTypeName);
     singleRecord.setAttributes(new RecordAttributes(allAttrs));
-    List<Record> entities = Collections.singletonList(singleRecord);
+    List<Record> records = Collections.singletonList(singleRecord);
     Map<String, DataTypeMapping> updatedSchema =
         addOrUpdateColumnIfNeeded(
-            instanceId, recordType.getName(), typeMapping, existingTableSchema, entities);
+            instanceId, recordType.getName(), typeMapping, existingTableSchema, records);
     try {
       recordDao.batchUpsert(
-          instanceId, recordTypeName, entities, new LinkedHashMap<>(updatedSchema));
+          instanceId, recordTypeName, records, new LinkedHashMap<>(updatedSchema));
       RecordResponse response =
           new RecordResponse(
                   recordId,
@@ -128,7 +128,7 @@ public class RecordController {
     return schema;
   }
 
-  @GetMapping("/{instanceId}/entities/{version}/{recordType}/{recordId}")
+  @GetMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
   public ResponseEntity<RecordResponse> getSingleRecord(
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("version") String version,
@@ -158,7 +158,7 @@ public class RecordController {
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
-  @PutMapping("/{instanceId}/entities/{version}/{recordType}/{recordId}")
+  @PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
   public ResponseEntity<RecordResponse> putSingleRecord(
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("version") String version,
@@ -226,11 +226,11 @@ public class RecordController {
               recordRequest.recordId(),
               recordRequest.recordType(),
               recordRequest.recordAttributes());
-      List<Record> entities = Collections.singletonList(newRecord);
+      List<Record> records = Collections.singletonList(newRecord);
       recordDao.createReccordType(
-          instanceId, requestSchema, recordTypeName, RelationUtils.findRelations(entities));
+          instanceId, requestSchema, recordTypeName, RelationUtils.findRelations(records));
       recordDao.batchUpsert(
-          instanceId, recordTypeName, entities, new LinkedHashMap<>(requestSchema));
+          instanceId, recordTypeName, records, new LinkedHashMap<>(requestSchema));
     } catch (MissingReferencedTableException e) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,

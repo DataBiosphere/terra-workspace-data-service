@@ -143,7 +143,7 @@ public class RecordDao {
   public void batchUpsert(
       UUID workspaceId,
       String recordType,
-      List<Record> entities,
+      List<Record> records,
       LinkedHashMap<String, DataTypeMapping> schema)
       throws InvalidRelation {
     schema.put(RECORD_ID.getColumnName(), DataTypeMapping.STRING);
@@ -152,7 +152,7 @@ public class RecordDao {
           .getJdbcTemplate()
           .batchUpdate(
               genInsertStatement(workspaceId, recordType, schema),
-              getInsertBatchArgs(entities, schema.keySet()));
+              getInsertBatchArgs(records, schema.keySet()));
     } catch (DataAccessException e) {
       if (e.getRootCause() instanceof SQLException sqlEx) {
         if (sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")) {
