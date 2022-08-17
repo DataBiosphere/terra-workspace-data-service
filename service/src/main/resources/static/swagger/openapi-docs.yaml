@@ -24,7 +24,7 @@ tags:
   - name: Schema
     description: Schema Manipulation APIs (coming soon)
 paths:
-  /{instanceid}/records/{v}/{recordtype}/{id}:
+  /{instanceid}/records/{v}/{type}/{id}:
     get:
       summary: Get record
       operationId: getSingleRecord
@@ -308,7 +308,6 @@ components:
       required: true
       schema:
         type: string
-        default: '15f36863-30a5-4cab-91f7-52be439f1175'
     searchLimitQueryParam:
       name: limit
       in: query

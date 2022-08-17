@@ -158,7 +158,7 @@ public class RecordControllerMockMvcTest {
             content()
                 .string(
                     containsString(
-                        "It looks like you're attempting to assign a reference to a table, missing, that does not exist")));
+                        "It looks like you're attempting to assign a relation to a table, missing, that does not exist")));
     ;
   }
 
@@ -272,7 +272,7 @@ public class RecordControllerMockMvcTest {
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isBadRequest())
         .andExpect(
-            content().string(containsString("assign a reference to a table that does not exist")));
+            content().string(containsString("assign a relation to a table that does not exist")));
   }
 
   @Test
@@ -306,7 +306,7 @@ public class RecordControllerMockMvcTest {
                         .getResolvedException()
                         .getMessage()
                         .contains(
-                            "reference to an existing column that was not configured for references")));
+                            "relation to an existing column that was not configured for relations")));
   }
 
   private void createSomeRecords(String recordType, int numRecords) throws Exception {

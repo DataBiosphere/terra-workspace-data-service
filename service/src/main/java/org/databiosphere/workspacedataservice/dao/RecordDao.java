@@ -34,7 +34,7 @@ public class RecordDao {
     this.namedTemplate = namedTemplate;
   }
 
-  public boolean workspaceSchemaExists(UUID instanceId) {
+  public boolean instanceSchemaExists(UUID instanceId) {
     return Boolean.TRUE.equals(
         namedTemplate.queryForObject(
             "select exists(select from information_schema.schemata WHERE schema_name = :workspaceSchema)",
@@ -42,8 +42,8 @@ public class RecordDao {
             Boolean.class));
   }
 
-  public void createSchema(UUID workspaceId) {
-    namedTemplate.getJdbcTemplate().update("create schema \"" + workspaceId.toString() + "\"");
+  public void createSchema(UUID instanceId) {
+    namedTemplate.getJdbcTemplate().update("create schema \"" + instanceId.toString() + "\"");
   }
 
   public boolean recordTypeExists(UUID instanceId, String recordType) {
@@ -55,8 +55,8 @@ public class RecordDao {
             Boolean.class));
   }
 
-  public void createReccordType(
-      UUID workspaceId,
+  public void createRecordType(
+      UUID instanceId,
       Map<String, DataTypeMapping> tableInfo,
       String tableName,
       Set<Relation> relations)
@@ -66,16 +66,16 @@ public class RecordDao {
         .getJdbcTemplate()
         .update(
             "create table "
-                + getQualifiedTableName(tableName, workspaceId)
+                + getQualifiedTableName(tableName, instanceId)
                 + "( "
                 + columnDefs
                 + ")");
     for (Relation relation : relations) {
       addForeignKeyForReference(
           tableName,
-          relation.referencedRecordType().getName(),
-          workspaceId,
-          relation.referenceColName());
+          relation.relationRecordType().getName(),
+          instanceId,
+          relation.relationColName());
     }
   }
 
@@ -102,12 +102,12 @@ public class RecordDao {
   }
 
   public void addColumn(
-      UUID workspaceId, String tableName, String columnName, DataTypeMapping colType) {
+      UUID instanceId, String tableName, String columnName, DataTypeMapping colType) {
     namedTemplate
         .getJdbcTemplate()
         .update(
             "alter table "
-                + getQualifiedTableName(tableName, workspaceId)
+                + getQualifiedTableName(tableName, instanceId)
                 + " add column \""
                 + columnName
                 + "\" "
@@ -115,12 +115,12 @@ public class RecordDao {
   }
 
   public void changeColumn(
-      UUID workspaceId, String tableName, String columnName, DataTypeMapping newColType) {
+      UUID instanceId, String tableName, String columnName, DataTypeMapping newColType) {
     namedTemplate
         .getJdbcTemplate()
         .update(
             "alter table "
-                + getQualifiedTableName(tableName, workspaceId)
+                + getQualifiedTableName(tableName, instanceId)
                 + " alter column \""
                 + columnName
                 + "\" TYPE "
@@ -141,7 +141,7 @@ public class RecordDao {
   // The expectation is that the record type already matches the schema and attributes given, as
   // that's dealt with earlier in the code.
   public void batchUpsert(
-      UUID workspaceId,
+      UUID instanceId,
       String recordType,
       List<Record> records,
       LinkedHashMap<String, DataTypeMapping> schema)
@@ -151,7 +151,7 @@ public class RecordDao {
       namedTemplate
           .getJdbcTemplate()
           .batchUpdate(
-              genInsertStatement(workspaceId, recordType, schema),
+              genInsertStatement(instanceId, recordType, schema),
               getInsertBatchArgs(records, schema.keySet()));
     } catch (DataAccessException e) {
       if (e.getRootCause() instanceof SQLException sqlEx) {
@@ -165,14 +165,14 @@ public class RecordDao {
   }
 
   public void addForeignKeyForReference(
-      String recordType, String referencedRecordType, UUID instanceId, String referenceColName)
+      String recordType, String referencedRecordType, UUID instanceId, String relationColName)
       throws MissingReferencedTableException {
     try {
       String addFk =
           "alter table "
               + getQualifiedTableName(recordType, instanceId)
               + " add foreign key (\""
-              + referenceColName
+              + relationColName
               + "\") "
               + "references "
               + getQualifiedTableName(referencedRecordType, instanceId);
@@ -188,13 +188,13 @@ public class RecordDao {
     }
   }
 
-  public List<Relation> getReferenceCols(UUID workspaceId, String tableName) {
+  public List<Relation> getRelationCols(UUID instanceId, String tableName) {
     return namedTemplate.query(
         "SELECT kcu.column_name, ccu.table_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu "
             + "ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema "
             + "JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema "
             + "WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = :workspace AND tc.table_name= :tableName",
-        Map.of("workspace", workspaceId.toString(), "tableName", tableName),
+        Map.of("workspace", instanceId.toString(), "tableName", tableName),
         (rs, rowNum) ->
             new Relation(
                 rs.getString("column_name"), new RecordType(rs.getString("table_name"))));
@@ -249,9 +249,9 @@ public class RecordDao {
   }
 
   private String genInsertStatement(
-      UUID workspaceId, String recordType, LinkedHashMap<String, DataTypeMapping> schema) {
+      UUID instanceId, String recordType, LinkedHashMap<String, DataTypeMapping> schema) {
     return "insert into "
-        + getQualifiedTableName(recordType, workspaceId)
+        + getQualifiedTableName(recordType, instanceId)
         + "("
         + getInsertColList(schema.keySet())
         + ") values ("
@@ -330,7 +330,7 @@ public class RecordDao {
       List<Relation> referenceCols) {
     Map<String, String> refColMapping = new HashMap<>();
     referenceCols.forEach(
-        rc -> refColMapping.put(rc.referenceColName(), rc.referencedRecordType().getName()));
+        rc -> refColMapping.put(rc.relationColName(), rc.relationRecordType().getName()));
     try {
       return namedTemplate.queryForObject(
           "select * from "

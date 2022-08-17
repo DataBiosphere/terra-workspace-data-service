@@ -57,12 +57,12 @@ At the moment, WDS is only available through this port.  It can be reached from 
 
 To query for a single record:
 ```bash
-curl http://localhost:8080/<instanceid>/records/v0.2/<table/type>/<record_name>
+curl http://localhost:8080/<instanceid>/records/v0.2/<table/type>/<record_id>
 ```
 
 To add new attribute or update values for existing attributes (this won't create a new record however):
 ``` bash
-curl -H "Content-type: application/json" -X PATCH "http://localhost:8080/<instanceid guid>/records/v0.2/<table/type>/<record_name>" -d '{
+curl -H "Content-type: application/json" -X PATCH "http://localhost:8080/<instanceid guid>/records/v0.2/<table/type>/<record_id>" -d '{
 "id": "<record_name>",
 "type": "<record_type>",
 "attributes": {

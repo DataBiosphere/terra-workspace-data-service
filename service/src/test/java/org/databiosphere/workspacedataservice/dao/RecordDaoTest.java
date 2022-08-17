@@ -26,16 +26,16 @@ public class RecordDaoTest {
 
   @Autowired
   RecordDao recordDao;
-  UUID workspaceId;
+  UUID instanceId;
   RecordType recordType;
 
   @BeforeEach
   void setUp() throws MissingReferencedTableException {
-    workspaceId = UUID.randomUUID();
+    instanceId = UUID.randomUUID();
     recordType = new RecordType("testRecordType");
-    recordDao.createSchema(workspaceId);
-    recordDao.createReccordType(
-        workspaceId, Collections.emptyMap(), recordType.getName(), Collections.emptySet());
+    recordDao.createSchema(instanceId);
+    recordDao.createRecordType(
+            instanceId, Collections.emptyMap(), recordType.getName(), Collections.emptySet());
   }
 
   @Test
@@ -45,39 +45,39 @@ public class RecordDaoTest {
     RecordId recordId = new RecordId("testRecord");
     Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
     recordDao.batchUpsert(
-        workspaceId,
+            instanceId,
         recordType.getName(),
         Collections.singletonList(testRecord),
         new LinkedHashMap<>());
 
     // make sure record is fetched
     Record search =
-        recordDao.getSingleRecord(workspaceId, recordType, recordId, Collections.emptyList());
+        recordDao.getSingleRecord(instanceId, recordType, recordId, Collections.emptyList());
     assertEquals(testRecord, search);
 
     // nonexistent record should be null
     Record none =
         recordDao.getSingleRecord(
-            workspaceId, recordType, new RecordId("noRecord"), Collections.emptyList());
+                instanceId, recordType, new RecordId("noRecord"), Collections.emptyList());
     assertNull(none);
   }
 
   @Test
   @Transactional
   void testCreateSingleRecord() throws InvalidRelation {
-    recordDao.addColumn(workspaceId, recordType.getName(), "foo", DataTypeMapping.STRING);
+    recordDao.addColumn(instanceId, recordType.getName(), "foo", DataTypeMapping.STRING);
 
     // create record with no attributes
     RecordId recordId = new RecordId("testRecord");
     Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
     recordDao.batchUpsert(
-        workspaceId,
+            instanceId,
         recordType.getName(),
         Collections.singletonList(testRecord),
         new LinkedHashMap<>());
 
     Record search =
-        recordDao.getSingleRecord(workspaceId, recordType, recordId, Collections.emptyList());
+        recordDao.getSingleRecord(instanceId, recordType, recordId, Collections.emptyList());
     assertEquals(testRecord, search, "Created record should match entered record");
 
     // create record with attributes
@@ -85,33 +85,33 @@ public class RecordDaoTest {
     Record recordWithAttr =
         new Record(attrId, recordType, new RecordAttributes(Map.of("foo", "bar")));
     recordDao.batchUpsert(
-        workspaceId,
+            instanceId,
         recordType.getName(),
         Collections.singletonList(recordWithAttr),
         new LinkedHashMap<>(Map.of("foo", DataTypeMapping.STRING)));
 
-    search = recordDao.getSingleRecord(workspaceId, recordType, attrId, Collections.emptyList());
+    search = recordDao.getSingleRecord(instanceId, recordType, attrId, Collections.emptyList());
     assertEquals(
             recordWithAttr, search, "Created record with attributes should match entered record");
   }
 
   @Test
   @Transactional
-  void testCreateRecordWithReferences()
+  void testCreateRecordWithRelations()
       throws MissingReferencedTableException, InvalidRelation {
     // make sure columns are in recordType, as this will be taken care of before we get to the dao
-    recordDao.addColumn(workspaceId, recordType.getName(), "foo", DataTypeMapping.STRING);
+    recordDao.addColumn(instanceId, recordType.getName(), "foo", DataTypeMapping.STRING);
 
     recordDao.addColumn(
-        workspaceId, recordType.getName(), "testRecordType", DataTypeMapping.STRING);
+            instanceId, recordType.getName(), "testRecordType", DataTypeMapping.STRING);
     recordDao.addForeignKeyForReference(
-        recordType.getName(), recordType.getName(), workspaceId, "testRecordType");
+        recordType.getName(), recordType.getName(), instanceId, "testRecordType");
 
     RecordId refRecordId = new RecordId("referencedRecord");
     Record referencedRecord =
         new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
     recordDao.batchUpsert(
-        workspaceId,
+            instanceId,
         recordType.getName(),
         Collections.singletonList(referencedRecord),
         new LinkedHashMap<>());
@@ -121,7 +121,7 @@ public class RecordDaoTest {
     Record testRecord =
         new Record(recordId, recordType, new RecordAttributes(Map.of("testRecordType", reference)));
     recordDao.batchUpsert(
-        workspaceId,
+            instanceId,
         recordType.getName(),
         Collections.singletonList(testRecord),
         new LinkedHashMap<>(
@@ -129,25 +129,25 @@ public class RecordDaoTest {
 
     Record search =
         recordDao.getSingleRecord(
-            workspaceId,
+                instanceId,
                 recordType,
                 recordId,
-            recordDao.getReferenceCols(workspaceId, recordType.getName()));
+            recordDao.getRelationCols(instanceId, recordType.getName()));
     assertEquals(testRecord, search, "Created record with references should match entered record");
   }
 
   @Test
   @Transactional
   void testGetReferenceCols() throws MissingReferencedTableException {
-    recordDao.addColumn(workspaceId, recordType.getName(), "referenceCol", DataTypeMapping.STRING);
+    recordDao.addColumn(instanceId, recordType.getName(), "referenceCol", DataTypeMapping.STRING);
     recordDao.addForeignKeyForReference(
-        recordType.getName(), recordType.getName(), workspaceId, "referenceCol");
+        recordType.getName(), recordType.getName(), instanceId, "referenceCol");
 
-    List<Relation> refCols = recordDao.getReferenceCols(workspaceId, recordType.getName());
+    List<Relation> refCols = recordDao.getRelationCols(instanceId, recordType.getName());
     assertEquals(1, refCols.size(), "There should be one referenced column");
     assertEquals(
         "referenceCol",
-        refCols.get(0).referenceColName(),
+        refCols.get(0).relationColName(),
         "Reference column should be named referenceCol");
   }
 }

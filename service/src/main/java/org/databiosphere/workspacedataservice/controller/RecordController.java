@@ -41,7 +41,7 @@ public class RecordController {
             instanceId,
                 recordType,
                 recordId,
-            recordDao.getReferenceCols(instanceId, recordTypeName));
+            recordDao.getRelationCols(instanceId, recordTypeName));
     if (singleRecord == null) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Record not found");
     }
@@ -82,9 +82,9 @@ public class RecordController {
     MapDifference<String, DataTypeMapping> difference =
         Maps.difference(existingTableSchema, schema);
     Map<String, DataTypeMapping> colsToAdd = difference.entriesOnlyOnRight();
-    Set<Relation> references = RelationUtils.findRelations(records);
+    Set<Relation> relations = RelationUtils.findRelations(records);
     Map<String, List<Relation>> newRefCols =
-        references.stream().collect(Collectors.groupingBy(Relation::referenceColName));
+        relations.stream().collect(Collectors.groupingBy(Relation::relationColName));
     // TODO: better communicate to the user that they're trying to assign multiple record types to a
     // single column
     Preconditions.checkArgument(
@@ -95,26 +95,26 @@ public class RecordController {
       if (newRefCols.containsKey(col)) {
         String referencedRecordType = null;
         try {
-          referencedRecordType = newRefCols.get(col).get(0).referencedRecordType().getName();
+          referencedRecordType = newRefCols.get(col).get(0).relationRecordType().getName();
           recordDao.addForeignKeyForReference(recordType, referencedRecordType, instanceId, col);
         } catch (MissingReferencedTableException e) {
           throw new ResponseStatusException(
               HttpStatus.BAD_REQUEST,
-              "It looks like you're attempting to assign a reference "
+              "It looks like you're attempting to assign a relation "
                   + "to a table, "
                   + referencedRecordType
                   + ", that does not exist");
         }
       }
     }
-    if (!recordDao.getReferenceCols(instanceId, recordType).stream()
-        .map(Relation::referenceColName)
+    if (!recordDao.getRelationCols(instanceId, recordType).stream()
+        .map(Relation::relationColName)
         .collect(Collectors.toSet())
         .containsAll(newRefCols.keySet())) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
-          "It looks like you're attempting to assign a reference "
-              + "to an existing column that was not configured for references");
+          "It looks like you're attempting to assign a relation "
+              + "to an existing column that was not configured for relations");
     }
     Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap =
         difference.entriesDiffering();
@@ -135,7 +135,7 @@ public class RecordController {
       @PathVariable("recordType") RecordType recordType,
       @PathVariable("recordId") RecordId recordId) {
     validateVersion(version);
-    if (!recordDao.workspaceSchemaExists(instanceId)
+    if (!recordDao.instanceSchemaExists(instanceId)
         || !recordDao.recordTypeExists(instanceId, recordType.getName())) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Instance or table don't exist");
     }
@@ -144,7 +144,7 @@ public class RecordController {
             instanceId,
                 recordType,
                 recordId,
-            recordDao.getReferenceCols(instanceId, recordType.getName()));
+            recordDao.getRelationCols(instanceId, recordType.getName()));
     if (result == null) {
       // TODO: standard exception classes
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Record not found");
@@ -169,7 +169,7 @@ public class RecordController {
     String recordTypeName = recordType.getName();
     Map<String, Object> attributesInRequest = recordRequest.recordAttributes().getAttributes();
     Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
-    if (!recordDao.workspaceSchemaExists(instanceId)) {
+    if (!recordDao.instanceSchemaExists(instanceId)) {
       recordDao.createSchema(instanceId);
     }
     try {
@@ -203,7 +203,7 @@ public class RecordController {
   public ResponseEntity<String> createInstance(
       @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {
     validateVersion(version);
-    if (recordDao.workspaceSchemaExists(instanceId)) {
+    if (recordDao.instanceSchemaExists(instanceId)) {
       return new ResponseEntity("This schema already exists.", HttpStatus.CONFLICT);
     }
     recordDao.createSchema(instanceId);
@@ -227,14 +227,14 @@ public class RecordController {
               recordRequest.recordType(),
               recordRequest.recordAttributes());
       List<Record> records = Collections.singletonList(newRecord);
-      recordDao.createReccordType(
+      recordDao.createRecordType(
           instanceId, requestSchema, recordTypeName, RelationUtils.findRelations(records));
       recordDao.batchUpsert(
           instanceId, recordTypeName, records, new LinkedHashMap<>(requestSchema));
     } catch (MissingReferencedTableException e) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
-          "It looks like you're attempting to assign a reference "
+          "It looks like you're attempting to assign a relation "
               + "to a table that does not exist",
           e);
     }
