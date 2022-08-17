@@ -14,7 +14,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 public class RelationUtils {
 
-  public static final String RELATION_IDENTIFIER = "terra-wds:";
+  public static final String RELATION_IDENTIFIER = "terra-wds";
 
   /**
    * Determines if any attributes reference another table
@@ -73,7 +73,11 @@ public class RelationUtils {
     return obj != null && obj.toString().startsWith(RELATION_IDENTIFIER);
   }
 
-  public static String createRelationString(String recordTypeName, String recordId){
-    return RELATION_IDENTIFIER + recordTypeName + "/" + recordId;
+  public static String createRelationString(String entityTypeName, String entityId) {
+    return UriComponentsBuilder.newInstance()
+            .scheme(RELATION_IDENTIFIER)
+            .pathSegment(entityTypeName, entityId)
+            .build()
+            .toUriString();
   }
 }
