@@ -552,7 +552,7 @@ public class ApiClient {
    * @param obj Object
    * @param formParams Form parameters
    * @param contentType Context type
-   * @return Entity
+   * @return Record
    * @throws ApiException API exception
    */
   public Record<?> serialize(Object obj, Map<String, Object> formParams, String contentType) throws ApiException {
@@ -579,7 +579,7 @@ public class ApiClient {
       record = Record.record(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE);
     } else {
       // We let jersey handle the serialization
-      record = Entity.record(obj, contentType);
+      record = Record.record(obj, contentType);
     }
     return record;
   }
