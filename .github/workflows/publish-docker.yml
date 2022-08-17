@@ -7,7 +7,7 @@ on:
 
 env:
   SERVICE_NAME: ${{ github.event.repository.name }}
-  GCR_REGISTRY: gcr.io
+  GCR_REGISTRY: us.gcr.io
   ACR_REGISTRY: terradevacrpublic.azurecr.io
   GOOGLE_PROJECT: broad-dsp-gcr-public
 
