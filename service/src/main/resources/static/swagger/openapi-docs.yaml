@@ -4,9 +4,9 @@ info:
   title: Workspace Data Service
   version: v0.2
   description: |
-    Workspace Data Service API
-
-    This is the proposed API. Endpoints marked as deprecated are not yet implemented.
+    This page lists both current and proposed APIs. The proposed APIs which have not yet been implemented
+    are marked as deprecated. This is incongruous, but by using the deprecated flag, we can force
+    swagger-ui to display those endpoints differently.
 
     As of v0.2, all APIs are subject to change without notice.
   termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
@@ -224,7 +224,7 @@ paths:
       deprecated: true
       summary: Describe record type (pending)
       description: |
-        Returns the schema definition for this type, including all of its attributes.
+        Returns the schema definition for this type.
       operationId: describeRecordType
       tags:
         - Schema
@@ -245,7 +245,7 @@ paths:
       description: |
         Update record type. All records of the old type will be updated to the new type.
         This API can be used to rename a record type and/or to perform batch updates to
-        this type's attributes. See also the updateAttribute API.
+        this type's attributes; see also the updateAttribute API.
         This API cannot be used to delete attributes; use deleteAttribute instead.
         Returns the updated type definition.
       operationId: updateRecordType
@@ -469,7 +469,9 @@ components:
         datatype:
           type: string
           enum: [boolean, date, datetime, string, json, long, double, relation]
-          description: datatype of this attribute. The enum of datatypes is subject to change.
+          description: |
+            Datatype of this attribute. The enum of datatypes is in flux and will change. Please
+            comment at https://docs.google.com/document/d/1d352ZoN5kEYWPjy0NqqWGxdf7HEu5VEdrLmiAv7dMmQ/edit#heading=h.naxag0augkgf.
         relatesTo:
           type: string
           description: Name of type to which this attribute relates. Only present if this is a relation attribute.
