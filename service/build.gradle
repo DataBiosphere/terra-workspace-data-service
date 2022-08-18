@@ -40,6 +40,7 @@ dependencies {
 
 sonarqube {
 	properties {
+		property "sonar.projectName", "terra-workspace-data-service"
 		property "sonar.projectKey", "DataBiosphere_workspace-data-service"
 		property "sonar.organization", "broad-databiosphere"
 		property "sonar.host.url", "https://sonarcloud.io"
