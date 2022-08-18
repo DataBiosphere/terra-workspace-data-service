@@ -8,6 +8,9 @@ info:
     are marked as deprecated. This is incongruous, but by using the deprecated flag, we can force
     swagger-ui to display those endpoints differently.
 
+    Error codes and responses for proposed APIs are likely to change as we gain more clarity on their
+    implementation.
+
     As of v0.2, all APIs are subject to change without notice.
   termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
   license:
@@ -267,6 +270,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RecordTypeSchema'
+        400:
+          description: Malformed payload; or invalid type name; or invalid attribute name, datatype, or relation target
+        409:
+          description: Target type or attribute name already exists, for a rename operation
     delete:
       deprecated: true
       summary: Delete record type (pending)
@@ -281,6 +288,8 @@ paths:
       responses:
         204:
           description: Success
+        409:
+          description: at least one of the records to be deleted is a relation target
   /{instanceid}/types/{type}/attributes/{v}/{attribute}:
     get:
       deprecated: true
@@ -330,6 +339,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AttributeSchema'
+        400:
+          description: Malformed payload; or invalid name, datatype, or relation target
+        409:
+          description: Target attribute name already exists, for a rename operation
     delete:
       deprecated: true
       summary: Delete attribute (pending)
