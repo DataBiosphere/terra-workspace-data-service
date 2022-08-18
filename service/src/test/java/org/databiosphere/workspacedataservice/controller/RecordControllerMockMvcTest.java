@@ -87,10 +87,8 @@ public class RecordControllerMockMvcTest {
 		String ref = RelationUtils.createRelationString(referencedType, "record_0");
 		attributes.put("sample-ref", ref);
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				referringType, "record_0")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordId("record_0"),
-								new RecordType(referringType), new RecordAttributes(attributes)))))
+				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 	}
 
@@ -104,10 +102,8 @@ public class RecordControllerMockMvcTest {
 		String ref = RelationUtils.createRelationString(referencedType, "record_0");
 		attributes.put("sample-ref", ref);
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				referringType, "record_0")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordId("record_0"),
-								new RecordType(referringType), new RecordAttributes(attributes)))))
+				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
 				.andExpect(status().isBadRequest()).andExpect(content().string(containsString(
 						"It looks like you're attempting to assign a relation to a table, missing, that does not exist")));;
 	}
@@ -123,10 +119,8 @@ public class RecordControllerMockMvcTest {
 		String ref = RelationUtils.createRelationString(referencedType, "record_99");
 		attributes.put("sample-ref", ref);
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				referringType, "record_0")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordId("record_0"),
-								new RecordType(referringType), new RecordAttributes(attributes)))))
+				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
 				.andExpect(status().isBadRequest()).andExpect(content().string(
 						containsString("It looks like you're trying to reference a record that does not exist.")));
 	}
@@ -139,10 +133,8 @@ public class RecordControllerMockMvcTest {
 		Map<String, Object> attributes = new HashMap<>();
 		attributes.put("attr3", "convert this column from date to text");
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				recordType, "record_1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordId("record_0"),
-								new RecordType(recordType), new RecordAttributes(attributes)))))
+				recordType, "record_1").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
 				.andExpect(status().isOk());
 	}
 
@@ -156,8 +148,7 @@ public class RecordControllerMockMvcTest {
 		String recordId = "record_missing";
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, recordId)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordId(recordId),
-								new RecordType(recordType), new RecordAttributes(attributes))))
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isNotFound());
 	}
@@ -173,8 +164,7 @@ public class RecordControllerMockMvcTest {
 
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, recordId)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordId(recordId),
-								new RecordType(recordType), new RecordAttributes(attributes))))
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isBadRequest())
 				.andExpect(content().string(containsString("assign a relation to a table that does not exist")));
@@ -190,8 +180,7 @@ public class RecordControllerMockMvcTest {
 		attributes.put("attr1", ref);
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, "record_0")
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordId("record_0"),
-								new RecordType(recordType), new RecordAttributes(attributes))))
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isConflict())
 				.andExpect(result -> assertTrue(result.getResolvedException().getMessage()
@@ -212,8 +201,7 @@ public class RecordControllerMockMvcTest {
 			attributes.put("attr-boolean", true);
 			mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 					recordType, recordId)
-							.content(mapper.writeValueAsString(new RecordRequest(new RecordId(recordId),
-									new RecordType(recordType), new RecordAttributes(attributes))))
+							.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 							.contentType(MediaType.APPLICATION_JSON))
 					.andExpect(status().is2xxSuccessful());
 		}

@@ -138,7 +138,8 @@ public class RecordController {
 			RecordResponse response = new RecordResponse(recordId, recordType, recordRequest.recordAttributes(),
 					new RecordMetadata("TODO"));
 			if (!recordDao.recordTypeExists(instanceId, recordTypeName)) {
-				createRecordTypeAndInsertRecords(instanceId, recordRequest, recordTypeName, requestSchema);
+				Record newRecord = new Record(recordId, recordType, recordRequest);
+				createRecordTypeAndInsertRecords(instanceId, newRecord, recordTypeName, requestSchema);
 				return new ResponseEntity(response, HttpStatus.CREATED);
 			} else {
 				Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId,
@@ -174,11 +175,9 @@ public class RecordController {
 		Preconditions.checkArgument(version.equals("v0.2"));
 	}
 
-	private void createRecordTypeAndInsertRecords(UUID instanceId, RecordRequest recordRequest, String recordTypeName,
+	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, String recordTypeName,
 			Map<String, DataTypeMapping> requestSchema) throws InvalidRelation {
 		try {
-			Record newRecord = new Record(recordRequest.recordId(), recordRequest.recordType(),
-					recordRequest.recordAttributes());
 			List<Record> records = Collections.singletonList(newRecord);
 			recordDao.createRecordType(instanceId, requestSchema, recordTypeName, RelationUtils.findRelations(records));
 			recordDao.batchUpsert(instanceId, recordTypeName, records, new LinkedHashMap<>(requestSchema));

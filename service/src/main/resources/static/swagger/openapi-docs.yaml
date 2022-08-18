@@ -55,8 +55,6 @@ paths:
         If the record already exists, its entire set of attributes will be overwritten by
         the attributes in the request body.
         
-        TODO: the type and id are duplicated in the url and the body; change this? Silently ignore the type/id in the body?
-        
         TODO: add a query parameter to allow/disallow overwriting existing records?
       operationId: createOrReplaceRecord
       tags:
@@ -89,8 +87,6 @@ paths:
         Any attributes included in the request body will be created or overwritten.
         Attributes not included in the request body will be untouched in the database.
         No attributes will be deleted. To delete attributes, use the PUT api instead.
-
-        TODO: the type and id are duplicated in the url and the body; change this? Silently ignore the type/id in the body?
       tags:
         - Records
       parameters:

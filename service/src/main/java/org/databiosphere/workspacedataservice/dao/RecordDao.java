@@ -184,7 +184,7 @@ public class RecordDao {
 		int i = 0;
 		for (String col : colNames) {
 			if (col.equals(RECORD_ID.getColumnName())) {
-				row[i++] = record.getName().getRecordIdentifier();
+				row[i++] = record.getId().getRecordIdentifier();
 			} else {
 				Object attVal = record.getAttributes().getAttributes().get(col);
 				row[i++] = getValueForSql(attVal);
