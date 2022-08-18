@@ -454,7 +454,7 @@ components:
             $ref: '#/components/schemas/RecordResponse'
   requestBodies:
     RecordRequestBody:
-      description: An record to upload
+      description: A record's attributes to upload
       required: true
       content:
         application/json:
@@ -492,13 +492,29 @@ components:
       type: object
       required:
         - operation
-        - entity
+        - record
       properties:
         operation:
           type: string
           enum: [create, update, replace, delete]
-        entity:
-          $ref: '#/components/schemas/RecordRequest'
+        record:
+          $ref: '#/components/schemas/BatchRecordRequest'
+    BatchRecordRequest:
+      type: object
+      required:
+        - id
+        - type
+        - attributes
+      properties:
+        id:
+          $ref: '#/components/schemas/RecordId'
+          description: Record id
+        type:
+          $ref: '#/components/schemas/RecordType'
+          description: Record type
+        attributes:
+          $ref: '#/components/schemas/RecordAttributes'
+          description: KVPs of record attributes
     BatchResponse:
       type: object
       required:
@@ -524,16 +540,8 @@ components:
     RecordRequest:
       type: object
       required:
-        - id
-        - type
         - attributes
       properties:
-        id:
-          $ref: '#/components/schemas/RecordId'
-          description: Record id
-        type:
-          $ref: '#/components/schemas/RecordType'
-          description: Record type
         attributes:
           $ref: '#/components/schemas/RecordAttributes'
           description: KVPs of record attributes
@@ -560,6 +568,13 @@ components:
     RecordAttributes:
       type: object
       additionalProperties: true
+      example: |
+        {
+          "stringAttr": "string",
+          "numericAttr": 123,
+          "booleanAttr": true,
+          "relationAttr": "terra-wds:/target-type/target-id"
+        }
     RecordAttributeDefinition:
       required:
         - name
