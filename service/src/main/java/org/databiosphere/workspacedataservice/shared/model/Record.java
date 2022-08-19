@@ -6,14 +6,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Record {
 
-	private RecordId name;
+	private RecordId id;
 
 	private RecordType recordType;
 
 	private RecordAttributes attributes;
 
-	public Record(RecordId name, RecordType recordType, RecordAttributes attributes) {
-		this.name = name;
+	public Record(RecordId id, RecordType recordType, RecordAttributes attributes) {
+		this.id = id;
 		this.recordType = recordType;
 		this.attributes = attributes;
 	}
@@ -21,22 +21,22 @@ public class Record {
 	public Record() {
 	}
 
-	public Record(RecordId recordName) {
-		this.name = recordName;
+	public Record(RecordId id) {
+		this.id = id;
 	}
 
-	public Record(RecordRequest request) {
-		this.name = request.recordId();
-		this.recordType = request.recordType();
+	public Record(RecordId id, RecordType type, RecordRequest request) {
+		this.id = id;
+		this.recordType = type;
 		this.attributes = request.recordAttributes();
 	}
 
-	public RecordId getName() {
-		return name;
+	public RecordId getId() {
+		return id;
 	}
 
-	public void setName(RecordId name) {
-		this.name = name;
+	public void setId(RecordId id) {
+		this.id = id;
 	}
 
 	public RecordAttributes getAttributes() {
@@ -63,14 +63,14 @@ public class Record {
 		if (!(o instanceof Record record))
 			return false;
 
-		if (!getName().equals(record.getName()))
+		if (!getId().equals(record.getId()))
 			return false;
 		return getRecordType().equals(record.getRecordType());
 	}
 
 	@Override
 	public int hashCode() {
-		int result = getName().hashCode();
+		int result = getId().hashCode();
 		result = 31 * result + getRecordType().hashCode();
 		return result;
 	}

@@ -19,17 +19,13 @@ public class RecordRequestTest {
 
 	@Test
 	void testJsonDeserialization() throws JsonProcessingException {
-		RecordId recordId = new RecordId("test-id");
-		RecordType recordType = new RecordType("test-type");
 		RecordAttributes recordAttributes = new RecordAttributes(
 				Map.of("foo", "bar", "num", 123, "bool", true, "anotherstring", "hello world"));
 
-		RecordRequest expected = new RecordRequest(recordId, recordType, recordAttributes);
+		RecordRequest expected = new RecordRequest(recordAttributes);
 
 		String inputJsonString = """
 				{
-				  "id": "test-id",
-				  "type": "test-type",
 				  "attributes": {
 				    "foo": "bar",
 				    "num": 123,
