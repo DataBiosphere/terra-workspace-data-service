@@ -7,7 +7,7 @@ ext {
 dependencies {
 	api 'org.springframework.boot:spring-boot-starter-json:+'
 
-	swaggerCodegen 'io.swagger.codegen.v3:swagger-codegen-cli'
+	swaggerCodegen 'org.openapitools:openapi-generator-cli'
 	//Need to include libraries for generated code to work
 	implementation "io.swagger.core.v3:swagger-annotations:$swagger_annotations_version"
 	implementation "org.glassfish.jersey.core:jersey-client:$jersey_version"
