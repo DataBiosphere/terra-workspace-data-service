@@ -145,8 +145,8 @@ public class RecordDao {
 				(rs, rowNum) -> new Relation(rs.getString("column_name"), new RecordType(rs.getString("table_name"))));
 	}
 
-	private String genColUpsertUpdates(List<RecordColumn> cols) {
-		return cols.stream().map(RecordColumn::colName).filter(c -> !RECORD_ID.getColumnName().equals(c))
+	private String genColUpsertUpdates(List<String> cols) {
+		return cols.stream().filter(c -> !RECORD_ID.getColumnName().equals(c))
 				.map(c -> "\"" + c + "\"" + " = excluded.\"" + c + "\"").collect(Collectors.joining(", "));
 	}
 
@@ -154,15 +154,12 @@ public class RecordDao {
 		return records.stream().map(r -> getInsertArgs(r, cols)).collect(Collectors.toList());
 	}
 
-	private Object getValueForSql(Object attVal) {
+	private Object getValueForSql(Object attVal, DataTypeMapping typeMapping) {
 		if (RelationUtils.isRelationValue(attVal)) {
 			return RelationUtils.getRelationValue(attVal);
 		}
-		DataTypeInferer inferer = new DataTypeInferer();
 
-		DataTypeMapping dataTypeMapping = inferer.inferType(attVal);
-
-		switch (dataTypeMapping) {
+		switch (typeMapping) {
 			case DATE -> {
 				return LocalDate.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
 			}
@@ -181,29 +178,30 @@ public class RecordDao {
 			if (colName.equals(RECORD_ID.getColumnName())) {
 				row[i++] = record.getId().getRecordIdentifier();
 			} else {
-				row[i++] = getValueForSql(record.getAttributes().getAttributes().get(colName));
+				row[i++] = getValueForSql(record.getAttributes().getAttributes().get(colName), col.typeMapping());
 			}
 		}
 		return row;
 	}
 
-	private String genInsertStatement(UUID instanceId, String recordType,
-									  List<RecordColumn> schema) {
-		return "insert into " + getQualifiedTableName(recordType, instanceId) + "(" + getInsertColList(schema)
-				+ ") values (" + getInsertParamList(schema) + ") " + "on conflict ("
+	private String genInsertStatement(UUID instanceId, String recordType, List<RecordColumn> schema) {
+		List<String> colNames = schema.stream().map(RecordColumn::colName).toList();
+		List<DataTypeMapping> colTypes = schema.stream().map(RecordColumn::typeMapping).toList();
+		return "insert into " + getQualifiedTableName(recordType, instanceId) + "(" + getInsertColList(colNames)
+				+ ") values (" + getInsertParamList(colTypes) + ") " + "on conflict ("
 				+ RECORD_ID.getColumnName() + ") "
 				+ (schema.size() == 1
 						? "do nothing"
-						: "do update set " + genColUpsertUpdates(schema));
+						: "do update set " + genColUpsertUpdates(colNames));
 	}
 
-	private String getInsertParamList(List<RecordColumn> existingTableSchema) {
-		return existingTableSchema.stream().map(col -> col.typeMapping().getPostgresType().equalsIgnoreCase("jsonb") ? "? :: jsonb" : "?")
+	private String getInsertParamList(List<DataTypeMapping> colTypes) {
+		return colTypes.stream().map(type -> type.getPostgresType().equalsIgnoreCase("jsonb") ? "? :: jsonb" : "?")
 				.collect(Collectors.joining(", "));
 	}
 
-	private String getInsertColList(List<RecordColumn> existingTableSchema) {
-		return existingTableSchema.stream().map(col -> "\"" + col.colName() + "\"").collect(Collectors.joining(", "));
+	private String getInsertColList(List<String> existingTableSchema) {
+		return existingTableSchema.stream().map(col -> "\"" + col + "\"").collect(Collectors.joining(", "));
 	}
 
 	private record RecordRowMapper(String recordType,
