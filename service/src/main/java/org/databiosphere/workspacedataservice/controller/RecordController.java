@@ -49,7 +49,7 @@ public class RecordController {
 		Map<String, DataTypeMapping> updatedSchema = addOrUpdateColumnIfNeeded(instanceId, recordType.getName(),
 				typeMapping, existingTableSchema, records);
 		try {
-			recordDao.batchUpsert(instanceId, recordTypeName, records, new LinkedHashMap<>(updatedSchema));
+			recordDao.batchUpsert(instanceId, recordTypeName, records, updatedSchema);
 			RecordResponse response = new RecordResponse(recordId, recordType, singleRecord.getAttributes(),
 					new RecordMetadata("TODO: SUPERFRESH"));
 			return new ResponseEntity<>(response, HttpStatus.OK);
@@ -148,9 +148,8 @@ public class RecordController {
 				existingTableSchema.keySet().forEach(attr -> attributesInRequest.putIfAbsent(attr, null));
 				Record record = new Record(recordId, recordType, recordRequest.recordAttributes());
 				List<Record> records = Collections.singletonList(record);
-				addOrUpdateColumnIfNeeded(instanceId, recordType.getName(), requestSchema, existingTableSchema,
-						records);
-				LinkedHashMap<String, DataTypeMapping> combinedSchema = new LinkedHashMap<>(existingTableSchema);
+				addOrUpdateColumnIfNeeded(instanceId, recordType.getName(), requestSchema, existingTableSchema, records);
+				Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
 				combinedSchema.putAll(requestSchema);
 				recordDao.batchUpsert(instanceId, recordTypeName, records, combinedSchema);
 				return new ResponseEntity(response, HttpStatus.OK);
@@ -180,7 +179,7 @@ public class RecordController {
 		try {
 			List<Record> records = Collections.singletonList(newRecord);
 			recordDao.createRecordType(instanceId, requestSchema, recordTypeName, RelationUtils.findRelations(records));
-			recordDao.batchUpsert(instanceId, recordTypeName, records, new LinkedHashMap<>(requestSchema));
+			recordDao.batchUpsert(instanceId, recordTypeName, records, requestSchema);
 		} catch (MissingReferencedTableException e) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"It looks like you're attempting to assign a relation " + "to a table that does not exist", e);
