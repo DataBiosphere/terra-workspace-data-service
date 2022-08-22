@@ -155,6 +155,9 @@ public class RecordDao {
 	}
 
 	private Object getValueForSql(Object attVal, DataTypeMapping typeMapping) {
+		if(Objects.isNull(attVal)){
+			return null;
+		}
 		if (RelationUtils.isRelationValue(attVal)) {
 			return RelationUtils.getRelationValue(attVal);
 		}
