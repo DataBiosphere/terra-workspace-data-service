@@ -1,6 +1,16 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import static org.databiosphere.workspacedataservice.service.model.SystemColumn.RECORD_ID;
+import org.databiosphere.workspacedataservice.service.RelationUtils;
+import org.databiosphere.workspacedataservice.service.model.*;
+import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.shared.model.*;
+import org.postgresql.util.PGobject;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -10,18 +20,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
-import org.databiosphere.workspacedataservice.service.DataTypeInferer;
-import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.model.*;
-import org.databiosphere.workspacedataservice.shared.model.*;
-import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.postgresql.util.PGobject;
-import org.springframework.dao.DataAccessException;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.stereotype.Repository;
+
+import static org.databiosphere.workspacedataservice.service.model.SystemColumn.RECORD_ID;
 
 @Repository
 public class RecordDao {
@@ -103,7 +103,7 @@ public class RecordDao {
 	// that's dealt with earlier in the code.
 	public void batchUpsert(UUID instanceId, String recordType, List<Record> records, Map<String, DataTypeMapping> schema) throws InvalidRelation {
 		schema.put(RECORD_ID.getColumnName(), DataTypeMapping.STRING);
-		List<RecordColumn> schemaAsList = schema.entrySet().stream().map(e -> new RecordColumn(e.getKey(), e.getValue())).collect(Collectors.toList());
+		List<RecordColumn> schemaAsList = schema.entrySet().stream().map(e -> new RecordColumn(e.getKey(), e.getValue())).toList();
 		try {
 			namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(instanceId, recordType, schemaAsList),
 					getInsertBatchArgs(records, schemaAsList));
@@ -151,7 +151,7 @@ public class RecordDao {
 	}
 
 	private List<Object[]> getInsertBatchArgs(List<Record> records, List<RecordColumn> cols) {
-		return records.stream().map(r -> getInsertArgs(r, cols)).collect(Collectors.toList());
+		return records.stream().map(r -> getInsertArgs(r, cols)).toList();
 	}
 
 	private Object getValueForSql(Object attVal, DataTypeMapping typeMapping) {
@@ -162,26 +162,24 @@ public class RecordDao {
 			return RelationUtils.getRelationValue(attVal);
 		}
 
-		switch (typeMapping) {
-			case DATE -> {
-				return LocalDate.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
-			}
-			case DATE_TIME -> {
-				return LocalDateTime.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-			}
+		if (typeMapping == DataTypeMapping.DATE) {
+			return LocalDate.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
+		} else if (typeMapping == DataTypeMapping.DATE_TIME) {
+			return LocalDateTime.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 		}
+
 		return attVal;
 	}
 
-	private Object[] getInsertArgs(Record record, List<RecordColumn> cols) {
+	private Object[] getInsertArgs(Record toInsert, List<RecordColumn> cols) {
 		Object[] row = new Object[cols.size()];
 		int i = 0;
 		for (RecordColumn col : cols) {
 			String colName = col.colName();
 			if (colName.equals(RECORD_ID.getColumnName())) {
-				row[i++] = record.getId().getRecordIdentifier();
+				row[i++] = toInsert.getId().getRecordIdentifier();
 			} else {
-				row[i++] = getValueForSql(record.getAttributes().getAttributes().get(colName), col.typeMapping());
+				row[i++] = getValueForSql(toInsert.getAttributes().getAttributes().get(colName), col.typeMapping());
 			}
 		}
 		return row;
