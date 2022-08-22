@@ -1,14 +1,10 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.*;
-
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.InvalidRelation;
 import org.databiosphere.workspacedataservice.service.model.MissingReferencedTableException;
+import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordId;
@@ -19,6 +15,10 @@ import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -47,13 +47,13 @@ public class RecordDaoTest {
 				new HashMap<>());
 
 		// make sure record is fetched
-		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId, Collections.emptyList());
+		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId, Collections.emptyList()).get();
 		assertEquals(testRecord, search);
 
 		// nonexistent record should be null
-		Record none = recordDao.getSingleRecord(instanceId, recordType, new RecordId("noRecord"),
+		Optional<Record> none = recordDao.getSingleRecord(instanceId, recordType, new RecordId("noRecord"),
 				Collections.emptyList());
-		assertNull(none);
+		assertEquals(none, Optional.empty());
 	}
 
 	@Test
@@ -67,7 +67,7 @@ public class RecordDaoTest {
 		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord),
 				new HashMap<>());
 
-		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId, Collections.emptyList());
+		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId, Collections.emptyList()).get();
 		assertEquals(testRecord, search, "Created record should match entered record");
 
 		// create record with attributes
@@ -76,7 +76,7 @@ public class RecordDaoTest {
 		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(recordWithAttr),
 				new HashMap<>(Map.of("foo", DataTypeMapping.STRING)));
 
-		search = recordDao.getSingleRecord(instanceId, recordType, attrId, Collections.emptyList());
+		search = recordDao.getSingleRecord(instanceId, recordType, attrId, Collections.emptyList()).get();
 		assertEquals(recordWithAttr, search, "Created record with attributes should match entered record");
 	}
 
@@ -102,7 +102,7 @@ public class RecordDaoTest {
 				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.STRING)));
 
 		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId,
-				recordDao.getRelationCols(instanceId, recordType.getName()));
+				recordDao.getRelationCols(instanceId, recordType.getName())).get();
 		assertEquals(testRecord, search, "Created record with references should match entered record");
 	}
 

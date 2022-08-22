@@ -39,7 +39,7 @@ public class RecordDao {
 	}
 
 	public void createSchema(UUID instanceId) {
-		namedTemplate.getJdbcTemplate().update("create schema \"" + instanceId.toString() + "\"");
+		namedTemplate.getJdbcTemplate().update("create schema " + quote(instanceId.toString()));
 	}
 
 	public boolean recordTypeExists(UUID instanceId, String recordType) {
@@ -61,7 +61,7 @@ public class RecordDao {
 	}
 
 	private String getQualifiedTableName(String recordType, UUID instanceId) {
-		return "\"" + instanceId.toString() + "\".\"" + recordType + "\"";
+		return quote(instanceId.toString()) + "." + quote(recordType);
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, String tableName) {
@@ -81,21 +81,25 @@ public class RecordDao {
 
 	public void addColumn(UUID instanceId, String tableName, String columnName, DataTypeMapping colType) {
 		namedTemplate.getJdbcTemplate().update("alter table " + getQualifiedTableName(tableName, instanceId)
-				+ " add column \"" + columnName + "\" " + colType.getPostgresType());
+				+ " add column " + quote(columnName) + " " + colType.getPostgresType());
 	}
 
 	public void changeColumn(UUID instanceId, String tableName, String columnName, DataTypeMapping newColType) {
 		namedTemplate.getJdbcTemplate().update("alter table " + getQualifiedTableName(tableName, instanceId)
-				+ " alter column \"" + columnName + "\" TYPE " + newColType.getPostgresType());
+				+ " alter column " + quote(columnName) + " TYPE " + newColType.getPostgresType());
 	}
 
 	private String genColumnDefs(Map<String, DataTypeMapping> tableInfo) {
 		return RECORD_ID.getColumnName() + " text primary key "
 				+ (tableInfo.size() > 0
 						? ", " + tableInfo.entrySet().stream()
-								.map(e -> "\"" + e.getKey() + "\" " + e.getValue().getPostgresType())
+								.map(e -> quote(e.getKey()) + " " + e.getValue().getPostgresType())
 								.collect(Collectors.joining(", "))
 						: "");
+	}
+
+	private String quote(String toQuote){
+		return "\"" + toQuote + "\"";
 	}
 
 	// The expectation is that the record type already matches the schema and
@@ -120,8 +124,8 @@ public class RecordDao {
 	public void addForeignKeyForReference(String recordType, String referencedRecordType, UUID instanceId,
 			String relationColName) throws MissingReferencedTableException {
 		try {
-			String addFk = "alter table " + getQualifiedTableName(recordType, instanceId) + " add foreign key (\""
-					+ relationColName + "\") " + "references "
+			String addFk = "alter table " + getQualifiedTableName(recordType, instanceId) + " add foreign key (" +
+					quote(relationColName) + ") " + "references "
 					+ getQualifiedTableName(referencedRecordType, instanceId);
 			namedTemplate.getJdbcTemplate().execute(addFk);
 		} catch (DataAccessException e) {
@@ -147,7 +151,7 @@ public class RecordDao {
 
 	private String genColUpsertUpdates(List<String> cols) {
 		return cols.stream().filter(c -> !RECORD_ID.getColumnName().equals(c))
-				.map(c -> "\"" + c + "\"" + " = excluded.\"" + c + "\"").collect(Collectors.joining(", "));
+				.map(c -> quote(c) + " = excluded." + quote(c)).collect(Collectors.joining(", "));
 	}
 
 	private List<Object[]> getInsertBatchArgs(List<Record> records, List<RecordColumn> cols) {
@@ -202,7 +206,7 @@ public class RecordDao {
 	}
 
 	private String getInsertColList(List<String> existingTableSchema) {
-		return existingTableSchema.stream().map(col -> "\"" + col + "\"").collect(Collectors.joining(", "));
+		return existingTableSchema.stream().map(this::quote).collect(Collectors.joining(", "));
 	}
 
 	private record RecordRowMapper(String recordType,
@@ -241,18 +245,18 @@ public class RecordDao {
 			}
 		}
 
-	public Record getSingleRecord(UUID instanceId, RecordType recordType, RecordId recordId,
+	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, RecordId recordId,
 			List<Relation> referenceCols) {
 		Map<String, String> refColMapping = new HashMap<>();
 		referenceCols.forEach(rc -> refColMapping.put(rc.relationColName(), rc.relationRecordType().getName()));
 		try {
-			return namedTemplate.queryForObject(
+			return Optional.of(namedTemplate.queryForObject(
 					"select * from " + getQualifiedTableName(recordType.getName(), instanceId) + " where "
 							+ RECORD_ID.getColumnName() + " = :recordId",
 					new MapSqlParameterSource("recordId", recordId.getRecordIdentifier()),
-					new RecordRowMapper(recordType.getName(), refColMapping));
+					new RecordRowMapper(recordType.getName(), refColMapping)));
 		} catch (EmptyResultDataAccessException e) {
-			return null;
+			return Optional.empty();
 		}
 	}
 }

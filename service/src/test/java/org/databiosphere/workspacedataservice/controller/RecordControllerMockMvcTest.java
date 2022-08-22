@@ -68,6 +68,37 @@ public class RecordControllerMockMvcTest {
 	}
 
 	@Test
+	public void ensurePutShowsNewlyNullFields() throws Exception {
+		String recordType1 = "recordType1";
+		createSomeRecords(recordType1, 1);
+		Map<String, Object> newAttributes = new HashMap<>();
+		newAttributes.put("new-attr", "some_val");
+		mockMvc.perform(put("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
+				recordType1, "record_0")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(newAttributes)))))
+				.andExpect(content().string(containsString("\"attr3\":null")))
+				.andExpect(content().string(containsString("\"attr-dt\":null")))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	public void ensurePatchShowsAllFields() throws Exception {
+		String recordType1 = "recordType1";
+		createSomeRecords(recordType1, 1);
+		Map<String, Object> newAttributes = new HashMap<>();
+		newAttributes.put("new-attr", "some_val");
+		mockMvc.perform(patch("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
+						recordType1, "record_0")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(newAttributes)))))
+				.andExpect(content().string(containsString("\"attr3\"")))
+				.andExpect(content().string(containsString("\"attr-dt\"")))
+				.andExpect(content().string(containsString("\"new-attr\":\"some_val\"")))
+				.andExpect(status().isOk());
+	}
+
+	@Test
 	@Transactional
 	public void createAndRetrieveRecord() throws Exception {
 		String recordType = "samples";
