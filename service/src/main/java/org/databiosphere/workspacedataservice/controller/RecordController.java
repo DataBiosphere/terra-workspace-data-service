@@ -179,7 +179,7 @@ public class RecordController {
 			recordDao.batchUpsert(instanceId, recordTypeName, records, requestSchema);
 		} catch (MissingReferencedTableException e) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"It looks like you're attempting to assign a relation " + "to a table that does not exist", e);
+					"It looks like you're attempting to assign a relation to a table that does not exist", e);
 		}
 	}
 

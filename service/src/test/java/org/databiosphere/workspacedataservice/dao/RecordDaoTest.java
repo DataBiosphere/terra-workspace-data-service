@@ -30,7 +30,7 @@ public class RecordDaoTest {
 	RecordType recordType;
 
 	@BeforeEach
-	void setUp() throws MissingReferencedTableException {
+	void setUp() throws MissingReferencedTableException, InvalidRelation {
 		instanceId = UUID.randomUUID();
 		recordType = new RecordType("testRecordType");
 		recordDao.createSchema(instanceId);
