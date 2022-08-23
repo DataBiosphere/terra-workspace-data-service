@@ -18,11 +18,12 @@ dependencies {
 	implementation "org.glassfish.jersey.media:jersey-media-multipart:$jersey_version"
 	implementation "org.glassfish.jersey.media:jersey-media-json-jackson:$jersey_version"
 
-	implementation "com.fasterxml.jackson.core:jackson-core:$jackson_version"
+//	implementation "com.fasterxml.jackson.core:jackson-core:$jackson_version"
 //	implementation "com.fasterxml.jackson.core:jackson-annotations:$jackson_version"
-	implementation "com.fasterxml.jackson.core:jackson-databind:$jackson_version"
+//	implementation "com.fasterxml.jackson.core:jackson-databind:$jackson_version"
 	implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jackson_version"
 
+	// jackson-databind-nullable infers jackson-databind, jackson-annotations, jackson-core
 	implementation "org.openapitools:jackson-databind-nullable:0.2.3"
 
 
