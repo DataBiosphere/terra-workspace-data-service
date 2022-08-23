@@ -24,9 +24,9 @@ openApiGenerate {
 	inputSpec = "$rootDir//service/src/main/resources/static/swagger/openapi-docs.yaml".toString()
 	generatorName = 'java'
 	library = 'jersey2'
-	invokerPackage = '${artifactGroup}.client'
-	modelPackage = '${artifactGroup}.model'
-	apiPackage = '${artifactGroup}.api'
+	invokerPackage = "${artifactGroup}.client".toString()
+	modelPackage = "${artifactGroup}.model".toString()
+	apiPackage = "${artifactGroup}.api".toString()
 	ignoreFileOverride = '${projectDir}/.swagger-codegen-ignore'
 	// we may want to generate tests or doc later ...
 	generateModelTests = false
