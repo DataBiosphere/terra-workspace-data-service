@@ -45,7 +45,7 @@ public class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	public void createInstanceAndTryToCreateAgain() throws Exception {
+	void createInstanceAndTryToCreateAgain() throws Exception {
 		UUID uuid = UUID.randomUUID();
 		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isCreated());
 		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isConflict());
@@ -53,14 +53,14 @@ public class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	public void tryFetchingMissingRecordType() throws Exception {
+	void tryFetchingMissingRecordType() throws Exception {
 		mockMvc.perform(get("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				"missing", "missing-2")).andExpect(status().isNotFound());
 	}
 
 	@Test
 	@Transactional
-	public void tryFetchingMissingRecord() throws Exception {
+	void tryFetchingMissingRecord() throws Exception {
 		String recordType1 = "recordType1";
 		createSomeRecords(recordType1, 1);
 		mockMvc.perform(get("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
@@ -68,7 +68,7 @@ public class RecordControllerMockMvcTest {
 	}
 
 	@Test
-	public void ensurePutShowsNewlyNullFields() throws Exception {
+	void ensurePutShowsNewlyNullFields() throws Exception {
 		String recordType1 = "recordType1";
 		createSomeRecords(recordType1, 1);
 		Map<String, Object> newAttributes = new HashMap<>();
@@ -83,7 +83,7 @@ public class RecordControllerMockMvcTest {
 	}
 
 	@Test
-	public void ensurePatchShowsAllFields() throws Exception {
+	void ensurePatchShowsAllFields() throws Exception {
 		String recordType1 = "recordType1";
 		createSomeRecords(recordType1, 1);
 		Map<String, Object> newAttributes = new HashMap<>();
@@ -100,7 +100,7 @@ public class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	public void createAndRetrieveRecord() throws Exception {
+	void createAndRetrieveRecord() throws Exception {
 		String recordType = "samples";
 		createSomeRecords(recordType, 1);
 		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
@@ -109,7 +109,7 @@ public class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	public void createRecordWithReferences() throws Exception {
+	void createRecordWithReferences() throws Exception {
 		String referencedType = "ref_participants";
 		String referringType = "ref_samples";
 		createSomeRecords(referencedType, 3);
@@ -125,7 +125,7 @@ public class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	public void referencingMissingTableFails() throws Exception {
+	void referencingMissingTableFails() throws Exception {
 		String referencedType = "missing";
 		String referringType = "ref_samples-2";
 		createSomeRecords(referringType, 1);
@@ -141,7 +141,7 @@ public class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	public void referencingMissingRecordFails() throws Exception {
+	void referencingMissingRecordFails() throws Exception {
 		String referencedType = "ref_participants-2";
 		String referringType = "ref_samples-3";
 		createSomeRecords(referencedType, 3);
@@ -158,7 +158,7 @@ public class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	public void expandColumnDefForNewData() throws Exception {
+	void expandColumnDefForNewData() throws Exception {
 		String recordType = "to-alter";
 		createSomeRecords(recordType, 1);
 		Map<String, Object> attributes = new HashMap<>();
@@ -171,7 +171,7 @@ public class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	public void patchMissingRecord() throws Exception {
+	void patchMissingRecord() throws Exception {
 		String recordType = "to-patch";
 		createSomeRecords(recordType, 1);
 		Map<String, Object> attributes = new HashMap<>();
@@ -186,7 +186,7 @@ public class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	public void putRecordWithMissingTableReference() throws Exception {
+	void putRecordWithMissingTableReference() throws Exception {
 		String recordType = "record-type-missing-table-ref";
 		String recordId = "record_0";
 		Map<String, Object> attributes = new HashMap<>();
@@ -194,7 +194,7 @@ public class RecordControllerMockMvcTest {
 		attributes.put("sample-ref", ref);
 
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				recordType, recordId)
+						recordType, recordId)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isBadRequest())
@@ -203,7 +203,7 @@ public class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	public void tryToAssignReferenceToNonRefColumn() throws Exception {
+	void tryToAssignReferenceToNonRefColumn() throws Exception {
 		String recordType = "ref-alter";
 		createSomeRecords(recordType, 1);
 		Map<String, Object> attributes = new HashMap<>();

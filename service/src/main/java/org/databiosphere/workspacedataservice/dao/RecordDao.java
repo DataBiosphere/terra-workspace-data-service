@@ -55,7 +55,7 @@ public class RecordDao {
 		try {
 			namedTemplate.getJdbcTemplate()
 					.update("create table " + getQualifiedTableName(tableName, instanceId) + "( " + columnDefs +
-							(relations.size() > 0 ? ", " + getFkSql(relations) : "") + ")");
+							(!relations.isEmpty() ? ", " + getFkSql(relations) : "") + ")");
 		} catch (DataAccessException e) {
 			convertToInvalidRelationEx(e);
 		}
@@ -118,14 +118,12 @@ public class RecordDao {
 	}
 
 	private static void convertToInvalidRelationEx(DataAccessException e) throws InvalidRelation {
-		if (e.getRootCause() instanceof SQLException sqlEx) {
-			if (sqlEx.getSQLState() != null) {
-				if(sqlEx.getSQLState().equals("23503")){
-					throw new InvalidRelation("It looks like you're trying to reference a record that does not exist.");
-				}
-				if(sqlEx.getSQLState().equals("42P01")){
-					throw new InvalidRelation("It looks like you're trying to assign a relation to a table that does not exist.");
-				}
+		if (e.getRootCause() instanceof SQLException sqlEx && sqlEx.getSQLState() != null) {
+			if (sqlEx.getSQLState().equals("23503")) {
+				throw new InvalidRelation("It looks like you're trying to reference a record that does not exist.");
+			}
+			if (sqlEx.getSQLState().equals("42P01")) {
+				throw new InvalidRelation("It looks like you're trying to assign a relation to a table that does not exist.");
 			}
 		}
 		throw e;
