@@ -39,7 +39,7 @@ public class RecordDao {
 	}
 
 	public void createSchema(UUID instanceId) {
-		namedTemplate.getJdbcTemplate().update("create schema \"" + instanceId.toString() + "\"");
+		namedTemplate.getJdbcTemplate().update("create schema " + quote(instanceId.toString()));
 	}
 
 	public boolean recordTypeExists(UUID instanceId, String recordType) {
@@ -50,18 +50,22 @@ public class RecordDao {
 	}
 
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, String tableName,
-			Set<Relation> relations) throws MissingReferencedTableException {
+			Set<Relation> relations) throws MissingReferencedTableException, InvalidRelation {
 		String columnDefs = genColumnDefs(tableInfo);
-		namedTemplate.getJdbcTemplate()
-				.update("create table " + getQualifiedTableName(tableName, instanceId) + "( " + columnDefs + ")");
-		for (Relation relation : relations) {
-			addForeignKeyForReference(tableName, relation.relationRecordType().getName(), instanceId,
-					relation.relationColName());
+		try {
+			namedTemplate.getJdbcTemplate()
+					.update("create table " + getQualifiedTableName(tableName, instanceId) + "( " + columnDefs +
+							(!relations.isEmpty() ? ", " + getFkSql(relations) : "") + ")");
+		} catch (DataAccessException e) {
+			if (e.getRootCause() instanceof SQLException sqlEx) {
+				checkForMissingTable(sqlEx);
+			}
+			throw e;
 		}
 	}
 
 	private String getQualifiedTableName(String recordType, UUID instanceId) {
-		return "\"" + instanceId.toString() + "\".\"" + recordType + "\"";
+		return quote(instanceId.toString()) + "." + quote(recordType);
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, String tableName) {
@@ -81,21 +85,25 @@ public class RecordDao {
 
 	public void addColumn(UUID instanceId, String tableName, String columnName, DataTypeMapping colType) {
 		namedTemplate.getJdbcTemplate().update("alter table " + getQualifiedTableName(tableName, instanceId)
-				+ " add column \"" + columnName + "\" " + colType.getPostgresType());
+				+ " add column " + quote(columnName) + " " + colType.getPostgresType());
 	}
 
 	public void changeColumn(UUID instanceId, String tableName, String columnName, DataTypeMapping newColType) {
 		namedTemplate.getJdbcTemplate().update("alter table " + getQualifiedTableName(tableName, instanceId)
-				+ " alter column \"" + columnName + "\" TYPE " + newColType.getPostgresType());
+				+ " alter column " + quote(columnName) + " TYPE " + newColType.getPostgresType());
 	}
 
 	private String genColumnDefs(Map<String, DataTypeMapping> tableInfo) {
-		return RECORD_ID.getColumnName() + " text primary key "
+		return RECORD_ID.getColumnName() + " text primary key"
 				+ (tableInfo.size() > 0
 						? ", " + tableInfo.entrySet().stream()
-								.map(e -> "\"" + e.getKey() + "\" " + e.getValue().getPostgresType())
+								.map(e -> quote(e.getKey()) + " " + e.getValue().getPostgresType())
 								.collect(Collectors.joining(", "))
 						: "");
+	}
+
+	private String quote(String toQuote){
+		return "\"" + toQuote + "\"";
 	}
 
 	// The expectation is that the record type already matches the schema and
@@ -108,31 +116,46 @@ public class RecordDao {
 			namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(instanceId, recordType, schemaAsList),
 					getInsertBatchArgs(records, schemaAsList));
 		} catch (DataAccessException e) {
-			if (e.getRootCause()instanceof SQLException sqlEx) {
-				if (sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")) {
-					throw new InvalidRelation("It looks like you're trying to reference a record that does not exist.");
-				}
+			if (e.getRootCause() instanceof SQLException sqlEx){
+				checkForMissingRecord(sqlEx);
+				throw e;
+			}
+		}
+	}
+
+
+	public void addForeignKeyForReference(String recordType, String referencedRecordType, UUID instanceId,
+										  String relationColName) throws MissingReferencedTableException {
+		try {
+			String addFk = "alter table " + getQualifiedTableName(recordType, instanceId) + " add foreign key (" +
+					quote(relationColName) + ") " + "references "
+					+ getQualifiedTableName(referencedRecordType, instanceId);
+			namedTemplate.getJdbcTemplate().execute(addFk);
+		} catch (DataAccessException e) {
+			if (e.getRootCause() instanceof SQLException sqlEx) {
+				checkForMissingTable(sqlEx);
 			}
 			throw e;
 		}
 	}
 
-	public void addForeignKeyForReference(String recordType, String referencedRecordType, UUID instanceId,
-			String relationColName) throws MissingReferencedTableException {
-		try {
-			String addFk = "alter table " + getQualifiedTableName(recordType, instanceId) + " add foreign key (\""
-					+ relationColName + "\") " + "references "
-					+ getQualifiedTableName(referencedRecordType, instanceId);
-			namedTemplate.getJdbcTemplate().execute(addFk);
-		} catch (DataAccessException e) {
-			if (e.getRootCause() instanceof SQLException) {
-				SQLException sqlEx = (SQLException) e.getRootCause();
-				if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("42P01")) {
-					throw new MissingReferencedTableException();
-				}
-				throw e;
-			}
+	private void checkForMissingTable(SQLException sqlEx) throws MissingReferencedTableException {
+		if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("42P01")) {
+			throw new MissingReferencedTableException();
 		}
+	}
+
+	private void checkForMissingRecord(SQLException sqlEx) throws InvalidRelation {
+		if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")) {
+			throw new InvalidRelation("It looks like you're trying to reference a record that does not exist.");
+		}
+	}
+
+
+
+	public String getFkSql(Set<Relation> relations) {
+		return relations.stream().map(r -> "constraint " + quote("fk_" + r.relationColName()) + " foreign key (" + quote(r.relationColName()) + ") references "
+				+ r.relationRecordType().getName() + "(" + RECORD_ID.getColumnName() + ")").collect(Collectors.joining(", \n"));
 	}
 
 	public List<Relation> getRelationCols(UUID instanceId, String tableName) {
@@ -147,7 +170,7 @@ public class RecordDao {
 
 	private String genColUpsertUpdates(List<String> cols) {
 		return cols.stream().filter(c -> !RECORD_ID.getColumnName().equals(c))
-				.map(c -> "\"" + c + "\"" + " = excluded.\"" + c + "\"").collect(Collectors.joining(", "));
+				.map(c -> quote(c) + " = excluded." + quote(c)).collect(Collectors.joining(", "));
 	}
 
 	private List<Object[]> getInsertBatchArgs(List<Record> records, List<RecordColumn> cols) {
@@ -202,7 +225,7 @@ public class RecordDao {
 	}
 
 	private String getInsertColList(List<String> existingTableSchema) {
-		return existingTableSchema.stream().map(col -> "\"" + col + "\"").collect(Collectors.joining(", "));
+		return existingTableSchema.stream().map(this::quote).collect(Collectors.joining(", "));
 	}
 
 	private record RecordRowMapper(String recordType,
@@ -220,8 +243,8 @@ public class RecordDao {
 					Map<String, Object> attributes = new HashMap<>();
 					Set<String> systemCols = Arrays.stream(SystemColumn.values()).map(SystemColumn::getColumnName)
 							.collect(Collectors.toSet());
-					for (int j = 0; j < metaData.getColumnCount(); j++) {
-						String columnName = metaData.getColumnName(j + 1);
+					for (int j = 1; j <= metaData.getColumnCount(); j++) {
+						String columnName = metaData.getColumnName(j);
 						if (systemCols.contains(columnName)) {
 							continue;
 						}
@@ -241,18 +264,18 @@ public class RecordDao {
 			}
 		}
 
-	public Record getSingleRecord(UUID instanceId, RecordType recordType, RecordId recordId,
+	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, RecordId recordId,
 			List<Relation> referenceCols) {
 		Map<String, String> refColMapping = new HashMap<>();
 		referenceCols.forEach(rc -> refColMapping.put(rc.relationColName(), rc.relationRecordType().getName()));
 		try {
-			return namedTemplate.queryForObject(
+			return Optional.ofNullable(namedTemplate.queryForObject(
 					"select * from " + getQualifiedTableName(recordType.getName(), instanceId) + " where "
 							+ RECORD_ID.getColumnName() + " = :recordId",
 					new MapSqlParameterSource("recordId", recordId.getRecordIdentifier()),
-					new RecordRowMapper(recordType.getName(), refColMapping));
+					new RecordRowMapper(recordType.getName(), refColMapping)));
 		} catch (EmptyResultDataAccessException e) {
-			return null;
+			return Optional.empty();
 		}
 	}
 }
