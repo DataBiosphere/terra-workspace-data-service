@@ -57,7 +57,10 @@ public class RecordDao {
 					.update("create table " + getQualifiedTableName(tableName, instanceId) + "( " + columnDefs +
 							(!relations.isEmpty() ? ", " + getFkSql(relations) : "") + ")");
 		} catch (DataAccessException e) {
-			convertToInvalidRelationEx(e);
+			if (e.getRootCause() instanceof SQLException sqlEx) {
+				checkForMissingTable(sqlEx);
+			}
+			throw e;
 		}
 	}
 
@@ -113,21 +116,13 @@ public class RecordDao {
 			namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(instanceId, recordType, schemaAsList),
 					getInsertBatchArgs(records, schemaAsList));
 		} catch (DataAccessException e) {
-			convertToInvalidRelationEx(e);
+			if (e.getRootCause() instanceof SQLException sqlEx){
+				checkForMissingRecord(sqlEx);
+				throw e;
+			}
 		}
 	}
 
-	private static void convertToInvalidRelationEx(DataAccessException e) throws InvalidRelation {
-		if (e.getRootCause() instanceof SQLException sqlEx && sqlEx.getSQLState() != null) {
-			if (sqlEx.getSQLState().equals("23503")) {
-				throw new InvalidRelation("It looks like you're trying to reference a record that does not exist.");
-			}
-			if (sqlEx.getSQLState().equals("42P01")) {
-				throw new InvalidRelation("It looks like you're trying to assign a relation to a table that does not exist.");
-			}
-		}
-		throw e;
-	}
 
 	public void addForeignKeyForReference(String recordType, String referencedRecordType, UUID instanceId,
 										  String relationColName) throws MissingReferencedTableException {
@@ -137,15 +132,25 @@ public class RecordDao {
 					+ getQualifiedTableName(referencedRecordType, instanceId);
 			namedTemplate.getJdbcTemplate().execute(addFk);
 		} catch (DataAccessException e) {
-			if (e.getRootCause() instanceof SQLException) {
-				SQLException sqlEx = (SQLException) e.getRootCause();
-				if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("42P01")) {
-					throw new MissingReferencedTableException();
-				}
-				throw e;
+			if (e.getRootCause() instanceof SQLException sqlEx) {
+				checkForMissingTable(sqlEx);
 			}
+			throw e;
 		}
 	}
+
+	private void checkForMissingTable(SQLException sqlEx) throws MissingReferencedTableException {
+		if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("42P01")) {
+			throw new MissingReferencedTableException();
+		}
+	}
+
+	private void checkForMissingRecord(SQLException sqlEx) throws InvalidRelation {
+		if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")) {
+			throw new InvalidRelation("It looks like you're trying to reference a record that does not exist.");
+		}
+	}
+
 
 
 	public String getFkSql(Set<Relation> relations) {
