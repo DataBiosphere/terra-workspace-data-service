@@ -1,6 +1,16 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import static org.databiosphere.workspacedataservice.service.model.SystemColumn.RECORD_ID;
+import org.databiosphere.workspacedataservice.service.RelationUtils;
+import org.databiosphere.workspacedataservice.service.model.*;
+import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.shared.model.*;
+import org.postgresql.util.PGobject;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -10,20 +20,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
-import org.databiosphere.workspacedataservice.service.DataTypeInferer;
-import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.model.*;
-import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
-import org.databiosphere.workspacedataservice.shared.model.RecordId;
-import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.postgresql.util.PGobject;
-import org.springframework.dao.DataAccessException;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.stereotype.Repository;
+
+import static org.databiosphere.workspacedataservice.service.model.SystemColumn.RECORD_ID;
 
 @Repository
 public class RecordDao {
@@ -103,12 +101,12 @@ public class RecordDao {
 	// The expectation is that the record type already matches the schema and
 	// attributes given, as
 	// that's dealt with earlier in the code.
-	public void batchUpsert(UUID instanceId, String recordType, List<Record> records,
-			LinkedHashMap<String, DataTypeMapping> schema) throws InvalidRelation {
+	public void batchUpsert(UUID instanceId, String recordType, List<Record> records, Map<String, DataTypeMapping> schema) throws InvalidRelation {
 		schema.put(RECORD_ID.getColumnName(), DataTypeMapping.STRING);
+		List<RecordColumn> schemaAsList = schema.entrySet().stream().map(e -> new RecordColumn(e.getKey(), e.getValue())).toList();
 		try {
-			namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(instanceId, recordType, schema),
-					getInsertBatchArgs(records, schema.keySet()));
+			namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(instanceId, recordType, schemaAsList),
+					getInsertBatchArgs(records, schemaAsList));
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				if (sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")) {
@@ -147,113 +145,101 @@ public class RecordDao {
 				(rs, rowNum) -> new Relation(rs.getString("column_name"), new RecordType(rs.getString("table_name"))));
 	}
 
-	private String genColUpsertUpdates(Set<String> cols) {
+	private String genColUpsertUpdates(List<String> cols) {
 		return cols.stream().filter(c -> !RECORD_ID.getColumnName().equals(c))
 				.map(c -> "\"" + c + "\"" + " = excluded.\"" + c + "\"").collect(Collectors.joining(", "));
 	}
 
-	private List<Object[]> getInsertBatchArgs(List<Record> records, Set<String> colNames) {
-		List<Object[]> result = new ArrayList<>();
-		for (Record record : records) {
-			result.add(getInsertArgs(record, colNames));
-		}
-		return result;
+	private List<Object[]> getInsertBatchArgs(List<Record> records, List<RecordColumn> cols) {
+		return records.stream().map(r -> getInsertArgs(r, cols)).toList();
 	}
 
-	private Object getValueForSql(Object attVal) {
+	private Object getValueForSql(Object attVal, DataTypeMapping typeMapping) {
+		if(Objects.isNull(attVal)){
+			return null;
+		}
 		if (RelationUtils.isRelationValue(attVal)) {
 			return RelationUtils.getRelationValue(attVal);
 		}
-		DataTypeInferer inferer = new DataTypeInferer();
 
-		DataTypeMapping dataTypeMapping = inferer.inferType(attVal);
-
-		switch (dataTypeMapping) {
-			case DATE -> {
-				return LocalDate.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
-			}
-			case DATE_TIME -> {
-				return LocalDateTime.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-			}
+		if (typeMapping == DataTypeMapping.DATE) {
+			return LocalDate.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
+		} else if (typeMapping == DataTypeMapping.DATE_TIME) {
+			return LocalDateTime.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 		}
+
 		return attVal;
 	}
 
-	private Object[] getInsertArgs(Record record, Set<String> colNames) {
-		Object[] row = new Object[colNames.size()];
+	private Object[] getInsertArgs(Record toInsert, List<RecordColumn> cols) {
+		Object[] row = new Object[cols.size()];
 		int i = 0;
-		for (String col : colNames) {
-			if (col.equals(RECORD_ID.getColumnName())) {
-				row[i++] = record.getId().getRecordIdentifier();
+		for (RecordColumn col : cols) {
+			String colName = col.colName();
+			if (colName.equals(RECORD_ID.getColumnName())) {
+				row[i++] = toInsert.getId().getRecordIdentifier();
 			} else {
-				Object attVal = record.getAttributes().getAttributes().get(col);
-				row[i++] = getValueForSql(attVal);
+				row[i++] = getValueForSql(toInsert.getAttributes().getAttributes().get(colName), col.typeMapping());
 			}
 		}
 		return row;
 	}
 
-	private String genInsertStatement(UUID instanceId, String recordType,
-			LinkedHashMap<String, DataTypeMapping> schema) {
-		return "insert into " + getQualifiedTableName(recordType, instanceId) + "(" + getInsertColList(schema.keySet())
-				+ ") values (" + getInsertParamList(schema.values()) + ") " + "on conflict ("
+	private String genInsertStatement(UUID instanceId, String recordType, List<RecordColumn> schema) {
+		List<String> colNames = schema.stream().map(RecordColumn::colName).toList();
+		List<DataTypeMapping> colTypes = schema.stream().map(RecordColumn::typeMapping).toList();
+		return "insert into " + getQualifiedTableName(recordType, instanceId) + "(" + getInsertColList(colNames)
+				+ ") values (" + getInsertParamList(colTypes) + ") " + "on conflict ("
 				+ RECORD_ID.getColumnName() + ") "
-				+ (schema.keySet().size() == 1
+				+ (schema.size() == 1
 						? "do nothing"
-						: "do update set " + genColUpsertUpdates(schema.keySet()));
+						: "do update set " + genColUpsertUpdates(colNames));
 	}
 
-	private String getInsertParamList(Collection<DataTypeMapping> existingTableSchema) {
-		return existingTableSchema.stream().map(m -> m.getPostgresType().equalsIgnoreCase("jsonb") ? "? :: jsonb" : "?")
+	private String getInsertParamList(List<DataTypeMapping> colTypes) {
+		return colTypes.stream().map(type -> type.getPostgresType().equalsIgnoreCase("jsonb") ? "? :: jsonb" : "?")
 				.collect(Collectors.joining(", "));
 	}
 
-	private String getInsertColList(Set<String> existingTableSchema) {
+	private String getInsertColList(List<String> existingTableSchema) {
 		return existingTableSchema.stream().map(col -> "\"" + col + "\"").collect(Collectors.joining(", "));
 	}
 
-	private class RecordRowMapper implements RowMapper<Record> {
-		private final String recordType;
-
-		private final Map<String, String> referenceColToTable;
-
-		private RecordRowMapper(String recordType, Map<String, String> referenceColToTable) {
-			this.recordType = recordType;
-			this.referenceColToTable = referenceColToTable;
-		}
+	private record RecordRowMapper(String recordType,
+								   Map<String, String> referenceColToTable) implements RowMapper<Record> {
 
 		@Override
-		public Record mapRow(ResultSet rs, int rowNum) throws SQLException {
-			return new Record(new RecordId(rs.getString(RECORD_ID.getColumnName())), new RecordType(recordType),
-					new RecordAttributes(getAttributes(rs)));
-		}
+			public Record mapRow(ResultSet rs, int rowNum) throws SQLException {
+				return new Record(new RecordId(rs.getString(RECORD_ID.getColumnName())), new RecordType(recordType),
+						new RecordAttributes(getAttributes(rs)));
+			}
 
-		private Map<String, Object> getAttributes(ResultSet rs) {
-			try {
-				ResultSetMetaData metaData = rs.getMetaData();
-				Map<String, Object> attributes = new HashMap<>();
-				Set<String> systemCols = Arrays.stream(SystemColumn.values()).map(SystemColumn::getColumnName)
-						.collect(Collectors.toSet());
-				for (int j = 0; j < metaData.getColumnCount(); j++) {
-					String columnName = metaData.getColumnName(j + 1);
-					if (systemCols.contains(columnName)) {
-						continue;
+			private Map<String, Object> getAttributes(ResultSet rs) {
+				try {
+					ResultSetMetaData metaData = rs.getMetaData();
+					Map<String, Object> attributes = new HashMap<>();
+					Set<String> systemCols = Arrays.stream(SystemColumn.values()).map(SystemColumn::getColumnName)
+							.collect(Collectors.toSet());
+					for (int j = 0; j < metaData.getColumnCount(); j++) {
+						String columnName = metaData.getColumnName(j + 1);
+						if (systemCols.contains(columnName)) {
+							continue;
+						}
+						if (referenceColToTable.size() > 0 && referenceColToTable.containsKey(columnName)) {
+							attributes.put(columnName, RelationUtils
+									.createRelationString(referenceColToTable.get(columnName), rs.getString(columnName)));
+						} else {
+							Object object = rs.getObject(columnName);
+							attributes.put(columnName,
+									object instanceof PGobject ? ((PGobject) object).getValue() : object);
+						}
 					}
-					if (referenceColToTable.size() > 0 && referenceColToTable.containsKey(columnName)) {
-						attributes.put(columnName, RelationUtils
-								.createRelationString(referenceColToTable.get(columnName), rs.getString(columnName)));
-					} else {
-						Object object = rs.getObject(columnName);
-						attributes.put(columnName,
-								object instanceof PGobject ? ((PGobject) object).getValue() : object);
-					}
+					return attributes;
+				} catch (SQLException e) {
+					throw new RuntimeException(e);
 				}
-				return attributes;
-			} catch (SQLException e) {
-				throw new RuntimeException(e);
 			}
 		}
-	}
 
 	public Record getSingleRecord(UUID instanceId, RecordType recordType, RecordId recordId,
 			List<Relation> referenceCols) {

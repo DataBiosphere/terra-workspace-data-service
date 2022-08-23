@@ -44,7 +44,7 @@ public class RecordDaoTest {
 		RecordId recordId = new RecordId("testRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
 		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord),
-				new LinkedHashMap<>());
+				new HashMap<>());
 
 		// make sure record is fetched
 		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId, Collections.emptyList());
@@ -65,7 +65,7 @@ public class RecordDaoTest {
 		RecordId recordId = new RecordId("testRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
 		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord),
-				new LinkedHashMap<>());
+				new HashMap<>());
 
 		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId, Collections.emptyList());
 		assertEquals(testRecord, search, "Created record should match entered record");
@@ -74,7 +74,7 @@ public class RecordDaoTest {
 		RecordId attrId = new RecordId("recordWithAttr");
 		Record recordWithAttr = new Record(attrId, recordType, new RecordAttributes(Map.of("foo", "bar")));
 		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(recordWithAttr),
-				new LinkedHashMap<>(Map.of("foo", DataTypeMapping.STRING)));
+				new HashMap<>(Map.of("foo", DataTypeMapping.STRING)));
 
 		search = recordDao.getSingleRecord(instanceId, recordType, attrId, Collections.emptyList());
 		assertEquals(recordWithAttr, search, "Created record with attributes should match entered record");
@@ -93,13 +93,13 @@ public class RecordDaoTest {
 		RecordId refRecordId = new RecordId("referencedRecord");
 		Record referencedRecord = new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
 		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(referencedRecord),
-				new LinkedHashMap<>());
+				new HashMap<>());
 
 		RecordId recordId = new RecordId("testRecord");
 		String reference = RelationUtils.createRelationString("testRecordType", "referencedRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(Map.of("testRecordType", reference)));
 		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord),
-				new LinkedHashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.STRING)));
+				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.STRING)));
 
 		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId,
 				recordDao.getRelationCols(instanceId, recordType.getName()));
