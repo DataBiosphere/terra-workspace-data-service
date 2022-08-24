@@ -50,7 +50,7 @@ public class RecordControllerMockMvcTest {
 		UUID uuid = UUID.randomUUID();
 		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isCreated());
 		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isConflict()).
-				andExpect(result -> assertEquals(result.getResponse().getErrorMessage(), "This schema already exists"));
+				andExpect(result -> assertEquals("This schema already exists", result.getResponse().getErrorMessage()));
 	}
 
 	@Test
