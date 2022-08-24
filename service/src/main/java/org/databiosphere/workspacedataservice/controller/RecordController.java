@@ -159,7 +159,9 @@ public class RecordController {
 	}
 
 	private static void validateVersion(String version) {
-		Preconditions.checkArgument(version.equals("v0.2"));
+		if(null == version || !version.equals("v0.2")){
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid API version specified");
+		}
 	}
 
 	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, String recordTypeName,

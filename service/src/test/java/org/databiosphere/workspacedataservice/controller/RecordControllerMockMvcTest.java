@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -236,15 +237,7 @@ public class RecordControllerMockMvcTest {
 	private void createSomeRecords(String recordType, int numRecords) throws Exception {
 		for (int i = 0; i < numRecords; i++) {
 			String recordId = "record_" + i;
-			Map<String, Object> attributes = new HashMap<>();
-			attributes.put("attr1", RandomStringUtils.randomAlphabetic(6));
-			attributes.put("attr2", RandomUtils.nextFloat());
-			attributes.put("attr3", "2022-11-01");
-			attributes.put("attr4", RandomStringUtils.randomNumeric(5));
-			attributes.put("attr5", RandomUtils.nextLong());
-			attributes.put("attr-dt", "2022-03-01T12:00:03");
-			attributes.put("attr-json", "{\"foo\":\"bar\"}");
-			attributes.put("attr-boolean", true);
+			Map<String, Object> attributes = generateRandomAttributes();
 			mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 					recordType, recordId)
 							.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))

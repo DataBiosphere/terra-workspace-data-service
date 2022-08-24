@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -21,18 +22,22 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 
+/**
+ * This test spins up a web server and the full Spring Boot web stack.  It was necessary
+ * to add it in order to test error handling since MockMvc doesn't match full Spring Boot error handling:
+ * https://github.com/spring-projects/spring-framework/issues/17290
+ * As a result, this test suite is currently focused on validating expected error handling
+ */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class RecordControllerExceptionTest {
+class FullStackRecordControllerTest {
     @Autowired
     private TestRestTemplate restTemplate;
     private static HttpHeaders headers;
     private static UUID instanceId;
-
-    private static String versionId = "v0.2";
-
+    private static final String versionId = "v0.2";
     private final ObjectMapper mapper = new ObjectMapper();
-
     @BeforeAll
     static void setUp() {
         headers = new HttpHeaders();
@@ -41,6 +46,7 @@ class RecordControllerExceptionTest {
     }
 
     @Test
+    @Transactional
     void missingReferencedRecordTypeShouldFail() throws JsonProcessingException {
         Map<String, Object> attrs = new HashMap<>();
         attrs.put("attr_ref", RelationUtils.createRelationString("non_existent", "recordId"));
@@ -54,6 +60,7 @@ class RecordControllerExceptionTest {
     }
 
     @Test
+    @Transactional
     void referencingMissingRecordShouldFail() throws Exception {
         Map<String, Object> attrs = new HashMap<>();
         String referencedRecordType = "referenced-type";
@@ -69,32 +76,26 @@ class RecordControllerExceptionTest {
 
 
     @Test
+    @Transactional
     void retrievingMissingEntityShouldFail() throws Exception {
         createSomeRecords("samples", 1);
         HttpEntity<String> requestEntity = new HttpEntity<>(headers);
         ResponseEntity<LinkedHashMap> response = restTemplate.exchange("/{instanceId}/records/{version}/{recordType}/{recordId}",
                 HttpMethod.GET, requestEntity, LinkedHashMap.class, instanceId, versionId, "samples", "sample_1");
         LinkedHashMap responseContent = response.getBody();
-        assertThat(responseContent.get("message")).isEqualTo("Record not found");
+        assertThat(responseContent).containsEntry("message", "Record not found");
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     private void createSomeRecords(String recordType, int numRecords) throws Exception {
         for (int i = 0; i < numRecords; i++) {
             String recordId = "record_" + i;
-            Map<String, Object> attributes = new HashMap<>();
-            attributes.put("attr1", RandomStringUtils.randomAlphabetic(6));
-            attributes.put("attr2", RandomUtils.nextFloat());
-            attributes.put("attr3", "2022-11-01");
-            attributes.put("attr4", RandomStringUtils.randomNumeric(5));
-            attributes.put("attr5", RandomUtils.nextLong());
-            attributes.put("attr-dt", "2022-03-01T12:00:03");
-            attributes.put("attr-json", "{\"foo\":\"bar\"}");
-            attributes.put("attr-boolean", true);
+            Map<String, Object> attributes = generateRandomAttributes();
             ResponseEntity<String> response = restTemplate.exchange("/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT,
                     new HttpEntity<>(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))), headers), String.class, instanceId, versionId,
                     recordType, recordId);
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         }
     }
+
 }
