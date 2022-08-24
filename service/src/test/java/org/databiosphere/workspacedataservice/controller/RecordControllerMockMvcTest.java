@@ -79,7 +79,7 @@ public class RecordControllerMockMvcTest {
 						recordType1, "record_0")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(illegalAttribute)))))
-				.andExpect(status().isConflict())
+				.andExpect(status().isBadRequest())
 				.andExpect(result -> assertEquals("Attribute names can't begin with sys_", result.getResponse().getErrorMessage()));
 	}
 	@Test
@@ -229,7 +229,7 @@ public class RecordControllerMockMvcTest {
 				recordType, "record_0")
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
-				.andExpect(status().isConflict())
+				.andExpect(status().isBadRequest())
 				.andExpect(result -> assertTrue(result.getResolvedException().getMessage()
 						.contains("relation to an existing column that was not configured for relations")));
 	}

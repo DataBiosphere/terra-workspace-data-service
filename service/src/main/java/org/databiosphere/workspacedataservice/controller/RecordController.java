@@ -62,7 +62,7 @@ public class RecordController {
 		MapDifference<String, DataTypeMapping> difference = Maps.difference(existingTableSchema, schema);
 		Map<String, DataTypeMapping> colsToAdd = difference.entriesOnlyOnRight();
 		colsToAdd.keySet().stream().filter(s -> s.startsWith(RESERVED_NAME_PREFIX)).findAny().ifPresent(s -> {
-			throw new ResponseStatusException(HttpStatus.CONFLICT, "Attribute names can't begin with " + RESERVED_NAME_PREFIX);
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Attribute names can't begin with " + RESERVED_NAME_PREFIX);
 		});
 		Set<Relation> relations = RelationUtils.findRelations(records);
 		Map<String, List<Relation>> newRefCols = relations.stream()
@@ -81,7 +81,7 @@ public class RecordController {
 		}
 		if (!recordDao.getRelationCols(instanceId, recordType).stream().map(Relation::relationColName)
 				.collect(Collectors.toSet()).containsAll(newRefCols.keySet())) {
-			throw new ResponseStatusException(HttpStatus.CONFLICT,
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"It looks like you're attempting to assign a relation "
 							+ "to an existing column that was not configured for relations");
 		}

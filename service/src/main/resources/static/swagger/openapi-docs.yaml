@@ -105,6 +105,12 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        400:
+          description: Bad request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       deprecated: true
       summary: Delete record (pending)
@@ -603,6 +609,10 @@ components:
     ErrorResponse:
       required:
         - status
+        - path
+        - message
+        - error
+        - timestamp
       type: object
       properties:
         status:
@@ -622,6 +632,9 @@ components:
         path:
           type: string
           description: requested record path
+        timestamp:
+          type: string
+          description: time of error
       description: ""
     RequestBodySearch:
       required:

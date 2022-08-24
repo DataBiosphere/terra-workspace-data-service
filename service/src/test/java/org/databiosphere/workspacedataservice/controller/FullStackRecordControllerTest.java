@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.in;
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 
 /**
@@ -85,6 +86,14 @@ class FullStackRecordControllerTest {
         LinkedHashMap responseContent = response.getBody();
         assertThat(responseContent).containsEntry("message", "Record not found");
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void invalidApiVersionShouldFail(){
+        ResponseEntity<LinkedHashMap> response = restTemplate.exchange("/{instanceId}/records/{version}/{recordType}/{recordId}",
+                HttpMethod.GET, new HttpEntity<>(headers), LinkedHashMap.class, instanceId, "garbage", "type", "id");
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).containsEntry("message", "Invalid API version specified");
     }
 
     private void createSomeRecords(String recordType, int numRecords) throws Exception {
