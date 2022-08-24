@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,6 +68,19 @@ public class RecordControllerMockMvcTest {
 		createSomeRecords(recordType1, 1);
 		mockMvc.perform(get("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				recordType1, "missing-2")).andExpect(status().isNotFound());
+	}
+
+	@Test
+	@Transactional
+	void tryCreatingIllegallyNamedRecordType() throws Exception {
+		String recordType = "sys_my_type";
+		Map<String, Object> attributes = new HashMap<>();
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						recordType, "recordId")
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isBadRequest())
+				.andExpect(result -> assertEquals("Record types can't start with sys_", result.getResponse().getErrorMessage()));
 	}
 
 	@Test

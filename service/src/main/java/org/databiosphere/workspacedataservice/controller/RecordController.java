@@ -166,6 +166,9 @@ public class RecordController {
 
 	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, String recordTypeName,
 												  Map<String, DataTypeMapping> requestSchema) {
+		if(recordTypeName.startsWith(RESERVED_NAME_PREFIX)){
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Record types can't start with " + RESERVED_NAME_PREFIX);
+		}
 		List<Record> records = Collections.singletonList(newRecord);
 		recordDao.createRecordType(instanceId, requestSchema, recordTypeName, RelationUtils.findRelations(records));
 		recordDao.batchUpsert(instanceId, recordTypeName, records, requestSchema);
