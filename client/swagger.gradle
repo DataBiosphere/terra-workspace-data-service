@@ -36,14 +36,14 @@ openApiGenerate {
 	inputSpec = "$rootDir//service/src/main/resources/static/swagger/openapi-docs.yaml".toString()
 	outputDir = "$buildDir/generated".toString()
 	generatorName = 'java'
-	library = 'jersey2'
+	library = 'jersey2' // TODO: use native? use google-api-client? use webclient? use jersey3?
 	configOptions = [
-		dateLibrary: "java11"
+		dateLibrary: "java8" // this is the default; delete?
 	]
 	invokerPackage = "${artifactGroup}.client".toString()
 	modelPackage = "${artifactGroup}.model".toString()
 	apiPackage = "${artifactGroup}.api".toString()
-	ignoreFileOverride = '${projectDir}/.swagger-codegen-ignore'
+//	ignoreFileOverride = '${projectDir}/.swagger-codegen-ignore'
 	// we may want to generate tests or doc later ...
 	generateModelTests = false
 	generateModelDocumentation = false
