@@ -2,8 +2,8 @@ package org.databiosphere.workspacedataservice.dao;
 
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.InvalidRelation;
-import org.databiosphere.workspacedataservice.service.model.MissingReferencedTableException;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingReferencedTableException;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -30,7 +30,7 @@ public class RecordDaoTest {
 	RecordType recordType;
 
 	@BeforeEach
-	void setUp() throws MissingReferencedTableException, InvalidRelation {
+	void setUp() {
 		instanceId = UUID.randomUUID();
 		recordType = new RecordType("testRecordType");
 		recordDao.createSchema(instanceId);
@@ -39,7 +39,7 @@ public class RecordDaoTest {
 
 	@Test
 	@Transactional
-	void testGetSingleRecord() throws InvalidRelation {
+	void testGetSingleRecord() throws InvalidRelationException {
 		// add record
 		RecordId recordId = new RecordId("testRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
@@ -58,7 +58,7 @@ public class RecordDaoTest {
 
 	@Test
 	@Transactional
-	void testCreateSingleRecord() throws InvalidRelation {
+	void testCreateSingleRecord() throws InvalidRelationException {
 		recordDao.addColumn(instanceId, recordType.getName(), "foo", DataTypeMapping.STRING);
 
 		// create record with no attributes
@@ -82,7 +82,7 @@ public class RecordDaoTest {
 
 	@Test
 	@Transactional
-	void testCreateRecordWithRelations() throws MissingReferencedTableException, InvalidRelation {
+	void testCreateRecordWithRelations() throws MissingReferencedTableException, InvalidRelationException {
 		// make sure columns are in recordType, as this will be taken care of before we
 		// get to the dao
 		recordDao.addColumn(instanceId, recordType.getName(), "foo", DataTypeMapping.STRING);
