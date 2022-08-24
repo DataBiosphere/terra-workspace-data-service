@@ -88,6 +88,11 @@ public class RecordDao {
 				+ " add column " + quote(columnName) + " " + colType.getPostgresType());
 	}
 
+	public void removeColumn(UUID instanceId, String tableName, String columnName) {
+		namedTemplate.getJdbcTemplate().update("alter table " + getQualifiedTableName(tableName, instanceId)
+				+ " drop column " + quote(columnName));
+	}
+
 	public void changeColumn(UUID instanceId, String tableName, String columnName, DataTypeMapping newColType) {
 		namedTemplate.getJdbcTemplate().update("alter table " + getQualifiedTableName(tableName, instanceId)
 				+ " alter column " + quote(columnName) + " TYPE " + newColType.getPostgresType());

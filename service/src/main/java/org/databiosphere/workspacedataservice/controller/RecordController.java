@@ -78,6 +78,8 @@ public class RecordController {
 					referencedRecordType = newRefCols.get(col).get(0).relationRecordType().getName();
 					recordDao.addForeignKeyForReference(recordType, referencedRecordType, instanceId, col);
 				} catch (MissingReferencedTableException e) {
+					//rollback created column
+					recordDao.removeColumn(instanceId, recordType, col);
 					throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 							"It looks like you're attempting to assign a relation " + "to a table, "
 									+ referencedRecordType + ", that does not exist");
