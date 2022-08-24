@@ -2,8 +2,6 @@ package org.databiosphere.workspacedataservice.dao;
 
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
-import org.databiosphere.workspacedataservice.service.model.exception.MissingReferencedTableException;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -39,7 +37,7 @@ public class RecordDaoTest {
 
 	@Test
 	@Transactional
-	void testGetSingleRecord() throws InvalidRelationException {
+	void testGetSingleRecord() {
 		// add record
 		RecordId recordId = new RecordId("testRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
@@ -58,7 +56,7 @@ public class RecordDaoTest {
 
 	@Test
 	@Transactional
-	void testCreateSingleRecord() throws InvalidRelationException {
+	void testCreateSingleRecord() {
 		recordDao.addColumn(instanceId, recordType.getName(), "foo", DataTypeMapping.STRING);
 
 		// create record with no attributes
@@ -82,7 +80,7 @@ public class RecordDaoTest {
 
 	@Test
 	@Transactional
-	void testCreateRecordWithRelations() throws MissingReferencedTableException, InvalidRelationException {
+	void testCreateRecordWithRelations() {
 		// make sure columns are in recordType, as this will be taken care of before we
 		// get to the dao
 		recordDao.addColumn(instanceId, recordType.getName(), "foo", DataTypeMapping.STRING);
@@ -108,7 +106,7 @@ public class RecordDaoTest {
 
 	@Test
 	@Transactional
-	void testGetReferenceCols() throws MissingReferencedTableException {
+	void testGetReferenceCols() {
 		recordDao.addColumn(instanceId, recordType.getName(), "referenceCol", DataTypeMapping.STRING);
 		recordDao.addForeignKeyForReference(recordType.getName(), recordType.getName(), instanceId, "referenceCol");
 

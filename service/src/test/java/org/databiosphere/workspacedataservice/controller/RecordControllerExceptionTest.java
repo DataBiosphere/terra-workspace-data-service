@@ -23,7 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class RecordControllerExceptionTest {
+class RecordControllerExceptionTest {
     @Autowired
     private TestRestTemplate restTemplate;
     private static HttpHeaders headers;
@@ -49,7 +49,7 @@ public class RecordControllerExceptionTest {
         ResponseEntity<LinkedHashMap> response = restTemplate.exchange("/{instanceId}/records/{version}/{recordType}/{recordId}",
                 HttpMethod.PUT, requestEntity, LinkedHashMap.class, instanceId, versionId, "samples-1", "sample_1");
         LinkedHashMap responseContent = response.getBody();
-        assertThat(responseContent.get("message")).isEqualTo("Referenced table(s) [non_existent_2, non_existent] do(es) not exist");
+        assertThat(responseContent).containsEntry("message", "Referenced table(s) [non_existent_2, non_existent] do(es) not exist");
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
@@ -63,7 +63,7 @@ public class RecordControllerExceptionTest {
         ResponseEntity<LinkedHashMap> response = restTemplate.exchange("/{instanceId}/records/{version}/{recordType}/{recordId}",
                 HttpMethod.PUT, requestEntity, LinkedHashMap.class, instanceId, versionId, "samples-2", "sample_1");
         LinkedHashMap responseContent = response.getBody();
-        assertThat(responseContent.get("message")).isEqualTo("It looks like you're trying to reference a record that does not exist.");
+        assertThat(responseContent).containsEntry("message", "It looks like you're trying to reference a record that does not exist.");
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
