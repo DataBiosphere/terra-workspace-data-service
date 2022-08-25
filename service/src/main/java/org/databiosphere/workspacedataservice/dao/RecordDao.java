@@ -176,10 +176,6 @@ public class RecordDao {
 				.collect(Collectors.joining(", \n"));
 	}
 
-	public String getSingleFkSql(Relation relation) {
-		return " references " + relation.relationRecordType().getName() + "(" + RECORD_ID.getColumnName() + ")";
-	}
-
 	public List<Relation> getRelationCols(UUID instanceId, String tableName) {
 		return namedTemplate.query(
 				"SELECT kcu.column_name, ccu.table_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu "
