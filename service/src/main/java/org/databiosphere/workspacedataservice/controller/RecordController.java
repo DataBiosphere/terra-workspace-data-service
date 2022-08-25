@@ -70,18 +70,17 @@ public class RecordController {
 		// single column
 		Preconditions.checkArgument(newRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty());
 		for (String col : colsToAdd.keySet()) {
-			recordDao.addColumn(instanceId, recordType, col, colsToAdd.get(col));
-			schema.put(col, colsToAdd.get(col));
+			String referencedRecordType = null;
 			if (newRefCols.containsKey(col)) {
-				String referencedRecordType = null;
-				try {
-					referencedRecordType = newRefCols.get(col).get(0).relationRecordType().getName();
-					recordDao.addForeignKeyForReference(recordType, referencedRecordType, instanceId, col);
-				} catch (MissingReferencedTableException e) {
-					throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-							"It looks like you're attempting to assign a relation " + "to a table, "
-									+ referencedRecordType + ", that does not exist");
-				}
+				referencedRecordType = newRefCols.get(col).get(0).relationRecordType().getName();
+			}
+			try {
+				recordDao.addColumn(instanceId, recordType, col, colsToAdd.get(col), referencedRecordType);
+				schema.put(col, colsToAdd.get(col));
+			} catch (MissingReferencedTableException e) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+						"It looks like you're attempting to assign a relation " + "to a table, "
+								+ referencedRecordType + ", that does not exist");
 			}
 		}
 		if (!recordDao.getRelationCols(instanceId, recordType).stream().map(Relation::relationColName)

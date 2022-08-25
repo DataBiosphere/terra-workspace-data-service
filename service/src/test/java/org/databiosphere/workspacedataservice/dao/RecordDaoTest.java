@@ -43,8 +43,7 @@ public class RecordDaoTest {
 		// add record
 		RecordId recordId = new RecordId("testRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
-		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord),
-				new HashMap<>());
+		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord), new HashMap<>());
 
 		// make sure record is fetched
 		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId, Collections.emptyList()).get();
@@ -58,14 +57,13 @@ public class RecordDaoTest {
 
 	@Test
 	@Transactional
-	void testCreateSingleRecord() throws InvalidRelation {
+	void testCreateSingleRecord() throws InvalidRelation, MissingReferencedTableException {
 		recordDao.addColumn(instanceId, recordType.getName(), "foo", DataTypeMapping.STRING);
 
 		// create record with no attributes
 		RecordId recordId = new RecordId("testRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
-		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord),
-				new HashMap<>());
+		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord), new HashMap<>());
 
 		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId, Collections.emptyList()).get();
 		assertEquals(testRecord, search, "Created record should match entered record");
