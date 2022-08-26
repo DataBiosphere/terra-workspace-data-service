@@ -3,6 +3,8 @@ package org.databiosphere.workspacedataservice.dao;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingReferencedTableException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordId;
@@ -41,8 +43,7 @@ public class RecordDaoTest {
 		// add record
 		RecordId recordId = new RecordId("testRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
-		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord),
-				new HashMap<>());
+		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord), new HashMap<>());
 
 		// make sure record is fetched
 		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId, Collections.emptyList()).get();
@@ -56,14 +57,13 @@ public class RecordDaoTest {
 
 	@Test
 	@Transactional
-	void testCreateSingleRecord() {
+	void testCreateSingleRecord() throws InvalidRelationException, MissingReferencedTableException {
 		recordDao.addColumn(instanceId, recordType.getName(), "foo", DataTypeMapping.STRING);
 
 		// create record with no attributes
 		RecordId recordId = new RecordId("testRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
-		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord),
-				new HashMap<>());
+		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord), new HashMap<>());
 
 		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId, Collections.emptyList()).get();
 		assertEquals(testRecord, search, "Created record should match entered record");

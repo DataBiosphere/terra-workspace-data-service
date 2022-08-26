@@ -85,9 +85,26 @@ public class RecordDao {
 						});
 	}
 
-	public void addColumn(UUID instanceId, String tableName, String columnName, DataTypeMapping colType) {
-		namedTemplate.getJdbcTemplate().update("alter table " + getQualifiedTableName(tableName, instanceId)
-				+ " add column " + quote(columnName) + " " + colType.getPostgresType());
+	public void addColumn(UUID instanceId, String tableName, String columnName, DataTypeMapping colType)
+			throws MissingReferencedTableException {
+		addColumn(instanceId, tableName, columnName, colType, null);
+	}
+
+	public void addColumn(UUID instanceId, String tableName, String columnName, DataTypeMapping colType,
+			String referencedTable) throws MissingReferencedTableException {
+		try {
+			namedTemplate.getJdbcTemplate()
+					.update("alter table " + getQualifiedTableName(tableName, instanceId) + " add column "
+							+ quote(columnName) + " " + colType.getPostgresType()
+							+ (referencedTable != null
+									? " references " + getQualifiedTableName(referencedTable, instanceId)
+									: ""));
+		} catch (DataAccessException e) {
+			if (e.getRootCause()instanceof SQLException sqlEx) {
+				checkForMissingTable(sqlEx, new String[]{referencedTable});
+			}
+			throw e;
+		}
 	}
 
 	public void changeColumn(UUID instanceId, String tableName, String columnName, DataTypeMapping newColType) {
@@ -104,7 +121,7 @@ public class RecordDao {
 						: "");
 	}
 
-	private String quote(String toQuote){
+	private String quote(String toQuote) {
 		return "\"" + toQuote + "\"";
 	}
 
@@ -118,19 +135,18 @@ public class RecordDao {
 			namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(instanceId, recordType, schemaAsList),
 					getInsertBatchArgs(records, schemaAsList));
 		} catch (DataAccessException e) {
-			if (e.getRootCause() instanceof SQLException sqlEx){
+			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingRecord(sqlEx);
 				throw e;
 			}
 		}
 	}
 
-
 	public void addForeignKeyForReference(String recordType, String referencedRecordType, UUID instanceId,
 										  String relationColName) {
 		try {
-			String addFk = "alter table " + getQualifiedTableName(recordType, instanceId) + " add foreign key (" +
-					quote(relationColName) + ") " + "references "
+			String addFk = "alter table " + getQualifiedTableName(recordType, instanceId) + " add foreign key ("
+					+ quote(relationColName) + ") " + "references "
 					+ getQualifiedTableName(referencedRecordType, instanceId);
 			namedTemplate.getJdbcTemplate().execute(addFk);
 		} catch (DataAccessException e) {
@@ -178,7 +194,7 @@ public class RecordDao {
 	}
 
 	private Object getValueForSql(Object attVal, DataTypeMapping typeMapping) {
-		if(Objects.isNull(attVal)){
+		if (Objects.isNull(attVal)) {
 			return null;
 		}
 		if (RelationUtils.isRelationValue(attVal)) {
@@ -229,7 +245,7 @@ public class RecordDao {
 	}
 
 	private record RecordRowMapper(String recordType,
-								   Map<String, String> referenceColToTable) implements RowMapper<Record> {
+			Map<String, String> referenceColToTable) implements RowMapper<Record> {
 
 		@Override
 			public Record mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -256,12 +272,12 @@ public class RecordDao {
 									object instanceof PGobject ? ((PGobject) object).getValue() : object);
 						}
 					}
-					return attributes;
-				} catch (SQLException e) {
-					throw new RuntimeException(e);
-				}
+				return attributes;
+			} catch (SQLException e) {
+				throw new RuntimeException(e);
 			}
 		}
+	}
 
 	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, RecordId recordId,
 			List<Relation> referenceCols) {

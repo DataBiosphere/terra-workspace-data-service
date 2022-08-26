@@ -8,6 +8,7 @@ import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingReferencedTableException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.springframework.http.HttpStatus;
@@ -72,12 +73,12 @@ public class RecordController {
 		// single column
 		Preconditions.checkArgument(newRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty());
 		for (String col : colsToAdd.keySet()) {
-			recordDao.addColumn(instanceId, recordType, col, colsToAdd.get(col));
-			schema.put(col, colsToAdd.get(col));
+			String referencedRecordType = null;
 			if (newRefCols.containsKey(col)) {
-				String referencedRecordType = newRefCols.get(col).get(0).relationRecordType().getName();
-				recordDao.addForeignKeyForReference(recordType, referencedRecordType, instanceId, col);
+				referencedRecordType = newRefCols.get(col).get(0).relationRecordType().getName();
 			}
+				recordDao.addColumn(instanceId, recordType, col, colsToAdd.get(col), referencedRecordType);
+				schema.put(col, colsToAdd.get(col));
 		}
 		if (!recordDao.getRelationCols(instanceId, recordType).stream().map(Relation::relationColName)
 				.collect(Collectors.toSet()).containsAll(newRefCols.keySet())) {
