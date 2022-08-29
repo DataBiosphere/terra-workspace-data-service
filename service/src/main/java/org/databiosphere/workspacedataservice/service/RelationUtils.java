@@ -75,8 +75,8 @@ public class RelationUtils {
 		return obj != null && obj.toString().startsWith(RELATION_IDENTIFIER);
 	}
 
-	public static String createRelationString(String entityTypeName, String entityId) {
-		return UriComponentsBuilder.newInstance().scheme(RELATION_IDENTIFIER).pathSegment(entityTypeName, entityId)
+	public static String createRelationString(String recordTypeName, String recordId) {
+		return UriComponentsBuilder.newInstance().scheme(RELATION_IDENTIFIER).pathSegment(recordTypeName, recordId)
 				.build().toUriString();
 	}
 }
