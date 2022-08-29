@@ -167,7 +167,7 @@ public class RecordController {
 			@PathVariable("recordId") RecordId recordId) {
 		validateVersion(version);
 		String recordTypeName = recordType.getName();
-		Record singleRecord = recordDao
+		recordDao
 				.getSingleRecord(instanceId, recordType, recordId,
 						recordDao.getRelationCols(instanceId, recordTypeName))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Record not found"));
