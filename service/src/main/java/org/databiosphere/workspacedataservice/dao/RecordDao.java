@@ -6,6 +6,7 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.postgresql.util.PGobject;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -122,6 +123,10 @@ public class RecordDao {
 		return "\"" + toQuote + "\"";
 	}
 
+	private String singleQuote(String toQuote) {
+		return "\'" + toQuote + "\'";
+	}
+
 	// The expectation is that the record type already matches the schema and
 	// attributes given, as
 	// that's dealt with earlier in the code.
@@ -136,6 +141,18 @@ public class RecordDao {
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingRecord(sqlEx);
+				throw e;
+			}
+		}
+	}
+
+	public void deleteSingleRecord(UUID instanceId, String recordType, String recordId) {
+		try {
+			namedTemplate.getJdbcTemplate().batchUpdate("delete from " + getQualifiedTableName(recordType, instanceId)
+					+ " where " + RECORD_ID.getColumnName() + "= " + singleQuote(recordId));
+		} catch (DataIntegrityViolationException e) {
+			if (e.getRootCause()instanceof SQLException sqlEx) {
+				checkForTableRelation(sqlEx);
 				throw e;
 			}
 		}
@@ -165,6 +182,13 @@ public class RecordDao {
 	private void checkForMissingRecord(SQLException sqlEx) throws InvalidRelation {
 		if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")) {
 			throw new InvalidRelation("It looks like you're trying to reference a record that does not exist.");
+		}
+	}
+
+	private void checkForTableRelation(SQLException sqlEx) {
+		if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")) {
+			throw new IllegalDeletionException(
+					"Unable to delete this record because it has a relation with another record.");
 		}
 	}
 

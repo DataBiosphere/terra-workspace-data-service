@@ -33,8 +33,9 @@ public class RecordController {
 			@PathVariable("recordId") RecordId recordId, @RequestBody RecordRequest recordRequest) {
 		validateVersion(version);
 		String recordTypeName = recordType.getName();
-		Record singleRecord = recordDao.getSingleRecord(instanceId, recordType, recordId,
-				recordDao.getRelationCols(instanceId, recordTypeName))
+		Record singleRecord = recordDao
+				.getSingleRecord(instanceId, recordType, recordId,
+						recordDao.getRelationCols(instanceId, recordTypeName))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Record not found"));
 		Map<String, Object> updatedAtts = recordRequest.recordAttributes().getAttributes();
 		Map<String, Object> allAttrs = new HashMap<>(singleRecord.getAttributes().getAttributes());
@@ -79,8 +80,8 @@ public class RecordController {
 				schema.put(col, colsToAdd.get(col));
 			} catch (MissingReferencedTableException e) {
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-						"It looks like you're attempting to assign a relation " + "to a table, "
-								+ referencedRecordType + ", that does not exist");
+						"It looks like you're attempting to assign a relation " + "to a table, " + referencedRecordType
+								+ ", that does not exist");
 			}
 		}
 		if (!recordDao.getRelationCols(instanceId, recordType).stream().map(Relation::relationColName)
@@ -109,9 +110,10 @@ public class RecordController {
 				|| !recordDao.recordTypeExists(instanceId, recordType.getName())) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Instance or table don't exist");
 		}
-		Record result = recordDao.getSingleRecord(instanceId, recordType, recordId,
-				recordDao.getRelationCols(instanceId, recordType.getName())).
-				orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Record not found"));
+		Record result = recordDao
+				.getSingleRecord(instanceId, recordType, recordId,
+						recordDao.getRelationCols(instanceId, recordType.getName()))
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Record not found"));
 		RecordResponse response = new RecordResponse(recordId, recordType, result.getAttributes(),
 				new RecordMetadata("TODO: RECORDMETADATA"));
 		return new ResponseEntity<>(response, HttpStatus.OK);
@@ -119,8 +121,8 @@ public class RecordController {
 
 	@PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
 	public ResponseEntity<RecordResponse> upsertSingleRecord(@PathVariable("instanceId") UUID instanceId,
-															 @PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-															 @PathVariable("recordId") RecordId recordId, @RequestBody RecordRequest recordRequest) {
+			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
+			@PathVariable("recordId") RecordId recordId, @RequestBody RecordRequest recordRequest) {
 		validateVersion(version);
 		String recordTypeName = recordType.getName();
 		Map<String, Object> attributesInRequest = recordRequest.recordAttributes().getAttributes();
@@ -142,12 +144,13 @@ public class RecordController {
 				existingTableSchema.keySet().forEach(attr -> attributesInRequest.putIfAbsent(attr, null));
 				Record record = new Record(recordId, recordType, recordRequest.recordAttributes());
 				List<Record> records = Collections.singletonList(record);
-				addOrUpdateColumnIfNeeded(instanceId, recordType.getName(), requestSchema, existingTableSchema, records);
+				addOrUpdateColumnIfNeeded(instanceId, recordType.getName(), requestSchema, existingTableSchema,
+						records);
 				Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
 				combinedSchema.putAll(requestSchema);
 				recordDao.batchUpsert(instanceId, recordTypeName, records, combinedSchema);
-				RecordResponse response = new RecordResponse(recordId, recordType, new RecordAttributes(attributesInRequest),
-						new RecordMetadata("TODO"));
+				RecordResponse response = new RecordResponse(recordId, recordType,
+						new RecordAttributes(attributesInRequest), new RecordMetadata("TODO"));
 				return new ResponseEntity(response, HttpStatus.OK);
 			}
 		} catch (ResponseStatusException | InvalidRelation e) {
@@ -164,6 +167,20 @@ public class RecordController {
 		}
 		recordDao.createSchema(instanceId);
 		return new ResponseEntity<>(HttpStatus.CREATED);
+	}
+
+	@DeleteMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
+	public ResponseEntity deleteSingleRecord(@PathVariable("instanceId") UUID instanceId,
+			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
+			@PathVariable("recordId") RecordId recordId) {
+		validateVersion(version);
+		String recordTypeName = recordType.getName();
+		Record singleRecord = recordDao
+				.getSingleRecord(instanceId, recordType, recordId,
+						recordDao.getRelationCols(instanceId, recordTypeName))
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Record not found"));
+		recordDao.deleteSingleRecord(instanceId, recordType.getName(), recordId.getRecordIdentifier());
+		return new ResponseEntity<>(HttpStatus.OK);
 	}
 
 	private static void validateVersion(String version) {

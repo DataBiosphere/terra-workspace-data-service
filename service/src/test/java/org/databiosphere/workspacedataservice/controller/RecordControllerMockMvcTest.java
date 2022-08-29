@@ -74,12 +74,10 @@ public class RecordControllerMockMvcTest {
 		Map<String, Object> newAttributes = new HashMap<>();
 		newAttributes.put("new-attr", "some_val");
 		mockMvc.perform(put("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
-				recordType1, "record_0")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(newAttributes)))))
+				recordType1, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(newAttributes)))))
 				.andExpect(content().string(containsString("\"attr3\":null")))
-				.andExpect(content().string(containsString("\"attr-dt\":null")))
-				.andExpect(status().isOk());
+				.andExpect(content().string(containsString("\"attr-dt\":null"))).andExpect(status().isOk());
 	}
 
 	@Test
@@ -89,13 +87,11 @@ public class RecordControllerMockMvcTest {
 		Map<String, Object> newAttributes = new HashMap<>();
 		newAttributes.put("new-attr", "some_val");
 		mockMvc.perform(patch("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
-						recordType1, "record_0")
-						.contentType(MediaType.APPLICATION_JSON)
+				recordType1, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(newAttributes)))))
 				.andExpect(content().string(containsString("\"attr3\"")))
 				.andExpect(content().string(containsString("\"attr-dt\"")))
-				.andExpect(content().string(containsString("\"new-attr\":\"some_val\"")))
-				.andExpect(status().isOk());
+				.andExpect(content().string(containsString("\"new-attr\":\"some_val\""))).andExpect(status().isOk());
 	}
 
 	@Test
@@ -194,7 +190,7 @@ public class RecordControllerMockMvcTest {
 		attributes.put("sample-ref", ref);
 
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-						recordType, recordId)
+				recordType, recordId)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isBadRequest())
@@ -216,6 +212,44 @@ public class RecordControllerMockMvcTest {
 				.andExpect(status().isConflict())
 				.andExpect(result -> assertTrue(result.getResolvedException().getMessage()
 						.contains("relation to an existing column that was not configured for relations")));
+	}
+
+	@Test
+	@Transactional
+	void deleteRecord() throws Exception {
+		String recordType = "samples";
+		createSomeRecords(recordType, 1);
+		mockMvc.perform(delete("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				recordType, "record_0")).andExpect(status().isOk());
+		mockMvc.perform(get("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
+				recordType, "missing-2")).andExpect(status().isNotFound());
+	}
+
+	@Test
+	@Transactional
+	void deleteMissingRecord() throws Exception {
+		String recordType = "samples";
+		createSomeRecords(recordType, 1);
+		mockMvc.perform(delete("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				recordType, "record_1")).andExpect(status().isNotFound());
+	}
+
+	@Test
+	@Transactional
+	void deleteReferencedRecord() throws Exception {
+		String referencedType = "ref_participants";
+		String referringType = "ref_samples";
+		createSomeRecords(referencedType, 1);
+		createSomeRecords(referringType, 1);
+		Map<String, Object> attributes = new HashMap<>();
+		String ref = RelationUtils.createRelationString(referencedType, "record_0");
+		attributes.put("sample-ref", ref);
+		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
+				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
+		mockMvc.perform(delete("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				referencedType, "record_0")).andExpect(status().isBadRequest());
 	}
 
 	private void createSomeRecords(String recordType, int numRecords) throws Exception {
