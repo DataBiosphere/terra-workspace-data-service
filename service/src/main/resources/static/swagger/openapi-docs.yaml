@@ -625,11 +625,6 @@ components:
         error:
           type: string
           description: error
-        trace:
-          type: array
-          description: stack trace
-          items:
-            $ref: '#/components/schemas/StackTraceElement'
         message:
           type: string
           description: error message

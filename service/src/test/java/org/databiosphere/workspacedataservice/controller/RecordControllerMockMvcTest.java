@@ -50,8 +50,8 @@ public class RecordControllerMockMvcTest {
 	void createInstanceAndTryToCreateAgain() throws Exception {
 		UUID uuid = UUID.randomUUID();
 		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isCreated());
-		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isConflict()).
-				andExpect(result -> assertEquals("This schema already exists", result.getResponse().getErrorMessage()));
+		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isConflict()).andExpect(
+				result -> assertEquals("This schema already exists", result.getResponse().getErrorMessage()));
 	}
 
 	@Test
@@ -76,11 +76,12 @@ public class RecordControllerMockMvcTest {
 		String recordType = "sys_my_type";
 		Map<String, Object> attributes = new HashMap<>();
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-						recordType, "recordId")
+				recordType, "recordId")
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isBadRequest())
-				.andExpect(result -> assertEquals("Record types can't start with sys_", result.getResponse().getErrorMessage()));
+				.andExpect(result -> assertEquals("Record types can't start with sys_",
+						result.getResponse().getErrorMessage()));
 	}
 
 	@Test
@@ -91,11 +92,11 @@ public class RecordControllerMockMvcTest {
 		Map<String, Object> illegalAttribute = new HashMap<>();
 		illegalAttribute.put("sys_foo", "some_val");
 		mockMvc.perform(patch("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
-						recordType1, "record_0")
-						.contentType(MediaType.APPLICATION_JSON)
+				recordType1, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(illegalAttribute)))))
 				.andExpect(status().isBadRequest())
-				.andExpect(result -> assertEquals("Attribute names can't begin with sys_", result.getResponse().getErrorMessage()));
+				.andExpect(result -> assertEquals("Attribute names can't begin with sys_",
+						result.getResponse().getErrorMessage()));
 	}
 	@Test
 	@Transactional
@@ -105,12 +106,10 @@ public class RecordControllerMockMvcTest {
 		Map<String, Object> newAttributes = new HashMap<>();
 		newAttributes.put("new-attr", "some_val");
 		mockMvc.perform(put("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
-				recordType1, "record_0")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(newAttributes)))))
+				recordType1, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(newAttributes)))))
 				.andExpect(content().string(containsString("\"attr3\":null")))
-				.andExpect(content().string(containsString("\"attr-dt\":null")))
-				.andExpect(status().isOk());
+				.andExpect(content().string(containsString("\"attr-dt\":null"))).andExpect(status().isOk());
 	}
 
 	@Test
@@ -120,11 +119,9 @@ public class RecordControllerMockMvcTest {
 		Map<String, Object> newAttributes = new HashMap<>();
 		newAttributes.put("new-attr", "some_val");
 		mockMvc.perform(patch("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
-						recordType1, "record_0")
-						.contentType(MediaType.APPLICATION_JSON)
+				recordType1, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(newAttributes)))))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.attributes.new-attr", is("some_val")));
+				.andExpect(status().isOk()).andExpect(jsonPath("$.attributes.new-attr", is("some_val")));
 	}
 
 	@Test
@@ -149,8 +146,7 @@ public class RecordControllerMockMvcTest {
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.attributes.sample-ref", is(ref)));
+				.andExpect(status().isOk()).andExpect(jsonPath("$.attributes.sample-ref", is(ref)));
 	}
 
 	@Test
@@ -166,7 +162,8 @@ public class RecordControllerMockMvcTest {
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
 				.andExpect(status().isBadRequest())
-				.andExpect(result -> assertEquals("Referenced table(s) [missing] do(es) not exist", result.getResolvedException().getMessage()));
+				.andExpect(result -> assertEquals("Referenced table(s) [missing] do(es) not exist",
+						result.getResolvedException().getMessage()));
 	}
 
 	@Test
@@ -182,8 +179,9 @@ public class RecordControllerMockMvcTest {
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
-				.andExpect(status().isBadRequest())
-				.andExpect(result -> assertEquals("It looks like you're trying to reference a record that does not exist.", result.getResolvedException().getMessage()));
+				.andExpect(status().isBadRequest()).andExpect(
+						result -> assertEquals("It looks like you're trying to reference a record that does not exist.",
+								result.getResolvedException().getMessage()));
 	}
 
 	@Test
@@ -225,11 +223,12 @@ public class RecordControllerMockMvcTest {
 		attributes.put("sample-ref", ref);
 
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-						recordType, recordId)
+				recordType, recordId)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
-				.andExpect(status().isBadRequest()).
-				andExpect(result -> assertEquals("Referenced table(s) [missing] do(es) not exist", result.getResolvedException().getMessage()));
+				.andExpect(status().isBadRequest())
+				.andExpect(result -> assertEquals("Referenced table(s) [missing] do(es) not exist",
+						result.getResolvedException().getMessage()));
 	}
 
 	@Test

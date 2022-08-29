@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 @ResponseStatus(HttpStatus.BAD_REQUEST)
 public class MissingReferencedTableException extends RuntimeException {
-    public MissingReferencedTableException(String[] missingTableNames) {
-        super("Referenced table(s) " + Arrays.toString(missingTableNames) + " do(es) not exist");
-    }
+	public MissingReferencedTableException(String[] missingTableNames) {
+		super("Referenced table(s) " + Arrays.toString(missingTableNames) + " do(es) not exist");
+	}
 }
