@@ -2,12 +2,14 @@ package org.databiosphere.workspacedataservice.dao;
 
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
+import org.databiosphere.workspacedataservice.service.model.exception.IllegalDeletionException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingReferencedTableException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.postgresql.util.PGobject;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -144,6 +146,18 @@ public class RecordDao {
 		}
 	}
 
+	public boolean deleteSingleRecord(UUID instanceId, String recordType, String recordId) {
+		try {
+			return namedTemplate.update("delete from " + getQualifiedTableName(recordType, instanceId) + " where "
+					+ RECORD_ID + " = :recordId", new MapSqlParameterSource("recordId", recordId)) == 1;
+		} catch (DataIntegrityViolationException e) {
+			if (e.getRootCause()instanceof SQLException sqlEx) {
+				checkForTableRelation(sqlEx);
+			}
+			throw e;
+		}
+	}
+
 	public void addForeignKeyForReference(String recordType, String referencedRecordType, UUID instanceId,
 			String relationColName) {
 		try {
@@ -169,6 +183,13 @@ public class RecordDao {
 		if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")) {
 			throw new InvalidRelationException(
 					"It looks like you're trying to reference a record that does not exist.");
+		}
+	}
+
+	private void checkForTableRelation(SQLException sqlEx) {
+		if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")) {
+			throw new IllegalDeletionException(
+					"Unable to delete this record because another record has a relation to it.");
 		}
 	}
 

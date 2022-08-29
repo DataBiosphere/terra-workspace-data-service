@@ -112,8 +112,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      deprecated: true
-      summary: Delete record (pending)
+      summary: Delete record
       description: Deletes the record at the specified type and id.
       operationId: deleteRecord
       tags:
@@ -126,6 +125,18 @@ paths:
       responses:
         204:
           description: Success
+        404:
+          description: Record not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        400:
+          description: Bad request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /{instanceid}/search/{v}:
     get:
       deprecated: true

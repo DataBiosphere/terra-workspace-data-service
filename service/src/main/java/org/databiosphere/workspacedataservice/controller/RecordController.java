@@ -161,6 +161,16 @@ public class RecordController {
 		return new ResponseEntity<>(HttpStatus.CREATED);
 	}
 
+	@DeleteMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
+	public ResponseEntity deleteSingleRecord(@PathVariable("instanceId") UUID instanceId,
+			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
+			@PathVariable("recordId") RecordId recordId) {
+		validateVersion(version);
+		boolean recordFound = recordDao.deleteSingleRecord(instanceId, recordType.getName(),
+				recordId.getRecordIdentifier());
+		return recordFound ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
+	}
+
 	private static void validateVersion(String version) {
 		if (null == version || !version.equals("v0.2")) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid API version specified");

@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -113,5 +114,50 @@ public class RecordDaoTest {
 		List<Relation> refCols = recordDao.getRelationCols(instanceId, recordType.getName());
 		assertEquals(1, refCols.size(), "There should be one referenced column");
 		assertEquals("referenceCol", refCols.get(0).relationColName(), "Reference column should be named referenceCol");
+	}
+
+	@Test
+	@Transactional
+	void testDeleteSingleRecord() {
+		// add record
+		RecordId recordId = new RecordId("testRecord");
+		Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
+		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord), new HashMap<>());
+
+		recordDao.deleteSingleRecord(instanceId, recordType.getName(), "testRecord");
+
+		// make sure record not fetched
+		Optional<Record> none = recordDao.getSingleRecord(instanceId, recordType, new RecordId("testRecord"),
+				Collections.emptyList());
+		assertEquals(Optional.empty(), none, "Deleted record should not be found");
+	}
+
+	@Test
+	@Transactional
+	void testDeleteRelatedRecord() {
+		// make sure columns are in recordType, as this will be taken care of before we
+		// get to the dao
+		recordDao.addColumn(instanceId, recordType.getName(), "foo", DataTypeMapping.STRING);
+
+		recordDao.addColumn(instanceId, recordType.getName(), "testRecordType", DataTypeMapping.STRING,
+				"testRecordType");
+
+		RecordId refRecordId = new RecordId("referencedRecord");
+		Record referencedRecord = new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
+		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(referencedRecord),
+				new HashMap<>());
+
+		RecordId recordId = new RecordId("testRecord");
+		String reference = RelationUtils.createRelationString("testRecordType", "referencedRecord");
+		Record testRecord = new Record(recordId, recordType, new RecordAttributes(Map.of("testRecordType", reference)));
+		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord),
+				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.STRING)));
+
+		// Should throw an error
+		Exception thrown = assertThrows(Exception.class, () -> {
+			recordDao.deleteSingleRecord(instanceId, recordType.getName(), "referencedRecord");
+		}, "Exception should be thrown when attempting to delete related record");
+
+		assert (thrown.getMessage().contains("Unable to delete this record"));
 	}
 }
