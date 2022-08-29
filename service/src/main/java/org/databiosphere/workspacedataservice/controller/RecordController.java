@@ -166,13 +166,9 @@ public class RecordController {
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") RecordId recordId) {
 		validateVersion(version);
-		String recordTypeName = recordType.getName();
-		recordDao
-				.getSingleRecord(instanceId, recordType, recordId,
-						recordDao.getRelationCols(instanceId, recordTypeName))
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Record not found"));
-		recordDao.deleteSingleRecord(instanceId, recordType.getName(), recordId.getRecordIdentifier());
-		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+		boolean recordFound = recordDao.deleteSingleRecord(instanceId, recordType.getName(),
+				recordId.getRecordIdentifier());
+		return recordFound ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
 
 	private static void validateVersion(String version) {

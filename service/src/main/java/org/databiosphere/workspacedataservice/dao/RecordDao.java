@@ -127,10 +127,6 @@ public class RecordDao {
 		return "\"" + toQuote + "\"";
 	}
 
-	private String singleQuote(String toQuote) {
-		return "\'" + toQuote + "\'";
-	}
-
 	// The expectation is that the record type already matches the schema and
 	// attributes given, as
 	// that's dealt with earlier in the code.
@@ -150,15 +146,15 @@ public class RecordDao {
 		}
 	}
 
-	public void deleteSingleRecord(UUID instanceId, String recordType, String recordId) {
+	public boolean deleteSingleRecord(UUID instanceId, String recordType, String recordId) {
 		try {
-			namedTemplate.getJdbcTemplate().batchUpdate("delete from " + getQualifiedTableName(recordType, instanceId)
-					+ " where " + RECORD_ID + "= " + singleQuote(recordId));
+			return namedTemplate.update("delete from " + getQualifiedTableName(recordType, instanceId) + " where "
+					+ RECORD_ID + " = :recordId", new MapSqlParameterSource("recordId", recordId)) == 1;
 		} catch (DataIntegrityViolationException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForTableRelation(sqlEx);
-				throw e;
 			}
+			throw e;
 		}
 	}
 
@@ -193,7 +189,7 @@ public class RecordDao {
 	private void checkForTableRelation(SQLException sqlEx) {
 		if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")) {
 			throw new IllegalDeletionException(
-					"Unable to delete this record because it has a relation with another record.");
+					"Unable to delete this record because another record has a relation to it.");
 		}
 	}
 
