@@ -105,6 +105,12 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        400:
+          description: Bad request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       deprecated: true
       summary: Delete record (pending)
@@ -218,6 +224,10 @@ paths:
           description: Success
         409:
           description: Conflict - schema already exists.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /{instanceid}/types/{v}/{type}:
     get:
       deprecated: true
@@ -603,6 +613,10 @@ components:
     ErrorResponse:
       required:
         - status
+        - path
+        - message
+        - error
+        - timestamp
       type: object
       properties:
         status:
@@ -611,17 +625,15 @@ components:
         error:
           type: string
           description: error
-        trace:
-          type: array
-          description: stack trace
-          items:
-            $ref: '#/components/schemas/StackTraceElement'
         message:
           type: string
           description: error message
         path:
           type: string
           description: requested record path
+        timestamp:
+          type: string
+          description: time of error
       description: ""
     RequestBodySearch:
       required:
