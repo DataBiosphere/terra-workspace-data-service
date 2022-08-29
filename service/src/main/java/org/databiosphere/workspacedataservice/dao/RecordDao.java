@@ -101,7 +101,7 @@ public class RecordDao {
 									: ""));
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
-				checkForMissingTable(sqlEx, new String[]{referencedTable});
+				checkForMissingTable(sqlEx, referencedTable);
 			}
 			throw e;
 		}
