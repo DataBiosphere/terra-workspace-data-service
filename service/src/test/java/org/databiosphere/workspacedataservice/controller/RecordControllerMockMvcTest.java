@@ -254,7 +254,7 @@ public class RecordControllerMockMvcTest {
 		String recordType = "samples";
 		createSomeRecords(recordType, 1);
 		mockMvc.perform(delete("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				recordType, "record_0")).andExpect(status().isOk());
+				recordType, "record_0")).andExpect(status().isNoContent());
 		mockMvc.perform(get("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, "missing-2")).andExpect(status().isNotFound());
 	}

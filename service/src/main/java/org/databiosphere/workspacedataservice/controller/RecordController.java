@@ -172,7 +172,7 @@ public class RecordController {
 						recordDao.getRelationCols(instanceId, recordTypeName))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Record not found"));
 		recordDao.deleteSingleRecord(instanceId, recordType.getName(), recordId.getRecordIdentifier());
-		return new ResponseEntity<>(HttpStatus.OK);
+		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 
 	private static void validateVersion(String version) {
