@@ -87,7 +87,6 @@ public class RecordDaoTest {
 		recordDao.addColumn(instanceId, recordType.getName(), "foo", DataTypeMapping.STRING);
 
 		recordDao.addColumn(instanceId, recordType.getName(), "testRecordType", DataTypeMapping.STRING);
-		recordDao.addForeignKeyForReference(recordType.getName(), recordType.getName(), instanceId, "testRecordType");
 
 		RecordId refRecordId = new RecordId("referencedRecord");
 		Record referencedRecord = new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
@@ -108,8 +107,7 @@ public class RecordDaoTest {
 	@Test
 	@Transactional
 	void testGetReferenceCols() {
-		recordDao.addColumn(instanceId, recordType.getName(), "referenceCol", DataTypeMapping.STRING);
-		recordDao.addForeignKeyForReference(recordType.getName(), recordType.getName(), instanceId, "referenceCol");
+		recordDao.addColumn(instanceId, recordType.getName(), "referenceCol", DataTypeMapping.STRING, recordType.getName());
 
 		List<Relation> refCols = recordDao.getRelationCols(instanceId, recordType.getName());
 		assertEquals(1, refCols.size(), "There should be one referenced column");

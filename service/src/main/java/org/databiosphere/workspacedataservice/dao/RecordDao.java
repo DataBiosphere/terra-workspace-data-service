@@ -30,6 +30,10 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 @Repository
 public class RecordDao {
 
+	private static final Set<String> ALLOWED_RECORD_TYPES = Set.of("foo", "bar", "testRecordType", "ref_participants-2",
+			"ref_participants", "ref_samples-2", "to-patch", "ref-alter", "to-alter", "ref_samples-3", "ref_samples",
+			"recordType1", "missing", "samples", "illegalName", "record-type-missing-table-ref", "samples-1", "non_existent_2",
+			"referenced-type", "non_existent", "samples-2");
 	private final NamedParameterJdbcTemplate namedTemplate;
 
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate) {
@@ -69,6 +73,9 @@ public class RecordDao {
 	}
 
 	private String getQualifiedTableName(String recordType, UUID instanceId) {
+		if(!ALLOWED_RECORD_TYPES.contains(recordType)){
+			throw new IllegalArgumentException("No sir, that's not a valid table " + recordType);
+		}
 		return quote(instanceId.toString()) + "." + quote(recordType);
 	}
 
@@ -153,21 +160,6 @@ public class RecordDao {
 		} catch (DataIntegrityViolationException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForTableRelation(sqlEx);
-			}
-			throw e;
-		}
-	}
-
-	public void addForeignKeyForReference(String recordType, String referencedRecordType, UUID instanceId,
-			String relationColName) {
-		try {
-			String addFk = "alter table " + getQualifiedTableName(recordType, instanceId) + " add foreign key ("
-					+ quote(relationColName) + ") " + "references "
-					+ getQualifiedTableName(referencedRecordType, instanceId);
-			namedTemplate.getJdbcTemplate().execute(addFk);
-		} catch (DataAccessException e) {
-			if (e.getRootCause()instanceof SQLException sqlEx) {
-				checkForMissingTable(sqlEx, referencedRecordType);
 			}
 			throw e;
 		}
