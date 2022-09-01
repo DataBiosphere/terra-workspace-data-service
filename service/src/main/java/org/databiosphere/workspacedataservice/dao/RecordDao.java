@@ -14,6 +14,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
@@ -61,8 +62,9 @@ public class RecordDao {
 			Set<Relation> relations) {
 		String columnDefs = genColumnDefs(tableInfo);
 		try {
-			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(tableName, instanceId) + "( "
-					+ columnDefs + (!relations.isEmpty() ? ", " + getFkSql(relations, instanceId) : "") + ")");
+			String sql = "create table %s ( "
+					+ columnDefs + (!relations.isEmpty() ? ", " + getFkSql(relations, instanceId) : "") + ")";
+			namedTemplate.getJdbcTemplate().update("call create_table_test(?, ?)", sql, getQualifiedTableName(tableName, instanceId));
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingTable(sqlEx,
@@ -73,9 +75,6 @@ public class RecordDao {
 	}
 
 	private String getQualifiedTableName(String recordType, UUID instanceId) {
-		if(!ALLOWED_RECORD_TYPES.contains(recordType)){
-			throw new IllegalArgumentException("No sir, that's not a valid table " + recordType);
-		}
 		return quote(instanceId.toString()) + "." + quote(recordType);
 	}
 
@@ -154,6 +153,9 @@ public class RecordDao {
 	}
 
 	public boolean deleteSingleRecord(UUID instanceId, String recordType, String recordId) {
+		if(!ALLOWED_RECORD_TYPES.contains(recordType)){
+			throw new IllegalArgumentException("No sir, that's not a valid table " + recordType);
+		}
 		try {
 			return namedTemplate.update("delete from " + getQualifiedTableName(recordType, instanceId) + " where "
 					+ RECORD_ID + " = :recordId", new MapSqlParameterSource("recordId", recordId)) == 1;
@@ -244,6 +246,9 @@ public class RecordDao {
 	}
 
 	private String genInsertStatement(UUID instanceId, String recordType, List<RecordColumn> schema) {
+		if(!ALLOWED_RECORD_TYPES.contains(recordType)){
+			throw new IllegalArgumentException("No sir, that's not a valid table " + recordType);
+		}
 		List<String> colNames = schema.stream().map(RecordColumn::colName).toList();
 		List<DataTypeMapping> colTypes = schema.stream().map(RecordColumn::typeMapping).toList();
 		return "insert into " + getQualifiedTableName(recordType, instanceId) + "(" + getInsertColList(colNames)
@@ -298,6 +303,9 @@ public class RecordDao {
 	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, RecordId recordId,
 			List<Relation> referenceCols) {
 		Map<String, String> refColMapping = new HashMap<>();
+		if(!ALLOWED_RECORD_TYPES.contains(recordType.getName())){
+			throw new IllegalArgumentException("No sir, that's not a valid table " + recordType);
+		}
 		referenceCols.forEach(rc -> refColMapping.put(rc.relationColName(), rc.relationRecordType().getName()));
 		try {
 			return Optional.ofNullable(namedTemplate.queryForObject(
