@@ -8,13 +8,12 @@ import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
-import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
+import org.databiosphere.workspacedataservice.service.model.exception.*;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -39,13 +38,12 @@ public class RecordController {
 		validateVersion(version);
 		String recordTypeName = recordType.getName();
 		if (!recordDao.recordTypeExists(instanceId, recordTypeName)) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"Record type " + recordTypeName + " does not exist");
+			throw new MissingRecordTypeException("Record type does not exist");
 		}
 		Record singleRecord = recordDao
 				.getSingleRecord(instanceId, recordType, recordId,
 						recordDao.getRelationCols(instanceId, recordTypeName))
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Record not found"));
+				.orElseThrow(() -> new MissingRecordException());
 		Map<String, Object> updatedAtts = recordRequest.recordAttributes().getAttributes();
 		Map<String, Object> allAttrs = new HashMap<>(singleRecord.getAttributes().getAttributes());
 		allAttrs.putAll(updatedAtts);
@@ -68,7 +66,7 @@ public class RecordController {
 		MapDifference<String, DataTypeMapping> difference = Maps.difference(existingTableSchema, schema);
 		Map<String, DataTypeMapping> colsToAdd = difference.entriesOnlyOnRight();
 		colsToAdd.keySet().stream().filter(s -> s.startsWith(RESERVED_NAME_PREFIX)).findAny().ifPresent(s -> {
-			throw new InvalidNameException("Attribute names can't begin with " + RESERVED_NAME_PREFIX);
+			throw new InvalidAttributeNameException();
 		});
 		Set<Relation> relations = RelationUtils.findRelations(records);
 		Map<String, List<Relation>> newRefCols = relations.stream()
@@ -87,9 +85,8 @@ public class RecordController {
 		}
 		if (!recordDao.getRelationCols(instanceId, recordType).stream().map(Relation::relationColName)
 				.collect(Collectors.toSet()).containsAll(newRefCols.keySet())) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"It looks like you're attempting to assign a relation "
-							+ "to an existing column that was not configured for relations");
+			throw new InvalidRelationException("It looks like you're attempting to assign a relation "
+					+ "to an existing column that was not configured for relations");
 		}
 		Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference.entriesDiffering();
 		for (String column : differenceMap.keySet()) {
@@ -109,12 +106,12 @@ public class RecordController {
 		validateVersion(version);
 		if (!recordDao.instanceSchemaExists(instanceId)
 				|| !recordDao.recordTypeExists(instanceId, recordType.getName())) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Instance or table don't exist");
+			throw new MissingRecordTypeException("Instance or record doesn't exist");
 		}
 		Record result = recordDao
 				.getSingleRecord(instanceId, recordType, recordId,
 						recordDao.getRelationCols(instanceId, recordType.getName()))
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Record not found"));
+				.orElseThrow(() -> new MissingRecordException());
 		RecordResponse response = new RecordResponse(recordId, recordType, result.getAttributes(),
 				new RecordMetadata("TODO: RECORDMETADATA"));
 		return new ResponseEntity<>(response, HttpStatus.OK);
@@ -159,7 +156,7 @@ public class RecordController {
 			@PathVariable("version") String version) {
 		validateVersion(version);
 		if (recordDao.instanceSchemaExists(instanceId)) {
-			throw new ResponseStatusException(HttpStatus.CONFLICT, "This schema already exists");
+			throw new IllegalInstanceCreationException("This instance already exists");
 		}
 		recordDao.createSchema(instanceId);
 		return new ResponseEntity<>(HttpStatus.CREATED);
@@ -177,14 +174,14 @@ public class RecordController {
 
 	private static void validateVersion(String version) {
 		if (null == version || !version.equals("v0.2")) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid API version specified");
+			throw new InvalidAPIException("Invalid API version specified");
 		}
 	}
 
 	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, String recordTypeName,
 			Map<String, DataTypeMapping> requestSchema) {
 		if (recordTypeName.startsWith(RESERVED_NAME_PREFIX)) {
-			throw new InvalidNameException("Record types can't start with " + RESERVED_NAME_PREFIX);
+			throw new InvalidRecordTypeException();
 		}
 		List<Record> records = Collections.singletonList(newRecord);
 		recordDao.createRecordType(instanceId, requestSchema, recordTypeName, RelationUtils.findRelations(records));

@@ -14,6 +14,8 @@ import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidAttributeNameException;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidRecordTypeException;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordId;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -51,7 +53,7 @@ public class RecordControllerMockMvcTest {
 		UUID uuid = UUID.randomUUID();
 		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isCreated());
 		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isConflict()).andExpect(
-				result -> assertEquals("This schema already exists", result.getResponse().getErrorMessage()));
+				result -> assertEquals("This instance already exists", result.getResolvedException().getMessage()));
 	}
 
 	@Test
@@ -80,8 +82,7 @@ public class RecordControllerMockMvcTest {
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isBadRequest())
-				.andExpect(result -> assertEquals("Record types can't start with sys_",
-						result.getResolvedException().getMessage()));
+				.andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidRecordTypeException));
 	}
 
 	@Test
@@ -94,9 +95,8 @@ public class RecordControllerMockMvcTest {
 		mockMvc.perform(patch("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				recordType1, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(illegalAttribute)))))
-				.andExpect(status().isBadRequest())
-				.andExpect(result -> assertEquals("Attribute names can't begin with sys_",
-						result.getResolvedException().getMessage()));
+				.andExpect(status().isBadRequest()).andExpect(
+						result -> assertTrue(result.getResolvedException() instanceof InvalidAttributeNameException));
 	}
 	@Test
 	@Transactional
