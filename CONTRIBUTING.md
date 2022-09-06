@@ -2,6 +2,12 @@
 
 Please see the [README](README.md) for instructions on how to set up the repo for development and testing.
 
+## Coding Style
+### Exceptions
+Custom exception classes should be located in `service/src/main/java/org.databiosphere.workspacedataservice/service/model/exception`, extend `RuntimeException` and should use the `@ResponseStatus` annotation. 
+See [`MissingReferencedTableException`](https://github.com/DataBiosphere/terra-workspace-data-service/blob/main/service/src/main/java/org/databiosphere/workspacedataservice/service/model/exception/MissingReferencedTableException.java) for an example. 
+Use custom exception classes wherever possible; if it is necessary to throw a generic exception from the controller, use a `ResponseStatusException` with appropriate HTTPStatus and a clear message.
+
 ## Before You Open a Pull Request
 
 You most likely want to do your work on a feature branch based on develop. There is no explicit naming convention; we usually use some combination of the JIRA issue number and something alluding to the work we're doing.
