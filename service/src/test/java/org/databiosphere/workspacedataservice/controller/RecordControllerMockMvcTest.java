@@ -81,7 +81,7 @@ public class RecordControllerMockMvcTest {
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isBadRequest())
 				.andExpect(result -> assertEquals("Record types can't start with sys_",
-						result.getResponse().getErrorMessage()));
+						result.getResolvedException().getMessage()));
 	}
 
 	@Test
@@ -96,7 +96,7 @@ public class RecordControllerMockMvcTest {
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(illegalAttribute)))))
 				.andExpect(status().isBadRequest())
 				.andExpect(result -> assertEquals("Attribute names can't begin with sys_",
-						result.getResponse().getErrorMessage()));
+						result.getResolvedException().getMessage()));
 	}
 	@Test
 	@Transactional

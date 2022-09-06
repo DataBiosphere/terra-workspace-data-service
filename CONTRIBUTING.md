@@ -1,12 +1,7 @@
 ## Contributing to Workspace Data Service
 
 Please see the [README](README.md) for instructions on how to set up the repo for development and testing.
-
-## Coding Style
-### Exceptions
-Custom exception classes should be located in `service/src/main/java/org.databiosphere.workspacedataservice/service/model/exception`, extend `RuntimeException` and should use the `@ResponseStatus` annotation. 
-See [`MissingReferencedTableException`](https://github.com/DataBiosphere/terra-workspace-data-service/blob/main/service/src/main/java/org/databiosphere/workspacedataservice/service/model/exception/MissingReferencedTableException.java) for an example. 
-Use custom exception classes wherever possible; if it is necessary to throw a generic exception from the controller, use a `ResponseStatusException` with appropriate HTTPStatus and a clear message.
+Be sure to check the [wiki](https://github.com/DataBiosphere/terra-workspace-data-service/wiki) for coding style guidelines and other useful info.
 
 ## Before You Open a Pull Request
 

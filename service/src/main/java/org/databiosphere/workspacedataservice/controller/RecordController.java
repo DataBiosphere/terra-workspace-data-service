@@ -38,7 +38,7 @@ public class RecordController {
 			@PathVariable("recordId") RecordId recordId, @RequestBody RecordRequest recordRequest) {
 		validateVersion(version);
 		String recordTypeName = recordType.getName();
-		if (!recordDao.recordTypeExists(instanceId, recordTypeName)){
+		if (!recordDao.recordTypeExists(instanceId, recordTypeName)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"Record type " + recordTypeName + " does not exist");
 		}
