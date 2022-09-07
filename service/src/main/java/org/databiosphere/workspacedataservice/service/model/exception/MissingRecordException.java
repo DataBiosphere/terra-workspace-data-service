@@ -5,9 +5,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.util.Arrays;
 
-@ResponseStatus(HttpStatus.NOT_FOUND)
+@ResponseStatus(code = HttpStatus.NOT_FOUND, reason = "Record not found")
 public class MissingRecordException extends RuntimeException {
-	public MissingRecordException() {
-		super("Record not found");
-	}
 }

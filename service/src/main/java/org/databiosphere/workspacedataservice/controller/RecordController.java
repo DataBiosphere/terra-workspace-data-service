@@ -38,7 +38,7 @@ public class RecordController {
 		validateVersion(version);
 		String recordTypeName = recordType.getName();
 		if (!recordDao.recordTypeExists(instanceId, recordTypeName)) {
-			throw new MissingRecordTypeException("Record type does not exist");
+			throw new MissingRecordTypeException();
 		}
 		Record singleRecord = recordDao
 				.getSingleRecord(instanceId, recordType, recordId,
@@ -104,9 +104,11 @@ public class RecordController {
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") RecordId recordId) {
 		validateVersion(version);
-		if (!recordDao.instanceSchemaExists(instanceId)
-				|| !recordDao.recordTypeExists(instanceId, recordType.getName())) {
-			throw new MissingRecordTypeException("Instance or record doesn't exist");
+		if (!recordDao.instanceSchemaExists(instanceId)) {
+			throw new MissingInstanceException();
+		}
+		if (!recordDao.recordTypeExists(instanceId, recordType.getName())) {
+			throw new MissingRecordTypeException();
 		}
 		Record result = recordDao
 				.getSingleRecord(instanceId, recordType, recordId,
@@ -174,7 +176,7 @@ public class RecordController {
 
 	private static void validateVersion(String version) {
 		if (null == version || !version.equals("v0.2")) {
-			throw new InvalidAPIException("Invalid API version specified");
+			throw new InvalidAPIException();
 		}
 	}
 

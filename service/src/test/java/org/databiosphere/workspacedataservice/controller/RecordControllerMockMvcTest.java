@@ -14,8 +14,10 @@ import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
+import org.databiosphere.workspacedataservice.service.model.exception.IllegalInstanceCreationException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidAttributeNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRecordTypeException;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordId;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -53,7 +55,7 @@ public class RecordControllerMockMvcTest {
 		UUID uuid = UUID.randomUUID();
 		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isCreated());
 		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isConflict()).andExpect(
-				result -> assertEquals("This instance already exists", result.getResolvedException().getMessage()));
+				result -> assertTrue(result.getResolvedException() instanceof IllegalInstanceCreationException));
 	}
 
 	@Test
@@ -179,9 +181,12 @@ public class RecordControllerMockMvcTest {
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
-				.andExpect(status().isBadRequest()).andExpect(
-						result -> assertEquals("It looks like you're trying to reference a record that does not exist.",
-								result.getResolvedException().getMessage()));
+				.andExpect(status().isBadRequest())
+				.andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidRelationException));
+
+		// assertEquals("It looks like you're trying to reference a record that does not
+		// exist.",
+		// result.getResolvedException().getMessage()));
 	}
 
 	@Test
