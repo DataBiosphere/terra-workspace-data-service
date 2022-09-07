@@ -92,6 +92,9 @@ From the command line, run
 ## Swagger UI
 When running locally, a Swagger UI is available at http://localhost:8080/swagger/swagger-ui.html.
 
+You can also view the swagger definitions via this third-party hosted UI: https://petstore.swagger.io/?url=https://raw.githubusercontent.com/DataBiosphere/terra-workspace-data-service/main/service/src/main/resources/static/swagger/openapi-docs.yaml.
+Note that in this third-party UI, the APIs are not active; this is only valuable for viewing the definitions.
+
 ## Docker
 To build the WDS docker image _(replace "wdsdocker" with your desired image name)_:
 ```bash
