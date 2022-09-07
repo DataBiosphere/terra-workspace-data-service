@@ -67,21 +67,24 @@ public class RecordController {
 					"Attribute names can't begin with " + RESERVED_NAME_PREFIX);
 		});
 		Set<Relation> relations = RelationUtils.findRelations(records);
-		relations.addAll(recordDao.getRelationCols(instanceId, recordType));
-		Map<String, List<Relation>> newRefCols = relations.stream()
+		List<Relation> existingRelations = recordDao.getRelationCols(instanceId, recordType);
+		relations.addAll(existingRelations);
+		Map<String, List<Relation>> allRefCols = relations.stream()
 				.collect(Collectors.groupingBy(Relation::relationColName));
-		Preconditions.checkArgument(newRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty(),
+		Preconditions.checkArgument(allRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty(),
 				"Relation attribute can only be assigned to one record type");
+		Set<String> existingRelationCols = existingRelations.stream().map(Relation::relationColName)
+				.collect(Collectors.toSet());
 		for (String col : colsToAdd.keySet()) {
 			String referencedRecordType = null;
-			if (newRefCols.containsKey(col)) {
-				referencedRecordType = newRefCols.get(col).get(0).relationRecordType().getName();
+			if (allRefCols.containsKey(col)) {
+				referencedRecordType = allRefCols.get(col).get(0).relationRecordType().getName();
+				existingRelationCols.add(col);
 			}
 			recordDao.addColumn(instanceId, recordType, col, colsToAdd.get(col), referencedRecordType);
 			schema.put(col, colsToAdd.get(col));
 		}
-		if (!recordDao.getRelationCols(instanceId, recordType).stream().map(Relation::relationColName)
-				.collect(Collectors.toSet()).containsAll(newRefCols.keySet())) {
+		if (!existingRelationCols.containsAll(allRefCols.keySet())) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"It looks like you're attempting to assign a relation "
 							+ "to an existing column that was not configured for relations");
