@@ -67,12 +67,10 @@ public class RecordController {
 					"Attribute names can't begin with " + RESERVED_NAME_PREFIX);
 		});
 		Set<Relation> relations = RelationUtils.findRelations(records);
+		relations.addAll(recordDao.getRelationCols(instanceId, recordType));
 		Map<String, List<Relation>> newRefCols = relations.stream()
 				.collect(Collectors.groupingBy(Relation::relationColName));
-		// TODO: better communicate to the user that they're trying to assign multiple
-		// record types to a
-		// single column
-		Preconditions.checkArgument(newRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty());
+		Preconditions.checkArgument(newRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty(), "Relation attribute can only be assigned to one record type");
 		for (String col : colsToAdd.keySet()) {
 			String referencedRecordType = null;
 			if (newRefCols.containsKey(col)) {
