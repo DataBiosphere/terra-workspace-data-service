@@ -23,6 +23,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.*;
@@ -73,10 +75,16 @@ public class RecordDao {
 	}
 
 	private String getQualifiedTableName(String recordType, UUID instanceId) {
-		if(!ALLOWED_RECORD_TYPES.contains(recordType)){
+		if(containsIllegalChars(recordType)){
 			throw new IllegalArgumentException("No sir, that's not a valid table " + recordType);
 		}
 		return quote(instanceId.toString()) + "." + quote(recordType);
+	}
+
+	private boolean containsIllegalChars(String recordType) {
+		Pattern pattern = Pattern.compile("[=;,]");
+		Matcher matcher = pattern.matcher(recordType);
+		return matcher.find();
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, String tableName) {
