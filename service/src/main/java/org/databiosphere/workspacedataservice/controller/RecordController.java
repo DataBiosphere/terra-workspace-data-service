@@ -43,7 +43,7 @@ public class RecordController {
 		Record singleRecord = recordDao
 				.getSingleRecord(instanceId, recordType, recordId,
 						recordDao.getRelationCols(instanceId, recordTypeName))
-				.orElseThrow(() -> new MissingRecordException());
+				.orElseThrow(MissingRecordException::new);
 		Map<String, Object> updatedAtts = recordRequest.recordAttributes().getAttributes();
 		Map<String, Object> allAttrs = new HashMap<>(singleRecord.getAttributes().getAttributes());
 		allAttrs.putAll(updatedAtts);
@@ -113,7 +113,7 @@ public class RecordController {
 		Record result = recordDao
 				.getSingleRecord(instanceId, recordType, recordId,
 						recordDao.getRelationCols(instanceId, recordType.getName()))
-				.orElseThrow(() -> new MissingRecordException());
+				.orElseThrow(MissingRecordException::new);
 		RecordResponse response = new RecordResponse(recordId, recordType, result.getAttributes(),
 				new RecordMetadata("TODO: RECORDMETADATA"));
 		return new ResponseEntity<>(response, HttpStatus.OK);
