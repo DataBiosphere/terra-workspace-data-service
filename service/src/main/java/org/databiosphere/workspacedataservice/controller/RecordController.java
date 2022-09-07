@@ -70,7 +70,8 @@ public class RecordController {
 		relations.addAll(recordDao.getRelationCols(instanceId, recordType));
 		Map<String, List<Relation>> newRefCols = relations.stream()
 				.collect(Collectors.groupingBy(Relation::relationColName));
-		Preconditions.checkArgument(newRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty(), "Relation attribute can only be assigned to one record type");
+		Preconditions.checkArgument(newRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty(),
+				"Relation attribute can only be assigned to one record type");
 		for (String col : colsToAdd.keySet()) {
 			String referencedRecordType = null;
 			if (newRefCols.containsKey(col)) {
