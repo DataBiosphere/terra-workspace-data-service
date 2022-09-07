@@ -62,9 +62,9 @@ public class RecordDao {
 			Set<Relation> relations) {
 		String columnDefs = genColumnDefs(tableInfo);
 		try {
-			String sql = "create table %s ( "
+			String sql = "create table %I.%I ( "
 					+ columnDefs + (!relations.isEmpty() ? ", " + getFkSql(relations, instanceId) : "") + ")";
-			namedTemplate.getJdbcTemplate().update("call create_table_test(?, ?)", sql, getQualifiedTableName(tableName, instanceId));
+			namedTemplate.getJdbcTemplate().update("call create_table_test(?,?,?)", sql, tableName, instanceId.toString());
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingTable(sqlEx,
