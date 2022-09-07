@@ -62,6 +62,7 @@ public class RecordControllerMockMvcTest {
 	}
 
 	@Test
+	@Transactional
 	void tryFetchingMissingRecord() throws Exception {
 		String recordType1 = "recordType1";
 		createSomeRecords(recordType1, 1);
