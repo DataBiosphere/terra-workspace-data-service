@@ -183,10 +183,6 @@ public class RecordControllerMockMvcTest {
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
 				.andExpect(status().isBadRequest())
 				.andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidRelationException));
-
-		// assertEquals("It looks like you're trying to reference a record that does not
-		// exist.",
-		// result.getResolvedException().getMessage()));
 	}
 
 	@Test
