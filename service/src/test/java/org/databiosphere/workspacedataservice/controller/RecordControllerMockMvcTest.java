@@ -11,19 +11,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
-import org.databiosphere.workspacedataservice.shared.model.RecordId;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
-import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -229,6 +224,36 @@ public class RecordControllerMockMvcTest {
 				.andExpect(status().isBadRequest())
 				.andExpect(result -> assertEquals("Referenced table(s) [missing] do(es) not exist",
 						result.getResolvedException().getMessage()));
+	}
+
+	@Test
+	@Transactional
+	void putRecordWithMismatchedReference() throws Exception {
+		String referencedType = "referenced_Type";
+		String referringType = "referring_Type";
+		String recordId = "record_0";
+		createSomeRecords(referencedType, 1);
+		createSomeRecords(referringType, 1);
+		Map<String, Object> attributes = new HashMap<>();
+		String ref = RelationUtils.createRelationString(referencedType, recordId);
+		attributes.put("ref-attr", ref);
+		//Add referencing attribute to referring_Type
+		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						referringType, recordId)
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk());
+		//Create a new referring_Type that puts a reference to a non-existent recordType in the pre-existing referencing attribute
+		Map<String, Object> new_attributes = new HashMap<>();
+		String invalid_ref = RelationUtils.createRelationString("missing", recordId);
+		new_attributes.put("ref-attr", invalid_ref);
+
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						referringType, "new_record")
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(new_attributes))))
+						.contentType(MediaType.APPLICATION_JSON))
+						.andExpect(result -> assertTrue(result.getResolvedException() instanceof IllegalArgumentException));
+
 	}
 
 	@Test
