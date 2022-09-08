@@ -174,7 +174,7 @@ public class RecordDao {
 
 	private void checkForMissingTable(SQLException sqlEx) {
 		if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("42P01")) {
-			throw new MissingObjectException("Referenced record type");
+			throw new MissingObjectException("Record type for relation");
 		}
 	}
 

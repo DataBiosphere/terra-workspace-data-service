@@ -172,7 +172,7 @@ public class RecordControllerMockMvcTest {
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
-				.andExpect(status().isBadRequest())
+				.andExpect(status().isForbidden())
 				.andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidRelationException));
 	}
 
@@ -234,9 +234,9 @@ public class RecordControllerMockMvcTest {
 				recordType, "record_0")
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
-				.andExpect(status().isBadRequest())
+				.andExpect(status().isForbidden())
 				.andExpect(result -> assertTrue(result.getResolvedException().getMessage()
-						.contains("relation to an existing column that was not configured for relations")));
+						.contains("relation to an existing attribute that was not configured for relations")));
 	}
 
 	@Test

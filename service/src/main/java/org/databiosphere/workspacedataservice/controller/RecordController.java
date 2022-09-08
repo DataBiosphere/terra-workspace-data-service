@@ -88,7 +88,7 @@ public class RecordController {
 		if (!recordDao.getRelationCols(instanceId, recordType).stream().map(Relation::relationColName)
 				.collect(Collectors.toSet()).containsAll(newRefCols.keySet())) {
 			throw new InvalidRelationException("It looks like you're attempting to assign a relation "
-					+ "to an existing column that was not configured for relations");
+					+ "to an existing attribute that was not configured for relations");
 		}
 		Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference.entriesDiffering();
 		for (String column : differenceMap.keySet()) {
