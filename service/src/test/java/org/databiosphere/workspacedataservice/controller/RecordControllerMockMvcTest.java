@@ -252,7 +252,8 @@ public class RecordControllerMockMvcTest {
 						referringType, "new_record")
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(new_attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
-						.andExpect(result -> assertTrue(result.getResolvedException() instanceof IllegalArgumentException));
+						.andExpect(status().isBadRequest());
+//						.andExpect(result -> assertTrue(result.getResolvedException() instanceof IllegalArgumentException));
 
 	}
 

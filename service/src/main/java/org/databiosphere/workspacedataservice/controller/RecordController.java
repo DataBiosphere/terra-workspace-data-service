@@ -71,8 +71,10 @@ public class RecordController {
 		relations.addAll(existingRelations);
 		Map<String, List<Relation>> allRefCols = relations.stream()
 				.collect(Collectors.groupingBy(Relation::relationColName));
-		Preconditions.checkArgument(allRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty(),
-				"Relation attribute can only be assigned to one record type");
+		if (!allRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty()){
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"Relation attribute can only be assigned to one record type");
+		}
 		Set<String> existingRelationCols = existingRelations.stream().map(Relation::relationColName)
 				.collect(Collectors.toSet());
 		for (String col : colsToAdd.keySet()) {
