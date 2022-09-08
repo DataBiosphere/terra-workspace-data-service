@@ -138,25 +138,26 @@ public class RecordDaoTest {
 	void testDeleteRelatedRecord() {
 		// make sure columns are in recordType, as this will be taken care of before we
 		// get to the dao
-		recordDao.addColumn(instanceId, recordType.getName(), "foo", DataTypeMapping.STRING);
+		String recordTypeName = recordType.getName();
+		recordDao.addColumn(instanceId, recordTypeName, "foo", DataTypeMapping.STRING);
 
-		recordDao.addColumn(instanceId, recordType.getName(), "testRecordType", DataTypeMapping.STRING,
+		recordDao.addColumn(instanceId, recordTypeName, "testRecordType", DataTypeMapping.STRING,
 				"testRecordType");
 
 		RecordId refRecordId = new RecordId("referencedRecord");
 		Record referencedRecord = new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
-		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(referencedRecord),
+		recordDao.batchUpsert(instanceId, recordTypeName, Collections.singletonList(referencedRecord),
 				new HashMap<>());
 
 		RecordId recordId = new RecordId("testRecord");
 		String reference = RelationUtils.createRelationString("testRecordType", "referencedRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(Map.of("testRecordType", reference)));
-		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord),
+		recordDao.batchUpsert(instanceId, recordTypeName, Collections.singletonList(testRecord),
 				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.STRING)));
 
 		// Should throw an error
 		assertThrows(IllegalDeletionException.class, () -> {
-			recordDao.deleteSingleRecord(instanceId, recordType.getName(), "referencedRecord");
+			recordDao.deleteSingleRecord(instanceId, recordTypeName, "referencedRecord");
 		}, "Exception should be thrown when attempting to delete related record");
 	}
 }
