@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.dao;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.model.exception.IllegalDeletionException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingReferencedTableException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -154,10 +155,8 @@ public class RecordDaoTest {
 				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.STRING)));
 
 		// Should throw an error
-		Exception thrown = assertThrows(Exception.class, () -> {
+		assertThrows(IllegalDeletionException.class, () -> {
 			recordDao.deleteSingleRecord(instanceId, recordType.getName(), "referencedRecord");
 		}, "Exception should be thrown when attempting to delete related record");
-
-		assert (thrown.getMessage().contains("Unable to delete this record"));
 	}
 }

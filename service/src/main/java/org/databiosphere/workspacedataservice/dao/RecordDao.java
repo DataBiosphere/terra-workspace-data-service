@@ -188,8 +188,7 @@ public class RecordDao {
 
 	private void checkForTableRelation(SQLException sqlEx) {
 		if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")) {
-			throw new IllegalDeletionException(
-					"Unable to delete this record because another record has a relation to it.");
+			throw new IllegalDeletionException();
 		}
 	}
 

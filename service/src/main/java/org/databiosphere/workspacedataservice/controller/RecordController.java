@@ -40,10 +40,8 @@ public class RecordController {
 		if (!recordDao.recordTypeExists(instanceId, recordTypeName)) {
 			throw new MissingRecordTypeException();
 		}
-		Record singleRecord = recordDao
-				.getSingleRecord(instanceId, recordType, recordId,
-						recordDao.getRelationCols(instanceId, recordTypeName))
-				.orElseThrow(MissingRecordException::new);
+		Record singleRecord = recordDao.getSingleRecord(instanceId, recordType, recordId,
+				recordDao.getRelationCols(instanceId, recordTypeName)).orElseThrow(MissingRecordException::new);
 		Map<String, Object> updatedAtts = recordRequest.recordAttributes().getAttributes();
 		Map<String, Object> allAttrs = new HashMap<>(singleRecord.getAttributes().getAttributes());
 		allAttrs.putAll(updatedAtts);
@@ -158,7 +156,7 @@ public class RecordController {
 			@PathVariable("version") String version) {
 		validateVersion(version);
 		if (recordDao.instanceSchemaExists(instanceId)) {
-			throw new IllegalInstanceCreationException("This instance already exists");
+			throw new IllegalInstanceCreationException();
 		}
 		recordDao.createSchema(instanceId);
 		return new ResponseEntity<>(HttpStatus.CREATED);
