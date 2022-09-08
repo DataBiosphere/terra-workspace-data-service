@@ -237,24 +237,23 @@ public class RecordControllerMockMvcTest {
 		Map<String, Object> attributes = new HashMap<>();
 		String ref = RelationUtils.createRelationString(referencedType, recordId);
 		attributes.put("ref-attr", ref);
-		//Add referencing attribute to referring_Type
+		// Add referencing attribute to referring_Type
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-						referringType, recordId)
+				referringType, recordId)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk());
-		//Create a new referring_Type that puts a reference to a non-existent recordType in the pre-existing referencing attribute
+		// Create a new referring_Type that puts a reference to a non-existent
+		// recordType in the pre-existing referencing attribute
 		Map<String, Object> new_attributes = new HashMap<>();
 		String invalid_ref = RelationUtils.createRelationString("missing", recordId);
 		new_attributes.put("ref-attr", invalid_ref);
 
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-						referringType, "new_record")
+				referringType, "new_record")
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(new_attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
-						.andExpect(status().isBadRequest());
-//						.andExpect(result -> assertTrue(result.getResolvedException() instanceof IllegalArgumentException));
-
+				.andExpect(status().isBadRequest());
 	}
 
 	@Test
