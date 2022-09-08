@@ -2,19 +2,20 @@ package org.databiosphere.workspacedataservice.dao;
 
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
-import org.databiosphere.workspacedataservice.service.model.exception.IllegalDeletionException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
-import org.databiosphere.workspacedataservice.service.model.exception.MissingReferencedTableException;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.postgresql.util.PGobject;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -61,8 +62,7 @@ public class RecordDao {
 					+ columnDefs + (!relations.isEmpty() ? ", " + getFkSql(relations, instanceId) : "") + ")");
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
-				checkForMissingTable(sqlEx,
-						relations.stream().map(r -> r.relationRecordType().getName()).toList().toArray(new String[0]));
+				checkForMissingTable(sqlEx);
 			}
 			throw e;
 		}
@@ -87,13 +87,12 @@ public class RecordDao {
 						});
 	}
 
-	public void addColumn(UUID instanceId, String tableName, String columnName, DataTypeMapping colType)
-			throws MissingReferencedTableException {
+	public void addColumn(UUID instanceId, String tableName, String columnName, DataTypeMapping colType) {
 		addColumn(instanceId, tableName, columnName, colType, null);
 	}
 
 	public void addColumn(UUID instanceId, String tableName, String columnName, DataTypeMapping colType,
-			String referencedTable) throws MissingReferencedTableException {
+			String referencedTable) {
 		try {
 			namedTemplate.getJdbcTemplate()
 					.update("alter table " + getQualifiedTableName(tableName, instanceId) + " add column "
@@ -103,7 +102,7 @@ public class RecordDao {
 									: ""));
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
-				checkForMissingTable(sqlEx, referencedTable);
+				checkForMissingTable(sqlEx);
 			}
 			throw e;
 		}
@@ -167,15 +166,15 @@ public class RecordDao {
 			namedTemplate.getJdbcTemplate().execute(addFk);
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
-				checkForMissingTable(sqlEx, referencedRecordType);
+				checkForMissingTable(sqlEx);
 			}
 			throw e;
 		}
 	}
 
-	private void checkForMissingTable(SQLException sqlEx, String... missingTableName) {
+	private void checkForMissingTable(SQLException sqlEx) {
 		if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("42P01")) {
-			throw new MissingReferencedTableException(missingTableName);
+			throw new MissingObjectException("Referenced record type");
 		}
 	}
 
@@ -188,7 +187,8 @@ public class RecordDao {
 
 	private void checkForTableRelation(SQLException sqlEx) {
 		if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")) {
-			throw new IllegalDeletionException();
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"Unable to delete this record because another record has a relation to it.");
 		}
 	}
 

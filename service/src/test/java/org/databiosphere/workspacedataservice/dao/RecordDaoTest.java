@@ -3,9 +3,7 @@ package org.databiosphere.workspacedataservice.dao;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
-import org.databiosphere.workspacedataservice.service.model.exception.IllegalDeletionException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
-import org.databiosphere.workspacedataservice.service.model.exception.MissingReferencedTableException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordId;
@@ -16,6 +14,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
@@ -59,7 +58,7 @@ public class RecordDaoTest {
 
 	@Test
 	@Transactional
-	void testCreateSingleRecord() throws InvalidRelationException, MissingReferencedTableException {
+	void testCreateSingleRecord() throws InvalidRelationException {
 		recordDao.addColumn(instanceId, recordType.getName(), "foo", DataTypeMapping.STRING);
 
 		// create record with no attributes
@@ -141,13 +140,11 @@ public class RecordDaoTest {
 		String recordTypeName = recordType.getName();
 		recordDao.addColumn(instanceId, recordTypeName, "foo", DataTypeMapping.STRING);
 
-		recordDao.addColumn(instanceId, recordTypeName, "testRecordType", DataTypeMapping.STRING,
-				"testRecordType");
+		recordDao.addColumn(instanceId, recordTypeName, "testRecordType", DataTypeMapping.STRING, "testRecordType");
 
 		RecordId refRecordId = new RecordId("referencedRecord");
 		Record referencedRecord = new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
-		recordDao.batchUpsert(instanceId, recordTypeName, Collections.singletonList(referencedRecord),
-				new HashMap<>());
+		recordDao.batchUpsert(instanceId, recordTypeName, Collections.singletonList(referencedRecord), new HashMap<>());
 
 		RecordId recordId = new RecordId("testRecord");
 		String reference = RelationUtils.createRelationString("testRecordType", "referencedRecord");
@@ -156,7 +153,7 @@ public class RecordDaoTest {
 				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.STRING)));
 
 		// Should throw an error
-		assertThrows(IllegalDeletionException.class, () -> {
+		assertThrows(ResponseStatusException.class, () -> {
 			recordDao.deleteSingleRecord(instanceId, recordTypeName, "referencedRecord");
 		}, "Exception should be thrown when attempting to delete related record");
 	}

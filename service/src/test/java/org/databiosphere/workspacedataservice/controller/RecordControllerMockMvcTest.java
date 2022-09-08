@@ -11,23 +11,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
+
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.model.exception.IllegalInstanceCreationException;
-import org.databiosphere.workspacedataservice.service.model.exception.InvalidAttributeNameException;
-import org.databiosphere.workspacedataservice.service.model.exception.InvalidRecordTypeException;
-import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
+import org.databiosphere.workspacedataservice.service.model.exception.*;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
-import org.databiosphere.workspacedataservice.shared.model.RecordId;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
-import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,8 +47,7 @@ public class RecordControllerMockMvcTest {
 	void createInstanceAndTryToCreateAgain() throws Exception {
 		UUID uuid = UUID.randomUUID();
 		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isCreated());
-		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isConflict()).andExpect(
-				result -> assertTrue(result.getResolvedException() instanceof IllegalInstanceCreationException));
+		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isConflict());
 	}
 
 	@Test
@@ -84,7 +76,7 @@ public class RecordControllerMockMvcTest {
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isBadRequest())
-				.andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidRecordTypeException));
+				.andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidNameException));
 	}
 
 	@Test
@@ -97,8 +89,8 @@ public class RecordControllerMockMvcTest {
 		mockMvc.perform(patch("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				recordType1, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(illegalAttribute)))))
-				.andExpect(status().isBadRequest()).andExpect(
-						result -> assertTrue(result.getResolvedException() instanceof InvalidAttributeNameException));
+				.andExpect(status().isBadRequest())
+				.andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidNameException));
 	}
 	@Test
 	@Transactional
@@ -163,9 +155,8 @@ public class RecordControllerMockMvcTest {
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
-				.andExpect(status().isBadRequest())
-				.andExpect(result -> assertEquals("Referenced table(s) [missing] do(es) not exist",
-						result.getResolvedException().getMessage()));
+				.andExpect(status().isNotFound())
+				.andExpect(result -> assertTrue(result.getResolvedException() instanceof MissingObjectException));
 	}
 
 	@Test
@@ -227,9 +218,8 @@ public class RecordControllerMockMvcTest {
 				recordType, recordId)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
-				.andExpect(status().isBadRequest())
-				.andExpect(result -> assertEquals("Referenced table(s) [missing] do(es) not exist",
-						result.getResolvedException().getMessage()));
+				.andExpect(status().isNotFound())
+				.andExpect(result -> assertTrue(result.getResolvedException() instanceof MissingObjectException));
 	}
 
 	@Test

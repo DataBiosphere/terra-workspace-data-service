@@ -14,6 +14,8 @@ import org.databiosphere.workspacedataservice.shared.model.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import org.webjars.NotFoundException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,10 +40,12 @@ public class RecordController {
 		validateVersion(version);
 		String recordTypeName = recordType.getName();
 		if (!recordDao.recordTypeExists(instanceId, recordTypeName)) {
-			throw new MissingRecordTypeException();
+			throw new MissingObjectException("Record type");
 		}
-		Record singleRecord = recordDao.getSingleRecord(instanceId, recordType, recordId,
-				recordDao.getRelationCols(instanceId, recordTypeName)).orElseThrow(MissingRecordException::new);
+		Record singleRecord = recordDao
+				.getSingleRecord(instanceId, recordType, recordId,
+						recordDao.getRelationCols(instanceId, recordTypeName))
+				.orElseThrow(() -> new MissingObjectException("Record"));
 		Map<String, Object> updatedAtts = recordRequest.recordAttributes().getAttributes();
 		Map<String, Object> allAttrs = new HashMap<>(singleRecord.getAttributes().getAttributes());
 		allAttrs.putAll(updatedAtts);
@@ -64,7 +68,7 @@ public class RecordController {
 		MapDifference<String, DataTypeMapping> difference = Maps.difference(existingTableSchema, schema);
 		Map<String, DataTypeMapping> colsToAdd = difference.entriesOnlyOnRight();
 		colsToAdd.keySet().stream().filter(s -> s.startsWith(RESERVED_NAME_PREFIX)).findAny().ifPresent(s -> {
-			throw new InvalidAttributeNameException();
+			throw new InvalidNameException("Attribute");
 		});
 		Set<Relation> relations = RelationUtils.findRelations(records);
 		Map<String, List<Relation>> newRefCols = relations.stream()
@@ -103,15 +107,15 @@ public class RecordController {
 			@PathVariable("recordId") RecordId recordId) {
 		validateVersion(version);
 		if (!recordDao.instanceSchemaExists(instanceId)) {
-			throw new MissingInstanceException();
+			throw new MissingObjectException("Instance");
 		}
 		if (!recordDao.recordTypeExists(instanceId, recordType.getName())) {
-			throw new MissingRecordTypeException();
+			throw new MissingObjectException("Record type");
 		}
 		Record result = recordDao
 				.getSingleRecord(instanceId, recordType, recordId,
 						recordDao.getRelationCols(instanceId, recordType.getName()))
-				.orElseThrow(MissingRecordException::new);
+				.orElseThrow(() -> new MissingObjectException("Record"));
 		RecordResponse response = new RecordResponse(recordId, recordType, result.getAttributes(),
 				new RecordMetadata("TODO: RECORDMETADATA"));
 		return new ResponseEntity<>(response, HttpStatus.OK);
@@ -156,7 +160,7 @@ public class RecordController {
 			@PathVariable("version") String version) {
 		validateVersion(version);
 		if (recordDao.instanceSchemaExists(instanceId)) {
-			throw new IllegalInstanceCreationException();
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "This instance already exists");
 		}
 		recordDao.createSchema(instanceId);
 		return new ResponseEntity<>(HttpStatus.CREATED);
@@ -174,14 +178,14 @@ public class RecordController {
 
 	private static void validateVersion(String version) {
 		if (null == version || !version.equals("v0.2")) {
-			throw new InvalidAPIException();
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid API version specified");
 		}
 	}
 
 	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, String recordTypeName,
 			Map<String, DataTypeMapping> requestSchema) {
 		if (recordTypeName.startsWith(RESERVED_NAME_PREFIX)) {
-			throw new InvalidRecordTypeException();
+			throw new InvalidNameException("Record type");
 		}
 		List<Record> records = Collections.singletonList(newRecord);
 		recordDao.createRecordType(instanceId, requestSchema, recordTypeName, RelationUtils.findRelations(records));
