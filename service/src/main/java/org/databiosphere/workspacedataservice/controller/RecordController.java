@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
@@ -15,7 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.webjars.NotFoundException;
 
 import java.util.*;
 import java.util.stream.Collectors;
