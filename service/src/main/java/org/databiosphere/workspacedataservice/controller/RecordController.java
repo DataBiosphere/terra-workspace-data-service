@@ -68,30 +68,7 @@ public class RecordController {
 		colsToAdd.keySet().stream().filter(s -> s.startsWith(RESERVED_NAME_PREFIX)).findAny().ifPresent(s -> {
 			throw new InvalidNameException("Attribute");
 		});
-		Set<Relation> relations = RelationUtils.findRelations(records);
-		List<Relation> existingRelations = recordDao.getRelationCols(instanceId, recordType);
-		relations.addAll(existingRelations);
-		Map<String, List<Relation>> allRefCols = relations.stream()
-				.collect(Collectors.groupingBy(Relation::relationColName));
-		if (!allRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty()) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"Relation attribute can only be assigned to one record type");
-		}
-		Set<String> existingRelationCols = existingRelations.stream().map(Relation::relationColName)
-				.collect(Collectors.toSet());
-		for (String col : colsToAdd.keySet()) {
-			String referencedRecordType = null;
-			if (allRefCols.containsKey(col)) {
-				referencedRecordType = allRefCols.get(col).get(0).relationRecordType().getName();
-				existingRelationCols.add(col);
-			}
-			recordDao.addColumn(instanceId, recordType, col, colsToAdd.get(col), referencedRecordType);
-			schema.put(col, colsToAdd.get(col));
-		}
-		if (!existingRelationCols.containsAll(allRefCols.keySet())) {
-			throw new InvalidRelationException("It looks like you're attempting to assign a relation "
-					+ "to an existing attribute that was not configured for relations");
-		}
+		validateRelationsAndAddColumns(instanceId, recordType, schema, records, colsToAdd, existingTableSchema);
 		Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference.entriesDiffering();
 		for (String column : differenceMap.keySet()) {
 			MapDifference.ValueDifference<DataTypeMapping> valueDifference = differenceMap.get(column);
@@ -101,6 +78,36 @@ public class RecordController {
 			schema.put(column, updatedColType);
 		}
 		return schema;
+	}
+
+	private void validateRelationsAndAddColumns(UUID instanceId, String recordType, Map<String, DataTypeMapping> requestSchema,
+												List<Record> records, Map<String, DataTypeMapping> colsToAdd, Map<String, DataTypeMapping> existingSchema) {
+		Set<Relation> relations = RelationUtils.findRelations(records);
+		List<Relation> existingRelations = recordDao.getRelationCols(instanceId, recordType);
+		Set<String> existingRelationCols = existingRelations.stream().map(Relation::relationColName).collect(Collectors.toSet());
+		//look for case where requested relation column already exists as a non-relational column
+		for (Relation relation : relations) {
+			String col = relation.relationColName();
+			if(!existingRelationCols.contains(col) && existingSchema.containsKey(col)){
+				throw new InvalidRelationException("It looks like you're attempting to assign a relation "
+						+ "to an existing attribute that was not configured for relations");
+			}
+		}
+		relations.addAll(existingRelations);
+		Map<String, List<Relation>> allRefCols = relations.stream()
+				.collect(Collectors.groupingBy(Relation::relationColName));
+		if (allRefCols.values().stream().anyMatch(l -> l.size() > 1)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"Relation attribute can only be assigned to one record type");
+		}
+		for (String col : colsToAdd.keySet()) {
+			String referencedRecordType = null;
+			if (allRefCols.containsKey(col)) {
+				referencedRecordType = allRefCols.get(col).get(0).relationRecordType().getName();
+			}
+			recordDao.addColumn(instanceId, recordType, col, colsToAdd.get(col), referencedRecordType);
+			requestSchema.put(col, colsToAdd.get(col));
+		}
 	}
 
 	@GetMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
