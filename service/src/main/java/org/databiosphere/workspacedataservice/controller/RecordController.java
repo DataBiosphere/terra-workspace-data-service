@@ -68,7 +68,7 @@ public class RecordController {
 		colsToAdd.keySet().stream().filter(s -> s.startsWith(RESERVED_NAME_PREFIX)).findAny().ifPresent(s -> {
 			throw new InvalidNameException("Attribute");
 		});
-		validateRelations(instanceId, recordType, schema, records, colsToAdd, existingTableSchema);
+		validateRelationsAndAddColumns(instanceId, recordType, schema, records, colsToAdd, existingTableSchema);
 		Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference.entriesDiffering();
 		for (String column : differenceMap.keySet()) {
 			MapDifference.ValueDifference<DataTypeMapping> valueDifference = differenceMap.get(column);
@@ -80,12 +80,12 @@ public class RecordController {
 		return schema;
 	}
 
-	private void validateRelations(UUID instanceId, String recordType, Map<String, DataTypeMapping> requestSchema,
-								   List<Record> records, Map<String, DataTypeMapping> colsToAdd, Map<String, DataTypeMapping> existingSchema) {
+	private void validateRelationsAndAddColumns(UUID instanceId, String recordType, Map<String, DataTypeMapping> requestSchema,
+												List<Record> records, Map<String, DataTypeMapping> colsToAdd, Map<String, DataTypeMapping> existingSchema) {
 		Set<Relation> relations = RelationUtils.findRelations(records);
 		List<Relation> existingRelations = recordDao.getRelationCols(instanceId, recordType);
 		Set<String> existingRelationCols = existingRelations.stream().map(Relation::relationColName).collect(Collectors.toSet());
-		//look for a case where requested relation column already exists as another type
+		//look for case where relation column already exists as a non-relational column
 		for (Relation relation : relations) {
 			String col = relation.relationColName();
 			if(!existingRelationCols.contains(col) && existingSchema.containsKey(col)){
