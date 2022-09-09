@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.controller;
 
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -12,6 +11,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
+import org.databiosphere.workspacedataservice.service.RelationUtils;
+import org.databiosphere.workspacedataservice.service.model.exception.*;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,8 +46,7 @@ public class RecordControllerMockMvcTest {
 	void createInstanceAndTryToCreateAgain() throws Exception {
 		UUID uuid = UUID.randomUUID();
 		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isCreated());
-		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isConflict()).andExpect(
-				result -> assertEquals("This schema already exists", result.getResponse().getErrorMessage()));
+		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isConflict());
 	}
 
 	@Test
@@ -75,8 +75,7 @@ public class RecordControllerMockMvcTest {
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isBadRequest())
-				.andExpect(result -> assertEquals("Record types can't start with sys_",
-						result.getResponse().getErrorMessage()));
+				.andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidNameException));
 	}
 
 	@Test
@@ -90,8 +89,7 @@ public class RecordControllerMockMvcTest {
 				recordType1, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(illegalAttribute)))))
 				.andExpect(status().isBadRequest())
-				.andExpect(result -> assertEquals("Attribute names can't begin with sys_",
-						result.getResponse().getErrorMessage()));
+				.andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidNameException));
 	}
 	@Test
 	@Transactional
@@ -156,9 +154,8 @@ public class RecordControllerMockMvcTest {
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
-				.andExpect(status().isBadRequest())
-				.andExpect(result -> assertEquals("Referenced table(s) [missing] do(es) not exist",
-						result.getResolvedException().getMessage()));
+				.andExpect(status().isNotFound())
+				.andExpect(result -> assertTrue(result.getResolvedException() instanceof MissingObjectException));
 	}
 
 	@Test
@@ -174,9 +171,8 @@ public class RecordControllerMockMvcTest {
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
-				.andExpect(status().isBadRequest()).andExpect(
-						result -> assertEquals("It looks like you're trying to reference a record that does not exist.",
-								result.getResolvedException().getMessage()));
+				.andExpect(status().isForbidden())
+				.andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidRelationException));
 	}
 
 	@Test
@@ -221,9 +217,8 @@ public class RecordControllerMockMvcTest {
 				recordType, recordId)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
-				.andExpect(status().isBadRequest())
-				.andExpect(result -> assertEquals("Referenced table(s) [missing] do(es) not exist",
-						result.getResolvedException().getMessage()));
+				.andExpect(status().isNotFound())
+				.andExpect(result -> assertTrue(result.getResolvedException() instanceof MissingObjectException));
 	}
 
 	@Test
@@ -268,9 +263,9 @@ public class RecordControllerMockMvcTest {
 				recordType, "record_0")
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 						.contentType(MediaType.APPLICATION_JSON))
-				.andExpect(status().isBadRequest())
+				.andExpect(status().isForbidden())
 				.andExpect(result -> assertTrue(result.getResolvedException().getMessage()
-						.contains("relation to an existing column that was not configured for relations")));
+						.contains("relation to an existing attribute that was not configured for relations")));
 	}
 
 	@Test
