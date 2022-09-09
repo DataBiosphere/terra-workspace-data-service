@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
@@ -15,7 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.webjars.NotFoundException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -70,26 +68,7 @@ public class RecordController {
 		colsToAdd.keySet().stream().filter(s -> s.startsWith(RESERVED_NAME_PREFIX)).findAny().ifPresent(s -> {
 			throw new InvalidNameException("Attribute");
 		});
-		Set<Relation> relations = RelationUtils.findRelations(records);
-		Map<String, List<Relation>> newRefCols = relations.stream()
-				.collect(Collectors.groupingBy(Relation::relationColName));
-		// TODO: better communicate to the user that they're trying to assign multiple
-		// record types to a
-		// single column
-		Preconditions.checkArgument(newRefCols.values().stream().filter(l -> l.size() > 1).findAny().isEmpty());
-		for (String col : colsToAdd.keySet()) {
-			String referencedRecordType = null;
-			if (newRefCols.containsKey(col)) {
-				referencedRecordType = newRefCols.get(col).get(0).relationRecordType().getName();
-			}
-			recordDao.addColumn(instanceId, recordType, col, colsToAdd.get(col), referencedRecordType);
-			schema.put(col, colsToAdd.get(col));
-		}
-		if (!recordDao.getRelationCols(instanceId, recordType).stream().map(Relation::relationColName)
-				.collect(Collectors.toSet()).containsAll(newRefCols.keySet())) {
-			throw new InvalidRelationException("It looks like you're attempting to assign a relation "
-					+ "to an existing attribute that was not configured for relations");
-		}
+		validateRelationsAndAddColumns(instanceId, recordType, schema, records, colsToAdd, existingTableSchema);
 		Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference.entriesDiffering();
 		for (String column : differenceMap.keySet()) {
 			MapDifference.ValueDifference<DataTypeMapping> valueDifference = differenceMap.get(column);
@@ -99,6 +78,36 @@ public class RecordController {
 			schema.put(column, updatedColType);
 		}
 		return schema;
+	}
+
+	private void validateRelationsAndAddColumns(UUID instanceId, String recordType, Map<String, DataTypeMapping> requestSchema,
+												List<Record> records, Map<String, DataTypeMapping> colsToAdd, Map<String, DataTypeMapping> existingSchema) {
+		Set<Relation> relations = RelationUtils.findRelations(records);
+		List<Relation> existingRelations = recordDao.getRelationCols(instanceId, recordType);
+		Set<String> existingRelationCols = existingRelations.stream().map(Relation::relationColName).collect(Collectors.toSet());
+		//look for case where requested relation column already exists as a non-relational column
+		for (Relation relation : relations) {
+			String col = relation.relationColName();
+			if(!existingRelationCols.contains(col) && existingSchema.containsKey(col)){
+				throw new InvalidRelationException("It looks like you're attempting to assign a relation "
+						+ "to an existing attribute that was not configured for relations");
+			}
+		}
+		relations.addAll(existingRelations);
+		Map<String, List<Relation>> allRefCols = relations.stream()
+				.collect(Collectors.groupingBy(Relation::relationColName));
+		if (allRefCols.values().stream().anyMatch(l -> l.size() > 1)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"Relation attribute can only be assigned to one record type");
+		}
+		for (String col : colsToAdd.keySet()) {
+			String referencedRecordType = null;
+			if (allRefCols.containsKey(col)) {
+				referencedRecordType = allRefCols.get(col).get(0).relationRecordType().getName();
+			}
+			recordDao.addColumn(instanceId, recordType, col, colsToAdd.get(col), referencedRecordType);
+			requestSchema.put(col, colsToAdd.get(col));
+		}
 	}
 
 	@GetMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")

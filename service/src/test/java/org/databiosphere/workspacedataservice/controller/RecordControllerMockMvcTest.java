@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.controller;
 
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -11,7 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-
+import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.exception.*;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -220,6 +219,36 @@ public class RecordControllerMockMvcTest {
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isNotFound())
 				.andExpect(result -> assertTrue(result.getResolvedException() instanceof MissingObjectException));
+	}
+
+	@Test
+	@Transactional
+	void putRecordWithMismatchedReference() throws Exception {
+		String referencedType = "referenced_Type";
+		String referringType = "referring_Type";
+		String recordId = "record_0";
+		createSomeRecords(referencedType, 1);
+		createSomeRecords(referringType, 1);
+		Map<String, Object> attributes = new HashMap<>();
+		String ref = RelationUtils.createRelationString(referencedType, recordId);
+		attributes.put("ref-attr", ref);
+		// Add referencing attribute to referring_Type
+		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				referringType, recordId)
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk());
+		// Create a new referring_Type that puts a reference to a non-existent
+		// recordType in the pre-existing referencing attribute
+		Map<String, Object> new_attributes = new HashMap<>();
+		String invalid_ref = RelationUtils.createRelationString("missing", recordId);
+		new_attributes.put("ref-attr", invalid_ref);
+
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				referringType, "new_record")
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(new_attributes))))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isBadRequest());
 	}
 
 	@Test
