@@ -1,6 +1,7 @@
 ## Contributing to Workspace Data Service
 
 Please see the [README](README.md) for instructions on how to set up the repo for development and testing.
+Be sure to check the [wiki](https://github.com/DataBiosphere/terra-workspace-data-service/wiki) for coding style guidelines and other useful info.
 
 ## Before You Open a Pull Request
 

@@ -59,8 +59,8 @@ class FullStackRecordControllerTest {
 				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT, requestEntity,
 				ErrorResponse.class, instanceId, versionId, "samples-1", "sample_1");
 		ErrorResponse err = response.getBody();
-		assertThat(err.getMessage()).isEqualTo("Referenced table(s) [non_existent_2, non_existent] do(es) not exist");
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(err.getMessage()).isEqualTo("Record type for relation does not exist");
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 	}
 
 	@Test
@@ -78,7 +78,7 @@ class FullStackRecordControllerTest {
 		ErrorResponse responseContent = response.getBody();
 		assertThat(responseContent.getMessage())
 				.isEqualTo("It looks like you're trying to reference a record that does not exist.");
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
 	}
 
 	@Test
@@ -90,7 +90,7 @@ class FullStackRecordControllerTest {
 				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.GET, requestEntity,
 				ErrorResponse.class, instanceId, versionId, "samples", "sample_1");
 		ErrorResponse responseContent = response.getBody();
-		assertThat(responseContent.getMessage()).isEqualTo("Record not found");
+		assertThat(responseContent.getMessage()).isEqualTo("Record does not exist");
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 	}
 
