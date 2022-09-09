@@ -85,7 +85,7 @@ public class RecordController {
 		Set<Relation> relations = RelationUtils.findRelations(records);
 		List<Relation> existingRelations = recordDao.getRelationCols(instanceId, recordType);
 		Set<String> existingRelationCols = existingRelations.stream().map(Relation::relationColName).collect(Collectors.toSet());
-		//look for case where relation column already exists as a non-relational column
+		//look for case where requested relation column already exists as a non-relational column
 		for (Relation relation : relations) {
 			String col = relation.relationColName();
 			if(!existingRelationCols.contains(col) && existingSchema.containsKey(col)){
