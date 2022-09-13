@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.exception.*;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -304,6 +303,46 @@ public class RecordControllerMockMvcTest {
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 		mockMvc.perform(delete("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referencedType, "record_0")).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@Transactional
+	void describeType() throws Exception {
+		String type = "recordType";
+		createSomeRecords(type, 1);
+
+		String referencedType = "referencedType";
+		createSomeRecords(referencedType, 1);
+		createSomeRecords(type, 1);
+		Map<String, Object> attributes = new HashMap<>();
+		String ref = RelationUtils.createRelationString(referencedType, "record_0");
+		attributes.put("attr-ref", ref);
+
+		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, type,
+				"record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
+				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
+
+		mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, type)).andExpect(status().isOk())
+				.andExpect(content().string(containsString("attr-dt\",\"datatype\":\"DATE_TIME\"")))
+				.andExpect(content().string(containsString("attr-json\",\"datatype\":\"JSON\"")))
+				.andExpect(content().string(containsString("attr1\",\"datatype\":\"STRING\"")))
+				.andExpect(content().string(containsString("attr2\",\"datatype\":\"DOUBLE\"")))
+				.andExpect(content().string(containsString("attr3\",\"datatype\":\"DATE\"")))
+				.andExpect(content().string(containsString("attr4\",\"datatype\":\"STRING\"")))
+				.andExpect(content().string(containsString("attr5\",\"datatype\":\"LONG\"")))
+				.andExpect(content().string(containsString("attr-boolean\",\"datatype\":\"BOOLEAN\"")))
+				.andExpect(content().string(
+						containsString("attr-ref\",\"datatype\":\"RELATION\",\"relatesTo\":\"" + referencedType)))
+				.andExpect(content().string(not(containsString("sys_name"))))
+				.andExpect(content().string(containsString("name\":\"" + type)));
+	}
+
+	@Test
+	@Transactional
+	void describeNonexistentType() throws Exception {
+		mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, "noType"))
+				.andExpect(status().isNotFound());
 	}
 
 	private void createSomeRecords(String recordType, int numRecords) throws Exception {

@@ -241,8 +241,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /{instanceid}/types/{v}/{type}:
     get:
-      deprecated: true
-      summary: Describe record type (pending)
+      summary: Describe record type
       description: |
         Returns the schema definition for this type.
       operationId: describeRecordType
@@ -259,6 +258,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RecordTypeSchema'
+        404:
+          description: Record type not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     patch:
       deprecated: true
       summary: Update record type (pending)

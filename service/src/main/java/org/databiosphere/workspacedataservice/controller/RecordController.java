@@ -5,8 +5,7 @@ import com.google.common.collect.Maps;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.service.model.exception.*;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
@@ -18,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 
 @RestController
@@ -80,15 +80,18 @@ public class RecordController {
 		return schema;
 	}
 
-	private void validateRelationsAndAddColumns(UUID instanceId, String recordType, Map<String, DataTypeMapping> requestSchema,
-												List<Record> records, Map<String, DataTypeMapping> colsToAdd, Map<String, DataTypeMapping> existingSchema) {
+	private void validateRelationsAndAddColumns(UUID instanceId, String recordType,
+			Map<String, DataTypeMapping> requestSchema, List<Record> records, Map<String, DataTypeMapping> colsToAdd,
+			Map<String, DataTypeMapping> existingSchema) {
 		Set<Relation> relations = RelationUtils.findRelations(records);
 		List<Relation> existingRelations = recordDao.getRelationCols(instanceId, recordType);
-		Set<String> existingRelationCols = existingRelations.stream().map(Relation::relationColName).collect(Collectors.toSet());
-		//look for case where requested relation column already exists as a non-relational column
+		Set<String> existingRelationCols = existingRelations.stream().map(Relation::relationColName)
+				.collect(Collectors.toSet());
+		// look for case where requested relation column already exists as a
+		// non-relational column
 		for (Relation relation : relations) {
 			String col = relation.relationColName();
-			if(!existingRelationCols.contains(col) && existingSchema.containsKey(col)){
+			if (!existingRelationCols.contains(col) && existingSchema.containsKey(col)) {
 				throw new InvalidRelationException("It looks like you're attempting to assign a relation "
 						+ "to an existing attribute that was not configured for relations");
 			}
@@ -183,6 +186,34 @@ public class RecordController {
 		boolean recordFound = recordDao.deleteSingleRecord(instanceId, recordType.getName(),
 				recordId.getRecordIdentifier());
 		return recordFound ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
+	}
+
+	@GetMapping("/{instanceId}/types/{v}/{type}")
+	public ResponseEntity<RecordTypeSchema> describeRecordType(@PathVariable("instanceId") UUID instanceId,
+			@PathVariable("v") String version, @PathVariable("type") RecordType recordType) {
+		validateVersion(version);
+		if (!recordDao.recordTypeExists(instanceId, recordType.getName())) {
+			throw new MissingObjectException("Record type");
+		}
+		RecordTypeSchema result = getSchemaDescription(instanceId, recordType.getName());
+		return new ResponseEntity<>(result, HttpStatus.OK);
+	}
+
+	private RecordTypeSchema getSchemaDescription(UUID instanceId, String recordType) {
+		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchema(instanceId, recordType);
+		schema.remove(RECORD_ID);
+		Map<String, RecordType> relations = recordDao.getRelationCols(instanceId, recordType).stream()
+				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
+		List<AttributeSchema> attrSchema = schema.entrySet().stream().map(entry -> createAttributeSchema(entry.getKey(),
+				entry.getValue(), relations.getOrDefault(entry.getKey(), null))).collect(Collectors.toList());
+		return new RecordTypeSchema(recordType, attrSchema);
+	}
+
+	private AttributeSchema createAttributeSchema(String name, DataTypeMapping datatype, RecordType relation) {
+		if (relation == null) {
+			return new AttributeSchema(name, datatype.toString(), null);
+		}
+		return new AttributeSchema(name, "RELATION", relation.getName());
 	}
 
 	private static void validateVersion(String version) {
