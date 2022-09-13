@@ -71,9 +71,9 @@ public class RecordDao {
 	}
 
 	private String getQualifiedTableName(String recordType, UUID instanceId) {
-		if(containsDisallowedSqlCharacter(recordType)){
-			throw new IllegalArgumentException("Your argument is no good");
-		}
+//		if(containsDisallowedSqlCharacter(recordType)){
+//			throw new IllegalArgumentException("Your argument is no good");
+//		}
 		return quote(instanceId.toString()) + "." + quote(recordType);
 	}
 
