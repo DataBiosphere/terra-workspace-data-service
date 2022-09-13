@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.*;
@@ -32,6 +33,7 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 public class RecordDao {
 
 	private final NamedParameterJdbcTemplate namedTemplate;
+	private static final Pattern DISALLOWED_CHARS_PATTERN = Pattern.compile("[^a-z0-9\\-_\\s]", Pattern.CASE_INSENSITIVE);
 
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate) {
 		this.namedTemplate = namedTemplate;
@@ -69,7 +71,14 @@ public class RecordDao {
 	}
 
 	private String getQualifiedTableName(String recordType, UUID instanceId) {
+		if(containsDisallowedSqlCharacter(recordType)){
+			throw new IllegalArgumentException("Your argument is no good");
+		}
 		return quote(instanceId.toString()) + "." + quote(recordType);
+	}
+
+	private boolean containsDisallowedSqlCharacter(String name) {
+		return name == null || DISALLOWED_CHARS_PATTERN.matcher(name).find();
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, String tableName) {
