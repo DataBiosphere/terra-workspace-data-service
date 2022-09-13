@@ -58,6 +58,7 @@ public class RecordDao {
 
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, String tableName,
 			Set<Relation> relations) {
+
 		String columnDefs = genColumnDefs(tableInfo);
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(tableName, instanceId) + "( "
@@ -68,12 +69,13 @@ public class RecordDao {
 			}
 			throw e;
 		}
+
 	}
 
 	private String getQualifiedTableName(String recordType, UUID instanceId) {
-//		if(containsDisallowedSqlCharacter(recordType)){
-//			throw new IllegalArgumentException("Your argument is no good");
-//		}
+		if(containsDisallowedSqlCharacter(recordType)){
+			throw new IllegalArgumentException("Your argument is no good");
+		}
 		return quote(instanceId.toString()) + "." + quote(recordType);
 	}
 
