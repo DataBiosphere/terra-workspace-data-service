@@ -383,6 +383,12 @@ public class RecordControllerMockMvcTest {
 		assertEquals(expectedSchemas, actual);
 	}
 
+	@Test
+	@Transactional
+	void describeAllTypesNoInstance() throws Exception {
+		mockMvc.perform(get("/{instanceId}/types/{v}", UUID.randomUUID(), versionId)).andExpect(status().isNotFound());
+	}
+
 	private void createSomeRecords(String recordType, int numRecords) throws Exception {
 		for (int i = 0; i < numRecords; i++) {
 			String recordId = "record_" + i;
