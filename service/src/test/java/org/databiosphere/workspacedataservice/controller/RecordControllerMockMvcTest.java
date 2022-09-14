@@ -2,15 +2,18 @@ package org.databiosphere.workspacedataservice.controller;
 
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+
+import java.util.*;
+
 import org.databiosphere.workspacedataservice.service.RelationUtils;
+import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
+import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.*;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -21,6 +24,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -323,28 +327,22 @@ public class RecordControllerMockMvcTest {
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 
-		mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, type)).andExpect(status().isOk())
-				.andExpect(jsonPath("$.name", is(equalTo(type))))
-				.andExpect(jsonPath("$.attributes",
-						hasItem(allOf(hasEntry("name", "attr-dt"), hasEntry("datatype", "DATE_TIME")))))
-				.andExpect(jsonPath("$.attributes",
-						hasItem(allOf(hasEntry("name", "attr-json"), hasEntry("datatype", "JSON")))))
-				.andExpect(jsonPath("$.attributes",
-						hasItem(allOf(hasEntry("name", "attr1"), hasEntry("datatype", "STRING")))))
-				.andExpect(jsonPath("$.attributes",
-						hasItem(allOf(hasEntry("name", "attr2"), hasEntry("datatype", "DOUBLE")))))
-				.andExpect(jsonPath("$.attributes",
-						hasItem(allOf(hasEntry("name", "attr3"), hasEntry("datatype", "DATE")))))
-				.andExpect(jsonPath("$.attributes",
-						hasItem(allOf(hasEntry("name", "attr4"), hasEntry("datatype", "STRING")))))
-				.andExpect(jsonPath("$.attributes",
-						hasItem(allOf(hasEntry("name", "attr5"), hasEntry("datatype", "LONG")))))
-				.andExpect(jsonPath("$.attributes",
-						hasItem(allOf(hasEntry("name", "attr-boolean"), hasEntry("datatype", "BOOLEAN")))))
-				.andExpect(jsonPath("$.attributes",
-						hasItem(allOf(hasEntry("name", "attr-ref"), hasEntry("datatype", "RELATION"),
-								hasEntry("relatesTo", referencedType)))))
-				.andExpect(jsonPath("$.attributes", hasSize(9))).andExpect(jsonPath("$.count", is(equalTo(1))));
+		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("attr-boolean", "BOOLEAN", null),
+				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
+				new AttributeSchema("attr-ref", "RELATION", referencedType),
+				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "DOUBLE", null),
+				new AttributeSchema("attr3", "DATE", null), new AttributeSchema("attr4", "STRING", null),
+				new AttributeSchema("attr5", "LONG", null));
+
+		RecordTypeSchema expected = new RecordTypeSchema(type, expectedAttributes, 1);
+
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, type))
+				.andExpect(status().isOk()).andReturn();
+
+		RecordTypeSchema actual = mapper.readValue(mvcResult.getResponse().getContentAsString(),
+				RecordTypeSchema.class);
+
+		assertEquals(expected, actual);
 	}
 
 	@Test

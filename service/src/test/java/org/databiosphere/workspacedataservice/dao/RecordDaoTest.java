@@ -160,22 +160,17 @@ public class RecordDaoTest {
 	@Test
 	@Transactional
 	void testCountRecords() {
-		// add record
-		RecordId recordId = new RecordId("testRecord");
-		Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
-		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord), new HashMap<>());
-
-		// make sure record is counted
-		int count = recordDao.countRecords(instanceId, recordType.getName());
-		assertEquals(1, count);
-
-		List<Record> batch = new ArrayList<>();
+		// ensure we start with a count of 0 records
+		assertEquals(0, recordDao.countRecords(instanceId, recordType.getName()));
+		// insert records and test the count after each insert
 		for (int i = 0; i < 10; i++) {
-			batch.add(new Record(new RecordId("record" + i), recordType, new RecordAttributes(new HashMap<>())));
+			Record testRecord = new Record(new RecordId("record" + i), recordType,
+					new RecordAttributes(new HashMap<>()));
+			recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord),
+					new HashMap<>());
+			assertEquals(i + 1, recordDao.countRecords(instanceId, recordType.getName()),
+					"after inserting " + (i + 1) + " records");
 		}
-		recordDao.batchUpsert(instanceId, recordType.getName(), batch, new HashMap<>());
-		int newcount = recordDao.countRecords(instanceId, recordType.getName());
-		assertEquals(11, newcount);
 	}
 
 }

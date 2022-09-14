@@ -17,7 +17,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 
 @RestController
@@ -37,9 +36,7 @@ public class RecordController {
 			@PathVariable("recordId") RecordId recordId, @RequestBody RecordRequest recordRequest) {
 		validateVersion(version);
 		String recordTypeName = recordType.getName();
-		if (!recordDao.recordTypeExists(instanceId, recordTypeName)) {
-			throw new MissingObjectException("Record type");
-		}
+		validateRecordType(instanceId, recordTypeName);
 		Record singleRecord = recordDao
 				.getSingleRecord(instanceId, recordType, recordId,
 						recordDao.getRelationCols(instanceId, recordTypeName))
@@ -121,9 +118,7 @@ public class RecordController {
 		if (!recordDao.instanceSchemaExists(instanceId)) {
 			throw new MissingObjectException("Instance");
 		}
-		if (!recordDao.recordTypeExists(instanceId, recordType.getName())) {
-			throw new MissingObjectException("Record type");
-		}
+		validateRecordType(instanceId, recordType.getName());
 		Record result = recordDao
 				.getSingleRecord(instanceId, recordType, recordId,
 						recordDao.getRelationCols(instanceId, recordType.getName()))
@@ -192,9 +187,7 @@ public class RecordController {
 	public ResponseEntity<RecordTypeSchema> describeRecordType(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType) {
 		validateVersion(version);
-		if (!recordDao.recordTypeExists(instanceId, recordType.getName())) {
-			throw new MissingObjectException("Record type");
-		}
+		validateRecordType(instanceId, recordType.getName());
 		RecordTypeSchema result = getSchemaDescription(instanceId, recordType.getName());
 		return new ResponseEntity<>(result, HttpStatus.OK);
 	}
@@ -203,8 +196,9 @@ public class RecordController {
 		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchema(instanceId, recordType);
 		Map<String, RecordType> relations = recordDao.getRelationCols(instanceId, recordType).stream()
 				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
-		List<AttributeSchema> attrSchema = schema.entrySet().stream().map(entry -> createAttributeSchema(entry.getKey(),
-				entry.getValue(), relations.getOrDefault(entry.getKey(), null))).toList();
+		List<AttributeSchema> attrSchema = schema.entrySet().stream().sorted(Map.Entry.comparingByKey())
+				.map(entry -> createAttributeSchema(entry.getKey(), entry.getValue(), relations.get(entry.getKey())))
+				.toList();
 		int recordCount = recordDao.countRecords(instanceId, recordType);
 		return new RecordTypeSchema(recordType, attrSchema, recordCount);
 	}
@@ -219,6 +213,12 @@ public class RecordController {
 	private static void validateVersion(String version) {
 		if (null == version || !version.equals("v0.2")) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid API version specified");
+		}
+	}
+
+	private void validateRecordType(UUID instanceId, String recordTypeName) {
+		if (!recordDao.recordTypeExists(instanceId, recordTypeName)) {
+			throw new MissingObjectException("Record type");
 		}
 	}
 
