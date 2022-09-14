@@ -2,15 +2,18 @@ package org.databiosphere.workspacedataservice.controller;
 
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+
+import java.util.*;
+
 import org.databiosphere.workspacedataservice.service.RelationUtils;
+import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
+import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.*;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -21,6 +24,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -323,19 +327,22 @@ public class RecordControllerMockMvcTest {
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 
-		mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, type)).andExpect(status().isOk())
-				.andExpect(content().string(containsString("attr-dt\",\"datatype\":\"DATE_TIME\"")))
-				.andExpect(content().string(containsString("attr-json\",\"datatype\":\"JSON\"")))
-				.andExpect(content().string(containsString("attr1\",\"datatype\":\"STRING\"")))
-				.andExpect(content().string(containsString("attr2\",\"datatype\":\"DOUBLE\"")))
-				.andExpect(content().string(containsString("attr3\",\"datatype\":\"DATE\"")))
-				.andExpect(content().string(containsString("attr4\",\"datatype\":\"STRING\"")))
-				.andExpect(content().string(containsString("attr5\",\"datatype\":\"LONG\"")))
-				.andExpect(content().string(containsString("attr-boolean\",\"datatype\":\"BOOLEAN\"")))
-				.andExpect(content().string(
-						containsString("attr-ref\",\"datatype\":\"RELATION\",\"relatesTo\":\"" + referencedType)))
-				.andExpect(content().string(not(containsString("sys_name"))))
-				.andExpect(content().string(containsString("name\":\"" + type)));
+		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("attr-boolean", "BOOLEAN", null),
+				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
+				new AttributeSchema("attr-ref", "RELATION", referencedType),
+				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "DOUBLE", null),
+				new AttributeSchema("attr3", "DATE", null), new AttributeSchema("attr4", "STRING", null),
+				new AttributeSchema("attr5", "LONG", null));
+
+		RecordTypeSchema expected = new RecordTypeSchema(type, expectedAttributes, 1);
+
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, type))
+				.andExpect(status().isOk()).andReturn();
+
+		RecordTypeSchema actual = mapper.readValue(mvcResult.getResponse().getContentAsString(),
+				RecordTypeSchema.class);
+
+		assertEquals(expected, actual);
 	}
 
 	@Test

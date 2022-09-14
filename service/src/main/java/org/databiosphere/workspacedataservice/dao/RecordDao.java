@@ -75,9 +75,10 @@ public class RecordDao {
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, String tableName) {
 		MapSqlParameterSource params = new MapSqlParameterSource("instanceId", instanceId.toString());
 		params.addValue("tableName", tableName);
+		params.addValue("recordName", RECORD_ID);
 		return namedTemplate
 				.query("select column_name, data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
-						+ "and table_name = :tableName", params, rs -> {
+						+ "and table_name = :tableName and column_name != :recordName", params, rs -> {
 							Map<String, DataTypeMapping> result = new HashMap<>();
 							while (rs.next()) {
 								result.put(rs.getString("column_name"),

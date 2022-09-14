@@ -643,6 +643,7 @@ components:
       required:
         - name
         - attributes
+        - count
       type: object
       properties:
         name:
@@ -652,6 +653,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AttributeSchema'
+        count:
+          type: integer
+          description: Number of records of this type
     ErrorResponse:
       required:
         - status
