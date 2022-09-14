@@ -33,7 +33,7 @@ public class RecordTest {
 	void testRecordTypeDeserialization() throws JsonProcessingException {
 		String input = "\"my-record-type\"";
 
-		RecordType expected = RecordType.forUnitTest("my-record-type");
+		RecordType expected = RecordType.valueOf("my-record-type");
 
 		RecordType actual = jacksonObjectMapper.readValue(input, RecordType.class);
 
@@ -63,7 +63,7 @@ public class RecordTest {
 		RecordAttributes recordAttributes = new RecordAttributes(
 				Map.of("foo", "bar", "num", 123, "bool", true, "anotherstring", "hello world"));
 
-		RecordType recordType = RecordType.forUnitTest("mytype");
+		RecordType recordType = RecordType.valueOf("mytype");
 		RecordId recordId = new RecordId("my-id");
 
 		Record expected = new Record(recordId, recordType, recordAttributes);

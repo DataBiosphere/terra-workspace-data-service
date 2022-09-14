@@ -11,12 +11,18 @@ public class RecordType {
 
 	private final String name;
 
-	@JsonCreator
-	public RecordType(String name) {
+	private RecordType(String name) {
 		this.name = name;
 	}
 
-	public static RecordType forUnitTest(String recordTypeName) {
+	// TODO: probably no need to have all of valueOf(), fromSqlTableName(), fromUriSegment()
+
+	/* the valueOf() method is required since the constructor is private. Spring
+	   uses valueOf() when extracting inbound @PathVariable arguments - which are Strings -
+	   into this class.
+	 */
+	@JsonCreator
+	public static RecordType valueOf(String recordTypeName) {
 		return new RecordType(recordTypeName);
 	}
 
@@ -28,6 +34,7 @@ public class RecordType {
 		return new RecordType(uriSegment);
 	}
 
+	// TODO: probably no need to have all of toSqlTableName(), toJsonValue(), toUriSegment()
 	public String toSqlTableName() {
 		return name;
 	}

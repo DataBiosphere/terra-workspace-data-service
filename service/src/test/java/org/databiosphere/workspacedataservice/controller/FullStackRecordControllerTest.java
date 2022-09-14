@@ -2,8 +2,6 @@ package org.databiosphere.workspacedataservice.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.databiosphere.workspacedata.model.ErrorResponse;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -23,7 +21,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.in;
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 
 /**
@@ -53,9 +50,9 @@ class FullStackRecordControllerTest {
 	void missingReferencedRecordTypeShouldFail() throws JsonProcessingException {
 		Map<String, Object> attrs = new HashMap<>();
 		attrs.put("attr_ref",
-				RelationUtils.createRelationString(RecordType.forUnitTest("non_existent"), "recordId"));
+				RelationUtils.createRelationString(RecordType.valueOf("non_existent"), "recordId"));
 		attrs.put("attr_ref_2",
-				RelationUtils.createRelationString(RecordType.forUnitTest("non_existent_2"), "recordId"));
+				RelationUtils.createRelationString(RecordType.valueOf("non_existent_2"), "recordId"));
 		HttpEntity<String> requestEntity = new HttpEntity<>(
 				mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attrs))), headers);
 		ResponseEntity<ErrorResponse> response = restTemplate.exchange(
@@ -70,7 +67,7 @@ class FullStackRecordControllerTest {
 	@Transactional
 	void referencingMissingRecordShouldFail() throws Exception {
 		Map<String, Object> attrs = new HashMap<>();
-		RecordType referencedRecordType = RecordType.forUnitTest("referenced-type");
+		RecordType referencedRecordType = RecordType.valueOf("referenced-type");
 		createSomeRecords(referencedRecordType, 1);
 		attrs.put("attr_ref", RelationUtils.createRelationString(referencedRecordType, "missing-id"));
 		HttpEntity<String> requestEntity = new HttpEntity<>(
@@ -87,7 +84,7 @@ class FullStackRecordControllerTest {
 	@Test
 	@Transactional
 	void retrievingMissingEntityShouldFail() throws Exception {
-		createSomeRecords(RecordType.forUnitTest("samples"), 1);
+		createSomeRecords(RecordType.valueOf("samples"), 1);
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
 		ResponseEntity<ErrorResponse> response = restTemplate.exchange(
 				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.GET, requestEntity,
