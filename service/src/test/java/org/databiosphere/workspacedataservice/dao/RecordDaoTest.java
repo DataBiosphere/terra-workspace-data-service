@@ -171,9 +171,10 @@ public class RecordDaoTest {
 		assertTrue(newTypesList.contains(recordType.getName()));
 		assertTrue(newTypesList.contains(newRecordType));
 	}
-		@Test
-		@Transactional
-		void testCountRecords() {
+
+	@Test
+	@Transactional
+	void testCountRecords() {
 		// ensure we start with a count of 0 records
 		assertEquals(0, recordDao.countRecords(instanceId, recordType.getName()));
 		// insert records and test the count after each insert
