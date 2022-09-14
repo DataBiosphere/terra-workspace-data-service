@@ -561,7 +561,7 @@ components:
       properties:
         attributes:
           $ref: '#/components/schemas/RecordAttributes'
-          description: KVPs of record attributes
+          description: KVPs of record attributes, valid characters for attribute names are limited to letters, numbers, spaces, dashes, and underscores.
     RecordResponse:
       required:
         - id
@@ -616,7 +616,7 @@ components:
       properties:
         name:
           type: string
-          description: Record type name
+          description: Record type name, valid characters for record type names are limited to letters, numbers, spaces, dashes, and underscores.
         attributes:
           type: array
           items:
