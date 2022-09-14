@@ -2,16 +2,18 @@ package org.databiosphere.workspacedataservice.controller;
 
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+
+import java.util.*;
+
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.RelationUtils;
+import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
+import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.*;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -22,6 +24,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -304,6 +307,49 @@ public class RecordControllerMockMvcTest {
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 		mockMvc.perform(delete("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referencedType, "record_0")).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@Transactional
+	void describeType() throws Exception {
+		String type = "recordType";
+		createSomeRecords(type, 1);
+
+		String referencedType = "referencedType";
+		createSomeRecords(referencedType, 1);
+		createSomeRecords(type, 1);
+		Map<String, Object> attributes = new HashMap<>();
+		String ref = RelationUtils.createRelationString(referencedType, "record_0");
+		attributes.put("attr-ref", ref);
+
+		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, type,
+				"record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
+				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
+
+		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("attr-boolean", "BOOLEAN", null),
+				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
+				new AttributeSchema("attr-ref", "RELATION", referencedType),
+				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "DOUBLE", null),
+				new AttributeSchema("attr3", "DATE", null), new AttributeSchema("attr4", "STRING", null),
+				new AttributeSchema("attr5", "LONG", null));
+
+		RecordTypeSchema expected = new RecordTypeSchema(type, expectedAttributes, 1);
+
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, type))
+				.andExpect(status().isOk()).andReturn();
+
+		RecordTypeSchema actual = mapper.readValue(mvcResult.getResponse().getContentAsString(),
+				RecordTypeSchema.class);
+
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	@Transactional
+	void describeNonexistentType() throws Exception {
+		mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, "noType"))
+				.andExpect(status().isNotFound());
 	}
 
 	private void createSomeRecords(String recordType, int numRecords) throws Exception {
