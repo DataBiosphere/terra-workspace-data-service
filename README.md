@@ -73,6 +73,7 @@ curl -H "Content-type: application/json" -X PATCH "http://localhost:8080/<instan
 }
 }'
 ```
+Note that attribute and record type names are subject to the logic in [validateName](https://github.com/DataBiosphere/terra-workspace-data-service/blob/5375c8c846ad163e38a5540c4487ea05fb292f45/service/src/main/java/org/databiosphere/workspacedataservice/dao/RecordDao.java#L80)
 
 When done, stop postgres:
 ```bash
