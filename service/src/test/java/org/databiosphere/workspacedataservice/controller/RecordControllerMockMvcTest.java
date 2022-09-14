@@ -15,6 +15,7 @@ import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.exception.*;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +60,7 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void tryFetchingMissingRecord() throws Exception {
-		String recordType1 = "recordType1";
+		RecordType recordType1 = RecordType.fromSqlTableName("recordType1");
 		createSomeRecords(recordType1, 1);
 		mockMvc.perform(get("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				recordType1, "missing-2")).andExpect(status().isNotFound());
@@ -81,7 +82,7 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void updateWithIllegalAttributeName() throws Exception {
-		String recordType1 = "illegalName";
+		RecordType recordType1 = RecordType.fromSqlTableName("illegalName");
 		createSomeRecords(recordType1, 1);
 		Map<String, Object> illegalAttribute = new HashMap<>();
 		illegalAttribute.put("sys_foo", "some_val");
@@ -94,7 +95,7 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void ensurePutShowsNewlyNullFields() throws Exception {
-		String recordType1 = "recordType1";
+		RecordType recordType1 = RecordType.fromSqlTableName("recordType1");
 		createSomeRecords(recordType1, 1);
 		Map<String, Object> newAttributes = new HashMap<>();
 		newAttributes.put("new-attr", "some_val");
@@ -107,7 +108,7 @@ public class RecordControllerMockMvcTest {
 
 	@Test
 	void ensurePatchShowsAllFields() throws Exception {
-		String recordType1 = "recordType1";
+		RecordType recordType1 = RecordType.fromSqlTableName("recordType1");
 		createSomeRecords(recordType1, 1);
 		Map<String, Object> newAttributes = new HashMap<>();
 		newAttributes.put("new-attr", "some_val");
@@ -120,7 +121,7 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void createAndRetrieveRecord() throws Exception {
-		String recordType = "samples";
+		RecordType recordType = RecordType.fromSqlTableName("samples");
 		createSomeRecords(recordType, 1);
 		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, "record_0")).andExpect(status().isOk()).andExpect(jsonPath("$.id", is("record_0")));
@@ -129,8 +130,8 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void createRecordWithReferences() throws Exception {
-		String referencedType = "ref_participants";
-		String referringType = "ref_samples";
+		RecordType referencedType = RecordType.fromSqlTableName("ref_participants");
+		RecordType referringType = RecordType.fromSqlTableName("ref_samples");
 		createSomeRecords(referencedType, 3);
 		createSomeRecords(referringType, 1);
 		Map<String, Object> attributes = new HashMap<>();
@@ -145,8 +146,8 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void referencingMissingTableFails() throws Exception {
-		String referencedType = "missing";
-		String referringType = "ref_samples-2";
+		RecordType referencedType = RecordType.fromSqlTableName("missing");
+		RecordType referringType = RecordType.fromSqlTableName("ref_samples-2");
 		createSomeRecords(referringType, 1);
 		Map<String, Object> attributes = new HashMap<>();
 		String ref = RelationUtils.createRelationString(referencedType, "record_0");
@@ -161,8 +162,8 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void referencingMissingRecordFails() throws Exception {
-		String referencedType = "ref_participants-2";
-		String referringType = "ref_samples-3";
+		RecordType referencedType = RecordType.fromSqlTableName("ref_participants-2");
+		RecordType referringType = RecordType.fromSqlTableName("ref_samples-3");
 		createSomeRecords(referencedType, 3);
 		createSomeRecords(referringType, 1);
 		Map<String, Object> attributes = new HashMap<>();
@@ -178,7 +179,7 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void expandColumnDefForNewData() throws Exception {
-		String recordType = "to-alter";
+		RecordType recordType = RecordType.fromSqlTableName("to-alter");
 		createSomeRecords(recordType, 1);
 		Map<String, Object> attributes = new HashMap<>();
 		String newTextValue = "convert this column from date to text";
@@ -192,7 +193,7 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void patchMissingRecord() throws Exception {
-		String recordType = "to-patch";
+		RecordType recordType = RecordType.fromSqlTableName("to-patch");
 		createSomeRecords(recordType, 1);
 		Map<String, Object> attributes = new HashMap<>();
 		attributes.put("attr-boolean", true);
@@ -210,7 +211,7 @@ public class RecordControllerMockMvcTest {
 		String recordType = "record-type-missing-table-ref";
 		String recordId = "record_0";
 		Map<String, Object> attributes = new HashMap<>();
-		String ref = RelationUtils.createRelationString("missing", "missing_also");
+		String ref = RelationUtils.createRelationString(RecordType.fromSqlTableName("missing"), "missing_also");
 		attributes.put("sample-ref", ref);
 
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
@@ -224,8 +225,8 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void putRecordWithMismatchedReference() throws Exception {
-		String referencedType = "referenced_Type";
-		String referringType = "referring_Type";
+		RecordType referencedType = RecordType.fromSqlTableName("referenced_Type");
+		RecordType referringType = RecordType.fromSqlTableName("referring_Type");
 		String recordId = "record_0";
 		createSomeRecords(referencedType, 1);
 		createSomeRecords(referringType, 1);
@@ -241,7 +242,7 @@ public class RecordControllerMockMvcTest {
 		// Create a new referring_Type that puts a reference to a non-existent
 		// recordType in the pre-existing referencing attribute
 		Map<String, Object> new_attributes = new HashMap<>();
-		String invalid_ref = RelationUtils.createRelationString("missing", recordId);
+		String invalid_ref = RelationUtils.createRelationString(RecordType.fromSqlTableName("missing"), recordId);
 		new_attributes.put("ref-attr", invalid_ref);
 
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
@@ -254,10 +255,10 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void tryToAssignReferenceToNonRefColumn() throws Exception {
-		String recordType = "ref-alter";
+		RecordType recordType = RecordType.fromSqlTableName("ref-alter");
 		createSomeRecords(recordType, 1);
 		Map<String, Object> attributes = new HashMap<>();
-		String ref = RelationUtils.createRelationString("missing", "missing_also");
+		String ref = RelationUtils.createRelationString(RecordType.fromSqlTableName("missing"), "missing_also");
 		attributes.put("attr1", ref);
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, "record_0")
@@ -271,7 +272,7 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void deleteRecord() throws Exception {
-		String recordType = "samples";
+		RecordType recordType = RecordType.fromSqlTableName("samples");
 		createSomeRecords(recordType, 1);
 		mockMvc.perform(delete("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, "record_0")).andExpect(status().isNoContent());
@@ -282,7 +283,7 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void deleteMissingRecord() throws Exception {
-		String recordType = "samples";
+		RecordType recordType = RecordType.fromSqlTableName("samples");
 		createSomeRecords(recordType, 1);
 		mockMvc.perform(delete("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, "record_1")).andExpect(status().isNotFound());
@@ -291,8 +292,8 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void deleteReferencedRecord() throws Exception {
-		String referencedType = "ref_participants";
-		String referringType = "ref_samples";
+		RecordType referencedType = RecordType.fromSqlTableName("ref_participants");
+		RecordType referringType = RecordType.fromSqlTableName("ref_samples");
 		createSomeRecords(referencedType, 1);
 		createSomeRecords(referringType, 1);
 		Map<String, Object> attributes = new HashMap<>();
@@ -306,12 +307,12 @@ public class RecordControllerMockMvcTest {
 				referencedType, "record_0")).andExpect(status().isBadRequest());
 	}
 
-	private void createSomeRecords(String recordType, int numRecords) throws Exception {
+	private void createSomeRecords(RecordType recordType, int numRecords) throws Exception {
 		for (int i = 0; i < numRecords; i++) {
 			String recordId = "record_" + i;
 			Map<String, Object> attributes = generateRandomAttributes();
 			mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-					recordType, recordId)
+					recordType.toPathSegment(), recordId)
 							.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 							.contentType(MediaType.APPLICATION_JSON))
 					.andExpect(status().is2xxSuccessful());

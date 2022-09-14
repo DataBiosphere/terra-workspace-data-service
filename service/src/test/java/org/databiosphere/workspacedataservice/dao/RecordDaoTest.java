@@ -33,9 +33,9 @@ public class RecordDaoTest {
 	@BeforeEach
 	void setUp() {
 		instanceId = UUID.randomUUID();
-		recordType = new RecordType("testRecordType");
+		recordType = RecordType.fromSqlTableName("testRecordType");
 		recordDao.createSchema(instanceId);
-		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType.getName(), Collections.emptySet());
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType, Collections.emptySet());
 	}
 
 	@Test
@@ -44,7 +44,7 @@ public class RecordDaoTest {
 		// add record
 		RecordId recordId = new RecordId("testRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
-		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord), new HashMap<>());
+		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord), new HashMap<>());
 
 		// make sure record is fetched
 		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId, Collections.emptyList()).get();
@@ -59,12 +59,12 @@ public class RecordDaoTest {
 	@Test
 	@Transactional
 	void testCreateSingleRecord() throws InvalidRelationException {
-		recordDao.addColumn(instanceId, recordType.getName(), "foo", DataTypeMapping.STRING);
+		recordDao.addColumn(instanceId, recordType, "foo", DataTypeMapping.STRING);
 
 		// create record with no attributes
 		RecordId recordId = new RecordId("testRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
-		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord), new HashMap<>());
+		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord), new HashMap<>());
 
 		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId, Collections.emptyList()).get();
 		assertEquals(testRecord, search, "Created record should match entered record");
@@ -72,7 +72,7 @@ public class RecordDaoTest {
 		// create record with attributes
 		RecordId attrId = new RecordId("recordWithAttr");
 		Record recordWithAttr = new Record(attrId, recordType, new RecordAttributes(Map.of("foo", "bar")));
-		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(recordWithAttr),
+		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(recordWithAttr),
 				new HashMap<>(Map.of("foo", DataTypeMapping.STRING)));
 
 		search = recordDao.getSingleRecord(instanceId, recordType, attrId, Collections.emptyList()).get();
@@ -84,34 +84,35 @@ public class RecordDaoTest {
 	void testCreateRecordWithRelations() {
 		// make sure columns are in recordType, as this will be taken care of before we
 		// get to the dao
-		recordDao.addColumn(instanceId, recordType.getName(), "foo", DataTypeMapping.STRING);
+		recordDao.addColumn(instanceId, recordType, "foo", DataTypeMapping.STRING);
 
-		recordDao.addColumn(instanceId, recordType.getName(), "testRecordType", DataTypeMapping.STRING);
-		recordDao.addForeignKeyForReference(recordType.getName(), recordType.getName(), instanceId, "testRecordType");
+		recordDao.addColumn(instanceId, recordType, "testRecordType", DataTypeMapping.STRING);
+		recordDao.addForeignKeyForReference(recordType, recordType, instanceId, "testRecordType");
 
 		RecordId refRecordId = new RecordId("referencedRecord");
 		Record referencedRecord = new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
-		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(referencedRecord),
-				new HashMap<>());
+		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(referencedRecord), new HashMap<>());
 
 		RecordId recordId = new RecordId("testRecord");
-		String reference = RelationUtils.createRelationString("testRecordType", "referencedRecord");
+		String reference = RelationUtils.createRelationString(RecordType.fromSqlTableName("testRecordType"),
+				"referencedRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(Map.of("testRecordType", reference)));
-		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord),
+		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord),
 				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.STRING)));
 
-		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId,
-				recordDao.getRelationCols(instanceId, recordType.getName())).get();
+		Record search = recordDao
+				.getSingleRecord(instanceId, recordType, recordId, recordDao.getRelationCols(instanceId, recordType))
+				.get();
 		assertEquals(testRecord, search, "Created record with references should match entered record");
 	}
 
 	@Test
 	@Transactional
 	void testGetReferenceCols() {
-		recordDao.addColumn(instanceId, recordType.getName(), "referenceCol", DataTypeMapping.STRING);
-		recordDao.addForeignKeyForReference(recordType.getName(), recordType.getName(), instanceId, "referenceCol");
+		recordDao.addColumn(instanceId, recordType, "referenceCol", DataTypeMapping.STRING);
+		recordDao.addForeignKeyForReference(recordType, recordType, instanceId, "referenceCol");
 
-		List<Relation> refCols = recordDao.getRelationCols(instanceId, recordType.getName());
+		List<Relation> refCols = recordDao.getRelationCols(instanceId, recordType);
 		assertEquals(1, refCols.size(), "There should be one referenced column");
 		assertEquals("referenceCol", refCols.get(0).relationColName(), "Reference column should be named referenceCol");
 	}
@@ -122,9 +123,9 @@ public class RecordDaoTest {
 		// add record
 		RecordId recordId = new RecordId("testRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
-		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord), new HashMap<>());
+		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord), new HashMap<>());
 
-		recordDao.deleteSingleRecord(instanceId, recordType.getName(), "testRecord");
+		recordDao.deleteSingleRecord(instanceId, recordType, "testRecord");
 
 		// make sure record not fetched
 		Optional<Record> none = recordDao.getSingleRecord(instanceId, recordType, new RecordId("testRecord"),
@@ -137,24 +138,25 @@ public class RecordDaoTest {
 	void testDeleteRelatedRecord() {
 		// make sure columns are in recordType, as this will be taken care of before we
 		// get to the dao
-		String recordTypeName = recordType.getName();
-		recordDao.addColumn(instanceId, recordTypeName, "foo", DataTypeMapping.STRING);
+		recordDao.addColumn(instanceId, recordType, "foo", DataTypeMapping.STRING);
 
-		recordDao.addColumn(instanceId, recordTypeName, "testRecordType", DataTypeMapping.STRING, "testRecordType");
+		recordDao.addColumn(instanceId, recordType, "testRecordType", DataTypeMapping.STRING,
+				RecordType.fromSqlTableName("testRecordType"));
 
 		RecordId refRecordId = new RecordId("referencedRecord");
 		Record referencedRecord = new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
-		recordDao.batchUpsert(instanceId, recordTypeName, Collections.singletonList(referencedRecord), new HashMap<>());
+		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(referencedRecord), new HashMap<>());
 
 		RecordId recordId = new RecordId("testRecord");
-		String reference = RelationUtils.createRelationString("testRecordType", "referencedRecord");
+		String reference = RelationUtils.createRelationString(RecordType.fromSqlTableName("testRecordType"),
+				"referencedRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(Map.of("testRecordType", reference)));
-		recordDao.batchUpsert(instanceId, recordTypeName, Collections.singletonList(testRecord),
+		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord),
 				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.STRING)));
 
 		// Should throw an error
 		assertThrows(ResponseStatusException.class, () -> {
-			recordDao.deleteSingleRecord(instanceId, recordTypeName, "referencedRecord");
+			recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord");
 		}, "Exception should be thrown when attempting to delete related record");
 	}
 }

@@ -8,6 +8,7 @@ import org.databiosphere.workspacedata.model.ErrorResponse;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,8 +52,10 @@ class FullStackRecordControllerTest {
 	@Transactional
 	void missingReferencedRecordTypeShouldFail() throws JsonProcessingException {
 		Map<String, Object> attrs = new HashMap<>();
-		attrs.put("attr_ref", RelationUtils.createRelationString("non_existent", "recordId"));
-		attrs.put("attr_ref_2", RelationUtils.createRelationString("non_existent_2", "recordId"));
+		attrs.put("attr_ref",
+				RelationUtils.createRelationString(RecordType.fromSqlTableName("non_existent"), "recordId"));
+		attrs.put("attr_ref_2",
+				RelationUtils.createRelationString(RecordType.fromSqlTableName("non_existent_2"), "recordId"));
 		HttpEntity<String> requestEntity = new HttpEntity<>(
 				mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attrs))), headers);
 		ResponseEntity<ErrorResponse> response = restTemplate.exchange(
@@ -67,7 +70,7 @@ class FullStackRecordControllerTest {
 	@Transactional
 	void referencingMissingRecordShouldFail() throws Exception {
 		Map<String, Object> attrs = new HashMap<>();
-		String referencedRecordType = "referenced-type";
+		RecordType referencedRecordType = RecordType.fromSqlTableName("referenced-type");
 		createSomeRecords(referencedRecordType, 1);
 		attrs.put("attr_ref", RelationUtils.createRelationString(referencedRecordType, "missing-id"));
 		HttpEntity<String> requestEntity = new HttpEntity<>(
@@ -84,7 +87,7 @@ class FullStackRecordControllerTest {
 	@Test
 	@Transactional
 	void retrievingMissingEntityShouldFail() throws Exception {
-		createSomeRecords("samples", 1);
+		createSomeRecords(RecordType.fromSqlTableName("samples"), 1);
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
 		ResponseEntity<ErrorResponse> response = restTemplate.exchange(
 				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.GET, requestEntity,
@@ -103,7 +106,7 @@ class FullStackRecordControllerTest {
 		assertThat(response.getBody()).containsEntry("message", "Invalid API version specified");
 	}
 
-	private void createSomeRecords(String recordType, int numRecords) throws Exception {
+	private void createSomeRecords(RecordType recordType, int numRecords) throws Exception {
 		for (int i = 0; i < numRecords; i++) {
 			String recordId = "record_" + i;
 			Map<String, Object> attributes = generateRandomAttributes();

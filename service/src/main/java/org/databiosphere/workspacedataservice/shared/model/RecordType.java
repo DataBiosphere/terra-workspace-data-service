@@ -1,32 +1,62 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
+
 import java.util.Objects;
+
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 
 public class RecordType {
 
+	public static RecordType fromSqlTableName(String tableName) {
+		return new RecordType(tableName);
+	}
+
+//	public static RecordType fromPathSegment(String pathSegment) {
+//		return new RecordType(pathSegment);
+//	}
+
+	@JsonCreator
 	public RecordType(String name) {
 		this.name = name;
 	}
 
-	public RecordType() {
-	}
+	private final String name;
 
-	private String name;
+	// public String getNameXXX() {
+	// return name;
+	// }
+	//
+//	 public void setName(String name) {
+//	 this.name = name;
+//	 }
 
-	@JsonValue
-	public String getName() {
+	public String toSqlTableName() {
 		return name;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	@JsonValue
+	public String toPathSegment() {
+		return name;
+	}
+
+	// TODO: return void instead?
+	public RecordType validate() {
+		if (name.startsWith(RESERVED_NAME_PREFIX)) {
+			throw new InvalidNameException("Record type");
+		}
+		return this;
 	}
 
 	@Override
 	public String toString() {
-		return "RecordType{" + "name='" + name + '\'' + '}';
+		return name;
 	}
+	// public String toString() {
+//		return "RecordType{" + "name='" + name + '\'' + '}';
+//	}
 
 	@Override
 	public boolean equals(Object o) {
