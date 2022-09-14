@@ -355,23 +355,32 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void describeAllTypes() throws Exception {
-		String type1 = "recordType1";
+		// replace instanceId for this test so only these records are found
+		instanceId = UUID.randomUUID();
+		String type1 = "firstType";
 		createSomeRecords(type1, 1);
-		String type2 = "recordType2";
+		String type2 = "secondType";
 		createSomeRecords(type2, 2);
-		String type3 = "recordType3";
+		String type3 = "thirdType";
 		createSomeRecords(type3, 10);
-		mockMvc.perform(get("/{instanceId}/types/{v}", instanceId, versionId)).andExpect(status().isOk())
-				.andExpect(content().string(containsString("attr-dt\",\"datatype\":\"DATE_TIME\"")))
-				.andExpect(content().string(containsString("attr-json\",\"datatype\":\"JSON\"")))
-				.andExpect(content().string(containsString("attr1\",\"datatype\":\"STRING\"")))
-				.andExpect(content().string(containsString("attr2\",\"datatype\":\"DOUBLE\"")))
-				.andExpect(content().string(containsString("attr3\",\"datatype\":\"DATE\"")))
-				.andExpect(content().string(containsString("attr4\",\"datatype\":\"STRING\"")))
-				.andExpect(content().string(containsString("attr5\",\"datatype\":\"LONG\"")))
-				.andExpect(content().string(containsString("attr-boolean\",\"datatype\":\"BOOLEAN\"")))
-				.andExpect(content().string(containsString("\"count\":1")))
-				.andExpect(content().string(not(containsString("sys_name"))));
+
+		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("attr-boolean", "BOOLEAN", null),
+				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
+				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "DOUBLE", null),
+				new AttributeSchema("attr3", "DATE", null), new AttributeSchema("attr4", "STRING", null),
+				new AttributeSchema("attr5", "LONG", null));
+
+		List<RecordTypeSchema> expectedSchemas = Arrays.asList(new RecordTypeSchema(type1, expectedAttributes, 1),
+				new RecordTypeSchema(type2, expectedAttributes, 2),
+				new RecordTypeSchema(type3, expectedAttributes, 10));
+
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}", instanceId, versionId))
+				.andExpect(status().isOk()).andReturn();
+
+		List<RecordTypeSchema> actual = Arrays
+				.asList(mapper.readValue(mvcResult.getResponse().getContentAsString(), RecordTypeSchema[].class));
+
+		assertEquals(expectedSchemas, actual);
 	}
 
 	private void createSomeRecords(String recordType, int numRecords) throws Exception {
