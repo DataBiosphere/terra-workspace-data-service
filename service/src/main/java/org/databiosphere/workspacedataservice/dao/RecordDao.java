@@ -210,6 +210,11 @@ public class RecordDao {
 				(rs, rowNum) -> new Relation(rs.getString("column_name"), new RecordType(rs.getString("table_name"))));
 	}
 
+	public int countRecords(UUID instanceId, String recordTypeName) {
+		return namedTemplate.getJdbcTemplate().queryForObject(
+				"select count(*) from " + getQualifiedTableName(recordTypeName, instanceId), Integer.class);
+	}
+
 	private String genColUpsertUpdates(List<String> cols) {
 		return cols.stream().filter(c -> !RECORD_ID.equals(c)).map(c -> quote(c) + " = excluded." + quote(c))
 				.collect(Collectors.joining(", "));
@@ -315,5 +320,10 @@ public class RecordDao {
 		} catch (EmptyResultDataAccessException e) {
 			return Optional.empty();
 		}
+	}
+
+	public List<String> getAllRecordTypes(UUID instanceId) {
+		return namedTemplate.queryForList("select tablename from pg_tables WHERE schemaname = :workspaceSchema",
+				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), String.class);
 	}
 }

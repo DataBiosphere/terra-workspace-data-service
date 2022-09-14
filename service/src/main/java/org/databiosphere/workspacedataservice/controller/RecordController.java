@@ -199,14 +199,28 @@ public class RecordController {
 		return new ResponseEntity<>(result, HttpStatus.OK);
 	}
 
+	@GetMapping("/{instanceId}/types/{v}")
+	public ResponseEntity<List<RecordTypeSchema>> describeAllRecordTypes(@PathVariable("instanceId") UUID instanceId,
+			@PathVariable("v") String version) {
+		validateVersion(version);
+		if (!recordDao.instanceSchemaExists(instanceId)) {
+			throw new MissingObjectException("Instance");
+		}
+		List<String> allRecordTypes = recordDao.getAllRecordTypes(instanceId);
+		List<RecordTypeSchema> result = allRecordTypes.stream()
+				.map(recordType -> getSchemaDescription(instanceId, recordType)).collect(Collectors.toList());
+		return new ResponseEntity<>(result, HttpStatus.OK);
+	}
+
 	private RecordTypeSchema getSchemaDescription(UUID instanceId, String recordType) {
 		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchema(instanceId, recordType);
 		schema.remove(RECORD_ID);
 		Map<String, RecordType> relations = recordDao.getRelationCols(instanceId, recordType).stream()
 				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
 		List<AttributeSchema> attrSchema = schema.entrySet().stream().map(entry -> createAttributeSchema(entry.getKey(),
-				entry.getValue(), relations.getOrDefault(entry.getKey(), null))).collect(Collectors.toList());
-		return new RecordTypeSchema(recordType, attrSchema);
+				entry.getValue(), relations.getOrDefault(entry.getKey(), null))).toList();
+		int recordCount = recordDao.countRecords(instanceId, recordType);
+		return new RecordTypeSchema(recordType, attrSchema, recordCount);
 	}
 
 	private AttributeSchema createAttributeSchema(String name, DataTypeMapping datatype, RecordType relation) {

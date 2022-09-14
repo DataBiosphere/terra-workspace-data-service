@@ -345,6 +345,28 @@ public class RecordControllerMockMvcTest {
 				.andExpect(status().isNotFound());
 	}
 
+	@Test
+	@Transactional
+	void describeAllTypes() throws Exception {
+		String type1 = "recordType1";
+		createSomeRecords(type1, 1);
+		String type2 = "recordType2";
+		createSomeRecords(type2, 2);
+		String type3 = "recordType3";
+		createSomeRecords(type3, 10);
+		mockMvc.perform(get("/{instanceId}/types/{v}", instanceId, versionId)).andExpect(status().isOk())
+				.andExpect(content().string(containsString("attr-dt\",\"datatype\":\"DATE_TIME\"")))
+				.andExpect(content().string(containsString("attr-json\",\"datatype\":\"JSON\"")))
+				.andExpect(content().string(containsString("attr1\",\"datatype\":\"STRING\"")))
+				.andExpect(content().string(containsString("attr2\",\"datatype\":\"DOUBLE\"")))
+				.andExpect(content().string(containsString("attr3\",\"datatype\":\"DATE\"")))
+				.andExpect(content().string(containsString("attr4\",\"datatype\":\"STRING\"")))
+				.andExpect(content().string(containsString("attr5\",\"datatype\":\"LONG\"")))
+				.andExpect(content().string(containsString("attr-boolean\",\"datatype\":\"BOOLEAN\"")))
+				.andExpect(content().string(containsString("\"count\":1")))
+				.andExpect(content().string(not(containsString("sys_name"))));
+	}
+
 	private void createSomeRecords(String recordType, int numRecords) throws Exception {
 		for (int i = 0; i < numRecords; i++) {
 			String recordId = "record_" + i;
