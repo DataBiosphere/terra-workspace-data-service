@@ -46,7 +46,7 @@ class FullStackRecordControllerTest {
 	void testBadRecordTypeNames() throws JsonProcessingException {
 		HttpEntity<String> requestEntity = new HttpEntity<>(
 				mapper.writeValueAsString(new RecordRequest(new RecordAttributes(new HashMap<>()))), headers);
-		List<String> badNames = List.of("); drop table users;", "$$foo.bar", "samples.11", "##magic beans!");
+		List<String> badNames = List.of("); drop table users;", "$$foo.bar", "...", "&Q$(*^@$(*");
 		for (String badName : badNames) {
 			ResponseEntity<ErrorResponse> response = restTemplate.exchange(
 					"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT, requestEntity,
@@ -60,7 +60,7 @@ class FullStackRecordControllerTest {
 	@Test
 	@Transactional
 	void testBadAttributeNames() throws JsonProcessingException {
-		List<String> badNames = List.of("); drop table users;", "$$foo.bar", "samples.11", "##magic beans!");
+		List<String> badNames = List.of("create table buttheads(id int)", "samples.11", "##magic beans!");
 		for (String badName : badNames) {
 			HashMap<String, Object> attributes = new HashMap<>();
 			attributes.put(badName, "foo");
