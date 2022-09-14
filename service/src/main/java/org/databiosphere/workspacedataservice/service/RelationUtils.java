@@ -37,7 +37,7 @@ public class RelationUtils {
 	}
 
 	public static RecordType getTypeValue(Object obj) {
-		return new RecordType(splitRelationIdentifier(obj)[0]);
+		return RecordType.fromUriSegment(splitRelationIdentifier(obj)[0]);
 	}
 
 	private static String[] splitRelationIdentifier(Object obj) {
@@ -77,6 +77,6 @@ public class RelationUtils {
 
 	public static String createRelationString(RecordType targetRecordType, String recordId) {
 		return UriComponentsBuilder.newInstance().scheme(RELATION_IDENTIFIER)
-				.pathSegment(targetRecordType.toPathSegment(), recordId).build().toUriString();
+				.pathSegment(targetRecordType.toUriSegment(), recordId).build().toUriString();
 	}
 }

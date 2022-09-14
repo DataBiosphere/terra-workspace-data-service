@@ -21,7 +21,7 @@ public class RecordResponseTest {
 	@Test
 	void testJsonSerialization() throws JsonProcessingException {
 		RecordId recordId = new RecordId("test-id");
-		RecordType recordType = RecordType.fromSqlTableName("test-type");
+		RecordType recordType = RecordType.forUnitTest("test-type");
 		RecordAttributes recordAttributes = new RecordAttributes(
 				Map.of("foo", "bar", "num", 123, "bool", true, "anotherstring", "hello world"));
 		RecordMetadata recordMetadata = new RecordMetadata("test-provenance");

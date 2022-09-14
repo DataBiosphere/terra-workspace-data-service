@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
 import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 
 import java.util.Objects;
@@ -10,53 +9,46 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 
 public class RecordType {
 
-	public static RecordType fromSqlTableName(String tableName) {
-		return new RecordType(tableName);
-	}
+	private final String name;
 
-//	public static RecordType fromPathSegment(String pathSegment) {
-//		return new RecordType(pathSegment);
-//	}
-
-	@JsonCreator
 	public RecordType(String name) {
 		this.name = name;
 	}
 
-	private final String name;
+	public static RecordType forUnitTest(String tableName) {
+		return new RecordType(tableName);
+	}
 
-	// public String getNameXXX() {
-	// return name;
-	// }
-	//
-//	 public void setName(String name) {
-//	 this.name = name;
-//	 }
+	public static RecordType fromSqlTableName(String tableName) {
+		return new RecordType(tableName);
+	}
+
+	public static RecordType fromUriSegment(String tableName) {
+		return new RecordType(tableName);
+	}
 
 	public String toSqlTableName() {
 		return name;
 	}
 
 	@JsonValue
-	public String toPathSegment() {
+	public String toUriSegment() {
 		return name;
 	}
 
-	// TODO: return void instead?
-	public RecordType validate() {
+	public void validate() {
 		if (name.startsWith(RESERVED_NAME_PREFIX)) {
 			throw new InvalidNameException("Record type");
 		}
-		return this;
 	}
 
+	/* returning the raw string value allows RecordType to be used directly as an argument to
+		url templates, e.g. within unit tests
+	 */
 	@Override
 	public String toString() {
 		return name;
 	}
-	// public String toString() {
-//		return "RecordType{" + "name='" + name + '\'' + '}';
-//	}
 
 	@Override
 	public boolean equals(Object o) {

@@ -53,9 +53,9 @@ class FullStackRecordControllerTest {
 	void missingReferencedRecordTypeShouldFail() throws JsonProcessingException {
 		Map<String, Object> attrs = new HashMap<>();
 		attrs.put("attr_ref",
-				RelationUtils.createRelationString(RecordType.fromSqlTableName("non_existent"), "recordId"));
+				RelationUtils.createRelationString(RecordType.forUnitTest("non_existent"), "recordId"));
 		attrs.put("attr_ref_2",
-				RelationUtils.createRelationString(RecordType.fromSqlTableName("non_existent_2"), "recordId"));
+				RelationUtils.createRelationString(RecordType.forUnitTest("non_existent_2"), "recordId"));
 		HttpEntity<String> requestEntity = new HttpEntity<>(
 				mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attrs))), headers);
 		ResponseEntity<ErrorResponse> response = restTemplate.exchange(
@@ -70,7 +70,7 @@ class FullStackRecordControllerTest {
 	@Transactional
 	void referencingMissingRecordShouldFail() throws Exception {
 		Map<String, Object> attrs = new HashMap<>();
-		RecordType referencedRecordType = RecordType.fromSqlTableName("referenced-type");
+		RecordType referencedRecordType = RecordType.forUnitTest("referenced-type");
 		createSomeRecords(referencedRecordType, 1);
 		attrs.put("attr_ref", RelationUtils.createRelationString(referencedRecordType, "missing-id"));
 		HttpEntity<String> requestEntity = new HttpEntity<>(
@@ -87,7 +87,7 @@ class FullStackRecordControllerTest {
 	@Test
 	@Transactional
 	void retrievingMissingEntityShouldFail() throws Exception {
-		createSomeRecords(RecordType.fromSqlTableName("samples"), 1);
+		createSomeRecords(RecordType.forUnitTest("samples"), 1);
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
 		ResponseEntity<ErrorResponse> response = restTemplate.exchange(
 				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.GET, requestEntity,

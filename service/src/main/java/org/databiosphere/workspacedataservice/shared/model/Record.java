@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.shared.model;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Record {
@@ -54,7 +53,7 @@ public class Record {
 
 	@JsonGetter("recordType")
 	public String getRecordTypeName() {
-		return recordType.toPathSegment();
+		return recordType.toUriSegment();
 	}
 
 	@Override

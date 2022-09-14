@@ -33,7 +33,7 @@ public class RecordDaoTest {
 	@BeforeEach
 	void setUp() {
 		instanceId = UUID.randomUUID();
-		recordType = RecordType.fromSqlTableName("testRecordType");
+		recordType = RecordType.forUnitTest("testRecordType");
 		recordDao.createSchema(instanceId);
 		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType, Collections.emptySet());
 	}
@@ -94,7 +94,7 @@ public class RecordDaoTest {
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(referencedRecord), new HashMap<>());
 
 		RecordId recordId = new RecordId("testRecord");
-		String reference = RelationUtils.createRelationString(RecordType.fromSqlTableName("testRecordType"),
+		String reference = RelationUtils.createRelationString(RecordType.forUnitTest("testRecordType"),
 				"referencedRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(Map.of("testRecordType", reference)));
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord),
@@ -141,14 +141,14 @@ public class RecordDaoTest {
 		recordDao.addColumn(instanceId, recordType, "foo", DataTypeMapping.STRING);
 
 		recordDao.addColumn(instanceId, recordType, "testRecordType", DataTypeMapping.STRING,
-				RecordType.fromSqlTableName("testRecordType"));
+				RecordType.forUnitTest("testRecordType"));
 
 		RecordId refRecordId = new RecordId("referencedRecord");
 		Record referencedRecord = new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(referencedRecord), new HashMap<>());
 
 		RecordId recordId = new RecordId("testRecord");
-		String reference = RelationUtils.createRelationString(RecordType.fromSqlTableName("testRecordType"),
+		String reference = RelationUtils.createRelationString(RecordType.forUnitTest("testRecordType"),
 				"referencedRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(Map.of("testRecordType", reference)));
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord),
