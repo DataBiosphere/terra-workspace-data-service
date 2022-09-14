@@ -34,7 +34,7 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 public class RecordDao {
 
 	private final NamedParameterJdbcTemplate namedTemplate;
-	private static final Pattern DISALLOWED_CHARS_PATTERN = Pattern.compile("[^a-z0-9\\-_\\s]", Pattern.CASE_INSENSITIVE);
+	private static final Pattern DISALLOWED_CHARS_PATTERN = Pattern.compile("[^a-z0-9\\-_ ]", Pattern.CASE_INSENSITIVE);
 
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate) {
 		this.namedTemplate = namedTemplate;
@@ -80,9 +80,8 @@ public class RecordDao {
 	private String validateName(String name, InvalidNameException.NameType nameType){
 		if(containsDisallowedSqlCharacter(name)){
 			throw new InvalidNameException(nameType);
-		} else {
-			return name;
 		}
+		return name;
 	}
 
 	private boolean containsDisallowedSqlCharacter(String name) {
