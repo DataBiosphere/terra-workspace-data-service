@@ -2,12 +2,14 @@ package org.databiosphere.workspacedataservice.shared.model;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Record {
 
 	private RecordId id;
 
+	@JsonProperty("type")
 	private RecordType recordType;
 
 	private RecordAttributes attributes;
@@ -53,7 +55,7 @@ public class Record {
 
 	@JsonGetter("recordType")
 	public String getRecordTypeName() {
-		return recordType.toUriSegment();
+		return recordType.toJsonValue();
 	}
 
 	@Override

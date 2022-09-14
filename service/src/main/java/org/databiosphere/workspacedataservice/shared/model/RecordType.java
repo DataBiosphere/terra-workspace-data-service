@@ -11,20 +11,21 @@ public class RecordType {
 
 	private final String name;
 
+	@JsonCreator
 	public RecordType(String name) {
 		this.name = name;
 	}
 
-	public static RecordType forUnitTest(String tableName) {
-		return new RecordType(tableName);
+	public static RecordType forUnitTest(String recordTypeName) {
+		return new RecordType(recordTypeName);
 	}
 
 	public static RecordType fromSqlTableName(String tableName) {
 		return new RecordType(tableName);
 	}
 
-	public static RecordType fromUriSegment(String tableName) {
-		return new RecordType(tableName);
+	public static RecordType fromUriSegment(String uriSegment) {
+		return new RecordType(uriSegment);
 	}
 
 	public String toSqlTableName() {
@@ -32,6 +33,10 @@ public class RecordType {
 	}
 
 	@JsonValue
+	public String toJsonValue() {
+		return name;
+	}
+
 	public String toUriSegment() {
 		return name;
 	}
