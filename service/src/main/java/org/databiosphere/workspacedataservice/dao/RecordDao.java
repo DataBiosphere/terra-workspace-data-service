@@ -210,6 +210,11 @@ public class RecordDao {
 				(rs, rowNum) -> new Relation(rs.getString("column_name"), new RecordType(rs.getString("table_name"))));
 	}
 
+	public int countRecords(UUID instanceId, String recordTypeName) {
+		return namedTemplate.getJdbcTemplate().queryForObject(
+				"select count(*) from " + getQualifiedTableName(recordTypeName, instanceId), Integer.class);
+	}
+
 	private String genColUpsertUpdates(List<String> cols) {
 		return cols.stream().filter(c -> !RECORD_ID.equals(c)).map(c -> quote(c) + " = excluded." + quote(c))
 				.collect(Collectors.joining(", "));

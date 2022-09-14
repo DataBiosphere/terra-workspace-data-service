@@ -18,8 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -157,4 +156,26 @@ public class RecordDaoTest {
 			recordDao.deleteSingleRecord(instanceId, recordTypeName, "referencedRecord");
 		}, "Exception should be thrown when attempting to delete related record");
 	}
+
+	@Test
+	@Transactional
+	void testCountRecords() {
+		// add record
+		RecordId recordId = new RecordId("testRecord");
+		Record testRecord = new Record(recordId, recordType, new RecordAttributes(new HashMap<>()));
+		recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord), new HashMap<>());
+
+		// make sure record is counted
+		int count = recordDao.countRecords(instanceId, recordType.getName());
+		assertEquals(1, count);
+
+		List<Record> batch = new ArrayList<>();
+		for (int i = 0; i < 10; i++) {
+			batch.add(new Record(new RecordId("record" + i), recordType, new RecordAttributes(new HashMap<>())));
+		}
+		recordDao.batchUpsert(instanceId, recordType.getName(), batch, new HashMap<>());
+		int newcount = recordDao.countRecords(instanceId, recordType.getName());
+		assertEquals(11, newcount);
+	}
+
 }

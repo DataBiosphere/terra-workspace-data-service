@@ -205,8 +205,9 @@ public class RecordController {
 		Map<String, RecordType> relations = recordDao.getRelationCols(instanceId, recordType).stream()
 				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
 		List<AttributeSchema> attrSchema = schema.entrySet().stream().map(entry -> createAttributeSchema(entry.getKey(),
-				entry.getValue(), relations.getOrDefault(entry.getKey(), null))).collect(Collectors.toList());
-		return new RecordTypeSchema(recordType, attrSchema);
+				entry.getValue(), relations.getOrDefault(entry.getKey(), null))).toList();
+		int recordCount = recordDao.countRecords(instanceId, recordType);
+		return new RecordTypeSchema(recordType, attrSchema, recordCount);
 	}
 
 	private AttributeSchema createAttributeSchema(String name, DataTypeMapping datatype, RecordType relation) {
