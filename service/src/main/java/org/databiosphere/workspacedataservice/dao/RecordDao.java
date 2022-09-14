@@ -85,6 +85,13 @@ public class RecordDao {
 		}
 	}
 
+	public List<Record> queryForRecords(String recordTypeName, int pageSize, int offset, String sortDirection, UUID instanceId) {
+		return namedTemplate.getJdbcTemplate().query("select * from "
+					+ getQualifiedTableName(recordTypeName, instanceId) + " order by " + RECORD_ID
+					+ " " + sortDirection + " limit " + pageSize + " offset " + offset,
+				new RecordRowMapper(recordTypeName, getRelationColumnsByName(getRelationCols(instanceId, recordTypeName))));
+	}
+
 	private boolean containsDisallowedSqlCharacter(String name) {
 		return name == null || DISALLOWED_CHARS_PATTERN.matcher(name).find();
 	}
@@ -321,8 +328,7 @@ public class RecordDao {
 
 	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, RecordId recordId,
 			List<Relation> referenceCols) {
-		Map<String, String> refColMapping = new HashMap<>();
-		referenceCols.forEach(rc -> refColMapping.put(rc.relationColName(), rc.relationRecordType().getName()));
+		Map<String, String> refColMapping = getRelationColumnsByName(referenceCols);
 		try {
 			return Optional.ofNullable(namedTemplate.queryForObject(
 					"select * from " + getQualifiedTableName(recordType.getName(), instanceId) + " where " + RECORD_ID
@@ -332,5 +338,11 @@ public class RecordDao {
 		} catch (EmptyResultDataAccessException e) {
 			return Optional.empty();
 		}
+	}
+
+	private static Map<String, String> getRelationColumnsByName(List<Relation> referenceCols) {
+		Map<String, String> refColMapping = new HashMap<>();
+		referenceCols.forEach(rc -> refColMapping.put(rc.relationColName(), rc.relationRecordType().getName()));
+		return refColMapping;
 	}
 }

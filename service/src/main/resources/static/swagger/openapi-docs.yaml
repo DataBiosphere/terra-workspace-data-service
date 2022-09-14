@@ -137,34 +137,7 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /{instanceid}/search/{v}:
-    get:
-      deprecated: true
-      summary: Query records (pending)
-      description: |
-        Paginated list of records matching the criteria supplied in url query parameters.
-        This API supports a basic subset of search and filtering operations. For full functionality,
-        use the POST api instead.
-
-        TODO: Eliminate this API in favor of POST?
-      operationId: basicQueryRecords
-      tags:
-        - Records
-      parameters:
-        - $ref: '#/components/parameters/instanceIdPathParam'
-        - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/searchLimitQueryParam'
-        - $ref: '#/components/parameters/searchOffsetQueryParam'
-        - $ref: '#/components/parameters/searchSortQueryParam'
-        - $ref: '#/components/parameters/searchTermsQueryParam'
-        - $ref: '#/components/parameters/searchOperatorQueryParam'
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RecordQueryResponse'
+  /{instanceid}/search/{v}/{type}:
     post:
       deprecated: true
       summary: Query records (pending)
@@ -175,6 +148,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
       requestBody:
         description: The search to perform
         required: true
@@ -190,9 +164,7 @@ paths:
                 limit:
                   $ref: '#/components/schemas/SearchLimit'
                 sort:
-                  $ref: '#/components/schemas/SearchSort'
-                query:
-                  $ref: '#/components/schemas/RequestBodySearch'
+                  $ref: '#/components/schemas/SearchSortDirection'
       responses:
         200:
           description: Success
@@ -672,17 +644,12 @@ components:
       type: string
       enum: [and, or]
       description: Search behavior for multiple filter terms
-    SearchSort:
+    SearchSortDirection:
       type: string
+      enum:
+        - asc, desc
       description: |
-        Sort specification for search results.
-
-        Accepts `attribute` and `direction` separated by a single space (%20 url-encoded).
-        `direction` can be "asc" or "desc". `direction` is optional and defaults to "asc".
-        `attribute` and `direction` must be separated by a single space.
-
-        Concatenate multiple sort specifications with commas.
-      example: name,size desc,color asc
+        Sort direction (descending or ascending)
     SearchTerms:
       type: string
       description: Space-delimited list of terms on which to search

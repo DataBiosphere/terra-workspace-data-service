@@ -133,6 +133,17 @@ public class RecordController {
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
+	@PostMapping("/{instanceid}/search/{version}/{recordType}")
+	public SearchResponse queryForEntities(@PathVariable("instanceid") UUID instanceId,
+											  @PathVariable("recordType") String recordTypeName,
+											  @RequestBody SearchRequest searchRequest) {
+		if(!recordDao.recordTypeExists(instanceId, recordTypeName)) {
+			throw new MissingObjectException("Record type");
+		}
+		return new SearchResponse(searchRequest, recordDao.queryForRecords(recordTypeName, searchRequest.pageSize(), searchRequest.offset(),
+				searchRequest.sortDirection().name().toLowerCase(), instanceId));
+	}
+
 	@PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
 	public ResponseEntity<RecordResponse> upsertSingleRecord(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
