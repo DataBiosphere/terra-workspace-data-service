@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dao;
 
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -73,7 +74,15 @@ public class RecordDao {
 	}
 
 	private String getQualifiedTableName(String recordType, UUID instanceId) {
-		return quote(instanceId.toString()) + "." + quote(recordType);
+		return quote(instanceId.toString()) + "." + quote(validateName(recordType, InvalidNameException.NameType.RECORD_TYPE));
+	}
+
+	private String validateName(String name, InvalidNameException.NameType nameType){
+		if(containsDisallowedSqlCharacter(name)){
+			throw new InvalidNameException(nameType);
+		} else {
+			return name;
+		}
 	}
 
 	private boolean containsDisallowedSqlCharacter(String name) {
@@ -104,7 +113,7 @@ public class RecordDao {
 		try {
 			namedTemplate.getJdbcTemplate()
 					.update("alter table " + getQualifiedTableName(tableName, instanceId) + " add column "
-							+ quote(columnName) + " " + colType.getPostgresType()
+							+ quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " " + colType.getPostgresType()
 							+ (referencedTable != null
 									? " references " + getQualifiedTableName(referencedTable, instanceId)
 									: ""));
@@ -118,14 +127,14 @@ public class RecordDao {
 
 	public void changeColumn(UUID instanceId, String tableName, String columnName, DataTypeMapping newColType) {
 		namedTemplate.getJdbcTemplate().update("alter table " + getQualifiedTableName(tableName, instanceId)
-				+ " alter column " + quote(columnName) + " TYPE " + newColType.getPostgresType());
+				+ " alter column " + quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " TYPE " + newColType.getPostgresType());
 	}
 
 	private String genColumnDefs(Map<String, DataTypeMapping> tableInfo) {
 		return RECORD_ID + " text primary key"
 				+ (tableInfo.size() > 0
 						? ", " + tableInfo.entrySet().stream()
-								.map(e -> quote(e.getKey()) + " " + e.getValue().getPostgresType())
+								.map(e -> quote(validateName(e.getKey(), InvalidNameException.NameType.ATTRIBUTE)) + " " + e.getValue().getPostgresType())
 								.collect(Collectors.joining(", "))
 						: "");
 	}
@@ -300,7 +309,7 @@ public class RecordDao {
 					} else {
 						Object object = rs.getObject(columnName);
 						attributes.put(columnName,
-								object instanceof PGobject ? ((PGobject) object).getValue() : object);
+								object instanceof PGobject pGobject? pGobject.getValue() : object);
 					}
 				}
 				return attributes;
