@@ -185,6 +185,13 @@ public class RecordController {
 		return recordFound ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
 
+	@DeleteMapping("/{instanceId}/records/{version}/{recordType}/")
+	public ResponseEntity deleteRecordType(@PathVariable("instanceId") UUID instanceId,
+											 @PathVariable("version") String version, @PathVariable("recordType") RecordType recordType) {
+		validateVersion(version);
+		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+	}
+
 	private static void validateVersion(String version) {
 		if (null == version || !version.equals("v0.2")) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid API version specified");
