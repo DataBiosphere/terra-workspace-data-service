@@ -324,18 +324,27 @@ public class RecordControllerMockMvcTest {
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 
 		mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, type)).andExpect(status().isOk())
-				.andExpect(content().string(containsString("attr-dt\",\"datatype\":\"DATE_TIME\"")))
-				.andExpect(content().string(containsString("attr-json\",\"datatype\":\"JSON\"")))
-				.andExpect(content().string(containsString("attr1\",\"datatype\":\"STRING\"")))
-				.andExpect(content().string(containsString("attr2\",\"datatype\":\"DOUBLE\"")))
-				.andExpect(content().string(containsString("attr3\",\"datatype\":\"DATE\"")))
-				.andExpect(content().string(containsString("attr4\",\"datatype\":\"STRING\"")))
-				.andExpect(content().string(containsString("attr5\",\"datatype\":\"LONG\"")))
-				.andExpect(content().string(containsString("attr-boolean\",\"datatype\":\"BOOLEAN\"")))
-				.andExpect(content().string(
-						containsString("attr-ref\",\"datatype\":\"RELATION\",\"relatesTo\":\"" + referencedType)))
-				.andExpect(content().string(not(containsString("sys_name"))))
-				.andExpect(content().string(containsString("name\":\"" + type)));
+				.andExpect(jsonPath("$.name", is(equalTo(type))))
+				.andExpect(jsonPath("$.attributes",
+						hasItem(allOf(hasEntry("name", "attr-dt"), hasEntry("datatype", "DATE_TIME")))))
+				.andExpect(jsonPath("$.attributes",
+						hasItem(allOf(hasEntry("name", "attr-json"), hasEntry("datatype", "JSON")))))
+				.andExpect(jsonPath("$.attributes",
+						hasItem(allOf(hasEntry("name", "attr1"), hasEntry("datatype", "STRING")))))
+				.andExpect(jsonPath("$.attributes",
+						hasItem(allOf(hasEntry("name", "attr2"), hasEntry("datatype", "DOUBLE")))))
+				.andExpect(jsonPath("$.attributes",
+						hasItem(allOf(hasEntry("name", "attr3"), hasEntry("datatype", "DATE")))))
+				.andExpect(jsonPath("$.attributes",
+						hasItem(allOf(hasEntry("name", "attr4"), hasEntry("datatype", "STRING")))))
+				.andExpect(jsonPath("$.attributes",
+						hasItem(allOf(hasEntry("name", "attr5"), hasEntry("datatype", "LONG")))))
+				.andExpect(jsonPath("$.attributes",
+						hasItem(allOf(hasEntry("name", "attr-boolean"), hasEntry("datatype", "BOOLEAN")))))
+				.andExpect(jsonPath("$.attributes",
+						hasItem(allOf(hasEntry("name", "attr-ref"), hasEntry("datatype", "RELATION"),
+								hasEntry("relatesTo", referencedType)))))
+				.andExpect(jsonPath("$.attributes", hasSize(9))).andExpect(jsonPath("$.count", is(equalTo(1))));
 	}
 
 	@Test
