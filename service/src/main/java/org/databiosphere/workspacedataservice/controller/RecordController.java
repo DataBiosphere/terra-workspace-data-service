@@ -115,9 +115,7 @@ public class RecordController {
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") RecordId recordId) {
 		validateVersion(version);
-		if (!recordDao.instanceSchemaExists(instanceId)) {
-			throw new MissingObjectException("Instance");
-		}
+		validateInstance(instanceId);
 		validateRecordType(instanceId, recordType.getName());
 		Record result = recordDao
 				.getSingleRecord(instanceId, recordType, recordId,
@@ -199,6 +197,17 @@ public class RecordController {
 		return new ResponseEntity<>(result, HttpStatus.OK);
 	}
 
+	@GetMapping("/{instanceId}/types/{v}")
+	public ResponseEntity<List<RecordTypeSchema>> describeAllRecordTypes(@PathVariable("instanceId") UUID instanceId,
+			@PathVariable("v") String version) {
+		validateVersion(version);
+		validateInstance(instanceId);
+		List<String> allRecordTypes = recordDao.getAllRecordTypes(instanceId);
+		List<RecordTypeSchema> result = allRecordTypes.stream()
+				.map(recordType -> getSchemaDescription(instanceId, recordType)).toList();
+		return new ResponseEntity<>(result, HttpStatus.OK);
+	}
+
 	private RecordTypeSchema getSchemaDescription(UUID instanceId, String recordType) {
 		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchema(instanceId, recordType);
 		Map<String, RecordType> relations = recordDao.getRelationCols(instanceId, recordType).stream()
@@ -226,6 +235,12 @@ public class RecordController {
 	private void validateRecordType(UUID instanceId, String recordTypeName) {
 		if (!recordDao.recordTypeExists(instanceId, recordTypeName)) {
 			throw new MissingObjectException("Record type");
+		}
+	}
+
+	private void validateInstance(UUID instanceId) {
+		if (!recordDao.instanceSchemaExists(instanceId)) {
+			throw new MissingObjectException("Instance");
 		}
 	}
 
