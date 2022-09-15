@@ -324,7 +324,8 @@ public class RecordDao {
 	}
 
 	public List<String> getAllRecordTypes(UUID instanceId) {
-		return namedTemplate.queryForList("select tablename from pg_tables WHERE schemaname = :workspaceSchema",
+		return namedTemplate.queryForList(
+				"select tablename from pg_tables WHERE schemaname = :workspaceSchema order by tablename",
 				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), String.class);
 	}
 }

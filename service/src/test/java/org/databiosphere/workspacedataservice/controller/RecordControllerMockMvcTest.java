@@ -356,13 +356,13 @@ public class RecordControllerMockMvcTest {
 	@Transactional
 	void describeAllTypes() throws Exception {
 		// replace instanceId for this test so only these records are found
-		instanceId = UUID.randomUUID();
+		UUID instId = UUID.randomUUID();
 		String type1 = "firstType";
-		createSomeRecords(type1, 1);
+		createSomeRecords(type1, 1, instId);
 		String type2 = "secondType";
-		createSomeRecords(type2, 2);
+		createSomeRecords(type2, 2, instId);
 		String type3 = "thirdType";
-		createSomeRecords(type3, 10);
+		createSomeRecords(type3, 10, instId);
 
 		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("attr-boolean", "BOOLEAN", null),
 				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
@@ -374,7 +374,7 @@ public class RecordControllerMockMvcTest {
 				new RecordTypeSchema(type2, expectedAttributes, 2),
 				new RecordTypeSchema(type3, expectedAttributes, 10));
 
-		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}", instanceId, versionId))
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}", instId, versionId))
 				.andExpect(status().isOk()).andReturn();
 
 		List<RecordTypeSchema> actual = Arrays
@@ -390,10 +390,14 @@ public class RecordControllerMockMvcTest {
 	}
 
 	private void createSomeRecords(String recordType, int numRecords) throws Exception {
+		createSomeRecords(recordType, numRecords, instanceId);
+	}
+
+	private void createSomeRecords(String recordType, int numRecords, UUID instId) throws Exception {
 		for (int i = 0; i < numRecords; i++) {
 			String recordId = "record_" + i;
 			Map<String, Object> attributes = generateRandomAttributes();
-			mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+			mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instId, versionId,
 					recordType, recordId)
 							.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 							.contentType(MediaType.APPLICATION_JSON))
