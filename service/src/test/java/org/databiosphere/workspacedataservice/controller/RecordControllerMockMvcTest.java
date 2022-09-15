@@ -352,11 +352,52 @@ public class RecordControllerMockMvcTest {
 				.andExpect(status().isNotFound());
 	}
 
+	@Test
+	@Transactional
+	void describeAllTypes() throws Exception {
+		// replace instanceId for this test so only these records are found
+		UUID instId = UUID.randomUUID();
+		String type1 = "firstType";
+		createSomeRecords(type1, 1, instId);
+		String type2 = "secondType";
+		createSomeRecords(type2, 2, instId);
+		String type3 = "thirdType";
+		createSomeRecords(type3, 10, instId);
+
+		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("attr-boolean", "BOOLEAN", null),
+				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
+				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "DOUBLE", null),
+				new AttributeSchema("attr3", "DATE", null), new AttributeSchema("attr4", "STRING", null),
+				new AttributeSchema("attr5", "LONG", null));
+
+		List<RecordTypeSchema> expectedSchemas = Arrays.asList(new RecordTypeSchema(type1, expectedAttributes, 1),
+				new RecordTypeSchema(type2, expectedAttributes, 2),
+				new RecordTypeSchema(type3, expectedAttributes, 10));
+
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}", instId, versionId))
+				.andExpect(status().isOk()).andReturn();
+
+		List<RecordTypeSchema> actual = Arrays
+				.asList(mapper.readValue(mvcResult.getResponse().getContentAsString(), RecordTypeSchema[].class));
+
+		assertEquals(expectedSchemas, actual);
+	}
+
+	@Test
+	@Transactional
+	void describeAllTypesNoInstance() throws Exception {
+		mockMvc.perform(get("/{instanceId}/types/{v}", UUID.randomUUID(), versionId)).andExpect(status().isNotFound());
+	}
+
 	private void createSomeRecords(String recordType, int numRecords) throws Exception {
+		createSomeRecords(recordType, numRecords, instanceId);
+	}
+
+	private void createSomeRecords(String recordType, int numRecords, UUID instId) throws Exception {
 		for (int i = 0; i < numRecords; i++) {
 			String recordId = "record_" + i;
 			Map<String, Object> attributes = generateRandomAttributes();
-			mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+			mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instId, versionId,
 					recordType, recordId)
 							.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
 							.contentType(MediaType.APPLICATION_JSON))

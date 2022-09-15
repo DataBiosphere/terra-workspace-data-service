@@ -156,6 +156,21 @@ public class RecordDaoTest {
 			recordDao.deleteSingleRecord(instanceId, recordTypeName, "referencedRecord");
 		}, "Exception should be thrown when attempting to delete related record");
 	}
+	@Test
+	@Transactional
+	void testGetAllRecordTypes() {
+		List<String> typesList = recordDao.getAllRecordTypes(instanceId);
+		assertEquals(1, typesList.size());
+		assertTrue(typesList.contains(recordType.getName()));
+
+		String newRecordType = "newRecordType";
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), newRecordType, Collections.emptySet());
+
+		List<String> newTypesList = recordDao.getAllRecordTypes(instanceId);
+		assertEquals(2, newTypesList.size());
+		assertTrue(newTypesList.contains(recordType.getName()));
+		assertTrue(newTypesList.contains(newRecordType));
+	}
 
 	@Test
 	@Transactional
