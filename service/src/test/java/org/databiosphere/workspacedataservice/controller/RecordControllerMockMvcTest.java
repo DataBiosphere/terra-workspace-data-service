@@ -99,13 +99,18 @@ public class RecordControllerMockMvcTest {
 	@Transactional
 	void putNewRecord() throws Exception {
 		String newRecordType = "newRecordType";
-		RecordAttributes attributes = new RecordAttributes(Map.of("foo","bar","num",123));
+		RecordAttributes attributes = new RecordAttributes(Map.of("foo", "bar", "num", 123));
+		// create new record with new record type
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-						newRecordType, "newRecordId")
-						.content(mapper.writeValueAsString(new RecordRequest(attributes)))
+				newRecordType, "newRecordId").content(mapper.writeValueAsString(new RecordRequest(attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isCreated());
 
+		RecordAttributes attributes2 = new RecordAttributes(Map.of("foo", "baz", "num", 888));
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				newRecordType, "newRecordId2").content(mapper.writeValueAsString(new RecordRequest(attributes2)))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isCreated());
 	}
 	@Test
 	@Transactional
@@ -202,7 +207,7 @@ public class RecordControllerMockMvcTest {
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, "record_1").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
-				.andExpect(status().isOk()).andExpect(jsonPath("$.attributes.attr3", is(newTextValue)));
+				.andExpect(status().isCreated()).andExpect(jsonPath("$.attributes.attr3", is(newTextValue)));
 	}
 
 	@Test

@@ -74,11 +74,12 @@ public class RecordDao {
 	}
 
 	private String getQualifiedTableName(String recordType, UUID instanceId) {
-		return quote(instanceId.toString()) + "." + quote(validateName(recordType, InvalidNameException.NameType.RECORD_TYPE));
+		return quote(instanceId.toString()) + "."
+				+ quote(validateName(recordType, InvalidNameException.NameType.RECORD_TYPE));
 	}
 
-	private String validateName(String name, InvalidNameException.NameType nameType){
-		if(containsDisallowedSqlCharacter(name)){
+	private String validateName(String name, InvalidNameException.NameType nameType) {
+		if (containsDisallowedSqlCharacter(name)) {
 			throw new InvalidNameException(nameType);
 		}
 		return name;
@@ -113,7 +114,8 @@ public class RecordDao {
 		try {
 			namedTemplate.getJdbcTemplate()
 					.update("alter table " + getQualifiedTableName(tableName, instanceId) + " add column "
-							+ quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " " + colType.getPostgresType()
+							+ quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " "
+							+ colType.getPostgresType()
 							+ (referencedTable != null
 									? " references " + getQualifiedTableName(referencedTable, instanceId)
 									: ""));
@@ -126,15 +128,18 @@ public class RecordDao {
 	}
 
 	public void changeColumn(UUID instanceId, String tableName, String columnName, DataTypeMapping newColType) {
-		namedTemplate.getJdbcTemplate().update("alter table " + getQualifiedTableName(tableName, instanceId)
-				+ " alter column " + quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " TYPE " + newColType.getPostgresType());
+		namedTemplate.getJdbcTemplate()
+				.update("alter table " + getQualifiedTableName(tableName, instanceId) + " alter column "
+						+ quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " TYPE "
+						+ newColType.getPostgresType());
 	}
 
 	private String genColumnDefs(Map<String, DataTypeMapping> tableInfo) {
 		return RECORD_ID + " text primary key"
 				+ (tableInfo.size() > 0
 						? ", " + tableInfo.entrySet().stream()
-								.map(e -> quote(validateName(e.getKey(), InvalidNameException.NameType.ATTRIBUTE)) + " " + e.getValue().getPostgresType())
+								.map(e -> quote(validateName(e.getKey(), InvalidNameException.NameType.ATTRIBUTE)) + " "
+										+ e.getValue().getPostgresType())
 								.collect(Collectors.joining(", "))
 						: "");
 	}
@@ -313,8 +318,7 @@ public class RecordDao {
 								.createRelationString(referenceColToTable.get(columnName), rs.getString(columnName)));
 					} else {
 						Object object = rs.getObject(columnName);
-						attributes.put(columnName,
-								object instanceof PGobject pGobject? pGobject.getValue() : object);
+						attributes.put(columnName, object instanceof PGobject pGobject ? pGobject.getValue() : object);
 					}
 				}
 				return attributes;
@@ -337,6 +341,14 @@ public class RecordDao {
 		} catch (EmptyResultDataAccessException e) {
 			return Optional.empty();
 		}
+	}
+
+	public boolean recordExists(UUID instanceId, String recordType, String recordId) {
+		return Boolean.TRUE
+				.equals(namedTemplate.queryForObject(
+						"select exists(select * from " + getQualifiedTableName(recordType, instanceId) + " where "
+								+ RECORD_ID + " = :recordId)",
+						new MapSqlParameterSource("recordId", recordId), Boolean.class));
 	}
 
 	public List<String> getAllRecordTypes(UUID instanceId) {

@@ -188,4 +188,15 @@ public class RecordDaoTest {
 		}
 	}
 
+	@Test
+	@Transactional
+	void testRecordExists() {
+		assertFalse(recordDao.recordExists(instanceId, recordType.getName(), "aRecord"));
+		recordDao.batchUpsert(instanceId, recordType.getName(),
+				Collections.singletonList(
+						new Record(new RecordId("aRecord"), recordType, new RecordAttributes((new HashMap<>())))),
+				new HashMap<>());
+		assertTrue(recordDao.recordExists(instanceId, recordType.getName(), "aRecord"));
+	}
+
 }
