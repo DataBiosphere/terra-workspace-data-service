@@ -94,6 +94,19 @@ public class RecordControllerMockMvcTest {
 				.andExpect(status().isBadRequest())
 				.andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidNameException));
 	}
+
+	@Test
+	@Transactional
+	void putNewRecord() throws Exception {
+		String newRecordType = "newRecordType";
+		RecordAttributes attributes = new RecordAttributes(Map.of("foo","bar","num",123));
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						newRecordType, "newRecordId")
+						.content(mapper.writeValueAsString(new RecordRequest(attributes)))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isCreated());
+
+	}
 	@Test
 	@Transactional
 	void ensurePutShowsNewlyNullFields() throws Exception {
