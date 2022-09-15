@@ -297,8 +297,7 @@ paths:
         409:
           description: Target type or attribute name already exists, for a rename operation
     delete:
-      deprecated: true
-      summary: Delete record type (pending)
+      summary: Delete record type
       description: Delete record type. All records of this type will be deleted.
       operationId: deleteRecordType
       tags:

@@ -8,10 +8,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.databiosphere.workspacedataservice.service.RelationUtils;
 
 import java.util.*;
 
-import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.*;
@@ -325,6 +325,69 @@ public class RecordControllerMockMvcTest {
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 		mockMvc.perform(delete("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referencedType, "record_0")).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@Transactional
+	void deleteRecordType() throws Exception {
+		String recordType = "recordType";
+		createSomeRecords(recordType, 3);
+		mockMvc.perform(delete("/{instanceId}/types/{v}/{type}", instanceId, versionId, recordType))
+				.andExpect(status().isNoContent());
+		mockMvc.perform(get("/{instanceId}/types/{version}/{type}", instanceId, versionId, recordType))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	@Transactional
+	void deleteNonExistentRecordType() throws Exception {
+		String recordType = "recordType";
+		mockMvc.perform(delete("/{instanceId}/types/{version}/{recordType}", instanceId, versionId, recordType))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	@Transactional
+	void deleteReferencedRecordType() throws Exception {
+		String referencedType = "ref_participants";
+		String referringType = "ref_samples";
+		createSomeRecords(referencedType, 3);
+		createSomeRecords(referringType, 1);
+		Map<String, Object> attributes = new HashMap<>();
+		String ref = RelationUtils.createRelationString(referencedType, "record_0");
+		attributes.put("sample-ref", ref);
+		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
+				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
+
+		mockMvc.perform(delete("/{instanceId}/types/{version}/{recordType}", instanceId, versionId, referencedType))
+				.andExpect(status().isConflict());
+	}
+
+	@Test
+	@Transactional
+	void deleteReferencedRecordTypeWithNoRecords() throws Exception {
+		String referencedType = "ref_participants";
+		String referringType = "ref_samples";
+		createSomeRecords(referencedType, 3);
+		createSomeRecords(referringType, 1);
+		Map<String, Object> attributes = new HashMap<>();
+		String ref = RelationUtils.createRelationString(referencedType, "record_0");
+		attributes.put("sample-ref", ref);
+		// Create relation column
+		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
+				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
+
+		// Delete record from referencing type
+		mockMvc.perform(delete("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				referringType, "record_0")).andExpect(status().isNoContent());
+
+		// Attempt to delete referenced type
+		mockMvc.perform(delete("/{instanceId}/types/{version}/{recordType}", instanceId, versionId, referencedType))
+				.andExpect(status().isConflict());
 	}
 
 	@Test

@@ -208,9 +208,15 @@ public class RecordDao {
 	}
 
 	private void checkForTableRelation(SQLException sqlEx) {
-		if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"Unable to delete this record because another record has a relation to it.");
+		if (sqlEx != null && sqlEx.getSQLState() != null) {
+			if (sqlEx.getSQLState().equals("23503")) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+						"Unable to delete this record because another record has a relation to it.");
+			}
+			if (sqlEx.getSQLState().equals("2BP01")) {
+				throw new ResponseStatusException(HttpStatus.CONFLICT,
+						"Unable to delete this record type because another record type has a relation to it.");
+			}
 		}
 	}
 
@@ -355,5 +361,16 @@ public class RecordDao {
 		return namedTemplate.queryForList(
 				"select tablename from pg_tables WHERE schemaname = :workspaceSchema order by tablename",
 				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), String.class);
+	}
+
+	public void deleteRecordType(UUID instanceId, String recordType) {
+		try {
+			namedTemplate.getJdbcTemplate().update("drop table " + getQualifiedTableName(recordType, instanceId));
+		} catch (DataAccessException e) {
+			if (e.getRootCause()instanceof SQLException sqlEx) {
+				checkForTableRelation(sqlEx);
+			}
+			throw e;
+		}
 	}
 }
