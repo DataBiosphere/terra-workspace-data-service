@@ -60,7 +60,7 @@ class FullStackRecordControllerTest {
 	@Test
 	@Transactional
 	void testBadAttributeNames() throws JsonProcessingException {
-		List<String> badNames = List.of("create table buttheads(id int)", "samples.11", "##magic beans!");
+		List<String> badNames = List.of("create table buttheads(id int)", "samples\n11", "##magic beans!");
 		for (String badName : badNames) {
 			HashMap<String, Object> attributes = new HashMap<>();
 			attributes.put(badName, "foo");

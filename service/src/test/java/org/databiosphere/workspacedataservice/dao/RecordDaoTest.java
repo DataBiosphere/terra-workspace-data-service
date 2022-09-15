@@ -18,12 +18,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class RecordDaoTest {
+class RecordDaoTest {
 
 	@Autowired
 	RecordDao recordDao;
@@ -157,4 +156,36 @@ public class RecordDaoTest {
 			recordDao.deleteSingleRecord(instanceId, recordTypeName, "referencedRecord");
 		}, "Exception should be thrown when attempting to delete related record");
 	}
+	@Test
+	@Transactional
+	void testGetAllRecordTypes() {
+		List<String> typesList = recordDao.getAllRecordTypes(instanceId);
+		assertEquals(1, typesList.size());
+		assertTrue(typesList.contains(recordType.getName()));
+
+		String newRecordType = "newRecordType";
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), newRecordType, Collections.emptySet());
+
+		List<String> newTypesList = recordDao.getAllRecordTypes(instanceId);
+		assertEquals(2, newTypesList.size());
+		assertTrue(newTypesList.contains(recordType.getName()));
+		assertTrue(newTypesList.contains(newRecordType));
+	}
+
+	@Test
+	@Transactional
+	void testCountRecords() {
+		// ensure we start with a count of 0 records
+		assertEquals(0, recordDao.countRecords(instanceId, recordType.getName()));
+		// insert records and test the count after each insert
+		for (int i = 0; i < 10; i++) {
+			Record testRecord = new Record(new RecordId("record" + i), recordType,
+					new RecordAttributes(new HashMap<>()));
+			recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord),
+					new HashMap<>());
+			assertEquals(i + 1, recordDao.countRecords(instanceId, recordType.getName()),
+					"after inserting " + (i + 1) + " records");
+		}
+	}
+
 }

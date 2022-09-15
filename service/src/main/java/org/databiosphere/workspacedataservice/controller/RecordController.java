@@ -5,8 +5,7 @@ import com.google.common.collect.Maps;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.service.model.exception.*;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
@@ -37,9 +36,7 @@ public class RecordController {
 			@PathVariable("recordId") RecordId recordId, @RequestBody RecordRequest recordRequest) {
 		validateVersion(version);
 		String recordTypeName = recordType.getName();
-		if (!recordDao.recordTypeExists(instanceId, recordTypeName)) {
-			throw new MissingObjectException("Record type");
-		}
+		validateRecordType(instanceId, recordTypeName);
 		Record singleRecord = recordDao
 				.getSingleRecord(instanceId, recordType, recordId,
 						recordDao.getRelationCols(instanceId, recordTypeName))
@@ -81,15 +78,18 @@ public class RecordController {
 		return schema;
 	}
 
-	private void validateRelationsAndAddColumns(UUID instanceId, String recordType, Map<String, DataTypeMapping> requestSchema,
-												List<Record> records, Map<String, DataTypeMapping> colsToAdd, Map<String, DataTypeMapping> existingSchema) {
+	private void validateRelationsAndAddColumns(UUID instanceId, String recordType,
+			Map<String, DataTypeMapping> requestSchema, List<Record> records, Map<String, DataTypeMapping> colsToAdd,
+			Map<String, DataTypeMapping> existingSchema) {
 		Set<Relation> relations = RelationUtils.findRelations(records);
 		List<Relation> existingRelations = recordDao.getRelationCols(instanceId, recordType);
-		Set<String> existingRelationCols = existingRelations.stream().map(Relation::relationColName).collect(Collectors.toSet());
-		//look for case where requested relation column already exists as a non-relational column
+		Set<String> existingRelationCols = existingRelations.stream().map(Relation::relationColName)
+				.collect(Collectors.toSet());
+		// look for case where requested relation column already exists as a
+		// non-relational column
 		for (Relation relation : relations) {
 			String col = relation.relationColName();
-			if(!existingRelationCols.contains(col) && existingSchema.containsKey(col)){
+			if (!existingRelationCols.contains(col) && existingSchema.containsKey(col)) {
 				throw new InvalidRelationException("It looks like you're attempting to assign a relation "
 						+ "to an existing attribute that was not configured for relations");
 			}
@@ -118,12 +118,8 @@ public class RecordController {
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") RecordId recordId) {
 		validateVersion(version);
-		if (!recordDao.instanceSchemaExists(instanceId)) {
-			throw new MissingObjectException("Instance");
-		}
-		if (!recordDao.recordTypeExists(instanceId, recordType.getName())) {
-			throw new MissingObjectException("Record type");
-		}
+		validateInstance(instanceId);
+		validateRecordType(instanceId, recordType.getName());
 		Record result = recordDao
 				.getSingleRecord(instanceId, recordType, recordId,
 						recordDao.getRelationCols(instanceId, recordType.getName()))
@@ -199,9 +195,59 @@ public class RecordController {
 		return recordFound ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
 
+	@GetMapping("/{instanceId}/types/{v}/{type}")
+	public ResponseEntity<RecordTypeSchema> describeRecordType(@PathVariable("instanceId") UUID instanceId,
+			@PathVariable("v") String version, @PathVariable("type") RecordType recordType) {
+		validateVersion(version);
+		validateRecordType(instanceId, recordType.getName());
+		RecordTypeSchema result = getSchemaDescription(instanceId, recordType.getName());
+		return new ResponseEntity<>(result, HttpStatus.OK);
+	}
+
+	@GetMapping("/{instanceId}/types/{v}")
+	public ResponseEntity<List<RecordTypeSchema>> describeAllRecordTypes(@PathVariable("instanceId") UUID instanceId,
+			@PathVariable("v") String version) {
+		validateVersion(version);
+		validateInstance(instanceId);
+		List<String> allRecordTypes = recordDao.getAllRecordTypes(instanceId);
+		List<RecordTypeSchema> result = allRecordTypes.stream()
+				.map(recordType -> getSchemaDescription(instanceId, recordType)).toList();
+		return new ResponseEntity<>(result, HttpStatus.OK);
+	}
+
+	private RecordTypeSchema getSchemaDescription(UUID instanceId, String recordType) {
+		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchema(instanceId, recordType);
+		Map<String, RecordType> relations = recordDao.getRelationCols(instanceId, recordType).stream()
+				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
+		List<AttributeSchema> attrSchema = schema.entrySet().stream().sorted(Map.Entry.comparingByKey())
+				.map(entry -> createAttributeSchema(entry.getKey(), entry.getValue(), relations.get(entry.getKey())))
+				.toList();
+		int recordCount = recordDao.countRecords(instanceId, recordType);
+		return new RecordTypeSchema(recordType, attrSchema, recordCount);
+	}
+
+	private AttributeSchema createAttributeSchema(String name, DataTypeMapping datatype, RecordType relation) {
+		if (relation == null) {
+			return new AttributeSchema(name, datatype.toString(), null);
+		}
+		return new AttributeSchema(name, "RELATION", relation.getName());
+	}
+
 	private static void validateVersion(String version) {
 		if (null == version || !version.equals("v0.2")) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid API version specified");
+		}
+	}
+
+	private void validateRecordType(UUID instanceId, String recordTypeName) {
+		if (!recordDao.recordTypeExists(instanceId, recordTypeName)) {
+			throw new MissingObjectException("Record type");
+		}
+	}
+
+	private void validateInstance(UUID instanceId) {
+		if (!recordDao.instanceSchemaExists(instanceId)) {
+			throw new MissingObjectException("Instance");
 		}
 	}
 

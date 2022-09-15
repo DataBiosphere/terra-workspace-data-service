@@ -34,7 +34,7 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 public class RecordDao {
 
 	private final NamedParameterJdbcTemplate namedTemplate;
-	private static final Pattern DISALLOWED_CHARS_PATTERN = Pattern.compile("[^a-z0-9\\-_\\s]", Pattern.CASE_INSENSITIVE);
+	private static final Pattern DISALLOWED_CHARS_PATTERN = Pattern.compile("[^a-z0-9\\-_ ]", Pattern.CASE_INSENSITIVE);
 
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate) {
 		this.namedTemplate = namedTemplate;
@@ -80,9 +80,8 @@ public class RecordDao {
 	private String validateName(String name, InvalidNameException.NameType nameType){
 		if(containsDisallowedSqlCharacter(name)){
 			throw new InvalidNameException(nameType);
-		} else {
-			return name;
 		}
+		return name;
 	}
 
 	public List<Record> queryForRecords(String recordTypeName, int pageSize, int offset, String sortDirection, UUID instanceId) {
@@ -99,9 +98,10 @@ public class RecordDao {
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, String tableName) {
 		MapSqlParameterSource params = new MapSqlParameterSource("instanceId", instanceId.toString());
 		params.addValue("tableName", tableName);
+		params.addValue("recordName", RECORD_ID);
 		return namedTemplate
 				.query("select column_name, data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
-						+ "and table_name = :tableName", params, rs -> {
+						+ "and table_name = :tableName and column_name != :recordName", params, rs -> {
 							Map<String, DataTypeMapping> result = new HashMap<>();
 							while (rs.next()) {
 								result.put(rs.getString("column_name"),
@@ -234,6 +234,11 @@ public class RecordDao {
 				(rs, rowNum) -> new Relation(rs.getString("column_name"), new RecordType(rs.getString("table_name"))));
 	}
 
+	public int countRecords(UUID instanceId, String recordTypeName) {
+		return namedTemplate.getJdbcTemplate().queryForObject(
+				"select count(*) from " + getQualifiedTableName(recordTypeName, instanceId), Integer.class);
+	}
+
 	private String genColUpsertUpdates(List<String> cols) {
 		return cols.stream().filter(c -> !RECORD_ID.equals(c)).map(c -> quote(c) + " = excluded." + quote(c))
 				.collect(Collectors.joining(", "));
@@ -338,6 +343,12 @@ public class RecordDao {
 		} catch (EmptyResultDataAccessException e) {
 			return Optional.empty();
 		}
+	}
+
+	public List<String> getAllRecordTypes(UUID instanceId) {
+		return namedTemplate.queryForList(
+				"select tablename from pg_tables WHERE schemaname = :workspaceSchema order by tablename",
+				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), String.class);
 	}
 
 	private static Map<String, String> getRelationColumnsByName(List<Relation> referenceCols) {
