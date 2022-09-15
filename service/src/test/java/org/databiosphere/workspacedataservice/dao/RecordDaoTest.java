@@ -188,4 +188,40 @@ public class RecordDaoTest {
 		}
 	}
 
+	@Test
+	@Transactional
+	void testDeleteRecordType() {
+		// make sure type already exists
+		assertTrue(recordDao.recordTypeExists(instanceId, recordType.getName()));
+		recordDao.deleteRecordType(instanceId, recordType.getName());
+		// make sure type no longer exists
+		assertFalse(recordDao.recordTypeExists(instanceId, recordType.getName()));
+	}
+
+	@Test
+	@Transactional
+	void testDeleteRecordTypeWithRelation() {
+		String recordTypeName = recordType.getName();
+		String referencedTypeName = "referencedType";
+		RecordType referencedType = new RecordType(referencedTypeName);
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), referencedTypeName, Collections.emptySet());
+
+		recordDao.addColumn(instanceId, recordTypeName, "relation", DataTypeMapping.STRING, referencedTypeName);
+
+		RecordId refRecordId = new RecordId("referencedRecord");
+		Record referencedRecord = new Record(refRecordId, referencedType, new RecordAttributes(new HashMap<>()));
+		recordDao.batchUpsert(instanceId, referencedTypeName, Collections.singletonList(referencedRecord),
+				new HashMap<>());
+
+		RecordId recordId = new RecordId("testRecord");
+		String reference = RelationUtils.createRelationString(referencedTypeName, refRecordId.getRecordIdentifier());
+		Record testRecord = new Record(recordId, recordType, new RecordAttributes(Map.of("relation", reference)));
+		recordDao.batchUpsert(instanceId, recordTypeName, Collections.singletonList(testRecord),
+				new HashMap<>(Map.of("relation", DataTypeMapping.STRING)));
+
+		// Should throw an error
+		assertThrows(ResponseStatusException.class, () -> {
+			recordDao.deleteRecordType(instanceId, referencedTypeName);
+		}, "Exception should be thrown when attempting to delete record type with relation");
+	}
 }

@@ -74,11 +74,12 @@ public class RecordDao {
 	}
 
 	private String getQualifiedTableName(String recordType, UUID instanceId) {
-		return quote(instanceId.toString()) + "." + quote(validateName(recordType, InvalidNameException.NameType.RECORD_TYPE));
+		return quote(instanceId.toString()) + "."
+				+ quote(validateName(recordType, InvalidNameException.NameType.RECORD_TYPE));
 	}
 
-	private String validateName(String name, InvalidNameException.NameType nameType){
-		if(containsDisallowedSqlCharacter(name)){
+	private String validateName(String name, InvalidNameException.NameType nameType) {
+		if (containsDisallowedSqlCharacter(name)) {
 			throw new InvalidNameException(nameType);
 		}
 		return name;
@@ -113,7 +114,8 @@ public class RecordDao {
 		try {
 			namedTemplate.getJdbcTemplate()
 					.update("alter table " + getQualifiedTableName(tableName, instanceId) + " add column "
-							+ quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " " + colType.getPostgresType()
+							+ quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " "
+							+ colType.getPostgresType()
 							+ (referencedTable != null
 									? " references " + getQualifiedTableName(referencedTable, instanceId)
 									: ""));
@@ -126,15 +128,18 @@ public class RecordDao {
 	}
 
 	public void changeColumn(UUID instanceId, String tableName, String columnName, DataTypeMapping newColType) {
-		namedTemplate.getJdbcTemplate().update("alter table " + getQualifiedTableName(tableName, instanceId)
-				+ " alter column " + quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " TYPE " + newColType.getPostgresType());
+		namedTemplate.getJdbcTemplate()
+				.update("alter table " + getQualifiedTableName(tableName, instanceId) + " alter column "
+						+ quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " TYPE "
+						+ newColType.getPostgresType());
 	}
 
 	private String genColumnDefs(Map<String, DataTypeMapping> tableInfo) {
 		return RECORD_ID + " text primary key"
 				+ (tableInfo.size() > 0
 						? ", " + tableInfo.entrySet().stream()
-								.map(e -> quote(validateName(e.getKey(), InvalidNameException.NameType.ATTRIBUTE)) + " " + e.getValue().getPostgresType())
+								.map(e -> quote(validateName(e.getKey(), InvalidNameException.NameType.ATTRIBUTE)) + " "
+										+ e.getValue().getPostgresType())
 								.collect(Collectors.joining(", "))
 						: "");
 	}
@@ -203,9 +208,15 @@ public class RecordDao {
 	}
 
 	private void checkForTableRelation(SQLException sqlEx) {
-		if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"Unable to delete this record because another record has a relation to it.");
+		if (sqlEx != null && sqlEx.getSQLState() != null) {
+			if (sqlEx.getSQLState().equals("23503")) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+						"Unable to delete this record because another record has a relation to it.");
+			}
+			if (sqlEx.getSQLState().equals("2BP01")) {
+				throw new ResponseStatusException(HttpStatus.CONFLICT,
+						"Unable to delete this record type because another record type has a relation to it.");
+			}
 		}
 	}
 
@@ -313,8 +324,7 @@ public class RecordDao {
 								.createRelationString(referenceColToTable.get(columnName), rs.getString(columnName)));
 					} else {
 						Object object = rs.getObject(columnName);
-						attributes.put(columnName,
-								object instanceof PGobject pGobject? pGobject.getValue() : object);
+						attributes.put(columnName, object instanceof PGobject pGobject ? pGobject.getValue() : object);
 					}
 				}
 				return attributes;
@@ -343,5 +353,16 @@ public class RecordDao {
 		return namedTemplate.queryForList(
 				"select tablename from pg_tables WHERE schemaname = :workspaceSchema order by tablename",
 				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), String.class);
+	}
+
+	public void deleteRecordType(UUID instanceId, String recordType) {
+		try {
+			namedTemplate.getJdbcTemplate().update("drop table " + getQualifiedTableName(recordType, instanceId));
+		} catch (DataAccessException e) {
+			if (e.getRootCause()instanceof SQLException sqlEx) {
+				checkForTableRelation(sqlEx);
+			}
+			throw e;
+		}
 	}
 }
