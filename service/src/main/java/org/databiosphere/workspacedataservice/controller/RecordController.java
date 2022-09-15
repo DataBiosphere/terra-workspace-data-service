@@ -181,10 +181,13 @@ public class RecordController {
 		return recordFound ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
 
-	@DeleteMapping("/{instanceId}/records/{version}/{recordType}/")
+	@DeleteMapping("/{instanceId}/types/{v}/{type}")
 	public ResponseEntity deleteRecordType(@PathVariable("instanceId") UUID instanceId,
-			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType) {
+			@PathVariable("v") String version, @PathVariable("type") RecordType recordType) {
 		validateVersion(version);
+		validateInstance(instanceId);
+		validateRecordType(instanceId, recordType.getName());
+		recordDao.deleteRecordType(instanceId, recordType.getName());
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 
