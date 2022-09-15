@@ -122,7 +122,6 @@ class FullStackRecordControllerTest {
 		}
 	}
 
-
 	@Test
 	@Transactional
 	void missingReferencedRecordTypeShouldFail() throws JsonProcessingException {
