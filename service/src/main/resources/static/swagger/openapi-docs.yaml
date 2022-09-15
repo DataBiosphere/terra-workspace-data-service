@@ -139,8 +139,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /{instanceid}/search/{v}/{type}:
     post:
-      deprecated: true
-      summary: Query records (pending)
+      summary: Query records
       description: Paginated list of records matching the criteria supplied in the request body
       operationId: queryRecords
       tags:
@@ -150,21 +149,7 @@ paths:
         - $ref: '#/components/parameters/versionPathParam'
         - $ref: '#/components/parameters/recordTypePathParam'
       requestBody:
-        description: The search to perform
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - query
-              properties:
-                offset:
-                  $ref: '#/components/schemas/SearchOffset'
-                limit:
-                  $ref: '#/components/schemas/SearchLimit'
-                sort:
-                  $ref: '#/components/schemas/SearchSortDirection'
+        $ref: '#/components/requestBodies/SearchRequestBody'
       responses:
         200:
           description: Success
@@ -172,6 +157,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RecordQueryResponse'
+        404:
+          description: record type not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /{instanceid}/batch/{v}:
     post:
       deprecated: true
@@ -473,6 +464,13 @@ components:
           schema:
             $ref: '#/components/schemas/RecordResponse'
   requestBodies:
+    SearchRequestBody:
+      description: A paginated search request
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SearchRequest'
     RecordRequestBody:
       description: A record's attributes to upload
       required: true
@@ -557,6 +555,19 @@ components:
                 description: Record type
               message:
                 type: string
+    SearchRequest:
+      type: object
+      required:
+        - offset
+        - limit
+        - sort
+      properties:
+        offset:
+          $ref: '#/components/schemas/SearchOffset'
+        limit:
+          $ref: '#/components/schemas/SearchLimit'
+        sort:
+          $ref: '#/components/schemas/SearchSortDirection'
     RecordRequest:
       type: object
       required:
@@ -608,7 +619,22 @@ components:
     RecordMetadata:
       type: object
     RecordQueryResponse:
+      required:
+        - searchRequest
+        - records
+        - totalRecords
       type: object
+      properties:
+        searchRequest:
+          $ref: '#/components/schemas/SearchRequest'
+        totalRecords:
+          type: integer
+          description: number of records in the record type
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecordResponse'
+          description: list of records found
     RecordType:
       type: string
     RecordTypeSchema:
@@ -681,8 +707,7 @@ components:
       description: Search behavior for multiple filter terms
     SearchSortDirection:
       type: string
-      enum:
-        - asc, desc
+      enum: [asc, desc]
       description: |
         Sort direction (descending or ascending)
     SearchTerms:

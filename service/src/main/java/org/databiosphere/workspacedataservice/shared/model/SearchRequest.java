@@ -1,5 +1,5 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
 
-public record SearchRequest(int pageSize, int offset, SortDirection sortDirection) {
+public record SearchRequest(int limit, int offset, SortDirection sort) {
 }

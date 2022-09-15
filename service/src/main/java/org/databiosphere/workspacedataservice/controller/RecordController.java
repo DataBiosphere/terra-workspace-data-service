@@ -130,14 +130,17 @@ public class RecordController {
 	}
 
 	@PostMapping("/{instanceid}/search/{version}/{recordType}")
-	public SearchResponse queryForEntities(@PathVariable("instanceid") UUID instanceId,
-											  @PathVariable("recordType") String recordTypeName,
-											  @RequestBody SearchRequest searchRequest) {
+	public RecordQueryResponse queryForEntities(@PathVariable("instanceid") UUID instanceId,
+												@PathVariable("recordType") String recordTypeName,
+												@RequestBody SearchRequest searchRequest) {
 		if(!recordDao.recordTypeExists(instanceId, recordTypeName)) {
 			throw new MissingObjectException("Record type");
 		}
-		return new SearchResponse(searchRequest, recordDao.queryForRecords(recordTypeName, searchRequest.pageSize(), searchRequest.offset(),
-				searchRequest.sortDirection().name().toLowerCase(), instanceId));
+		List<Record> records = recordDao.queryForRecords(recordTypeName, searchRequest.limit(), searchRequest.offset(),
+				searchRequest.sort().name().toLowerCase(), instanceId);
+		List<RecordResponse> recordList = records.stream().map(r ->
+				new RecordResponse(r.getId(), r.getRecordType(), r.getAttributes(), new RecordMetadata("UNUSED"))).toList();
+		return new RecordQueryResponse(searchRequest, recordList, recordDao.countRecords(instanceId, recordTypeName));
 	}
 
 	@PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
