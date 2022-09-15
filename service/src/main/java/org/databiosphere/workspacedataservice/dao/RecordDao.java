@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dao;
 
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -24,6 +25,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.*;
@@ -32,6 +34,7 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 public class RecordDao {
 
 	private final NamedParameterJdbcTemplate namedTemplate;
+	private static final Pattern DISALLOWED_CHARS_PATTERN = Pattern.compile("[^a-z0-9\\-_ ]", Pattern.CASE_INSENSITIVE);
 
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate) {
 		this.namedTemplate = namedTemplate;
@@ -56,6 +59,7 @@ public class RecordDao {
 
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, String tableName,
 			Set<Relation> relations) {
+
 		String columnDefs = genColumnDefs(tableInfo);
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(tableName, instanceId) + "( "
@@ -66,10 +70,22 @@ public class RecordDao {
 			}
 			throw e;
 		}
+
 	}
 
 	private String getQualifiedTableName(String recordType, UUID instanceId) {
-		return quote(instanceId.toString()) + "." + quote(recordType);
+		return quote(instanceId.toString()) + "." + quote(validateName(recordType, InvalidNameException.NameType.RECORD_TYPE));
+	}
+
+	private String validateName(String name, InvalidNameException.NameType nameType){
+		if(containsDisallowedSqlCharacter(name)){
+			throw new InvalidNameException(nameType);
+		}
+		return name;
+	}
+
+	private boolean containsDisallowedSqlCharacter(String name) {
+		return name == null || DISALLOWED_CHARS_PATTERN.matcher(name).find();
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, String tableName) {
@@ -97,7 +113,7 @@ public class RecordDao {
 		try {
 			namedTemplate.getJdbcTemplate()
 					.update("alter table " + getQualifiedTableName(tableName, instanceId) + " add column "
-							+ quote(columnName) + " " + colType.getPostgresType()
+							+ quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " " + colType.getPostgresType()
 							+ (referencedTable != null
 									? " references " + getQualifiedTableName(referencedTable, instanceId)
 									: ""));
@@ -111,14 +127,14 @@ public class RecordDao {
 
 	public void changeColumn(UUID instanceId, String tableName, String columnName, DataTypeMapping newColType) {
 		namedTemplate.getJdbcTemplate().update("alter table " + getQualifiedTableName(tableName, instanceId)
-				+ " alter column " + quote(columnName) + " TYPE " + newColType.getPostgresType());
+				+ " alter column " + quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " TYPE " + newColType.getPostgresType());
 	}
 
 	private String genColumnDefs(Map<String, DataTypeMapping> tableInfo) {
 		return RECORD_ID + " text primary key"
 				+ (tableInfo.size() > 0
 						? ", " + tableInfo.entrySet().stream()
-								.map(e -> quote(e.getKey()) + " " + e.getValue().getPostgresType())
+								.map(e -> quote(validateName(e.getKey(), InvalidNameException.NameType.ATTRIBUTE)) + " " + e.getValue().getPostgresType())
 								.collect(Collectors.joining(", "))
 						: "");
 	}
@@ -298,7 +314,7 @@ public class RecordDao {
 					} else {
 						Object object = rs.getObject(columnName);
 						attributes.put(columnName,
-								object instanceof PGobject ? ((PGobject) object).getValue() : object);
+								object instanceof PGobject pGobject? pGobject.getValue() : object);
 					}
 				}
 				return attributes;

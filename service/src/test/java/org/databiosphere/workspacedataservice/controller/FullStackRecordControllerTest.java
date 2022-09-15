@@ -2,8 +2,6 @@ package org.databiosphere.workspacedataservice.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.databiosphere.workspacedata.model.ErrorResponse;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -16,13 +14,9 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.in;
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 
 /**
@@ -46,6 +40,41 @@ class FullStackRecordControllerTest {
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		instanceId = UUID.randomUUID();
 	}
+
+	@Test
+	@Transactional
+	void testBadRecordTypeNames() throws JsonProcessingException {
+		HttpEntity<String> requestEntity = new HttpEntity<>(
+				mapper.writeValueAsString(new RecordRequest(new RecordAttributes(new HashMap<>()))), headers);
+		List<String> badNames = List.of("); drop table users;", "$$foo.bar", "...", "&Q$(*^@$(*");
+		for (String badName : badNames) {
+			ResponseEntity<ErrorResponse> response = restTemplate.exchange(
+					"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT, requestEntity,
+					ErrorResponse.class, instanceId, versionId, badName, "sample_1");
+			ErrorResponse err = response.getBody();
+			assertThat(err.getMessage()).containsPattern("Record Type .* or contain characters besides letters");
+			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		}
+	}
+
+	@Test
+	@Transactional
+	void testBadAttributeNames() throws JsonProcessingException {
+		List<String> badNames = List.of("create table buttheads(id int)", "samples\n11", "##magic beans!");
+		for (String badName : badNames) {
+			HashMap<String, Object> attributes = new HashMap<>();
+			attributes.put(badName, "foo");
+			HttpEntity<String> requestEntity = new HttpEntity<>(
+					mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))), headers);
+			ResponseEntity<ErrorResponse> response = restTemplate.exchange(
+					"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT, requestEntity,
+					ErrorResponse.class, instanceId, versionId, "sample", "sample_1");
+			ErrorResponse err = response.getBody();
+			assertThat(err.getMessage()).containsPattern("Attribute .* or contain characters besides letters");
+			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		}
+	}
+
 
 	@Test
 	@Transactional
