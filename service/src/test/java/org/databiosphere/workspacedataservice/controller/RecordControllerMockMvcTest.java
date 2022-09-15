@@ -344,7 +344,7 @@ public class RecordControllerMockMvcTest {
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 
 		mockMvc.perform(delete("/{instanceId}/types/{version}/{recordType}", instanceId, versionId, referencedType))
-				.andExpect(status().isForbidden());
+				.andExpect(status().isConflict());
 	}
 
 	@Test
@@ -369,7 +369,7 @@ public class RecordControllerMockMvcTest {
 
 		// Attempt to delete referenced type
 		mockMvc.perform(delete("/{instanceId}/types/{version}/{recordType}", instanceId, versionId, referencedType))
-				.andExpect(status().isForbidden());
+				.andExpect(status().isConflict());
 	}
 
 	@Test

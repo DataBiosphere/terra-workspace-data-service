@@ -185,7 +185,7 @@ public class RecordController {
 	}
 
 	@DeleteMapping("/{instanceId}/types/{v}/{type}")
-	public ResponseEntity deleteRecordType(@PathVariable("instanceId") UUID instanceId,
+	public ResponseEntity<Void> deleteRecordType(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType) {
 		validateVersion(version);
 		validateInstance(instanceId);

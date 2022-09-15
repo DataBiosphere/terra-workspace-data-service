@@ -17,7 +17,7 @@ public class InvalidNameException extends RuntimeException {
 		}
 	}
 	public InvalidNameException(NameType nameType) {
-		super(nameType.name + " names can't start with " + ReservedNames.RESERVED_NAME_PREFIX +
-				" or contain characters besides letters, numbers, spaces, dashes or underscores.");
+		super(nameType.name + " names can't start with " + ReservedNames.RESERVED_NAME_PREFIX
+				+ " or contain characters besides letters, numbers, spaces, dashes or underscores.");
 	}
 }
