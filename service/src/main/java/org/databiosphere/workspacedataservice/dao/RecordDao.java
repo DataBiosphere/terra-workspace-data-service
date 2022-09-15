@@ -367,4 +367,15 @@ public class RecordDao {
 		referenceCols.forEach(rc -> refColMapping.put(rc.relationColName(), rc.relationRecordType().getName()));
 		return refColMapping;
 	}
+
+	public void deleteRecordType(UUID instanceId, String recordType) {
+		try {
+			namedTemplate.getJdbcTemplate().update("drop table " + getQualifiedTableName(recordType, instanceId));
+		} catch (DataAccessException e) {
+			if (e.getRootCause()instanceof SQLException sqlEx) {
+				checkForTableRelation(sqlEx);
+			}
+			throw e;
+		}
+	}
 }
