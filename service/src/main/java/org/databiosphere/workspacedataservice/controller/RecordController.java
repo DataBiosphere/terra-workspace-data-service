@@ -63,12 +63,13 @@ public class RecordController {
 		MapDifference<String, DataTypeMapping> difference = Maps.difference(existingTableSchema, schema);
 		Map<String, DataTypeMapping> colsToAdd = difference.entriesOnlyOnRight();
 		colsToAdd.keySet().stream().filter(s -> s.startsWith(RESERVED_NAME_PREFIX)).findAny().ifPresent(s -> {
-			throw new InvalidNameException("Attribute");
+			throw new InvalidNameException(InvalidNameException.NameType.ATTRIBUTE);
 		});
 		validateRelationsAndAddColumns(instanceId, recordType, schema, records, colsToAdd, existingTableSchema);
 		Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference.entriesDiffering();
-		for (String column : differenceMap.keySet()) {
-			MapDifference.ValueDifference<DataTypeMapping> valueDifference = differenceMap.get(column);
+		for (Map.Entry<String, MapDifference.ValueDifference<DataTypeMapping>> entry : differenceMap.entrySet()) {
+			String column = entry.getKey();
+			MapDifference.ValueDifference<DataTypeMapping> valueDifference = entry.getValue();
 			DataTypeMapping updatedColType = inferer.selectBestType(valueDifference.leftValue(),
 					valueDifference.rightValue());
 			recordDao.changeColumn(instanceId, recordType, column, updatedColType);
@@ -100,13 +101,15 @@ public class RecordController {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"Relation attribute can only be assigned to one record type");
 		}
-		for (String col : colsToAdd.keySet()) {
+		for (Map.Entry<String, DataTypeMapping> entry : colsToAdd.entrySet()) {
 			String referencedRecordType = null;
+			String col = entry.getKey();
+			DataTypeMapping dataType = entry.getValue();
 			if (allRefCols.containsKey(col)) {
 				referencedRecordType = allRefCols.get(col).get(0).relationRecordType().getName();
 			}
-			recordDao.addColumn(instanceId, recordType, col, colsToAdd.get(col), referencedRecordType);
-			requestSchema.put(col, colsToAdd.get(col));
+			recordDao.addColumn(instanceId, recordType, col, dataType, referencedRecordType);
+			requestSchema.put(col, dataType);
 		}
 	}
 
@@ -148,8 +151,8 @@ public class RecordController {
 					recordTypeName);
 			// null out any attributes that already exist but aren't in the request
 			existingTableSchema.keySet().forEach(attr -> attributesInRequest.putIfAbsent(attr, null));
-			Record record = new Record(recordId, recordType, recordRequest.recordAttributes());
-			List<Record> records = Collections.singletonList(record);
+			Record newRecord = new Record(recordId, recordType, recordRequest.recordAttributes());
+			List<Record> records = Collections.singletonList(newRecord);
 			addOrUpdateColumnIfNeeded(instanceId, recordType.getName(), requestSchema, existingTableSchema, records);
 			Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
 			combinedSchema.putAll(requestSchema);
@@ -172,7 +175,7 @@ public class RecordController {
 	}
 
 	@DeleteMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
-	public ResponseEntity deleteSingleRecord(@PathVariable("instanceId") UUID instanceId,
+	public ResponseEntity<Void> deleteSingleRecord(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") RecordId recordId) {
 		validateVersion(version);
@@ -250,7 +253,7 @@ public class RecordController {
 	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, String recordTypeName,
 			Map<String, DataTypeMapping> requestSchema) {
 		if (recordTypeName.startsWith(RESERVED_NAME_PREFIX)) {
-			throw new InvalidNameException("Record type");
+			throw new InvalidNameException(InvalidNameException.NameType.RECORD_TYPE);
 		}
 		List<Record> records = Collections.singletonList(newRecord);
 		recordDao.createRecordType(instanceId, requestSchema, recordTypeName, RelationUtils.findRelations(records));

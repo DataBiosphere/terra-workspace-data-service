@@ -6,7 +6,18 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(code = HttpStatus.BAD_REQUEST)
 public class InvalidNameException extends RuntimeException {
-	public InvalidNameException(String objectType) {
-		super(objectType + " names can't start with " + ReservedNames.RESERVED_NAME_PREFIX);
+
+	public enum NameType {
+		ATTRIBUTE("Attribute"), RECORD_TYPE("Record Type");
+
+		private final String name;
+
+		NameType(String name) {
+			this.name = name;
+		}
+	}
+	public InvalidNameException(NameType nameType) {
+		super(nameType.name + " names can't start with " + ReservedNames.RESERVED_NAME_PREFIX +
+				" or contain characters besides letters, numbers, spaces, dashes or underscores.");
 	}
 }
