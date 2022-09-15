@@ -4,8 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedata.model.ErrorResponse;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
-import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
+import org.databiosphere.workspacedataservice.shared.model.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +14,9 @@ import org.springframework.http.*;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.function.Supplier;
 
+import static org.assertj.core.api.Assertions.anyOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 
@@ -55,6 +56,52 @@ class FullStackRecordControllerTest {
 			assertThat(err.getMessage()).containsPattern("Record Type .* or contain characters besides letters");
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		}
+	}
+
+	@Test
+	@Transactional
+	void testQuerySuccess() throws Exception {
+		String recordType = "for_query";
+		List<String> names = List.of("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
+		Iterator<String> namesIterator = names.iterator();
+		createSomeRecords(recordType, 26, namesIterator::next);
+		int limit = 5;
+		int offset = 0;
+		RecordQueryResponse body = executeQuery(limit, offset, SortDirection.ASC, recordType, RecordQueryResponse.class).getBody();
+		assertThat(body.records()).hasSize(limit);
+		assertThat(body.records().get(0).recordId().getRecordIdentifier()).as("A should be the first record id in ascending order").isEqualTo("A");
+		assertThat(body.records().get(4).recordId().getRecordIdentifier()).isEqualTo("E");
+		body = executeQuery(limit, offset, SortDirection.DESC, recordType, RecordQueryResponse.class).getBody();
+		assertThat(body.records()).hasSize(limit);
+		assertThat(body.records().get(0).recordId().getRecordIdentifier()).as("Z should be first record id in descending order").isEqualTo("Z");
+		assertThat(body.records().get(4).recordId().getRecordIdentifier()).isEqualTo("V");
+		offset = 10;
+		body = executeQuery(limit, offset, SortDirection.ASC, recordType, RecordQueryResponse.class).getBody();
+		assertThat(body.records().get(0).recordId().getRecordIdentifier()).as("K should be first record id in ascending order with offset of 10").isEqualTo("K");
+	}
+
+	@Test
+	@Transactional
+	void testQueryFailures() throws Exception {
+		String recordType = "for_query";
+		int limit = 5;
+		int offset = 0;
+		ResponseEntity<ErrorResponse> response = executeQuery(limit, offset, SortDirection.ASC, recordType, ErrorResponse.class);
+		assertThat(response.getStatusCode()).as("record type doesn't exist").isEqualTo(HttpStatus.NOT_FOUND);
+		createSomeRecords(recordType, 1);
+		limit = 1001;
+		response = executeQuery(limit, offset, SortDirection.ASC, recordType, ErrorResponse.class);
+		assertThat(response.getStatusCode()).as("unsupported limit size").isEqualTo(HttpStatus.BAD_REQUEST);
+		limit = 0;
+		response = executeQuery(limit, offset, SortDirection.ASC, recordType, ErrorResponse.class);
+		assertThat(response.getStatusCode()).as("unsupported limit size").isEqualTo(HttpStatus.BAD_REQUEST);
+	}
+
+	private <T> ResponseEntity<T> executeQuery(int limit, int offset, SortDirection sortDirection, String recordType, Class<T> responseType) throws JsonProcessingException {
+		HttpEntity<String> requestEntity = new HttpEntity<>(
+				mapper.writeValueAsString(new SearchRequest(limit, offset, sortDirection)), headers);
+		return restTemplate.exchange("/{instanceid}/search/{v}/{type}", HttpMethod.POST, requestEntity,
+				responseType, instanceId, versionId, recordType);
 	}
 
 	@Test
@@ -132,16 +179,16 @@ class FullStackRecordControllerTest {
 		assertThat(response.getBody()).containsEntry("message", "Invalid API version specified");
 	}
 
-	private void createSomeRecords(String recordType, int numRecords) throws Exception {
+	private void createSomeRecords(String recordType, int numRecords, Supplier<String>... recordIdSupplier) throws Exception {
 		for (int i = 0; i < numRecords; i++) {
-			String recordId = "record_" + i;
+			String recordId = recordIdSupplier == null || recordIdSupplier.length == 0 ? "record_" + i : recordIdSupplier[0].get();
 			Map<String, Object> attributes = generateRandomAttributes();
 			ResponseEntity<String> response = restTemplate.exchange(
 					"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT,
 					new HttpEntity<>(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))),
 							headers),
 					String.class, instanceId, versionId, recordType, recordId);
-			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+			assertThat(response.getStatusCode()).isIn(HttpStatus.CREATED, HttpStatus.OK);
 		}
 	}
 

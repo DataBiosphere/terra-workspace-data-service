@@ -22,6 +22,7 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 @RestController
 public class RecordController {
 
+	private static final int MAX_RECORDS = 1_000;
 	private final RecordDao recordDao;
 	private final DataTypeInferer inferer;
 
@@ -135,6 +136,9 @@ public class RecordController {
 												@RequestBody SearchRequest searchRequest) {
 		if(!recordDao.recordTypeExists(instanceId, recordTypeName)) {
 			throw new MissingObjectException("Record type");
+		}
+		if(searchRequest.limit() > MAX_RECORDS || searchRequest.limit() < 1){
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Limit must be more than 0 and can't exceed " + MAX_RECORDS);
 		}
 		List<Record> records = recordDao.queryForRecords(recordTypeName, searchRequest.limit(), searchRequest.offset(),
 				searchRequest.sort().name().toLowerCase(), instanceId);
