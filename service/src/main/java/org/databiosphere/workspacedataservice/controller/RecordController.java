@@ -131,7 +131,6 @@ public class RecordController {
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") RecordId recordId, @RequestBody RecordRequest recordRequest) {
 		validateVersion(version);
-		// String recordTypeName = recordType;
 		Map<String, Object> attributesInRequest = recordRequest.recordAttributes().getAttributes();
 		Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
 		HttpStatus status = HttpStatus.CREATED;
