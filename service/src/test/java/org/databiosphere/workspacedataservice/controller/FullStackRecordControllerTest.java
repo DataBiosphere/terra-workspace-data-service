@@ -80,10 +80,8 @@ class FullStackRecordControllerTest {
 	@Transactional
 	void missingReferencedRecordTypeShouldFail() throws JsonProcessingException {
 		Map<String, Object> attrs = new HashMap<>();
-		attrs.put("attr_ref",
-				RelationUtils.createRelationString(RecordType.valueOf("non_existent"), "recordId"));
-		attrs.put("attr_ref_2",
-				RelationUtils.createRelationString(RecordType.valueOf("non_existent_2"), "recordId"));
+		attrs.put("attr_ref", RelationUtils.createRelationString(RecordType.valueOf("non_existent"), "recordId"));
+		attrs.put("attr_ref_2", RelationUtils.createRelationString(RecordType.valueOf("non_existent_2"), "recordId"));
 		HttpEntity<String> requestEntity = new HttpEntity<>(
 				mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attrs))), headers);
 		ResponseEntity<ErrorResponse> response = restTemplate.exchange(

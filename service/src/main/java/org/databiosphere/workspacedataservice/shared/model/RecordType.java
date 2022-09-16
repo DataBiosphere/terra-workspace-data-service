@@ -15,11 +15,13 @@ public class RecordType {
 		this.name = name;
 	}
 
-	// TODO: probably no need to have all of valueOf(), fromSqlTableName(), fromUriSegment()
+	// TODO: probably no need to have all of valueOf(), fromSqlTableName(),
+	// fromUriSegment()
 
-	/* the valueOf() method is required since the constructor is private. Spring
-	   uses valueOf() when extracting inbound @PathVariable arguments - which are Strings -
-	   into this class.
+	/*
+	 * the valueOf() method is required since the constructor is private. Spring
+	 * uses valueOf() when extracting inbound @PathVariable arguments - which are
+	 * Strings - into this class.
 	 */
 	@JsonCreator
 	public static RecordType valueOf(String recordTypeName) {
@@ -34,7 +36,8 @@ public class RecordType {
 		return new RecordType(uriSegment);
 	}
 
-	// TODO: probably no need to have all of toSqlTableName(), toJsonValue(), toUriSegment()
+	// TODO: probably no need to have all of toSqlTableName(), toJsonValue(),
+	// toUriSegment()
 	public String toSqlTableName() {
 		return name;
 	}
@@ -50,12 +53,13 @@ public class RecordType {
 
 	public void validate() {
 		if (name.startsWith(RESERVED_NAME_PREFIX)) {
-			throw new InvalidNameException("Record type");
+			throw new InvalidNameException(InvalidNameException.NameType.RECORD_TYPE);
 		}
 	}
 
-	/* returning the raw string value allows RecordType to be used directly as an argument to
-		url templates, e.g. within unit tests
+	/*
+	 * returning the raw string value allows RecordType to be used directly as an
+	 * argument to url templates, e.g. within unit tests
 	 */
 	@Override
 	public String toString() {

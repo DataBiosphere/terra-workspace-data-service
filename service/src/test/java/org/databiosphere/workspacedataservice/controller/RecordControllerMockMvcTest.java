@@ -357,8 +357,8 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void deleteReferencedRecordType() throws Exception {
-		String referencedType = "ref_participants";
-		String referringType = "ref_samples";
+		RecordType referencedType = RecordType.valueOf("ref_participants");
+		RecordType referringType = RecordType.valueOf("ref_samples");
 		createSomeRecords(referencedType, 3);
 		createSomeRecords(referringType, 1);
 		Map<String, Object> attributes = new HashMap<>();
@@ -376,8 +376,8 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void deleteReferencedRecordTypeWithNoRecords() throws Exception {
-		String referencedType = "ref_participants";
-		String referringType = "ref_samples";
+		RecordType referencedType = RecordType.valueOf("ref_participants");
+		RecordType referringType = RecordType.valueOf("ref_samples");
 		createSomeRecords(referencedType, 3);
 		createSomeRecords(referringType, 1);
 		Map<String, Object> attributes = new HashMap<>();
@@ -401,10 +401,10 @@ public class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void describeType() throws Exception {
-		String type = "recordType";
+		RecordType type = RecordType.valueOf("recordType");
 		createSomeRecords(type, 1);
 
-		String referencedType = "referencedType";
+		RecordType referencedType = RecordType.valueOf("referencedType");
 		createSomeRecords(referencedType, 1);
 		createSomeRecords(type, 1);
 		Map<String, Object> attributes = new HashMap<>();
@@ -418,12 +418,12 @@ public class RecordControllerMockMvcTest {
 
 		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("attr-boolean", "BOOLEAN", null),
 				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
-				new AttributeSchema("attr-ref", "RELATION", referencedType),
+				new AttributeSchema("attr-ref", "RELATION", referencedType.toJsonValue()),
 				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "DOUBLE", null),
 				new AttributeSchema("attr3", "DATE", null), new AttributeSchema("attr4", "STRING", null),
 				new AttributeSchema("attr5", "LONG", null));
 
-		RecordTypeSchema expected = new RecordTypeSchema(type, expectedAttributes, 1);
+		RecordTypeSchema expected = new RecordTypeSchema(type.toJsonValue(), expectedAttributes, 1);
 
 		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, type))
 				.andExpect(status().isOk()).andReturn();
@@ -479,10 +479,18 @@ public class RecordControllerMockMvcTest {
 	}
 
 	private void createSomeRecords(String recordType, int numRecords) throws Exception {
+		createSomeRecords(RecordType.valueOf(recordType), numRecords, instanceId);
+	}
+
+	private void createSomeRecords(RecordType recordType, int numRecords) throws Exception {
 		createSomeRecords(recordType, numRecords, instanceId);
 	}
 
 	private void createSomeRecords(String recordType, int numRecords, UUID instId) throws Exception {
+		createSomeRecords(RecordType.valueOf(recordType), numRecords, instId);
+	}
+
+	private void createSomeRecords(RecordType recordType, int numRecords, UUID instId) throws Exception {
 		for (int i = 0; i < numRecords; i++) {
 			String recordId = "record_" + i;
 			Map<String, Object> attributes = generateRandomAttributes();

@@ -188,8 +188,8 @@ public class RecordController {
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType) {
 		validateVersion(version);
 		validateInstance(instanceId);
-		validateRecordType(instanceId, recordType.getName());
-		recordDao.deleteRecordType(instanceId, recordType.getName());
+		validateRecordType(instanceId, recordType);
+		recordDao.deleteRecordType(instanceId, recordType);
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 
@@ -197,8 +197,8 @@ public class RecordController {
 	public ResponseEntity<RecordTypeSchema> describeRecordType(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType) {
 		validateVersion(version);
-		validateRecordType(instanceId, recordType.getName());
-		RecordTypeSchema result = getSchemaDescription(instanceId, recordType.getName());
+		validateRecordType(instanceId, recordType);
+		RecordTypeSchema result = getSchemaDescription(instanceId, recordType);
 		return new ResponseEntity<>(result, HttpStatus.OK);
 	}
 
@@ -207,13 +207,13 @@ public class RecordController {
 			@PathVariable("v") String version) {
 		validateVersion(version);
 		validateInstance(instanceId);
-		List<String> allRecordTypes = recordDao.getAllRecordTypes(instanceId);
+		List<RecordType> allRecordTypes = recordDao.getAllRecordTypes(instanceId);
 		List<RecordTypeSchema> result = allRecordTypes.stream()
 				.map(recordType -> getSchemaDescription(instanceId, recordType)).toList();
 		return new ResponseEntity<>(result, HttpStatus.OK);
 	}
 
-	private RecordTypeSchema getSchemaDescription(UUID instanceId, String recordType) {
+	private RecordTypeSchema getSchemaDescription(UUID instanceId, RecordType recordType) {
 		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchema(instanceId, recordType);
 		Map<String, RecordType> relations = recordDao.getRelationCols(instanceId, recordType).stream()
 				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
@@ -221,14 +221,14 @@ public class RecordController {
 				.map(entry -> createAttributeSchema(entry.getKey(), entry.getValue(), relations.get(entry.getKey())))
 				.toList();
 		int recordCount = recordDao.countRecords(instanceId, recordType);
-		return new RecordTypeSchema(recordType, attrSchema, recordCount);
+		return new RecordTypeSchema(recordType.toJsonValue(), attrSchema, recordCount);
 	}
 
 	private AttributeSchema createAttributeSchema(String name, DataTypeMapping datatype, RecordType relation) {
 		if (relation == null) {
 			return new AttributeSchema(name, datatype.toString(), null);
 		}
-		return new AttributeSchema(name, "RELATION", relation.getName());
+		return new AttributeSchema(name, "RELATION", relation.toJsonValue());
 	}
 
 	private static void validateVersion(String version) {
@@ -237,7 +237,7 @@ public class RecordController {
 		}
 	}
 
-	private void validateRecordType(UUID instanceId, String recordType) {
+	private void validateRecordType(UUID instanceId, RecordType recordType) {
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
 			throw new MissingObjectException("Record type");
 		}
@@ -250,8 +250,8 @@ public class RecordController {
 	}
 
 	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, RecordType recordType,
-				Map<String, DataTypeMapping> requestSchema) {
-			recordType.validate();
+			Map<String, DataTypeMapping> requestSchema) {
+		recordType.validate();
 		List<Record> records = Collections.singletonList(newRecord);
 		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records));
 		recordDao.batchUpsert(instanceId, recordType, records, requestSchema);

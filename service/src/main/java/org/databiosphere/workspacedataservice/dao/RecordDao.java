@@ -53,7 +53,8 @@ public class RecordDao {
 	public boolean recordTypeExists(UUID instanceId, RecordType recordType) {
 		return Boolean.TRUE.equals(namedTemplate.queryForObject(
 				"select exists(select from pg_tables where schemaname = :instanceId AND tablename  = :recordType)",
-				new MapSqlParameterSource(Map.of("instanceId", instanceId.toString(), "recordType", recordType.toSqlTableName())),
+				new MapSqlParameterSource(
+						Map.of("instanceId", instanceId.toString(), "recordType", recordType.toSqlTableName())),
 				Boolean.class));
 	}
 
@@ -73,9 +74,9 @@ public class RecordDao {
 
 	}
 
-	private String getQualifiedTableName(String recordType, UUID instanceId) {
+	private String getQualifiedTableName(RecordType recordType, UUID instanceId) {
 		return quote(instanceId.toString()) + "."
-				+ quote(validateName(recordType, InvalidNameException.NameType.RECORD_TYPE));
+				+ quote(validateName(recordType.toSqlTableName(), InvalidNameException.NameType.RECORD_TYPE));
 	}
 
 	private String validateName(String name, InvalidNameException.NameType nameType) {
@@ -114,7 +115,8 @@ public class RecordDao {
 		try {
 			namedTemplate.getJdbcTemplate()
 					.update("alter table " + getQualifiedTableName(recordType, instanceId) + " add column "
-							+ quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " " + colType.getPostgresType()
+							+ quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " "
+							+ colType.getPostgresType()
 							+ (referencedType != null
 									? " references " + getQualifiedTableName(referencedType, instanceId)
 									: ""));
@@ -128,8 +130,8 @@ public class RecordDao {
 
 	public void changeColumn(UUID instanceId, RecordType recordType, String columnName, DataTypeMapping newColType) {
 		namedTemplate.getJdbcTemplate()
-				.update("alter table " + getQualifiedTableName(recordType, instanceId)
-						+ " alter column " + quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " TYPE "
+				.update("alter table " + getQualifiedTableName(recordType, instanceId) + " alter column "
+						+ quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " TYPE "
 						+ newColType.getPostgresType());
 	}
 
@@ -238,9 +240,9 @@ public class RecordDao {
 						RecordType.fromSqlTableName(rs.getString("table_name"))));
 	}
 
-	public int countRecords(UUID instanceId, String recordTypeName) {
-		return namedTemplate.getJdbcTemplate().queryForObject(
-				"select count(*) from " + getQualifiedTableName(recordTypeName, instanceId), Integer.class);
+	public int countRecords(UUID instanceId, RecordType recordType) {
+		return namedTemplate.getJdbcTemplate()
+				.queryForObject("select count(*) from " + getQualifiedTableName(recordType, instanceId), Integer.class);
 	}
 
 	private String genColUpsertUpdates(List<String> cols) {
@@ -349,7 +351,7 @@ public class RecordDao {
 		}
 	}
 
-	public boolean recordExists(UUID instanceId, String recordType, String recordId) {
+	public boolean recordExists(UUID instanceId, RecordType recordType, String recordId) {
 		return Boolean.TRUE
 				.equals(namedTemplate.queryForObject(
 						"select exists(select * from " + getQualifiedTableName(recordType, instanceId) + " where "
@@ -357,13 +359,13 @@ public class RecordDao {
 						new MapSqlParameterSource("recordId", recordId), Boolean.class));
 	}
 
-	public List<String> getAllRecordTypes(UUID instanceId) {
+	public List<RecordType> getAllRecordTypes(UUID instanceId) {
 		return namedTemplate.queryForList(
 				"select tablename from pg_tables WHERE schemaname = :workspaceSchema order by tablename",
-				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), String.class);
+				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), RecordType.class);
 	}
 
-	public void deleteRecordType(UUID instanceId, String recordType) {
+	public void deleteRecordType(UUID instanceId, RecordType recordType) {
 		try {
 			namedTemplate.getJdbcTemplate().update("drop table " + getQualifiedTableName(recordType, instanceId));
 		} catch (DataAccessException e) {

@@ -93,8 +93,7 @@ public class RecordDaoTest {
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(referencedRecord), new HashMap<>());
 
 		RecordId recordId = new RecordId("testRecord");
-		String reference = RelationUtils.createRelationString(RecordType.valueOf("testRecordType"),
-				"referencedRecord");
+		String reference = RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "referencedRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(Map.of("testRecordType", reference)));
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord),
 				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.STRING)));
@@ -147,8 +146,7 @@ public class RecordDaoTest {
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(referencedRecord), new HashMap<>());
 
 		RecordId recordId = new RecordId("testRecord");
-		String reference = RelationUtils.createRelationString(RecordType.valueOf("testRecordType"),
-				"referencedRecord");
+		String reference = RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "referencedRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(Map.of("testRecordType", reference)));
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord),
 				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.STRING)));
@@ -161,16 +159,16 @@ public class RecordDaoTest {
 	@Test
 	@Transactional
 	void testGetAllRecordTypes() {
-		List<String> typesList = recordDao.getAllRecordTypes(instanceId);
+		List<RecordType> typesList = recordDao.getAllRecordTypes(instanceId);
 		assertEquals(1, typesList.size());
-		assertTrue(typesList.contains(recordType.getName()));
+		assertTrue(typesList.contains(recordType));
 
-		String newRecordType = "newRecordType";
+		RecordType newRecordType = RecordType.valueOf("newRecordType");
 		recordDao.createRecordType(instanceId, Collections.emptyMap(), newRecordType, Collections.emptySet());
 
-		List<String> newTypesList = recordDao.getAllRecordTypes(instanceId);
+		List<RecordType> newTypesList = recordDao.getAllRecordTypes(instanceId);
 		assertEquals(2, newTypesList.size());
-		assertTrue(newTypesList.contains(recordType.getName()));
+		assertTrue(newTypesList.contains(recordType));
 		assertTrue(newTypesList.contains(newRecordType));
 	}
 
@@ -178,14 +176,13 @@ public class RecordDaoTest {
 	@Transactional
 	void testCountRecords() {
 		// ensure we start with a count of 0 records
-		assertEquals(0, recordDao.countRecords(instanceId, recordType.getName()));
+		assertEquals(0, recordDao.countRecords(instanceId, recordType));
 		// insert records and test the count after each insert
 		for (int i = 0; i < 10; i++) {
 			Record testRecord = new Record(new RecordId("record" + i), recordType,
 					new RecordAttributes(new HashMap<>()));
-			recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord),
-					new HashMap<>());
-			assertEquals(i + 1, recordDao.countRecords(instanceId, recordType.getName()),
+			recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord), new HashMap<>());
+			assertEquals(i + 1, recordDao.countRecords(instanceId, recordType),
 					"after inserting " + (i + 1) + " records");
 		}
 	}
@@ -193,48 +190,47 @@ public class RecordDaoTest {
 	@Test
 	@Transactional
 	void testRecordExists() {
-		assertFalse(recordDao.recordExists(instanceId, recordType.getName(), "aRecord"));
-		recordDao.batchUpsert(instanceId, recordType.getName(),
+		assertFalse(recordDao.recordExists(instanceId, recordType, "aRecord"));
+		recordDao.batchUpsert(instanceId, recordType,
 				Collections.singletonList(
 						new Record(new RecordId("aRecord"), recordType, new RecordAttributes((new HashMap<>())))),
 				new HashMap<>());
-		assertTrue(recordDao.recordExists(instanceId, recordType.getName(), "aRecord"));
+		assertTrue(recordDao.recordExists(instanceId, recordType, "aRecord"));
 	}
 
 	@Test
 	@Transactional
 	void testDeleteRecordType() {
 		// make sure type already exists
-		assertTrue(recordDao.recordTypeExists(instanceId, recordType.getName()));
-		recordDao.deleteRecordType(instanceId, recordType.getName());
+		assertTrue(recordDao.recordTypeExists(instanceId, recordType));
+		recordDao.deleteRecordType(instanceId, recordType);
 		// make sure type no longer exists
-		assertFalse(recordDao.recordTypeExists(instanceId, recordType.getName()));
+		assertFalse(recordDao.recordTypeExists(instanceId, recordType));
 	}
 
 	@Test
 	@Transactional
 	void testDeleteRecordTypeWithRelation() {
-		String recordTypeName = recordType.getName();
-		String referencedTypeName = "referencedType";
-		RecordType referencedType = new RecordType(referencedTypeName);
-		recordDao.createRecordType(instanceId, Collections.emptyMap(), referencedTypeName, Collections.emptySet());
+		RecordType recordTypeName = recordType;
+		RecordType referencedType = RecordType.valueOf("referencedType");
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), referencedType, Collections.emptySet());
 
-		recordDao.addColumn(instanceId, recordTypeName, "relation", DataTypeMapping.STRING, referencedTypeName);
+		recordDao.addColumn(instanceId, recordTypeName, "relation", DataTypeMapping.STRING, referencedType);
 
 		RecordId refRecordId = new RecordId("referencedRecord");
 		Record referencedRecord = new Record(refRecordId, referencedType, new RecordAttributes(new HashMap<>()));
-		recordDao.batchUpsert(instanceId, referencedTypeName, Collections.singletonList(referencedRecord),
+		recordDao.batchUpsert(instanceId, referencedType, Collections.singletonList(referencedRecord),
 				new HashMap<>());
 
 		RecordId recordId = new RecordId("testRecord");
-		String reference = RelationUtils.createRelationString(referencedTypeName, refRecordId.getRecordIdentifier());
+		String reference = RelationUtils.createRelationString(referencedType, refRecordId.getRecordIdentifier());
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(Map.of("relation", reference)));
 		recordDao.batchUpsert(instanceId, recordTypeName, Collections.singletonList(testRecord),
 				new HashMap<>(Map.of("relation", DataTypeMapping.STRING)));
 
 		// Should throw an error
 		assertThrows(ResponseStatusException.class, () -> {
-			recordDao.deleteRecordType(instanceId, referencedTypeName);
+			recordDao.deleteRecordType(instanceId, referencedType);
 		}, "Exception should be thrown when attempting to delete record type with relation");
 	}
 }
