@@ -418,12 +418,12 @@ public class RecordControllerMockMvcTest {
 
 		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("attr-boolean", "BOOLEAN", null),
 				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
-				new AttributeSchema("attr-ref", "RELATION", referencedType.toJsonValue()),
+				new AttributeSchema("attr-ref", "RELATION", referencedType.getName()),
 				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "DOUBLE", null),
 				new AttributeSchema("attr3", "DATE", null), new AttributeSchema("attr4", "STRING", null),
 				new AttributeSchema("attr5", "LONG", null));
 
-		RecordTypeSchema expected = new RecordTypeSchema(type.toJsonValue(), expectedAttributes, 1);
+		RecordTypeSchema expected = new RecordTypeSchema(type.getName(), expectedAttributes, 1);
 
 		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, type))
 				.andExpect(status().isOk()).andReturn();

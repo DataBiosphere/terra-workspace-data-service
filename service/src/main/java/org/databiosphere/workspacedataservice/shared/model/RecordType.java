@@ -15,39 +15,23 @@ public class RecordType {
 		this.name = name;
 	}
 
-	// TODO: probably no need to have all of valueOf(), fromSqlTableName(),
-	// fromUriSegment()
-
 	/*
-	 * the valueOf() method is required since the constructor is private. Spring
-	 * uses valueOf() when extracting inbound @PathVariable arguments - which are
-	 * Strings - into this class.
+	 * the name "valueOf()" for this factory method is required since the
+	 * constructor is private. Spring uses valueOf() when extracting inbound
+	 * @PathVariable arguments - which are Strings - into this class.
 	 */
 	@JsonCreator
 	public static RecordType valueOf(String recordTypeName) {
 		return new RecordType(recordTypeName);
 	}
 
-	public static RecordType fromSqlTableName(String tableName) {
-		return new RecordType(tableName);
-	}
-
-	public static RecordType fromUriSegment(String uriSegment) {
-		return new RecordType(uriSegment);
-	}
-
-	// TODO: probably no need to have all of toSqlTableName(), toJsonValue(),
-	// toUriSegment()
-	public String toSqlTableName() {
-		return name;
-	}
-
+	/*
+	 * N.B. we have a separate getName() method, even though getName() and toString()
+	 * are currently equivalent. In IntelliJ, it's much easier to find usages of
+	 * getName() than toString(), since toString() is an override.
+	 */
 	@JsonValue
-	public String toJsonValue() {
-		return name;
-	}
-
-	public String toUriSegment() {
+	public String getName() {
 		return name;
 	}
 

@@ -55,7 +55,7 @@ public class Record {
 
 	@JsonGetter("recordType")
 	public String getRecordTypeName() {
-		return recordType.toJsonValue();
+		return recordType.getName();
 	}
 
 	@Override

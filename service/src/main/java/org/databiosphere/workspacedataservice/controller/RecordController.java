@@ -221,14 +221,14 @@ public class RecordController {
 				.map(entry -> createAttributeSchema(entry.getKey(), entry.getValue(), relations.get(entry.getKey())))
 				.toList();
 		int recordCount = recordDao.countRecords(instanceId, recordType);
-		return new RecordTypeSchema(recordType.toJsonValue(), attrSchema, recordCount);
+		return new RecordTypeSchema(recordType.getName(), attrSchema, recordCount);
 	}
 
 	private AttributeSchema createAttributeSchema(String name, DataTypeMapping datatype, RecordType relation) {
 		if (relation == null) {
 			return new AttributeSchema(name, datatype.toString(), null);
 		}
-		return new AttributeSchema(name, "RELATION", relation.toJsonValue());
+		return new AttributeSchema(name, "RELATION", relation.getName());
 	}
 
 	private static void validateVersion(String version) {

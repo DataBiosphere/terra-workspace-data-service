@@ -54,7 +54,7 @@ public class RecordDao {
 		return Boolean.TRUE.equals(namedTemplate.queryForObject(
 				"select exists(select from pg_tables where schemaname = :instanceId AND tablename  = :recordType)",
 				new MapSqlParameterSource(
-						Map.of("instanceId", instanceId.toString(), "recordType", recordType.toSqlTableName())),
+						Map.of("instanceId", instanceId.toString(), "recordType", recordType.getName())),
 				Boolean.class));
 	}
 
@@ -76,7 +76,7 @@ public class RecordDao {
 
 	private String getQualifiedTableName(RecordType recordType, UUID instanceId) {
 		return quote(instanceId.toString()) + "."
-				+ quote(validateName(recordType.toSqlTableName(), InvalidNameException.NameType.RECORD_TYPE));
+				+ quote(validateName(recordType.getName(), InvalidNameException.NameType.RECORD_TYPE));
 	}
 
 	private String validateName(String name, InvalidNameException.NameType nameType) {
@@ -92,7 +92,7 @@ public class RecordDao {
 
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
 		MapSqlParameterSource params = new MapSqlParameterSource("instanceId", instanceId.toString());
-		params.addValue("tableName", recordType.toSqlTableName());
+		params.addValue("tableName", recordType.getName());
 		params.addValue("recordName", RECORD_ID);
 		return namedTemplate
 				.query("select column_name, data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
@@ -235,9 +235,9 @@ public class RecordDao {
 						+ "ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema "
 						+ "JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema "
 						+ "WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = :workspace AND tc.table_name= :tableName",
-				Map.of("workspace", instanceId.toString(), "tableName", recordType.toSqlTableName()),
+				Map.of("workspace", instanceId.toString(), "tableName", recordType.getName()),
 				(rs, rowNum) -> new Relation(rs.getString("column_name"),
-						RecordType.fromSqlTableName(rs.getString("table_name"))));
+						RecordType.valueOf(rs.getString("table_name"))));
 	}
 
 	public int countRecords(UUID instanceId, RecordType recordType) {
