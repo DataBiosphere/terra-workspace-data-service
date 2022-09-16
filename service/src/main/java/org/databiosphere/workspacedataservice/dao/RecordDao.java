@@ -86,11 +86,13 @@ public class RecordDao {
 	}
 
 	@SuppressWarnings("squid:S2077")
-	public List<Record> queryForRecords(String recordTypeName, int pageSize, int offset, String sortDirection, UUID instanceId) {
-		return namedTemplate.getJdbcTemplate().query("select * from "
-					+ getQualifiedTableName(recordTypeName, instanceId) + " order by " + RECORD_ID
-					+ " " + sortDirection + " limit " + pageSize + " offset " + offset,
-				new RecordRowMapper(recordTypeName, getRelationColumnsByName(getRelationCols(instanceId, recordTypeName))));
+	public List<Record> queryForRecords(String recordTypeName, int pageSize, int offset, String sortDirection,
+			UUID instanceId) {
+		return namedTemplate.getJdbcTemplate()
+				.query("select * from " + getQualifiedTableName(recordTypeName, instanceId) + " order by " + RECORD_ID
+						+ " " + sortDirection + " limit " + pageSize + " offset " + offset,
+						new RecordRowMapper(recordTypeName,
+								getRelationColumnsByName(getRelationCols(instanceId, recordTypeName))));
 	}
 
 	private boolean containsDisallowedSqlCharacter(String name) {
@@ -332,8 +334,7 @@ public class RecordDao {
 								.createRelationString(referenceColToTable.get(columnName), rs.getString(columnName)));
 					} else {
 						Object object = rs.getObject(columnName);
-						attributes.put(columnName,
-								object instanceof PGobject pGobject? pGobject.getValue() : object);
+						attributes.put(columnName, object instanceof PGobject pGobject ? pGobject.getValue() : object);
 					}
 				}
 				return attributes;

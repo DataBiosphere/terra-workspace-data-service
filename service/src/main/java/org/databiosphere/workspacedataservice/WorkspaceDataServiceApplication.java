@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Bean;
 public class WorkspaceDataServiceApplication {
 
 	@Bean
-	public ObjectMapper objectMapper(){
+	public ObjectMapper objectMapper() {
 		return JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS).build();
 	}
 	public static void main(String[] args) {
