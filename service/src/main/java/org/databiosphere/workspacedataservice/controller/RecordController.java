@@ -134,9 +134,7 @@ public class RecordController {
 	public RecordQueryResponse queryForEntities(@PathVariable("instanceid") UUID instanceId,
 												@PathVariable("recordType") String recordTypeName,
 												@RequestBody SearchRequest searchRequest) {
-		if(!recordDao.recordTypeExists(instanceId, recordTypeName)) {
-			throw new MissingObjectException("Record type");
-		}
+		validateRecordType(instanceId, recordTypeName);
 		if(searchRequest.limit() > MAX_RECORDS || searchRequest.limit() < 1){
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Limit must be more than 0 and can't exceed " + MAX_RECORDS);
 		}
