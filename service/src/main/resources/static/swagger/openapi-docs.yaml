@@ -241,8 +241,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /{instanceid}/types/{v}/{type}:
     get:
-      deprecated: true
-      summary: Describe record type (pending)
+      summary: Describe record type
       description: |
         Returns the schema definition for this type.
       operationId: describeRecordType
@@ -259,6 +258,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RecordTypeSchema'
+        404:
+          description: Record type not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     patch:
       deprecated: true
       summary: Update record type (pending)
@@ -292,8 +297,7 @@ paths:
         409:
           description: Target type or attribute name already exists, for a rename operation
     delete:
-      deprecated: true
-      summary: Delete record type (pending)
+      summary: Delete record type
       description: Delete record type. All records of this type will be deleted.
       operationId: deleteRecordType
       tags:
@@ -307,6 +311,32 @@ paths:
           description: Success
         409:
           description: at least one of the records to be deleted is a relation target
+  /{instanceid}/types/{v}:
+    get:
+      summary: Describe all record types
+      description: |
+        Returns the schema definition for all types in this instance.
+      operationId: describeAllRecordTypes
+      tags:
+        - Schema
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecordTypeSchema'
+        404:
+          description: Instance not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /{instanceid}/types/{type}/attributes/{v}/{attribute}:
     get:
       deprecated: true
@@ -561,7 +591,7 @@ components:
       properties:
         attributes:
           $ref: '#/components/schemas/RecordAttributes'
-          description: KVPs of record attributes
+          description: KVPs of record attributes, valid characters for attribute names are limited to letters, numbers, spaces, dashes, and underscores.
     RecordResponse:
       required:
         - id
@@ -612,15 +642,19 @@ components:
       required:
         - name
         - attributes
+        - count
       type: object
       properties:
         name:
           type: string
-          description: Record type name
+          description: Record type name, valid characters for record type names are limited to letters, numbers, spaces, dashes, and underscores.
         attributes:
           type: array
           items:
             $ref: '#/components/schemas/AttributeSchema'
+        count:
+          type: integer
+          description: Number of records of this type
     ErrorResponse:
       required:
         - status

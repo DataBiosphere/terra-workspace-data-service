@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dao;
 
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -24,6 +25,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.*;
@@ -32,6 +34,7 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 public class RecordDao {
 
 	private final NamedParameterJdbcTemplate namedTemplate;
+	private static final Pattern DISALLOWED_CHARS_PATTERN = Pattern.compile("[^a-z0-9\\-_ ]", Pattern.CASE_INSENSITIVE);
 
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate) {
 		this.namedTemplate = namedTemplate;
@@ -56,6 +59,7 @@ public class RecordDao {
 
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
 			Set<Relation> relations) {
+
 		String columnDefs = genColumnDefs(tableInfo);
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(recordType, instanceId)
@@ -66,18 +70,32 @@ public class RecordDao {
 			}
 			throw e;
 		}
+
 	}
 
-	private String getQualifiedTableName(RecordType recordType, UUID instanceId) {
-		return quote(instanceId.toString()) + "." + quote(recordType.toSqlTableName());
+	private String getQualifiedTableName(String recordType, UUID instanceId) {
+		return quote(instanceId.toString()) + "."
+				+ quote(validateName(recordType, InvalidNameException.NameType.RECORD_TYPE));
+	}
+
+	private String validateName(String name, InvalidNameException.NameType nameType) {
+		if (containsDisallowedSqlCharacter(name)) {
+			throw new InvalidNameException(nameType);
+		}
+		return name;
+	}
+
+	private boolean containsDisallowedSqlCharacter(String name) {
+		return name == null || DISALLOWED_CHARS_PATTERN.matcher(name).find();
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
 		MapSqlParameterSource params = new MapSqlParameterSource("instanceId", instanceId.toString());
 		params.addValue("tableName", recordType.toSqlTableName());
+		params.addValue("recordName", RECORD_ID);
 		return namedTemplate
 				.query("select column_name, data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
-						+ "and table_name = :tableName", params, rs -> {
+						+ "and table_name = :tableName and column_name != :recordName", params, rs -> {
 							Map<String, DataTypeMapping> result = new HashMap<>();
 							while (rs.next()) {
 								result.put(rs.getString("column_name"),
@@ -96,7 +114,7 @@ public class RecordDao {
 		try {
 			namedTemplate.getJdbcTemplate()
 					.update("alter table " + getQualifiedTableName(recordType, instanceId) + " add column "
-							+ quote(columnName) + " " + colType.getPostgresType()
+							+ quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " " + colType.getPostgresType()
 							+ (referencedType != null
 									? " references " + getQualifiedTableName(referencedType, instanceId)
 									: ""));
@@ -109,15 +127,18 @@ public class RecordDao {
 	}
 
 	public void changeColumn(UUID instanceId, RecordType recordType, String columnName, DataTypeMapping newColType) {
-		namedTemplate.getJdbcTemplate().update("alter table " + getQualifiedTableName(recordType, instanceId)
-				+ " alter column " + quote(columnName) + " TYPE " + newColType.getPostgresType());
+		namedTemplate.getJdbcTemplate()
+				.update("alter table " + getQualifiedTableName(recordType, instanceId)
+						+ " alter column " + quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " TYPE "
+						+ newColType.getPostgresType());
 	}
 
 	private String genColumnDefs(Map<String, DataTypeMapping> tableInfo) {
 		return RECORD_ID + " text primary key"
 				+ (tableInfo.size() > 0
 						? ", " + tableInfo.entrySet().stream()
-								.map(e -> quote(e.getKey()) + " " + e.getValue().getPostgresType())
+								.map(e -> quote(validateName(e.getKey(), InvalidNameException.NameType.ATTRIBUTE)) + " "
+										+ e.getValue().getPostgresType())
 								.collect(Collectors.joining(", "))
 						: "");
 	}
@@ -186,9 +207,15 @@ public class RecordDao {
 	}
 
 	private void checkForTableRelation(SQLException sqlEx) {
-		if (sqlEx != null && sqlEx.getSQLState() != null && sqlEx.getSQLState().equals("23503")) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"Unable to delete this record because another record has a relation to it.");
+		if (sqlEx != null && sqlEx.getSQLState() != null) {
+			if (sqlEx.getSQLState().equals("23503")) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+						"Unable to delete this record because another record has a relation to it.");
+			}
+			if (sqlEx.getSQLState().equals("2BP01")) {
+				throw new ResponseStatusException(HttpStatus.CONFLICT,
+						"Unable to delete this record type because another record type has a relation to it.");
+			}
 		}
 	}
 
@@ -209,6 +236,11 @@ public class RecordDao {
 				Map.of("workspace", instanceId.toString(), "tableName", recordType.toSqlTableName()),
 				(rs, rowNum) -> new Relation(rs.getString("column_name"),
 						RecordType.fromSqlTableName(rs.getString("table_name"))));
+	}
+
+	public int countRecords(UUID instanceId, String recordTypeName) {
+		return namedTemplate.getJdbcTemplate().queryForObject(
+				"select count(*) from " + getQualifiedTableName(recordTypeName, instanceId), Integer.class);
 	}
 
 	private String genColUpsertUpdates(List<String> cols) {
@@ -292,8 +324,7 @@ public class RecordDao {
 								.createRelationString(referenceColToTable.get(columnName), rs.getString(columnName)));
 					} else {
 						Object object = rs.getObject(columnName);
-						attributes.put(columnName,
-								object instanceof PGobject ? ((PGobject) object).getValue() : object);
+						attributes.put(columnName, object instanceof PGobject pGobject ? pGobject.getValue() : object);
 					}
 				}
 				return attributes;
@@ -315,6 +346,31 @@ public class RecordDao {
 					new RecordRowMapper(recordType, refColMapping)));
 		} catch (EmptyResultDataAccessException e) {
 			return Optional.empty();
+		}
+	}
+
+	public boolean recordExists(UUID instanceId, String recordType, String recordId) {
+		return Boolean.TRUE
+				.equals(namedTemplate.queryForObject(
+						"select exists(select * from " + getQualifiedTableName(recordType, instanceId) + " where "
+								+ RECORD_ID + " = :recordId)",
+						new MapSqlParameterSource("recordId", recordId), Boolean.class));
+	}
+
+	public List<String> getAllRecordTypes(UUID instanceId) {
+		return namedTemplate.queryForList(
+				"select tablename from pg_tables WHERE schemaname = :workspaceSchema order by tablename",
+				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), String.class);
+	}
+
+	public void deleteRecordType(UUID instanceId, String recordType) {
+		try {
+			namedTemplate.getJdbcTemplate().update("drop table " + getQualifiedTableName(recordType, instanceId));
+		} catch (DataAccessException e) {
+			if (e.getRootCause()instanceof SQLException sqlEx) {
+				checkForTableRelation(sqlEx);
+			}
+			throw e;
 		}
 	}
 }

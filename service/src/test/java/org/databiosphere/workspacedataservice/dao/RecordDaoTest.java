@@ -18,8 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -158,5 +157,84 @@ public class RecordDaoTest {
 		assertThrows(ResponseStatusException.class, () -> {
 			recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord");
 		}, "Exception should be thrown when attempting to delete related record");
+	}
+	@Test
+	@Transactional
+	void testGetAllRecordTypes() {
+		List<String> typesList = recordDao.getAllRecordTypes(instanceId);
+		assertEquals(1, typesList.size());
+		assertTrue(typesList.contains(recordType.getName()));
+
+		String newRecordType = "newRecordType";
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), newRecordType, Collections.emptySet());
+
+		List<String> newTypesList = recordDao.getAllRecordTypes(instanceId);
+		assertEquals(2, newTypesList.size());
+		assertTrue(newTypesList.contains(recordType.getName()));
+		assertTrue(newTypesList.contains(newRecordType));
+	}
+
+	@Test
+	@Transactional
+	void testCountRecords() {
+		// ensure we start with a count of 0 records
+		assertEquals(0, recordDao.countRecords(instanceId, recordType.getName()));
+		// insert records and test the count after each insert
+		for (int i = 0; i < 10; i++) {
+			Record testRecord = new Record(new RecordId("record" + i), recordType,
+					new RecordAttributes(new HashMap<>()));
+			recordDao.batchUpsert(instanceId, recordType.getName(), Collections.singletonList(testRecord),
+					new HashMap<>());
+			assertEquals(i + 1, recordDao.countRecords(instanceId, recordType.getName()),
+					"after inserting " + (i + 1) + " records");
+		}
+	}
+
+	@Test
+	@Transactional
+	void testRecordExists() {
+		assertFalse(recordDao.recordExists(instanceId, recordType.getName(), "aRecord"));
+		recordDao.batchUpsert(instanceId, recordType.getName(),
+				Collections.singletonList(
+						new Record(new RecordId("aRecord"), recordType, new RecordAttributes((new HashMap<>())))),
+				new HashMap<>());
+		assertTrue(recordDao.recordExists(instanceId, recordType.getName(), "aRecord"));
+	}
+
+	@Test
+	@Transactional
+	void testDeleteRecordType() {
+		// make sure type already exists
+		assertTrue(recordDao.recordTypeExists(instanceId, recordType.getName()));
+		recordDao.deleteRecordType(instanceId, recordType.getName());
+		// make sure type no longer exists
+		assertFalse(recordDao.recordTypeExists(instanceId, recordType.getName()));
+	}
+
+	@Test
+	@Transactional
+	void testDeleteRecordTypeWithRelation() {
+		String recordTypeName = recordType.getName();
+		String referencedTypeName = "referencedType";
+		RecordType referencedType = new RecordType(referencedTypeName);
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), referencedTypeName, Collections.emptySet());
+
+		recordDao.addColumn(instanceId, recordTypeName, "relation", DataTypeMapping.STRING, referencedTypeName);
+
+		RecordId refRecordId = new RecordId("referencedRecord");
+		Record referencedRecord = new Record(refRecordId, referencedType, new RecordAttributes(new HashMap<>()));
+		recordDao.batchUpsert(instanceId, referencedTypeName, Collections.singletonList(referencedRecord),
+				new HashMap<>());
+
+		RecordId recordId = new RecordId("testRecord");
+		String reference = RelationUtils.createRelationString(referencedTypeName, refRecordId.getRecordIdentifier());
+		Record testRecord = new Record(recordId, recordType, new RecordAttributes(Map.of("relation", reference)));
+		recordDao.batchUpsert(instanceId, recordTypeName, Collections.singletonList(testRecord),
+				new HashMap<>(Map.of("relation", DataTypeMapping.STRING)));
+
+		// Should throw an error
+		assertThrows(ResponseStatusException.class, () -> {
+			recordDao.deleteRecordType(instanceId, referencedTypeName);
+		}, "Exception should be thrown when attempting to delete record type with relation");
 	}
 }
