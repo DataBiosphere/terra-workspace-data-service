@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
 import com.fasterxml.jackson.annotation.*;
+import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 
 import java.util.Objects;
@@ -13,6 +14,7 @@ public class RecordType {
 
 	private RecordType(String name) {
 		this.name = name;
+		validate();
 	}
 
 	/*
@@ -39,6 +41,7 @@ public class RecordType {
 		if (name.startsWith(RESERVED_NAME_PREFIX)) {
 			throw new InvalidNameException(InvalidNameException.NameType.RECORD_TYPE);
 		}
+		RecordDao.validateName(name, InvalidNameException.NameType.RECORD_TYPE);
 	}
 
 	/*

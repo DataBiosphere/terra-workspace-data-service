@@ -2,14 +2,19 @@ package org.databiosphere.workspacedataservice.shared.model;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -38,6 +43,23 @@ public class RecordTest {
 		RecordType actual = jacksonObjectMapper.readValue(input, RecordType.class);
 
 		assertEquals(expected, actual);
+	}
+
+	@Test
+	void testRecordTypeValidationOnCreation() {
+		List<String> invalidNames = Arrays.asList(RESERVED_NAME_PREFIX + "anything", "semi;colon", "back\\slash", "bang!");
+
+		invalidNames.forEach(testCase -> {
+			// Should throw an error
+			Exception ex = assertThrows(InvalidNameException.class, () -> {
+				RecordType.valueOf(testCase);
+			}, "Exception should be thrown when creating a RecordType of '" + testCase + "'");
+
+			assertTrue(ex.getMessage().contains(RESERVED_NAME_PREFIX),
+					"Exception message should contain 'sys_'. Was: '['" + ex.getMessage() + "']'");
+			assertTrue(ex.getMessage().startsWith(InvalidNameException.NameType.RECORD_TYPE.getName()),
+					"Exception message should start with 'Record Type'. Was: '['" + ex.getMessage() + "']'");
+		});
 	}
 
 	@Test

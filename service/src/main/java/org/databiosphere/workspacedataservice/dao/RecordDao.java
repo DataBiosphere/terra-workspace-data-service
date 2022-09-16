@@ -79,14 +79,14 @@ public class RecordDao {
 				+ quote(validateName(recordType.getName(), InvalidNameException.NameType.RECORD_TYPE));
 	}
 
-	private String validateName(String name, InvalidNameException.NameType nameType) {
+	public static String validateName(String name, InvalidNameException.NameType nameType) {
 		if (containsDisallowedSqlCharacter(name)) {
 			throw new InvalidNameException(nameType);
 		}
 		return name;
 	}
 
-	private boolean containsDisallowedSqlCharacter(String name) {
+	private static boolean containsDisallowedSqlCharacter(String name) {
 		return name == null || DISALLOWED_CHARS_PATTERN.matcher(name).find();
 	}
 
