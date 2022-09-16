@@ -132,14 +132,17 @@ public class RecordController {
 
 	@PostMapping("/{instanceid}/search/{version}/{recordType}")
 	public RecordQueryResponse queryForEntities(@PathVariable("instanceid") UUID instanceId,
-			@PathVariable("recordType") String recordTypeName, @RequestBody SearchRequest searchRequest) {
+			@PathVariable("recordType") String recordTypeName, @RequestBody(required = false) SearchRequest searchRequest) {
 		validateRecordType(instanceId, recordTypeName);
-		if (searchRequest.limit() > MAX_RECORDS || searchRequest.limit() < 1) {
+		if(null == searchRequest){
+			searchRequest = new SearchRequest();
+		}
+		if (searchRequest.getLimit() > MAX_RECORDS || searchRequest.getLimit() < 1) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"Limit must be more than 0 and can't exceed " + MAX_RECORDS);
 		}
-		List<Record> records = recordDao.queryForRecords(recordTypeName, searchRequest.limit(), searchRequest.offset(),
-				searchRequest.sort().name().toLowerCase(), instanceId);
+		List<Record> records = recordDao.queryForRecords(recordTypeName, searchRequest.getLimit(), searchRequest.getOffset(),
+				searchRequest.getSort().name().toLowerCase(), instanceId);
 		List<RecordResponse> recordList = records.stream().map(
 				r -> new RecordResponse(r.getId(), r.getRecordType(), r.getAttributes(), new RecordMetadata("UNUSED")))
 				.toList();
