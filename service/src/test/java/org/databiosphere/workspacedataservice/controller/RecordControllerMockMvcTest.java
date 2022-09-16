@@ -111,6 +111,13 @@ public class RecordControllerMockMvcTest {
 				newRecordType, "newRecordId2").content(mapper.writeValueAsString(new RecordRequest(attributes2)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isCreated());
+
+		// now update the second new record
+		RecordAttributes attributes3 = new RecordAttributes(Map.of("foo", "updated", "num", 999));
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				newRecordType, "newRecordId2").content(mapper.writeValueAsString(new RecordRequest(attributes3)))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk());
 	}
 	@Test
 	@Transactional
