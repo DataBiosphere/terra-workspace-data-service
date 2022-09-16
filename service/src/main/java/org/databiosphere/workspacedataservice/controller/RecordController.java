@@ -137,6 +137,7 @@ public class RecordController {
 		String recordTypeName = recordType.getName();
 		Map<String, Object> attributesInRequest = recordRequest.recordAttributes().getAttributes();
 		Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
+		HttpStatus status = HttpStatus.CREATED;
 		if (!recordDao.instanceSchemaExists(instanceId)) {
 			recordDao.createSchema(instanceId);
 		}
@@ -145,12 +146,15 @@ public class RecordController {
 					new RecordMetadata("TODO"));
 			Record newRecord = new Record(recordId, recordType, recordRequest);
 			createRecordTypeAndInsertRecords(instanceId, newRecord, recordTypeName, requestSchema);
-			return new ResponseEntity<>(response, HttpStatus.CREATED);
+			return new ResponseEntity<>(response, status);
 		} else {
 			Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId,
 					recordTypeName);
 			// null out any attributes that already exist but aren't in the request
 			existingTableSchema.keySet().forEach(attr -> attributesInRequest.putIfAbsent(attr, null));
+			if (recordDao.recordExists(instanceId, recordTypeName, recordId.getRecordIdentifier())) {
+				status = HttpStatus.OK;
+			}
 			Record newRecord = new Record(recordId, recordType, recordRequest.recordAttributes());
 			List<Record> records = Collections.singletonList(newRecord);
 			addOrUpdateColumnIfNeeded(instanceId, recordType.getName(), requestSchema, existingTableSchema, records);
@@ -159,7 +163,7 @@ public class RecordController {
 			recordDao.batchUpsert(instanceId, recordTypeName, records, combinedSchema);
 			RecordResponse response = new RecordResponse(recordId, recordType,
 					new RecordAttributes(attributesInRequest), new RecordMetadata("TODO"));
-			return new ResponseEntity<>(response, HttpStatus.OK);
+			return new ResponseEntity<>(response, status);
 		}
 	}
 
