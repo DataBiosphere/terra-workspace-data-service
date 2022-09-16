@@ -418,12 +418,12 @@ public class RecordControllerMockMvcTest {
 
 		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("attr-boolean", "BOOLEAN", null),
 				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
-				new AttributeSchema("attr-ref", "RELATION", referencedType.getName()),
+				new AttributeSchema("attr-ref", "RELATION", referencedType),
 				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "DOUBLE", null),
 				new AttributeSchema("attr3", "DATE", null), new AttributeSchema("attr4", "STRING", null),
 				new AttributeSchema("attr5", "LONG", null));
 
-		RecordTypeSchema expected = new RecordTypeSchema(type.getName(), expectedAttributes, 1);
+		RecordTypeSchema expected = new RecordTypeSchema(type, expectedAttributes, 1);
 
 		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, type))
 				.andExpect(status().isOk()).andReturn();
@@ -446,11 +446,11 @@ public class RecordControllerMockMvcTest {
 	void describeAllTypes() throws Exception {
 		// replace instanceId for this test so only these records are found
 		UUID instId = UUID.randomUUID();
-		String type1 = "firstType";
+		RecordType type1 = RecordType.valueOf("firstType");
 		createSomeRecords(type1, 1, instId);
-		String type2 = "secondType";
+		RecordType type2 = RecordType.valueOf("secondType");
 		createSomeRecords(type2, 2, instId);
-		String type3 = "thirdType";
+		RecordType type3 = RecordType.valueOf("thirdType");
 		createSomeRecords(type3, 10, instId);
 
 		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("attr-boolean", "BOOLEAN", null),
