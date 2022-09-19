@@ -22,4 +22,8 @@ public class SqlUtils {
         return name;
     }
 
+    public static String sanitizeSqlString(String input) {
+        return DISALLOWED_CHARS_PATTERN.matcher(input).replaceAll("");
+    }
+
 }
