@@ -37,10 +37,6 @@ public class RecordType {
 		return name;
 	}
 
-	public String getSqlValidatedName() {
-		return SqlUtils.sanitizeSqlString(name);
-	}
-
 	public void validate() {
 		if (name.startsWith(RESERVED_NAME_PREFIX)) {
 			throw new InvalidNameException(InvalidNameException.NameType.RECORD_TYPE);
