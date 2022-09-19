@@ -400,53 +400,6 @@ components:
       required: true
       schema:
         type: string
-    searchLimitQueryParam:
-      name: limit
-      in: query
-      required: false
-      schema:
-        $ref: '#/components/schemas/SearchLimit'
-    searchOffsetQueryParam:
-      name: offset
-      in: query
-      required: false
-      schema:
-        $ref: '#/components/schemas/SearchOffset'
-    searchOperatorQueryParam:
-      name: operator
-      in: query
-      description: |
-        Controls behavior when searching for multiple `terms`.
-        If a `query` value is specified, `terms` and `operator` will be ignored.
-      required: false
-      schema:
-        $ref: '#/components/schemas/SearchOperator'
-    searchSortQueryParam:
-      name: sort
-      in: query
-      required: false
-      schema:
-        $ref: '#/components/schemas/SearchSort'
-      examples:
-        single attribute:
-          description: Sort by a single attribute ascending
-          value: name
-        directional:
-          description: Sort by a single attribute and specify sort direction
-          value: name desc
-        multiple attributes:
-          description: Specify multiple attributes on which to sort
-          value: name,size desc,color asc
-    searchTermsQueryParam:
-      name: terms
-      in: query
-      description: |
-        Search terms used to filter query results.
-        If a `query` value is specified, `terms` and `operator` will be ignored.
-        Separate multiple terms by a space (%20 url-encoded)
-      required: false
-      schema:
-        type: string
     versionPathParam:
       name: v
       in: path

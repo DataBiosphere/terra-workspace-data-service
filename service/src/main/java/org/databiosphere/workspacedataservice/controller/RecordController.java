@@ -138,7 +138,7 @@ public class RecordController {
 		if (null == searchRequest) {
 			searchRequest = new SearchRequest();
 		}
-		if (searchRequest.getLimit() > MAX_RECORDS || searchRequest.getLimit() < 1 || searchRequest.getOffset() >= 0) {
+		if (searchRequest.getLimit() > MAX_RECORDS || searchRequest.getLimit() < 1 || searchRequest.getOffset() < 0) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"Limit must be more than 0 and can't exceed " + MAX_RECORDS + ", and offset must be positive.");
 		}
