@@ -25,7 +25,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.*;
@@ -34,8 +33,6 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 public class RecordDao {
 
 	private final NamedParameterJdbcTemplate namedTemplate;
-	private static final Pattern DISALLOWED_CHARS_PATTERN = Pattern.compile("[^a-z0-9\\-_ ]", Pattern.CASE_INSENSITIVE);
-
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate) {
 		this.namedTemplate = namedTemplate;
 	}
@@ -76,18 +73,7 @@ public class RecordDao {
 
 	private String getQualifiedTableName(RecordType recordType, UUID instanceId) {
 		return quote(instanceId.toString()) + "."
-				+ quote(validateName(recordType.getName(), InvalidNameException.NameType.RECORD_TYPE));
-	}
-
-	public static String validateName(String name, InvalidNameException.NameType nameType) {
-		if (containsDisallowedSqlCharacter(name)) {
-			throw new InvalidNameException(nameType);
-		}
-		return name;
-	}
-
-	private static boolean containsDisallowedSqlCharacter(String name) {
-		return name == null || DISALLOWED_CHARS_PATTERN.matcher(name).find();
+				+ quote(SqlUtils.validateSqlString(recordType.getName(), InvalidNameException.NameType.RECORD_TYPE));
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
@@ -115,7 +101,7 @@ public class RecordDao {
 		try {
 			namedTemplate.getJdbcTemplate()
 					.update("alter table " + getQualifiedTableName(recordType, instanceId) + " add column "
-							+ quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " "
+							+ quote(SqlUtils.validateSqlString(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " "
 							+ colType.getPostgresType()
 							+ (referencedType != null
 									? " references " + getQualifiedTableName(referencedType, instanceId)
@@ -131,7 +117,7 @@ public class RecordDao {
 	public void changeColumn(UUID instanceId, RecordType recordType, String columnName, DataTypeMapping newColType) {
 		namedTemplate.getJdbcTemplate()
 				.update("alter table " + getQualifiedTableName(recordType, instanceId) + " alter column "
-						+ quote(validateName(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " TYPE "
+						+ quote(SqlUtils.validateSqlString(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " TYPE "
 						+ newColType.getPostgresType());
 	}
 
@@ -139,7 +125,7 @@ public class RecordDao {
 		return RECORD_ID + " text primary key"
 				+ (tableInfo.size() > 0
 						? ", " + tableInfo.entrySet().stream()
-								.map(e -> quote(validateName(e.getKey(), InvalidNameException.NameType.ATTRIBUTE)) + " "
+								.map(e -> quote(SqlUtils.validateSqlString(e.getKey(), InvalidNameException.NameType.ATTRIBUTE)) + " "
 										+ e.getValue().getPostgresType())
 								.collect(Collectors.joining(", "))
 						: "");
