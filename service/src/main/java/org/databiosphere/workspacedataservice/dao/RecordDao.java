@@ -373,9 +373,8 @@ public class RecordDao {
 	}
 
 	private static Map<String, String> getRelationColumnsByName(List<Relation> referenceCols) {
-		Map<String, String> refColMapping = new HashMap<>();
-		referenceCols.forEach(rc -> refColMapping.put(rc.relationColName(), rc.relationRecordType().getName()));
-		return refColMapping;
+		return referenceCols.stream().collect(
+				Collectors.toMap(Relation::relationColName, relation -> relation.relationRecordType().getName()));
 	}
 
 	public void deleteRecordType(UUID instanceId, String recordType) {

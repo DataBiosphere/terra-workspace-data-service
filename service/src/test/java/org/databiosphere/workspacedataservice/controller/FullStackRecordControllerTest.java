@@ -76,13 +76,15 @@ class FullStackRecordControllerTest {
 		assertThat(body.records().get(0).recordId().getRecordIdentifier())
 				.as("A should be the first record id in ascending order").isEqualTo("A");
 		assertThat(body.records().get(4).recordId().getRecordIdentifier()).isEqualTo("E");
-		body = executeQuery(recordType, RecordQueryResponse.class, new SearchRequest(limit, offset, SortDirection.DESC)).getBody();
+		body = executeQuery(recordType, RecordQueryResponse.class, new SearchRequest(limit, offset, SortDirection.DESC))
+				.getBody();
 		assertThat(body.records()).hasSize(limit);
 		assertThat(body.records().get(0).recordId().getRecordIdentifier())
 				.as("Z should be first record id in descending order").isEqualTo("Z");
 		assertThat(body.records().get(4).recordId().getRecordIdentifier()).isEqualTo("V");
 		offset = 10;
-		body = executeQuery(recordType, RecordQueryResponse.class, new SearchRequest(limit, offset, SortDirection.ASC)).getBody();
+		body = executeQuery(recordType, RecordQueryResponse.class, new SearchRequest(limit, offset, SortDirection.ASC))
+				.getBody();
 		assertThat(body.records().get(0).recordId().getRecordIdentifier())
 				.as("K should be first record id in ascending order with offset of 10").isEqualTo("K");
 	}
@@ -93,8 +95,8 @@ class FullStackRecordControllerTest {
 		String recordType = "for_query";
 		int limit = 5;
 		int offset = 0;
-		ResponseEntity<ErrorResponse> response = executeQuery(recordType,
-				ErrorResponse.class, new SearchRequest(limit, offset, SortDirection.ASC));
+		ResponseEntity<ErrorResponse> response = executeQuery(recordType, ErrorResponse.class,
+				new SearchRequest(limit, offset, SortDirection.ASC));
 		assertThat(response.getStatusCode()).as("record type doesn't exist").isEqualTo(HttpStatus.NOT_FOUND);
 		createSomeRecords(recordType, 1);
 		limit = 1001;
@@ -105,8 +107,8 @@ class FullStackRecordControllerTest {
 		assertThat(response.getStatusCode()).as("unsupported limit size").isEqualTo(HttpStatus.BAD_REQUEST);
 	}
 
-	private <T> ResponseEntity<T> executeQuery(String recordType,
-			Class<T> responseType, SearchRequest... request) throws JsonProcessingException {
+	private <T> ResponseEntity<T> executeQuery(String recordType, Class<T> responseType, SearchRequest... request)
+			throws JsonProcessingException {
 		HttpEntity<String> requestEntity = new HttpEntity<>(
 				request != null && request.length > 0 ? mapper.writeValueAsString(request[0]) : "", headers);
 		return restTemplate.exchange("/{instanceid}/search/{v}/{type}", HttpMethod.POST, requestEntity, responseType,
