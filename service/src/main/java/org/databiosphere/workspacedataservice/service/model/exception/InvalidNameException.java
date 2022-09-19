@@ -12,6 +12,10 @@ public class InvalidNameException extends RuntimeException {
 
 		private final String name;
 
+		public String getName() {
+			return name;
+		}
+
 		NameType(String name) {
 			this.name = name;
 		}

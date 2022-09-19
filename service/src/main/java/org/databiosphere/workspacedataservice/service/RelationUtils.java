@@ -29,15 +29,15 @@ public class RelationUtils {
 			Map<String, Object> attributes = record.getAttributes().getAttributes();
 			for (String attr : attributes.keySet()) {
 				if (isRelationValue(attributes.get(attr))) {
-					result.add(new Relation(attr, new RecordType(getTypeValue(attributes.get(attr)))));
+					result.add(new Relation(attr, getTypeValue(attributes.get(attr))));
 				}
 			}
 		}
 		return result;
 	}
 
-	public static String getTypeValue(Object obj) {
-		return splitRelationIdentifier(obj)[0];
+	public static RecordType getTypeValue(Object obj) {
+		return RecordType.valueOf(splitRelationIdentifier(obj)[0]);
 	}
 
 	private static String[] splitRelationIdentifier(Object obj) {
@@ -75,8 +75,8 @@ public class RelationUtils {
 		return obj != null && obj.toString().startsWith(RELATION_IDENTIFIER);
 	}
 
-	public static String createRelationString(String recordTypeName, String recordId) {
-		return UriComponentsBuilder.newInstance().scheme(RELATION_IDENTIFIER).pathSegment(recordTypeName, recordId)
-				.build().toUriString();
+	public static String createRelationString(RecordType targetRecordType, String recordId) {
+		return UriComponentsBuilder.newInstance().scheme(RELATION_IDENTIFIER)
+				.pathSegment(targetRecordType.getName(), recordId).build().toUriString();
 	}
 }

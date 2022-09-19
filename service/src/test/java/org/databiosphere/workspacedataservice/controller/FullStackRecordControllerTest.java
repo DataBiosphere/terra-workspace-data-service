@@ -61,7 +61,7 @@ class FullStackRecordControllerTest {
 	@Test
 	@Transactional
 	void testQuerySuccess() throws Exception {
-		String recordType = "for_query";
+		RecordType recordType = RecordType.valueOf("for_query");
 		List<String> names = List.of("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
 				"Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
 		Iterator<String> namesIterator = names.iterator();
@@ -92,7 +92,7 @@ class FullStackRecordControllerTest {
 	@Test
 	@Transactional
 	void testQueryFailures() throws Exception {
-		String recordType = "for_query";
+		RecordType recordType = RecordType.valueOf("for_query");
 		int limit = 5;
 		int offset = 0;
 		ResponseEntity<ErrorResponse> response = executeQuery(recordType, ErrorResponse.class,
@@ -107,7 +107,7 @@ class FullStackRecordControllerTest {
 		assertThat(response.getStatusCode()).as("unsupported limit size").isEqualTo(HttpStatus.BAD_REQUEST);
 	}
 
-	private <T> ResponseEntity<T> executeQuery(String recordType, Class<T> responseType, SearchRequest... request)
+	private <T> ResponseEntity<T> executeQuery(RecordType recordType, Class<T> responseType, SearchRequest... request)
 			throws JsonProcessingException {
 		HttpEntity<String> requestEntity = new HttpEntity<>(
 				request != null && request.length > 0 ? mapper.writeValueAsString(request[0]) : "", headers);
@@ -137,8 +137,8 @@ class FullStackRecordControllerTest {
 	@Transactional
 	void missingReferencedRecordTypeShouldFail() throws JsonProcessingException {
 		Map<String, Object> attrs = new HashMap<>();
-		attrs.put("attr_ref", RelationUtils.createRelationString("non_existent", "recordId"));
-		attrs.put("attr_ref_2", RelationUtils.createRelationString("non_existent_2", "recordId"));
+		attrs.put("attr_ref", RelationUtils.createRelationString(RecordType.valueOf("non_existent"), "recordId"));
+		attrs.put("attr_ref_2", RelationUtils.createRelationString(RecordType.valueOf("non_existent_2"), "recordId"));
 		HttpEntity<String> requestEntity = new HttpEntity<>(
 				mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attrs))), headers);
 		ResponseEntity<ErrorResponse> response = restTemplate.exchange(
@@ -153,7 +153,7 @@ class FullStackRecordControllerTest {
 	@Transactional
 	void referencingMissingRecordShouldFail() throws Exception {
 		Map<String, Object> attrs = new HashMap<>();
-		String referencedRecordType = "referenced-type";
+		RecordType referencedRecordType = RecordType.valueOf("referenced-type");
 		createSomeRecords(referencedRecordType, 1);
 		attrs.put("attr_ref", RelationUtils.createRelationString(referencedRecordType, "missing-id"));
 		HttpEntity<String> requestEntity = new HttpEntity<>(
@@ -170,7 +170,7 @@ class FullStackRecordControllerTest {
 	@Test
 	@Transactional
 	void retrievingMissingEntityShouldFail() throws Exception {
-		createSomeRecords("samples", 1);
+		createSomeRecords(RecordType.valueOf("samples"), 1);
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
 		ResponseEntity<ErrorResponse> response = restTemplate.exchange(
 				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.GET, requestEntity,
@@ -189,7 +189,7 @@ class FullStackRecordControllerTest {
 		assertThat(response.getBody()).containsEntry("message", "Invalid API version specified");
 	}
 
-	private void createSomeRecords(String recordType, int numRecords, Supplier<String>... recordIdSupplier)
+	private void createSomeRecords(RecordType recordType, int numRecords, Supplier<String>... recordIdSupplier)
 			throws Exception {
 		for (int i = 0; i < numRecords; i++) {
 			String recordId = recordIdSupplier == null || recordIdSupplier.length == 0
