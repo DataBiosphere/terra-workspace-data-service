@@ -31,7 +31,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 @SpringBootTest
 @AutoConfigureMockMvc
-public class RecordControllerMockMvcTest {
+class RecordControllerMockMvcTest {
 
 	private final ObjectMapper mapper = new ObjectMapper();
 	@Autowired

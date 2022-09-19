@@ -76,6 +76,16 @@ public class RecordDao {
 		return quote(instanceId.toString()) + "." + quote(recordType.getName());
 	}
 
+	@SuppressWarnings("squid:S2077")
+	public List<Record> queryForRecords(RecordType recordType, int pageSize, int offset, String sortDirection,
+			UUID instanceId) {
+		return namedTemplate.getJdbcTemplate()
+				.query("select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + RECORD_ID
+						+ " " + sortDirection + " limit " + pageSize + " offset " + offset,
+						new RecordRowMapper(recordType,
+								getRelationColumnsByName(getRelationCols(instanceId, recordType))));
+	}
+
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
 		MapSqlParameterSource params = new MapSqlParameterSource("instanceId", instanceId.toString());
 		params.addValue("tableName", recordType.getName());
@@ -324,8 +334,7 @@ public class RecordDao {
 
 	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, RecordId recordId,
 			List<Relation> referenceCols) {
-		Map<String, RecordType> refColMapping = new HashMap<>();
-		referenceCols.forEach(rc -> refColMapping.put(rc.relationColName(), rc.relationRecordType()));
+		Map<String, RecordType> refColMapping = getRelationColumnsByName(referenceCols);
 		try {
 			return Optional.ofNullable(namedTemplate.queryForObject(
 					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + RECORD_ID
@@ -349,6 +358,11 @@ public class RecordDao {
 		return namedTemplate.queryForList(
 				"select tablename from pg_tables WHERE schemaname = :workspaceSchema order by tablename",
 				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), RecordType.class);
+	}
+
+	private static Map<String, RecordType> getRelationColumnsByName(List<Relation> referenceCols) {
+		return referenceCols.stream().collect(
+				Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
 	}
 
 	public void deleteRecordType(UUID instanceId, RecordType recordType) {
