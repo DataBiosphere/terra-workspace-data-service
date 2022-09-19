@@ -75,7 +75,7 @@ public class RecordDao {
 
 	private String getQualifiedTableName(RecordType recordType, UUID instanceId) {
 		// N.B. recordType is sql-validated in its constructor, so we don't need it here
-		return quote(instanceId.toString()) + "." + quote(SqlUtils.validateSqlString(recordType.getName(), RECORD_TYPE);
+		return quote(instanceId.toString()) + "." + quote(SqlUtils.validateSqlString(recordType.getName(), RECORD_TYPE));
 	}
 
 	@SuppressWarnings("squid:S2077")
