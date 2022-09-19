@@ -35,7 +35,7 @@ public class RecordController {
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") RecordId recordId, @RequestBody RecordRequest recordRequest) {
 		validateVersion(version);
-		validateRecordType(instanceId, recordType);
+		checkRecordTypeExists(instanceId, recordType);
 		Record singleRecord = recordDao
 				.getSingleRecord(instanceId, recordType, recordId, recordDao.getRelationCols(instanceId, recordType))
 				.orElseThrow(() -> new MissingObjectException("Record"));
@@ -117,7 +117,7 @@ public class RecordController {
 			@PathVariable("recordId") RecordId recordId) {
 		validateVersion(version);
 		validateInstance(instanceId);
-		validateRecordType(instanceId, recordType);
+		checkRecordTypeExists(instanceId, recordType);
 		Record result = recordDao
 				.getSingleRecord(instanceId, recordType, recordId, recordDao.getRelationCols(instanceId, recordType))
 				.orElseThrow(() -> new MissingObjectException("Record"));
@@ -187,7 +187,7 @@ public class RecordController {
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType) {
 		validateVersion(version);
 		validateInstance(instanceId);
-		validateRecordType(instanceId, recordType);
+		checkRecordTypeExists(instanceId, recordType);
 		recordDao.deleteRecordType(instanceId, recordType);
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
@@ -196,7 +196,7 @@ public class RecordController {
 	public ResponseEntity<RecordTypeSchema> describeRecordType(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType) {
 		validateVersion(version);
-		validateRecordType(instanceId, recordType);
+		checkRecordTypeExists(instanceId, recordType);
 		RecordTypeSchema result = getSchemaDescription(instanceId, recordType);
 		return new ResponseEntity<>(result, HttpStatus.OK);
 	}
@@ -236,7 +236,7 @@ public class RecordController {
 		}
 	}
 
-	private void validateRecordType(UUID instanceId, RecordType recordType) {
+	private void checkRecordTypeExists(UUID instanceId, RecordType recordType) {
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
 			throw new MissingObjectException("Record type");
 		}
