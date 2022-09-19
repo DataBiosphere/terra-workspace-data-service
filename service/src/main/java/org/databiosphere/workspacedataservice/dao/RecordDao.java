@@ -358,6 +358,14 @@ public class RecordDao {
 		}
 	}
 
+	public boolean recordExists(UUID instanceId, String recordType, String recordId) {
+		return Boolean.TRUE
+				.equals(namedTemplate.queryForObject(
+						"select exists(select * from " + getQualifiedTableName(recordType, instanceId) + " where "
+								+ RECORD_ID + " = :recordId)",
+						new MapSqlParameterSource("recordId", recordId), Boolean.class));
+	}
+
 	public List<String> getAllRecordTypes(UUID instanceId) {
 		return namedTemplate.queryForList(
 				"select tablename from pg_tables WHERE schemaname = :workspaceSchema order by tablename",
