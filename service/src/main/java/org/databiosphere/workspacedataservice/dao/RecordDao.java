@@ -56,6 +56,7 @@ public class RecordDao {
 				Boolean.class));
 	}
 
+	@SuppressWarnings("squid:S2077")
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
 			Set<Relation> relations) {
 
