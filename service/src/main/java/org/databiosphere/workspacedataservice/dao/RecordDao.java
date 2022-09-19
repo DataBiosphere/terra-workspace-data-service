@@ -72,8 +72,8 @@ public class RecordDao {
 	}
 
 	private String getQualifiedTableName(RecordType recordType, UUID instanceId) {
-		return quote(instanceId.toString()) + "."
-				+ quote(SqlUtils.validateSqlString(recordType.getName(), InvalidNameException.NameType.RECORD_TYPE));
+		// N.B. recordType is sql-validated in its constructor, so we don't need it here
+		return quote(instanceId.toString()) + "." + quote(recordType.getName());
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
