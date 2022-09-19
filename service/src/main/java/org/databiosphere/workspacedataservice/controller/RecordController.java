@@ -22,6 +22,7 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 @RestController
 public class RecordController {
 
+	private static final int MAX_RECORDS = 1_000;
 	private final RecordDao recordDao;
 	private final DataTypeInferer inferer;
 
@@ -127,6 +128,30 @@ public class RecordController {
 		RecordResponse response = new RecordResponse(recordId, recordType, result.getAttributes(),
 				new RecordMetadata("TODO: RECORDMETADATA"));
 		return new ResponseEntity<>(response, HttpStatus.OK);
+	}
+
+	@PostMapping("/{instanceid}/search/{version}/{recordType}")
+	public RecordQueryResponse queryForEntities(@PathVariable("instanceid") UUID instanceId,
+			@PathVariable("recordType") String recordTypeName,
+			@RequestBody(required = false) SearchRequest searchRequest) {
+		validateRecordType(instanceId, recordTypeName);
+		if (null == searchRequest) {
+			searchRequest = new SearchRequest();
+		}
+		if (searchRequest.getLimit() > MAX_RECORDS || searchRequest.getLimit() < 1 || searchRequest.getOffset() < 0) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"Limit must be more than 0 and can't exceed " + MAX_RECORDS + ", and offset must be positive.");
+		}
+		int totalRecords = recordDao.countRecords(instanceId, recordTypeName);
+		if (searchRequest.getOffset() > totalRecords) {
+			return new RecordQueryResponse(searchRequest, Collections.emptyList(), totalRecords);
+		}
+		List<Record> records = recordDao.queryForRecords(recordTypeName, searchRequest.getLimit(),
+				searchRequest.getOffset(), searchRequest.getSort().name().toLowerCase(), instanceId);
+		List<RecordResponse> recordList = records.stream().map(
+				r -> new RecordResponse(r.getId(), r.getRecordType(), r.getAttributes(), new RecordMetadata("UNUSED")))
+				.toList();
+		return new RecordQueryResponse(searchRequest, recordList, totalRecords);
 	}
 
 	@PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")

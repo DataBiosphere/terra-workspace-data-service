@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-public class RecordControllerMockMvcTest {
+class RecordControllerMockMvcTest {
 
 	private final ObjectMapper mapper = new ObjectMapper();
 	@Autowired
