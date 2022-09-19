@@ -250,7 +250,6 @@ public class RecordController {
 
 	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, RecordType recordType,
 			Map<String, DataTypeMapping> requestSchema) {
-		recordType.validate();
 		List<Record> records = Collections.singletonList(newRecord);
 		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records));
 		recordDao.batchUpsert(instanceId, recordType, records, requestSchema);
