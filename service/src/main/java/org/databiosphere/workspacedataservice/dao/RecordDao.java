@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.*;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
+import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.RECORD_TYPE;
 
 @Repository
 public class RecordDao {
@@ -74,7 +75,7 @@ public class RecordDao {
 
 	private String getQualifiedTableName(RecordType recordType, UUID instanceId) {
 		// N.B. recordType is sql-validated in its constructor, so we don't need it here
-		return quote(instanceId.toString()) + "." + quote(recordType.getName());
+		return quote(instanceId.toString()) + "." + quote(SqlUtils.validateSqlString(recordType.getName(), RECORD_TYPE);
 	}
 
 	@SuppressWarnings("squid:S2077")
