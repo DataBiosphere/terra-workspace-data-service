@@ -28,6 +28,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.*;
+import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
 
 @Repository
 public class RecordDao {
@@ -106,12 +107,13 @@ public class RecordDao {
 		addColumn(instanceId, recordType, columnName, colType, null);
 	}
 
+	@SuppressWarnings("squid:S2077")
 	public void addColumn(UUID instanceId, RecordType recordType, String columnName, DataTypeMapping colType,
 			RecordType referencedType) {
 		try {
 			namedTemplate.getJdbcTemplate()
 					.update("alter table " + getQualifiedTableName(recordType, instanceId) + " add column "
-							+ quote(SqlUtils.validateSqlString(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " "
+							+ quote(SqlUtils.validateSqlString(columnName, ATTRIBUTE)) + " "
 							+ colType.getPostgresType()
 							+ (referencedType != null
 									? " references " + getQualifiedTableName(referencedType, instanceId)
@@ -124,10 +126,11 @@ public class RecordDao {
 		}
 	}
 
+	@SuppressWarnings("squid:S2077")
 	public void changeColumn(UUID instanceId, RecordType recordType, String columnName, DataTypeMapping newColType) {
 		namedTemplate.getJdbcTemplate()
 				.update("alter table " + getQualifiedTableName(recordType, instanceId) + " alter column "
-						+ quote(SqlUtils.validateSqlString(columnName, InvalidNameException.NameType.ATTRIBUTE)) + " TYPE "
+						+ quote(SqlUtils.validateSqlString(columnName, ATTRIBUTE)) + " TYPE "
 						+ newColType.getPostgresType());
 	}
 
@@ -135,7 +138,7 @@ public class RecordDao {
 		return RECORD_ID + " text primary key"
 				+ (tableInfo.size() > 0
 						? ", " + tableInfo.entrySet().stream()
-								.map(e -> quote(SqlUtils.validateSqlString(e.getKey(), InvalidNameException.NameType.ATTRIBUTE)) + " "
+								.map(e -> quote(SqlUtils.validateSqlString(e.getKey(), ATTRIBUTE)) + " "
 										+ e.getValue().getPostgresType())
 								.collect(Collectors.joining(", "))
 						: "");
@@ -218,9 +221,10 @@ public class RecordDao {
 	}
 
 	public String getFkSql(Set<Relation> relations, UUID instanceId) {
+
 		return relations.stream()
-				.map(r -> "constraint " + quote("fk_" + r.relationColName()) + " foreign key ("
-						+ quote(r.relationColName()) + ") references "
+				.map(r -> "constraint " + quote("fk_" + SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE)) + " foreign key ("
+						+ quote(SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE)) + ") references "
 						+ getQualifiedTableName(r.relationRecordType(), instanceId) + "(" + RECORD_ID + ")")
 				.collect(Collectors.joining(", \n"));
 	}
@@ -236,6 +240,7 @@ public class RecordDao {
 						RecordType.valueOf(rs.getString("table_name"))));
 	}
 
+	@SuppressWarnings("squid:S2077")
 	public int countRecords(UUID instanceId, RecordType recordType) {
 		return namedTemplate.getJdbcTemplate()
 				.queryForObject("select count(*) from " + getQualifiedTableName(recordType, instanceId), Integer.class);
