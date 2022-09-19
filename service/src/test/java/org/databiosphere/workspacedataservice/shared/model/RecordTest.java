@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class RecordTest {
+class RecordTest {
 
 	@Autowired
 	private ObjectMapper jacksonObjectMapper;

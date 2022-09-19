@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class SqlUtilsTest {
+class SqlUtilsTest {
 
     @Test
     void testValidateSqlStringFailures() {
