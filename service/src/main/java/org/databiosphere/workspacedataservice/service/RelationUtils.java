@@ -26,7 +26,7 @@ public class RelationUtils {
 	public static Set<Relation> findRelations(List<Record> records) {
 		Set<Relation> result = new HashSet<>();
 		for (Record record : records) {
-			for (Map.Entry<String, Object> entry : record.getAttributes().entrySet()) {
+			for (Map.Entry<String, Object> entry : record.getAttributes().attributeSet()) {
 				if (isRelationValue(entry.getValue())) {
 					result.add(new Relation(entry.getKey(), getTypeValue(entry.getValue())));
 				}

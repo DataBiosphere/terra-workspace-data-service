@@ -281,7 +281,7 @@ public class RecordDao {
 			if (colName.equals(RECORD_ID)) {
 				row[i++] = toInsert.getId();
 			} else {
-				row[i++] = getValueForSql(toInsert.getAttributes().get(colName), col.typeMapping());
+				row[i++] = getValueForSql(toInsert.getAttributes().getAttributeValue(colName), col.typeMapping());
 			}
 		}
 		return row;
@@ -324,11 +324,11 @@ public class RecordDao {
 						continue;
 					}
 					if (referenceColToTable.size() > 0 && referenceColToTable.containsKey(columnName)) {
-						attributes.put(columnName, RelationUtils
+						attributes.putAttribute(columnName, RelationUtils
 								.createRelationString(referenceColToTable.get(columnName), rs.getString(columnName)));
 					} else {
 						Object object = rs.getObject(columnName);
-						attributes.put(columnName, object instanceof PGobject pGobject ? pGobject.getValue() : object);
+						attributes.putAttribute(columnName, object instanceof PGobject pGobject ? pGobject.getValue() : object);
 					}
 				}
 				return attributes;

@@ -7,31 +7,39 @@ import java.util.*;
 
 public class RecordAttributes {
 
+	// internal representation is a sorted map, so json serialization
+	// is nicely sorted without additional work upon render
+	private final TreeMap<String, Object> attributes;
+	// TODO: want to use Guava ImmutableMap, or even Java unmodifiable maps, but they don't allow null values
+
 	// ========== members and constructors
 
-	// TODO: want to use Guava ImmutableMap, or even Java unmodifiable maps, but they don't allow null values
-	// use sorted map internally so getAttributes is automatically sorted
-	private final TreeMap<String, Object> attributes;
-
+	/**
+	 * Generic constructor, also used as the JsonCreator.
+	 * @param attributes the map of attribute names->values to use for this RecordAttributes.
+	 */
 	@JsonCreator
 	public RecordAttributes(Map<String, Object> attributes) {
 		this.attributes = new TreeMap<>(attributes);
 	}
 
+	/**
+	 * creates a RecordAttributes with no keys/values
+	 * @return the empty RecordAttributes object
+	 */
 	public static RecordAttributes empty() {
 		return new RecordAttributes(Collections.emptyMap());
 	}
 
-	// TODO: assess how this is used
-	// ========== getAttributes
+	// ========== accessors
 
-	// when serializing to json, sort attribute keys
+	// when serializing to json, delegate to the internal map.
+	// this is private so callers aren't tempted to use it
 	@JsonValue
-	public Map<String, Object> getAttributes() {
+	private Map<String, Object> getAttributes() {
 		return attributes;
 	}
 
-	// ========== accessors
 	/**
 	 * Retrieve the value for a single named attribute
 	 * 
@@ -39,17 +47,25 @@ public class RecordAttributes {
 	 *            name of the attribute to retrieve
 	 * @return the value of the named attribute
 	 */
-	public Object get(String attributeName) {
+	public Object getAttributeValue(String attributeName) {
 		return this.attributes.get(attributeName);
 	}
 
-	public Set<Map.Entry<String, Object>> entrySet() {
+	public boolean containsAttribute(String attributeName) {
+		return this.attributes.containsKey(attributeName);
+	}
+
+	public Set<Map.Entry<String, Object>> attributeSet() {
 		return this.attributes.entrySet();
+	}
+
+	public Set<String> attributeNameSet() {
+		return this.attributes.keySet();
 	}
 
 	// ========== mutators
 
-	public RecordAttributes putAll(Map<String, Object> incoming) {
+	private RecordAttributes putAll(Map<String, Object> incoming) {
 		this.attributes.putAll(incoming);
 		return this;
 	}
@@ -58,12 +74,14 @@ public class RecordAttributes {
 		return putAll(incoming.getAttributes());
 	}
 
-	public void put(String key, Object value)  {
+	public RecordAttributes putAttribute(String key, Object value)  {
 		this.attributes.put(key, value);
+		return this;
 	}
 
-	public void putIfAbsent(String key, Object value) {
+	public RecordAttributes putAttributeIfAbsent(String key, Object value) {
 		this.attributes.putIfAbsent(key, value);
+		return this;
 	}
 
 	// ========== util methods

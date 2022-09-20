@@ -169,7 +169,7 @@ public class RecordController {
 		} else {
 			Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
 			// null out any attributes that already exist but aren't in the request
-			existingTableSchema.keySet().forEach(attr -> attributesInRequest.putIfAbsent(attr, null));
+			existingTableSchema.keySet().forEach(attr -> attributesInRequest.putAttributeIfAbsent(attr, null));
 			if (recordDao.recordExists(instanceId, recordType, recordId)) {
 				status = HttpStatus.OK;
 			}

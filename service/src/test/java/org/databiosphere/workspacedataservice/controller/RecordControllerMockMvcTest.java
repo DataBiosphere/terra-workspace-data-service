@@ -89,7 +89,7 @@ class RecordControllerMockMvcTest {
 		RecordType recordType1 = RecordType.valueOf("illegalName");
 		createSomeRecords(recordType1, 1);
 		RecordAttributes illegalAttribute = RecordAttributes.empty();
-		illegalAttribute.put("sys_foo", "some_val");
+		illegalAttribute.putAttribute("sys_foo", "some_val");
 		mockMvc.perform(patch("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				recordType1, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(illegalAttribute))))
@@ -127,7 +127,7 @@ class RecordControllerMockMvcTest {
 		RecordType recordType1 = RecordType.valueOf("recordType1");
 		createSomeRecords(recordType1, 1);
 		RecordAttributes newAttributes = RecordAttributes.empty();
-		newAttributes.put("new-attr", "some_val");
+		newAttributes.putAttribute("new-attr", "some_val");
 		mockMvc.perform(put("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				recordType1, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(newAttributes))))
@@ -140,7 +140,7 @@ class RecordControllerMockMvcTest {
 		RecordType recordType1 = RecordType.valueOf("recordType1");
 		createSomeRecords(recordType1, 1);
 		RecordAttributes newAttributes = RecordAttributes.empty();
-		newAttributes.put("new-attr", "some_val");
+		newAttributes.putAttribute("new-attr", "some_val");
 		mockMvc.perform(patch("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				recordType1, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(newAttributes))))
@@ -165,7 +165,7 @@ class RecordControllerMockMvcTest {
 		createSomeRecords(referringType, 1);
 		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, "record_0");
-		attributes.put("sample-ref", ref);
+		attributes.putAttribute("sample-ref", ref);
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
@@ -180,7 +180,7 @@ class RecordControllerMockMvcTest {
 		createSomeRecords(referringType, 1);
 		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, "record_0");
-		attributes.put("sample-ref", ref);
+		attributes.putAttribute("sample-ref", ref);
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
@@ -197,7 +197,7 @@ class RecordControllerMockMvcTest {
 		createSomeRecords(referringType, 1);
 		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, "record_99");
-		attributes.put("sample-ref", ref);
+		attributes.putAttribute("sample-ref", ref);
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
@@ -212,7 +212,7 @@ class RecordControllerMockMvcTest {
 		createSomeRecords(recordType, 1);
 		RecordAttributes attributes = RecordAttributes.empty();
 		String newTextValue = "convert this column from date to text";
-		attributes.put("attr3", newTextValue);
+		attributes.putAttribute("attr3", newTextValue);
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, "record_1").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
@@ -225,7 +225,7 @@ class RecordControllerMockMvcTest {
 		RecordType recordType = RecordType.valueOf("to-patch");
 		createSomeRecords(recordType, 1);
 		RecordAttributes attributes = RecordAttributes.empty();
-		attributes.put("attr-boolean", true);
+		attributes.putAttribute("attr-boolean", true);
 		String recordId = "record_missing";
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, recordId)
@@ -241,7 +241,7 @@ class RecordControllerMockMvcTest {
 		String recordId = "record_0";
 		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(RecordType.valueOf("missing"), "missing_also");
-		attributes.put("sample-ref", ref);
+		attributes.putAttribute("sample-ref", ref);
 
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, recordId)
@@ -261,7 +261,7 @@ class RecordControllerMockMvcTest {
 		createSomeRecords(referringType, 1);
 		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, recordId);
-		attributes.put("ref-attr", ref);
+		attributes.putAttribute("ref-attr", ref);
 		// Add referencing attribute to referring_Type
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, recordId)
@@ -272,7 +272,7 @@ class RecordControllerMockMvcTest {
 		// recordType in the pre-existing referencing attribute
 		RecordAttributes new_attributes = RecordAttributes.empty();
 		String invalid_ref = RelationUtils.createRelationString(RecordType.valueOf("missing"), recordId);
-		new_attributes.put("ref-attr", invalid_ref);
+		new_attributes.putAttribute("ref-attr", invalid_ref);
 
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "new_record")
@@ -288,7 +288,7 @@ class RecordControllerMockMvcTest {
 		createSomeRecords(recordType, 1);
 		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(RecordType.valueOf("missing"), "missing_also");
-		attributes.put("attr1", ref);
+		attributes.putAttribute("attr1", ref);
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, "record_0")
 						.content(mapper.writeValueAsString(new RecordRequest(attributes)))
@@ -327,7 +327,7 @@ class RecordControllerMockMvcTest {
 		createSomeRecords(referringType, 1);
 		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, "record_0");
-		attributes.put("sample-ref", ref);
+		attributes.putAttribute("sample-ref", ref);
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
@@ -364,7 +364,7 @@ class RecordControllerMockMvcTest {
 		createSomeRecords(referringType, 1);
 		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, "record_0");
-		attributes.put("sample-ref", ref);
+		attributes.putAttribute("sample-ref", ref);
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
@@ -383,7 +383,7 @@ class RecordControllerMockMvcTest {
 		createSomeRecords(referringType, 1);
 		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, "record_0");
-		attributes.put("sample-ref", ref);
+		attributes.putAttribute("sample-ref", ref);
 		// Create relation column
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
@@ -410,7 +410,7 @@ class RecordControllerMockMvcTest {
 		createSomeRecords(type, 1);
 		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, "record_0");
-		attributes.put("attr-ref", ref);
+		attributes.putAttribute("attr-ref", ref);
 
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, type,
 				"record_0").contentType(MediaType.APPLICATION_JSON)
