@@ -27,9 +27,9 @@ class RecordTest {
 	void testRecordIdDeserialization() throws JsonProcessingException {
 		String input = "\"my-fancy-id\"";
 
-		RecordId expected = new RecordId("my-fancy-id");
+		String expected = "my-fancy-id";
 
-		RecordId actual = jacksonObjectMapper.readValue(input, RecordId.class);
+		String actual = jacksonObjectMapper.readValue(input, String.class);
 
 		assertEquals(expected, actual);
 	}
@@ -86,7 +86,7 @@ class RecordTest {
 				Map.of("foo", "bar", "num", 123, "bool", true, "anotherstring", "hello world"));
 
 		RecordType recordType = RecordType.valueOf("mytype");
-		RecordId recordId = new RecordId("my-id");
+		String recordId = "my-id";
 
 		Record expected = new Record(recordId, recordType, recordAttributes);
 

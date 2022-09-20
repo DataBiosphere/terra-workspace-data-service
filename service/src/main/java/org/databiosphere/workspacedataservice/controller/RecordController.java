@@ -34,7 +34,7 @@ public class RecordController {
 	@PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
 	public ResponseEntity<RecordResponse> updateSingleRecord(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			@PathVariable("recordId") RecordId recordId, @RequestBody RecordRequest recordRequest) {
+			@PathVariable("recordId") String recordId, @RequestBody RecordRequest recordRequest) {
 		validateVersion(version);
 		checkRecordTypeExists(instanceId, recordType);
 		Record singleRecord = recordDao
@@ -115,7 +115,7 @@ public class RecordController {
 	@GetMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
 	public ResponseEntity<RecordResponse> getSingleRecord(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			@PathVariable("recordId") RecordId recordId) {
+			@PathVariable("recordId") String recordId) {
 		validateVersion(version);
 		validateInstance(instanceId);
 		checkRecordTypeExists(instanceId, recordType);
@@ -154,7 +154,7 @@ public class RecordController {
 	@PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
 	public ResponseEntity<RecordResponse> upsertSingleRecord(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			@PathVariable("recordId") RecordId recordId, @RequestBody RecordRequest recordRequest) {
+			@PathVariable("recordId") String recordId, @RequestBody RecordRequest recordRequest) {
 		validateVersion(version);
 		Map<String, Object> attributesInRequest = recordRequest.recordAttributes().getAttributes();
 		Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
@@ -172,7 +172,7 @@ public class RecordController {
 			Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
 			// null out any attributes that already exist but aren't in the request
 			existingTableSchema.keySet().forEach(attr -> attributesInRequest.putIfAbsent(attr, null));
-			if (recordDao.recordExists(instanceId, recordType, recordId.getRecordIdentifier())) {
+			if (recordDao.recordExists(instanceId, recordType, recordId)) {
 				status = HttpStatus.OK;
 			}
 			Record newRecord = new Record(recordId, recordType, recordRequest.recordAttributes());
@@ -201,9 +201,9 @@ public class RecordController {
 	@DeleteMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
 	public ResponseEntity<Void> deleteSingleRecord(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			@PathVariable("recordId") RecordId recordId) {
+			@PathVariable("recordId") String recordId) {
 		validateVersion(version);
-		boolean recordFound = recordDao.deleteSingleRecord(instanceId, recordType, recordId.getRecordIdentifier());
+		boolean recordFound = recordDao.deleteSingleRecord(instanceId, recordType, recordId);
 		return recordFound ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
 

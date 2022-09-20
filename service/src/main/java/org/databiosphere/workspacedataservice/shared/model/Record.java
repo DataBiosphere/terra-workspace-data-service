@@ -7,14 +7,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Record {
 
-	private RecordId id;
+	private String id;
 
 	@JsonProperty("type")
 	private RecordType recordType;
 
 	private RecordAttributes attributes;
 
-	public Record(RecordId id, RecordType recordType, RecordAttributes attributes) {
+	public Record(String id, RecordType recordType, RecordAttributes attributes) {
 		this.id = id;
 		this.recordType = recordType;
 		this.attributes = attributes;
@@ -23,21 +23,21 @@ public class Record {
 	public Record() {
 	}
 
-	public Record(RecordId id) {
+	public Record(String id) {
 		this.id = id;
 	}
 
-	public Record(RecordId id, RecordType type, RecordRequest request) {
+	public Record(String id, RecordType type, RecordRequest request) {
 		this.id = id;
 		this.recordType = type;
 		this.attributes = request.recordAttributes();
 	}
 
-	public RecordId getId() {
+	public String getId() {
 		return id;
 	}
 
-	public void setId(RecordId id) {
+	public void setId(String id) {
 		this.id = id;
 	}
 
