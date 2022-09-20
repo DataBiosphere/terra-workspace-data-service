@@ -11,8 +11,7 @@ public class RecordAttributes {
 
 	// TODO: want to use Guava ImmutableMap, or even Java unmodifiable maps, but they don't allow null values
 	// use sorted map internally so getAttributes is automatically sorted
-	final private TreeMap<String, Object> attributes;
-
+	private final TreeMap<String, Object> attributes;
 
 	@JsonCreator
 	public RecordAttributes(Map<String, Object> attributes) {
