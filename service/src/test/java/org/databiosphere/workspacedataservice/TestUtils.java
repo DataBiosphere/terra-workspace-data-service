@@ -14,7 +14,7 @@ public class TestUtils {
 	}
 
 	public static RecordAttributes generateRandomAttributes() {
-		Map<String, Object> attributes = new HashMap<>();
+		RecordAttributes attributes = RecordAttributes.empty();
 		attributes.put("attr1", RandomStringUtils.randomAlphabetic(6));
 		attributes.put("attr2", RandomUtils.nextFloat());
 		attributes.put("attr3", "2022-11-01");
@@ -23,6 +23,6 @@ public class TestUtils {
 		attributes.put("attr-dt", "2022-03-01T12:00:03");
 		attributes.put("attr-json", "{\"foo\":\"bar\"}");
 		attributes.put("attr-boolean", true);
-		return new RecordAttributes(attributes);
+		return attributes;
 	}
 }

@@ -316,7 +316,7 @@ public class RecordDao {
 		private RecordAttributes getAttributes(ResultSet rs) {
 			try {
 				ResultSetMetaData metaData = rs.getMetaData();
-				Map<String, Object> attributes = new HashMap<>();
+				RecordAttributes attributes = RecordAttributes.empty();
 
 				for (int j = 1; j <= metaData.getColumnCount(); j++) {
 					String columnName = metaData.getColumnName(j);
@@ -331,7 +331,7 @@ public class RecordDao {
 						attributes.put(columnName, object instanceof PGobject pGobject ? pGobject.getValue() : object);
 					}
 				}
-				return new RecordAttributes(attributes);
+				return attributes;
 			} catch (SQLException e) {
 				throw new RuntimeException(e);
 			}
