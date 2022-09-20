@@ -281,7 +281,7 @@ public class RecordDao {
 			if (colName.equals(RECORD_ID)) {
 				row[i++] = toInsert.getId();
 			} else {
-				row[i++] = getValueForSql(toInsert.getAttributes().getAttributes().get(colName), col.typeMapping());
+				row[i++] = getValueForSql(toInsert.getAttributes().get(colName), col.typeMapping());
 			}
 		}
 		return row;
