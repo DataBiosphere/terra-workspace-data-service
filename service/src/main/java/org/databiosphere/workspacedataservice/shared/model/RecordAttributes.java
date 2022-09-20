@@ -2,27 +2,25 @@ package org.databiosphere.workspacedataservice.shared.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-//import com.google.common.collect.ImmutableMap;
-//import com.google.common.collect.ImmutableSortedMap;
-//import graphql.collect.ImmutableMapWithNullValues;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
+import java.util.*;
 
 public class RecordAttributes {
 
 	// ========== members and constructors
 
-	// private ImmutableSortedMap<String, Object> attributes;
-	// private ImmutableMapWithNullValues<String, Object> attributes;
+	// TODO: want to use Guava ImmutableMap, or even Java unmodifiable maps, but they don't allow null values
 	// use sorted map internally so getAttributes is automatically sorted
-	private TreeMap<String, Object> attributes;
+	final private TreeMap<String, Object> attributes;
 
 
 	@JsonCreator
 	public RecordAttributes(Map<String, Object> attributes) {
 		this.attributes = new TreeMap<>(attributes);
+	}
+
+	public static RecordAttributes empty() {
+		return new RecordAttributes(Collections.emptyMap());
 	}
 
 	// TODO: assess how this is used
@@ -35,9 +33,6 @@ public class RecordAttributes {
 	}
 
 	// ========== accessors
-
-	// TODO: implement iterator
-
 	/**
 	 * Retrieve the value for a single named attribute
 	 * 
@@ -49,11 +44,8 @@ public class RecordAttributes {
 		return this.attributes.get(attributeName);
 	}
 
-	/**
-	 * find all relation attributes
-	 */
-	public void getRelations() {
-		// TODO
+	public Set<Map.Entry<String, Object>> entrySet() {
+		return this.attributes.entrySet();
 	}
 
 	// ========== mutators
@@ -67,9 +59,12 @@ public class RecordAttributes {
 		return putAll(incoming.getAttributes());
 	}
 
-	public RecordAttributes putIfAbsent(String key, Object value) {
+	public void put(String key, Object value)  {
+		this.attributes.put(key, value);
+	}
+
+	public void putIfAbsent(String key, Object value) {
 		this.attributes.putIfAbsent(key, value);
-		return this;
 	}
 
 	// ========== util methods

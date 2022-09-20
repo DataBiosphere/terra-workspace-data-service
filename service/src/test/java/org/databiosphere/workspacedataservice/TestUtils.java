@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,7 +13,7 @@ public class TestUtils {
 
 	}
 
-	public static Map<String, Object> generateRandomAttributes() {
+	public static RecordAttributes generateRandomAttributes() {
 		Map<String, Object> attributes = new HashMap<>();
 		attributes.put("attr1", RandomStringUtils.randomAlphabetic(6));
 		attributes.put("attr2", RandomUtils.nextFloat());
@@ -22,6 +23,6 @@ public class TestUtils {
 		attributes.put("attr-dt", "2022-03-01T12:00:03");
 		attributes.put("attr-json", "{\"foo\":\"bar\"}");
 		attributes.put("attr-boolean", true);
-		return attributes;
+		return new RecordAttributes(attributes);
 	}
 }

@@ -310,10 +310,10 @@ public class RecordDao {
 		@Override
 		public Record mapRow(ResultSet rs, int rowNum) throws SQLException {
 			return new Record(rs.getString(RECORD_ID), recordType,
-					new RecordAttributes(getAttributes(rs)));
+					getAttributes(rs));
 		}
 
-		private Map<String, Object> getAttributes(ResultSet rs) {
+		private RecordAttributes getAttributes(ResultSet rs) {
 			try {
 				ResultSetMetaData metaData = rs.getMetaData();
 				Map<String, Object> attributes = new HashMap<>();
@@ -331,7 +331,7 @@ public class RecordDao {
 						attributes.put(columnName, object instanceof PGobject pGobject ? pGobject.getValue() : object);
 					}
 				}
-				return attributes;
+				return new RecordAttributes(attributes);
 			} catch (SQLException e) {
 				throw new RuntimeException(e);
 			}

@@ -19,7 +19,7 @@ public class DataTypeInferer {
 
 	public Map<String, DataTypeMapping> inferTypes(RecordAttributes updatedAtts) {
 		Map<String, DataTypeMapping> result = new HashMap<>();
-		for (Map.Entry<String, Object> entry : updatedAtts.getAttributes().entrySet()) {
+		for (Map.Entry<String, Object> entry : updatedAtts.entrySet()) {
 			result.put(entry.getKey(), inferType(entry.getValue()));
 		}
 		return result;
