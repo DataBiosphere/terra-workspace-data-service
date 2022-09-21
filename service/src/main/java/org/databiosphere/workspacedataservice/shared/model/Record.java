@@ -66,20 +66,6 @@ public class Record {
 		return this;
 	}
 
-//	public Record putAll(RecordAttributes incoming) {
-//		this.attributes.putAll(incoming);
-//	}
-//
-//	public Record putAttribute(String key, Object value)  {
-//		this.attributes.putAttribute(key, value);
-//	}
-//
-//	public Record putAttributeIfAbsent(String key, Object value) {
-//		this.attributes.putAttributeIfAbsent(key, value);
-//		return this;
-//	}
-
-
 	public RecordType getRecordType() {
 		return recordType;
 	}

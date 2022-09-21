@@ -60,17 +60,6 @@ public class RecordAttributes {
 		return this.attributes.entrySet();
 	}
 
-	/* not currently used, but could be useful in the future
-
-	public boolean containsAttribute(String attributeName) {
-		return this.attributes.containsKey(attributeName);
-	}
-
-	public Set<String> attributeNameSet() {
-		return this.attributes.keySet();
-	}
-	*/
-
 	// ========== mutators
 
 	public RecordAttributes putAll(RecordAttributes incoming) {
