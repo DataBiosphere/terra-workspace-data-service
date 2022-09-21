@@ -9,6 +9,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
+import java.util.List;
+import org.databiosphere.workspacedataservice.shared.model.Record;
 import java.util.Map;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 
@@ -20,6 +22,21 @@ public class DataTypeInferer {
 		Map<String, DataTypeMapping> result = new HashMap<>();
 		for (Map.Entry<String, Object> entry : updatedAtts.entrySet()) {
 			result.put(entry.getKey(), inferType(entry.getValue()));
+		}
+		return result;
+	}
+
+	public Map<String, DataTypeMapping> inferTypes(List<Record> records){
+		Map<String, DataTypeMapping> result = new HashMap<>();
+		for (Record record : records) {
+			for (Map.Entry<String, Object> entry : record.getAttributes().getAttributes().entrySet()) {
+				DataTypeMapping inferredType = inferType(entry.getValue());
+				if(result.get(entry.getKey()) != inferredType){
+					result.put(entry.getKey(), selectBestType(result.get(entry.getKey()), inferredType));
+				} else {
+					result.put(entry.getKey(), inferredType);
+				}
+			}
 		}
 		return result;
 	}

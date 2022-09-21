@@ -2,6 +2,9 @@ package org.databiosphere.workspacedataservice.controller;
 
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -12,8 +15,11 @@ import org.databiosphere.workspacedataservice.shared.model.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -265,6 +271,40 @@ public class RecordController {
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
 			throw new MissingObjectException("Record type");
 		}
+	}
+
+	@PostMapping("/{instanceid}/{v}/{type}/upload")
+	public String handleStreamingUpload(@PathVariable("instanceid") UUID instanceId, @PathVariable("v") String version,
+										@PathVariable("type") RecordType recordType, @RequestParam("file") MultipartFile file) throws IOException {
+		validateInstance(instanceId);
+		validateVersion(version);
+		InputStreamReader inputStreamReader = new InputStreamReader(file.getInputStream());
+
+		CSVFormat csvFormat = CSVFormat.Builder.create(CSVFormat.DEFAULT).setHeader().build();
+		CSVParser rows = csvFormat.parse(inputStreamReader);
+		int batchSize = 10_000;
+		boolean recordTypeExists = recordDao.recordTypeExists(instanceId, recordType);
+		List<Record> batch = new ArrayList<>();
+		Map<String, DataTypeMapping> schema = null;
+		for (CSVRecord row : rows) {
+			Map<String, Object> m = (Map)row.toMap();
+			batch.add(new Record(new RecordId(row.get("id")), recordType, new RecordAttributes(m)));
+			if(batch.size() >= batchSize) {
+				if (!recordTypeExists) {
+					schema = inferer.inferTypes(batch);
+					recordDao.createRecordType(instanceId, schema, recordType, Collections.emptySet());
+					recordTypeExists = true;
+				}
+				recordDao.batchUpsert(instanceId, recordType, batch, schema);
+				batch.clear();
+			}
+		}
+		if(!recordTypeExists){
+			recordDao.createRecordType(instanceId, schema, recordType, Collections.emptySet());
+		}
+		recordDao.batchUpsert(instanceId, recordType, batch, inferer.inferTypes(batch));
+		inputStreamReader.close();
+		return "done";
 	}
 
 	private void validateInstance(UUID instanceId) {
