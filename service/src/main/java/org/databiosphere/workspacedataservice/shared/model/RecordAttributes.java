@@ -39,6 +39,7 @@ public class RecordAttributes {
 
 	// when serializing to json, delegate to the internal map.
 	// this is private so callers aren't tempted to use it
+	@SuppressWarnings("unused") // used by JsonValue but nothing else, intentionally
 	@JsonValue
 	private Map<String, Object> getAttributes() {
 		return attributes;
@@ -55,27 +56,26 @@ public class RecordAttributes {
 		return this.attributes.get(attributeName);
 	}
 
-	public boolean containsAttribute(String attributeName) {
-		return this.attributes.containsKey(attributeName);
-	}
-
 	public Set<Map.Entry<String, Object>> attributeSet() {
 		return this.attributes.entrySet();
+	}
+
+	/* not currently used, but could be useful in the future
+
+	public boolean containsAttribute(String attributeName) {
+		return this.attributes.containsKey(attributeName);
 	}
 
 	public Set<String> attributeNameSet() {
 		return this.attributes.keySet();
 	}
+	*/
 
 	// ========== mutators
 
-	private RecordAttributes putAll(Map<String, Object> incoming) {
-		this.attributes.putAll(incoming);
-		return this;
-	}
-
 	public RecordAttributes putAll(RecordAttributes incoming) {
-		return putAll(incoming.attributes);
+		this.attributes.putAll(incoming.attributes);
+		return this;
 	}
 
 	public RecordAttributes putAttribute(String key, Object value)  {
