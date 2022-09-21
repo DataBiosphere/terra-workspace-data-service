@@ -41,7 +41,7 @@ public class RecordController {
 				.getSingleRecord(instanceId, recordType, recordId, recordDao.getRelationCols(instanceId, recordType))
 				.orElseThrow(() -> new MissingObjectException("Record"));
 		RecordAttributes incomingAtts = recordRequest.recordAttributes();
-		RecordAttributes allAttrs = singleRecord.getAttributes().putAll(incomingAtts);
+		RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAtts).getAttributes();
 		Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts);
 		Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
 		singleRecord.setAttributes(allAttrs);

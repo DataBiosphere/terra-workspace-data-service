@@ -5,12 +5,16 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.util.*;
 
+/**
+ * Represents the attributes of a Record.
+ */
 public class RecordAttributes {
 
 	// internal representation is a sorted map, so json serialization
 	// is nicely sorted without additional work upon render
 	private final TreeMap<String, Object> attributes;
-	// TODO: want to use Guava ImmutableMap, or even Java unmodifiable maps, but they don't allow null values
+	// want to use Guava ImmutableMap, or even Java unmodifiable maps, but they don't allow null values
+	// and nulls are necessary since we may have them in the db
 
 	// ========== members and constructors
 
@@ -71,7 +75,7 @@ public class RecordAttributes {
 	}
 
 	public RecordAttributes putAll(RecordAttributes incoming) {
-		return putAll(incoming.getAttributes());
+		return putAll(incoming.attributes);
 	}
 
 	public RecordAttributes putAttribute(String key, Object value)  {
@@ -84,7 +88,7 @@ public class RecordAttributes {
 		return this;
 	}
 
-	// ========== util methods
+	// ========== utils
 
 	@Override
 	public String toString() {
