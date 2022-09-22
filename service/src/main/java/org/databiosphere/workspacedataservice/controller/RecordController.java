@@ -1,5 +1,9 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import org.apache.commons.csv.CSVFormat;
@@ -19,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -271,6 +276,36 @@ public class RecordController {
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
 			throw new MissingObjectException("Record type");
 		}
+	}
+
+	@PostMapping("/{instanceid}/{v}/{type}/write")
+	public ResponseEntity<Void> streamingWrite(@PathVariable("instanceid") UUID instanceId, @PathVariable("v") String version,
+											   @PathVariable("type") RecordType recordType, InputStream is) throws IOException {
+		validateInstance(instanceId);
+		validateVersion(version);
+		InputStreamReader inputStreamReader = new InputStreamReader(is);
+		JsonFactory factory = new JsonFactory(new ObjectMapper());
+		JsonParser parser = factory.createParser(inputStreamReader);
+		if (parser.nextToken() != JsonToken.START_ARRAY) {
+			throw new IllegalArgumentException("Expected content to be an array");
+		}
+		handleBatchOperation(parser);
+		inputStreamReader.close();
+		return ResponseEntity.ok().build();
+	}
+
+	private void handleBatchOperation(JsonParser parser) throws IOException {
+		parser.nextToken();
+		parser.nextToken(); //operation
+		parser.nextToken();
+		String operationValue = parser.getText();
+		parser.nextToken(); // record
+		parser.nextToken(); //record value
+		handleRecord(parser);
+	}
+
+	private void handleRecord(JsonParser parser) throws IOException {
+		Record record = parser.readValueAs(Record.class);
 	}
 
 	@PostMapping("/{instanceid}/{v}/{type}/upload")
