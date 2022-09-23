@@ -29,6 +29,9 @@ public class DataTypeInferer {
 	public Map<String, DataTypeMapping> inferTypes(List<Record> records){
 		Map<String, DataTypeMapping> result = new HashMap<>();
 		for (Record record : records) {
+			if(record.getAttributes() == null){
+				continue;
+			}
 			for (Map.Entry<String, Object> entry : record.getAttributes().getAttributes().entrySet()) {
 				DataTypeMapping inferredType = inferType(entry.getValue());
 				if(result.get(entry.getKey()) != inferredType){

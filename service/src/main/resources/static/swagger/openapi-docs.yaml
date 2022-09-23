@@ -163,9 +163,8 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /{instanceid}/batch/{v}:
+  /{instanceid}/batch/{v}/{type}:
     post:
-      deprecated: true
       summary: Batch write records (pending)
       description: Perform a batch of create / delete / update / replace operations on multiple records
       operationId: batchWriteRecords
@@ -174,6 +173,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
       requestBody:
         $ref: '#/components/requestBodies/BatchRequestBody'
       responses:

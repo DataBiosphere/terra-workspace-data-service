@@ -1,9 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import org.apache.commons.csv.CSVFormat;
@@ -12,8 +9,14 @@ import org.apache.commons.csv.CSVRecord;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.model.*;
-import org.databiosphere.workspacedataservice.service.model.exception.*;
+import org.databiosphere.workspacedataservice.service.StreamingWriteService;
+import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.springframework.http.HttpStatus;
@@ -37,8 +40,11 @@ public class RecordController {
 	private final RecordDao recordDao;
 	private final DataTypeInferer inferer;
 
-	public RecordController(RecordDao recordDao) {
+	private final StreamingWriteService writeService;
+
+	public RecordController(RecordDao recordDao, StreamingWriteService writeService) {
 		this.recordDao = recordDao;
+		this.writeService = writeService;
 		this.inferer = new DataTypeInferer();
 	}
 
@@ -278,35 +284,15 @@ public class RecordController {
 		}
 	}
 
-	@PostMapping("/{instanceid}/{v}/{type}/write")
+	@PostMapping("/{instanceid}/batch/{v}/{type}")
 	public ResponseEntity<Void> streamingWrite(@PathVariable("instanceid") UUID instanceId, @PathVariable("v") String version,
-											   @PathVariable("type") RecordType recordType, InputStream is) throws IOException {
+											   @PathVariable("type") RecordType recordType, InputStream is) {
 		validateInstance(instanceId);
 		validateVersion(version);
-		InputStreamReader inputStreamReader = new InputStreamReader(is);
-		JsonFactory factory = new JsonFactory(new ObjectMapper());
-		JsonParser parser = factory.createParser(inputStreamReader);
-		if (parser.nextToken() != JsonToken.START_ARRAY) {
-			throw new IllegalArgumentException("Expected content to be an array");
-		}
-		handleBatchOperation(parser);
-		inputStreamReader.close();
+		writeService.consumeStream(is, 500, instanceId, recordType);
 		return ResponseEntity.ok().build();
 	}
 
-	private void handleBatchOperation(JsonParser parser) throws IOException {
-		parser.nextToken();
-		parser.nextToken(); //operation
-		parser.nextToken();
-		String operationValue = parser.getText();
-		parser.nextToken(); // record
-		parser.nextToken(); //record value
-		handleRecord(parser);
-	}
-
-	private void handleRecord(JsonParser parser) throws IOException {
-		Record record = parser.readValueAs(Record.class);
-	}
 
 	@PostMapping("/{instanceid}/{v}/{type}/upload")
 	public String handleStreamingUpload(@PathVariable("instanceid") UUID instanceId, @PathVariable("v") String version,

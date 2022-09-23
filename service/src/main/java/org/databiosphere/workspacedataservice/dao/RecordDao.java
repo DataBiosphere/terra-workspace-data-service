@@ -11,12 +11,14 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -302,6 +304,26 @@ public class RecordDao {
 
 	private String getInsertColList(List<String> existingTableSchema) {
 		return existingTableSchema.stream().map(this::quote).collect(Collectors.joining(", "));
+	}
+
+	public void batchDelete(UUID instanceId, RecordType recordType, List<Record> records) {
+		List<String> recordIds = records.stream().map(r -> r.getRecordType().getName()).toList();
+		namedTemplate.getJdbcTemplate().batchUpdate("delete from" + getQualifiedTableName(recordType, instanceId) + " where "
+				+ RECORD_ID + " = ?", new BatchPreparedStatementSetter() {
+			@Override
+			public void setValues(PreparedStatement ps, int i) throws SQLException {
+				ps.setString(1, recordIds.get(i));
+			}
+
+			@Override
+			public int getBatchSize() {
+				return recordIds.size();
+			}
+		});
+	}
+
+	public void batchReplace(UUID instanceId, RecordType recordType, List<Record> records) {
+
 	}
 
 	private record RecordRowMapper(RecordType recordType,
