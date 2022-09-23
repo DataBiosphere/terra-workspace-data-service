@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.BatchOperation;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -15,7 +14,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class StreamingWriteHandler implements Closeable {
 
@@ -49,7 +47,7 @@ public class StreamingWriteHandler implements Closeable {
             OperationType opType = op.getOperation();
             if(lastOp != null && lastOp != opType){
                 savedRecord = op;
-                return new WriteStreamInfo(result, opType);
+                return new WriteStreamInfo(result, lastOp);
             }
             recordsProcessed++;
             result.add(op.getRecord());

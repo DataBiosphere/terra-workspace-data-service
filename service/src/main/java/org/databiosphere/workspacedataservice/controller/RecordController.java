@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import com.fasterxml.jackson.core.JsonParser;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import org.apache.commons.csv.CSVFormat;
@@ -289,7 +288,7 @@ public class RecordController {
 											   @PathVariable("type") RecordType recordType, InputStream is) {
 		validateInstance(instanceId);
 		validateVersion(version);
-		writeService.consumeStream(is, 500, instanceId, recordType);
+		writeService.consumeWriteStream(is, 500, instanceId, recordType);
 		return ResponseEntity.ok().build();
 	}
 

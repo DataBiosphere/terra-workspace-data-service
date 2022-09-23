@@ -1,49 +1,43 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.databiosphere.workspacedataservice.shared.model.OperationType.DELETE;
+import static org.databiosphere.workspacedataservice.shared.model.OperationType.UPSERT;
 
-@SpringBootTest
-public class StreamingTest {
-
-    @Autowired
-    private RecordDao recordDao;
+class StreamingTest {
 
     @Test
-    void testFoo() throws IOException {
-        StreamingWriteHandler handler = new StreamingWriteHandler(StreamingTest.class.getResourceAsStream("/batch_write.json"));
+    void testReadLessThanWholeStream() throws IOException {
+        StreamingWriteHandler handler = new StreamingWriteHandler(StreamingTest.class.getResourceAsStream("/batch_write_upsert.json"));
         List<Record> records = handler.readRecords(1).getRecords();
-        assertThat(records).as("Should only return 1 record").hasSize(1);
+        assertThat(records).as("Should only read 1 out of 2 records in the file").hasSize(1);
     }
 
     @Test
     void testReadWholeStream() throws IOException {
-        StreamingWriteHandler handler = new StreamingWriteHandler(StreamingTest.class.getResourceAsStream("/batch_write.json"));
-        boolean haveRecords = true;
-        int iterations = 0;
-        while(haveRecords){
-            List<Record> records = handler.readRecords(2).getRecords();
-            iterations++;
-            haveRecords = !records.isEmpty();
-        }
-        assertThat(iterations).isEqualTo(3);
+        StreamingWriteHandler handler = new StreamingWriteHandler(StreamingTest.class.getResourceAsStream("/batch_write_upsert.json"));
+        List<Record> records = handler.readRecords(500).getRecords();
+        assertThat(records).as("Should read all 2 records in the file").hasSize(2);
     }
 
     @Test
-    void serviceTest() {
-        InputStream stream = StreamingTest.class.getResourceAsStream("/batch_write.json");
-        new StreamingWriteService(recordDao).consumeStream(stream, 2,
-                UUID.fromString("0d94b421-6e19-43b9-99c4-842dba662ca8"), RecordType.valueOf("foobo"));
+    void testReadMixedOperations() throws IOException {
+        StreamingWriteHandler handler = new StreamingWriteHandler(StreamingTest.class.getResourceAsStream("/batch_write_mix.json"));
+        StreamingWriteHandler.WriteStreamInfo res = handler.readRecords(500);
+        assertThat(res.getRecords()).as("Should read 1 record").hasSize(1);
+        assertThat(res.getOperationType()).isEqualTo(UPSERT);
+        res = handler.readRecords(500);
+        assertThat(res.getRecords()).as("Should read 1 record").hasSize(1);
+        assertThat(res.getOperationType()).isEqualTo(DELETE);
+        res = handler.readRecords(500);
+        assertThat(res.getRecords()).as("Should read 1 record").hasSize(1);
+        assertThat(res.getOperationType()).isEqualTo(UPSERT);
+
     }
 }

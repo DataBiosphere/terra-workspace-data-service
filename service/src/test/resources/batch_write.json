@@ -1,4 +1,0 @@
-[
-  {"operation":  "create", "record":  {"id":  "foo-1", "type": "bar", "attributes":  {"attr1":  "hello"}}},
-  {"operation":  "update", "record":  {"id":  "foo-2", "type": "bar", "attributes":  {"attr1":  "hello"}}}
-]

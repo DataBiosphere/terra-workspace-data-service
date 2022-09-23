@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.service;
 
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.slf4j.Logger;
@@ -10,7 +11,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -22,13 +22,11 @@ public class StreamingWriteService {
 
     private final DataTypeInferer inferer = new DataTypeInferer();
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(StreamingWriteService.class);
-
     public StreamingWriteService(RecordDao recordDao) {
         this.recordDao = recordDao;
     }
 
-    public void consumeStream(InputStream is, int batchSize, UUID instanceId, RecordType recordType){
+    public void consumeWriteStream(InputStream is, int batchSize, UUID instanceId, RecordType recordType){
         try(StreamingWriteHandler streamingWriteHandler = new StreamingWriteHandler(is)){
             boolean isFirstBatch = true;
             Map<String, DataTypeMapping> schema = null;
@@ -38,13 +36,13 @@ public class StreamingWriteService {
                     schema = inferer.inferTypes(records);
                     isFirstBatch = false;
                     if(!recordDao.recordTypeExists(instanceId, recordType)){
-                        recordDao.createRecordType(instanceId, schema, recordType, Collections.emptySet());
+                        recordDao.createRecordType(instanceId, schema, recordType, RelationUtils.findRelations(records));
                     }
                 }
-                switch (info.getOperationType()){
-                    case CREATE, UPDATE -> recordDao.batchUpsert(instanceId, recordType, records, schema);
-                    case DELETE -> recordDao.batchDelete(instanceId, recordType, records);
-                    case REPLACE -> recordDao.batchReplace(instanceId, recordType, records);
+                if(info.getOperationType() == OperationType.UPSERT){
+                    recordDao.batchUpsert(instanceId, recordType, records, schema);
+                } else if (info.getOperationType() == OperationType.DELETE) {
+                    recordDao.batchDelete(instanceId, recordType, records);
                 }
             }
         } catch (IOException e) {
