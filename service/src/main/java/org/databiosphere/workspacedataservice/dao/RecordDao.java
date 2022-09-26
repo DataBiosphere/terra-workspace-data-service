@@ -281,7 +281,7 @@ public class RecordDao {
 		for (RecordColumn col : cols) {
 			String colName = col.colName();
 			if (colName.equals(RECORD_ID)) {
-				row[i++] = toInsert.getId().getRecordIdentifier();
+				row[i++] = toInsert.getId();
 			} else {
 				row[i++] = getValueForSql(toInsert.getAttributes().getAttributes().get(colName), col.typeMapping());
 			}
@@ -331,7 +331,7 @@ public class RecordDao {
 
 		@Override
 		public Record mapRow(ResultSet rs, int rowNum) throws SQLException {
-			return new Record(new RecordId(rs.getString(RECORD_ID)), recordType,
+			return new Record(rs.getString(RECORD_ID), recordType,
 					new RecordAttributes(getAttributes(rs)));
 		}
 
@@ -360,14 +360,14 @@ public class RecordDao {
 		}
 	}
 
-	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, RecordId recordId,
+	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, String recordId,
 			List<Relation> referenceCols) {
 		Map<String, RecordType> refColMapping = getRelationColumnsByName(referenceCols);
 		try {
 			return Optional.ofNullable(namedTemplate.queryForObject(
 					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + RECORD_ID
 							+ " = :recordId",
-					new MapSqlParameterSource("recordId", recordId.getRecordIdentifier()),
+					new MapSqlParameterSource("recordId", recordId),
 					new RecordRowMapper(recordType, refColMapping)));
 		} catch (EmptyResultDataAccessException e) {
 			return Optional.empty();
