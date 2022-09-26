@@ -21,8 +21,10 @@ public class StreamingWriteHandler implements Closeable {
 
     private BatchOperation savedRecord;
 
+    private final InputStream inputStream;
 
     public StreamingWriteHandler(InputStream inputStream) throws IOException {
+        this.inputStream = inputStream;
         JsonMapper mapper = JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS).build();
         JsonFactory factory = new JsonFactory(mapper);
         parser = factory.createParser(inputStream);
@@ -31,6 +33,14 @@ public class StreamingWriteHandler implements Closeable {
         }
     }
 
+    /**
+     * Reads numRecords from the stream unless the operation type changes during the stream
+     * in which case we return early and keep the last record read in memory so it can be returned
+     * in a subsequent call.
+     * @param numRecords
+     * @return
+     * @throws IOException
+     */
     public WriteStreamInfo readRecords(int numRecords) throws IOException {
         int recordsProcessed = 0;
         List<Record> result = new ArrayList<>(numRecords);
@@ -59,6 +69,7 @@ public class StreamingWriteHandler implements Closeable {
     @Override
     public void close() throws IOException {
         parser.close();
+        inputStream.close();
     }
 
     public class WriteStreamInfo {
@@ -80,6 +91,5 @@ public class StreamingWriteHandler implements Closeable {
             return operationType;
         }
     }
-
 
 }

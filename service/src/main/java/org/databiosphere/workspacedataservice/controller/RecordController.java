@@ -308,7 +308,7 @@ public class RecordController {
 		Map<String, DataTypeMapping> schema = null;
 		for (CSVRecord row : rows) {
 			Map<String, Object> m = (Map)row.toMap();
-			batch.add(new Record(new RecordId(row.get("id")), recordType, new RecordAttributes(m)));
+			batch.add(new Record(row.get("id"), recordType, new RecordAttributes(m)));
 			if(batch.size() >= batchSize) {
 				if (!recordTypeExists) {
 					schema = inferer.inferTypes(batch);
