@@ -7,6 +7,7 @@ import java.util.*;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.junit.jupiter.api.Test;
 
 class DataTypeInfererTest {
@@ -47,8 +48,9 @@ class DataTypeInfererTest {
 		assertThat(inferer.inferType("[\"12345\"]")).isEqualTo(DataTypeMapping.JSON);
 	}
 
-	private static Map<String, Object> getSomeAttrs() {
-		return Map.of("int_val", new Random().nextInt(), "string_val", RandomStringUtils.random(10), "json_val",
-				"[\"a\", \"b\"]", "date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00");
+	private static RecordAttributes getSomeAttrs() {
+		return new RecordAttributes(
+			Map.of("int_val", new Random().nextInt(), "string_val", RandomStringUtils.random(10), "json_val",
+				"[\"a\", \"b\"]", "date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00"));
 	}
 }

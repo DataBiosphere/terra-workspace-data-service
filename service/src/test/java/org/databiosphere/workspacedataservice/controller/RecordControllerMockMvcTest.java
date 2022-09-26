@@ -74,10 +74,10 @@ class RecordControllerMockMvcTest {
 	@Transactional
 	void tryCreatingIllegallyNamedRecordType() throws Exception {
 		String recordType = "sys_my_type";
-		Map<String, Object> attributes = new HashMap<>();
+		RecordAttributes attributes = RecordAttributes.empty();
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, "recordId")
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isBadRequest())
 				.andExpect(result -> assertTrue(result.getResolvedException() instanceof MethodArgumentTypeMismatchException));
@@ -88,11 +88,11 @@ class RecordControllerMockMvcTest {
 	void updateWithIllegalAttributeName() throws Exception {
 		RecordType recordType1 = RecordType.valueOf("illegalName");
 		createSomeRecords(recordType1, 1);
-		Map<String, Object> illegalAttribute = new HashMap<>();
-		illegalAttribute.put("sys_foo", "some_val");
+		RecordAttributes illegalAttribute = RecordAttributes.empty();
+		illegalAttribute.putAttribute("sys_foo", "some_val");
 		mockMvc.perform(patch("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				recordType1, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(illegalAttribute)))))
+						.content(mapper.writeValueAsString(new RecordRequest(illegalAttribute))))
 				.andExpect(status().isBadRequest())
 				.andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidNameException));
 	}
@@ -126,11 +126,11 @@ class RecordControllerMockMvcTest {
 	void ensurePutShowsNewlyNullFields() throws Exception {
 		RecordType recordType1 = RecordType.valueOf("recordType1");
 		createSomeRecords(recordType1, 1);
-		Map<String, Object> newAttributes = new HashMap<>();
-		newAttributes.put("new-attr", "some_val");
+		RecordAttributes newAttributes = RecordAttributes.empty();
+		newAttributes.putAttribute("new-attr", "some_val");
 		mockMvc.perform(put("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				recordType1, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(newAttributes)))))
+						.content(mapper.writeValueAsString(new RecordRequest(newAttributes))))
 				.andExpect(content().string(containsString("\"attr3\":null")))
 				.andExpect(content().string(containsString("\"attr-dt\":null"))).andExpect(status().isOk());
 	}
@@ -139,11 +139,11 @@ class RecordControllerMockMvcTest {
 	void ensurePatchShowsAllFields() throws Exception {
 		RecordType recordType1 = RecordType.valueOf("recordType1");
 		createSomeRecords(recordType1, 1);
-		Map<String, Object> newAttributes = new HashMap<>();
-		newAttributes.put("new-attr", "some_val");
+		RecordAttributes newAttributes = RecordAttributes.empty();
+		newAttributes.putAttribute("new-attr", "some_val");
 		mockMvc.perform(patch("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				recordType1, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(newAttributes)))))
+						.content(mapper.writeValueAsString(new RecordRequest(newAttributes))))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.attributes.new-attr", is("some_val")));
 	}
 
@@ -163,12 +163,12 @@ class RecordControllerMockMvcTest {
 		RecordType referringType = RecordType.valueOf("ref_samples");
 		createSomeRecords(referencedType, 3);
 		createSomeRecords(referringType, 1);
-		Map<String, Object> attributes = new HashMap<>();
+		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, "record_0");
-		attributes.put("sample-ref", ref);
+		attributes.putAttribute("sample-ref", ref);
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.attributes.sample-ref", is(ref)));
 	}
 
@@ -178,12 +178,12 @@ class RecordControllerMockMvcTest {
 		RecordType referencedType = RecordType.valueOf("missing");
 		RecordType referringType = RecordType.valueOf("ref_samples-2");
 		createSomeRecords(referringType, 1);
-		Map<String, Object> attributes = new HashMap<>();
+		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, "record_0");
-		attributes.put("sample-ref", ref);
+		attributes.putAttribute("sample-ref", ref);
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isNotFound())
 				.andExpect(result -> assertTrue(result.getResolvedException() instanceof MissingObjectException));
 	}
@@ -195,12 +195,12 @@ class RecordControllerMockMvcTest {
 		RecordType referringType = RecordType.valueOf("ref_samples-3");
 		createSomeRecords(referencedType, 3);
 		createSomeRecords(referringType, 1);
-		Map<String, Object> attributes = new HashMap<>();
+		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, "record_99");
-		attributes.put("sample-ref", ref);
+		attributes.putAttribute("sample-ref", ref);
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isForbidden())
 				.andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidRelationException));
 	}
@@ -210,12 +210,12 @@ class RecordControllerMockMvcTest {
 	void expandColumnDefForNewData() throws Exception {
 		RecordType recordType = RecordType.valueOf("to-alter");
 		createSomeRecords(recordType, 1);
-		Map<String, Object> attributes = new HashMap<>();
+		RecordAttributes attributes = RecordAttributes.empty();
 		String newTextValue = "convert this column from date to text";
-		attributes.put("attr3", newTextValue);
+		attributes.putAttribute("attr3", newTextValue);
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, "record_1").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isCreated()).andExpect(jsonPath("$.attributes.attr3", is(newTextValue)));
 	}
 
@@ -224,12 +224,12 @@ class RecordControllerMockMvcTest {
 	void patchMissingRecord() throws Exception {
 		RecordType recordType = RecordType.valueOf("to-patch");
 		createSomeRecords(recordType, 1);
-		Map<String, Object> attributes = new HashMap<>();
-		attributes.put("attr-boolean", true);
+		RecordAttributes attributes = RecordAttributes.empty();
+		attributes.putAttribute("attr-boolean", true);
 		String recordId = "record_missing";
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, recordId)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isNotFound());
 	}
@@ -239,13 +239,13 @@ class RecordControllerMockMvcTest {
 	void putRecordWithMissingTableReference() throws Exception {
 		String recordType = "record-type-missing-table-ref";
 		String recordId = "record_0";
-		Map<String, Object> attributes = new HashMap<>();
+		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(RecordType.valueOf("missing"), "missing_also");
-		attributes.put("sample-ref", ref);
+		attributes.putAttribute("sample-ref", ref);
 
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, recordId)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isNotFound())
 				.andExpect(result -> assertTrue(result.getResolvedException() instanceof MissingObjectException));
@@ -259,24 +259,24 @@ class RecordControllerMockMvcTest {
 		String recordId = "record_0";
 		createSomeRecords(referencedType, 1);
 		createSomeRecords(referringType, 1);
-		Map<String, Object> attributes = new HashMap<>();
+		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, recordId);
-		attributes.put("ref-attr", ref);
+		attributes.putAttribute("ref-attr", ref);
 		// Add referencing attribute to referring_Type
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, recordId)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk());
 		// Create a new referring_Type that puts a reference to a non-existent
 		// recordType in the pre-existing referencing attribute
-		Map<String, Object> new_attributes = new HashMap<>();
+		RecordAttributes new_attributes = RecordAttributes.empty();
 		String invalid_ref = RelationUtils.createRelationString(RecordType.valueOf("missing"), recordId);
-		new_attributes.put("ref-attr", invalid_ref);
+		new_attributes.putAttribute("ref-attr", invalid_ref);
 
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "new_record")
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(new_attributes))))
+						.content(mapper.writeValueAsString(new RecordRequest(new_attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isBadRequest());
 	}
@@ -286,12 +286,12 @@ class RecordControllerMockMvcTest {
 	void tryToAssignReferenceToNonRefColumn() throws Exception {
 		RecordType recordType = RecordType.valueOf("ref-alter");
 		createSomeRecords(recordType, 1);
-		Map<String, Object> attributes = new HashMap<>();
+		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(RecordType.valueOf("missing"), "missing_also");
-		attributes.put("attr1", ref);
+		attributes.putAttribute("attr1", ref);
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, "record_0")
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isForbidden())
 				.andExpect(result -> assertTrue(result.getResolvedException().getMessage()
@@ -325,12 +325,12 @@ class RecordControllerMockMvcTest {
 		RecordType referringType = RecordType.valueOf("ref_samples");
 		createSomeRecords(referencedType, 1);
 		createSomeRecords(referringType, 1);
-		Map<String, Object> attributes = new HashMap<>();
+		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, "record_0");
-		attributes.put("sample-ref", ref);
+		attributes.putAttribute("sample-ref", ref);
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 		mockMvc.perform(delete("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referencedType, "record_0")).andExpect(status().isBadRequest());
@@ -362,12 +362,12 @@ class RecordControllerMockMvcTest {
 		RecordType referringType = RecordType.valueOf("ref_samples");
 		createSomeRecords(referencedType, 3);
 		createSomeRecords(referringType, 1);
-		Map<String, Object> attributes = new HashMap<>();
+		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, "record_0");
-		attributes.put("sample-ref", ref);
+		attributes.putAttribute("sample-ref", ref);
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 
 		mockMvc.perform(delete("/{instanceId}/types/{version}/{recordType}", instanceId, versionId, referencedType))
@@ -381,13 +381,13 @@ class RecordControllerMockMvcTest {
 		RecordType referringType = RecordType.valueOf("ref_samples");
 		createSomeRecords(referencedType, 3);
 		createSomeRecords(referringType, 1);
-		Map<String, Object> attributes = new HashMap<>();
+		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, "record_0");
-		attributes.put("sample-ref", ref);
+		attributes.putAttribute("sample-ref", ref);
 		// Create relation column
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 
 		// Delete record from referencing type
@@ -408,13 +408,13 @@ class RecordControllerMockMvcTest {
 		RecordType referencedType = RecordType.valueOf("referencedType");
 		createSomeRecords(referencedType, 1);
 		createSomeRecords(type, 1);
-		Map<String, Object> attributes = new HashMap<>();
+		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, "record_0");
-		attributes.put("attr-ref", ref);
+		attributes.putAttribute("attr-ref", ref);
 
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, type,
 				"record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes)))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 
 		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("attr-boolean", "BOOLEAN", null),
@@ -494,10 +494,10 @@ class RecordControllerMockMvcTest {
 	private void createSomeRecords(RecordType recordType, int numRecords, UUID instId) throws Exception {
 		for (int i = 0; i < numRecords; i++) {
 			String recordId = "record_" + i;
-			Map<String, Object> attributes = generateRandomAttributes();
+			RecordAttributes attributes = generateRandomAttributes();
 			mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instId, versionId,
 					recordType, recordId)
-							.content(mapper.writeValueAsString(new RecordRequest(new RecordAttributes(attributes))))
+							.content(mapper.writeValueAsString(new RecordRequest(attributes)))
 							.contentType(MediaType.APPLICATION_JSON))
 					.andExpect(status().is2xxSuccessful());
 		}

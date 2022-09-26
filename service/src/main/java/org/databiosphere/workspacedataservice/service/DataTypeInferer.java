@@ -11,14 +11,15 @@ import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 
 public class DataTypeInferer {
 
 	private ObjectMapper objectMapper = new ObjectMapper();
 
-	public Map<String, DataTypeMapping> inferTypes(Map<String, Object> updatedAtts) {
+	public Map<String, DataTypeMapping> inferTypes(RecordAttributes updatedAtts) {
 		Map<String, DataTypeMapping> result = new HashMap<>();
-		for (Map.Entry<String, Object> entry : updatedAtts.entrySet()) {
+		for (Map.Entry<String, Object> entry : updatedAtts.attributeSet()) {
 			result.put(entry.getKey(), inferType(entry.getValue()));
 		}
 		return result;
