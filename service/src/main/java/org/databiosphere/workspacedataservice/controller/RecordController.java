@@ -49,13 +49,11 @@ public class RecordController {
 		Record singleRecord = recordDao
 				.getSingleRecord(instanceId, recordType, recordId, recordDao.getRelationCols(instanceId, recordType))
 				.orElseThrow(() -> new MissingObjectException("Record"));
-		Map<String, Object> updatedAtts = recordRequest.recordAttributes().getAttributes();
-		Map<String, Object> allAttrs = new HashMap<>(singleRecord.getAttributes().getAttributes());
-		allAttrs.putAll(updatedAtts);
-
-		Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(updatedAtts);
+		RecordAttributes incomingAtts = recordRequest.recordAttributes();
+		RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAtts).getAttributes();
+		Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts);
 		Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
-		singleRecord.setAttributes(new RecordAttributes(allAttrs));
+		singleRecord.setAttributes(allAttrs);
 		List<Record> records = Collections.singletonList(singleRecord);
 		Map<String, DataTypeMapping> updatedSchema =  writeService.addOrUpdateColumnIfNeeded(instanceId, recordType, typeMapping,
 				existingTableSchema, records);
@@ -110,7 +108,7 @@ public class RecordController {
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") String recordId, @RequestBody RecordRequest recordRequest) {
 		validateVersion(version);
-		Map<String, Object> attributesInRequest = recordRequest.recordAttributes().getAttributes();
+		RecordAttributes attributesInRequest = recordRequest.recordAttributes();
 		Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
 		HttpStatus status = HttpStatus.CREATED;
 		if (!recordDao.instanceSchemaExists(instanceId)) {
@@ -125,7 +123,7 @@ public class RecordController {
 		} else {
 			Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
 			// null out any attributes that already exist but aren't in the request
-			existingTableSchema.keySet().forEach(attr -> attributesInRequest.putIfAbsent(attr, null));
+			existingTableSchema.keySet().forEach(attr -> attributesInRequest.putAttributeIfAbsent(attr, null));
 			if (recordDao.recordExists(instanceId, recordType, recordId)) {
 				status = HttpStatus.OK;
 			}
@@ -136,7 +134,7 @@ public class RecordController {
 			combinedSchema.putAll(requestSchema);
 			recordDao.batchUpsert(instanceId, recordType, records, combinedSchema);
 			RecordResponse response = new RecordResponse(recordId, recordType,
-					new RecordAttributes(attributesInRequest), new RecordMetadata("TODO"));
+					attributesInRequest, new RecordMetadata("TODO"));
 			return new ResponseEntity<>(response, status);
 		}
 	}
