@@ -1,7 +1,11 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
+import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
+import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -35,6 +39,7 @@ import static org.databiosphere.workspacedataservice.service.model.exception.Inv
 @Repository
 public class RecordDao {
 
+	private static final int BATCH_WRITE_ERROR_SAMPLE_SIZE = 5;
 	private final NamedParameterJdbcTemplate namedTemplate;
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate) {
 		this.namedTemplate = namedTemplate;
@@ -72,7 +77,6 @@ public class RecordDao {
 			}
 			throw e;
 		}
-
 	}
 
 	private String getQualifiedTableName(RecordType recordType, UUID instanceId) {
@@ -156,9 +160,7 @@ public class RecordDao {
 	// that's dealt with earlier in the code.
 	public void batchUpsert(UUID instanceId, RecordType recordType, List<Record> records,
 			Map<String, DataTypeMapping> schema) {
-		schema.put(RECORD_ID, DataTypeMapping.STRING);
-		List<RecordColumn> schemaAsList = schema.entrySet().stream()
-				.map(e -> new RecordColumn(e.getKey(), e.getValue())).toList();
+		List<RecordColumn> schemaAsList = getSchemaWithRowId(schema);
 		try {
 			namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(instanceId, recordType, schemaAsList),
 					getInsertBatchArgs(records, schemaAsList));
@@ -168,6 +170,59 @@ public class RecordDao {
 				throw e;
 			}
 		}
+	}
+
+	private static List<RecordColumn> getSchemaWithRowId(Map<String, DataTypeMapping> schema) {
+		schema.put(RECORD_ID, DataTypeMapping.STRING);
+		List<RecordColumn> schemaAsList = schema.entrySet().stream()
+				.map(e -> new RecordColumn(e.getKey(), e.getValue())).toList();
+		return schemaAsList;
+	}
+
+	public void batchUpsertWithErrorCapture(UUID instanceId, RecordType recordType, List<Record> records,
+											Map<String, DataTypeMapping> schema) {
+		try {
+			batchUpsert(instanceId, recordType, records, schema);
+		} catch (DataAccessException e){
+			if(isRowLevelException(e)){
+				Map<String, DataTypeMapping> recordTypeSchemaWithoutId = new HashMap<>(schema);
+				recordTypeSchemaWithoutId.remove(RECORD_ID);
+				Map<String, String> invalidRows = checkEachRow(records, recordTypeSchemaWithoutId);
+				if(!invalidRows.isEmpty()){
+					throw new BatchWriteException(invalidRows);
+				}
+			}
+		}
+	}
+
+	private Map<String, String> checkEachRow(List<Record> records, Map<String, DataTypeMapping> recordTypeSchema) {
+		DataTypeInferer inferer = new DataTypeInferer();
+		Map<String, String> result = new HashMap<>();
+		for (Record record : records) {
+			Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(record.getAttributes().getAttributes());
+			if(!schemaForRecord.equals(recordTypeSchema)){
+				MapDifference<String, DataTypeMapping> difference = Maps.difference(schemaForRecord, recordTypeSchema);
+				Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference.entriesDiffering();
+				result.put(record.getId(), convertSchemaDiffToErrorMessage(differenceMap, record.getAttributes().getAttributes()));
+				if(result.size() >= BATCH_WRITE_ERROR_SAMPLE_SIZE){
+					return result;
+				}
+			}
+		}
+		return result;
+	}
+
+	private String convertSchemaDiffToErrorMessage(Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap, Map<String, Object> attributes) {
+		return differenceMap.keySet().stream().map(attr -> attr + "=" + attributes.get(attr) + " is a " + differenceMap.get(attr).leftValue() +
+				" in the request but is defined as " + differenceMap.get(attr).rightValue() + " in the record type definition").collect(Collectors.joining("\n"));
+	}
+
+	private boolean isRowLevelException(DataAccessException e) {
+		if(e.getRootCause() instanceof SQLException sqlException){
+			// data type mismatch: https://www.postgresql.org/docs/13/errcodes-appendix.html
+			return sqlException.getSQLState().equals("42804");
+		}
+		return false;
 	}
 
 	public boolean deleteSingleRecord(UUID instanceId, RecordType recordType, String recordId) {

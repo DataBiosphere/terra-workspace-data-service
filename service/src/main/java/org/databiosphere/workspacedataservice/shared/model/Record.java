@@ -76,4 +76,13 @@ public class Record {
 		result = 31 * result + getRecordType().hashCode();
 		return result;
 	}
+
+	@Override
+	public String toString() {
+		return "Record{" +
+				"id='" + id + '\'' +
+				", recordType=" + recordType +
+				", attributes=" + attributes +
+				'}';
+	}
 }

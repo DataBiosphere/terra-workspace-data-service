@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import org.databiosphere.workspacedataservice.service.model.ReservedNames;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 
 import java.util.regex.Pattern;
@@ -19,7 +20,7 @@ public class SqlUtils {
 	}
 
 	public static String validateSqlString(String name, InvalidNameException.NameType nameType) {
-		if (containsDisallowedSqlCharacter(name)) {
+		if (containsDisallowedSqlCharacter(name) || name.startsWith(ReservedNames.RESERVED_NAME_PREFIX)) {
 			throw new InvalidNameException(nameType);
 		}
 		return name;
