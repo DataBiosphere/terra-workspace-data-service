@@ -199,11 +199,11 @@ public class RecordDao {
 		DataTypeInferer inferer = new DataTypeInferer();
 		Map<String, String> result = new HashMap<>();
 		for (Record record : records) {
-			Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(record.getAttributes().getAttributes());
+			Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(record.getAttributes());
 			if(!schemaForRecord.equals(recordTypeSchema)){
 				MapDifference<String, DataTypeMapping> difference = Maps.difference(schemaForRecord, recordTypeSchema);
 				Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference.entriesDiffering();
-				result.put(record.getId(), convertSchemaDiffToErrorMessage(differenceMap, record.getAttributes().getAttributes()));
+				result.put(record.getId(), convertSchemaDiffToErrorMessage(differenceMap, record.getAttributes()));
 				if(result.size() >= BATCH_WRITE_ERROR_SAMPLE_SIZE){
 					return result;
 				}
@@ -212,8 +212,8 @@ public class RecordDao {
 		return result;
 	}
 
-	private String convertSchemaDiffToErrorMessage(Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap, Map<String, Object> attributes) {
-		return differenceMap.keySet().stream().map(attr -> attr + "=" + attributes.get(attr) + " is a " + differenceMap.get(attr).leftValue() +
+	private String convertSchemaDiffToErrorMessage(Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap, RecordAttributes attributes) {
+		return differenceMap.keySet().stream().map(attr -> attr + "=" + attributes.getAttributeValue(attr) + " is a " + differenceMap.get(attr).leftValue() +
 				" in the request but is defined as " + differenceMap.get(attr).rightValue() + " in the record type definition").collect(Collectors.joining("\n"));
 	}
 

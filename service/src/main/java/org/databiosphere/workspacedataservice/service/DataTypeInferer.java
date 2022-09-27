@@ -33,8 +33,9 @@ public class DataTypeInferer {
 			if(record.getAttributes() == null){
 				continue;
 			}
-			for (Map.Entry<String, Object> entry : record.getAttributes().getAttributes().entrySet()) {
-				DataTypeMapping inferredType = inferType(entry.getValue());
+			Map<String, DataTypeMapping> inferred = inferTypes(record.getAttributes());
+			for (Map.Entry<String, DataTypeMapping> entry : inferred.entrySet()) {
+				DataTypeMapping inferredType = entry.getValue();
 				if(result.containsKey(entry.getKey()) && result.get(entry.getKey()) != inferredType){
 					result.put(entry.getKey(), selectBestType(result.get(entry.getKey()), inferredType));
 				} else {
