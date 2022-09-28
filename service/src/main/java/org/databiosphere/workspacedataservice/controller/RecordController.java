@@ -179,8 +179,8 @@ public class RecordController {
 			Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
 			combinedSchema.putAll(requestSchema);
 			recordDao.batchUpsert(instanceId, recordType, records, combinedSchema);
-			RecordResponse response = new RecordResponse(recordId, recordType,
-					attributesInRequest, new RecordMetadata("TODO"));
+			RecordResponse response = new RecordResponse(recordId, recordType, attributesInRequest,
+					new RecordMetadata("TODO"));
 			return new ResponseEntity<>(response, status);
 		}
 	}

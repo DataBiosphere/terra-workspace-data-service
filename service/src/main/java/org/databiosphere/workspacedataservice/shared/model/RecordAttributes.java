@@ -13,14 +13,18 @@ public class RecordAttributes {
 	// internal representation is a sorted map, so json serialization
 	// is nicely sorted without additional work upon render
 	private final TreeMap<String, Object> attributes;
-	// want to use Guava ImmutableMap, or even Java unmodifiable maps, but they don't allow null values
+	// want to use Guava ImmutableMap, or even Java unmodifiable maps, but they
+	// don't allow null values
 	// and nulls are necessary since we may have them in the db
 
 	// ========== members and constructors
 
 	/**
 	 * Generic constructor, also used as the JsonCreator.
-	 * @param attributes the map of attribute names->values to use for this RecordAttributes.
+	 * 
+	 * @param attributes
+	 *            the map of attribute names->values to use for this
+	 *            RecordAttributes.
 	 */
 	@JsonCreator
 	public RecordAttributes(Map<String, Object> attributes) {
@@ -29,6 +33,7 @@ public class RecordAttributes {
 
 	/**
 	 * creates a RecordAttributes with no keys/values
+	 * 
 	 * @return the empty RecordAttributes object
 	 */
 	public static RecordAttributes empty() {
@@ -67,7 +72,7 @@ public class RecordAttributes {
 		return this;
 	}
 
-	public RecordAttributes putAttribute(String key, Object value)  {
+	public RecordAttributes putAttribute(String key, Object value) {
 		this.attributes.put(key, value);
 		return this;
 	}

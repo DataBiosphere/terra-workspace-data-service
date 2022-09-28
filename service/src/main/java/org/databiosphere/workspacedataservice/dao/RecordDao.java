@@ -75,17 +75,17 @@ public class RecordDao {
 
 	private String getQualifiedTableName(RecordType recordType, UUID instanceId) {
 		// N.B. recordType is sql-validated in its constructor, so we don't need it here
-		return quote(instanceId.toString()) + "." + quote(SqlUtils.validateSqlString(recordType.getName(), RECORD_TYPE));
+		return quote(instanceId.toString()) + "."
+				+ quote(SqlUtils.validateSqlString(recordType.getName(), RECORD_TYPE));
 	}
 
 	@SuppressWarnings("squid:S2077")
 	public List<Record> queryForRecords(RecordType recordType, int pageSize, int offset, String sortDirection,
 			UUID instanceId) {
-		return namedTemplate.getJdbcTemplate()
-				.query("select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + RECORD_ID
-						+ " " + sortDirection + " limit " + pageSize + " offset " + offset,
-						new RecordRowMapper(recordType,
-								getRelationColumnsByName(getRelationCols(instanceId, recordType))));
+		return namedTemplate.getJdbcTemplate().query(
+				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + RECORD_ID + " "
+						+ sortDirection + " limit " + pageSize + " offset " + offset,
+				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType))));
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
@@ -114,8 +114,7 @@ public class RecordDao {
 		try {
 			namedTemplate.getJdbcTemplate()
 					.update("alter table " + getQualifiedTableName(recordType, instanceId) + " add column "
-							+ quote(SqlUtils.validateSqlString(columnName, ATTRIBUTE)) + " "
-							+ colType.getPostgresType()
+							+ quote(SqlUtils.validateSqlString(columnName, ATTRIBUTE)) + " " + colType.getPostgresType()
 							+ (referencedType != null
 									? " references " + getQualifiedTableName(referencedType, instanceId)
 									: ""));
@@ -224,9 +223,10 @@ public class RecordDao {
 	public String getFkSql(Set<Relation> relations, UUID instanceId) {
 
 		return relations.stream()
-				.map(r -> "constraint " + quote("fk_" + SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE)) + " foreign key ("
-						+ quote(SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE)) + ") references "
-						+ getQualifiedTableName(r.relationRecordType(), instanceId) + "(" + RECORD_ID + ")")
+				.map(r -> "constraint " + quote("fk_" + SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE))
+						+ " foreign key (" + quote(SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE))
+						+ ") references " + getQualifiedTableName(r.relationRecordType(), instanceId) + "(" + RECORD_ID
+						+ ")")
 				.collect(Collectors.joining(", \n"));
 	}
 
@@ -309,8 +309,7 @@ public class RecordDao {
 
 		@Override
 		public Record mapRow(ResultSet rs, int rowNum) throws SQLException {
-			return new Record(rs.getString(RECORD_ID), recordType,
-					getAttributes(rs));
+			return new Record(rs.getString(RECORD_ID), recordType, getAttributes(rs));
 		}
 
 		private RecordAttributes getAttributes(ResultSet rs) {
@@ -328,7 +327,8 @@ public class RecordDao {
 								.createRelationString(referenceColToTable.get(columnName), rs.getString(columnName)));
 					} else {
 						Object object = rs.getObject(columnName);
-						attributes.putAttribute(columnName, object instanceof PGobject pGobject ? pGobject.getValue() : object);
+						attributes.putAttribute(columnName,
+								object instanceof PGobject pGobject ? pGobject.getValue() : object);
 					}
 				}
 				return attributes;
@@ -345,8 +345,7 @@ public class RecordDao {
 			return Optional.ofNullable(namedTemplate.queryForObject(
 					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + RECORD_ID
 							+ " = :recordId",
-					new MapSqlParameterSource("recordId", recordId),
-					new RecordRowMapper(recordType, refColMapping)));
+					new MapSqlParameterSource("recordId", recordId), new RecordRowMapper(recordType, refColMapping)));
 		} catch (EmptyResultDataAccessException e) {
 			return Optional.empty();
 		}
@@ -367,8 +366,8 @@ public class RecordDao {
 	}
 
 	private static Map<String, RecordType> getRelationColumnsByName(List<Relation> referenceCols) {
-		return referenceCols.stream().collect(
-				Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
+		return referenceCols.stream()
+				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
 	}
 
 	public void deleteRecordType(UUID instanceId, RecordType recordType) {
