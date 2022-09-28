@@ -73,14 +73,14 @@ class FullStackRecordControllerTest {
 		body = executeQuery(recordType, RecordQueryResponse.class, new SearchRequest(limit, offset, SortDirection.ASC))
 				.getBody();
 		assertThat(body.records()).hasSize(limit);
-		assertThat(body.records().get(0).recordId())
-				.as("A should be the first record id in ascending order").isEqualTo("A");
+		assertThat(body.records().get(0).recordId()).as("A should be the first record id in ascending order")
+				.isEqualTo("A");
 		assertThat(body.records().get(4).recordId()).isEqualTo("E");
 		body = executeQuery(recordType, RecordQueryResponse.class, new SearchRequest(limit, offset, SortDirection.DESC))
 				.getBody();
 		assertThat(body.records()).hasSize(limit);
-		assertThat(body.records().get(0).recordId())
-				.as("Z should be first record id in descending order").isEqualTo("Z");
+		assertThat(body.records().get(0).recordId()).as("Z should be first record id in descending order")
+				.isEqualTo("Z");
 		assertThat(body.records().get(4).recordId()).isEqualTo("V");
 		offset = 10;
 		body = executeQuery(recordType, RecordQueryResponse.class, new SearchRequest(limit, offset, SortDirection.ASC))
@@ -137,10 +137,12 @@ class FullStackRecordControllerTest {
 	@Transactional
 	void missingReferencedRecordTypeShouldFail() throws JsonProcessingException {
 		RecordAttributes attrs = RecordAttributes.empty();
-		attrs.putAttribute("attr_ref", RelationUtils.createRelationString(RecordType.valueOf("non_existent"), "recordId"));
-		attrs.putAttribute("attr_ref_2", RelationUtils.createRelationString(RecordType.valueOf("non_existent_2"), "recordId"));
-		HttpEntity<String> requestEntity = new HttpEntity<>(
-				mapper.writeValueAsString(new RecordRequest(attrs)), headers);
+		attrs.putAttribute("attr_ref",
+				RelationUtils.createRelationString(RecordType.valueOf("non_existent"), "recordId"));
+		attrs.putAttribute("attr_ref_2",
+				RelationUtils.createRelationString(RecordType.valueOf("non_existent_2"), "recordId"));
+		HttpEntity<String> requestEntity = new HttpEntity<>(mapper.writeValueAsString(new RecordRequest(attrs)),
+				headers);
 		ResponseEntity<ErrorResponse> response = restTemplate.exchange(
 				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT, requestEntity,
 				ErrorResponse.class, instanceId, versionId, "samples-1", "sample_1");
@@ -156,8 +158,8 @@ class FullStackRecordControllerTest {
 		RecordType referencedRecordType = RecordType.valueOf("referenced-type");
 		createSomeRecords(referencedRecordType, 1);
 		attrs.putAttribute("attr_ref", RelationUtils.createRelationString(referencedRecordType, "missing-id"));
-		HttpEntity<String> requestEntity = new HttpEntity<>(
-				mapper.writeValueAsString(new RecordRequest(attrs)), headers);
+		HttpEntity<String> requestEntity = new HttpEntity<>(mapper.writeValueAsString(new RecordRequest(attrs)),
+				headers);
 		ResponseEntity<ErrorResponse> response = restTemplate.exchange(
 				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT, requestEntity,
 				ErrorResponse.class, instanceId, versionId, "samples-2", "sample_1");
@@ -198,9 +200,8 @@ class FullStackRecordControllerTest {
 			RecordAttributes attributes = generateRandomAttributes();
 			ResponseEntity<String> response = restTemplate.exchange(
 					"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT,
-					new HttpEntity<>(mapper.writeValueAsString(new RecordRequest(attributes)),
-							headers),
-					String.class, instanceId, versionId, recordType, recordId);
+					new HttpEntity<>(mapper.writeValueAsString(new RecordRequest(attributes)), headers), String.class,
+					instanceId, versionId, recordType, recordId);
 			assertThat(response.getStatusCode()).isIn(HttpStatus.CREATED, HttpStatus.OK);
 		}
 	}

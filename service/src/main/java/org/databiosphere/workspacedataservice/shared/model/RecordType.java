@@ -20,6 +20,7 @@ public class RecordType {
 	/*
 	 * the name "valueOf()" for this factory method is required since the
 	 * constructor is private. Spring uses valueOf() when extracting inbound
+	 * 
 	 * @PathVariable arguments - which are Strings - into this class.
 	 */
 	@JsonCreator
@@ -28,9 +29,9 @@ public class RecordType {
 	}
 
 	/*
-	 * N.B. we have a separate getName() method, even though getName() and toString()
-	 * are currently equivalent. In IntelliJ, it's much easier to find usages of
-	 * getName() than toString(), since toString() is an override.
+	 * N.B. we have a separate getName() method, even though getName() and
+	 * toString() are currently equivalent. In IntelliJ, it's much easier to find
+	 * usages of getName() than toString(), since toString() is an override.
 	 */
 	@JsonValue
 	public String getName() {
