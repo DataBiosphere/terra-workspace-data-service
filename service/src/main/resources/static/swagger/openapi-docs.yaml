@@ -488,25 +488,14 @@ components:
     BatchResponse:
       type: object
       required:
-        - status
-        - failures
+        - message
+        - recordsModified
       properties:
-        status:
+        message:
           type: string
-          enum: [Success, Failure]
-        failures:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                $ref: '#/components/schemas/RecordId'
-                description: Record id
-              type:
-                $ref: '#/components/schemas/RecordType'
-                description: Record type
-              message:
-                type: string
+        recordsModified:
+          type: integer
+
     SearchRequest:
       type: object
       properties:

@@ -1,8 +1,5 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -17,12 +14,9 @@ import org.databiosphere.workspacedataservice.shared.model.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -55,14 +49,13 @@ public class RecordController {
 		Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
 		singleRecord.setAttributes(allAttrs);
 		List<Record> records = Collections.singletonList(singleRecord);
-		Map<String, DataTypeMapping> updatedSchema =  writeService.addOrUpdateColumnIfNeeded(instanceId, recordType, typeMapping,
-				existingTableSchema, records);
+		Map<String, DataTypeMapping> updatedSchema = writeService.addOrUpdateColumnIfNeeded(instanceId, recordType,
+				typeMapping, existingTableSchema, records);
 		recordDao.batchUpsert(instanceId, recordType, records, updatedSchema);
 		RecordResponse response = new RecordResponse(recordId, recordType, singleRecord.getAttributes(),
 				new RecordMetadata("TODO: SUPERFRESH"));
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
-
 
 	@GetMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
 	public ResponseEntity<RecordResponse> getSingleRecord(@PathVariable("instanceId") UUID instanceId,
@@ -133,8 +126,8 @@ public class RecordController {
 			Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
 			combinedSchema.putAll(requestSchema);
 			recordDao.batchUpsert(instanceId, recordType, records, combinedSchema);
-			RecordResponse response = new RecordResponse(recordId, recordType,
-					attributesInRequest, new RecordMetadata("TODO"));
+			RecordResponse response = new RecordResponse(recordId, recordType, attributesInRequest,
+					new RecordMetadata("TODO"));
 			return new ResponseEntity<>(response, status);
 		}
 	}
@@ -220,47 +213,11 @@ public class RecordController {
 	}
 
 	@PostMapping("/{instanceid}/batch/{v}/{type}")
-	public ResponseEntity<Void> streamingWrite(@PathVariable("instanceid") UUID instanceId, @PathVariable("v") String version,
-											   @PathVariable("type") RecordType recordType, InputStream is) {
-		validateInstance(instanceId);
+	public ResponseEntity<BatchResponse> streamingWrite(@PathVariable("instanceid") UUID instanceId,
+			@PathVariable("v") String version, @PathVariable("type") RecordType recordType, InputStream is) {
 		validateVersion(version);
-		writeService.consumeWriteStream(is, instanceId, recordType);
-		return ResponseEntity.ok().build();
-	}
-
-
-	@PostMapping("/{instanceid}/{v}/{type}/upload")
-	public String handleStreamingUpload(@PathVariable("instanceid") UUID instanceId, @PathVariable("v") String version,
-										@PathVariable("type") RecordType recordType, @RequestParam("file") MultipartFile file) throws IOException {
-		validateInstance(instanceId);
-		validateVersion(version);
-		InputStreamReader inputStreamReader = new InputStreamReader(file.getInputStream());
-
-		CSVFormat csvFormat = CSVFormat.Builder.create(CSVFormat.DEFAULT).setHeader().build();
-		CSVParser rows = csvFormat.parse(inputStreamReader);
-		int batchSize = 10_000;
-		boolean recordTypeExists = recordDao.recordTypeExists(instanceId, recordType);
-		List<Record> batch = new ArrayList<>();
-		Map<String, DataTypeMapping> schema = null;
-		for (CSVRecord row : rows) {
-			Map<String, Object> m = (Map)row.toMap();
-			batch.add(new Record(row.get("id"), recordType, new RecordAttributes(m)));
-			if(batch.size() >= batchSize) {
-				if (!recordTypeExists) {
-					schema = inferer.inferTypes(batch);
-					recordDao.createRecordType(instanceId, schema, recordType, Collections.emptySet());
-					recordTypeExists = true;
-				}
-				recordDao.batchUpsert(instanceId, recordType, batch, schema);
-				batch.clear();
-			}
-		}
-		if(!recordTypeExists){
-			recordDao.createRecordType(instanceId, schema, recordType, Collections.emptySet());
-		}
-		recordDao.batchUpsert(instanceId, recordType, batch, inferer.inferTypes(batch));
-		inputStreamReader.close();
-		return "done";
+		int recordsModified = writeService.consumeWriteStream(is, instanceId, recordType);
+		return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
 	}
 
 	private void validateInstance(UUID instanceId) {

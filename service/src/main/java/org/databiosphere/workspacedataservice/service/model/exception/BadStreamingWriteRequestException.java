@@ -12,8 +12,8 @@ public class BadStreamingWriteRequestException extends IllegalArgumentException 
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BadStreamingWriteRequestException.class);
 	public BadStreamingWriteRequestException(IOException ex) {
-		super("The server doesn't understand the request. Please check swagger to make sure you use" +
-				"the proper format.");
+		super("The server doesn't understand the request. Please check swagger to make sure you use"
+				+ "the proper format.");
 		LOGGER.error("Error parsing request stream as json ", ex);
 	}
 }

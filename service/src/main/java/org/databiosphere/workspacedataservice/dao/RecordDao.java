@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
+import org.databiosphere.workspacedataservice.service.model.exception.BatchDeleteException;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -81,17 +82,17 @@ public class RecordDao {
 
 	private String getQualifiedTableName(RecordType recordType, UUID instanceId) {
 		// N.B. recordType is sql-validated in its constructor, so we don't need it here
-		return quote(instanceId.toString()) + "." + quote(SqlUtils.validateSqlString(recordType.getName(), RECORD_TYPE));
+		return quote(instanceId.toString()) + "."
+				+ quote(SqlUtils.validateSqlString(recordType.getName(), RECORD_TYPE));
 	}
 
 	@SuppressWarnings("squid:S2077")
 	public List<Record> queryForRecords(RecordType recordType, int pageSize, int offset, String sortDirection,
 			UUID instanceId) {
-		return namedTemplate.getJdbcTemplate()
-				.query("select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + RECORD_ID
-						+ " " + sortDirection + " limit " + pageSize + " offset " + offset,
-						new RecordRowMapper(recordType,
-								getRelationColumnsByName(getRelationCols(instanceId, recordType))));
+		return namedTemplate.getJdbcTemplate().query(
+				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + RECORD_ID + " "
+						+ sortDirection + " limit " + pageSize + " offset " + offset,
+				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType))));
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
@@ -120,8 +121,7 @@ public class RecordDao {
 		try {
 			namedTemplate.getJdbcTemplate()
 					.update("alter table " + getQualifiedTableName(recordType, instanceId) + " add column "
-							+ quote(SqlUtils.validateSqlString(columnName, ATTRIBUTE)) + " "
-							+ colType.getPostgresType()
+							+ quote(SqlUtils.validateSqlString(columnName, ATTRIBUTE)) + " " + colType.getPostgresType()
 							+ (referencedType != null
 									? " references " + getQualifiedTableName(referencedType, instanceId)
 									: ""));
@@ -180,15 +180,15 @@ public class RecordDao {
 	}
 
 	public void batchUpsertWithErrorCapture(UUID instanceId, RecordType recordType, List<Record> records,
-											Map<String, DataTypeMapping> schema) {
+			Map<String, DataTypeMapping> schema) {
 		try {
 			batchUpsert(instanceId, recordType, records, schema);
-		} catch (DataAccessException e){
-			if(isRowLevelException(e)){
+		} catch (DataAccessException e) {
+			if (isDataMismatchException(e)) {
 				Map<String, DataTypeMapping> recordTypeSchemaWithoutId = new HashMap<>(schema);
 				recordTypeSchemaWithoutId.remove(RECORD_ID);
 				Map<String, String> invalidRows = checkEachRow(records, recordTypeSchemaWithoutId);
-				if(!invalidRows.isEmpty()){
+				if (!invalidRows.isEmpty()) {
 					throw new BatchWriteException(invalidRows);
 				}
 			}
@@ -200,11 +200,12 @@ public class RecordDao {
 		Map<String, String> result = new HashMap<>();
 		for (Record record : records) {
 			Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(record.getAttributes());
-			if(!schemaForRecord.equals(recordTypeSchema)){
+			if (!schemaForRecord.equals(recordTypeSchema)) {
 				MapDifference<String, DataTypeMapping> difference = Maps.difference(schemaForRecord, recordTypeSchema);
-				Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference.entriesDiffering();
+				Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference
+						.entriesDiffering();
 				result.put(record.getId(), convertSchemaDiffToErrorMessage(differenceMap, record.getAttributes()));
-				if(result.size() >= BATCH_WRITE_ERROR_SAMPLE_SIZE){
+				if (result.size() >= BATCH_WRITE_ERROR_SAMPLE_SIZE) {
 					return result;
 				}
 			}
@@ -212,13 +213,17 @@ public class RecordDao {
 		return result;
 	}
 
-	private String convertSchemaDiffToErrorMessage(Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap, RecordAttributes attributes) {
-		return differenceMap.keySet().stream().map(attr -> attr + "=" + attributes.getAttributeValue(attr) + " is a " + differenceMap.get(attr).leftValue() +
-				" in the request but is defined as " + differenceMap.get(attr).rightValue() + " in the record type definition").collect(Collectors.joining("\n"));
+	private String convertSchemaDiffToErrorMessage(
+			Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap, RecordAttributes attributes) {
+		return differenceMap.keySet().stream()
+				.map(attr -> attr + "=" + attributes.getAttributeValue(attr) + " is a "
+						+ differenceMap.get(attr).leftValue() + " in the request but is defined as "
+						+ differenceMap.get(attr).rightValue() + " in the record type definition")
+				.collect(Collectors.joining("\n"));
 	}
 
-	private boolean isRowLevelException(DataAccessException e) {
-		if(e.getRootCause() instanceof SQLException sqlException){
+	private boolean isDataMismatchException(DataAccessException e) {
+		if (e.getRootCause()instanceof SQLException sqlException) {
 			// data type mismatch: https://www.postgresql.org/docs/13/errcodes-appendix.html
 			return sqlException.getSQLState().equals("42804");
 		}
@@ -281,9 +286,10 @@ public class RecordDao {
 	public String getFkSql(Set<Relation> relations, UUID instanceId) {
 
 		return relations.stream()
-				.map(r -> "constraint " + quote("fk_" + SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE)) + " foreign key ("
-						+ quote(SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE)) + ") references "
-						+ getQualifiedTableName(r.relationRecordType(), instanceId) + "(" + RECORD_ID + ")")
+				.map(r -> "constraint " + quote("fk_" + SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE))
+						+ " foreign key (" + quote(SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE))
+						+ ") references " + getQualifiedTableName(r.relationRecordType(), instanceId) + "(" + RECORD_ID
+						+ ")")
 				.collect(Collectors.joining(", \n"));
 	}
 
@@ -362,32 +368,45 @@ public class RecordDao {
 	}
 
 	public void batchDelete(UUID instanceId, RecordType recordType, List<Record> records) {
-		List<String> recordIds = records.stream().map(r -> r.getRecordType().getName()).toList();
-		namedTemplate.getJdbcTemplate().batchUpdate("delete from" + getQualifiedTableName(recordType, instanceId) + " where "
-				+ RECORD_ID + " = ?", new BatchPreparedStatementSetter() {
-			@Override
-			public void setValues(PreparedStatement ps, int i) throws SQLException {
-				ps.setString(1, recordIds.get(i));
-			}
+		List<String> recordIds = records.stream().map(Record::getId).toList();
+		try {
+			int[] rowCounts = namedTemplate.getJdbcTemplate().batchUpdate(
+					"delete from" + getQualifiedTableName(recordType, instanceId) + " where " + RECORD_ID + " = ?",
+					new BatchPreparedStatementSetter() {
+						@Override
+						public void setValues(PreparedStatement ps, int i) throws SQLException {
+							ps.setString(1, recordIds.get(i));
+						}
 
-			@Override
-			public int getBatchSize() {
-				return recordIds.size();
+						@Override
+						public int getBatchSize() {
+							return recordIds.size();
+						}
+					});
+			Map<String, String> errorInfo = new HashMap<>();
+			for (int i = 0; i < rowCounts.length; i++) {
+				if(rowCounts[i] != 1){
+					errorInfo.put(recordIds.get(i), "Does not exist in " + recordType.getName());
+				}
 			}
-		});
+			if(!errorInfo.isEmpty()){
+				throw new BatchDeleteException(errorInfo);
+			}
+		} catch (DataIntegrityViolationException e) {
+			if (e.getRootCause() instanceof SQLException sqlEx) {
+				checkForTableRelation(sqlEx);
+			}
+			throw e;
+		}
 	}
 
-	public void batchReplace(UUID instanceId, RecordType recordType, List<Record> records) {
-
-	}
 
 	private record RecordRowMapper(RecordType recordType,
 			Map<String, RecordType> referenceColToTable) implements RowMapper<Record> {
 
 		@Override
 		public Record mapRow(ResultSet rs, int rowNum) throws SQLException {
-			return new Record(rs.getString(RECORD_ID), recordType,
-					getAttributes(rs));
+			return new Record(rs.getString(RECORD_ID), recordType, getAttributes(rs));
 		}
 
 		private RecordAttributes getAttributes(ResultSet rs) {
@@ -405,7 +424,8 @@ public class RecordDao {
 								.createRelationString(referenceColToTable.get(columnName), rs.getString(columnName)));
 					} else {
 						Object object = rs.getObject(columnName);
-						attributes.putAttribute(columnName, object instanceof PGobject pGobject ? pGobject.getValue() : object);
+						attributes.putAttribute(columnName,
+								object instanceof PGobject pGobject ? pGobject.getValue() : object);
 					}
 				}
 				return attributes;
@@ -422,8 +442,7 @@ public class RecordDao {
 			return Optional.ofNullable(namedTemplate.queryForObject(
 					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + RECORD_ID
 							+ " = :recordId",
-					new MapSqlParameterSource("recordId", recordId),
-					new RecordRowMapper(recordType, refColMapping)));
+					new MapSqlParameterSource("recordId", recordId), new RecordRowMapper(recordType, refColMapping)));
 		} catch (EmptyResultDataAccessException e) {
 			return Optional.empty();
 		}
@@ -444,8 +463,8 @@ public class RecordDao {
 	}
 
 	private static Map<String, RecordType> getRelationColumnsByName(List<Relation> referenceCols) {
-		return referenceCols.stream().collect(
-				Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
+		return referenceCols.stream()
+				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
 	}
 
 	public void deleteRecordType(UUID instanceId, RecordType recordType) {

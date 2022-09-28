@@ -47,7 +47,8 @@ class RecordTest {
 
 	@Test
 	void testRecordTypeValidationOnCreation() {
-		List<String> invalidNames = Arrays.asList(RESERVED_NAME_PREFIX + "anything", "semi;colon", "back\\slash", "bang!");
+		List<String> invalidNames = Arrays.asList(RESERVED_NAME_PREFIX + "anything", "semi;colon", "back\\slash",
+				"bang!");
 
 		invalidNames.forEach(testCase -> {
 			// Should throw an error

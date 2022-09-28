@@ -50,7 +50,7 @@ class DataTypeInfererTest {
 
 	private static RecordAttributes getSomeAttrs() {
 		return new RecordAttributes(
-			Map.of("int_val", new Random().nextInt(), "string_val", RandomStringUtils.random(10), "json_val",
-				"[\"a\", \"b\"]", "date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00"));
+				Map.of("int_val", new Random().nextInt(), "string_val", RandomStringUtils.random(10), "json_val",
+						"[\"a\", \"b\"]", "date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00"));
 	}
 }

@@ -49,8 +49,7 @@ class RecordDaoTest {
 		assertEquals(testRecord, search);
 
 		// nonexistent record should be null
-		Optional<Record> none = recordDao.getSingleRecord(instanceId, recordType, "noRecord",
-				Collections.emptyList());
+		Optional<Record> none = recordDao.getSingleRecord(instanceId, recordType, "noRecord", Collections.emptyList());
 		assertEquals(none, Optional.empty());
 	}
 
@@ -68,7 +67,7 @@ class RecordDaoTest {
 		assertEquals(testRecord, search, "Created record should match entered record");
 
 		// create record with attributes
-		String attrId ="recordWithAttr";
+		String attrId = "recordWithAttr";
 		Record recordWithAttr = new Record(attrId, recordType, new RecordAttributes(Map.of("foo", "bar")));
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(recordWithAttr),
 				new HashMap<>(Map.of("foo", DataTypeMapping.STRING)));
@@ -178,8 +177,7 @@ class RecordDaoTest {
 		assertEquals(0, recordDao.countRecords(instanceId, recordType));
 		// insert records and test the count after each insert
 		for (int i = 0; i < 10; i++) {
-			Record testRecord = new Record("record" + i, recordType,
-					RecordAttributes.empty());
+			Record testRecord = new Record("record" + i, recordType, RecordAttributes.empty());
 			recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord), new HashMap<>());
 			assertEquals(i + 1, recordDao.countRecords(instanceId, recordType),
 					"after inserting " + (i + 1) + " records");
@@ -191,8 +189,7 @@ class RecordDaoTest {
 	void testRecordExists() {
 		assertFalse(recordDao.recordExists(instanceId, recordType, "aRecord"));
 		recordDao.batchUpsert(instanceId, recordType,
-				Collections.singletonList(
-						new Record("aRecord", recordType, RecordAttributes.empty())),
+				Collections.singletonList(new Record("aRecord", recordType, RecordAttributes.empty())),
 				new HashMap<>());
 		assertTrue(recordDao.recordExists(instanceId, recordType, "aRecord"));
 	}
@@ -218,8 +215,7 @@ class RecordDaoTest {
 
 		String refRecordId = "referencedRecord";
 		Record referencedRecord = new Record(refRecordId, referencedType, RecordAttributes.empty());
-		recordDao.batchUpsert(instanceId, referencedType, Collections.singletonList(referencedRecord),
-				new HashMap<>());
+		recordDao.batchUpsert(instanceId, referencedType, Collections.singletonList(referencedRecord), new HashMap<>());
 
 		String recordId = "testRecord";
 		String reference = RelationUtils.createRelationString(referencedType, refRecordId);

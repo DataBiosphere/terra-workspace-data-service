@@ -70,7 +70,7 @@ public class Record {
 		return recordType;
 	}
 
-	@JsonGetter("recordType")
+	@JsonProperty("type")
 	public String getRecordTypeName() {
 		return recordType.getName();
 	}
@@ -96,10 +96,6 @@ public class Record {
 
 	@Override
 	public String toString() {
-		return "Record{" +
-				"id='" + id + '\'' +
-				", recordType=" + recordType +
-				", attributes=" + attributes +
-				'}';
+		return "Record{" + "id='" + id + '\'' + ", recordType=" + recordType + ", attributes=" + attributes + '}';
 	}
 }
