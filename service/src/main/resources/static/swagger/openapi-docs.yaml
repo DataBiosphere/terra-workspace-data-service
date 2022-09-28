@@ -478,13 +478,10 @@ components:
       properties:
         id:
           $ref: '#/components/schemas/RecordId'
-          description: Record id
         type:
           $ref: '#/components/schemas/RecordType'
-          description: Record type
         attributes:
           $ref: '#/components/schemas/RecordAttributes'
-          description: KVPs of record attributes
     BatchResponse:
       type: object
       required:
