@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 
 @Service
-public class WriteService {
+public class BatchWriteService {
 
 	private final RecordDao recordDao;
 
@@ -37,7 +37,7 @@ public class WriteService {
 
 	private final int batchSize;
 
-	public WriteService(RecordDao recordDao, @Value("${twds.write.batch.size}") int batchSize) {
+	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size}") int batchSize) {
 		this.recordDao = recordDao;
 		this.batchSize = batchSize;
 	}

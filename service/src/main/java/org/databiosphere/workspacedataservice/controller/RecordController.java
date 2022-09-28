@@ -3,7 +3,7 @@ package org.databiosphere.workspacedataservice.controller;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.WriteService;
+import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
@@ -26,11 +26,11 @@ public class RecordController {
 	private static final int MAX_RECORDS = 1_000;
 	private final RecordDao recordDao;
 	private final DataTypeInferer inferer;
-	private final WriteService writeService;
+	private final BatchWriteService batchWriteService;
 
-	public RecordController(RecordDao recordDao, WriteService writeService) {
+	public RecordController(RecordDao recordDao, BatchWriteService batchWriteService) {
 		this.recordDao = recordDao;
-		this.writeService = writeService;
+		this.batchWriteService = batchWriteService;
 		this.inferer = new DataTypeInferer();
 	}
 
@@ -49,7 +49,7 @@ public class RecordController {
 		Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
 		singleRecord.setAttributes(allAttrs);
 		List<Record> records = Collections.singletonList(singleRecord);
-		Map<String, DataTypeMapping> updatedSchema = writeService.addOrUpdateColumnIfNeeded(instanceId, recordType,
+		Map<String, DataTypeMapping> updatedSchema = batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType,
 				typeMapping, existingTableSchema, records);
 		recordDao.batchUpsert(instanceId, recordType, records, updatedSchema);
 		RecordResponse response = new RecordResponse(recordId, recordType, singleRecord.getAttributes(),
@@ -122,7 +122,7 @@ public class RecordController {
 			}
 			Record newRecord = new Record(recordId, recordType, recordRequest.recordAttributes());
 			List<Record> records = Collections.singletonList(newRecord);
-			writeService.addOrUpdateColumnIfNeeded(instanceId, recordType, requestSchema, existingTableSchema, records);
+			batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType, requestSchema, existingTableSchema, records);
 			Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
 			combinedSchema.putAll(requestSchema);
 			recordDao.batchUpsert(instanceId, recordType, records, combinedSchema);
@@ -216,7 +216,7 @@ public class RecordController {
 	public ResponseEntity<BatchResponse> streamingWrite(@PathVariable("instanceid") UUID instanceId,
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType, InputStream is) {
 		validateVersion(version);
-		int recordsModified = writeService.consumeWriteStream(is, instanceId, recordType);
+		int recordsModified = batchWriteService.consumeWriteStream(is, instanceId, recordType);
 		return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
 	}
 
