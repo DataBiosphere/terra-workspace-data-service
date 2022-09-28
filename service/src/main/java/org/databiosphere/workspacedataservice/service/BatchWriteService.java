@@ -98,6 +98,13 @@ public class BatchWriteService {
 		}
 	}
 
+	/**
+	 * All or nothing, write all the operations successfully in the InputStream or write none.
+	 * @param is
+	 * @param instanceId
+	 * @param recordType
+	 * @return number of records updated
+	 */
 	@Transactional
 	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType) {
 		int recordsAffected = 0;
