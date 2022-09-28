@@ -40,7 +40,6 @@ import static org.databiosphere.workspacedataservice.service.model.exception.Inv
 @Repository
 public class RecordDao {
 
-	private static final int BATCH_WRITE_ERROR_SAMPLE_SIZE = 5;
 	private final NamedParameterJdbcTemplate namedTemplate;
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate) {
 		this.namedTemplate = namedTemplate;
@@ -204,9 +203,6 @@ public class RecordDao {
 				Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference
 						.entriesDiffering();
 				result.add(convertSchemaDiffToErrorMessage(differenceMap, rcd.getAttributes(), rcd.getId(), recordType));
-				if (result.size() >= BATCH_WRITE_ERROR_SAMPLE_SIZE) {
-					return result;
-				}
 			}
 		}
 		return result;
