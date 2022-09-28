@@ -521,20 +521,6 @@ class RecordControllerMockMvcTest {
 	}
 
 	@Test
-	void batchDeleteShouldFailWhenRecordIsNotFound() throws Exception {
-		RecordType recordType = RecordType.valueOf("forBatchDelete");
-		createSomeRecords(recordType, 3);
-		RecordAttributes emptyAtts = new RecordAttributes(new HashMap<>());
-		List<BatchOperation> batchOperations = List.of(new BatchOperation(new Record("record_0", recordType, emptyAtts), OperationType.DELETE),
-				new BatchOperation(new Record("missing", recordType, emptyAtts), OperationType.DELETE));
-		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, recordType)
-				.content(mapper.writeValueAsString(batchOperations)).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
-		//record_0 should still be present since the above deletion is transactional and should fail upon 'missing'
-		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, recordType, "record_0")
-				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk());
-	}
-
-	@Test
 	@Transactional
 	void batchInsertShouldFailWithInvalidRelation() throws Exception {
 		RecordType recordType = RecordType.valueOf("relationBatchInsert");

@@ -20,6 +20,9 @@ import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * This test spins up a web server and the full Spring Boot web stack. It was
@@ -243,6 +246,23 @@ class FullStackRecordControllerTest {
 		ResponseEntity<RecordResponse> stillPresentNonReferencedRecord = restTemplate.exchange("/{instanceId}/records/{version}/{recordType}/{recordId}",
 				HttpMethod.GET, new HttpEntity<>(headers), RecordResponse.class, instanceId, versionId, referencedRT, "record_1");
 		assertThat(stillPresentNonReferencedRecord.getBody().recordId()).isEqualTo("record_1");
+	}
+
+	@Test
+	@Transactional
+	void batchDeleteShouldFailWhenRecordIsNotFound() throws Exception {
+		RecordType recordType = RecordType.valueOf("forBatchDelete");
+		createSomeRecords(recordType, 3);
+		RecordAttributes emptyAtts = new RecordAttributes(new HashMap<>());
+		List<BatchOperation> batchOperations = List.of(new BatchOperation(new Record("record_0", recordType, emptyAtts), OperationType.DELETE),
+				new BatchOperation(new Record("missing", recordType, emptyAtts), OperationType.DELETE));
+		ResponseEntity<ErrorResponse> error = restTemplate.exchange("/{instanceid}/batch/{v}/{type}", HttpMethod.POST, new HttpEntity<>(mapper.writeValueAsString(batchOperations), headers),
+				ErrorResponse.class, instanceId, versionId, recordType);
+		assertThat(error.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+		//record_0 should still be present since the above deletion is transactional and should fail upon 'missing'
+		ResponseEntity<RecordResponse> rresponse = restTemplate.exchange("/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.GET, new HttpEntity<>(headers),
+				RecordResponse.class, instanceId, versionId, recordType, "record_0");
+		assertThat(rresponse.getBody().recordId()).isEqualTo("record_0");
 	}
 
 }
