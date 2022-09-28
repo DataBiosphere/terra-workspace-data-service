@@ -223,6 +223,7 @@ class FullStackRecordControllerTest {
 				ErrorResponse.class, instanceId, versionId, recordType);
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody().getMessage()).contains("Some of the records in your request don't have the proper data for the record type");
+		assertThat(response.getBody().getMessage()).contains("is a STRING in the request but is defined as DOUBLE in the record type definition for bw-test");
 	}
 
 	@Test

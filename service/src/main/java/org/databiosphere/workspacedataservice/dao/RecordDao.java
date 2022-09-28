@@ -186,24 +186,24 @@ public class RecordDao {
 			if (isDataMismatchException(e)) {
 				Map<String, DataTypeMapping> recordTypeSchemaWithoutId = new HashMap<>(schema);
 				recordTypeSchemaWithoutId.remove(RECORD_ID);
-				Map<String, String> invalidRows = checkEachRow(records, recordTypeSchemaWithoutId);
-				if (!invalidRows.isEmpty()) {
-					throw new BatchWriteException(invalidRows);
+				List<String> rowErrors = checkEachRow(records, recordTypeSchemaWithoutId, recordType);
+				if (!rowErrors.isEmpty()) {
+					throw new BatchWriteException(rowErrors);
 				}
 			}
 		}
 	}
 
-	private Map<String, String> checkEachRow(List<Record> records, Map<String, DataTypeMapping> recordTypeSchema) {
+	private List<String> checkEachRow(List<Record> records, Map<String, DataTypeMapping> recordTypeSchema, RecordType recordType) {
 		DataTypeInferer inferer = new DataTypeInferer();
-		Map<String, String> result = new HashMap<>();
+		List<String> result = new ArrayList<>();
 		for (Record rcd : records) {
 			Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(rcd.getAttributes());
 			if (!schemaForRecord.equals(recordTypeSchema)) {
 				MapDifference<String, DataTypeMapping> difference = Maps.difference(schemaForRecord, recordTypeSchema);
 				Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference
 						.entriesDiffering();
-				result.put(rcd.getId(), convertSchemaDiffToErrorMessage(differenceMap, rcd.getAttributes()));
+				result.add(convertSchemaDiffToErrorMessage(differenceMap, rcd.getAttributes(), rcd.getId(), recordType));
 				if (result.size() >= BATCH_WRITE_ERROR_SAMPLE_SIZE) {
 					return result;
 				}
@@ -213,11 +213,11 @@ public class RecordDao {
 	}
 
 	private String convertSchemaDiffToErrorMessage(
-			Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap, RecordAttributes attributes) {
+			Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap, RecordAttributes attributes, String recordId, RecordType recordType) {
 		return differenceMap.keySet().stream()
-				.map(attr -> attr + "=" + attributes.getAttributeValue(attr) + " is a "
+				.map(attr -> recordId + "." + attr + "=" + attributes.getAttributeValue(attr) + " is a "
 						+ differenceMap.get(attr).leftValue() + " in the request but is defined as "
-						+ differenceMap.get(attr).rightValue() + " in the record type definition")
+						+ differenceMap.get(attr).rightValue() + " in the record type definition for " + recordType)
 				.collect(Collectors.joining("\n"));
 	}
 
@@ -383,14 +383,14 @@ public class RecordDao {
 							return recordIds.size();
 						}
 					});
-			Map<String, String> errorInfo = new HashMap<>();
+			List<String> recordErrors = new ArrayList<>();
 			for (int i = 0; i < rowCounts.length; i++) {
 				if(rowCounts[i] != 1){
-					errorInfo.put(recordIds.get(i), "Does not exist in " + recordType.getName());
+					recordErrors.add("record id " + recordIds.get(i) + " does not exist in " + recordType.getName());
 				}
 			}
-			if(!errorInfo.isEmpty()){
-				throw new BatchDeleteException(errorInfo);
+			if(!recordErrors.isEmpty()){
+				throw new BatchDeleteException(recordErrors);
 			}
 		} catch (DataIntegrityViolationException e) {
 			if (e.getRootCause() instanceof SQLException sqlEx) {
