@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.service.model.exception;
 
-import com.google.common.collect.Maps;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 

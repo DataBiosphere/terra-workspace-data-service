@@ -29,17 +29,17 @@ public class DataTypeInferer {
 
 	public Map<String, DataTypeMapping> inferTypes(List<Record> records) {
 		Map<String, DataTypeMapping> result = new HashMap<>();
-		for (Record record : records) {
-			if (record.getAttributes() == null) {
+		for (Record rcd : records) {
+			if (rcd.getAttributes() == null) {
 				continue;
 			}
-			Map<String, DataTypeMapping> inferred = inferTypes(record.getAttributes());
+			Map<String, DataTypeMapping> inferred = inferTypes(rcd.getAttributes());
 			for (Map.Entry<String, DataTypeMapping> entry : inferred.entrySet()) {
 				DataTypeMapping inferredType = entry.getValue();
 				if (result.containsKey(entry.getKey()) && result.get(entry.getKey()) != inferredType) {
 					result.put(entry.getKey(), selectBestType(result.get(entry.getKey()), inferredType));
 				} else {
-					result.put(entry.getKey(), inferredType);
+					result.putIfAbsent(entry.getKey(), inferredType);
 				}
 			}
 		}

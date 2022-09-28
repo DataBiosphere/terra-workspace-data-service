@@ -5,18 +5,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class BatchOperation {
 
-	private Record record;
+	private Record rcd;
 
 	private OperationType operation;
 
 	@JsonCreator
-	public BatchOperation(@JsonProperty("record") Record record, @JsonProperty("operation") OperationType operation) {
-		this.record = record;
+	public BatchOperation(@JsonProperty("record") Record rcd, @JsonProperty("operation") OperationType operation) {
+		this.rcd = rcd;
 		this.operation = operation;
 	}
 
 	public Record getRecord() {
-		return record;
+		return rcd;
 	}
 
 	public OperationType getOperation() {

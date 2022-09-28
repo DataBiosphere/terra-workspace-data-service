@@ -523,6 +523,7 @@ class RecordControllerMockMvcTest {
 				new BatchOperation(new Record("missing", recordType, emptyAtts), OperationType.DELETE));
 		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, recordType)
 				.content(mapper.writeValueAsString(batchOperations)).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
+		//record_0 should still be present since the above deletion is transactional and should fail upon 'missing'
 		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, recordType, "record_0")
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk());
 	}

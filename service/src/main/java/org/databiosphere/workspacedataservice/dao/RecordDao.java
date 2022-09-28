@@ -174,9 +174,8 @@ public class RecordDao {
 
 	private static List<RecordColumn> getSchemaWithRowId(Map<String, DataTypeMapping> schema) {
 		schema.put(RECORD_ID, DataTypeMapping.STRING);
-		List<RecordColumn> schemaAsList = schema.entrySet().stream()
+		return schema.entrySet().stream()
 				.map(e -> new RecordColumn(e.getKey(), e.getValue())).toList();
-		return schemaAsList;
 	}
 
 	public void batchUpsertWithErrorCapture(UUID instanceId, RecordType recordType, List<Record> records,
@@ -198,13 +197,13 @@ public class RecordDao {
 	private Map<String, String> checkEachRow(List<Record> records, Map<String, DataTypeMapping> recordTypeSchema) {
 		DataTypeInferer inferer = new DataTypeInferer();
 		Map<String, String> result = new HashMap<>();
-		for (Record record : records) {
-			Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(record.getAttributes());
+		for (Record rcd : records) {
+			Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(rcd.getAttributes());
 			if (!schemaForRecord.equals(recordTypeSchema)) {
 				MapDifference<String, DataTypeMapping> difference = Maps.difference(schemaForRecord, recordTypeSchema);
 				Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference
 						.entriesDiffering();
-				result.put(record.getId(), convertSchemaDiffToErrorMessage(differenceMap, record.getAttributes()));
+				result.put(rcd.getId(), convertSchemaDiffToErrorMessage(differenceMap, rcd.getAttributes()));
 				if (result.size() >= BATCH_WRITE_ERROR_SAMPLE_SIZE) {
 					return result;
 				}
@@ -367,6 +366,7 @@ public class RecordDao {
 		return existingTableSchema.stream().map(this::quote).collect(Collectors.joining(", "));
 	}
 
+	@SuppressWarnings("squid:S2077")
 	public void batchDelete(UUID instanceId, RecordType recordType, List<Record> records) {
 		List<String> recordIds = records.stream().map(Record::getId).toList();
 		try {

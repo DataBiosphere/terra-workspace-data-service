@@ -4,7 +4,4 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 
 public record BatchResponse(int recordsModified, String success) {
 
-    @JsonCreator
-    public BatchResponse {
-    }
 }
