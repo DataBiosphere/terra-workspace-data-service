@@ -4,20 +4,20 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedata.model.ErrorResponse;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.shared.model.*;
 import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.shared.model.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.*;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.function.Supplier;
 
-import static org.assertj.core.api.Assertions.anyOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 
@@ -28,7 +28,8 @@ import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAtt
  * https://github.com/spring-projects/spring-framework/issues/17290 As a result,
  * this test suite is currently focused on validating expected error handling
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {"spring.main.allow-bean-definition-overriding=true"})
+@Import(SmallBatchWriteTestConfig.class)
 class FullStackRecordControllerTest {
 	@Autowired
 	private TestRestTemplate restTemplate;
@@ -192,19 +193,55 @@ class FullStackRecordControllerTest {
 		assertThat(response.getBody()).containsEntry("message", "Invalid API version specified");
 	}
 
-	private void createSomeRecords(RecordType recordType, int numRecords, Supplier<String>... recordIdSupplier)
+	private List<Record> createSomeRecords(RecordType recordType, int numRecords, Supplier<String>... recordIdSupplier)
 			throws Exception {
+		List<Record> result = new ArrayList<>();
 		for (int i = 0; i < numRecords; i++) {
 			String recordId = recordIdSupplier == null || recordIdSupplier.length == 0
 					? "record_" + i
 					: recordIdSupplier[0].get();
 			RecordAttributes attributes = generateRandomAttributes();
+			RecordRequest recordRequest = new RecordRequest(attributes);
 			ResponseEntity<String> response = restTemplate.exchange(
 					"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT,
-					new HttpEntity<>(mapper.writeValueAsString(new RecordRequest(attributes)), headers), String.class,
+					new HttpEntity<>(mapper.writeValueAsString(recordRequest), headers), String.class,
 					instanceId, versionId, recordType, recordId);
 			assertThat(response.getStatusCode()).isIn(HttpStatus.CREATED, HttpStatus.OK);
+			result.add(new Record(recordId, recordType, recordRequest));
 		}
+		return result;
+	}
+
+	@Test
+	@Transactional
+	void dataTypeMismatchShouldFailBatchWrite() throws Exception {
+		RecordType recordType = RecordType.valueOf("bw-test");
+		List<Record> someRecords = createSomeRecords(recordType, 2);
+		List<BatchOperation> operations = someRecords.stream().map(r -> new BatchOperation(new Record(r.getId(), r.getRecordType(), r.getAttributes()), OperationType.UPSERT)).toList();
+		operations.get(1).getRecord().getAttributes().putAttribute("attr2", "not a float, this should fail");
+		ResponseEntity<ErrorResponse> response = restTemplate.exchange("/{instanceid}/batch/{v}/{type}", HttpMethod.POST, new HttpEntity<>(mapper.writeValueAsString(operations), headers),
+				ErrorResponse.class, instanceId, versionId, recordType);
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(response.getBody().getMessage()).contains("Some of the records in your request don't have the proper data for the record type");
+	}
+
+	@Test
+	@Transactional
+	void batchDeletingReferencedRecordsShouldFail() throws Exception {
+		RecordType referencedRT = RecordType.valueOf("batch-delete-test-referenced");
+		List<Record> someRecords = createSomeRecords(referencedRT, 2);
+		RecordType referencerRT = RecordType.valueOf("referencer");
+		List<BatchOperation> ops = List.of(new BatchOperation(new Record("referencer-1", referencerRT,
+				new RecordAttributes(Map.of("attr-ref", RelationUtils.createRelationString(referencedRT, "record_0")))), OperationType.UPSERT));
+		restTemplate.exchange("/{instanceid}/batch/{v}/{type}", HttpMethod.POST, new HttpEntity<>(mapper.writeValueAsString(ops), headers),
+				String.class, instanceId, versionId, referencerRT);
+		List<BatchOperation> deleteOps = List.of(new BatchOperation(someRecords.get(1), OperationType.DELETE), new BatchOperation(someRecords.get(0), OperationType.DELETE));
+		ResponseEntity<ErrorResponse> error = restTemplate.exchange("/{instanceid}/batch/{v}/{type}", HttpMethod.POST, new HttpEntity<>(mapper.writeValueAsString(deleteOps), headers),
+				ErrorResponse.class, instanceId, versionId, referencedRT);
+		assertThat(error.getBody().getMessage()).contains("because another record has a relation to it");
+		ResponseEntity<RecordResponse> stillPresentNonReferencedRecord = restTemplate.exchange("/{instanceId}/records/{version}/{recordType}/{recordId}",
+				HttpMethod.GET, new HttpEntity<>(headers), RecordResponse.class, instanceId, versionId, referencedRT, "record_1");
+		assertThat(stillPresentNonReferencedRecord.getBody().recordId()).isEqualTo("record_1");
 	}
 
 }
