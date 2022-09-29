@@ -209,8 +209,6 @@ class FullStackRecordControllerTest {
 					"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT,
 					new HttpEntity<>(mapper.writeValueAsString(recordRequest), headers), String.class,
 					instanceId, versionId, recordType, recordId);
-					new HttpEntity<>(mapper.writeValueAsString(new RecordRequest(attributes)), headers), String.class,
-					instanceId, versionId, recordType, recordId);
 			assertThat(response.getStatusCode()).isIn(HttpStatus.CREATED, HttpStatus.OK);
 			result.add(new Record(recordId, recordType, recordRequest));
 		}
