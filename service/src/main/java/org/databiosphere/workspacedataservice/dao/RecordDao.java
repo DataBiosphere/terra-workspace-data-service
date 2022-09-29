@@ -171,7 +171,7 @@ public class RecordDao {
 		}
 	}
 
-	private static List<RecordColumn> getSchemaWithRowId(Map<String, DataTypeMapping> schema) {
+	private List<RecordColumn> getSchemaWithRowId(Map<String, DataTypeMapping> schema) {
 		schema.put(RECORD_ID, DataTypeMapping.STRING);
 		return schema.entrySet().stream()
 				.map(e -> new RecordColumn(e.getKey(), e.getValue())).toList();
