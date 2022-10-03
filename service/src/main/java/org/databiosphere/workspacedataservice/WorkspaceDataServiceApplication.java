@@ -14,6 +14,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import javax.sql.DataSource;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @SpringBootApplication
 public class WorkspaceDataServiceApplication {
@@ -42,6 +44,18 @@ public class WorkspaceDataServiceApplication {
 		//https://jdbc.postgresql.org/documentation/head/query.html#query-with-cursor
 		jdbcTemplate.getJdbcTemplate().setFetchSize(fetchSize);
 		return jdbcTemplate;
+	}
+
+
+	// CORS: allow Ajax requests from anywhere for all endpoints.
+	@Bean
+	public WebMvcConfigurer corsConfigurer() {
+		return new WebMvcConfigurer() {
+			@Override
+			public void addCorsMappings(CorsRegistry registry) {
+				registry.addMapping("/**").allowedOrigins("*");
+			}
+		};
 	}
 
 	public static void main(String[] args) {

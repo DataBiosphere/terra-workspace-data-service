@@ -1,24 +1,16 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
-import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-
-import java.util.*;
-
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
-import org.databiosphere.workspacedataservice.service.model.exception.*;
-import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
-import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
-import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.shared.model.*;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -28,6 +20,16 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import java.util.*;
+
+import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -473,26 +475,93 @@ class RecordControllerMockMvcTest {
 		mockMvc.perform(get("/{instanceId}/types/{v}", UUID.randomUUID(), versionId)).andExpect(status().isNotFound());
 	}
 
-	private void createSomeRecords(String recordType, int numRecords) throws Exception {
-		createSomeRecords(RecordType.valueOf(recordType), numRecords, instanceId);
+	private List<Record> createSomeRecords(String recordType, int numRecords) throws Exception {
+		return createSomeRecords(RecordType.valueOf(recordType), numRecords, instanceId);
 	}
 
-	private void createSomeRecords(RecordType recordType, int numRecords) throws Exception {
-		createSomeRecords(recordType, numRecords, instanceId);
+	private List<Record> createSomeRecords(RecordType recordType, int numRecords) throws Exception {
+		return createSomeRecords(recordType, numRecords, instanceId);
 	}
 
-	private void createSomeRecords(String recordType, int numRecords, UUID instId) throws Exception {
-		createSomeRecords(RecordType.valueOf(recordType), numRecords, instId);
-	}
 
-	private void createSomeRecords(RecordType recordType, int numRecords, UUID instId) throws Exception {
+	private List<Record> createSomeRecords(RecordType recordType, int numRecords, UUID instId) throws Exception {
+		List<Record> result = new ArrayList<>();
 		for (int i = 0; i < numRecords; i++) {
 			String recordId = "record_" + i;
 			RecordAttributes attributes = generateRandomAttributes();
+			RecordRequest recordRequest = new RecordRequest(attributes);
 			mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instId, versionId,
-					recordType, recordId).content(mapper.writeValueAsString(new RecordRequest(attributes)))
+					recordType, recordId).content(mapper.writeValueAsString(recordRequest))
 							.contentType(MediaType.APPLICATION_JSON))
 					.andExpect(status().is2xxSuccessful());
+			result.add(new Record(recordId, recordType, recordRequest));
 		}
+		return result;
 	}
+
+	@Test
+	@Transactional
+	void batchWriteInsertShouldSucceed() throws Exception {
+		mockMvc.perform(post("/{instanceId}/{version}/", instanceId, versionId));
+		String recordId = "foo";
+		String newBatchRecordType = "new-record-type";
+		Record record = new Record(recordId, RecordType.valueOf(newBatchRecordType),
+				new RecordAttributes(Map.of("attr1", "attr-val")));
+		Record record2 = new Record("foo2", RecordType.valueOf(newBatchRecordType),
+				new RecordAttributes(Map.of("attr1", "attr-val")));
+		BatchOperation op = new BatchOperation(record, OperationType.UPSERT);
+		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, newBatchRecordType)
+						.content(mapper.writeValueAsString(List.of(op, new BatchOperation(record2, OperationType.UPSERT)))).contentType(MediaType.APPLICATION_JSON))
+						.andExpect(jsonPath("$.recordsModified", is(2)))
+						.andExpect(jsonPath("$.message", is("Huzzah")))
+				.andExpect(status().isOk());
+		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, newBatchRecordType, recordId)
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk());
+		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, newBatchRecordType)
+						.content(mapper.writeValueAsString(List.of(new BatchOperation(record, OperationType.DELETE)))).contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk());
+		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, newBatchRecordType, recordId)
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
+	}
+
+	@Test
+	@Transactional
+	void batchInsertShouldFailWithInvalidRelation() throws Exception {
+		RecordType recordType = RecordType.valueOf("relationBatchInsert");
+		List<BatchOperation> batchOperations = List.of(new BatchOperation(new Record("record_0", recordType,
+						new RecordAttributes(Map.of("attr-relation", RelationUtils.createRelationString(RecordType.valueOf("missing"), "A")))), OperationType.UPSERT),
+				new BatchOperation(new Record("record_1", recordType, new RecordAttributes(Map.of("attr-relation", RelationUtils.createRelationString(RecordType.valueOf("missing"), "A")))), OperationType.UPSERT));
+		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, recordType)
+				.content(mapper.writeValueAsString(batchOperations)).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
+	}
+
+	@Test
+	@Transactional
+	void batchInsertShouldFailWithInvalidRelationExistingRecordType() throws Exception {
+		RecordType recordType = RecordType.valueOf("relationBatchInsert");
+		createSomeRecords(recordType, 2);
+		List<BatchOperation> batchOperations = List.of(new BatchOperation(new Record("record_0", recordType,
+						new RecordAttributes(Map.of("attr-relation", RelationUtils.createRelationString(RecordType.valueOf("missing"), "A")))), OperationType.UPSERT),
+				new BatchOperation(new Record("record_1", recordType, new RecordAttributes(Map.of("attr-relation", RelationUtils.createRelationString(RecordType.valueOf("missing"), "A")))), OperationType.UPSERT));
+		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, recordType)
+				.content(mapper.writeValueAsString(batchOperations)).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
+	}
+
+	@Test
+	@Transactional
+	void mixOfUpsertAndDeleteShouldSucceed() throws Exception {
+		RecordType recordType = RecordType.valueOf("forBatch");
+		List<Record> records = createSomeRecords(recordType, 2);
+		Record upsertRcd = records.get(1);
+		upsertRcd.getAttributes().putAttribute("new-col", "new value!!");
+		List<BatchOperation> ops = List.of(new BatchOperation(records.get(0), OperationType.DELETE), new BatchOperation(upsertRcd, OperationType.UPSERT));
+		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, recordType)
+				.content(mapper.writeValueAsString(ops)).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk());
+		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, recordType, records.get(0).getId())
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
+		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, recordType, upsertRcd.getId())
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andExpect(jsonPath("$.attributes.new-col", is("new value!!")));
+	}
+
+
 }

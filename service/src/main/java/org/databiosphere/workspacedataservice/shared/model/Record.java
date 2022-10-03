@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
-import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -70,7 +69,7 @@ public class Record {
 		return recordType;
 	}
 
-	@JsonGetter("recordType")
+	@JsonProperty("type")
 	public String getRecordTypeName() {
 		return recordType.getName();
 	}
@@ -92,5 +91,10 @@ public class Record {
 		int result = getId().hashCode();
 		result = 31 * result + getRecordType().hashCode();
 		return result;
+	}
+
+	@Override
+	public String toString() {
+		return "Record{" + "id='" + id + '\'' + ", recordType=" + recordType + ", attributes=" + attributes + '}';
 	}
 }

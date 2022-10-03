@@ -1,0 +1,5 @@
+[
+  {"operation":  "upsert", "record":  {"id":  "foo-1", "type": "bar", "attributes":  {"attr1":  "hello"}}},
+  {"operation":  "delete", "record":  {"id":  "foo-2", "type": "bar", "attributes":  {"attr1":  "hello"}}},
+  {"operation":  "upsert", "record":  {"id":  "foo-3", "type": "bar", "attributes":  {"attr1":  "hello"}}}
+]

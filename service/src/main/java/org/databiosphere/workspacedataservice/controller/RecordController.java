@@ -1,19 +1,16 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import com.google.common.collect.MapDifference;
-import com.google.common.collect.Maps;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.QuoteMode;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.Relation;
-import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
-import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
@@ -25,13 +22,12 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 
 @RestController
 public class RecordController {
@@ -39,9 +35,11 @@ public class RecordController {
 	private static final int MAX_RECORDS = 1_000;
 	private final RecordDao recordDao;
 	private final DataTypeInferer inferer;
+	private final BatchWriteService batchWriteService;
 
-	public RecordController(RecordDao recordDao) {
+	public RecordController(RecordDao recordDao, BatchWriteService batchWriteService) {
 		this.recordDao = recordDao;
+		this.batchWriteService = batchWriteService;
 		this.inferer = new DataTypeInferer();
 	}
 
@@ -60,68 +58,12 @@ public class RecordController {
 		Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
 		singleRecord.setAttributes(allAttrs);
 		List<Record> records = Collections.singletonList(singleRecord);
-		Map<String, DataTypeMapping> updatedSchema = addOrUpdateColumnIfNeeded(instanceId, recordType, typeMapping,
-				existingTableSchema, records);
+		Map<String, DataTypeMapping> updatedSchema = batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType,
+				typeMapping, existingTableSchema, records);
 		recordDao.batchUpsert(instanceId, recordType, records, updatedSchema);
 		RecordResponse response = new RecordResponse(recordId, recordType, singleRecord.getAttributes(),
 				new RecordMetadata("TODO: SUPERFRESH"));
 		return new ResponseEntity<>(response, HttpStatus.OK);
-	}
-
-	private Map<String, DataTypeMapping> addOrUpdateColumnIfNeeded(UUID instanceId, RecordType recordType,
-			Map<String, DataTypeMapping> schema, Map<String, DataTypeMapping> existingTableSchema,
-			List<Record> records) {
-		MapDifference<String, DataTypeMapping> difference = Maps.difference(existingTableSchema, schema);
-		Map<String, DataTypeMapping> colsToAdd = difference.entriesOnlyOnRight();
-		colsToAdd.keySet().stream().filter(s -> s.startsWith(RESERVED_NAME_PREFIX)).findAny().ifPresent(s -> {
-			throw new InvalidNameException(InvalidNameException.NameType.ATTRIBUTE);
-		});
-		validateRelationsAndAddColumns(instanceId, recordType, schema, records, colsToAdd, existingTableSchema);
-		Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference.entriesDiffering();
-		for (Map.Entry<String, MapDifference.ValueDifference<DataTypeMapping>> entry : differenceMap.entrySet()) {
-			String column = entry.getKey();
-			MapDifference.ValueDifference<DataTypeMapping> valueDifference = entry.getValue();
-			DataTypeMapping updatedColType = inferer.selectBestType(valueDifference.leftValue(),
-					valueDifference.rightValue());
-			recordDao.changeColumn(instanceId, recordType, column, updatedColType);
-			schema.put(column, updatedColType);
-		}
-		return schema;
-	}
-
-	private void validateRelationsAndAddColumns(UUID instanceId, RecordType recordType,
-			Map<String, DataTypeMapping> requestSchema, List<Record> records, Map<String, DataTypeMapping> colsToAdd,
-			Map<String, DataTypeMapping> existingSchema) {
-		Set<Relation> relations = RelationUtils.findRelations(records);
-		List<Relation> existingRelations = recordDao.getRelationCols(instanceId, recordType);
-		Set<String> existingRelationCols = existingRelations.stream().map(Relation::relationColName)
-				.collect(Collectors.toSet());
-		// look for case where requested relation column already exists as a
-		// non-relational column
-		for (Relation relation : relations) {
-			String col = relation.relationColName();
-			if (!existingRelationCols.contains(col) && existingSchema.containsKey(col)) {
-				throw new InvalidRelationException("It looks like you're attempting to assign a relation "
-						+ "to an existing attribute that was not configured for relations");
-			}
-		}
-		relations.addAll(existingRelations);
-		Map<String, List<Relation>> allRefCols = relations.stream()
-				.collect(Collectors.groupingBy(Relation::relationColName));
-		if (allRefCols.values().stream().anyMatch(l -> l.size() > 1)) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"Relation attribute can only be assigned to one record type");
-		}
-		for (Map.Entry<String, DataTypeMapping> entry : colsToAdd.entrySet()) {
-			RecordType referencedRecordType = null;
-			String col = entry.getKey();
-			DataTypeMapping dataType = entry.getValue();
-			if (allRefCols.containsKey(col)) {
-				referencedRecordType = allRefCols.get(col).get(0).relationRecordType();
-			}
-			recordDao.addColumn(instanceId, recordType, col, dataType, referencedRecordType);
-			requestSchema.put(col, dataType);
-		}
 	}
 
 	@GetMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
@@ -220,7 +162,7 @@ public class RecordController {
 			}
 			Record newRecord = new Record(recordId, recordType, recordRequest.recordAttributes());
 			List<Record> records = Collections.singletonList(newRecord);
-			addOrUpdateColumnIfNeeded(instanceId, recordType, requestSchema, existingTableSchema, records);
+			batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType, requestSchema, existingTableSchema, records);
 			Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
 			combinedSchema.putAll(requestSchema);
 			recordDao.batchUpsert(instanceId, recordType, records, combinedSchema);
@@ -308,6 +250,14 @@ public class RecordController {
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
 			throw new MissingObjectException("Record type");
 		}
+	}
+
+	@PostMapping("/{instanceid}/batch/{v}/{type}")
+	public ResponseEntity<BatchResponse> streamingWrite(@PathVariable("instanceid") UUID instanceId,
+			@PathVariable("v") String version, @PathVariable("type") RecordType recordType, InputStream is) {
+		validateVersion(version);
+		int recordsModified = batchWriteService.consumeWriteStream(is, instanceId, recordType);
+		return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
 	}
 
 	private void validateInstance(UUID instanceId) {
