@@ -1,7 +1,12 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
+import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
+import org.databiosphere.workspacedataservice.service.model.exception.BatchDeleteException;
+import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -11,12 +16,14 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -70,7 +77,6 @@ public class RecordDao {
 			}
 			throw e;
 		}
-
 	}
 
 	private String getQualifiedTableName(RecordType recordType, UUID instanceId) {
@@ -153,9 +159,7 @@ public class RecordDao {
 	// that's dealt with earlier in the code.
 	public void batchUpsert(UUID instanceId, RecordType recordType, List<Record> records,
 			Map<String, DataTypeMapping> schema) {
-		schema.put(RECORD_ID, DataTypeMapping.STRING);
-		List<RecordColumn> schemaAsList = schema.entrySet().stream()
-				.map(e -> new RecordColumn(e.getKey(), e.getValue())).toList();
+		List<RecordColumn> schemaAsList = getSchemaWithRowId(schema);
 		try {
 			namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(instanceId, recordType, schemaAsList),
 					getInsertBatchArgs(records, schemaAsList));
@@ -165,6 +169,57 @@ public class RecordDao {
 				throw e;
 			}
 		}
+	}
+
+	private List<RecordColumn> getSchemaWithRowId(Map<String, DataTypeMapping> schema) {
+		schema.put(RECORD_ID, DataTypeMapping.STRING);
+		return schema.entrySet().stream()
+				.map(e -> new RecordColumn(e.getKey(), e.getValue())).toList();
+	}
+
+	public void batchUpsertWithErrorCapture(UUID instanceId, RecordType recordType, List<Record> records,
+			Map<String, DataTypeMapping> schema) {
+		try {
+			batchUpsert(instanceId, recordType, records, schema);
+		} catch (DataAccessException e) {
+			if (isDataMismatchException(e)) {
+				Map<String, DataTypeMapping> recordTypeSchemaWithoutId = new HashMap<>(schema);
+				recordTypeSchemaWithoutId.remove(RECORD_ID);
+				List<String> rowErrors = checkEachRow(records, recordTypeSchemaWithoutId);
+				if (!rowErrors.isEmpty()) {
+					throw new BatchWriteException(rowErrors);
+				}
+			}
+		}
+	}
+
+	private List<String> checkEachRow(List<Record> records, Map<String, DataTypeMapping> recordTypeSchema) {
+		DataTypeInferer inferer = new DataTypeInferer();
+		List<String> result = new ArrayList<>();
+		for (Record rcd : records) {
+			Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(rcd.getAttributes());
+			if (!schemaForRecord.equals(recordTypeSchema)) {
+				MapDifference<String, DataTypeMapping> difference = Maps.difference(schemaForRecord, recordTypeSchema);
+				Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference
+						.entriesDiffering();
+				result.add(convertSchemaDiffToErrorMessage(differenceMap, rcd));
+			}
+		}
+		return result;
+	}
+
+	private String convertSchemaDiffToErrorMessage(
+			Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap, Record rcd) {
+		return differenceMap.keySet().stream()
+				.map(attr -> rcd.getId() + "." + attr + " is a "
+						+ differenceMap.get(attr).leftValue() + " in the request but is defined as "
+						+ differenceMap.get(attr).rightValue() + " in the record type definition for " + rcd.getRecordType())
+				.collect(Collectors.joining("\n"));
+	}
+
+	private boolean isDataMismatchException(DataAccessException e) {
+		return e.getRootCause() instanceof SQLException sqlException
+				&& sqlException.getSQLState().equals("42804");
 	}
 
 	public boolean deleteSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
@@ -303,6 +358,41 @@ public class RecordDao {
 	private String getInsertColList(List<String> existingTableSchema) {
 		return existingTableSchema.stream().map(this::quote).collect(Collectors.joining(", "));
 	}
+
+	@SuppressWarnings("squid:S2077")
+	public void batchDelete(UUID instanceId, RecordType recordType, List<Record> records) {
+		List<String> recordIds = records.stream().map(Record::getId).toList();
+		try {
+			int[] rowCounts = namedTemplate.getJdbcTemplate().batchUpdate(
+					"delete from" + getQualifiedTableName(recordType, instanceId) + " where " + RECORD_ID + " = ?",
+					new BatchPreparedStatementSetter() {
+						@Override
+						public void setValues(PreparedStatement ps, int i) throws SQLException {
+							ps.setString(1, recordIds.get(i));
+						}
+
+						@Override
+						public int getBatchSize() {
+							return recordIds.size();
+						}
+					});
+			List<String> recordErrors = new ArrayList<>();
+			for (int i = 0; i < rowCounts.length; i++) {
+				if(rowCounts[i] != 1){
+					recordErrors.add("record id " + recordIds.get(i) + " does not exist in " + recordType.getName());
+				}
+			}
+			if(!recordErrors.isEmpty()){
+				throw new BatchDeleteException(recordErrors);
+			}
+		} catch (DataIntegrityViolationException e) {
+			if (e.getRootCause() instanceof SQLException sqlEx) {
+				checkForTableRelation(sqlEx);
+			}
+			throw e;
+		}
+	}
+
 
 	private record RecordRowMapper(RecordType recordType,
 			Map<String, RecordType> referenceColToTable) implements RowMapper<Record> {

@@ -163,17 +163,17 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /{instanceid}/batch/{v}:
+  /{instanceid}/batch/{v}/{type}:
     post:
-      deprecated: true
-      summary: Batch write records (pending)
-      description: Perform a batch of create / delete / update / replace operations on multiple records
+      summary: Batch write records
+      description: Perform a batch of upsert / delete operations on multiple records
       operationId: batchWriteRecords
       tags:
         - Records
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
       requestBody:
         $ref: '#/components/requestBodies/BatchRequestBody'
       responses:
@@ -466,7 +466,7 @@ components:
       properties:
         operation:
           type: string
-          enum: [create, update, replace, delete]
+          enum: [upsert, delete]
         record:
           $ref: '#/components/schemas/BatchRecordRequest'
     BatchRecordRequest:
@@ -478,35 +478,21 @@ components:
       properties:
         id:
           $ref: '#/components/schemas/RecordId'
-          description: Record id
         type:
           $ref: '#/components/schemas/RecordType'
-          description: Record type
         attributes:
           $ref: '#/components/schemas/RecordAttributes'
-          description: KVPs of record attributes
     BatchResponse:
       type: object
       required:
-        - status
-        - failures
+        - message
+        - recordsModified
       properties:
-        status:
+        message:
           type: string
-          enum: [Success, Failure]
-        failures:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                $ref: '#/components/schemas/RecordId'
-                description: Record id
-              type:
-                $ref: '#/components/schemas/RecordType'
-                description: Record type
-              message:
-                type: string
+        recordsModified:
+          type: integer
+
     SearchRequest:
       type: object
       properties:
