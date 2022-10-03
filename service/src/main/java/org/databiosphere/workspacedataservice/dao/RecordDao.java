@@ -7,6 +7,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.MissingObj
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.postgresql.util.PGobject;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -25,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.*;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
@@ -34,8 +36,11 @@ import static org.databiosphere.workspacedataservice.service.model.exception.Inv
 public class RecordDao {
 
 	private final NamedParameterJdbcTemplate namedTemplate;
-	public RecordDao(NamedParameterJdbcTemplate namedTemplate) {
+
+	private final NamedParameterJdbcTemplate templateForStreaming;
+	public RecordDao(NamedParameterJdbcTemplate namedTemplate, @Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming) {
 		this.namedTemplate = namedTemplate;
+		this.templateForStreaming = templateForStreaming;
 	}
 
 	public boolean instanceSchemaExists(UUID instanceId) {
@@ -218,6 +223,11 @@ public class RecordDao {
 						"Unable to delete this record type because another record type has a relation to it.");
 			}
 		}
+	}
+
+	public Stream<Record> streamAllRecordsForType(UUID instanceId, RecordType recordType){
+		return templateForStreaming.getJdbcTemplate().queryForStream("select * from " + getQualifiedTableName(recordType, instanceId),
+				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType))));
 	}
 
 	public String getFkSql(Set<Relation> relations, UUID instanceId) {

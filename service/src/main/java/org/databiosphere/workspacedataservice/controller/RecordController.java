@@ -2,20 +2,34 @@ package org.databiosphere.workspacedataservice.controller;
 
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.QuoteMode;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.model.*;
-import org.databiosphere.workspacedataservice.service.model.exception.*;
+import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 
@@ -124,6 +138,37 @@ public class RecordController {
 				new RecordMetadata("TODO: RECORDMETADATA"));
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
+
+	@GetMapping("{instanceId}/records/{version}/{recordType}")
+	public ResponseEntity<StreamingResponseBody> streamAllEntities(@PathVariable("instanceId") UUID instanceId,
+																   @PathVariable("version") String version,
+																   @PathVariable("recordType") RecordType recordType) {
+		validateVersion(version);
+		validateInstance(instanceId);
+		checkRecordTypeExists(instanceId, recordType);
+		Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType);
+		List<String> headers = new ArrayList<>(recordDao.getExistingTableSchema(instanceId, recordType).keySet());
+		CSVFormat format = CSVFormat.DEFAULT.builder().setDelimiter('\t').setEscape('"').setQuote('"')
+				.setQuoteMode(QuoteMode.MINIMAL).setHeader(headers.toArray(new String[0])).build();
+
+		StreamingResponseBody responseBody = httpResponseOutputStream -> {
+			try (CSVPrinter writer = format.print(new OutputStreamWriter(httpResponseOutputStream))) {
+				Consumer<Record> recordConsumer = r -> {
+					try {
+						for (String header : headers) {
+							writer.print(r.getAttributeValue(header));
+						}
+						writer.println();
+					} catch (IOException ioException){
+						throw new RuntimeException(ioException);
+					}
+				};
+				allRecords.forEach(recordConsumer);
+			}
+		};
+		return ResponseEntity.status(HttpStatus.OK).contentType(new MediaType("text", "csv")).body(responseBody);
+	}
+
 
 	@PostMapping("/{instanceid}/search/{version}/{recordType}")
 	public RecordQueryResponse queryForEntities(@PathVariable("instanceid") UUID instanceId,
