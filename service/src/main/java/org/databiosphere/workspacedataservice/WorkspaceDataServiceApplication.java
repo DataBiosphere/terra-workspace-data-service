@@ -11,6 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import javax.sql.DataSource;
@@ -34,6 +35,19 @@ public class WorkspaceDataServiceApplication {
 		//https://jdbc.postgresql.org/documentation/head/query.html#query-with-cursor
 		hikariDataSource.setAutoCommit(false);
 		return hikariDataSource;
+	}
+
+	@Bean
+	@Primary
+	@ConfigurationProperties("spring.datasource")
+	public DataSource mainDb(){
+		return DataSourceBuilder.create().build();
+	}
+
+	@Bean
+	@Primary
+	public NamedParameterJdbcTemplate namedParameterJdbcTemplate(){
+		return new NamedParameterJdbcTemplate(mainDb());
 	}
 
 	@Bean
