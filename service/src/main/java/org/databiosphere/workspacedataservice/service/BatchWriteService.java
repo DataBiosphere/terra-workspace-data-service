@@ -110,14 +110,14 @@ public class BatchWriteService {
 		int recordsAffected = 0;
 		try (StreamingWriteHandler streamingWriteHandler = new StreamingWriteHandler(is)) {
 			Map<String, DataTypeMapping> schema = null;
-			boolean firstBatch = true;
+			boolean firstUpsertBatch = true;
 			for (StreamingWriteHandler.WriteStreamInfo info = streamingWriteHandler.readRecords(batchSize); !info
 					.getRecords().isEmpty(); info = streamingWriteHandler.readRecords(batchSize)) {
 				List<Record> records = info.getRecords();
-				if (firstBatch && info.getOperationType() == OperationType.UPSERT) {
+				if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
 					schema = inferer.inferTypes(records);
 					createOrModifyRecordType(instanceId, recordType, schema, records);
-					firstBatch = false;
+					firstUpsertBatch = false;
 				}
 				writeBatch(instanceId, recordType, schema, info, records);
 				recordsAffected += records.size();
@@ -128,17 +128,15 @@ public class BatchWriteService {
 		return recordsAffected;
 	}
 
-	private void createOrModifyRecordType(UUID instanceId, RecordType recordType, Map<String, DataTypeMapping> schema, List<Record> records) {
-		if (!recordDao.instanceSchemaExists(instanceId)) {
-			recordDao.createSchema(instanceId);
-		}
+	private Map<String, DataTypeMapping> createOrModifyRecordType(UUID instanceId, RecordType recordType, Map<String, DataTypeMapping> schema, List<Record> records) {
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
 			recordDao.createRecordType(instanceId, schema, recordType,
 					RelationUtils.findRelations(records));
 		} else {
-			addOrUpdateColumnIfNeeded(instanceId, recordType, schema,
+			return addOrUpdateColumnIfNeeded(instanceId, recordType, schema,
 					recordDao.getExistingTableSchema(instanceId, recordType), records);
 		}
+		return schema;
 	}
 
 	private void writeBatch(UUID instanceId, RecordType recordType, Map<String, DataTypeMapping> schema,

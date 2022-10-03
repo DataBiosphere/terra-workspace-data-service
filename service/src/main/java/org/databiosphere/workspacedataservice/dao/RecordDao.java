@@ -211,18 +211,15 @@ public class RecordDao {
 	private String convertSchemaDiffToErrorMessage(
 			Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap, RecordAttributes attributes, String recordId, RecordType recordType) {
 		return differenceMap.keySet().stream()
-				.map(attr -> recordId + "." + attr + "=" + attributes.getAttributeValue(attr) + " is a "
+				.map(attr -> recordId + "." + attr + " is a "
 						+ differenceMap.get(attr).leftValue() + " in the request but is defined as "
 						+ differenceMap.get(attr).rightValue() + " in the record type definition for " + recordType)
 				.collect(Collectors.joining("\n"));
 	}
 
 	private boolean isDataMismatchException(DataAccessException e) {
-		if (e.getRootCause()instanceof SQLException sqlException) {
-			// data type mismatch: https://www.postgresql.org/docs/13/errcodes-appendix.html
-			return sqlException.getSQLState().equals("42804");
-		}
-		return false;
+		return e.getRootCause() instanceof SQLException sqlException
+				&& sqlException.getSQLState().equals("42804");
 	}
 
 	public boolean deleteSingleRecord(UUID instanceId, RecordType recordType, String recordId) {

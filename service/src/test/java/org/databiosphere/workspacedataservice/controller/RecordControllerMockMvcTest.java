@@ -10,6 +10,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.MissingObj
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -501,14 +502,17 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void batchWriteInsertShouldSucceed() throws Exception {
+		mockMvc.perform(post("/{instanceId}/{version}/", instanceId, versionId));
 		String recordId = "foo";
 		String newBatchRecordType = "new-record-type";
 		Record record = new Record(recordId, RecordType.valueOf(newBatchRecordType),
 				new RecordAttributes(Map.of("attr1", "attr-val")));
+		Record record2 = new Record("foo2", RecordType.valueOf(newBatchRecordType),
+				new RecordAttributes(Map.of("attr1", "attr-val")));
 		BatchOperation op = new BatchOperation(record, OperationType.UPSERT);
 		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, newBatchRecordType)
-						.content(mapper.writeValueAsString(List.of(op))).contentType(MediaType.APPLICATION_JSON))
-						.andExpect(jsonPath("$.recordsModified", is(1)))
+						.content(mapper.writeValueAsString(List.of(op, new BatchOperation(record2, OperationType.UPSERT)))).contentType(MediaType.APPLICATION_JSON))
+						.andExpect(jsonPath("$.recordsModified", is(2)))
 						.andExpect(jsonPath("$.message", is("Huzzah")))
 				.andExpect(status().isOk());
 		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, newBatchRecordType, recordId)
