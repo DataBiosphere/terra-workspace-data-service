@@ -185,7 +185,7 @@ public class RecordDao {
 			if (isDataMismatchException(e)) {
 				Map<String, DataTypeMapping> recordTypeSchemaWithoutId = new HashMap<>(schema);
 				recordTypeSchemaWithoutId.remove(RECORD_ID);
-				List<String> rowErrors = checkEachRow(records, recordTypeSchemaWithoutId, recordType);
+				List<String> rowErrors = checkEachRow(records, recordTypeSchemaWithoutId);
 				if (!rowErrors.isEmpty()) {
 					throw new BatchWriteException(rowErrors);
 				}
@@ -193,7 +193,7 @@ public class RecordDao {
 		}
 	}
 
-	private List<String> checkEachRow(List<Record> records, Map<String, DataTypeMapping> recordTypeSchema, RecordType recordType) {
+	private List<String> checkEachRow(List<Record> records, Map<String, DataTypeMapping> recordTypeSchema) {
 		DataTypeInferer inferer = new DataTypeInferer();
 		List<String> result = new ArrayList<>();
 		for (Record rcd : records) {
@@ -202,18 +202,18 @@ public class RecordDao {
 				MapDifference<String, DataTypeMapping> difference = Maps.difference(schemaForRecord, recordTypeSchema);
 				Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference
 						.entriesDiffering();
-				result.add(convertSchemaDiffToErrorMessage(differenceMap, rcd.getAttributes(), rcd.getId(), recordType));
+				result.add(convertSchemaDiffToErrorMessage(differenceMap, rcd));
 			}
 		}
 		return result;
 	}
 
 	private String convertSchemaDiffToErrorMessage(
-			Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap, RecordAttributes attributes, String recordId, RecordType recordType) {
+			Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap, Record rcd) {
 		return differenceMap.keySet().stream()
-				.map(attr -> recordId + "." + attr + " is a "
+				.map(attr -> rcd.getId() + "." + attr + " is a "
 						+ differenceMap.get(attr).leftValue() + " in the request but is defined as "
-						+ differenceMap.get(attr).rightValue() + " in the record type definition for " + recordType)
+						+ differenceMap.get(attr).rightValue() + " in the record type definition for " + rcd.getRecordType())
 				.collect(Collectors.joining("\n"));
 	}
 
