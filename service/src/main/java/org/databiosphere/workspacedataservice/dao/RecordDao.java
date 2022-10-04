@@ -423,7 +423,7 @@ public class RecordDao {
 					if (columnName.startsWith(RESERVED_NAME_PREFIX)) {
 						continue;
 					}
-					if (referenceColToTable.size() > 0 && referenceColToTable.containsKey(columnName)) {
+					if (referenceColToTable.size() > 0 && referenceColToTable.containsKey(columnName) && rs.getString(columnName) != null) {
 						attributes.putAttribute(columnName, RelationUtils
 								.createRelationString(referenceColToTable.get(columnName), rs.getString(columnName)));
 					} else {
