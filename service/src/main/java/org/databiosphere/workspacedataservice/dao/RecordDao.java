@@ -171,8 +171,8 @@ public class RecordDao {
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingRecord(sqlEx);
-				throw e;
 			}
+			throw e;
 		}
 	}
 
@@ -195,6 +195,7 @@ public class RecordDao {
 					throw new BatchWriteException(rowErrors);
 				}
 			}
+			throw e;
 		}
 	}
 

@@ -15,6 +15,9 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import javax.sql.DataSource;
+
+import org.springframework.lang.NonNull;
+import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -66,8 +69,13 @@ public class WorkspaceDataServiceApplication {
 	public WebMvcConfigurer corsConfigurer() {
 		return new WebMvcConfigurer() {
 			@Override
-			public void addCorsMappings(CorsRegistry registry) {
+			public void addCorsMappings(@NonNull CorsRegistry registry) {
 				registry.addMapping("/**").allowedOrigins("*");
+			}
+
+			@Override
+			public void configureAsyncSupport(@NonNull AsyncSupportConfigurer configurer) {
+				configurer.setDefaultTimeout(-1);
 			}
 		};
 	}

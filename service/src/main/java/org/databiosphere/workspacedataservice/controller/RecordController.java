@@ -1,16 +1,13 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
-import org.apache.commons.csv.QuoteMode;
+import com.univocity.parsers.tsv.TsvWriter;
+import com.univocity.parsers.tsv.TsvWriterSettings;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
-import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
-import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.TsvSupport;
+import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
@@ -21,11 +18,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -88,24 +83,19 @@ public class RecordController {
 		validateVersion(version);
 		validateInstance(instanceId);
 		checkRecordTypeExists(instanceId, recordType);
+		List<String> headers = new ArrayList<>(Collections.singletonList(ReservedNames.RECORD_ID));
+		headers.addAll(recordDao.getExistingTableSchema(instanceId, recordType).keySet());
 		Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType);
-		List<String> headers = new ArrayList<>(recordDao.getExistingTableSchema(instanceId, recordType).keySet());
-		CSVFormat format = CSVFormat.DEFAULT.builder().setDelimiter('\t').setEscape('"').setQuote('"')
-				.setQuoteMode(QuoteMode.MINIMAL).setHeader(headers.toArray(new String[0])).build();
-
+		TsvWriterSettings tsvSettings = TsvSupport.getTsvSettings();
 		StreamingResponseBody responseBody = httpResponseOutputStream -> {
-			try (CSVPrinter writer = format.print(new OutputStreamWriter(httpResponseOutputStream))) {
-				Consumer<Record> recordConsumer = r -> {
-					try {
-						for (String header : headers) {
-							writer.print(r.getAttributeValue(header));
-						}
-						writer.println();
-					} catch (IOException ioException){
-						throw new RuntimeException(ioException);
-					}
-				};
-				allRecords.forEach(recordConsumer);
+			TsvWriter writer = null;
+			try {
+				writer = new TsvWriter(new OutputStreamWriter(httpResponseOutputStream), tsvSettings);
+				writer.writeHeaders(headers);
+				TsvSupport.RecordEmitter recordEmitter = new TsvSupport.RecordEmitter(writer, headers.subList(1, headers.size()));
+				allRecords.forEach(recordEmitter);
+			} finally {
+				writer.close();
 			}
 		};
 		return ResponseEntity.status(HttpStatus.OK).contentType(new MediaType("text", "csv")).body(responseBody);
