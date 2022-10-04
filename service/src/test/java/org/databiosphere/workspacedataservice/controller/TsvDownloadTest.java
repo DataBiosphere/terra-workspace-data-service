@@ -10,7 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,12 +29,10 @@ public class TsvDownloadTest {
     private RecordController recordController;
 
     @Test
-    @Transactional
     void batchWriteFollowedByTsvDownload() throws IOException {
         RecordType recordType = RecordType.valueOf("tsv-test");
         String version = "v0.2";
         UUID instanceId = UUID.randomUUID();
-        System.out.println(instanceId);
         recordController.createInstance(instanceId, version);
         InputStream is = FullStackRecordControllerTest.class.getResourceAsStream("/batch_write_tsv_data.json");
         ResponseEntity<BatchResponse> response = recordController.streamingWrite(instanceId, version, recordType, is);
@@ -42,7 +40,7 @@ public class TsvDownloadTest {
         assertThat(response.getStatusCodeValue()).isEqualTo(200);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        ResponseEntity<Resource> stream = restTemplate.exchange("/{instanceId}/records/{version}/{recordType}",
+        ResponseEntity<Resource> stream = restTemplate.exchange("/{instanceId}/tsv/{version}/{recordType}",
                 HttpMethod.GET, new HttpEntity<>(headers), Resource.class, instanceId, version, recordType);
         InputStream inputStream = stream.getBody().getInputStream();
         TsvParserSettings tsvParserSettings = new TsvParserSettings();
