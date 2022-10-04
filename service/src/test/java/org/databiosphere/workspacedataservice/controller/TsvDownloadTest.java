@@ -10,17 +10,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class TsvDownloadTest {
+class TsvDownloadTest {
 
     @Autowired
     private TestRestTemplate restTemplate;
@@ -47,7 +47,7 @@ public class TsvDownloadTest {
         tsvParserSettings.getFormat().setLineSeparator("\n");
         TsvParser tsvParser = new TsvParser(tsvParserSettings);
         List<String[]> result = tsvParser.parseAll(inputStream);
-        assertThat(result.size()).isEqualTo(3);
+        assertThat(result).hasSize(3);
         assertThat(result.get(0)).isEqualTo(new String[]{"sys_name", "createdAt", "description", "location", "jsonObj", "jsonArray"});
         assertThat(result.get(1)).isEqualTo(new String[]{"1", "2021-10-11", "Embedded\tTab", "Portland, OR", "{\"age\": 22, \"foo\": \"bar\"}", null});
         assertThat(result.get(2)).isEqualTo(new String[]{"2", null, ",Weird\n String", "Cambridge, MA", null, "[1, 3, 9, \"puppies\"]"});
