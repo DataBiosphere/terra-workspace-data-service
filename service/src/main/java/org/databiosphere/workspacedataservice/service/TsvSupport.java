@@ -10,6 +10,10 @@ import java.util.function.Consumer;
 
 public class TsvSupport {
 
+    private TsvSupport (){
+
+    }
+
 
     public static TsvWriterSettings getTsvSettings(){
         TsvWriterSettings settings = new TsvWriterSettings();
@@ -28,11 +32,11 @@ public class TsvSupport {
         }
 
         @Override
-        public void accept(Record record) {
+        public void accept(Record rcd) {
             List<Object> attributeValues = new ArrayList<>();
-            attributeValues.add(record.getId());
+            attributeValues.add(rcd.getId());
             for (String attributeName : attributeNames) {
-                attributeValues.add(record.getAttributeValue(attributeName));
+                attributeValues.add(rcd.getAttributeValue(attributeName));
             }
             tsvWriter.writeRow(attributeValues);
         }

@@ -89,10 +89,10 @@ public class RecordController {
 		TsvWriterSettings tsvSettings = TsvSupport.getTsvSettings();
 		StreamingResponseBody responseBody = httpResponseOutputStream -> {
 			TsvWriter writer = null;
-			try {
-				writer = new TsvWriter(new OutputStreamWriter(httpResponseOutputStream), tsvSettings);
-				writer.writeHeaders(headers);
+			try (OutputStreamWriter outputStreamWriter = new OutputStreamWriter(httpResponseOutputStream)){
+				writer = new TsvWriter(outputStreamWriter, tsvSettings);
 				TsvSupport.RecordEmitter recordEmitter = new TsvSupport.RecordEmitter(writer, headers.subList(1, headers.size()));
+				writer.writeHeaders(headers);
 				allRecords.forEach(recordEmitter);
 			} finally {
 				writer.close();

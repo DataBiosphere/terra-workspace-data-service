@@ -29,6 +29,7 @@ public class TsvDownloadTest {
     private RecordController recordController;
 
     @Test
+    @Transactional
     void batchWriteFollowedByTsvDownload() throws IOException {
         RecordType recordType = RecordType.valueOf("tsv-test");
         String version = "v0.2";
