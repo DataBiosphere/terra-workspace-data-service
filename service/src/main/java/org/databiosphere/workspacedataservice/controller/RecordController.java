@@ -76,7 +76,7 @@ public class RecordController {
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
-	@GetMapping("{instanceId}/records/{version}/{recordType}")
+	@GetMapping("{instanceId}/tsv/{version}/{recordType}")
 	public ResponseEntity<StreamingResponseBody> streamAllEntities(@PathVariable("instanceId") UUID instanceId,
 																   @PathVariable("version") String version,
 																   @PathVariable("recordType") RecordType recordType) {
