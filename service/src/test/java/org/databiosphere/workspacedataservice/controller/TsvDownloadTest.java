@@ -38,7 +38,7 @@ class TsvDownloadTest {
         String version = "v0.2";
         UUID instanceId = UUID.randomUUID();
         recordController.createInstance(instanceId, version);
-        InputStream is = FullStackRecordControllerTest.class.getResourceAsStream("/batch_write_tsv_data.json");
+        InputStream is = TsvDownloadTest.class.getResourceAsStream("/batch_write_tsv_data.json");
         ResponseEntity<BatchResponse> response = recordController.streamingWrite(instanceId, version, recordType, is);
         is.close();
         assertThat(response.getStatusCodeValue()).isEqualTo(200);
