@@ -11,6 +11,9 @@ import java.util.function.Consumer;
 
 public class TsvSupport {
 
+    private TsvSupport() {
+    }
+
     public static CSVFormat getOutputFormat(List<String> headers) {
          return CSVFormat.DEFAULT.builder().setDelimiter('\t')
                 .setQuoteMode(QuoteMode.MINIMAL)
@@ -29,11 +32,11 @@ public class TsvSupport {
         }
 
         @Override
-        public void accept(Record record) {
+        public void accept(Record rcd) {
             try {
-                csvPrinter.print(record.getId());
+                csvPrinter.print(rcd.getId());
                 for (String attributeName : attributeNames) {
-                    csvPrinter.print(record.getAttributeValue(attributeName));
+                    csvPrinter.print(rcd.getAttributeValue(attributeName));
                 }
                 csvPrinter.println();
             } catch (IOException e) {
