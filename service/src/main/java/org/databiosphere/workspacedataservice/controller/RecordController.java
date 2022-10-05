@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import com.univocity.parsers.tsv.TsvWriter;
-import com.univocity.parsers.tsv.TsvWriterSettings;
+import org.apache.commons.csv.CSVPrinter;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
@@ -86,16 +85,11 @@ public class RecordController {
 		List<String> headers = new ArrayList<>(Collections.singletonList(ReservedNames.RECORD_ID));
 		headers.addAll(recordDao.getExistingTableSchema(instanceId, recordType).keySet());
 		Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType);
-		TsvWriterSettings tsvSettings = TsvSupport.getTsvSettings();
+
 		StreamingResponseBody responseBody = httpResponseOutputStream -> {
-			TsvWriter writer = null;
-			try (OutputStreamWriter outputStreamWriter = new OutputStreamWriter(httpResponseOutputStream)){
-				writer = new TsvWriter(outputStreamWriter, tsvSettings);
+			try (CSVPrinter writer = TsvSupport.getOutputFormat(headers).print(new OutputStreamWriter(httpResponseOutputStream))) {
 				TsvSupport.RecordEmitter recordEmitter = new TsvSupport.RecordEmitter(writer, headers.subList(1, headers.size()));
-				writer.writeHeaders(headers);
 				allRecords.forEach(recordEmitter);
-			} finally {
-				writer.close();
 			}
 		};
 		return ResponseEntity.status(HttpStatus.OK).contentType(new MediaType("text", "csv")).body(responseBody);

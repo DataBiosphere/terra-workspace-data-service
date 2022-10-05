@@ -1,7 +1,9 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import com.univocity.parsers.tsv.TsvParser;
-import com.univocity.parsers.tsv.TsvParserSettings;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.csv.QuoteMode;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
@@ -13,7 +15,9 @@ import org.springframework.http.*;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,13 +47,16 @@ class TsvDownloadTest {
         ResponseEntity<Resource> stream = restTemplate.exchange("/{instanceId}/tsv/{version}/{recordType}",
                 HttpMethod.GET, new HttpEntity<>(headers), Resource.class, instanceId, version, recordType);
         InputStream inputStream = stream.getBody().getInputStream();
-        TsvParserSettings tsvParserSettings = new TsvParserSettings();
-        tsvParserSettings.getFormat().setLineSeparator("\n");
-        TsvParser tsvParser = new TsvParser(tsvParserSettings);
-        List<String[]> result = tsvParser.parseAll(inputStream);
-        assertThat(result).hasSize(3);
-        assertThat(result.get(0)).isEqualTo(new String[]{"sys_name", "createdAt", "description", "location", "jsonObj", "jsonArray"});
-        assertThat(result.get(1)).isEqualTo(new String[]{"1", "2021-10-11", "Embedded\tTab", "Portland, OR", "{\"age\": 22, \"foo\": \"bar\"}", null});
-        assertThat(result.get(2)).isEqualTo(new String[]{"2", null, ",Weird\n String", "Cambridge, MA", null, "[1, 3, 9, \"puppies\"]"});
+        CSVFormat csvFormat = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).setDelimiter("\t").setQuoteMode(QuoteMode.MINIMAL).build();
+        InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+        Iterable<CSVRecord> records = new CSVParser(reader, csvFormat);
+        Iterator<CSVRecord> iterator = records.iterator();
+        CSVRecord rcd = iterator.next();
+        assertThat(rcd.get("description")).isEqualTo("Embedded\tTab");
+        rcd = iterator.next();
+        assertThat(rcd.get("description")).isEqualTo("\n,Weird\n String");
+        assertThat(rcd.get("location")).isEqualTo("Cambridge, \"MA\"");
+        assertThat(iterator.hasNext()).isFalse();
+        reader.close();
     }
 }

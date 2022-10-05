@@ -1,44 +1,44 @@
 package org.databiosphere.workspacedataservice.service;
 
-import com.univocity.parsers.tsv.TsvWriter;
-import com.univocity.parsers.tsv.TsvWriterSettings;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.QuoteMode;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
 
 public class TsvSupport {
 
-    private TsvSupport (){
-
-    }
-
-
-    public static TsvWriterSettings getTsvSettings(){
-        TsvWriterSettings settings = new TsvWriterSettings();
-        settings.getFormat().setLineSeparator("\n");
-        return settings;
+    public static CSVFormat getOutputFormat(List<String> headers) {
+         return CSVFormat.DEFAULT.builder().setDelimiter('\t')
+                .setQuoteMode(QuoteMode.MINIMAL)
+                 .setRecordSeparator("\n")
+                 .setHeader(headers.toArray(new String[0])).build();
     }
 
     public static class RecordEmitter implements Consumer<Record> {
 
-        private final TsvWriter tsvWriter;
+        private final CSVPrinter csvPrinter;
         private final List<String> attributeNames;
 
-        public RecordEmitter(TsvWriter writer, List<String> attributeNames) {
-            this.tsvWriter = writer;
+        public RecordEmitter(CSVPrinter csvPrinter, List<String> attributeNames) {
+            this.csvPrinter = csvPrinter;
             this.attributeNames = attributeNames;
         }
 
         @Override
-        public void accept(Record rcd) {
-            List<Object> attributeValues = new ArrayList<>();
-            attributeValues.add(rcd.getId());
-            for (String attributeName : attributeNames) {
-                attributeValues.add(rcd.getAttributeValue(attributeName));
+        public void accept(Record record) {
+            try {
+                csvPrinter.print(record.getId());
+                for (String attributeName : attributeNames) {
+                    csvPrinter.print(record.getAttributeValue(attributeName));
+                }
+                csvPrinter.println();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
-            tsvWriter.writeRow(attributeValues);
         }
     }
 }
