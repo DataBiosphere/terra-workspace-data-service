@@ -14,10 +14,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -73,6 +76,18 @@ public class RecordController {
 		RecordResponse response = new RecordResponse(recordId, recordType, result.getAttributes(),
 				new RecordMetadata("TODO: RECORDMETADATA"));
 		return new ResponseEntity<>(response, HttpStatus.OK);
+	}
+
+	@PostMapping("/{instanceid}/{v}/{type}/upload")
+	public ResponseEntity<TsvUploadResponse> handleStreamingUpload(@PathVariable("instanceid") UUID instanceId, @PathVariable("v") String version,
+										@PathVariable("type") RecordType recordType, @RequestParam("file") MultipartFile file) throws IOException {
+		validateInstance(instanceId);
+		validateVersion(version);
+		int records;
+		try (InputStreamReader inputStreamReader = new InputStreamReader(file.getInputStream())) {
+			records = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType);
+		}
+		return new ResponseEntity<>(new TsvUploadResponse(records, "Updated " + recordType.toString()), HttpStatus.OK);
 	}
 
 	@GetMapping("{instanceId}/tsv/{version}/{recordType}")

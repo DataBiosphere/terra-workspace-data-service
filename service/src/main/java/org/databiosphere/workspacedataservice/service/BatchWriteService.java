@@ -2,6 +2,9 @@ package org.databiosphere.workspacedataservice.service;
 
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
@@ -11,6 +14,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.InvalidNam
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -20,12 +24,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.io.InputStreamReader;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.databiosphere.workspacedataservice.service.TsvSupport.ROW_ID_COLUMN_NAME;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 
 @Service
@@ -96,6 +99,40 @@ public class BatchWriteService {
 			recordDao.addColumn(instanceId, recordType, col, dataType, referencedRecordType);
 			requestSchema.put(col, dataType);
 		}
+	}
+
+	@Transactional
+	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType) throws IOException {
+		CSVFormat csvFormat = TsvSupport.getUploadFormat();
+		CSVParser rows = csvFormat.parse(is);
+		List<Record> batch = new ArrayList<>();
+		boolean firstUpsertBatch = true;
+		Map<String, DataTypeMapping> schema = null;
+		int recordsProcessed = 0;
+		for (CSVRecord row : rows) {
+			Map<String, Object> m = (Map)row.toMap();
+			m.remove(ROW_ID_COLUMN_NAME);
+			batch.add(new Record(row.get(ROW_ID_COLUMN_NAME), recordType, new RecordAttributes(m)));
+			recordsProcessed++;
+			if(batch.size() >= batchSize){
+				if(firstUpsertBatch){
+					schema = createOrUpdateSchema(instanceId, recordType, batch);
+					firstUpsertBatch = false;
+				}
+				recordDao.batchUpsert(instanceId, recordType, batch, schema);
+				batch.clear();
+			}
+		}
+		if(firstUpsertBatch){
+			schema = createOrUpdateSchema(instanceId, recordType, batch);
+		}
+		recordDao.batchUpsert(instanceId, recordType, batch, schema);
+		return recordsProcessed;
+	}
+
+	private Map<String, DataTypeMapping> createOrUpdateSchema(UUID instanceId, RecordType recordType, List<Record> batch) {
+		Map<String, DataTypeMapping> schema = inferer.inferTypes(batch);
+		return createOrModifyRecordType(instanceId, recordType, schema, batch);
 	}
 
 	/**
