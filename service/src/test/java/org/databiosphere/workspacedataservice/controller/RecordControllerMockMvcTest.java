@@ -15,9 +15,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.*;
@@ -38,6 +41,9 @@ class RecordControllerMockMvcTest {
 	@Autowired
 	private MockMvc mockMvc;
 
+	@Autowired
+	private WebApplicationContext webApplicationContext;
+
 	private static UUID instanceId;
 
 	private static String versionId = "v0.2";
@@ -53,6 +59,23 @@ class RecordControllerMockMvcTest {
 		UUID uuid = UUID.randomUUID();
 		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isCreated());
 		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isConflict());
+	}
+
+	@Test
+	public void whenFileUploaded_thenVerifyStatus()
+			throws Exception {
+		MockMultipartFile file
+				= new MockMultipartFile(
+				"file",
+				"hello.txt",
+				MediaType.TEXT_PLAIN_VALUE,
+				"Hello, World!".getBytes()
+		);
+
+		mockMvc.perform(post("/{instanceId}/{version}/", instanceId, versionId));
+		mockMvc.perform(multipart("/{instanceid}/{v}/{type}/upload", instanceId, versionId, "tsv-record-type").file(file))
+				.andExpect(status().isOk());
+		System.out.println(instanceId);
 	}
 
 	@Test
