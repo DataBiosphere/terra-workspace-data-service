@@ -11,37 +11,35 @@ import java.util.function.Consumer;
 
 public class TsvSupport {
 
-    private TsvSupport() {
-    }
+	private TsvSupport() {
+	}
 
-    public static CSVFormat getOutputFormat(List<String> headers) {
-         return CSVFormat.DEFAULT.builder().setDelimiter('\t')
-                .setQuoteMode(QuoteMode.MINIMAL)
-                 .setRecordSeparator("\n")
-                 .setHeader(headers.toArray(new String[0])).build();
-    }
+	public static CSVFormat getOutputFormat(List<String> headers) {
+		return CSVFormat.DEFAULT.builder().setDelimiter('\t').setQuoteMode(QuoteMode.MINIMAL).setRecordSeparator("\n")
+				.setHeader(headers.toArray(new String[0])).build();
+	}
 
-    public static class RecordEmitter implements Consumer<Record> {
+	public static class RecordEmitter implements Consumer<Record> {
 
-        private final CSVPrinter csvPrinter;
-        private final List<String> attributeNames;
+		private final CSVPrinter csvPrinter;
+		private final List<String> attributeNames;
 
-        public RecordEmitter(CSVPrinter csvPrinter, List<String> attributeNames) {
-            this.csvPrinter = csvPrinter;
-            this.attributeNames = attributeNames;
-        }
+		public RecordEmitter(CSVPrinter csvPrinter, List<String> attributeNames) {
+			this.csvPrinter = csvPrinter;
+			this.attributeNames = attributeNames;
+		}
 
-        @Override
-        public void accept(Record rcd) {
-            try {
-                csvPrinter.print(rcd.getId());
-                for (String attributeName : attributeNames) {
-                    csvPrinter.print(rcd.getAttributeValue(attributeName));
-                }
-                csvPrinter.println();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
+		@Override
+		public void accept(Record rcd) {
+			try {
+				csvPrinter.print(rcd.getId());
+				for (String attributeName : attributeNames) {
+					csvPrinter.print(rcd.getAttributeValue(attributeName));
+				}
+				csvPrinter.println();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
 }

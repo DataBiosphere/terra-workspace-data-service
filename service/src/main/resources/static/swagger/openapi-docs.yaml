@@ -178,7 +178,7 @@ paths:
         200:
           description: Records in tsv format
           content:
-            text/plain:
+            text/tab-separated-values:
               schema:
                 type: string
                 format: binary
