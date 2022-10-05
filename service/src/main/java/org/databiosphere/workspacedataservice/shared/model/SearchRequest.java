@@ -5,11 +5,19 @@ public class SearchRequest {
 	private int limit = 10;
 	private int offset = 0;
 	private SortDirection sort = SortDirection.ASC;
+	private String sortAttribute = null;
 
 	public SearchRequest(int limit, int offset, SortDirection sort) {
 		this.limit = limit;
 		this.offset = offset;
 		this.sort = sort;
+	}
+
+	public SearchRequest(int limit, int offset, SortDirection sort, String sortAttribute) {
+		this.limit = limit;
+		this.offset = offset;
+		this.sort = sort;
+		this.sortAttribute = sortAttribute;
 	}
 
 	public SearchRequest() {
@@ -38,4 +46,8 @@ public class SearchRequest {
 	public void setSort(SortDirection sort) {
 		this.sort = sort;
 	}
+
+	public String getSortAttribute() { return sortAttribute; }
+
+	public void setSortAttribute(String sortAttribute) { this.sortAttribute = sortAttribute; }
 }

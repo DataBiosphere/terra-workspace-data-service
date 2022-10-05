@@ -502,6 +502,8 @@ components:
           $ref: '#/components/schemas/SearchLimit'
         sort:
           $ref: '#/components/schemas/SearchSortDirection'
+        sortAttribute:
+          type: string
     RecordRequest:
       type: object
       required:
