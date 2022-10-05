@@ -35,7 +35,7 @@ public class WorkspaceDataServiceApplication {
 	public DataSource streamingDs(){
 		DataSource ds = DataSourceBuilder.create().build();
 		HikariDataSource hikariDataSource = (HikariDataSource) ds;
-		//https://jdbc.postgresql.org/documentation/head/query.html#query-with-cursor
+		//https://jdbc.postgresql.org/documentation/query/#getting-results-based-on-a-cursor
 		hikariDataSource.setAutoCommit(false);
 		return hikariDataSource;
 	}
@@ -58,7 +58,7 @@ public class WorkspaceDataServiceApplication {
 	public NamedParameterJdbcTemplate templateForStreaming(@Qualifier("streamingDs") DataSource ds,
 														   @Value("${twds.streaming.fetch.size:50}") int fetchSize){
 		NamedParameterJdbcTemplate jdbcTemplate = new NamedParameterJdbcTemplate(ds);
-		//https://jdbc.postgresql.org/documentation/head/query.html#query-with-cursor
+		//https://jdbc.postgresql.org/documentation/query/#getting-results-based-on-a-cursor
 		jdbcTemplate.getJdbcTemplate().setFetchSize(fetchSize);
 		return jdbcTemplate;
 	}
