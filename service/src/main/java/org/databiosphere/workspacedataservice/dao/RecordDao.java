@@ -417,8 +417,16 @@ public class RecordDao {
 								.createRelationString(referenceColToTable.get(columnName), rs.getString(columnName)));
 					} else {
 						Object object = rs.getObject(columnName);
-						attributes.putAttribute(columnName,
-								object instanceof PGobject pGobject ? pGobject.getValue() : object);
+
+						if (object instanceof java.sql.Date date) {
+							object = date.toString();
+						} else if (object instanceof java.sql.Timestamp ts) {
+							object = ts.toString();
+						} else if (object instanceof PGobject pGobject) {
+							object = pGobject.getValue();
+						}
+
+						attributes.putAttribute(columnName, object);
 					}
 				}
 				return attributes;
