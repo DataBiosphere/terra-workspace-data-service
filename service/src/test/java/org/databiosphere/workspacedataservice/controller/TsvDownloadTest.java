@@ -56,6 +56,7 @@ class TsvDownloadTest {
         rcd = iterator.next();
         assertThat(rcd.get("description")).isEqualTo("\n,Weird\n String");
         assertThat(rcd.get("location")).isEqualTo("Cambridge, \"MA\"");
+        assertThat(rcd.get("unicodeData")).isEqualTo("\uD83D\uDCA9\u0207");
         assertThat(iterator.hasNext()).isFalse();
         reader.close();
     }
