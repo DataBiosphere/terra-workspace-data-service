@@ -15,10 +15,13 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.*;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.databiosphere.workspacedataservice.TestUtils.generateNonRandomAttributes;
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 
 /**
@@ -94,6 +97,43 @@ class FullStackRecordControllerTest {
 
 	@Test
 	@Transactional
+	void testSortedQuerySuccess() throws Exception {
+		RecordType recordType = RecordType.valueOf("sorted_query");
+		createSpecificRecords(recordType, 8);
+		int limit = 5;
+		int offset = 0;
+		SearchRequest sortByAlpha = new SearchRequest(limit, offset, SortDirection.ASC, "attr1");
+		RecordQueryResponse body = executeQuery(recordType, RecordQueryResponse.class, sortByAlpha)
+				.getBody();
+		assertThat(body.records()).hasSize(limit);
+		assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr1")).as("Record with attr1 'abc' should be first record in ascending order")
+				.isEqualTo("abc");
+		assertThat(body.records().get(4).recordAttributes().getAttributeValue("attr1")).isEqualTo("mno");
+		SearchRequest sortByFloat = new SearchRequest(limit, offset, SortDirection.DESC, "attr2");
+		body = executeQuery(recordType, RecordQueryResponse.class, sortByFloat)
+				.getBody();
+		assertThat(body.records()).hasSize(limit);
+		assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr2")).as("Record with attr2 2.99792448e8f should be first record in descending order")
+				.isEqualTo(299792448);
+		assertThat(body.records().get(4).recordAttributes().getAttributeValue("attr2")).isEqualTo(1.4142);
+		SearchRequest sortByInt = new SearchRequest(limit, offset, SortDirection.ASC, "attr3");
+		body = executeQuery(recordType, RecordQueryResponse.class, sortByInt)
+				.getBody();
+		assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr3"))
+				.as("Record with attr3 1 should be first record in ascending order").isEqualTo(1);
+		assertThat(body.records().get(4).recordAttributes().getAttributeValue("attr3")).isEqualTo(5);
+		SearchRequest sortByDate = new SearchRequest(limit, offset, SortDirection.DESC, "attr-dt");
+		body = executeQuery(recordType, RecordQueryResponse.class, sortByDate)
+				.getBody();
+		assertThat(body.records()).hasSize(limit);
+		assertThat(Instant.ofEpochMilli((Long)body.records().get(0).recordAttributes().getAttributeValue("attr-dt")).atZone(ZoneId.systemDefault()).toLocalDate()).as("Record with attr-dt 2022-04-25 should be first record in descending order")
+				.isEqualTo("2022-04-25");
+		assertThat(Instant.ofEpochMilli((Long)body.records().get(4).recordAttributes().getAttributeValue("attr-dt")).atZone(ZoneId.systemDefault()).toLocalDate())
+				.isEqualTo("2002-03-23");
+	}
+
+	@Test
+	@Transactional
 	void testQueryFailures() throws Exception {
 		RecordType recordType = RecordType.valueOf("for_query");
 		int limit = 5;
@@ -102,6 +142,9 @@ class FullStackRecordControllerTest {
 				new SearchRequest(limit, offset, SortDirection.ASC));
 		assertThat(response.getStatusCode()).as("record type doesn't exist").isEqualTo(HttpStatus.NOT_FOUND);
 		createSomeRecords(recordType, 1);
+		response = executeQuery(recordType, ErrorResponse.class,
+				new SearchRequest(limit, offset, SortDirection.ASC, "no-attr"));
+		assertThat(response.getStatusCode()).as("attribute doesn't exist").isEqualTo(HttpStatus.NOT_FOUND);
 		limit = 1001;
 		response = executeQuery(recordType, ErrorResponse.class, new SearchRequest(limit, offset, SortDirection.ASC));
 		assertThat(response.getStatusCode()).as("unsupported limit size").isEqualTo(HttpStatus.BAD_REQUEST);
@@ -207,6 +250,23 @@ class FullStackRecordControllerTest {
 					"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT,
 					new HttpEntity<>(mapper.writeValueAsString(recordRequest), headers), String.class, instanceId,
 					versionId, recordType, recordId);
+			assertThat(response.getStatusCode()).isIn(HttpStatus.CREATED, HttpStatus.OK);
+			result.add(new Record(recordId, recordType, recordRequest));
+		}
+		return result;
+	}
+
+	private List<Record> createSpecificRecords(RecordType recordType, int numRecords)
+			throws Exception {
+		List<Record> result = new ArrayList<>();
+		for (int i = 0; i < numRecords; i++) {
+			String recordId = "record_" + i;
+			RecordAttributes attributes = generateNonRandomAttributes(i);
+			RecordRequest recordRequest = new RecordRequest(attributes);
+			ResponseEntity<String> response = restTemplate.exchange(
+					"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT,
+					new HttpEntity<>(mapper.writeValueAsString(recordRequest), headers), String.class,
+					instanceId, versionId, recordType, recordId);
 			assertThat(response.getStatusCode()).isIn(HttpStatus.CREATED, HttpStatus.OK);
 			result.add(new Record(recordId, recordType, recordRequest));
 		}
