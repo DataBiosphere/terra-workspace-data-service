@@ -132,7 +132,7 @@ public class RecordController {
 		}
 	}
 
-	@PostMapping("/{instanceId}/{version}")
+	@PostMapping("/instances/{version}/{instanceId}")
 	public ResponseEntity<String> createInstance(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version) {
 		validateVersion(version);
