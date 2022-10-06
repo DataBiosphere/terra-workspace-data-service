@@ -87,7 +87,7 @@ public class RecordDao {
 
 	@SuppressWarnings("squid:S2077")
 	public List<Record> queryForRecords(RecordType recordType, int pageSize, int offset, String sortDirection,
-			UUID instanceId, String sortAttribute) {
+										String sortAttribute, UUID instanceId) {
 		return namedTemplate.getJdbcTemplate().query(
 				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + (sortAttribute == null ? RECORD_ID : quote(sortAttribute)) + " "
 						+ sortDirection + " limit " + pageSize + " offset " + offset,

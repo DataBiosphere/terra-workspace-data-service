@@ -86,14 +86,14 @@ public class RecordController {
 		}
 
 		if(searchRequest.getSortAttribute() != null && !recordDao.getExistingTableSchema(instanceId, recordType).keySet().contains(searchRequest.getSortAttribute())){
-			throw new MissingObjectException("Record attribute");
+			throw new MissingObjectException("Requested sort attribute");
 		}
 		int totalRecords = recordDao.countRecords(instanceId, recordType);
 		if (searchRequest.getOffset() > totalRecords) {
 			return new RecordQueryResponse(searchRequest, Collections.emptyList(), totalRecords);
 		}
 		List<Record> records = recordDao.queryForRecords(recordType, searchRequest.getLimit(),
-				searchRequest.getOffset(), searchRequest.getSort().name().toLowerCase(), instanceId, searchRequest.getSortAttribute());
+				searchRequest.getOffset(), searchRequest.getSort().name().toLowerCase(), searchRequest.getSortAttribute(), instanceId);
 		List<RecordResponse> recordList = records.stream().map(
 				r -> new RecordResponse(r.getId(), r.getRecordType(), r.getAttributes(), new RecordMetadata("UNUSED")))
 				.toList();
