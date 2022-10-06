@@ -334,6 +334,10 @@ public class RecordDao {
 			return LocalDate.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
 		} else if (typeMapping == DataTypeMapping.DATE_TIME) {
 			return LocalDateTime.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+		} else if(typeMapping == DataTypeMapping.LONG && attVal instanceof String){
+			return Long.parseLong(attVal.toString());
+		} else if(typeMapping == DataTypeMapping.DOUBLE && attVal instanceof String){
+			return Double.parseDouble(attVal.toString());
 		}
 
 		return attVal;

@@ -10,6 +10,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import java.util.Map;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -105,7 +107,33 @@ public class DataTypeInferer {
 		if (isValidJson(sVal)) {
 			return JSON;
 		}
+		//when we load from TSV, numbers are converted to strings, we need to go back to numbers
+		if(isLongValue(sVal)){
+			return LONG;
+		}
+		if(isDoubleValue(sVal)){
+			return DOUBLE;
+		}
 		return STRING;
+	}
+
+	private boolean isLongValue(String sVal) {
+		try {
+			Long.parseLong(sVal);
+			return true;
+		} catch (NumberFormatException e) {
+			return false;
+		}
+	}
+
+
+	private boolean isDoubleValue(String sVal) {
+		try {
+			Double.parseDouble(sVal);
+			return true;
+		} catch (NumberFormatException e) {
+			return false;
+		}
 	}
 
 	public boolean isValidJson(String val) {

@@ -78,19 +78,19 @@ public class RecordController {
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
-	@PostMapping("/{instanceid}/{v}/{type}/upload")
-	public ResponseEntity<TsvUploadResponse> handleStreamingUpload(@PathVariable("instanceid") UUID instanceId, @PathVariable("v") String version,
-										@PathVariable("type") RecordType recordType, @RequestParam("file") MultipartFile file) throws IOException {
+	@PostMapping("/{instanceId}/tsv/{version}/{recordType}")
+	public ResponseEntity<TsvUploadResponse> handleStreamingUpload(@PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version,
+										@PathVariable("recordType") RecordType recordType, @RequestParam("records") MultipartFile records) throws IOException {
 		validateInstance(instanceId);
 		validateVersion(version);
-		int records;
-		try (InputStreamReader inputStreamReader = new InputStreamReader(file.getInputStream())) {
-			records = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType);
+		int recordsModified;
+		try (InputStreamReader inputStreamReader = new InputStreamReader(records.getInputStream())) {
+			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType);
 		}
-		return new ResponseEntity<>(new TsvUploadResponse(records, "Updated " + recordType.toString()), HttpStatus.OK);
+		return new ResponseEntity<>(new TsvUploadResponse(recordsModified, "Updated " + recordType.toString()), HttpStatus.OK);
 	}
 
-	@GetMapping("{instanceId}/tsv/{version}/{recordType}")
+	@GetMapping("/{instanceId}/tsv/{version}/{recordType}")
 	public ResponseEntity<StreamingResponseBody> streamAllEntities(@PathVariable("instanceId") UUID instanceId,
 																   @PathVariable("version") String version,
 																   @PathVariable("recordType") RecordType recordType) {

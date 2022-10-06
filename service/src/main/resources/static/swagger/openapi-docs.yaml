@@ -188,6 +188,54 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Import records to a record type from a tsv file
+      description: Upload a tsv to modify or create records in a record type.  This operation will insert update records.
+      tags:
+        - Records
+      operationId: uploadTSV
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - records
+              properties:
+                records:
+                  type: string
+                  description: A valid TSV import file
+                  format: binary
+        required: true
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TsvUploadResponse'
+        400:
+          description: Bad Request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Instance not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /{instanceid}/batch/{v}/{type}:
     post:
       summary: Batch write records
@@ -508,6 +556,16 @@ components:
         attributes:
           $ref: '#/components/schemas/RecordAttributes'
     BatchResponse:
+      type: object
+      required:
+        - message
+        - recordsModified
+      properties:
+        message:
+          type: string
+        recordsModified:
+          type: integer
+    TsvUploadResponse:
       type: object
       required:
         - message
