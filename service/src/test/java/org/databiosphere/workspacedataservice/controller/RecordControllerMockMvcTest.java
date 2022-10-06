@@ -51,8 +51,8 @@ class RecordControllerMockMvcTest {
 	@Transactional
 	void createInstanceAndTryToCreateAgain() throws Exception {
 		UUID uuid = UUID.randomUUID();
-		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isCreated());
-		mockMvc.perform(post("/{instanceId}/{version}/", uuid, versionId)).andExpect(status().isConflict());
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isCreated());
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isConflict());
 	}
 
 	@Test
@@ -500,7 +500,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void batchWriteInsertShouldSucceed() throws Exception {
-		mockMvc.perform(post("/{instanceId}/{version}/", instanceId, versionId));
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		String recordId = "foo";
 		String newBatchRecordType = "new-record-type";
 		Record record = new Record(recordId, RecordType.valueOf(newBatchRecordType),
