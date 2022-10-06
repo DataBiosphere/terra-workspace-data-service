@@ -163,6 +163,31 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /{instanceid}/tsv/{v}/{type}:
+    get:
+      summary: Retrieve all records in record type as tsv.
+      operationId: getRecordsAsTsv
+      description: Streams all records in a record type to a tsv format.
+      tags:
+        - Records
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+      responses:
+        200:
+          description: Records in tsv format
+          content:
+            text/tab-separated-values:
+              schema:
+                type: string
+                format: binary
+        404:
+          description: Instance or Record type not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /{instanceid}/batch/{v}/{type}:
     post:
       summary: Batch write records

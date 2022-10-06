@@ -99,7 +99,9 @@ public class BatchWriteService {
 	}
 
 	/**
-	 * All or nothing, write all the operations successfully in the InputStream or write none.
+	 * All or nothing, write all the operations successfully in the InputStream or
+	 * write none.
+	 * 
 	 * @param is
 	 * @param instanceId
 	 * @param recordType
@@ -128,10 +130,10 @@ public class BatchWriteService {
 		return recordsAffected;
 	}
 
-	private Map<String, DataTypeMapping> createOrModifyRecordType(UUID instanceId, RecordType recordType, Map<String, DataTypeMapping> schema, List<Record> records) {
+	private Map<String, DataTypeMapping> createOrModifyRecordType(UUID instanceId, RecordType recordType,
+			Map<String, DataTypeMapping> schema, List<Record> records) {
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
-			recordDao.createRecordType(instanceId, schema, recordType,
-					RelationUtils.findRelations(records));
+			recordDao.createRecordType(instanceId, schema, recordType, RelationUtils.findRelations(records));
 		} else {
 			return addOrUpdateColumnIfNeeded(instanceId, recordType, schema,
 					recordDao.getExistingTableSchema(instanceId, recordType), records);

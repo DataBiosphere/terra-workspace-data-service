@@ -1,24 +1,27 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import org.apache.commons.csv.CSVPrinter;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.BatchWriteService;
-import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
-import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
-import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.TsvSupport;
+import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @RestController
 public class RecordController {
@@ -72,6 +75,28 @@ public class RecordController {
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
+	@GetMapping("{instanceId}/tsv/{version}/{recordType}")
+	public ResponseEntity<StreamingResponseBody> streamAllEntities(@PathVariable("instanceId") UUID instanceId,
+			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType) {
+		validateVersion(version);
+		validateInstance(instanceId);
+		checkRecordTypeExists(instanceId, recordType);
+		List<String> headers = new ArrayList<>(Collections.singletonList(ReservedNames.RECORD_ID));
+		headers.addAll(recordDao.getExistingTableSchema(instanceId, recordType).keySet());
+		Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType);
+
+		StreamingResponseBody responseBody = httpResponseOutputStream -> {
+			try (CSVPrinter writer = TsvSupport.getOutputFormat(headers)
+					.print(new OutputStreamWriter(httpResponseOutputStream))) {
+				TsvSupport.RecordEmitter recordEmitter = new TsvSupport.RecordEmitter(writer,
+						headers.subList(1, headers.size()));
+				allRecords.forEach(recordEmitter);
+			}
+		};
+		return ResponseEntity.status(HttpStatus.OK).contentType(new MediaType("text", "tab-separated-values"))
+				.body(responseBody);
+	}
+
 	@PostMapping("/{instanceid}/search/{version}/{recordType}")
 	public RecordQueryResponse queryForEntities(@PathVariable("instanceid") UUID instanceId,
 			@PathVariable("recordType") RecordType recordType,
@@ -122,7 +147,8 @@ public class RecordController {
 			}
 			Record newRecord = new Record(recordId, recordType, recordRequest.recordAttributes());
 			List<Record> records = Collections.singletonList(newRecord);
-			batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType, requestSchema, existingTableSchema, records);
+			batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType, requestSchema, existingTableSchema,
+					records);
 			Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
 			combinedSchema.putAll(requestSchema);
 			recordDao.batchUpsert(instanceId, recordType, records, combinedSchema);
