@@ -582,4 +582,72 @@ class RecordControllerMockMvcTest {
 				.andExpect(jsonPath("$.attributes.new-col", is("new value!!")));
 	}
 
+	@Test
+	@Transactional
+	void dateAttributeShouldBeHumanReadable() throws Exception {
+		// N.B. This test does not assert that the date attribute is saved as a date in
+		// Postgres;
+		// other tests verify that.
+		UUID instanceId = UUID.randomUUID();
+		RecordType recordType = RecordType.valueOf("test-type");
+		RecordAttributes attributes = RecordAttributes.empty();
+		String dateString = "1911-01-21";
+		attributes.putAttribute("dateAttr", dateString);
+		// create record in db
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				recordType, "recordId").content(mapper.writeValueAsString(new RecordRequest(attributes)))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isCreated());
+		// retrieve as single record
+		MvcResult mvcSingleResult = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}",
+				instanceId, versionId, recordType, "recordId")).andExpect(status().isOk()).andReturn();
+		// assert single-record response is human-readable
+		RecordResponse actualSingle = mapper.readValue(mvcSingleResult.getResponse().getContentAsString(),
+				RecordResponse.class);
+		assertEquals(dateString, actualSingle.recordAttributes().getAttributeValue("dateAttr"));
+
+		// retrieve as a page of records
+		MvcResult mvcMultiResult = mockMvc
+				.perform(post("/{instanceId}/search/{version}/{recordType}", instanceId, versionId, recordType))
+				.andExpect(status().isOk()).andReturn();
+
+		RecordQueryResponse actualMulti = mapper.readValue(mvcMultiResult.getResponse().getContentAsString(),
+				RecordQueryResponse.class);
+		assertEquals(dateString, actualMulti.records().get(0).recordAttributes().getAttributeValue("dateAttr"));
+	}
+
+	@Test
+	@Transactional
+	void datetimeAttributeShouldBeHumanReadable() throws Exception {
+		// N.B. This test does not assert that the datetime attribute is saved as a
+		// timestamp in Postgres;
+		// other tests verify that.
+		UUID instanceId = UUID.randomUUID();
+		RecordType recordType = RecordType.valueOf("test-type");
+		RecordAttributes attributes = RecordAttributes.empty();
+		String datetimeString = "1911-01-21T13:45:43";
+		attributes.putAttribute("datetimeAttr", datetimeString);
+		// create record in db
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				recordType, "recordId").content(mapper.writeValueAsString(new RecordRequest(attributes)))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isCreated());
+		// retrieve as single record
+		MvcResult mvcSingleResult = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}",
+				instanceId, versionId, recordType, "recordId")).andExpect(status().isOk()).andReturn();
+		// assert single-record response is human-readable
+		RecordResponse actualSingle = mapper.readValue(mvcSingleResult.getResponse().getContentAsString(),
+				RecordResponse.class);
+		assertEquals(datetimeString, actualSingle.recordAttributes().getAttributeValue("datetimeAttr"));
+
+		// retrieve as a page of records
+		MvcResult mvcMultiResult = mockMvc
+				.perform(post("/{instanceId}/search/{version}/{recordType}", instanceId, versionId, recordType))
+				.andExpect(status().isOk()).andReturn();
+
+		RecordQueryResponse actualMulti = mapper.readValue(mvcMultiResult.getResponse().getContentAsString(),
+				RecordQueryResponse.class);
+		assertEquals(datetimeString, actualMulti.records().get(0).recordAttributes().getAttributeValue("datetimeAttr"));
+	}
+
 }
