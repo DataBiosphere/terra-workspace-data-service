@@ -56,7 +56,7 @@ public class WorkspaceDataServiceApplication {
 	@Bean
 	@Qualifier("streamingDs")
 	public NamedParameterJdbcTemplate templateForStreaming(@Qualifier("streamingDs") DataSource ds,
-			@Value("${twds.streaming.fetch.size:50}") int fetchSize) {
+			@Value("${twds.streaming.fetch.size:5000}") int fetchSize) {
 		NamedParameterJdbcTemplate jdbcTemplate = new NamedParameterJdbcTemplate(ds);
 		// https://jdbc.postgresql.org/documentation/query/#getting-results-based-on-a-cursor
 		jdbcTemplate.getJdbcTemplate().setFetchSize(fetchSize);
