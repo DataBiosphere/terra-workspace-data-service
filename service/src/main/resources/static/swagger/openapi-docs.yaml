@@ -208,7 +208,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BatchResponse'
-  /{instanceid}/{v}/:
+  /{instanceid}/{v}:
     post:
       summary: Create an instance (unstable)
       description: Create an instance with the given UUID. This API is liable to change.
