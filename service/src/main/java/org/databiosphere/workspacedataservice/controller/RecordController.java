@@ -10,6 +10,7 @@ import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -94,6 +95,7 @@ public class RecordController {
 			}
 		};
 		return ResponseEntity.status(HttpStatus.OK).contentType(new MediaType("text", "tab-separated-values"))
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + recordType.getName() + ".tsv")
 				.body(responseBody);
 	}
 
@@ -110,7 +112,8 @@ public class RecordController {
 					"Limit must be more than 0 and can't exceed " + MAX_RECORDS + ", and offset must be positive.");
 		}
 
-		if(searchRequest.getSortAttribute() != null && !recordDao.getExistingTableSchema(instanceId, recordType).keySet().contains(searchRequest.getSortAttribute())){
+		if (searchRequest.getSortAttribute() != null && !recordDao.getExistingTableSchema(instanceId, recordType)
+				.keySet().contains(searchRequest.getSortAttribute())) {
 			throw new MissingObjectException("Requested sort attribute");
 		}
 		int totalRecords = recordDao.countRecords(instanceId, recordType);
@@ -118,7 +121,8 @@ public class RecordController {
 			return new RecordQueryResponse(searchRequest, Collections.emptyList(), totalRecords);
 		}
 		List<Record> records = recordDao.queryForRecords(recordType, searchRequest.getLimit(),
-				searchRequest.getOffset(), searchRequest.getSort().name().toLowerCase(), searchRequest.getSortAttribute(), instanceId);
+				searchRequest.getOffset(), searchRequest.getSort().name().toLowerCase(),
+				searchRequest.getSortAttribute(), instanceId);
 		List<RecordResponse> recordList = records.stream().map(
 				r -> new RecordResponse(r.getId(), r.getRecordType(), r.getAttributes(), new RecordMetadata("UNUSED")))
 				.toList();
