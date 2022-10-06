@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -14,7 +15,8 @@ public class WorkspaceDataServiceApplication {
 
 	@Bean
 	public ObjectMapper objectMapper() {
-		return JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS).build();
+		return JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false).findAndAddModules().build();
 	}
 
 	// CORS: allow Ajax requests from anywhere for all endpoints.

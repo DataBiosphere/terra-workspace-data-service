@@ -419,9 +419,9 @@ public class RecordDao {
 						Object object = rs.getObject(columnName);
 
 						if (object instanceof java.sql.Date date) {
-							object = date.toString();
+							object = date.toLocalDate();
 						} else if (object instanceof java.sql.Timestamp ts) {
-							object = ts.toString();
+							object = ts.toLocalDateTime();
 						} else if (object instanceof PGobject pGobject) {
 							object = pGobject.getValue();
 						}
