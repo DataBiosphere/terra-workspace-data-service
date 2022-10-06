@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,7 +27,8 @@ public class WorkspaceDataServiceApplication {
 
 	@Bean
 	public ObjectMapper objectMapper() {
-		return JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS).build();
+		return JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false).findAndAddModules().build();
 	}
 
 	@Bean

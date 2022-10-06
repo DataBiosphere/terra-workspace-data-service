@@ -16,6 +16,7 @@ import org.springframework.http.*;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Supplier;
@@ -126,10 +127,12 @@ class FullStackRecordControllerTest {
 		body = executeQuery(recordType, RecordQueryResponse.class, sortByDate)
 				.getBody();
 		assertThat(body.records()).hasSize(limit);
-		assertThat(Instant.ofEpochMilli((Long)body.records().get(0).recordAttributes().getAttributeValue("attr-dt")).atZone(ZoneId.systemDefault()).toLocalDate()).as("Record with attr-dt 2022-04-25 should be first record in descending order")
-				.isEqualTo("2022-04-25");
-		assertThat(Instant.ofEpochMilli((Long)body.records().get(4).recordAttributes().getAttributeValue("attr-dt")).atZone(ZoneId.systemDefault()).toLocalDate())
-				.isEqualTo("2002-03-23");
+
+		assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr-dt"))
+				.as("Record with attr-dt 2022-04-25 should be first record in descending order")
+				.isEqualTo("2022-04-25T12:00:01");
+		assertThat(body.records().get(4).recordAttributes().getAttributeValue("attr-dt"))
+				.isEqualTo("2002-03-23T12:00:01");
 	}
 
 	@Test
