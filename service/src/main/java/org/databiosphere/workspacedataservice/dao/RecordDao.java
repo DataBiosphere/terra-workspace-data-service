@@ -12,6 +12,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.MissingObj
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.postgresql.util.PGobject;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -32,6 +33,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.*;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
@@ -41,8 +43,12 @@ import static org.databiosphere.workspacedataservice.service.model.exception.Inv
 public class RecordDao {
 
 	private final NamedParameterJdbcTemplate namedTemplate;
-	public RecordDao(NamedParameterJdbcTemplate namedTemplate) {
+
+	private final NamedParameterJdbcTemplate templateForStreaming;
+	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
+			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming) {
 		this.namedTemplate = namedTemplate;
+		this.templateForStreaming = templateForStreaming;
 	}
 
 	public boolean instanceSchemaExists(UUID instanceId) {
@@ -87,9 +93,9 @@ public class RecordDao {
 
 	@SuppressWarnings("squid:S2077")
 	public List<Record> queryForRecords(RecordType recordType, int pageSize, int offset, String sortDirection,
-			UUID instanceId) {
+										String sortAttribute, UUID instanceId) {
 		return namedTemplate.getJdbcTemplate().query(
-				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + RECORD_ID + " "
+				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + (sortAttribute == null ? RECORD_ID : quote(sortAttribute)) + " "
 						+ sortDirection + " limit " + pageSize + " offset " + offset,
 				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType))));
 	}
@@ -166,15 +172,14 @@ public class RecordDao {
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingRecord(sqlEx);
-				throw e;
 			}
+			throw e;
 		}
 	}
 
 	private List<RecordColumn> getSchemaWithRowId(Map<String, DataTypeMapping> schema) {
 		schema.put(RECORD_ID, DataTypeMapping.STRING);
-		return schema.entrySet().stream()
-				.map(e -> new RecordColumn(e.getKey(), e.getValue())).toList();
+		return schema.entrySet().stream().map(e -> new RecordColumn(e.getKey(), e.getValue())).toList();
 	}
 
 	public void batchUpsertWithErrorCapture(UUID instanceId, RecordType recordType, List<Record> records,
@@ -190,6 +195,7 @@ public class RecordDao {
 					throw new BatchWriteException(rowErrors);
 				}
 			}
+			throw e;
 		}
 	}
 
@@ -211,15 +217,14 @@ public class RecordDao {
 	private String convertSchemaDiffToErrorMessage(
 			Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap, Record rcd) {
 		return differenceMap.keySet().stream()
-				.map(attr -> rcd.getId() + "." + attr + " is a "
-						+ differenceMap.get(attr).leftValue() + " in the request but is defined as "
-						+ differenceMap.get(attr).rightValue() + " in the record type definition for " + rcd.getRecordType())
+				.map(attr -> rcd.getId() + "." + attr + " is a " + differenceMap.get(attr).leftValue()
+						+ " in the request but is defined as " + differenceMap.get(attr).rightValue()
+						+ " in the record type definition for " + rcd.getRecordType())
 				.collect(Collectors.joining("\n"));
 	}
 
 	private boolean isDataMismatchException(DataAccessException e) {
-		return e.getRootCause() instanceof SQLException sqlException
-				&& sqlException.getSQLState().equals("42804");
+		return e.getRootCause()instanceof SQLException sqlException && sqlException.getSQLState().equals("42804");
 	}
 
 	public boolean deleteSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
@@ -273,6 +278,12 @@ public class RecordDao {
 						"Unable to delete this record type because another record type has a relation to it.");
 			}
 		}
+	}
+
+	public Stream<Record> streamAllRecordsForType(UUID instanceId, RecordType recordType) {
+		return templateForStreaming.getJdbcTemplate().queryForStream(
+				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + RECORD_ID,
+				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType))));
 	}
 
 	public String getFkSql(Set<Relation> relations, UUID instanceId) {
@@ -378,21 +389,20 @@ public class RecordDao {
 					});
 			List<String> recordErrors = new ArrayList<>();
 			for (int i = 0; i < rowCounts.length; i++) {
-				if(rowCounts[i] != 1){
+				if (rowCounts[i] != 1) {
 					recordErrors.add("record id " + recordIds.get(i) + " does not exist in " + recordType.getName());
 				}
 			}
-			if(!recordErrors.isEmpty()){
+			if (!recordErrors.isEmpty()) {
 				throw new BatchDeleteException(recordErrors);
 			}
 		} catch (DataIntegrityViolationException e) {
-			if (e.getRootCause() instanceof SQLException sqlEx) {
+			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForTableRelation(sqlEx);
 			}
 			throw e;
 		}
 	}
-
 
 	private record RecordRowMapper(RecordType recordType,
 			Map<String, RecordType> referenceColToTable) implements RowMapper<Record> {
@@ -412,7 +422,8 @@ public class RecordDao {
 					if (columnName.startsWith(RESERVED_NAME_PREFIX)) {
 						continue;
 					}
-					if (referenceColToTable.size() > 0 && referenceColToTable.containsKey(columnName) && rs.getString(columnName) != null) {
+					if (referenceColToTable.size() > 0 && referenceColToTable.containsKey(columnName)
+							&& rs.getString(columnName) != null) {
 						attributes.putAttribute(columnName, RelationUtils
 								.createRelationString(referenceColToTable.get(columnName), rs.getString(columnName)));
 					} else {

@@ -15,14 +15,14 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.*;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.databiosphere.workspacedataservice.TestUtils.generateNonRandomAttributes;
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * This test spins up a web server and the full Spring Boot web stack. It was
@@ -31,7 +31,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * https://github.com/spring-projects/spring-framework/issues/17290 As a result,
  * this test suite is currently focused on validating expected error handling
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {"spring.main.allow-bean-definition-overriding=true"})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+		"spring.main.allow-bean-definition-overriding=true"})
 @Import(SmallBatchWriteTestConfig.class)
 class FullStackRecordControllerTest {
 	@Autowired
@@ -96,6 +97,43 @@ class FullStackRecordControllerTest {
 
 	@Test
 	@Transactional
+	void testSortedQuerySuccess() throws Exception {
+		RecordType recordType = RecordType.valueOf("sorted_query");
+		createSpecificRecords(recordType, 8);
+		int limit = 5;
+		int offset = 0;
+		SearchRequest sortByAlpha = new SearchRequest(limit, offset, SortDirection.ASC, "attr1");
+		RecordQueryResponse body = executeQuery(recordType, RecordQueryResponse.class, sortByAlpha)
+				.getBody();
+		assertThat(body.records()).hasSize(limit);
+		assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr1")).as("Record with attr1 'abc' should be first record in ascending order")
+				.isEqualTo("abc");
+		assertThat(body.records().get(4).recordAttributes().getAttributeValue("attr1")).isEqualTo("mno");
+		SearchRequest sortByFloat = new SearchRequest(limit, offset, SortDirection.DESC, "attr2");
+		body = executeQuery(recordType, RecordQueryResponse.class, sortByFloat)
+				.getBody();
+		assertThat(body.records()).hasSize(limit);
+		assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr2")).as("Record with attr2 2.99792448e8f should be first record in descending order")
+				.isEqualTo(299792448);
+		assertThat(body.records().get(4).recordAttributes().getAttributeValue("attr2")).isEqualTo(1.4142);
+		SearchRequest sortByInt = new SearchRequest(limit, offset, SortDirection.ASC, "attr3");
+		body = executeQuery(recordType, RecordQueryResponse.class, sortByInt)
+				.getBody();
+		assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr3"))
+				.as("Record with attr3 1 should be first record in ascending order").isEqualTo(1);
+		assertThat(body.records().get(4).recordAttributes().getAttributeValue("attr3")).isEqualTo(5);
+		SearchRequest sortByDate = new SearchRequest(limit, offset, SortDirection.DESC, "attr-dt");
+		body = executeQuery(recordType, RecordQueryResponse.class, sortByDate)
+				.getBody();
+		assertThat(body.records()).hasSize(limit);
+		assertThat(Instant.ofEpochMilli((Long)body.records().get(0).recordAttributes().getAttributeValue("attr-dt")).atZone(ZoneId.systemDefault()).toLocalDate()).as("Record with attr-dt 2022-04-25 should be first record in descending order")
+				.isEqualTo("2022-04-25");
+		assertThat(Instant.ofEpochMilli((Long)body.records().get(4).recordAttributes().getAttributeValue("attr-dt")).atZone(ZoneId.systemDefault()).toLocalDate())
+				.isEqualTo("2002-03-23");
+	}
+
+	@Test
+	@Transactional
 	void testQueryFailures() throws Exception {
 		RecordType recordType = RecordType.valueOf("for_query");
 		int limit = 5;
@@ -104,6 +142,9 @@ class FullStackRecordControllerTest {
 				new SearchRequest(limit, offset, SortDirection.ASC));
 		assertThat(response.getStatusCode()).as("record type doesn't exist").isEqualTo(HttpStatus.NOT_FOUND);
 		createSomeRecords(recordType, 1);
+		response = executeQuery(recordType, ErrorResponse.class,
+				new SearchRequest(limit, offset, SortDirection.ASC, "no-attr"));
+		assertThat(response.getStatusCode()).as("attribute doesn't exist").isEqualTo(HttpStatus.NOT_FOUND);
 		limit = 1001;
 		response = executeQuery(recordType, ErrorResponse.class, new SearchRequest(limit, offset, SortDirection.ASC));
 		assertThat(response.getStatusCode()).as("unsupported limit size").isEqualTo(HttpStatus.BAD_REQUEST);
@@ -207,6 +248,23 @@ class FullStackRecordControllerTest {
 			RecordRequest recordRequest = new RecordRequest(attributes);
 			ResponseEntity<String> response = restTemplate.exchange(
 					"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT,
+					new HttpEntity<>(mapper.writeValueAsString(recordRequest), headers), String.class, instanceId,
+					versionId, recordType, recordId);
+			assertThat(response.getStatusCode()).isIn(HttpStatus.CREATED, HttpStatus.OK);
+			result.add(new Record(recordId, recordType, recordRequest));
+		}
+		return result;
+	}
+
+	private List<Record> createSpecificRecords(RecordType recordType, int numRecords)
+			throws Exception {
+		List<Record> result = new ArrayList<>();
+		for (int i = 0; i < numRecords; i++) {
+			String recordId = "record_" + i;
+			RecordAttributes attributes = generateNonRandomAttributes(i);
+			RecordRequest recordRequest = new RecordRequest(attributes);
+			ResponseEntity<String> response = restTemplate.exchange(
+					"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT,
 					new HttpEntity<>(mapper.writeValueAsString(recordRequest), headers), String.class,
 					instanceId, versionId, recordType, recordId);
 			assertThat(response.getStatusCode()).isIn(HttpStatus.CREATED, HttpStatus.OK);
@@ -220,13 +278,19 @@ class FullStackRecordControllerTest {
 	void dataTypeMismatchShouldFailBatchWrite() throws Exception {
 		RecordType recordType = RecordType.valueOf("bw-test");
 		List<Record> someRecords = createSomeRecords(recordType, 2);
-		List<BatchOperation> operations = someRecords.stream().map(r -> new BatchOperation(new Record(r.getId(), r.getRecordType(), r.getAttributes()), OperationType.UPSERT)).toList();
+		List<BatchOperation> operations = someRecords.stream()
+				.map(r -> new BatchOperation(new Record(r.getId(), r.getRecordType(), r.getAttributes()),
+						OperationType.UPSERT))
+				.toList();
 		operations.get(1).getRecord().getAttributes().putAttribute("attr2", "not a float, this should fail");
-		ResponseEntity<ErrorResponse> response = restTemplate.exchange("/{instanceid}/batch/{v}/{type}", HttpMethod.POST, new HttpEntity<>(mapper.writeValueAsString(operations), headers),
-				ErrorResponse.class, instanceId, versionId, recordType);
+		ResponseEntity<ErrorResponse> response = restTemplate.exchange("/{instanceid}/batch/{v}/{type}",
+				HttpMethod.POST, new HttpEntity<>(mapper.writeValueAsString(operations), headers), ErrorResponse.class,
+				instanceId, versionId, recordType);
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-		assertThat(response.getBody().getMessage()).contains("Some of the records in your request don't have the proper data for the record type");
-		assertThat(response.getBody().getMessage()).contains("is a STRING in the request but is defined as DOUBLE in the record type definition for bw-test");
+		assertThat(response.getBody().getMessage())
+				.contains("Some of the records in your request don't have the proper data for the record type");
+		assertThat(response.getBody().getMessage()).contains(
+				"is a STRING in the request but is defined as DOUBLE in the record type definition for bw-test");
 	}
 
 	@Test
@@ -235,16 +299,24 @@ class FullStackRecordControllerTest {
 		RecordType referencedRT = RecordType.valueOf("batch-delete-test-referenced");
 		List<Record> someRecords = createSomeRecords(referencedRT, 2);
 		RecordType referencerRT = RecordType.valueOf("referencer");
-		List<BatchOperation> ops = List.of(new BatchOperation(new Record("referencer-1", referencerRT,
-				new RecordAttributes(Map.of("attr-ref", RelationUtils.createRelationString(referencedRT, "record_0")))), OperationType.UPSERT));
-		restTemplate.exchange("/{instanceid}/batch/{v}/{type}", HttpMethod.POST, new HttpEntity<>(mapper.writeValueAsString(ops), headers),
-				String.class, instanceId, versionId, referencerRT);
-		List<BatchOperation> deleteOps = List.of(new BatchOperation(someRecords.get(1), OperationType.DELETE), new BatchOperation(someRecords.get(0), OperationType.DELETE));
-		ResponseEntity<ErrorResponse> error = restTemplate.exchange("/{instanceid}/batch/{v}/{type}", HttpMethod.POST, new HttpEntity<>(mapper.writeValueAsString(deleteOps), headers),
-				ErrorResponse.class, instanceId, versionId, referencedRT);
+		List<BatchOperation> ops = List
+				.of(new BatchOperation(
+						new Record("referencer-1", referencerRT,
+								new RecordAttributes(Map.of("attr-ref",
+										RelationUtils.createRelationString(referencedRT, "record_0")))),
+						OperationType.UPSERT));
+		restTemplate.exchange("/{instanceid}/batch/{v}/{type}", HttpMethod.POST,
+				new HttpEntity<>(mapper.writeValueAsString(ops), headers), String.class, instanceId, versionId,
+				referencerRT);
+		List<BatchOperation> deleteOps = List.of(new BatchOperation(someRecords.get(1), OperationType.DELETE),
+				new BatchOperation(someRecords.get(0), OperationType.DELETE));
+		ResponseEntity<ErrorResponse> error = restTemplate.exchange("/{instanceid}/batch/{v}/{type}", HttpMethod.POST,
+				new HttpEntity<>(mapper.writeValueAsString(deleteOps), headers), ErrorResponse.class, instanceId,
+				versionId, referencedRT);
 		assertThat(error.getBody().getMessage()).contains("because another record has a relation to it");
-		ResponseEntity<RecordResponse> stillPresentNonReferencedRecord = restTemplate.exchange("/{instanceId}/records/{version}/{recordType}/{recordId}",
-				HttpMethod.GET, new HttpEntity<>(headers), RecordResponse.class, instanceId, versionId, referencedRT, "record_1");
+		ResponseEntity<RecordResponse> stillPresentNonReferencedRecord = restTemplate.exchange(
+				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.GET, new HttpEntity<>(headers),
+				RecordResponse.class, instanceId, versionId, referencedRT, "record_1");
 		assertThat(stillPresentNonReferencedRecord.getBody().recordId()).isEqualTo("record_1");
 	}
 
@@ -254,13 +326,17 @@ class FullStackRecordControllerTest {
 		RecordType recordType = RecordType.valueOf("forBatchDelete");
 		createSomeRecords(recordType, 3);
 		RecordAttributes emptyAtts = new RecordAttributes(new HashMap<>());
-		List<BatchOperation> batchOperations = List.of(new BatchOperation(new Record("record_0", recordType, emptyAtts), OperationType.DELETE),
+		List<BatchOperation> batchOperations = List.of(
+				new BatchOperation(new Record("record_0", recordType, emptyAtts), OperationType.DELETE),
 				new BatchOperation(new Record("missing", recordType, emptyAtts), OperationType.DELETE));
-		ResponseEntity<ErrorResponse> error = restTemplate.exchange("/{instanceid}/batch/{v}/{type}", HttpMethod.POST, new HttpEntity<>(mapper.writeValueAsString(batchOperations), headers),
-				ErrorResponse.class, instanceId, versionId, recordType);
+		ResponseEntity<ErrorResponse> error = restTemplate.exchange("/{instanceid}/batch/{v}/{type}", HttpMethod.POST,
+				new HttpEntity<>(mapper.writeValueAsString(batchOperations), headers), ErrorResponse.class, instanceId,
+				versionId, recordType);
 		assertThat(error.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-		//record_0 should still be present since the above deletion is transactional and should fail upon 'missing'
-		ResponseEntity<RecordResponse> rresponse = restTemplate.exchange("/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.GET, new HttpEntity<>(headers),
+		// record_0 should still be present since the above deletion is transactional
+		// and should fail upon 'missing'
+		ResponseEntity<RecordResponse> rresponse = restTemplate.exchange(
+				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.GET, new HttpEntity<>(headers),
 				RecordResponse.class, instanceId, versionId, recordType, "record_0");
 		assertThat(rresponse.getBody().recordId()).isEqualTo("record_0");
 	}
