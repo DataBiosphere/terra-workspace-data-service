@@ -35,8 +35,8 @@ class TsvDownloadTest {
     @Autowired
     private TestRestTemplate restTemplate;
 
-    @Autowired
-    private RecordController recordController;
+	@Autowired
+	private RecordController recordController;
 
     @Autowired
     private BatchWriteService batchWriteService;
@@ -75,4 +75,31 @@ class TsvDownloadTest {
         assertThat(iterator.hasNext()).isFalse();
         reader.close();
     }
+	@Test
+	void batchWriteFollowedByTsvDownload() throws IOException {
+		RecordType recordType = RecordType.valueOf("tsv-test");
+		String version = "v0.2";
+		UUID instanceId = UUID.randomUUID();
+		recordController.createInstance(instanceId, version);
+		InputStream is = TsvDownloadTest.class.getResourceAsStream("/batch_write_tsv_data.json");
+		ResponseEntity<BatchResponse> response = recordController.streamingWrite(instanceId, version, recordType, is);
+		assertThat(response.getStatusCodeValue()).isEqualTo(200);
+		HttpHeaders headers = new HttpHeaders();
+		ResponseEntity<Resource> stream = restTemplate.exchange("/{instanceId}/tsv/{version}/{recordType}",
+				HttpMethod.GET, new HttpEntity<>(headers), Resource.class, instanceId, version, recordType);
+		InputStream inputStream = stream.getBody().getInputStream();
+		CSVFormat csvFormat = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).setDelimiter("\t")
+				.setQuoteMode(QuoteMode.MINIMAL).build();
+		InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+		Iterable<CSVRecord> records = new CSVParser(reader, csvFormat);
+		Iterator<CSVRecord> iterator = records.iterator();
+		CSVRecord rcd = iterator.next();
+		assertThat(rcd.get("description")).isEqualTo("Embedded\tTab");
+		rcd = iterator.next();
+		assertThat(rcd.get("description")).isEqualTo("\n,Weird\n String");
+		assertThat(rcd.get("location")).isEqualTo("Cambridge, \"MA\"");
+		assertThat(rcd.get("unicodeData")).isEqualTo("\uD83D\uDCA9\u0207");
+		assertThat(iterator.hasNext()).isFalse();
+		reader.close();
+	}
 }

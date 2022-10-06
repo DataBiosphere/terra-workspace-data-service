@@ -12,10 +12,10 @@ import java.util.function.Consumer;
 
 public class TsvSupport {
 
+	private TsvSupport() {
+	}
     public static final String ROW_ID_COLUMN_NAME = ReservedNames.RECORD_ID;
 
-    private TsvSupport() {
-    }
 
     public static CSVFormat getUploadFormat(){
         return CSVFormat.Builder.create(CSVFormat.DEFAULT).setHeader()
@@ -30,27 +30,27 @@ public class TsvSupport {
                  .setHeader(headers.toArray(new String[0])).build();
     }
 
-    public static class RecordEmitter implements Consumer<Record> {
+	public static class RecordEmitter implements Consumer<Record> {
 
-        private final CSVPrinter csvPrinter;
-        private final List<String> attributeNames;
+		private final CSVPrinter csvPrinter;
+		private final List<String> attributeNames;
 
-        public RecordEmitter(CSVPrinter csvPrinter, List<String> attributeNames) {
-            this.csvPrinter = csvPrinter;
-            this.attributeNames = attributeNames;
-        }
+		public RecordEmitter(CSVPrinter csvPrinter, List<String> attributeNames) {
+			this.csvPrinter = csvPrinter;
+			this.attributeNames = attributeNames;
+		}
 
-        @Override
-        public void accept(Record rcd) {
-            try {
-                csvPrinter.print(rcd.getId());
-                for (String attributeName : attributeNames) {
-                    csvPrinter.print(rcd.getAttributeValue(attributeName));
-                }
-                csvPrinter.println();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
+		@Override
+		public void accept(Record rcd) {
+			try {
+				csvPrinter.print(rcd.getId());
+				for (String attributeName : attributeNames) {
+					csvPrinter.print(rcd.getAttributeValue(attributeName));
+				}
+				csvPrinter.println();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
 }

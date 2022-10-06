@@ -56,7 +56,8 @@ class RecordDaoTest {
 	@Test
 	@Transactional
 	void testGetRecordsWithRelations() {
-		//Create two records of the same type, one with a value for a relation attribute, the other without
+		// Create two records of the same type, one with a value for a relation
+		// attribute, the other without
 		recordDao.addColumn(instanceId, recordType, "foo", DataTypeMapping.STRING);
 		recordDao.addColumn(instanceId, recordType, "relationAttr", DataTypeMapping.STRING);
 		recordDao.addForeignKeyForReference(recordType, recordType, instanceId, "relationAttr");
@@ -75,11 +76,13 @@ class RecordDaoTest {
 		List<Relation> relations = recordDao.getRelationCols(instanceId, recordType);
 
 		Record testRecordFetched = recordDao.getSingleRecord(instanceId, recordType, recordId, relations).get();
-		//Relation attribute should be in the form of "terra-wds:/recordType/recordId"
-		assertEquals(RelationUtils.createRelationString(recordType, refRecordId), testRecordFetched.getAttributeValue("relationAttr").toString());
+		// Relation attribute should be in the form of "terra-wds:/recordType/recordId"
+		assertEquals(RelationUtils.createRelationString(recordType, refRecordId),
+				testRecordFetched.getAttributeValue("relationAttr").toString());
 
-		Record referencedRecordFetched = recordDao.getSingleRecord(instanceId, recordType, refRecordId, relations).get();
-		//Null relation attribute should be null
+		Record referencedRecordFetched = recordDao.getSingleRecord(instanceId, recordType, refRecordId, relations)
+				.get();
+		// Null relation attribute should be null
 		assertNull(referencedRecordFetched.getAttributeValue("relationAttr"));
 	}
 

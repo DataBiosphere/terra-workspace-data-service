@@ -505,7 +505,6 @@ class RecordControllerMockMvcTest {
 		return createSomeRecords(recordType, numRecords, instanceId);
 	}
 
-
 	private List<Record> createSomeRecords(RecordType recordType, int numRecords, UUID instId) throws Exception {
 		List<Record> result = new ArrayList<>();
 		for (int i = 0; i < numRecords; i++) {
@@ -533,28 +532,36 @@ class RecordControllerMockMvcTest {
 				new RecordAttributes(Map.of("attr1", "attr-val")));
 		BatchOperation op = new BatchOperation(record, OperationType.UPSERT);
 		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, newBatchRecordType)
-						.content(mapper.writeValueAsString(List.of(op, new BatchOperation(record2, OperationType.UPSERT)))).contentType(MediaType.APPLICATION_JSON))
-						.andExpect(jsonPath("$.recordsModified", is(2)))
-						.andExpect(jsonPath("$.message", is("Huzzah")))
-				.andExpect(status().isOk());
-		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, newBatchRecordType, recordId)
-				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk());
+				.content(mapper.writeValueAsString(List.of(op, new BatchOperation(record2, OperationType.UPSERT))))
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(jsonPath("$.recordsModified", is(2)))
+				.andExpect(jsonPath("$.message", is("Huzzah"))).andExpect(status().isOk());
+		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				newBatchRecordType, recordId).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk());
 		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, newBatchRecordType)
-						.content(mapper.writeValueAsString(List.of(new BatchOperation(record, OperationType.DELETE)))).contentType(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk());
-		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, newBatchRecordType, recordId)
-				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
+				.content(mapper.writeValueAsString(List.of(new BatchOperation(record, OperationType.DELETE))))
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk());
+		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				newBatchRecordType, recordId).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
 	}
 
 	@Test
 	@Transactional
 	void batchInsertShouldFailWithInvalidRelation() throws Exception {
 		RecordType recordType = RecordType.valueOf("relationBatchInsert");
-		List<BatchOperation> batchOperations = List.of(new BatchOperation(new Record("record_0", recordType,
-						new RecordAttributes(Map.of("attr-relation", RelationUtils.createRelationString(RecordType.valueOf("missing"), "A")))), OperationType.UPSERT),
-				new BatchOperation(new Record("record_1", recordType, new RecordAttributes(Map.of("attr-relation", RelationUtils.createRelationString(RecordType.valueOf("missing"), "A")))), OperationType.UPSERT));
+		List<BatchOperation> batchOperations = List.of(
+				new BatchOperation(
+						new Record("record_0", recordType,
+								new RecordAttributes(Map.of("attr-relation",
+										RelationUtils.createRelationString(RecordType.valueOf("missing"), "A")))),
+						OperationType.UPSERT),
+				new BatchOperation(
+						new Record("record_1", recordType,
+								new RecordAttributes(Map.of("attr-relation",
+										RelationUtils.createRelationString(RecordType.valueOf("missing"), "A")))),
+						OperationType.UPSERT));
 		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, recordType)
-				.content(mapper.writeValueAsString(batchOperations)).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
+				.content(mapper.writeValueAsString(batchOperations)).contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isNotFound());
 	}
 
 	@Test
@@ -562,11 +569,20 @@ class RecordControllerMockMvcTest {
 	void batchInsertShouldFailWithInvalidRelationExistingRecordType() throws Exception {
 		RecordType recordType = RecordType.valueOf("relationBatchInsert");
 		createSomeRecords(recordType, 2);
-		List<BatchOperation> batchOperations = List.of(new BatchOperation(new Record("record_0", recordType,
-						new RecordAttributes(Map.of("attr-relation", RelationUtils.createRelationString(RecordType.valueOf("missing"), "A")))), OperationType.UPSERT),
-				new BatchOperation(new Record("record_1", recordType, new RecordAttributes(Map.of("attr-relation", RelationUtils.createRelationString(RecordType.valueOf("missing"), "A")))), OperationType.UPSERT));
+		List<BatchOperation> batchOperations = List.of(
+				new BatchOperation(
+						new Record("record_0", recordType,
+								new RecordAttributes(Map.of("attr-relation",
+										RelationUtils.createRelationString(RecordType.valueOf("missing"), "A")))),
+						OperationType.UPSERT),
+				new BatchOperation(
+						new Record("record_1", recordType,
+								new RecordAttributes(Map.of("attr-relation",
+										RelationUtils.createRelationString(RecordType.valueOf("missing"), "A")))),
+						OperationType.UPSERT));
 		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, recordType)
-				.content(mapper.writeValueAsString(batchOperations)).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
+				.content(mapper.writeValueAsString(batchOperations)).contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isNotFound());
 	}
 
 	@Test
@@ -576,14 +592,17 @@ class RecordControllerMockMvcTest {
 		List<Record> records = createSomeRecords(recordType, 2);
 		Record upsertRcd = records.get(1);
 		upsertRcd.getAttributes().putAttribute("new-col", "new value!!");
-		List<BatchOperation> ops = List.of(new BatchOperation(records.get(0), OperationType.DELETE), new BatchOperation(upsertRcd, OperationType.UPSERT));
+		List<BatchOperation> ops = List.of(new BatchOperation(records.get(0), OperationType.DELETE),
+				new BatchOperation(upsertRcd, OperationType.UPSERT));
 		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, recordType)
-				.content(mapper.writeValueAsString(ops)).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk());
-		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, recordType, records.get(0).getId())
-				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
-		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, recordType, upsertRcd.getId())
-				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andExpect(jsonPath("$.attributes.new-col", is("new value!!")));
+				.content(mapper.writeValueAsString(ops)).contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk());
+		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				recordType, records.get(0).getId()).contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				recordType, upsertRcd.getId()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.attributes.new-col", is("new value!!")));
 	}
-
 
 }

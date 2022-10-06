@@ -92,8 +92,7 @@ public class RecordController {
 
 	@GetMapping("/{instanceId}/tsv/{version}/{recordType}")
 	public ResponseEntity<StreamingResponseBody> streamAllEntities(@PathVariable("instanceId") UUID instanceId,
-																   @PathVariable("version") String version,
-																   @PathVariable("recordType") RecordType recordType) {
+			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType) {
 		validateVersion(version);
 		validateInstance(instanceId);
 		checkRecordTypeExists(instanceId, recordType);
@@ -102,14 +101,16 @@ public class RecordController {
 		Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType);
 
 		StreamingResponseBody responseBody = httpResponseOutputStream -> {
-			try (CSVPrinter writer = TsvSupport.getOutputFormat(headers).print(new OutputStreamWriter(httpResponseOutputStream))) {
-				TsvSupport.RecordEmitter recordEmitter = new TsvSupport.RecordEmitter(writer, headers.subList(1, headers.size()));
+			try (CSVPrinter writer = TsvSupport.getOutputFormat(headers)
+					.print(new OutputStreamWriter(httpResponseOutputStream))) {
+				TsvSupport.RecordEmitter recordEmitter = new TsvSupport.RecordEmitter(writer,
+						headers.subList(1, headers.size()));
 				allRecords.forEach(recordEmitter);
 			}
 		};
-		return ResponseEntity.status(HttpStatus.OK).contentType(new MediaType("text", "csv")).body(responseBody);
+		return ResponseEntity.status(HttpStatus.OK).contentType(new MediaType("text", "tab-separated-values"))
+				.body(responseBody);
 	}
-
 
 	@PostMapping("/{instanceid}/search/{version}/{recordType}")
 	public RecordQueryResponse queryForEntities(@PathVariable("instanceid") UUID instanceId,
@@ -161,7 +162,8 @@ public class RecordController {
 			}
 			Record newRecord = new Record(recordId, recordType, recordRequest.recordAttributes());
 			List<Record> records = Collections.singletonList(newRecord);
-			batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType, requestSchema, existingTableSchema, records);
+			batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType, requestSchema, existingTableSchema,
+					records);
 			Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
 			combinedSchema.putAll(requestSchema);
 			recordDao.batchUpsert(instanceId, recordType, records, combinedSchema);

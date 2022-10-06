@@ -45,7 +45,8 @@ public class RecordDao {
 	private final NamedParameterJdbcTemplate namedTemplate;
 
 	private final NamedParameterJdbcTemplate templateForStreaming;
-	public RecordDao(NamedParameterJdbcTemplate namedTemplate, @Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming) {
+	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
+			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming) {
 		this.namedTemplate = namedTemplate;
 		this.templateForStreaming = templateForStreaming;
 	}
@@ -178,8 +179,7 @@ public class RecordDao {
 
 	private List<RecordColumn> getSchemaWithRowId(Map<String, DataTypeMapping> schema) {
 		schema.put(RECORD_ID, DataTypeMapping.STRING);
-		return schema.entrySet().stream()
-				.map(e -> new RecordColumn(e.getKey(), e.getValue())).toList();
+		return schema.entrySet().stream().map(e -> new RecordColumn(e.getKey(), e.getValue())).toList();
 	}
 
 	public void batchUpsertWithErrorCapture(UUID instanceId, RecordType recordType, List<Record> records,
@@ -217,15 +217,14 @@ public class RecordDao {
 	private String convertSchemaDiffToErrorMessage(
 			Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap, Record rcd) {
 		return differenceMap.keySet().stream()
-				.map(attr -> rcd.getId() + "." + attr + " is a "
-						+ differenceMap.get(attr).leftValue() + " in the request but is defined as "
-						+ differenceMap.get(attr).rightValue() + " in the record type definition for " + rcd.getRecordType())
+				.map(attr -> rcd.getId() + "." + attr + " is a " + differenceMap.get(attr).leftValue()
+						+ " in the request but is defined as " + differenceMap.get(attr).rightValue()
+						+ " in the record type definition for " + rcd.getRecordType())
 				.collect(Collectors.joining("\n"));
 	}
 
 	private boolean isDataMismatchException(DataAccessException e) {
-		return e.getRootCause() instanceof SQLException sqlException
-				&& sqlException.getSQLState().equals("42804");
+		return e.getRootCause()instanceof SQLException sqlException && sqlException.getSQLState().equals("42804");
 	}
 
 	public boolean deleteSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
@@ -281,8 +280,9 @@ public class RecordDao {
 		}
 	}
 
-	public Stream<Record> streamAllRecordsForType(UUID instanceId, RecordType recordType){
-		return templateForStreaming.getJdbcTemplate().queryForStream("select * from " + getQualifiedTableName(recordType, instanceId),
+	public Stream<Record> streamAllRecordsForType(UUID instanceId, RecordType recordType) {
+		return templateForStreaming.getJdbcTemplate().queryForStream(
+				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + RECORD_ID,
 				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType))));
 	}
 
@@ -393,21 +393,20 @@ public class RecordDao {
 					});
 			List<String> recordErrors = new ArrayList<>();
 			for (int i = 0; i < rowCounts.length; i++) {
-				if(rowCounts[i] != 1){
+				if (rowCounts[i] != 1) {
 					recordErrors.add("record id " + recordIds.get(i) + " does not exist in " + recordType.getName());
 				}
 			}
-			if(!recordErrors.isEmpty()){
+			if (!recordErrors.isEmpty()) {
 				throw new BatchDeleteException(recordErrors);
 			}
 		} catch (DataIntegrityViolationException e) {
-			if (e.getRootCause() instanceof SQLException sqlEx) {
+			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForTableRelation(sqlEx);
 			}
 			throw e;
 		}
 	}
-
 
 	private record RecordRowMapper(RecordType recordType,
 			Map<String, RecordType> referenceColToTable) implements RowMapper<Record> {
@@ -427,7 +426,8 @@ public class RecordDao {
 					if (columnName.startsWith(RESERVED_NAME_PREFIX)) {
 						continue;
 					}
-					if (referenceColToTable.size() > 0 && referenceColToTable.containsKey(columnName) && rs.getString(columnName) != null) {
+					if (referenceColToTable.size() > 0 && referenceColToTable.containsKey(columnName)
+							&& rs.getString(columnName) != null) {
 						attributes.putAttribute(columnName, RelationUtils
 								.createRelationString(referenceColToTable.get(columnName), rs.getString(columnName)));
 					} else {

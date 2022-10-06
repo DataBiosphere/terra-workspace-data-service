@@ -12,8 +12,8 @@ import org.springframework.context.annotation.Bean;
 @TestConfiguration
 public class SmallBatchWriteTestConfig {
 
-    @Bean
-    public BatchWriteService batchWriteService(RecordDao recordDao){
-        return new BatchWriteService(recordDao, 1);
-    }
+	@Bean
+	public BatchWriteService batchWriteService(RecordDao recordDao) {
+		return new BatchWriteService(recordDao, 1);
+	}
 }
