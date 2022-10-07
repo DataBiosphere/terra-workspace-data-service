@@ -60,7 +60,7 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	public void tsvWithNoRowsShouldReturn400() throws Exception {
+	void tsvWithNoRowsShouldReturn400() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "no_data.tsv", MediaType.TEXT_PLAIN_VALUE,
 				"col1\tcol2\n".getBytes());
 
@@ -71,7 +71,7 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	public void tsvWithNoRowIdShouldReturn400() throws Exception {
+	void tsvWithNoRowIdShouldReturn400() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "no_row_id.tsv", MediaType.TEXT_PLAIN_VALUE,
 				"col1\tcol2\nfoo\tbar\n".getBytes());
 
@@ -82,7 +82,7 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	public void simpleTsvUploadShouldSucceed() throws Exception {
+	void simpleTsvUploadShouldSucceed() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				"sys_name\tcol1\tcol2\na\tfoo\tbar\n".getBytes());
 
@@ -93,7 +93,7 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	public void uploadTsvAndVerifySchema() throws Exception {
+	void uploadTsvAndVerifySchema() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
 				RecordControllerMockMvcTest.class.getResourceAsStream("/small-test.tsv"));
 
