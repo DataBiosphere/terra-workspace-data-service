@@ -2,10 +2,7 @@ package org.databiosphere.workspacedataservice.controller;
 
 import org.apache.commons.csv.CSVPrinter;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.service.BatchWriteService;
-import org.databiosphere.workspacedataservice.service.DataTypeInferer;
-import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.TsvSupport;
+import org.databiosphere.workspacedataservice.service.*;
 import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -51,7 +48,7 @@ public class RecordController {
 				.orElseThrow(() -> new MissingObjectException("Record"));
 		RecordAttributes incomingAtts = recordRequest.recordAttributes();
 		RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAtts).getAttributes();
-		Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts);
+		Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts, InBoundDataSource.JSON);
 		Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
 		singleRecord.setAttributes(allAttrs);
 		List<Record> records = Collections.singletonList(singleRecord);
@@ -79,15 +76,17 @@ public class RecordController {
 	}
 
 	@PostMapping("/{instanceId}/tsv/{version}/{recordType}")
-	public ResponseEntity<TsvUploadResponse> handleStreamingUpload(@PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version,
-										@PathVariable("recordType") RecordType recordType, @RequestParam("records") MultipartFile records) throws IOException {
+	public ResponseEntity<TsvUploadResponse> tsvUpload(@PathVariable("instanceId") UUID instanceId,
+			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
+			@RequestParam("records") MultipartFile records) throws IOException {
 		validateInstance(instanceId);
 		validateVersion(version);
 		int recordsModified;
 		try (InputStreamReader inputStreamReader = new InputStreamReader(records.getInputStream())) {
 			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType);
 		}
-		return new ResponseEntity<>(new TsvUploadResponse(recordsModified, "Updated " + recordType.toString()), HttpStatus.OK);
+		return new ResponseEntity<>(new TsvUploadResponse(recordsModified, "Updated " + recordType.toString()),
+				HttpStatus.OK);
 	}
 
 	@GetMapping("/{instanceId}/tsv/{version}/{recordType}")
@@ -142,7 +141,7 @@ public class RecordController {
 			@PathVariable("recordId") String recordId, @RequestBody RecordRequest recordRequest) {
 		validateVersion(version);
 		RecordAttributes attributesInRequest = recordRequest.recordAttributes();
-		Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
+		Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest, InBoundDataSource.JSON);
 		HttpStatus status = HttpStatus.CREATED;
 		if (!recordDao.instanceSchemaExists(instanceId)) {
 			recordDao.createSchema(instanceId);

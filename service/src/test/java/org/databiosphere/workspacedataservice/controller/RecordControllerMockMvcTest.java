@@ -41,9 +41,6 @@ class RecordControllerMockMvcTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@Autowired
-	private WebApplicationContext webApplicationContext;
-
 	private static UUID instanceId;
 
 	private static String versionId = "v0.2";
@@ -62,20 +59,71 @@ class RecordControllerMockMvcTest {
 	}
 
 	@Test
-	public void whenFileUploaded_thenVerifyStatus()
-			throws Exception {
-		MockMultipartFile file
-				= new MockMultipartFile(
-				"file",
-				"hello.txt",
-				MediaType.TEXT_PLAIN_VALUE,
-				"Hello, World!".getBytes()
-		);
+	@Transactional
+	public void tsvWithNoRowsShouldReturn400() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "no_data.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"col1\tcol2\n".getBytes());
 
-		mockMvc.perform(post("/{instanceId}/{version}/", instanceId, versionId));
-		mockMvc.perform(multipart("/{instanceid}/{v}/{type}/upload", instanceId, versionId, "tsv-record-type").file(file))
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
+				.file(file)).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@Transactional
+	public void tsvWithNoRowIdShouldReturn400() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "no_row_id.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"col1\tcol2\nfoo\tbar\n".getBytes());
+
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
+				.file(file)).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@Transactional
+	public void simpleTsvUploadShouldSucceed() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"sys_name\tcol1\tcol2\na\tfoo\tbar\n".getBytes());
+
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
+				.file(file)).andExpect(status().isOk());
+	}
+
+	@Test
+	@Transactional
+	public void uploadTsvAndVerifySchema() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
+				RecordControllerMockMvcTest.class.getResourceAsStream("/small-test.tsv"));
+
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
+		String recordType = "tsv-types";
+		mockMvc.perform(
+				multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType).file(file))
 				.andExpect(status().isOk());
-		System.out.println(instanceId);
+		MvcResult schemaResult = mockMvc
+				.perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType)).andReturn();
+		RecordTypeSchema schema = mapper.readValue(schemaResult.getResponse().getContentAsString(),
+				RecordTypeSchema.class);
+		assertEquals("date", schema.attributes().get(0).name());
+		assertEquals("DATE", schema.attributes().get(0).datatype());
+		assertEquals("DOUBLE", schema.attributes().get(1).datatype());
+		assertEquals("double", schema.attributes().get(1).name());
+		assertEquals("json", schema.attributes().get(4).name());
+		assertEquals("JSON", schema.attributes().get(4).datatype());
+		assertEquals("LONG", schema.attributes().get(5).datatype());
+		assertEquals("long", schema.attributes().get(5).name());
+		MockMultipartFile alter = new MockMultipartFile("records", "change_json_to_text.tsv",
+				MediaType.TEXT_PLAIN_VALUE, "sys_name\tjson\na\tfoo\n".getBytes());
+		mockMvc.perform(
+				multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType).file(alter))
+				.andExpect(status().isOk());
+		schemaResult = mockMvc.perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType))
+				.andReturn();
+		schema = mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+		assertEquals("json", schema.attributes().get(4).name());
+		assertEquals("STRING", schema.attributes().get(4).datatype());
 	}
 
 	@Test

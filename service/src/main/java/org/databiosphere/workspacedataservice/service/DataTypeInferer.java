@@ -21,21 +21,21 @@ public class DataTypeInferer {
 
 	private ObjectMapper objectMapper = new ObjectMapper();
 
-	public Map<String, DataTypeMapping> inferTypes(RecordAttributes updatedAtts) {
+	public Map<String, DataTypeMapping> inferTypes(RecordAttributes updatedAtts, InBoundDataSource dataSource) {
 		Map<String, DataTypeMapping> result = new HashMap<>();
 		for (Map.Entry<String, Object> entry : updatedAtts.attributeSet()) {
-			result.put(entry.getKey(), inferType(entry.getValue()));
+			result.put(entry.getKey(), inferType(entry.getValue(), dataSource));
 		}
 		return result;
 	}
 
-	public Map<String, DataTypeMapping> inferTypes(List<Record> records) {
+	public Map<String, DataTypeMapping> inferTypes(List<Record> records, InBoundDataSource dataSource) {
 		Map<String, DataTypeMapping> result = new HashMap<>();
 		for (Record rcd : records) {
 			if (rcd.getAttributes() == null) {
 				continue;
 			}
-			Map<String, DataTypeMapping> inferred = inferTypes(rcd.getAttributes());
+			Map<String, DataTypeMapping> inferred = inferTypes(rcd.getAttributes(), dataSource);
 			for (Map.Entry<String, DataTypeMapping> entry : inferred.entrySet()) {
 				DataTypeMapping inferredType = entry.getValue();
 				if (result.containsKey(entry.getKey()) && result.get(entry.getKey()) != inferredType) {
@@ -51,6 +51,9 @@ public class DataTypeInferer {
 	public DataTypeMapping selectBestType(DataTypeMapping existing, DataTypeMapping newMapping) {
 		if (existing == newMapping) {
 			return existing;
+		}
+		if (newMapping == NULL || existing == NULL) {
+			return newMapping != NULL ? newMapping : existing;
 		}
 		if (existing == LONG && newMapping == DOUBLE) {
 			return DOUBLE;
@@ -70,12 +73,12 @@ public class DataTypeInferer {
 	 * @param val
 	 * @return
 	 */
-	public DataTypeMapping inferType(Object val) {
+	public DataTypeMapping inferType(Object val, InBoundDataSource dataSource) {
 		// if we're looking at a user request and they submit a null value for a new
 		// attribute,
 		// this is the best inference we can make about the column type
-		if (val == null) {
-			return STRING;
+		if (StringUtils.isEmpty(val.toString())) {
+			return NULL;
 		}
 
 		if (val instanceof Long || val instanceof Integer) {
@@ -107,17 +110,20 @@ public class DataTypeInferer {
 		if (isValidJson(sVal)) {
 			return JSON;
 		}
-		//when we load from TSV, numbers are converted to strings, we need to go back to numbers
-		if(isLongValue(sVal)){
-			return LONG;
-		}
-		if(isDoubleValue(sVal)){
-			return DOUBLE;
+		if (dataSource == InBoundDataSource.TSV) {
+			// when we load from TSV, numbers are converted to strings, we need to go back
+			// to numbers
+			if (isLongValue(sVal)) {
+				return LONG;
+			}
+			if (isDoubleValue(sVal)) {
+				return DOUBLE;
+			}
 		}
 		return STRING;
 	}
 
-	private boolean isLongValue(String sVal) {
+	public boolean isLongValue(String sVal) {
 		try {
 			Long.parseLong(sVal);
 			return true;
@@ -126,8 +132,7 @@ public class DataTypeInferer {
 		}
 	}
 
-
-	private boolean isDoubleValue(String sVal) {
+	public boolean isDoubleValue(String sVal) {
 		try {
 			Double.parseDouble(sVal);
 			return true;

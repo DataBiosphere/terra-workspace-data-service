@@ -190,7 +190,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
       summary: Import records to a record type from a tsv file
-      description: Upload a tsv to modify or create records in a record type.  This operation will insert update records.
+      description: Upload a tsv to modify or create records in a record type.  This operation will insert or update records.
       tags:
         - Records
       operationId: uploadTSV
@@ -226,12 +226,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         404:
           description: Instance not found
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        500:
-          description: Internal Error
           content:
             'application/json':
               schema:

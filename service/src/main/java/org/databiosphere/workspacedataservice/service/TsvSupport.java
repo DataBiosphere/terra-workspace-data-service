@@ -14,21 +14,17 @@ public class TsvSupport {
 
 	private TsvSupport() {
 	}
-    public static final String ROW_ID_COLUMN_NAME = ReservedNames.RECORD_ID;
+	public static final String ROW_ID_COLUMN_NAME = ReservedNames.RECORD_ID;
 
+	public static CSVFormat getUploadFormat() {
+		return CSVFormat.Builder.create(CSVFormat.DEFAULT).setHeader().setDelimiter('\t')
+				.setQuoteMode(QuoteMode.MINIMAL).build();
+	}
 
-    public static CSVFormat getUploadFormat(){
-        return CSVFormat.Builder.create(CSVFormat.DEFAULT).setHeader()
-                .setDelimiter('\t')
-                .setQuoteMode(QuoteMode.MINIMAL).build();
-    }
-
-    public static CSVFormat getOutputFormat(List<String> headers) {
-         return CSVFormat.DEFAULT.builder().setDelimiter('\t')
-                .setQuoteMode(QuoteMode.MINIMAL)
-                 .setRecordSeparator("\n")
-                 .setHeader(headers.toArray(new String[0])).build();
-    }
+	public static CSVFormat getOutputFormat(List<String> headers) {
+		return CSVFormat.DEFAULT.builder().setDelimiter('\t').setQuoteMode(QuoteMode.MINIMAL).setRecordSeparator("\n")
+				.setHeader(headers.toArray(new String[0])).build();
+	}
 
 	public static class RecordEmitter implements Consumer<Record> {
 

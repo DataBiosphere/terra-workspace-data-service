@@ -8,14 +8,13 @@ import org.apache.commons.csv.CSVRecord;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
-import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
-import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
-import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
-import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
+import org.databiosphere.workspacedataservice.service.model.exception.*;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -39,6 +38,8 @@ public class BatchWriteService {
 	private final DataTypeInferer inferer = new DataTypeInferer();
 
 	private final int batchSize;
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(BatchWriteService.class);
 
 	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size}") int batchSize) {
 		this.recordDao = recordDao;
@@ -110,28 +111,38 @@ public class BatchWriteService {
 		Map<String, DataTypeMapping> schema = null;
 		int recordsProcessed = 0;
 		for (CSVRecord row : rows) {
-			Map<String, Object> m = (Map)row.toMap();
+			Map<String, Object> m = (Map) row.toMap();
 			m.remove(ROW_ID_COLUMN_NAME);
-			batch.add(new Record(row.get(ROW_ID_COLUMN_NAME), recordType, new RecordAttributes(m)));
+			try {
+				batch.add(new Record(row.get(ROW_ID_COLUMN_NAME), recordType, new RecordAttributes(m)));
+			} catch (IllegalArgumentException ex) {
+				LOGGER.error("IllegalArgument exception while reading tsv", ex);
+				throw new InvalidTsvException(
+						"Uploaded TSV is missing " + ROW_ID_COLUMN_NAME + " to uniquely identify each row");
+			}
 			recordsProcessed++;
-			if(batch.size() >= batchSize){
-				if(firstUpsertBatch){
-					schema = createOrUpdateSchema(instanceId, recordType, batch);
+			if (batch.size() >= batchSize) {
+				if (firstUpsertBatch) {
+					schema = createOrUpdateSchema(instanceId, recordType, batch, InBoundDataSource.TSV);
 					firstUpsertBatch = false;
 				}
 				recordDao.batchUpsert(instanceId, recordType, batch, schema);
 				batch.clear();
 			}
 		}
-		if(firstUpsertBatch){
-			schema = createOrUpdateSchema(instanceId, recordType, batch);
+		if (firstUpsertBatch) {
+			if (batch.isEmpty()) {
+				throw new InvalidTsvException("We could not parse any data rows in your tsv file.");
+			}
+			schema = createOrUpdateSchema(instanceId, recordType, batch, InBoundDataSource.TSV);
 		}
 		recordDao.batchUpsert(instanceId, recordType, batch, schema);
 		return recordsProcessed;
 	}
 
-	private Map<String, DataTypeMapping> createOrUpdateSchema(UUID instanceId, RecordType recordType, List<Record> batch) {
-		Map<String, DataTypeMapping> schema = inferer.inferTypes(batch);
+	private Map<String, DataTypeMapping> createOrUpdateSchema(UUID instanceId, RecordType recordType,
+			List<Record> batch, InBoundDataSource dataSource) {
+		Map<String, DataTypeMapping> schema = inferer.inferTypes(batch, dataSource);
 		return createOrModifyRecordType(instanceId, recordType, schema, batch);
 	}
 
@@ -154,7 +165,7 @@ public class BatchWriteService {
 					.getRecords().isEmpty(); info = streamingWriteHandler.readRecords(batchSize)) {
 				List<Record> records = info.getRecords();
 				if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
-					schema = inferer.inferTypes(records);
+					schema = inferer.inferTypes(records, InBoundDataSource.JSON);
 					createOrModifyRecordType(instanceId, recordType, schema, records);
 					firstUpsertBatch = false;
 				}

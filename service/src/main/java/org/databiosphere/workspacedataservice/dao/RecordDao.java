@@ -2,7 +2,9 @@ package org.databiosphere.workspacedataservice.dao;
 
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
+import org.databiosphere.workspacedataservice.service.InBoundDataSource;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchDeleteException;
@@ -45,10 +47,13 @@ public class RecordDao {
 	private final NamedParameterJdbcTemplate namedTemplate;
 
 	private final NamedParameterJdbcTemplate templateForStreaming;
+
+	private final DataTypeInferer inferer;
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
 			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming) {
 		this.namedTemplate = namedTemplate;
 		this.templateForStreaming = templateForStreaming;
+		this.inferer = new DataTypeInferer();
 	}
 
 	public boolean instanceSchemaExists(UUID instanceId) {
@@ -200,10 +205,10 @@ public class RecordDao {
 	}
 
 	private List<String> checkEachRow(List<Record> records, Map<String, DataTypeMapping> recordTypeSchema) {
-		DataTypeInferer inferer = new DataTypeInferer();
 		List<String> result = new ArrayList<>();
 		for (Record rcd : records) {
-			Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(rcd.getAttributes());
+			Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(rcd.getAttributes(),
+					InBoundDataSource.JSON);
 			if (!schemaForRecord.equals(recordTypeSchema)) {
 				MapDifference<String, DataTypeMapping> difference = Maps.difference(schemaForRecord, recordTypeSchema);
 				Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference
@@ -334,10 +339,16 @@ public class RecordDao {
 			return LocalDate.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
 		} else if (typeMapping == DataTypeMapping.DATE_TIME) {
 			return LocalDateTime.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-		} else if(typeMapping == DataTypeMapping.LONG && attVal instanceof String){
+		} else if (typeMapping == DataTypeMapping.LONG && attVal instanceof String
+				&& inferer.isLongValue(attVal.toString())) {
 			return Long.parseLong(attVal.toString());
-		} else if(typeMapping == DataTypeMapping.DOUBLE && attVal instanceof String){
+		} else if (typeMapping == DataTypeMapping.DOUBLE && attVal instanceof String
+				&& inferer.isDoubleValue(attVal.toString())) {
 			return Double.parseDouble(attVal.toString());
+			// if the user is trying to add a null value to a JSON column we can't except
+			// empty string
+		} else if (typeMapping == DataTypeMapping.JSON && StringUtils.isEmpty(attVal.toString())) {
+			return null;
 		}
 
 		return attVal;
