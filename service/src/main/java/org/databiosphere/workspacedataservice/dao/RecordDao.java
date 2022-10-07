@@ -335,8 +335,10 @@ public class RecordDao {
 		if (RelationUtils.isRelationValue(attVal)) {
 			return RelationUtils.getRelationValue(attVal);
 		}
-
-		if (typeMapping == DataTypeMapping.DATE) {
+		if(StringUtils.isEmpty(attVal.toString())){
+			return null;
+		}
+		else if (typeMapping == DataTypeMapping.DATE) {
 			return LocalDate.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
 		} else if (typeMapping == DataTypeMapping.DATE_TIME) {
 			return LocalDateTime.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
@@ -348,8 +350,6 @@ public class RecordDao {
 			return Double.parseDouble(attVal.toString());
 			// if the user is trying to add a null value to a JSON column we can't except
 			// empty string
-		} else if (typeMapping == DataTypeMapping.JSON && StringUtils.isEmpty(attVal.toString())) {
-			return null;
 		}
 
 		return attVal;
