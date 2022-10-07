@@ -123,7 +123,7 @@ public class BatchWriteService {
 			recordsProcessed++;
 			if (batch.size() >= batchSize) {
 				if (firstUpsertBatch) {
-					schema = createOrUpdateSchema(instanceId, recordType, batch, InBoundDataSource.TSV);
+					schema = createOrUpdateSchema(instanceId, recordType, batch);
 					firstUpsertBatch = false;
 				}
 				recordDao.batchUpsert(instanceId, recordType, batch, schema);
@@ -134,15 +134,15 @@ public class BatchWriteService {
 			if (batch.isEmpty()) {
 				throw new InvalidTsvException("We could not parse any data rows in your tsv file.");
 			}
-			schema = createOrUpdateSchema(instanceId, recordType, batch, InBoundDataSource.TSV);
+			schema = createOrUpdateSchema(instanceId, recordType, batch);
 		}
 		recordDao.batchUpsert(instanceId, recordType, batch, schema);
 		return recordsProcessed;
 	}
 
 	private Map<String, DataTypeMapping> createOrUpdateSchema(UUID instanceId, RecordType recordType,
-			List<Record> batch, InBoundDataSource dataSource) {
-		Map<String, DataTypeMapping> schema = inferer.inferTypes(batch, dataSource);
+			List<Record> batch) {
+		Map<String, DataTypeMapping> schema = inferer.inferTypes(batch, InBoundDataSource.TSV);
 		return createOrModifyRecordType(instanceId, recordType, schema, batch);
 	}
 
