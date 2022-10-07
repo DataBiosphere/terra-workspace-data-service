@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVPrinter;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
@@ -24,6 +25,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Slf4j
 @RestController
 public class RecordController {
 
@@ -120,6 +122,7 @@ public class RecordController {
 		if (searchRequest.getOffset() > totalRecords) {
 			return new RecordQueryResponse(searchRequest, Collections.emptyList(), totalRecords);
 		}
+		log.info("queryForEntities: {}", recordType.getName());
 		List<Record> records = recordDao.queryForRecords(recordType, searchRequest.getLimit(),
 				searchRequest.getOffset(), searchRequest.getSort().name().toLowerCase(),
 				searchRequest.getSortAttribute(), instanceId);

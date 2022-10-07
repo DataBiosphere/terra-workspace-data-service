@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dao;
 
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
+import lombok.extern.slf4j.Slf4j;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
@@ -39,6 +40,7 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.RECORD_TYPE;
 
+@Slf4j
 @Repository
 public class RecordDao {
 
@@ -94,6 +96,7 @@ public class RecordDao {
 	@SuppressWarnings("squid:S2077")
 	public List<Record> queryForRecords(RecordType recordType, int pageSize, int offset, String sortDirection,
 										String sortAttribute, UUID instanceId) {
+		log.info("queryForRecords: {}", recordType.getName());
 		return namedTemplate.getJdbcTemplate().query(
 				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + (sortAttribute == null ? RECORD_ID : quote(sortAttribute)) + " "
 						+ sortDirection + " limit " + pageSize + " offset " + offset,
