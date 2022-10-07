@@ -36,15 +36,18 @@ class DataTypeInfererTest {
 
 	@Test
 	void selectBestTypes(){
-		assertThat(inferer.selectBestType(DataTypeMapping.LONG, DataTypeMapping.DOUBLE)).isEqualTo(DataTypeMapping.DOUBLE)
-				.as("longs can be expressed as doubles but not the other way around");
-		assertThat(inferer.selectBestType(DataTypeMapping.NULL, DataTypeMapping.DOUBLE)).isEqualTo(DataTypeMapping.DOUBLE)
-				.as("null values should not affect typing for non null values");
-		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.STRING)).isEqualTo(DataTypeMapping.STRING)
-				.as("if types are identical, return the type");
-		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.BOOLEAN)).isEqualTo(DataTypeMapping.STRING)
-				.as("should generalize to string/text type");
-
+		assertThat(inferer.selectBestType(DataTypeMapping.LONG, DataTypeMapping.DOUBLE))
+				.as("longs can be expressed as doubles but not the other way around")
+				.isEqualTo(DataTypeMapping.DOUBLE);
+		assertThat(inferer.selectBestType(DataTypeMapping.NULL, DataTypeMapping.DOUBLE))
+				.as("null values should not affect typing for non null values")
+				.isEqualTo(DataTypeMapping.DOUBLE);
+		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.STRING))
+				.as("if types are identical, return the type")
+				.isEqualTo(DataTypeMapping.STRING);
+		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.BOOLEAN))
+				.as("should generalize to string/text type")
+				.isEqualTo(DataTypeMapping.STRING);
 	}
 
 	@Test
