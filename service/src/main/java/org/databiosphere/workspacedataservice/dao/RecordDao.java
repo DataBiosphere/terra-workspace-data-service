@@ -98,9 +98,9 @@ public class RecordDao {
 
 	@SuppressWarnings("squid:S2077")
 	public List<Record> queryForRecords(RecordType recordType, int pageSize, int offset, String sortDirection,
-			UUID instanceId) {
+										String sortAttribute, UUID instanceId) {
 		return namedTemplate.getJdbcTemplate().query(
-				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + RECORD_ID + " "
+				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + (sortAttribute == null ? RECORD_ID : quote(sortAttribute)) + " "
 						+ sortDirection + " limit " + pageSize + " offset " + offset,
 				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType))));
 	}
@@ -443,8 +443,16 @@ public class RecordDao {
 								.createRelationString(referenceColToTable.get(columnName), rs.getString(columnName)));
 					} else {
 						Object object = rs.getObject(columnName);
-						attributes.putAttribute(columnName,
-								object instanceof PGobject pGobject ? pGobject.getValue() : object);
+
+						if (object instanceof java.sql.Date date) {
+							object = date.toLocalDate();
+						} else if (object instanceof java.sql.Timestamp ts) {
+							object = ts.toLocalDateTime();
+						} else if (object instanceof PGobject pGobject) {
+							object = pGobject.getValue();
+						}
+
+						attributes.putAttribute(columnName, object);
 					}
 				}
 				return attributes;
