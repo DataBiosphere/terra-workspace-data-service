@@ -82,8 +82,8 @@ class DataTypeInfererTest {
 				.putAttribute("long", "-999999");
 		Record second = new Record("second", RecordType.valueOf("test-inference"), secondAttrs);
 		Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(List.of(first, second), InBoundDataSource.TSV);
-		assertThat(inferredSchema).isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.LONG)).
-				as("Should still get BOOLEAN and LONG for types despite null values in one record");
+		assertThat(inferredSchema).as("Should still get BOOLEAN and LONG for types despite null values in one record")
+			.isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.LONG));
 	}
 
 	@Test
@@ -95,8 +95,8 @@ class DataTypeInfererTest {
 				.putAttribute("long", -999999);
 		Record second = new Record("second", RecordType.valueOf("test-inference"), secondAttrs);
 		Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(List.of(first, second), InBoundDataSource.JSON);
-		assertThat(inferredSchema).isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.LONG)).
-				as("Should still get BOOLEAN and LONG for types despite null values in one record");
+		assertThat(inferredSchema).as("Should still get BOOLEAN and LONG for types despite null values in one record")
+			.isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.LONG));
 	}
 
 	@Test
