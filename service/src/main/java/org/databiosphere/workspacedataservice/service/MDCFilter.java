@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 public class MDCFilter implements Filter {
 
     static final String MDC_KEY = "requestId";
-    static final String RESPONSE_HEADER = "x-b3-traceid";
+    public static final String RESPONSE_HEADER = "x-b3-traceid";
 
     // add other headers here, such as: x-vcap-request-id, X─B3─ParentSpanId, X─B3─SpanId, X─B3─Sampled
     static final List<String> INCOMING_HEADERS = Arrays.asList("x-b3-traceid", "x-request-id", "trace-id", "x-amzn-trace-id");
@@ -34,7 +34,7 @@ public class MDCFilter implements Filter {
         if (servletRequest instanceof HttpServletRequest httpServletRequest) {
             for (String hdr : INCOMING_HEADERS) {
                 String foundIncoming = httpServletRequest.getHeader(hdr);
-                if (foundIncoming != null) {
+                if (foundIncoming != null && !foundIncoming.isBlank()) {
                     uniqueId = foundIncoming;
                     break;
                 }
