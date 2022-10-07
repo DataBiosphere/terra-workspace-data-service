@@ -114,14 +114,14 @@ class DataTypeInfererTest {
 	}
 
 	private static RecordAttributes getSomeAttrs() {
-		return new RecordAttributes(Map.of("int_val", new Random().nextInt(), "string_val",
-				RandomStringUtils.random(10), "json_val", "[\"a\", \"b\"]", "date_val", "2001-11-03", "date_time_val",
+		return new RecordAttributes(Map.of("int_val", 4747, "string_val",
+				"Abracadabra Open Sesame", "json_val", "[\"a\", \"b\"]", "date_val", "2001-11-03", "date_time_val",
 				"2001-11-03T10:00:00", "number_or_string", "47"));
 	}
 
 	private static RecordAttributes getSomeTsvAttrs() {
-		return new RecordAttributes(Map.of("int_val", String.valueOf(new Random().nextInt()), "string_val",
-				String.valueOf(RandomStringUtils.random(10)), "json_val", "[\"a\", \"b\"]", "date_val", "2001-11-03", "date_time_val",
+		return new RecordAttributes(Map.of("int_val", "4747", "string_val",
+				"Abracadabra Open Sesame", "json_val", "[\"a\", \"b\"]", "date_val", "2001-11-03", "date_time_val",
 				"2001-11-03T10:00:00", "number_or_string", "47"));
 	}
 }
