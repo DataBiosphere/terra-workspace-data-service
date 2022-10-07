@@ -12,6 +12,7 @@ import org.databiosphere.workspacedataservice.shared.model.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -82,13 +83,29 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	void simpleTsvUploadShouldSucceed() throws Exception {
+	void simpleTsvUploadWithBatchingShouldSucceed(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
+		StringBuilder tsvContent = new StringBuilder("sys_name\tcol1\n");
+		for (int i = 0; i < batchSize+1; i++) {
+			tsvContent.append(i+"\ttada"+i+"\n");
+		}
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
-				"sys_name\tcol1\tcol2\na\tfoo\tbar\n".getBytes());
+				tsvContent.toString().getBytes());
 
 		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
 				.file(file)).andExpect(status().isOk());
+	}
+
+	@Test
+	@Transactional
+	void tsvWithMissingRelationShouldFail(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
+
+		MockMultipartFile file = new MockMultipartFile("records", "simple_bad_relation.tsv", MediaType.TEXT_PLAIN_VALUE,
+				("sys_name\trelation\na\t"+ RelationUtils.createRelationString(RecordType.valueOf("missing"), "QQ")+"\n").getBytes());
+
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
+				.file(file)).andExpect(status().isNotFound());
 	}
 
 	@Test
@@ -123,6 +140,7 @@ class RecordControllerMockMvcTest {
 				.andReturn();
 		schema = mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
 		assertEquals("json", schema.attributes().get(4).name());
+		//data type should downgrade to string
 		assertEquals("STRING", schema.attributes().get(4).datatype());
 	}
 

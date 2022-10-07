@@ -1,14 +1,19 @@
 package org.databiosphere.workspacedataservice;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.in;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.*;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.RandomUtils;
+import org.databiosphere.workspacedata.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.InBoundDataSource;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
 
 class DataTypeInfererTest {
@@ -30,8 +35,21 @@ class DataTypeInfererTest {
 	}
 
 	@Test
+	void selectBestTypes(){
+		assertThat(inferer.selectBestType(DataTypeMapping.LONG, DataTypeMapping.DOUBLE)).isEqualTo(DataTypeMapping.DOUBLE)
+				.as("longs can be expressed as doubles but not the other way around");
+		assertThat(inferer.selectBestType(DataTypeMapping.NULL, DataTypeMapping.DOUBLE)).isEqualTo(DataTypeMapping.DOUBLE)
+				.as("null values should not affect typing for non null values");
+		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.STRING)).isEqualTo(DataTypeMapping.STRING)
+				.as("if types are identical, return the type");
+		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.BOOLEAN)).isEqualTo(DataTypeMapping.STRING)
+				.as("should generalize to string/text type");
+
+	}
+
+	@Test
 	void inferTypesTsvSource() {
-		Map<String, DataTypeMapping> result = inferer.inferTypes(getSomeAttrs(), InBoundDataSource.TSV);
+		Map<String, DataTypeMapping> result = inferer.inferTypes(getSomeTsvAttrs(), InBoundDataSource.TSV);
 		Map<String, DataTypeMapping> expected = new HashMap<>();
 		expected.put("string_val", DataTypeMapping.STRING);
 		expected.put("int_val", DataTypeMapping.LONG);
@@ -53,6 +71,32 @@ class DataTypeInfererTest {
 	}
 
 	@Test
+	void nullValuesMixedWithNonNullsShouldStillYieldProperTypeTSV(){
+		RecordAttributes firstAttrs = RecordAttributes.empty().putAttribute("boolean", "")
+				.putAttribute("long", null);
+		Record first = new Record("first", RecordType.valueOf("test-inference"), firstAttrs);
+		RecordAttributes secondAttrs = RecordAttributes.empty().putAttribute("boolean", "true")
+				.putAttribute("long", "-999999");
+		Record second = new Record("second", RecordType.valueOf("test-inference"), secondAttrs);
+		Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(List.of(first, second), InBoundDataSource.TSV);
+		assertThat(inferredSchema).isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.LONG)).
+				as("Should still get BOOLEAN and LONG for types despite null values in one record");
+	}
+
+	@Test
+	void nullValuesMixedWithNonNullsShouldStillYieldProperTypeJSON(){
+		RecordAttributes firstAttrs = RecordAttributes.empty().putAttribute("boolean", null)
+				.putAttribute("long", null);
+		Record first = new Record("first", RecordType.valueOf("test-inference"), firstAttrs);
+		RecordAttributes secondAttrs = RecordAttributes.empty().putAttribute("boolean", "true")
+				.putAttribute("long", -999999);
+		Record second = new Record("second", RecordType.valueOf("test-inference"), secondAttrs);
+		Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(List.of(first, second), InBoundDataSource.JSON);
+		assertThat(inferredSchema).isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.LONG)).
+				as("Should still get BOOLEAN and LONG for types despite null values in one record");
+	}
+
+	@Test
 	void inferSomeTypes() {
 		assertThat(inferer.inferType("True", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.BOOLEAN);
 		assertThat(inferer.inferType("Hello", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
@@ -69,6 +113,12 @@ class DataTypeInfererTest {
 	private static RecordAttributes getSomeAttrs() {
 		return new RecordAttributes(Map.of("int_val", new Random().nextInt(), "string_val",
 				RandomStringUtils.random(10), "json_val", "[\"a\", \"b\"]", "date_val", "2001-11-03", "date_time_val",
+				"2001-11-03T10:00:00", "number_or_string", "47"));
+	}
+
+	private static RecordAttributes getSomeTsvAttrs() {
+		return new RecordAttributes(Map.of("int_val", String.valueOf(new Random().nextInt()), "string_val",
+				String.valueOf(RandomStringUtils.random(10)), "json_val", "[\"a\", \"b\"]", "date_val", "2001-11-03", "date_time_val",
 				"2001-11-03T10:00:00", "number_or_string", "47"));
 	}
 }
