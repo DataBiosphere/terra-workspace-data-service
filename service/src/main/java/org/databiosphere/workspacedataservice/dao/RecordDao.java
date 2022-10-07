@@ -348,10 +348,9 @@ public class RecordDao {
 		} else if (typeMapping == DataTypeMapping.DOUBLE && attVal instanceof String
 				&& inferer.isDoubleValue(attVal.toString())) {
 			return Double.parseDouble(attVal.toString());
-			// if the user is trying to add a null value to a JSON column we can't except
-			// empty string
+		} else if(typeMapping == DataTypeMapping.BOOLEAN && attVal instanceof String && inferer.isValidBoolean(attVal.toString())){
+			return Boolean.parseBoolean(attVal.toString());
 		}
-
 		return attVal;
 	}
 

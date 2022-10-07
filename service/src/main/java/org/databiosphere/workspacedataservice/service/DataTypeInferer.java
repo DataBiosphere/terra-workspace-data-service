@@ -88,7 +88,7 @@ public class DataTypeInferer {
 		if (isValidDateTime(sVal)) {
 			return DATE_TIME;
 		}
-		if (sVal.equalsIgnoreCase("true") || sVal.equalsIgnoreCase("false")) {
+		if (isValidBoolean(sVal)) {
 			return BOOLEAN;
 		}
 		if (isValidJson(sVal)) {
@@ -148,13 +148,17 @@ public class DataTypeInferer {
 			if (isValidDateTime(sVal)) {
 				return DATE_TIME;
 			}
-			if (sVal.equalsIgnoreCase("true") || sVal.equalsIgnoreCase("false")) {
+			if (isValidBoolean(sVal)) {
 				return BOOLEAN;
 			}
 			if (isValidJson(sVal)) {
 				return JSON;
 			}
 			return STRING;
+	}
+
+	public boolean isValidBoolean(String sVal) {
+		return sVal.equalsIgnoreCase("true") || sVal.equalsIgnoreCase("false");
 	}
 
 	public DataTypeMapping inferType(Object val, InBoundDataSource dataSource) {
