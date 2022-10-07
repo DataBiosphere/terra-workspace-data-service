@@ -39,10 +39,8 @@ class TsvDownloadTest {
 		recordController.createInstance(instanceId, version);
 		InputStream is = TsvDownloadTest.class.getResourceAsStream("/batch_write_tsv_data.json");
 		ResponseEntity<BatchResponse> response = recordController.streamingWrite(instanceId, version, recordType, is);
-		is.close();
 		assertThat(response.getStatusCodeValue()).isEqualTo(200);
 		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
 		ResponseEntity<Resource> stream = restTemplate.exchange("/{instanceId}/tsv/{version}/{recordType}",
 				HttpMethod.GET, new HttpEntity<>(headers), Resource.class, instanceId, version, recordType);
 		InputStream inputStream = stream.getBody().getInputStream();
@@ -56,6 +54,7 @@ class TsvDownloadTest {
 		rcd = iterator.next();
 		assertThat(rcd.get("description")).isEqualTo("\n,Weird\n String");
 		assertThat(rcd.get("location")).isEqualTo("Cambridge, \"MA\"");
+		assertThat(rcd.get("unicodedata")).isEqualTo("\uD83D\uDCA9\u0207");
 		assertThat(iterator.hasNext()).isFalse();
 		reader.close();
 	}
