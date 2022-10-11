@@ -335,21 +335,22 @@ public class RecordDao {
 		if (RelationUtils.isRelationValue(attVal)) {
 			return RelationUtils.getRelationValue(attVal);
 		}
-		if(StringUtils.isEmpty(attVal.toString())){
-			return null;
-		}
-		else if (typeMapping == DataTypeMapping.DATE) {
-			return LocalDate.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
-		} else if (typeMapping == DataTypeMapping.DATE_TIME) {
-			return LocalDateTime.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-		} else if (typeMapping == DataTypeMapping.LONG && attVal instanceof String
-				&& inferer.isLongValue(attVal.toString())) {
-			return Long.parseLong(attVal.toString());
-		} else if (typeMapping == DataTypeMapping.DOUBLE && attVal instanceof String
-				&& inferer.isDoubleValue(attVal.toString())) {
-			return Double.parseDouble(attVal.toString());
-		} else if(typeMapping == DataTypeMapping.BOOLEAN && attVal instanceof String && inferer.isValidBoolean(attVal.toString())){
-			return Boolean.parseBoolean(attVal.toString());
+		if (attVal instanceof String sVal) {
+			if (typeMapping == DataTypeMapping.LONG && inferer.isLongValue(sVal)) {
+				return Long.parseLong(sVal);
+			}
+			if (typeMapping == DataTypeMapping.DOUBLE && inferer.isDoubleValue(sVal)) {
+				return Double.parseDouble(sVal);
+			}
+			if (typeMapping == DataTypeMapping.BOOLEAN && inferer.isValidBoolean(sVal)) {
+				return Boolean.parseBoolean(sVal);
+			}
+			if (typeMapping == DataTypeMapping.DATE && inferer.isValidDate(sVal)) {
+				return LocalDate.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
+			}
+			if (typeMapping == DataTypeMapping.DATE_TIME && inferer.isValidDateTime(sVal)) {
+				return LocalDateTime.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+			}
 		}
 		return attVal;
 	}

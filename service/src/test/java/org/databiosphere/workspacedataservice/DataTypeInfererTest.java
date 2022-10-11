@@ -35,19 +35,15 @@ class DataTypeInfererTest {
 	}
 
 	@Test
-	void selectBestTypes(){
+	void selectBestTypes() {
 		assertThat(inferer.selectBestType(DataTypeMapping.LONG, DataTypeMapping.DOUBLE))
-				.as("longs can be expressed as doubles but not the other way around")
-				.isEqualTo(DataTypeMapping.DOUBLE);
+				.as("longs can be expressed as doubles but not the other way around").isEqualTo(DataTypeMapping.DOUBLE);
 		assertThat(inferer.selectBestType(DataTypeMapping.NULL, DataTypeMapping.DOUBLE))
-				.as("null values should not affect typing for non null values")
-				.isEqualTo(DataTypeMapping.DOUBLE);
+				.as("null values should not affect typing for non null values").isEqualTo(DataTypeMapping.DOUBLE);
 		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.STRING))
-				.as("if types are identical, return the type")
-				.isEqualTo(DataTypeMapping.STRING);
+				.as("if types are identical, return the type").isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.BOOLEAN))
-				.as("should generalize to string/text type")
-				.isEqualTo(DataTypeMapping.STRING);
+				.as("should generalize to string/text type").isEqualTo(DataTypeMapping.STRING);
 	}
 
 	@Test
@@ -74,29 +70,28 @@ class DataTypeInfererTest {
 	}
 
 	@Test
-	void nullValuesMixedWithNonNullsShouldStillYieldProperTypeTSV(){
-		RecordAttributes firstAttrs = RecordAttributes.empty().putAttribute("boolean", "")
-				.putAttribute("long", null);
+	void nullValuesMixedWithNonNullsShouldStillYieldProperTypeTSV() {
+		RecordAttributes firstAttrs = RecordAttributes.empty().putAttribute("boolean", "").putAttribute("long", null);
 		Record first = new Record("first", RecordType.valueOf("test-inference"), firstAttrs);
-		RecordAttributes secondAttrs = RecordAttributes.empty().putAttribute("boolean", "true")
-				.putAttribute("long", "-999999");
+		RecordAttributes secondAttrs = RecordAttributes.empty().putAttribute("boolean", "true").putAttribute("long",
+				"-999999");
 		Record second = new Record("second", RecordType.valueOf("test-inference"), secondAttrs);
 		Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(List.of(first, second), InBoundDataSource.TSV);
 		assertThat(inferredSchema).as("Should still get BOOLEAN and LONG for types despite null values in one record")
-			.isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.LONG));
+				.isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.LONG));
 	}
 
 	@Test
-	void nullValuesMixedWithNonNullsShouldStillYieldProperTypeJSON(){
-		RecordAttributes firstAttrs = RecordAttributes.empty().putAttribute("boolean", null)
-				.putAttribute("long", null);
+	void nullValuesMixedWithNonNullsShouldStillYieldProperTypeJSON() {
+		RecordAttributes firstAttrs = RecordAttributes.empty().putAttribute("boolean", null).putAttribute("long", null);
 		Record first = new Record("first", RecordType.valueOf("test-inference"), firstAttrs);
-		RecordAttributes secondAttrs = RecordAttributes.empty().putAttribute("boolean", "true")
-				.putAttribute("long", -999999);
+		RecordAttributes secondAttrs = RecordAttributes.empty().putAttribute("boolean", "true").putAttribute("long",
+				-999999);
 		Record second = new Record("second", RecordType.valueOf("test-inference"), secondAttrs);
-		Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(List.of(first, second), InBoundDataSource.JSON);
+		Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(List.of(first, second),
+				InBoundDataSource.JSON);
 		assertThat(inferredSchema).as("Should still get BOOLEAN and LONG for types despite null values in one record")
-			.isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.LONG));
+				.isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.LONG));
 	}
 
 	@Test
@@ -114,14 +109,14 @@ class DataTypeInfererTest {
 	}
 
 	private static RecordAttributes getSomeAttrs() {
-		return new RecordAttributes(Map.of("int_val", 4747, "string_val",
-				"Abracadabra Open Sesame", "json_val", "[\"a\", \"b\"]", "date_val", "2001-11-03", "date_time_val",
-				"2001-11-03T10:00:00", "number_or_string", "47"));
+		return new RecordAttributes(
+				Map.of("int_val", 4747, "string_val", "Abracadabra Open Sesame", "json_val", "[\"a\", \"b\"]",
+						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00", "number_or_string", "47"));
 	}
 
 	private static RecordAttributes getSomeTsvAttrs() {
-		return new RecordAttributes(Map.of("int_val", "4747", "string_val",
-				"Abracadabra Open Sesame", "json_val", "[\"a\", \"b\"]", "date_val", "2001-11-03", "date_time_val",
-				"2001-11-03T10:00:00", "number_or_string", "47"));
+		return new RecordAttributes(
+				Map.of("int_val", "4747", "string_val", "Abracadabra Open Sesame", "json_val", "[\"a\", \"b\"]",
+						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00", "number_or_string", "47"));
 	}
 }

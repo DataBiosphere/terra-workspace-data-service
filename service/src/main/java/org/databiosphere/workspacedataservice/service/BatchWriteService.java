@@ -113,6 +113,7 @@ public class BatchWriteService {
 		for (CSVRecord row : rows) {
 			Map<String, Object> m = (Map) row.toMap();
 			m.remove(ROW_ID_COLUMN_NAME);
+			changeEmptyStringsToNulls(m);
 			try {
 				batch.add(new Record(row.get(ROW_ID_COLUMN_NAME), recordType, new RecordAttributes(m)));
 			} catch (IllegalArgumentException ex) {
@@ -138,6 +139,20 @@ public class BatchWriteService {
 		}
 		recordDao.batchUpsert(instanceId, recordType, batch, schema);
 		return recordsProcessed;
+	}
+
+	/**
+	 * Should only be called from the TSV upload path, convert empty strings in the
+	 * TSV to nulls for storage in the database
+	 * 
+	 * @param m
+	 */
+	private void changeEmptyStringsToNulls(Map<String, Object> m) {
+		for (Map.Entry<String, Object> entry : m.entrySet()) {
+			if (entry.getValue().toString().equals("")) {
+				m.put(entry.getKey(), null);
+			}
+		}
 	}
 
 	private Map<String, DataTypeMapping> createOrUpdateSchema(UUID instanceId, RecordType recordType,

@@ -22,7 +22,7 @@ public class TsvSupport {
 	}
 
 	public static CSVFormat getOutputFormat(List<String> headers) {
-		return CSVFormat.DEFAULT.builder().setDelimiter('\t').setQuoteMode(QuoteMode.MINIMAL).setRecordSeparator("\n")
+		return CSVFormat.DEFAULT.builder().setDelimiter('\t').setQuoteMode(QuoteMode.MINIMAL)
 				.setHeader(headers.toArray(new String[0])).build();
 	}
 

@@ -85,8 +85,8 @@ class RecordControllerMockMvcTest {
 	@Transactional
 	void simpleTsvUploadWithBatchingShouldSucceed(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
 		StringBuilder tsvContent = new StringBuilder("sys_name\tcol1\n");
-		for (int i = 0; i < batchSize+1; i++) {
-			tsvContent.append(i+"\ttada"+i+"\n");
+		for (int i = 0; i < batchSize + 1; i++) {
+			tsvContent.append(i + "\ttada" + i + "\n");
 		}
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
@@ -101,7 +101,8 @@ class RecordControllerMockMvcTest {
 	void tsvWithMissingRelationShouldFail(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
 
 		MockMultipartFile file = new MockMultipartFile("records", "simple_bad_relation.tsv", MediaType.TEXT_PLAIN_VALUE,
-				("sys_name\trelation\na\t"+ RelationUtils.createRelationString(RecordType.valueOf("missing"), "QQ")+"\n").getBytes());
+				("sys_name\trelation\na\t" + RelationUtils.createRelationString(RecordType.valueOf("missing"), "QQ")
+						+ "\n").getBytes());
 
 		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
@@ -140,7 +141,7 @@ class RecordControllerMockMvcTest {
 				.andReturn();
 		schema = mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
 		assertEquals("json", schema.attributes().get(4).name());
-		//data type should downgrade to string
+		// data type should downgrade to string
 		assertEquals("STRING", schema.attributes().get(4).datatype());
 	}
 

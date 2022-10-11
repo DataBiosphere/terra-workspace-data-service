@@ -64,16 +64,17 @@ public class DataTypeInferer {
 	}
 
 	/**
-	 * Our TSV parser gives everything to us as Strings so we try to guess at the types from the
-	 * String representation and choose the stronger typing when we can. "" is converted to null
-	 * which also differs from our JSON handling.
+	 * Our TSV parser gives everything to us as Strings so we try to guess at the
+	 * types from the String representation and choose the stronger typing when we
+	 * can. "" is converted to null which also differs from our JSON handling.
+	 * 
 	 * @se inferTypeForJsonSource
 	 * @param val
 	 * @return
 	 */
-	public DataTypeMapping inferTypeForTsvSource(Object val){
+	public DataTypeMapping inferTypeForTsvSource(Object val) {
 		// For TSV we treat null and "" as the null value
-		if (StringUtils.isEmpty((String)val)) {
+		if (StringUtils.isEmpty((String) val)) {
 			return NULL;
 		}
 		String sVal = val.toString();
@@ -81,7 +82,18 @@ public class DataTypeInferer {
 		if (RelationUtils.isRelationValue(val)) {
 			return STRING;
 		}
+		// when we load from TSV, numbers are converted to strings, we need to go back
+		// to numbers
+		if (isLongValue(sVal)) {
+			return LONG;
+		}
+		if (isDoubleValue(sVal)) {
+			return DOUBLE;
+		}
+		return getTypeMappingFromString(sVal);
+	}
 
+	private DataTypeMapping getTypeMappingFromString(String sVal) {
 		if (isValidDate(sVal)) {
 			return DATE;
 		}
@@ -93,14 +105,6 @@ public class DataTypeInferer {
 		}
 		if (isValidJson(sVal)) {
 			return JSON;
-		}
-		// when we load from TSV, numbers are converted to strings, we need to go back
-		// to numbers
-		if (isLongValue(sVal)) {
-			return LONG;
-		}
-		if (isDoubleValue(sVal)) {
-			return DOUBLE;
 		}
 		return STRING;
 	}
@@ -117,44 +121,33 @@ public class DataTypeInferer {
 	 * @param val
 	 * @return the data type we want to use for this value
 	 */
-	public DataTypeMapping inferTypeForJsonSource(Object val){
-			// null does not tell us much, this results in a text data type in the db if everything in batch is null
-			// if there are non-null values in the batch this return value will let those values determine the
-			// underlying SQL data type
-			if (val == null) {
-				return NULL;
-			}
+	public DataTypeMapping inferTypeForJsonSource(Object val) {
+		// null does not tell us much, this results in a text data type in the db if
+		// everything in batch is null
+		// if there are non-null values in the batch this return value will let those
+		// values determine the
+		// underlying SQL data type
+		if (val == null) {
+			return NULL;
+		}
 
-			if (val instanceof Long || val instanceof Integer) {
-				return LONG;
-			}
+		if (val instanceof Long || val instanceof Integer) {
+			return LONG;
+		}
 
-			if (val instanceof Double || val instanceof Float) {
-				return DOUBLE;
-			}
+		if (val instanceof Double || val instanceof Float) {
+			return DOUBLE;
+		}
 
-			if (val instanceof Boolean) {
-				return BOOLEAN;
-			}
+		if (val instanceof Boolean) {
+			return BOOLEAN;
+		}
 
-			if (RelationUtils.isRelationValue(val)) {
-				return STRING;
-			}
-
-			String sVal = val.toString();
-			if (isValidDate(sVal)) {
-				return DATE;
-			}
-			if (isValidDateTime(sVal)) {
-				return DATE_TIME;
-			}
-			if (isValidBoolean(sVal)) {
-				return BOOLEAN;
-			}
-			if (isValidJson(sVal)) {
-				return JSON;
-			}
+		if (RelationUtils.isRelationValue(val)) {
 			return STRING;
+		}
+
+		return getTypeMappingFromString(val.toString());
 	}
 
 	public boolean isValidBoolean(String sVal) {
@@ -162,9 +155,9 @@ public class DataTypeInferer {
 	}
 
 	public DataTypeMapping inferType(Object val, InBoundDataSource dataSource) {
-		if(dataSource == InBoundDataSource.TSV){
+		if (dataSource == InBoundDataSource.TSV) {
 			return inferTypeForTsvSource(val);
-		} else if (dataSource == InBoundDataSource.JSON){
+		} else if (dataSource == InBoundDataSource.JSON) {
 			return inferTypeForJsonSource(val);
 		}
 		throw new IllegalArgumentException("Unhandled inbound data source " + dataSource);
@@ -197,7 +190,7 @@ public class DataTypeInferer {
 		}
 	}
 
-	private boolean isValidDateTime(String val) {
+	public boolean isValidDateTime(String val) {
 		try {
 			LocalDate.parse(val, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 		} catch (DateTimeParseException e) {
