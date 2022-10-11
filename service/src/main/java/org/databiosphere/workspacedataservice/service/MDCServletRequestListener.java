@@ -1,25 +1,26 @@
 package org.databiosphere.workspacedataservice.service;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.ServletRequestEvent;
+import javax.servlet.ServletRequestListener;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
+/**
+ * Servlet request listener that sets a unique request id into the SLF4J MDC context for this request. This listener
+ * does this by looking in the incoming request headers for an "x-b3-traceid", "x-request-id", or
+ * "trace-id" value (in that order) and using the first 64 characters of that value if present.
+ * <p>
+ * If no id is present in the incoming request headers, it will assign a new UUID value for the request id.
+ * <p>
+ * See also {@link MDCResponseHeaderFilter}, which adds the "requestId" value to the MDC context.
+ *
+ */
 @Component
-public class MDCFilter implements Filter {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(MDCFilter.class);
+public class MDCServletRequestListener implements ServletRequestListener {
 
     // where the unique request id is stored in the MDC context
     static final String MDC_KEY = "requestId";
@@ -27,13 +28,13 @@ public class MDCFilter implements Filter {
     public static final String RESPONSE_HEADER = "x-b3-traceid";
     // the list of request headers, in order, we will search for an incoming unique request id
     // we could add other headers here, such as: x-vcap-request-id, X─B3─ParentSpanId, X─B3─SpanId, X─B3─Sampled, x-amzn-trace-id
-    static final List<String> INCOMING_HEADERS = Arrays.asList("x-b3-traceid", "x-request-id", "trace-id");
+    static final List<String> INCOMING_HEADERS = Arrays.asList(RESPONSE_HEADER, "x-request-id", "trace-id");
 
     @Override
-    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+    public void requestInitialized(ServletRequestEvent requestEvent) {
         String uniqueId = null;
         // look for a non-blank unique request id in the incoming request headers
-        if (servletRequest instanceof HttpServletRequest httpServletRequest) {
+        if (requestEvent.getServletRequest() instanceof HttpServletRequest httpServletRequest) {
             for (String hdr : INCOMING_HEADERS) {
                 String foundIncoming = httpServletRequest.getHeader(hdr);
                 if (foundIncoming != null && !foundIncoming.isBlank()) {
@@ -50,16 +51,13 @@ public class MDCFilter implements Filter {
 
         // add id to MDC logging
         MDC.put(MDC_KEY, uniqueId);
-
-        LOGGER.trace("Request IP address is {}", servletRequest.getRemoteAddr());
-        LOGGER.trace("Request content type is {}", servletRequest.getContentType());
-
-        // add id to the response
-        if (servletResponse instanceof HttpServletResponse httpServletResponse) {
-            httpServletResponse.setHeader(RESPONSE_HEADER, uniqueId);
-            LOGGER.trace("Response header is set with uuid {}", uniqueId);
-        }
-
-        filterChain.doFilter(servletRequest, servletResponse);
     }
+
+
+
+    @Override
+    public void requestDestroyed(ServletRequestEvent requestEvent) {
+        MDC.clear();
+    }
+
 }
