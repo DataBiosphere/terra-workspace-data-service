@@ -37,7 +37,7 @@ public class MDCFilter implements Filter {
             for (String hdr : INCOMING_HEADERS) {
                 String foundIncoming = httpServletRequest.getHeader(hdr);
                 if (foundIncoming != null && !foundIncoming.isBlank()) {
-                    uniqueId = foundIncoming;
+                    uniqueId = foundIncoming.length() > 64 ? foundIncoming.substring(0,64) : foundIncoming;
                     break;
                 }
             }

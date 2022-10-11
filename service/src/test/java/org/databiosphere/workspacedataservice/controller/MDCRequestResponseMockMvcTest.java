@@ -82,4 +82,20 @@ class MDCRequestResponseMockMvcTest {
 		assertEquals(requestHeaderValue, actualResponseHeader);
 	}
 
+	@Test
+	void longTraceIdsInHeadersShouldBeShortened() throws Exception {
+		String requestHeaderValue = RandomStringUtils.randomAlphanumeric(256);
+
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{version}", instanceId, versionId)
+						.header("x-request-id", requestHeaderValue)
+				)
+				.andExpect(status().isNotFound()).andReturn();
+
+		String actualResponseHeader = mvcResult.getResponse().getHeader(MDCFilter.RESPONSE_HEADER);
+		assertNotNull(actualResponseHeader);
+		assertEquals(64, actualResponseHeader.length());
+		assertTrue(requestHeaderValue.startsWith(actualResponseHeader));
+	}
+
+
 }
