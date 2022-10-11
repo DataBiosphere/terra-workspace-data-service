@@ -26,8 +26,8 @@ public class MDCFilter implements Filter {
     // the response header containing the unique request id
     public static final String RESPONSE_HEADER = "x-b3-traceid";
     // the list of request headers, in order, we will search for an incoming unique request id
-    // we could add other headers here, such as: x-vcap-request-id, X─B3─ParentSpanId, X─B3─SpanId, X─B3─Sampled
-    static final List<String> INCOMING_HEADERS = Arrays.asList("x-b3-traceid", "x-request-id", "trace-id", "x-amzn-trace-id");
+    // we could add other headers here, such as: x-vcap-request-id, X─B3─ParentSpanId, X─B3─SpanId, X─B3─Sampled, x-amzn-trace-id
+    static final List<String> INCOMING_HEADERS = Arrays.asList("x-b3-traceid", "x-request-id", "trace-id");
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {

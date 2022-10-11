@@ -41,7 +41,7 @@ class MDCRequestResponseMockMvcTest {
 
 	// "strings" input should match MDCFilter.INCOMING_HEADERS
 	@ParameterizedTest(name = "Trace ID in header {0} should be honored")
-	@ValueSource(strings = {"x-b3-traceid", "x-request-id", "trace-id", "x-amzn-trace-id"})
+	@ValueSource(strings = {"x-b3-traceid", "x-request-id", "trace-id"})
 	void traceIdInHeaderShouldBeHonored(String requestHeaderName) throws Exception {
 		String requestHeaderValue = RandomStringUtils.randomAlphanumeric(32);
 
@@ -55,7 +55,7 @@ class MDCRequestResponseMockMvcTest {
 	}
 
 	@ParameterizedTest(name = "A blank Trace ID in header {0} should NOT be honored")
-	@ValueSource(strings = {"x-b3-traceid", "x-request-id", "trace-id", "x-amzn-trace-id"})
+	@ValueSource(strings = {"x-b3-traceid", "x-request-id", "trace-id"})
 	void emptyTraceIdInHeaderShouldNotBeHonored(String requestHeaderName) throws Exception {
 		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{version}", instanceId, versionId)
 						.header(requestHeaderName, " ")) // just a space character
@@ -71,7 +71,7 @@ class MDCRequestResponseMockMvcTest {
 		String requestHeaderValue = RandomStringUtils.randomAlphanumeric(32);
 
 		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{version}", instanceId, versionId)
-						.header("x-amzn-trace-id", "ignoreme")
+						.header("x-request-id", "ignoreme")
 						.header("trace-id", "ignoremetoo")
 						.header("x-b3-traceid", requestHeaderValue) // highest priority
 				)
