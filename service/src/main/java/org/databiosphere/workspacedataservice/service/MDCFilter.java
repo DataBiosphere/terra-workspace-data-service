@@ -11,13 +11,15 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 public class MDCFilter implements Filter {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MDCFilter.class);
 
     // where the unique request id is stored in the MDC context
     static final String MDC_KEY = "requestId";
@@ -49,13 +51,13 @@ public class MDCFilter implements Filter {
         // add id to MDC logging
         MDC.put(MDC_KEY, uniqueId);
 
-        log.trace("Request IP address is {}", servletRequest.getRemoteAddr());
-        log.trace("Request content type is {}", servletRequest.getContentType());
+        LOGGER.trace("Request IP address is {}", servletRequest.getRemoteAddr());
+        LOGGER.trace("Request content type is {}", servletRequest.getContentType());
 
         // add id to the response
         if (servletResponse instanceof HttpServletResponse httpServletResponse) {
             httpServletResponse.setHeader(RESPONSE_HEADER, uniqueId);
-            log.trace("Response header is set with uuid {}", uniqueId);
+            LOGGER.trace("Response header is set with uuid {}", uniqueId);
         }
 
         filterChain.doFilter(servletRequest, servletResponse);

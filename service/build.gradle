@@ -3,7 +3,6 @@ plugins {
 	id 'com.google.cloud.tools.jib'
 	id 'org.hidetake.swagger.generator'
 	id 'org.sonarqube'
-	id 'io.freefair.lombok'
 }
 
 repositories {

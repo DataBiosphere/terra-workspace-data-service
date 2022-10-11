@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVPrinter;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
@@ -11,6 +10,8 @@ import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -25,10 +26,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Slf4j
 @RestController
 public class RecordController {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(RecordController.class);
 	private static final int MAX_RECORDS = 1_000;
 	private final RecordDao recordDao;
 	private final DataTypeInferer inferer;
@@ -122,7 +123,7 @@ public class RecordController {
 		if (searchRequest.getOffset() > totalRecords) {
 			return new RecordQueryResponse(searchRequest, Collections.emptyList(), totalRecords);
 		}
-		log.info("queryForEntities: {}", recordType.getName());
+		LOGGER.info("queryForEntities: {}", recordType.getName());
 		List<Record> records = recordDao.queryForRecords(recordType, searchRequest.getLimit(),
 				searchRequest.getOffset(), searchRequest.getSort().name().toLowerCase(),
 				searchRequest.getSortAttribute(), instanceId);

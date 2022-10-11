@@ -2,7 +2,7 @@ package org.databiosphere.workspacedataservice.dao;
 
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import lombok.extern.slf4j.Slf4j;
+import org.databiosphere.workspacedataservice.controller.RecordController;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
@@ -13,6 +13,8 @@ import org.databiosphere.workspacedataservice.service.model.exception.MissingObj
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.postgresql.util.PGobject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -40,9 +42,10 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.RECORD_TYPE;
 
-@Slf4j
 @Repository
 public class RecordDao {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(RecordDao.class);
 
 	private final NamedParameterJdbcTemplate namedTemplate;
 
@@ -96,7 +99,7 @@ public class RecordDao {
 	@SuppressWarnings("squid:S2077")
 	public List<Record> queryForRecords(RecordType recordType, int pageSize, int offset, String sortDirection,
 										String sortAttribute, UUID instanceId) {
-		log.info("queryForRecords: {}", recordType.getName());
+		LOGGER.info("queryForRecords: {}", recordType.getName());
 		return namedTemplate.getJdbcTemplate().query(
 				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + (sortAttribute == null ? RECORD_ID : quote(sortAttribute)) + " "
 						+ sortDirection + " limit " + pageSize + " offset " + offset,
