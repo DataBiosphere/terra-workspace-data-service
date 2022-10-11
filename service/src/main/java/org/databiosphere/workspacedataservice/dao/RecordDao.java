@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.dao;
 
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import org.databiosphere.workspacedataservice.controller.RecordController;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
