@@ -37,6 +37,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -360,8 +361,8 @@ public class RecordDao {
 	}
 
 	private boolean checkForCompatibleTypes(DataTypeMapping attributeType, DataTypeMapping typeMapping,
-			Function<String, Boolean> typeCheckFunc, String attVal) {
-		return attributeType == typeMapping && typeCheckFunc.apply(attVal);
+											Predicate<String> typeCheckPredicate, String attVal) {
+		return attributeType == typeMapping && typeCheckPredicate.test(attVal);
 	}
 
 	private Object[] getInsertArgs(Record toInsert, List<RecordColumn> cols) {
