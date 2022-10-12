@@ -36,7 +36,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -341,28 +340,28 @@ public class RecordDao {
 			return RelationUtils.getRelationValue(attVal);
 		}
 		if (attVal instanceof String sVal) {
-			if (checkForCompatibleTypes(typeMapping, DataTypeMapping.LONG, inferer::isLongValue, sVal)) {
+			if (checkForCompatibleTypes(typeMapping == DataTypeMapping.LONG, inferer::isLongValue, sVal)) {
 				return Long.parseLong(sVal);
 			}
-			if (checkForCompatibleTypes(typeMapping, DataTypeMapping.DOUBLE, inferer::isDoubleValue, sVal)) {
+			if (checkForCompatibleTypes(typeMapping == DataTypeMapping.DOUBLE, inferer::isDoubleValue, sVal)) {
 				return Double.parseDouble(sVal);
 			}
-			if (checkForCompatibleTypes(typeMapping, DataTypeMapping.BOOLEAN, inferer::isValidBoolean, sVal)) {
+			if (checkForCompatibleTypes(typeMapping == DataTypeMapping.BOOLEAN, inferer::isValidBoolean, sVal)) {
 				return Boolean.parseBoolean(sVal);
 			}
-			if (checkForCompatibleTypes(typeMapping, DataTypeMapping.DATE, inferer::isValidDate, sVal)) {
+			if (checkForCompatibleTypes(typeMapping == DataTypeMapping.DATE, inferer::isValidDate, sVal)) {
 				return LocalDate.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE);
 			}
-			if (checkForCompatibleTypes(typeMapping, DataTypeMapping.DATE_TIME, inferer::isValidDateTime, sVal)) {
+			if (checkForCompatibleTypes(typeMapping == DataTypeMapping.DATE_TIME, inferer::isValidDateTime, sVal)) {
 				return LocalDateTime.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 			}
 		}
 		return attVal;
 	}
 
-	private boolean checkForCompatibleTypes(DataTypeMapping attributeType, DataTypeMapping typeMapping,
+	private boolean checkForCompatibleTypes(boolean typesMatch,
 											Predicate<String> typeCheckPredicate, String attVal) {
-		return attributeType == typeMapping && typeCheckPredicate.test(attVal);
+		return typesMatch && typeCheckPredicate.test(attVal);
 	}
 
 	private Object[] getInsertArgs(Record toInsert, List<RecordColumn> cols) {
