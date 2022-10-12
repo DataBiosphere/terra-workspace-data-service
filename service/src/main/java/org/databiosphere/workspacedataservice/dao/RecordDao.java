@@ -2,17 +2,19 @@ package org.databiosphere.workspacedataservice.dao;
 
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.InBoundDataSource;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.model.*;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchDeleteException;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.databiosphere.workspacedataservice.shared.model.*;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.postgresql.util.PGobject;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataAccessException;
@@ -34,10 +36,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.databiosphere.workspacedataservice.service.model.ReservedNames.*;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.RECORD_TYPE;
 
@@ -336,23 +340,28 @@ public class RecordDao {
 			return RelationUtils.getRelationValue(attVal);
 		}
 		if (attVal instanceof String sVal) {
-			if (typeMapping == DataTypeMapping.LONG && inferer.isLongValue(sVal)) {
+			if (checkForCompatibleTypes(typeMapping, DataTypeMapping.LONG, inferer::isLongValue, sVal)) {
 				return Long.parseLong(sVal);
 			}
-			if (typeMapping == DataTypeMapping.DOUBLE && inferer.isDoubleValue(sVal)) {
+			if (checkForCompatibleTypes(typeMapping, DataTypeMapping.DOUBLE, inferer::isDoubleValue, sVal)) {
 				return Double.parseDouble(sVal);
 			}
-			if (typeMapping == DataTypeMapping.BOOLEAN && inferer.isValidBoolean(sVal)) {
+			if (checkForCompatibleTypes(typeMapping, DataTypeMapping.BOOLEAN, inferer::isValidBoolean, sVal)) {
 				return Boolean.parseBoolean(sVal);
 			}
-			if (typeMapping == DataTypeMapping.DATE && inferer.isValidDate(sVal)) {
-				return LocalDate.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
+			if (checkForCompatibleTypes(typeMapping, DataTypeMapping.DATE, inferer::isValidDate, sVal)) {
+				return LocalDate.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE);
 			}
-			if (typeMapping == DataTypeMapping.DATE_TIME && inferer.isValidDateTime(sVal)) {
-				return LocalDateTime.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+			if (checkForCompatibleTypes(typeMapping, DataTypeMapping.DATE_TIME, inferer::isValidDateTime, sVal)) {
+				return LocalDateTime.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 			}
 		}
 		return attVal;
+	}
+
+	private boolean checkForCompatibleTypes(DataTypeMapping attributeType, DataTypeMapping typeMapping,
+			Function<String, Boolean> typeCheckFunc, String attVal) {
+		return attributeType == typeMapping && typeCheckFunc.apply(attVal);
 	}
 
 	private Object[] getInsertArgs(Record toInsert, List<RecordColumn> cols) {
