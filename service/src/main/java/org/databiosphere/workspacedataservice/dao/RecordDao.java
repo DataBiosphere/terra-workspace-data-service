@@ -340,27 +340,27 @@ public class RecordDao {
 			return RelationUtils.getRelationValue(attVal);
 		}
 		if (attVal instanceof String sVal) {
-			if (checkForCompatibleTypes(typeMapping == DataTypeMapping.LONG, inferer::isLongValue, sVal)) {
+			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.LONG, inferer::isLongValue, sVal)) {
 				return Long.parseLong(sVal);
 			}
-			if (checkForCompatibleTypes(typeMapping == DataTypeMapping.DOUBLE, inferer::isDoubleValue, sVal)) {
+			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.DOUBLE, inferer::isDoubleValue, sVal)) {
 				return Double.parseDouble(sVal);
 			}
-			if (checkForCompatibleTypes(typeMapping == DataTypeMapping.BOOLEAN, inferer::isValidBoolean, sVal)) {
+			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.BOOLEAN, inferer::isValidBoolean, sVal)) {
 				return Boolean.parseBoolean(sVal);
 			}
-			if (checkForCompatibleTypes(typeMapping == DataTypeMapping.DATE, inferer::isValidDate, sVal)) {
+			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.DATE, inferer::isValidDate, sVal)) {
 				return LocalDate.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE);
 			}
-			if (checkForCompatibleTypes(typeMapping == DataTypeMapping.DATE_TIME, inferer::isValidDateTime, sVal)) {
+			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.DATE_TIME, inferer::isValidDateTime, sVal)) {
 				return LocalDateTime.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 			}
 		}
 		return attVal;
 	}
 
-	private boolean checkForCompatibleTypes(boolean typesMatch,
-											Predicate<String> typeCheckPredicate, String attVal) {
+	private boolean stringIsCompatibleWithType(boolean typesMatch,
+											   Predicate<String> typeCheckPredicate, String attVal) {
 		return typesMatch && typeCheckPredicate.test(attVal);
 	}
 
