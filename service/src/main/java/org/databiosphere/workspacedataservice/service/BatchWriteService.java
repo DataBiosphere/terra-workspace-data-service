@@ -37,7 +37,7 @@ public class BatchWriteService {
 
 	private final int batchSize;
 
-	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size}") int batchSize) {
+	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize) {
 		this.recordDao = recordDao;
 		this.batchSize = batchSize;
 	}
