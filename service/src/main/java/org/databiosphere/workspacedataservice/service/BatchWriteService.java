@@ -149,7 +149,7 @@ public class BatchWriteService {
 	 */
 	private void changeEmptyStringsToNulls(Map<String, Object> m) {
 		for (Map.Entry<String, Object> entry : m.entrySet()) {
-			if (entry.getValue().toString().equals("")) {
+			if (entry.getValue().toString().isEmpty()) {
 				m.put(entry.getKey(), null);
 			}
 		}
