@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.service.model;
 
-import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -19,9 +18,7 @@ public enum DataTypeMapping {
 	ARRAY_OF_LONG(Long[].class, "bigint[]", true),
 	ARRAY_OF_TEXT(String[].class, "text[]", true),
 	ARRAY_OF_DOUBLE(Double[].class, "numeric[]", true),
-	ARRAY_OF_BOOLEAN(Boolean[].class, "boolean[]", true),
-	ARRAY_OF_DATE_TIME(LocalDateTime[].class, "timestamp with time zone[]", true),
-	ARRAY_OF_DATE(LocalDate[].class, "date[]", true);
+	ARRAY_OF_BOOLEAN(Boolean[].class, "boolean[]", true);
 
 	private Class javaType;
 
@@ -34,8 +31,6 @@ public enum DataTypeMapping {
 	static {
 		Arrays.stream(DataTypeMapping.values()).forEach(e -> MAPPING_BY_PG_TYPE.put(e.getPostgresType(), e));
 	}
-
-	private int sqlTypeInt;
 
 	DataTypeMapping(Class javaType, String postgresType, boolean isArrayType) {
 		this.javaType = javaType;

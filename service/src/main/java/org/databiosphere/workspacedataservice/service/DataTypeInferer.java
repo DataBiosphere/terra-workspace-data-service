@@ -224,12 +224,6 @@ public class DataTypeInferer {
 		if(getArrayOfType(val, Double[].class) != null){
 			return ARRAY_OF_DOUBLE;
 		}
-		if(getArrayOfType(val, LocalDateTime[].class) != null){
-			return ARRAY_OF_DATE_TIME;
-		}
-		if(getArrayOfType(val, LocalDate[].class) != null){
-			return ARRAY_OF_DATE;
-		}
 		if(getArrayOfType(val, String[].class) != null){
 			return ARRAY_OF_TEXT;
 		}
