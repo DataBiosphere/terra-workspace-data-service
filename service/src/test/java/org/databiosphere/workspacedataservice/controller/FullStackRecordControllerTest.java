@@ -101,28 +101,24 @@ class FullStackRecordControllerTest {
 		int limit = 5;
 		int offset = 0;
 		SearchRequest sortByAlpha = new SearchRequest(limit, offset, SortDirection.ASC, "attr1");
-		RecordQueryResponse body = executeQuery(recordType, RecordQueryResponse.class, sortByAlpha)
-				.getBody();
+		RecordQueryResponse body = executeQuery(recordType, RecordQueryResponse.class, sortByAlpha).getBody();
 		assertThat(body.records()).hasSize(limit);
-		assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr1")).as("Record with attr1 'abc' should be first record in ascending order")
-				.isEqualTo("abc");
+		assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr1"))
+				.as("Record with attr1 'abc' should be first record in ascending order").isEqualTo("abc");
 		assertThat(body.records().get(4).recordAttributes().getAttributeValue("attr1")).isEqualTo("mno");
 		SearchRequest sortByFloat = new SearchRequest(limit, offset, SortDirection.DESC, "attr2");
-		body = executeQuery(recordType, RecordQueryResponse.class, sortByFloat)
-				.getBody();
+		body = executeQuery(recordType, RecordQueryResponse.class, sortByFloat).getBody();
 		assertThat(body.records()).hasSize(limit);
-		assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr2")).as("Record with attr2 2.99792448e8f should be first record in descending order")
-				.isEqualTo(299792448);
+		assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr2"))
+				.as("Record with attr2 2.99792448e8f should be first record in descending order").isEqualTo(299792448);
 		assertThat(body.records().get(4).recordAttributes().getAttributeValue("attr2")).isEqualTo(1.4142);
 		SearchRequest sortByInt = new SearchRequest(limit, offset, SortDirection.ASC, "attr3");
-		body = executeQuery(recordType, RecordQueryResponse.class, sortByInt)
-				.getBody();
+		body = executeQuery(recordType, RecordQueryResponse.class, sortByInt).getBody();
 		assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr3"))
 				.as("Record with attr3 1 should be first record in ascending order").isEqualTo(1);
 		assertThat(body.records().get(4).recordAttributes().getAttributeValue("attr3")).isEqualTo(5);
 		SearchRequest sortByDate = new SearchRequest(limit, offset, SortDirection.DESC, "attr-dt");
-		body = executeQuery(recordType, RecordQueryResponse.class, sortByDate)
-				.getBody();
+		body = executeQuery(recordType, RecordQueryResponse.class, sortByDate).getBody();
 		assertThat(body.records()).hasSize(limit);
 
 		assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr-dt"))
@@ -256,8 +252,7 @@ class FullStackRecordControllerTest {
 		return result;
 	}
 
-	private List<Record> createSpecificRecords(RecordType recordType, int numRecords)
-			throws Exception {
+	private List<Record> createSpecificRecords(RecordType recordType, int numRecords) throws Exception {
 		List<Record> result = new ArrayList<>();
 		for (int i = 0; i < numRecords; i++) {
 			String recordId = "record_" + i;
@@ -265,8 +260,8 @@ class FullStackRecordControllerTest {
 			RecordRequest recordRequest = new RecordRequest(attributes);
 			ResponseEntity<String> response = restTemplate.exchange(
 					"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT,
-					new HttpEntity<>(mapper.writeValueAsString(recordRequest), headers), String.class,
-					instanceId, versionId, recordType, recordId);
+					new HttpEntity<>(mapper.writeValueAsString(recordRequest), headers), String.class, instanceId,
+					versionId, recordType, recordId);
 			assertThat(response.getStatusCode()).isIn(HttpStatus.CREATED, HttpStatus.OK);
 			result.add(new Record(recordId, recordType, recordRequest));
 		}

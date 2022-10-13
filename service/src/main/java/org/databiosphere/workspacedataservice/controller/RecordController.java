@@ -4,25 +4,54 @@ import org.apache.commons.csv.CSVPrinter;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
+import org.databiosphere.workspacedataservice.service.InBoundDataSource;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.TsvSupport;
-import org.databiosphere.workspacedataservice.service.model.*;
+import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.model.ReservedNames;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.databiosphere.workspacedataservice.shared.model.*;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.RecordMetadata;
+import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
+import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
+import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
+import org.databiosphere.workspacedataservice.shared.model.TsvUploadResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -52,7 +81,7 @@ public class RecordController {
 				.orElseThrow(() -> new MissingObjectException("Record"));
 		RecordAttributes incomingAtts = recordRequest.recordAttributes();
 		RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAtts).getAttributes();
-		Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts);
+		Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts, InBoundDataSource.JSON);
 		Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
 		singleRecord.setAttributes(allAttrs);
 		List<Record> records = Collections.singletonList(singleRecord);
@@ -79,7 +108,21 @@ public class RecordController {
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
-	@GetMapping("{instanceId}/tsv/{version}/{recordType}")
+	@PostMapping("/{instanceId}/tsv/{version}/{recordType}")
+	public ResponseEntity<TsvUploadResponse> tsvUpload(@PathVariable("instanceId") UUID instanceId,
+			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
+			@RequestParam("records") MultipartFile records) throws IOException {
+		validateInstance(instanceId);
+		validateVersion(version);
+		int recordsModified;
+		try (InputStreamReader inputStreamReader = new InputStreamReader(records.getInputStream())) {
+			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType);
+		}
+		return new ResponseEntity<>(new TsvUploadResponse(recordsModified, "Updated " + recordType.toString()),
+				HttpStatus.OK);
+	}
+
+	@GetMapping("/{instanceId}/tsv/{version}/{recordType}")
 	public ResponseEntity<StreamingResponseBody> streamAllEntities(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType) {
 		validateVersion(version);
@@ -139,7 +182,7 @@ public class RecordController {
 			@PathVariable("recordId") String recordId, @RequestBody RecordRequest recordRequest) {
 		validateVersion(version);
 		RecordAttributes attributesInRequest = recordRequest.recordAttributes();
-		Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
+		Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest, InBoundDataSource.JSON);
 		HttpStatus status = HttpStatus.CREATED;
 		if (!recordDao.instanceSchemaExists(instanceId)) {
 			recordDao.createSchema(instanceId);

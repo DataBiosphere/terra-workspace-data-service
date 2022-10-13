@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.QuoteMode;
+import org.databiosphere.workspacedataservice.service.model.ReservedNames;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 
 import java.io.IOException;
@@ -13,9 +14,15 @@ public class TsvSupport {
 
 	private TsvSupport() {
 	}
+	public static final String ROW_ID_COLUMN_NAME = ReservedNames.RECORD_ID;
+
+	public static CSVFormat getUploadFormat() {
+		return CSVFormat.DEFAULT.builder().setHeader().setDelimiter('\t')
+				.setQuoteMode(QuoteMode.MINIMAL).build();
+	}
 
 	public static CSVFormat getOutputFormat(List<String> headers) {
-		return CSVFormat.DEFAULT.builder().setDelimiter('\t').setQuoteMode(QuoteMode.MINIMAL).setRecordSeparator("\n")
+		return CSVFormat.DEFAULT.builder().setDelimiter('\t').setQuoteMode(QuoteMode.MINIMAL)
 				.setHeader(headers.toArray(new String[0])).build();
 	}
 

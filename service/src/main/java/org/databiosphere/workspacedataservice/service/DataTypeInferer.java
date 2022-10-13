@@ -1,39 +1,42 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
-import org.databiosphere.workspacedataservice.shared.model.Record;
 import java.util.Map;
-import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import java.util.Set;
+
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
 
 public class DataTypeInferer {
 
 	private ObjectMapper objectMapper = new ObjectMapper();
 
-	public Map<String, DataTypeMapping> inferTypes(RecordAttributes updatedAtts) {
+	public Map<String, DataTypeMapping> inferTypes(RecordAttributes updatedAtts, InBoundDataSource dataSource) {
 		Map<String, DataTypeMapping> result = new HashMap<>();
 		for (Map.Entry<String, Object> entry : updatedAtts.attributeSet()) {
-			result.put(entry.getKey(), inferType(entry.getValue()));
+			result.put(entry.getKey(), inferType(entry.getValue(), dataSource));
 		}
 		return result;
 	}
 
-	public Map<String, DataTypeMapping> inferTypes(List<Record> records) {
+	public Map<String, DataTypeMapping> inferTypes(List<Record> records, InBoundDataSource dataSource) {
 		Map<String, DataTypeMapping> result = new HashMap<>();
 		for (Record rcd : records) {
 			if (rcd.getAttributes() == null) {
 				continue;
 			}
-			Map<String, DataTypeMapping> inferred = inferTypes(rcd.getAttributes());
+			Map<String, DataTypeMapping> inferred = inferTypes(rcd.getAttributes(), dataSource);
 			for (Map.Entry<String, DataTypeMapping> entry : inferred.entrySet()) {
 				DataTypeMapping inferredType = entry.getValue();
 				if (result.containsKey(entry.getKey()) && result.get(entry.getKey()) != inferredType) {
@@ -50,30 +53,82 @@ public class DataTypeInferer {
 		if (existing == newMapping) {
 			return existing;
 		}
-		if (existing == LONG && newMapping == DOUBLE) {
-			return DOUBLE;
+		// if we're comparing to a NULL type, favor the non-null if present
+		if (newMapping == NULL || existing == NULL) {
+			return newMapping != NULL ? newMapping : existing;
 		}
-		if (existing == DOUBLE && newMapping == LONG) {
+		if (Set.of(newMapping, existing).equals(Set.of(LONG, DOUBLE))) {
 			return DOUBLE;
 		}
 		return STRING;
 	}
 
 	/**
+	 * Our TSV parser gives everything to us as Strings so we try to guess at the
+	 * types from the String representation and choose the stronger typing when we
+	 * can. "" is converted to null which also differs from our JSON handling.
+	 * 
+	 * @se inferTypeForJsonSource
+	 * @param val
+	 * @return
+	 */
+	public DataTypeMapping inferTypeForTsvSource(Object val) {
+		// For TSV we treat null and "" as the null value
+		if (StringUtils.isEmpty((String) val)) {
+			return NULL;
+		}
+		String sVal = val.toString();
+
+		if (RelationUtils.isRelationValue(val)) {
+			return STRING;
+		}
+		// when we load from TSV, numbers are converted to strings, we need to go back
+		// to numbers
+		if (isLongValue(sVal)) {
+			return LONG;
+		}
+		if (isDoubleValue(sVal)) {
+			return DOUBLE;
+		}
+		return getTypeMappingFromString(sVal);
+	}
+
+	private DataTypeMapping getTypeMappingFromString(String sVal) {
+		if (isValidDate(sVal)) {
+			return DATE;
+		}
+		if (isValidDateTime(sVal)) {
+			return DATE_TIME;
+		}
+		if (isValidBoolean(sVal)) {
+			return BOOLEAN;
+		}
+		if (isValidJson(sVal)) {
+			return JSON;
+		}
+		return STRING;
+	}
+
+	/**
+	 * JSON input format has more type information so we do a little less guessing
+	 * here than we do with a TSV input
+	 *
 	 * Order matters; we want to choose the most specific type. "1234" is valid
 	 * json, but the code chooses to infer it as a LONG (bigint in the db). "true"
 	 * is a string and valid json but the code is ordered to infer boolean. true is
 	 * also valid json but we want to infer boolean.
 	 *
 	 * @param val
-	 * @return
+	 * @return the data type we want to use for this value
 	 */
-	public DataTypeMapping inferType(Object val) {
-		// if we're looking at a user request and they submit a null value for a new
-		// attribute,
-		// this is the best inference we can make about the column type
+	public DataTypeMapping inferTypeForJsonSource(Object val) {
+		// null does not tell us much, this results in a text data type in the db if
+		// everything in batch is null
+		// if there are non-null values in the batch this return value will let those
+		// values determine the
+		// underlying SQL data type
 		if (val == null) {
-			return STRING;
+			return NULL;
 		}
 
 		if (val instanceof Long || val instanceof Integer) {
@@ -92,20 +147,38 @@ public class DataTypeInferer {
 			return STRING;
 		}
 
-		String sVal = val.toString();
-		if (isValidDate(sVal)) {
-			return DATE;
+		return getTypeMappingFromString(val.toString());
+	}
+
+	public boolean isValidBoolean(String sVal) {
+		return sVal.equalsIgnoreCase("true") || sVal.equalsIgnoreCase("false");
+	}
+
+	public DataTypeMapping inferType(Object val, InBoundDataSource dataSource) {
+		if (dataSource == InBoundDataSource.TSV) {
+			return inferTypeForTsvSource(val);
+		} else if (dataSource == InBoundDataSource.JSON) {
+			return inferTypeForJsonSource(val);
 		}
-		if (isValidDateTime(sVal)) {
-			return DATE_TIME;
+		throw new IllegalArgumentException("Unhandled inbound data source " + dataSource);
+	}
+
+	public boolean isLongValue(String sVal) {
+		try {
+			Long.parseLong(sVal);
+			return true;
+		} catch (NumberFormatException e) {
+			return false;
 		}
-		if (sVal.equalsIgnoreCase("true") || sVal.equalsIgnoreCase("false")) {
-			return BOOLEAN;
+	}
+
+	public boolean isDoubleValue(String sVal) {
+		try {
+			Double.parseDouble(sVal);
+			return true;
+		} catch (NumberFormatException e) {
+			return false;
 		}
-		if (isValidJson(sVal)) {
-			return JSON;
-		}
-		return STRING;
 	}
 
 	public boolean isValidJson(String val) {
@@ -117,7 +190,7 @@ public class DataTypeInferer {
 		}
 	}
 
-	private boolean isValidDateTime(String val) {
+	public boolean isValidDateTime(String val) {
 		try {
 			LocalDate.parse(val, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 		} catch (DateTimeParseException e) {

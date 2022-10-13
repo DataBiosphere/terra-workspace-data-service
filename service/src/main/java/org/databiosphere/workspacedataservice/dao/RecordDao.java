@@ -3,14 +3,18 @@ package org.databiosphere.workspacedataservice.dao;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
+import org.databiosphere.workspacedataservice.service.InBoundDataSource;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.model.*;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchDeleteException;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.databiosphere.workspacedataservice.shared.model.*;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,11 +37,20 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.databiosphere.workspacedataservice.service.model.ReservedNames.*;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.RECORD_TYPE;
 
@@ -49,10 +62,13 @@ public class RecordDao {
 	private final NamedParameterJdbcTemplate namedTemplate;
 
 	private final NamedParameterJdbcTemplate templateForStreaming;
+
+	private final DataTypeInferer inferer;
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
 			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming) {
 		this.namedTemplate = namedTemplate;
 		this.templateForStreaming = templateForStreaming;
+		this.inferer = new DataTypeInferer();
 	}
 
 	public boolean instanceSchemaExists(UUID instanceId) {
@@ -97,11 +113,12 @@ public class RecordDao {
 
 	@SuppressWarnings("squid:S2077")
 	public List<Record> queryForRecords(RecordType recordType, int pageSize, int offset, String sortDirection,
-										String sortAttribute, UUID instanceId) {
+			String sortAttribute, UUID instanceId) {
 		LOGGER.info("queryForRecords: {}", recordType.getName());
 		return namedTemplate.getJdbcTemplate().query(
-				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + (sortAttribute == null ? RECORD_ID : quote(sortAttribute)) + " "
-						+ sortDirection + " limit " + pageSize + " offset " + offset,
+				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by "
+						+ (sortAttribute == null ? RECORD_ID : quote(sortAttribute)) + " " + sortDirection + " limit "
+						+ pageSize + " offset " + offset,
 				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType))));
 	}
 
@@ -205,10 +222,10 @@ public class RecordDao {
 	}
 
 	private List<String> checkEachRow(List<Record> records, Map<String, DataTypeMapping> recordTypeSchema) {
-		DataTypeInferer inferer = new DataTypeInferer();
 		List<String> result = new ArrayList<>();
 		for (Record rcd : records) {
-			Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(rcd.getAttributes());
+			Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(rcd.getAttributes(),
+					InBoundDataSource.JSON);
 			if (!schemaForRecord.equals(recordTypeSchema)) {
 				MapDifference<String, DataTypeMapping> difference = Maps.difference(schemaForRecord, recordTypeSchema);
 				Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference
@@ -334,14 +351,29 @@ public class RecordDao {
 		if (RelationUtils.isRelationValue(attVal)) {
 			return RelationUtils.getRelationValue(attVal);
 		}
-
-		if (typeMapping == DataTypeMapping.DATE) {
-			return LocalDate.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE);
-		} else if (typeMapping == DataTypeMapping.DATE_TIME) {
-			return LocalDateTime.parse(attVal.toString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+		if (attVal instanceof String sVal) {
+			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.LONG, inferer::isLongValue, sVal)) {
+				return Long.parseLong(sVal);
+			}
+			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.DOUBLE, inferer::isDoubleValue, sVal)) {
+				return Double.parseDouble(sVal);
+			}
+			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.BOOLEAN, inferer::isValidBoolean, sVal)) {
+				return Boolean.parseBoolean(sVal);
+			}
+			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.DATE, inferer::isValidDate, sVal)) {
+				return LocalDate.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE);
+			}
+			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.DATE_TIME, inferer::isValidDateTime, sVal)) {
+				return LocalDateTime.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+			}
 		}
-
 		return attVal;
+	}
+
+	private boolean stringIsCompatibleWithType(boolean typesMatch,
+											   Predicate<String> typeCheckPredicate, String attVal) {
+		return typesMatch && typeCheckPredicate.test(attVal);
 	}
 
 	private Object[] getInsertArgs(Record toInsert, List<RecordColumn> cols) {

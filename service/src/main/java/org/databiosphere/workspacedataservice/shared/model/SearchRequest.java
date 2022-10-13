@@ -47,7 +47,11 @@ public class SearchRequest {
 		this.sort = sort;
 	}
 
-	public String getSortAttribute() { return sortAttribute; }
+	public String getSortAttribute() {
+		return sortAttribute;
+	}
 
-	public void setSortAttribute(String sortAttribute) { this.sortAttribute = sortAttribute; }
+	public void setSortAttribute(String sortAttribute) {
+		this.sortAttribute = sortAttribute;
+	}
 }

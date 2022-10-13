@@ -12,12 +12,16 @@ import org.databiosphere.workspacedataservice.shared.model.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.*;
@@ -53,6 +57,92 @@ class RecordControllerMockMvcTest {
 		UUID uuid = UUID.randomUUID();
 		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isCreated());
 		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isConflict());
+	}
+
+	@Test
+	@Transactional
+	void tsvWithNoRowsShouldReturn400() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "no_data.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"col1\tcol2\n".getBytes());
+
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
+				.file(file)).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@Transactional
+	void tsvWithNoRowIdShouldReturn400() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "no_row_id.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"col1\tcol2\nfoo\tbar\n".getBytes());
+
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
+				.file(file)).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@Transactional
+	void simpleTsvUploadWithBatchingShouldSucceed(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
+		StringBuilder tsvContent = new StringBuilder("sys_name\tcol1\n");
+		for (int i = 0; i < batchSize + 1; i++) {
+			tsvContent.append(i + "\ttada" + i + "\n");
+		}
+		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
+				tsvContent.toString().getBytes());
+
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
+				.file(file)).andExpect(status().isOk());
+	}
+
+	@Test
+	@Transactional
+	void tsvWithMissingRelationShouldFail(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
+
+		MockMultipartFile file = new MockMultipartFile("records", "simple_bad_relation.tsv", MediaType.TEXT_PLAIN_VALUE,
+				("sys_name\trelation\na\t" + RelationUtils.createRelationString(RecordType.valueOf("missing"), "QQ")
+						+ "\n").getBytes());
+
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
+				.file(file)).andExpect(status().isNotFound());
+	}
+
+	@Test
+	@Transactional
+	void uploadTsvAndVerifySchema() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
+				RecordControllerMockMvcTest.class.getResourceAsStream("/small-test.tsv"));
+
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
+		String recordType = "tsv-types";
+		mockMvc.perform(
+				multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType).file(file))
+				.andExpect(status().isOk());
+		MvcResult schemaResult = mockMvc
+				.perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType)).andReturn();
+		RecordTypeSchema schema = mapper.readValue(schemaResult.getResponse().getContentAsString(),
+				RecordTypeSchema.class);
+		assertEquals("date", schema.attributes().get(0).name());
+		assertEquals("DATE", schema.attributes().get(0).datatype());
+		assertEquals("DOUBLE", schema.attributes().get(1).datatype());
+		assertEquals("double", schema.attributes().get(1).name());
+		assertEquals("json", schema.attributes().get(4).name());
+		assertEquals("JSON", schema.attributes().get(4).datatype());
+		assertEquals("LONG", schema.attributes().get(5).datatype());
+		assertEquals("long", schema.attributes().get(5).name());
+		MockMultipartFile alter = new MockMultipartFile("records", "change_json_to_text.tsv",
+				MediaType.TEXT_PLAIN_VALUE, "sys_name\tjson\na\tfoo\n".getBytes());
+		mockMvc.perform(
+				multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType).file(alter))
+				.andExpect(status().isOk());
+		schemaResult = mockMvc.perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType))
+				.andReturn();
+		schema = mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+		assertEquals("json", schema.attributes().get(4).name());
+		// data type should downgrade to string
+		assertEquals("STRING", schema.attributes().get(4).datatype());
 	}
 
 	@Test

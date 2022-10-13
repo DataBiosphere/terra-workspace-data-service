@@ -1,0 +1,5 @@
+sys_name	greeting	unicode	json	date	embedded characters	double	long
+a	hello	🚀	"{""foo"":""bar""}"	2021-01-10	"test
+Foo
+Bar"	-2.287	-99
+b	goodbye	😈		2022-11-01	"Two Beers	Or	Not Two Beers?"	3.14	1147417414841
