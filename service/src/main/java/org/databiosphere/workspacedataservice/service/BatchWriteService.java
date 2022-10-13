@@ -41,7 +41,7 @@ public class BatchWriteService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchWriteService.class);
 
-	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size}") int batchSize) {
+	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize) {
 		this.recordDao = recordDao;
 		this.batchSize = batchSize;
 	}
