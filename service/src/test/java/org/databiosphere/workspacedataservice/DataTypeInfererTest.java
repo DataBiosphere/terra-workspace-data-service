@@ -105,18 +105,18 @@ class DataTypeInfererTest {
 				.isEqualTo(DataTypeMapping.DATE_TIME);
 		assertThat(inferer.inferType("12345", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.inferType("12345A", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
-		assertThat(inferer.inferType("[\"12345\"]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.JSON);
+		assertThat(inferer.inferType("[\"12345\"]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_TEXT);
 	}
 
 	private static RecordAttributes getSomeAttrs() {
 		return new RecordAttributes(
-				Map.of("int_val", 4747, "string_val", "Abracadabra Open Sesame", "json_val", "[\"a\", \"b\"]",
+				Map.of("int_val", 4747, "string_val", "Abracadabra Open Sesame", "json_val", "{\"list\": [\"a\", \"b\"]}",
 						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00", "number_or_string", "47"));
 	}
 
 	private static RecordAttributes getSomeTsvAttrs() {
 		return new RecordAttributes(
-				Map.of("int_val", "4747", "string_val", "Abracadabra Open Sesame", "json_val", "[\"a\", \"b\"]",
+				Map.of("int_val", "4747", "string_val", "Abracadabra Open Sesame", "json_val", "{\"list\": [\"a\", \"b\"]}",
 						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00", "number_or_string", "47"));
 	}
 }

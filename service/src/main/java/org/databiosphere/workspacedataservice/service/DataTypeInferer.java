@@ -1,14 +1,19 @@
 package org.databiosphere.workspacedataservice.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
@@ -20,7 +25,14 @@ import static org.databiosphere.workspacedataservice.service.model.DataTypeMappi
 
 public class DataTypeInferer {
 
-	private ObjectMapper objectMapper = new ObjectMapper();
+	private ObjectMapper objectMapper;
+
+	public DataTypeInferer() {
+		objectMapper = JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+				.configure(DeserializationFeature.ACCEPT_FLOAT_AS_INT, false)
+				.configure(MapperFeature.ALLOW_COERCION_OF_SCALARS, false).findAndAddModules().build();
+	}
 
 	public Map<String, DataTypeMapping> inferTypes(RecordAttributes updatedAtts, InBoundDataSource dataSource) {
 		Map<String, DataTypeMapping> result = new HashMap<>();
@@ -106,6 +118,9 @@ public class DataTypeInferer {
 		if (isValidJson(sVal)) {
 			return JSON;
 		}
+		if(isArray(sVal)){
+			return findArrayType(sVal);
+		}
 		return STRING;
 	}
 
@@ -181,12 +196,51 @@ public class DataTypeInferer {
 		}
 	}
 
-	public boolean isValidJson(String val) {
+	private JsonNode parseToJsonNode(String val){
 		try {
-			JsonNode jsonNode = objectMapper.readTree(val);
-			return jsonNode.isArray() || jsonNode.isObject();
+			return objectMapper.readTree(val);
 		} catch (JsonProcessingException e) {
-			return false;
+			return null;
+		}
+	}
+
+	public boolean isValidJson(String val) {
+		JsonNode jsonNode = parseToJsonNode(val);
+		return jsonNode != null && jsonNode.isObject();
+	}
+
+	public boolean isArray(String val){
+		JsonNode jsonNode = parseToJsonNode(val);
+		return jsonNode != null && jsonNode.isArray();
+	}
+
+	private DataTypeMapping findArrayType(String val)  {
+		if(getArrayOfType(val, Boolean[].class) != null){
+			return ARRAY_OF_BOOLEAN;
+		}
+		if(getArrayOfType(val, Long[].class) != null){
+			return ARRAY_OF_LONG;
+		}
+		if(getArrayOfType(val, Double[].class) != null){
+			return ARRAY_OF_DOUBLE;
+		}
+		if(getArrayOfType(val, LocalDateTime[].class) != null){
+			return ARRAY_OF_DATE_TIME;
+		}
+		if(getArrayOfType(val, LocalDate[].class) != null){
+			return ARRAY_OF_DATE;
+		}
+		if(getArrayOfType(val, String[].class) != null){
+			return ARRAY_OF_TEXT;
+		}
+		throw new IllegalArgumentException("Unsupported array type");
+	}
+
+	public <T> T[] getArrayOfType(String val, Class<T[]> clazz) {
+		try {
+			return objectMapper.readValue(val, clazz);
+		} catch (JsonProcessingException e) {
+			return null;
 		}
 	}
 

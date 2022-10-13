@@ -15,6 +15,7 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.postgresql.jdbc.PgArray;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.SqlParameterValue;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -34,6 +36,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -57,11 +60,11 @@ import static org.databiosphere.workspacedataservice.service.model.exception.Inv
 @Repository
 public class RecordDao {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(RecordDao.class);
-
 	private final NamedParameterJdbcTemplate namedTemplate;
 
 	private final NamedParameterJdbcTemplate templateForStreaming;
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(RecordDao.class);
 
 	private final DataTypeInferer inferer;
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
@@ -127,7 +130,7 @@ public class RecordDao {
 		params.addValue("tableName", recordType.getName());
 		params.addValue("recordName", RECORD_ID);
 		return namedTemplate
-				.query("select column_name, data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
+				.query("select column_name, udt_name::regtype as data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
 						+ "and table_name = :tableName and column_name != :recordName", params, rs -> {
 							Map<String, DataTypeMapping> result = new HashMap<>();
 							while (rs.next()) {
@@ -368,6 +371,9 @@ public class RecordDao {
 				return LocalDateTime.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 			}
 		}
+		if(typeMapping.isArrayType()){
+			return inferer.getArrayOfType(attVal.toString(), typeMapping.getJavaType());
+		}
 		return attVal;
 	}
 
@@ -472,6 +478,8 @@ public class RecordDao {
 							object = ts.toLocalDateTime();
 						} else if (object instanceof PGobject pGobject) {
 							object = pGobject.getValue();
+						} else if (object instanceof PgArray pgArray) {
+							object = pgArray.getArray();
 						}
 
 						attributes.putAttribute(columnName, object);

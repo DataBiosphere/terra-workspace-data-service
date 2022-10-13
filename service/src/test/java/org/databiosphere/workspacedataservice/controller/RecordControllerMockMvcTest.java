@@ -212,7 +212,6 @@ class RecordControllerMockMvcTest {
 				.andExpect(status().isOk());
 	}
 	@Test
-	@Transactional
 	void ensurePutShowsNewlyNullFields() throws Exception {
 		RecordType recordType1 = RecordType.valueOf("recordType1");
 		createSomeRecords(recordType1, 1);

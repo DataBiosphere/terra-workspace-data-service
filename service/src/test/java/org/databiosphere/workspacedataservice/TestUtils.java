@@ -19,7 +19,10 @@ public class TestUtils {
 				.putAttribute("attr2", RandomUtils.nextFloat()).putAttribute("attr3", "2022-11-01")
 				.putAttribute("attr4", RandomStringUtils.randomNumeric(5)).putAttribute("attr5", RandomUtils.nextLong())
 				.putAttribute("attr-dt", "2022-03-01T12:00:03").putAttribute("attr-json", "{\"foo\":\"bar\"}")
-				.putAttribute("attr-boolean", true);
+				.putAttribute("attr-boolean", true).putAttribute("z-array-of-double", "[99.9, 88, -77.1, 47, 47]")
+				.putAttribute("z-array-of-boolean", "[true, false]")
+				.putAttribute("z-array-of-long", "[1,2,3,4,5,80000001]")
+				.putAttribute("z-array-of-string", "[\"Ross\", \"Chandler\", \"Joey\"]");
 	}
 
 	public static RecordAttributes generateNonRandomAttributes(int seed) {
