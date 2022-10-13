@@ -222,7 +222,6 @@ public class RecordDao {
 	}
 
 	private List<String> checkEachRow(List<Record> records, Map<String, DataTypeMapping> recordTypeSchema) {
-		DataTypeInferer inferer = new DataTypeInferer();
 		List<String> result = new ArrayList<>();
 		for (Record rcd : records) {
 			Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(rcd.getAttributes(),
