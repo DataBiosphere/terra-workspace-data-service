@@ -69,10 +69,8 @@ public class DataTypeInferer {
 		if (newMapping == NULL || existing == NULL) {
 			return newMapping != NULL ? newMapping : existing;
 		}
-		if(existing.isArrayType() && newMapping.isArrayType()){
-			if (newMapping == EMPTY_ARRAY || existing == EMPTY_ARRAY) {
-				return newMapping != EMPTY_ARRAY ? newMapping : existing;
-			}
+		if (existing.isArrayType() && newMapping.isArrayType() && Set.of(existing, newMapping).contains(EMPTY_ARRAY)) {
+			return newMapping != EMPTY_ARRAY ? newMapping : existing;
 		}
 		if (Set.of(newMapping, existing).equals(Set.of(LONG, DOUBLE))) {
 			return DOUBLE;
@@ -230,7 +228,7 @@ public class DataTypeInferer {
 		return jsonNode != null && jsonNode.isArray();
 	}
 
-	private DataTypeMapping findArrayType(List list){
+	private <T> DataTypeMapping findArrayType(List<T> list){
 		DataTypeMapping bestMapping = null;
 		for (Object o : list) {
 			if(bestMapping == null){
