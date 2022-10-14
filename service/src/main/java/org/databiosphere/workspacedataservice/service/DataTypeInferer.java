@@ -112,7 +112,7 @@ public class DataTypeInferer {
 			return STRING;
 		}
 		//libreoffice at least uses left and right quotes which cause problems when we try to parse as JSON
-		sVal = sVal.replaceAll("“|”", "\"");
+		sVal = sVal.replaceAll("[“”]", "\"");
 		// when we load from TSV, numbers are converted to strings, we need to go back
 		// to numbers
 		if (isLongValue(sVal)) {
@@ -242,7 +242,7 @@ public class DataTypeInferer {
 			if(bestMapping == null){
 				bestMapping = inferType(o, InBoundDataSource.JSON);
 			} else {
-				bestMapping =selectBestType(bestMapping, inferType(o, InBoundDataSource.JSON));
+				bestMapping = selectBestType(bestMapping, inferType(o, InBoundDataSource.JSON));
 			}
 		}
 		return DataTypeMapping.getArrayTypeForBase(bestMapping);
@@ -264,7 +264,7 @@ public class DataTypeInferer {
 		if(getArrayOfType(val, String[].class) != null){
 			return EMPTY_ARRAY;
 		}
-		throw new IllegalArgumentException("Unsupported array type");
+		throw new IllegalArgumentException("Unsupported array type " + val);
 	}
 
 	public <T> T[] getArrayOfType(String val, Class<T[]> clazz) {
