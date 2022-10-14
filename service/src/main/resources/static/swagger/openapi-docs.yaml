@@ -518,7 +518,7 @@ components:
           description: name of this attribute.
         datatype:
           type: string
-          enum: [boolean, date, datetime, string, json, long, double, relation]
+          enum: [boolean, date, datetime, string, json, long, double, relation, array_of_boolean, array_of_string, array_of_long, array_of_double]
           description: |
             Datatype of this attribute. The enum of datatypes is in flux and will change. Please
             comment at https://docs.google.com/document/d/1d352ZoN5kEYWPjy0NqqWGxdf7HEu5VEdrLmiAv7dMmQ/edit#heading=h.naxag0augkgf.
@@ -617,7 +617,11 @@ components:
           "stringAttr": "string",
           "numericAttr": 123,
           "booleanAttr": true,
-          "relationAttr": "terra-wds:/target-type/target-id"
+          "relationAttr": "terra-wds:/target-type/target-id",
+          "arrayString": ["green", "read"],
+          "arrayBoolean": [true, false],
+          "arrayDouble": [12821.112, 0.12121211],
+          "arrayLong": [1,2,3]
         }
     RecordAttributeDefinition:
       required:

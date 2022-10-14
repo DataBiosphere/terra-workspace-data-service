@@ -20,10 +20,12 @@ import java.lang.reflect.Array;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
 
@@ -181,6 +183,9 @@ public class DataTypeInferer {
 		if (RelationUtils.isRelationValue(val)) {
 			return STRING;
 		}
+		if(val instanceof ArrayList){
+			return findArrayType((ArrayList)val);
+		}
 
 		return getTypeMappingFromString(val.toString());
 	}
@@ -232,6 +237,18 @@ public class DataTypeInferer {
 	public boolean isArray(String val){
 		JsonNode jsonNode = parseToJsonNode(val);
 		return jsonNode != null && jsonNode.isArray();
+	}
+
+	private DataTypeMapping findArrayType(List list){
+		DataTypeMapping bestMapping = null;
+		for (Object o : list) {
+			if(bestMapping == null){
+				bestMapping = inferType(o, InBoundDataSource.JSON);
+			} else {
+				bestMapping =selectBestType(bestMapping, inferType(o, InBoundDataSource.JSON));
+			}
+		}
+		return DataTypeMapping.getArrayTypeForBase(bestMapping);
 	}
 
 	private DataTypeMapping findArrayType(String val)  {

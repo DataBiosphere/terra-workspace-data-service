@@ -57,4 +57,22 @@ public enum DataTypeMapping {
 	public static DataTypeMapping fromPostgresType(String pgType) {
 		return MAPPING_BY_PG_TYPE.get(pgType);
 	}
+
+	public static DataTypeMapping getArrayTypeForBase(DataTypeMapping baseType){
+		if(baseType == null){
+			return EMPTY_ARRAY;
+		}
+		switch (baseType){
+			case STRING :
+				return ARRAY_OF_STRING;
+			case BOOLEAN:
+				return ARRAY_OF_BOOLEAN;
+			case LONG:
+				return ARRAY_OF_LONG;
+			case DOUBLE:
+				return ARRAY_OF_DOUBLE;
+			default:
+				throw new IllegalArgumentException("No supported array type for " + baseType);
+		}
+	}
 }
