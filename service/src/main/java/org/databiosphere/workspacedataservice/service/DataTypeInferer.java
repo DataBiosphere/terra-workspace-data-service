@@ -6,12 +6,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.cfg.CoercionAction;
+import com.fasterxml.jackson.databind.cfg.CoercionInputShape;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.type.LogicalType;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 
+import java.lang.reflect.Array;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -30,7 +35,10 @@ public class DataTypeInferer {
 		objectMapper = JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
 				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
 				.configure(DeserializationFeature.ACCEPT_FLOAT_AS_INT, false)
-				.configure(MapperFeature.ALLOW_COERCION_OF_SCALARS, false).findAndAddModules().build();
+				.findAndAddModules().build();
+		objectMapper.coercionConfigFor(LogicalType.Boolean).setCoercion(CoercionInputShape.Integer, CoercionAction.Fail);
+		objectMapper.coercionConfigFor(LogicalType.Float).setCoercion(CoercionInputShape.String, CoercionAction.Fail);
+		objectMapper.coercionConfigFor(LogicalType.Integer).setCoercion(CoercionInputShape.String, CoercionAction.Fail);
 	}
 
 	public Map<String, DataTypeMapping> inferTypes(RecordAttributes updatedAtts, InBoundDataSource dataSource) {
@@ -68,8 +76,19 @@ public class DataTypeInferer {
 		if (newMapping == NULL || existing == NULL) {
 			return newMapping != NULL ? newMapping : existing;
 		}
+		if(existing.isArrayType() && newMapping.isArrayType()){
+			if (newMapping == EMPTY_ARRAY || existing == EMPTY_ARRAY) {
+				return newMapping != EMPTY_ARRAY ? newMapping : existing;
+			}
+		}
 		if (Set.of(newMapping, existing).equals(Set.of(LONG, DOUBLE))) {
 			return DOUBLE;
+		}
+		if(Set.of(newMapping, existing).equals(Set.of(ARRAY_OF_DOUBLE, ARRAY_OF_LONG))){
+			return ARRAY_OF_DOUBLE;
+		}
+		if(newMapping.isArrayType() && existing.isArrayType()){
+			return ARRAY_OF_STRING;
 		}
 		return STRING;
 	}
@@ -93,6 +112,8 @@ public class DataTypeInferer {
 		if (RelationUtils.isRelationValue(val)) {
 			return STRING;
 		}
+		//libreoffice at least uses left and right quotes which cause problems when we try to parse as JSON
+		sVal = sVal.replaceAll("“|”", "\"");
 		// when we load from TSV, numbers are converted to strings, we need to go back
 		// to numbers
 		if (isLongValue(sVal)) {
@@ -214,17 +235,20 @@ public class DataTypeInferer {
 	}
 
 	private DataTypeMapping findArrayType(String val)  {
-		if(getArrayOfType(val, Boolean[].class) != null){
+		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Boolean[].class))){
 			return ARRAY_OF_BOOLEAN;
 		}
-		if(getArrayOfType(val, Long[].class) != null){
+		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Long[].class))){
 			return ARRAY_OF_LONG;
 		}
-		if(getArrayOfType(val, Double[].class) != null){
+		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Double[].class))){
 			return ARRAY_OF_DOUBLE;
 		}
-		if(getArrayOfType(val, String[].class) != null){
+		if(ArrayUtils.isNotEmpty(getArrayOfType(val, String[].class))){
 			return ARRAY_OF_STRING;
+		}
+		if(getArrayOfType(val, String[].class) != null){
+			return EMPTY_ARRAY;
 		}
 		throw new IllegalArgumentException("Unsupported array type");
 	}

@@ -98,7 +98,57 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	void tsvWithMissingRelationShouldFail(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
+	void nullAndNonNullArraysShouldChooseProperType() throws Exception {
+		StringBuilder tsvContent = new StringBuilder("sys_name\tarray\n");
+		//empty string/nulls
+		for (int i = 0; i < 10; i++) {
+			tsvContent.append(i + "null\t" + "\n");
+		}
+		//empty array
+		for (int i = 0; i < 10; i++) {
+			tsvContent.append(i + "empty\t[]\n");
+		}
+		//array of long
+		for (int i = 0; i < 10; i++) {
+			tsvContent.append(i + "valid\t[12]\n");
+		}
+		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
+				tsvContent.toString().getBytes());
+
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
+		String type = "tsv-record-type";
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, type)
+				.file(file)).andExpect(status().isOk());
+
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, type))
+				.andExpect(status().isOk()).andReturn();
+
+		RecordTypeSchema actual = mapper.readValue(mvcResult.getResponse().getContentAsString(),
+				RecordTypeSchema.class);
+		assertEquals("ARRAY_OF_LONG", actual.attributes().get(0).datatype());
+
+		//upload a second time, this time with array of double
+		StringBuilder secondUpload = new StringBuilder("sys_name\tarray\n");
+		//array of long
+		for (int i = 0; i < 10; i++) {
+			secondUpload.append(i + "valid\t[12.99]\n");
+		}
+		file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
+				secondUpload.toString().getBytes());
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, type)
+				.file(file)).andExpect(status().isOk());
+		mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, type))
+				.andExpect(status().isOk()).andReturn();
+
+		actual = mapper.readValue(mvcResult.getResponse().getContentAsString(),
+				RecordTypeSchema.class);
+		//type should change
+		assertEquals("ARRAY_OF_DOUBLE", actual.attributes().get(0).datatype());
+	}
+
+	@Test
+	@Transactional
+	void tsvWithMissingRelationShouldFail() throws Exception {
 
 		MockMultipartFile file = new MockMultipartFile("records", "simple_bad_relation.tsv", MediaType.TEXT_PLAIN_VALUE,
 				("sys_name\trelation\na\t" + RelationUtils.createRelationString(RecordType.valueOf("missing"), "QQ")
@@ -132,6 +182,14 @@ class RecordControllerMockMvcTest {
 		assertEquals("JSON", schema.attributes().get(4).datatype());
 		assertEquals("LONG", schema.attributes().get(5).datatype());
 		assertEquals("long", schema.attributes().get(5).name());
+		assertEquals("z_array_of_string", schema.attributes().get(7).name());
+		assertEquals("ARRAY_OF_STRING", schema.attributes().get(7).datatype());
+		assertEquals("z_double_array", schema.attributes().get(8).name());
+		assertEquals("ARRAY_OF_DOUBLE", schema.attributes().get(8).datatype());
+		assertEquals("z_long_array", schema.attributes().get(9).name());
+		assertEquals("ARRAY_OF_LONG", schema.attributes().get(9).datatype());
+		assertEquals("z_z_boolean_array", schema.attributes().get(10).name());
+		assertEquals("ARRAY_OF_BOOLEAN", schema.attributes().get(10).datatype());
 		MockMultipartFile alter = new MockMultipartFile("records", "change_json_to_text.tsv",
 				MediaType.TEXT_PLAIN_VALUE, "sys_name\tjson\na\tfoo\n".getBytes());
 		mockMvc.perform(

@@ -8,6 +8,7 @@ import java.util.Map;
 
 public enum DataTypeMapping {
 	NULL(String.class, "text", false),
+	EMPTY_ARRAY(String[].class, "text", true),
 	BOOLEAN(Boolean.class, "boolean", false),
 	DATE(LocalDate.class, "date", false),
 	DATE_TIME(LocalDateTime.class, "timestamp with time zone", false),

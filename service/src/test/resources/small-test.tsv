@@ -1,5 +1,5 @@
-sys_name	greeting	unicode	json	date	embedded characters	double	long
+sys_name	greeting	unicode	json	date	embedded characters	double	long	z_array_of_string	z_long_array	z_double_array	z_z_boolean_array
 a	hello	🚀	"{""foo"":""bar""}"	2021-01-10	"test
 Foo
-Bar"	-2.287	-99
-b	goodbye	😈		2022-11-01	"Two Beers	Or	Not Two Beers?"	3.14	1147417414841
+Bar"	-2.287	-99	[“test1”, “test2”]		[-11.2221, -11]	"[true, “false""]"
+b	goodbye	😈		2022-11-01	"Two Beers	Or	Not Two Beers?"	3.14	1147417414841	[“98”, “99”]	[199, 12]		
