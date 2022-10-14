@@ -165,7 +165,7 @@ public class DataTypeInferer {
 		if (RelationUtils.isRelationValue(val)) {
 			return STRING;
 		}
-		if(val instanceof List listVal){
+		if(val instanceof List<?> listVal){
 			return findArrayType(listVal);
 		}
 

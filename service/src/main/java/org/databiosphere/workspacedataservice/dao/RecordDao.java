@@ -370,7 +370,7 @@ public class RecordDao {
 			}
 		}
 		if(typeMapping.isArrayType()){
-			if(attVal instanceof ArrayList valAsList){
+			if(attVal instanceof ArrayList<?> valAsList){
 				return getListAsArray(valAsList, typeMapping);
 			}
 			return inferer.getArrayOfType(attVal.toString(), typeMapping.getJavaType());
@@ -378,7 +378,7 @@ public class RecordDao {
 		return attVal;
 	}
 
-	private Object[] getListAsArray(ArrayList<Object> attVal, DataTypeMapping typeMapping) {
+	private Object[] getListAsArray(ArrayList<?> attVal, DataTypeMapping typeMapping) {
 		switch (typeMapping){
 			case ARRAY_OF_STRING:
 				return attVal.toArray(new String[0]);
