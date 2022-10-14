@@ -13,7 +13,6 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
@@ -225,7 +224,7 @@ public class DataTypeInferer {
 			return ARRAY_OF_DOUBLE;
 		}
 		if(getArrayOfType(val, String[].class) != null){
-			return ARRAY_OF_TEXT;
+			return ARRAY_OF_STRING;
 		}
 		throw new IllegalArgumentException("Unsupported array type");
 	}

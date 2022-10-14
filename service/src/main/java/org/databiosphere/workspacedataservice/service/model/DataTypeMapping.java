@@ -16,7 +16,7 @@ public enum DataTypeMapping {
 	LONG(Long.class, "bigint", false),
 	DOUBLE(Double.class, "numeric", false),
 	ARRAY_OF_LONG(Long[].class, "bigint[]", true),
-	ARRAY_OF_TEXT(String[].class, "text[]", true),
+	ARRAY_OF_STRING(String[].class, "text[]", true),
 	ARRAY_OF_DOUBLE(Double[].class, "numeric[]", true),
 	ARRAY_OF_BOOLEAN(Boolean[].class, "boolean[]", true);
 

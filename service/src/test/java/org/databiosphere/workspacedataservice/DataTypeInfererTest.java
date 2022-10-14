@@ -1,13 +1,10 @@
 package org.databiosphere.workspacedataservice;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.in;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.*;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
-import org.databiosphere.workspacedata.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.InBoundDataSource;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -105,7 +102,7 @@ class DataTypeInfererTest {
 				.isEqualTo(DataTypeMapping.DATE_TIME);
 		assertThat(inferer.inferType("12345", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.inferType("12345A", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
-		assertThat(inferer.inferType("[\"12345\"]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_TEXT);
+		assertThat(inferer.inferType("[\"12345\"]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
 	}
 
 	private static RecordAttributes getSomeAttrs() {

@@ -506,7 +506,9 @@ class RecordControllerMockMvcTest {
 				new AttributeSchema("attr-ref", "RELATION", referencedType),
 				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "DOUBLE", null),
 				new AttributeSchema("attr3", "DATE", null), new AttributeSchema("attr4", "STRING", null),
-				new AttributeSchema("attr5", "LONG", null));
+				new AttributeSchema("attr5", "LONG", null), new AttributeSchema("z-array-of-boolean", "ARRAY_OF_BOOLEAN", null),
+				new AttributeSchema("z-array-of-double", "ARRAY_OF_DOUBLE", null),
+				new AttributeSchema("z-array-of-long", "ARRAY_OF_LONG", null), new AttributeSchema("z-array-of-string", "ARRAY_OF_STRING", null));
 
 		RecordTypeSchema expected = new RecordTypeSchema(type, expectedAttributes, 1);
 
@@ -542,7 +544,9 @@ class RecordControllerMockMvcTest {
 				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
 				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "DOUBLE", null),
 				new AttributeSchema("attr3", "DATE", null), new AttributeSchema("attr4", "STRING", null),
-				new AttributeSchema("attr5", "LONG", null));
+				new AttributeSchema("attr5", "LONG", null), new AttributeSchema("z-array-of-boolean", "ARRAY_OF_BOOLEAN", null),
+				new AttributeSchema("z-array-of-double", "ARRAY_OF_DOUBLE", null),
+				new AttributeSchema("z-array-of-long", "ARRAY_OF_LONG", null), new AttributeSchema("z-array-of-string", "ARRAY_OF_STRING", null));
 
 		List<RecordTypeSchema> expectedSchemas = Arrays.asList(new RecordTypeSchema(type1, expectedAttributes, 1),
 				new RecordTypeSchema(type2, expectedAttributes, 2),
