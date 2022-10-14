@@ -66,10 +66,10 @@ public class RecordDao {
 
 	private final DataTypeInferer inferer;
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
-			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming) {
+			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf) {
 		this.namedTemplate = namedTemplate;
 		this.templateForStreaming = templateForStreaming;
-		this.inferer = new DataTypeInferer();
+		this.inferer = inf;
 	}
 
 	public boolean instanceSchemaExists(UUID instanceId) {

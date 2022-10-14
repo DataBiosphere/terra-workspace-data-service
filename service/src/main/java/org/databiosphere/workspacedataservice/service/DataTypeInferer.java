@@ -28,16 +28,10 @@ import static org.databiosphere.workspacedataservice.service.model.DataTypeMappi
 
 public class DataTypeInferer {
 
-	private ObjectMapper objectMapper;
+	private final ObjectMapper objectMapper;
 
-	public DataTypeInferer() {
-		objectMapper = JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
-				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-				.configure(DeserializationFeature.ACCEPT_FLOAT_AS_INT, false)
-				.findAndAddModules().build();
-		objectMapper.coercionConfigFor(LogicalType.Boolean).setCoercion(CoercionInputShape.Integer, CoercionAction.Fail);
-		objectMapper.coercionConfigFor(LogicalType.Float).setCoercion(CoercionInputShape.String, CoercionAction.Fail);
-		objectMapper.coercionConfigFor(LogicalType.Integer).setCoercion(CoercionInputShape.String, CoercionAction.Fail);
+	public DataTypeInferer(ObjectMapper mapper) {
+		this.objectMapper = mapper;
 	}
 
 	public Map<String, DataTypeMapping> inferTypes(RecordAttributes updatedAtts, InBoundDataSource dataSource) {

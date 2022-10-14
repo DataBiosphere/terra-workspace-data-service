@@ -12,10 +12,14 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
+@SpringBootTest
 class DataTypeInfererTest {
 
-	DataTypeInferer inferer = new DataTypeInferer();
+	@Autowired
+	DataTypeInferer inferer;
 
 	@Test
 	void inferTypesJsonSource() {

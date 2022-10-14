@@ -64,10 +64,10 @@ public class RecordController {
 	private final DataTypeInferer inferer;
 	private final BatchWriteService batchWriteService;
 
-	public RecordController(RecordDao recordDao, BatchWriteService batchWriteService) {
+	public RecordController(RecordDao recordDao, BatchWriteService batchWriteService, DataTypeInferer inf) {
 		this.recordDao = recordDao;
 		this.batchWriteService = batchWriteService;
-		this.inferer = new DataTypeInferer();
+		this.inferer = inf;
 	}
 
 	@PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
