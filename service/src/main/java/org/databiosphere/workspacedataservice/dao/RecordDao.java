@@ -1,9 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import org.apache.commons.lang3.ArrayUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.InBoundDataSource;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -28,18 +26,15 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.core.SqlParameterValue;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.lang.reflect.InvocationTargetException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -390,7 +385,14 @@ public class RecordDao {
 			case ARRAY_OF_BOOLEAN:
 				return attVal.toArray(new Boolean[0]);
 			case ARRAY_OF_DOUBLE:
-				List<Object> doubleList = attVal.stream().map(i -> {if(i instanceof Integer)  return (double)((Integer)i).intValue(); else return i;}).collect(Collectors.toList());
+				List<Object> doubleList = attVal.stream().map(i -> {
+					if (i instanceof Integer){
+						return (double) ((Integer) i).intValue();
+					}
+					else {
+						return i;
+					}
+				}).toList();
 				return doubleList.toArray(new Double[0]);
 			case ARRAY_OF_LONG:
 				return attVal.toArray(new Long[0]);

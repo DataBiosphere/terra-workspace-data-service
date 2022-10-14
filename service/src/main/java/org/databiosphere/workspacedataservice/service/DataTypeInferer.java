@@ -16,16 +16,13 @@ import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 
-import java.lang.reflect.Array;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
 
@@ -183,8 +180,8 @@ public class DataTypeInferer {
 		if (RelationUtils.isRelationValue(val)) {
 			return STRING;
 		}
-		if(val instanceof List){
-			return findArrayType((List)val);
+		if(val instanceof List listVal){
+			return findArrayType(listVal);
 		}
 
 		return getTypeMappingFromString(val.toString());
