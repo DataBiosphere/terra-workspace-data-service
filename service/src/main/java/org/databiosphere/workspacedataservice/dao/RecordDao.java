@@ -370,12 +370,16 @@ public class RecordDao {
 			}
 		}
 		if(typeMapping.isArrayType()){
-			if(attVal instanceof ArrayList<?> valAsList){
-				return getListAsArray(valAsList, typeMapping);
-			}
-			return inferer.getArrayOfType(attVal.toString(), typeMapping.getJavaType());
+			return getArrayValues(attVal, typeMapping);
 		}
 		return attVal;
+	}
+
+	private Object getArrayValues(Object attVal, DataTypeMapping typeMapping) {
+		if (attVal instanceof ArrayList<?> valAsList) {
+			return getListAsArray(valAsList, typeMapping);
+		}
+		return inferer.getArrayOfType(attVal.toString(), typeMapping.getJavaType());
 	}
 
 	private Object[] getListAsArray(ArrayList<?> attVal, DataTypeMapping typeMapping) {

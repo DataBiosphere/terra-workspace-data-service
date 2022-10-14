@@ -123,7 +123,7 @@ public class DataTypeInferer {
 			return JSON;
 		}
 		if(isArray(sVal)){
-			return findArrayType(sVal);
+			return findArrayTypeFromJson(sVal);
 		}
 		return STRING;
 	}
@@ -233,7 +233,7 @@ public class DataTypeInferer {
 		return DataTypeMapping.getArrayTypeForBase(bestMapping);
 	}
 
-	private DataTypeMapping findArrayType(String val)  {
+	private DataTypeMapping findArrayTypeFromJson(String val)  {
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Boolean[].class))){
 			return ARRAY_OF_BOOLEAN;
 		}
