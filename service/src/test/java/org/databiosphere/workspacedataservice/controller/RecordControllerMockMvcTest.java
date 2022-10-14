@@ -559,7 +559,9 @@ class RecordControllerMockMvcTest {
 						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 
-		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("attr-boolean", "BOOLEAN", null),
+		List<AttributeSchema> expectedAttributes = Arrays.asList(
+				new AttributeSchema("array-of-string", "ARRAY_OF_STRING", null),
+				new AttributeSchema("attr-boolean", "BOOLEAN", null),
 				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
 				new AttributeSchema("attr-ref", "RELATION", referencedType),
 				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "DOUBLE", null),
@@ -598,7 +600,7 @@ class RecordControllerMockMvcTest {
 		RecordType type3 = RecordType.valueOf("thirdType");
 		createSomeRecords(type3, 10, instId);
 
-		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("attr-boolean", "BOOLEAN", null),
+		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("array-of-string", "ARRAY_OF_STRING", null), new AttributeSchema("attr-boolean", "BOOLEAN", null),
 				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
 				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "DOUBLE", null),
 				new AttributeSchema("attr3", "DATE", null), new AttributeSchema("attr4", "STRING", null),

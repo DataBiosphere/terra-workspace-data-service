@@ -183,8 +183,8 @@ public class DataTypeInferer {
 		if (RelationUtils.isRelationValue(val)) {
 			return STRING;
 		}
-		if(val instanceof ArrayList){
-			return findArrayType((ArrayList)val);
+		if(val instanceof List){
+			return findArrayType((List)val);
 		}
 
 		return getTypeMappingFromString(val.toString());

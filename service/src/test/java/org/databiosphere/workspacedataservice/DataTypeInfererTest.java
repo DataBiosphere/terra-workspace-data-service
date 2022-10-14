@@ -21,6 +21,7 @@ class DataTypeInfererTest {
 	void inferTypesJsonSource() {
 		Map<String, DataTypeMapping> result = inferer.inferTypes(getSomeAttrs(), InBoundDataSource.JSON);
 		Map<String, DataTypeMapping> expected = new HashMap<>();
+		expected.put("array_of_string", DataTypeMapping.ARRAY_OF_STRING);
 		expected.put("string_val", DataTypeMapping.STRING);
 		expected.put("int_val", DataTypeMapping.LONG);
 		expected.put("json_val", DataTypeMapping.JSON);
@@ -124,7 +125,7 @@ class DataTypeInfererTest {
 	private static RecordAttributes getSomeAttrs() {
 		return new RecordAttributes(
 				Map.of("int_val", 4747, "string_val", "Abracadabra Open Sesame", "json_val", "{\"list\": [\"a\", \"b\"]}",
-						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00", "number_or_string", "47"));
+						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00", "number_or_string", "47", "array_of_string", List.of("red", "yellow")));
 	}
 
 	private static RecordAttributes getSomeTsvAttrs() {

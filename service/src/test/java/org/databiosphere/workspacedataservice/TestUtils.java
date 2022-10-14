@@ -22,7 +22,8 @@ public class TestUtils {
 				.putAttribute("attr-boolean", true).putAttribute("z-array-of-double", "[99.9, 88, -77.1, 47, 47]")
 				.putAttribute("z-array-of-boolean", "[true, false]")
 				.putAttribute("z-array-of-long", "[1,2,3,4,5,80000001]")
-				.putAttribute("z-array-of-string", "[\"Ross\", \"Chandler\", \"Joey\"]");
+				.putAttribute("z-array-of-string", "[\"Ross\", \"Chandler\", \"Joey\"]")
+				.putAttribute("array-of-string", List.of("Ross", "Chandler", "Joey"));
 	}
 
 	public static RecordAttributes generateNonRandomAttributes(int seed) {
