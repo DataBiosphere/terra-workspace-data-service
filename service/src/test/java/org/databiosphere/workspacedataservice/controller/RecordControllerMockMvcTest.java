@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -24,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
@@ -38,7 +41,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class RecordControllerMockMvcTest {
 
-	private final ObjectMapper mapper = new ObjectMapper();
+	@Autowired
+	private ObjectMapper mapper;
 	@Autowired
 	private MockMvc mockMvc;
 
@@ -126,11 +130,11 @@ class RecordControllerMockMvcTest {
 				RecordTypeSchema.class);
 		assertEquals("date", schema.attributes().get(0).name());
 		assertEquals("DATE", schema.attributes().get(0).datatype());
-		assertEquals("DOUBLE", schema.attributes().get(1).datatype());
+		assertEquals("NUMBER", schema.attributes().get(1).datatype());
 		assertEquals("double", schema.attributes().get(1).name());
 		assertEquals("json", schema.attributes().get(4).name());
 		assertEquals("JSON", schema.attributes().get(4).datatype());
-		assertEquals("LONG", schema.attributes().get(5).datatype());
+		assertEquals("NUMBER", schema.attributes().get(5).datatype());
 		assertEquals("long", schema.attributes().get(5).name());
 		MockMultipartFile alter = new MockMultipartFile("records", "change_json_to_text.tsv",
 				MediaType.TEXT_PLAIN_VALUE, "sys_name\tjson\na\tfoo\n".getBytes());
@@ -505,9 +509,9 @@ class RecordControllerMockMvcTest {
 		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("attr-boolean", "BOOLEAN", null),
 				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
 				new AttributeSchema("attr-ref", "RELATION", referencedType),
-				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "DOUBLE", null),
+				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "NUMBER", null),
 				new AttributeSchema("attr3", "DATE", null), new AttributeSchema("attr4", "STRING", null),
-				new AttributeSchema("attr5", "LONG", null));
+				new AttributeSchema("attr5", "NUMBER", null));
 
 		RecordTypeSchema expected = new RecordTypeSchema(type, expectedAttributes, 1);
 
@@ -541,9 +545,9 @@ class RecordControllerMockMvcTest {
 
 		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("attr-boolean", "BOOLEAN", null),
 				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
-				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "DOUBLE", null),
+				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "NUMBER", null),
 				new AttributeSchema("attr3", "DATE", null), new AttributeSchema("attr4", "STRING", null),
-				new AttributeSchema("attr5", "LONG", null));
+				new AttributeSchema("attr5", "NUMBER", null));
 
 		List<RecordTypeSchema> expectedSchemas = Arrays.asList(new RecordTypeSchema(type1, expectedAttributes, 1),
 				new RecordTypeSchema(type2, expectedAttributes, 2),
@@ -585,6 +589,29 @@ class RecordControllerMockMvcTest {
 			result.add(new Record(recordId, recordType, recordRequest));
 		}
 		return result;
+	}
+
+	@Test
+//	@Transactional
+	void bigNumbersShouldNotOverflow() throws Exception {
+		String recordId = "recordId";
+		RecordAttributes attributes = RecordAttributes.empty()
+				.putAttribute("bigInt", new BigInteger("9223372036854775809"))
+				.putAttribute("bigFloat", new BigDecimal("9223372036854775809.55556666"));
+		RecordRequest recordRequest = new RecordRequest(attributes);
+		String reccordType = "bigNumTest";
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						reccordType, recordId).content(mapper.writeValueAsString(recordRequest))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().is2xxSuccessful());
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				reccordType, recordId).contentType(MediaType.APPLICATION_JSON)).andReturn();
+		RecordResponse recordResponse = mapper.readValue(mvcResult.getResponse().getContentAsString(),
+				RecordResponse.class);
+		System.out.println(mvcResult.getResponse().getContentAsString());
+//		assertEquals(recordResponse.recordAttributes().getAttributeValue("bigInt"), new BigInteger("9223372036854775809"));
+		assertEquals(new BigDecimal("9223372036854775809.55556666"), recordResponse.recordAttributes().getAttributeValue("bigFloat"));
+
 	}
 
 	@Test

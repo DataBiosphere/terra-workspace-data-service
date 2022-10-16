@@ -8,6 +8,8 @@ import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -57,9 +59,6 @@ public class DataTypeInferer {
 		if (newMapping == NULL || existing == NULL) {
 			return newMapping != NULL ? newMapping : existing;
 		}
-		if (Set.of(newMapping, existing).equals(Set.of(LONG, DOUBLE))) {
-			return DOUBLE;
-		}
 		return STRING;
 	}
 
@@ -84,11 +83,8 @@ public class DataTypeInferer {
 		}
 		// when we load from TSV, numbers are converted to strings, we need to go back
 		// to numbers
-		if (isLongValue(sVal)) {
-			return LONG;
-		}
-		if (isDoubleValue(sVal)) {
-			return DOUBLE;
+		if (isNumericValue(sVal)) {
+			return NUMBER;
 		}
 		return getTypeMappingFromString(sVal);
 	}
@@ -131,12 +127,8 @@ public class DataTypeInferer {
 			return NULL;
 		}
 
-		if (val instanceof Long || val instanceof Integer) {
-			return LONG;
-		}
-
-		if (val instanceof Double || val instanceof Float) {
-			return DOUBLE;
+		if (val instanceof BigDecimal || val instanceof BigInteger) {
+			return NUMBER;
 		}
 
 		if (val instanceof Boolean) {
@@ -163,23 +155,15 @@ public class DataTypeInferer {
 		throw new IllegalArgumentException("Unhandled inbound data source " + dataSource);
 	}
 
-	public boolean isLongValue(String sVal) {
+	public boolean isNumericValue(String sVal) {
 		try {
-			Long.parseLong(sVal);
+			new BigDecimal(sVal);
 			return true;
 		} catch (NumberFormatException e) {
 			return false;
 		}
 	}
 
-	public boolean isDoubleValue(String sVal) {
-		try {
-			Double.parseDouble(sVal);
-			return true;
-		} catch (NumberFormatException e) {
-			return false;
-		}
-	}
 
 	public boolean isValidJson(String val) {
 		try {

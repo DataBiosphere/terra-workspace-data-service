@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -66,7 +67,7 @@ class RecordTest {
 	@Test
 	void testRecordAttributesDeserialization() throws JsonProcessingException {
 		RecordAttributes expected = new RecordAttributes(
-				Map.of("foo", "bar", "num", 123, "bool", true, "anotherstring", "hello world"));
+				Map.of("foo", "bar", "num", new BigInteger("123"), "bool", true, "anotherstring", "hello world"));
 
 		String inputJsonString = """
 				{
@@ -84,7 +85,7 @@ class RecordTest {
 	@Test
 	void testRecordDeserialization() throws JsonProcessingException {
 		RecordAttributes recordAttributes = new RecordAttributes(
-				Map.of("foo", "bar", "num", 123, "bool", true, "anotherstring", "hello world"));
+				Map.of("foo", "bar", "num", new BigInteger("123"), "bool", true, "anotherstring", "hello world"));
 
 		RecordType recordType = RecordType.valueOf("mytype");
 		String recordId = "my-id";

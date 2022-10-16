@@ -30,6 +30,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -352,11 +353,8 @@ public class RecordDao {
 			return RelationUtils.getRelationValue(attVal);
 		}
 		if (attVal instanceof String sVal) {
-			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.LONG, inferer::isLongValue, sVal)) {
-				return Long.parseLong(sVal);
-			}
-			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.DOUBLE, inferer::isDoubleValue, sVal)) {
-				return Double.parseDouble(sVal);
+			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.NUMBER, inferer::isNumericValue, sVal)) {
+				return new BigDecimal(sVal);
 			}
 			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.BOOLEAN, inferer::isValidBoolean, sVal)) {
 				return Boolean.parseBoolean(sVal);
