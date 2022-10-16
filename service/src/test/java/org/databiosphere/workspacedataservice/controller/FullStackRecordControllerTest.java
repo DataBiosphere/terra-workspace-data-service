@@ -273,6 +273,7 @@ class FullStackRecordControllerTest {
 	}
 
 	@Test
+	@Transactional
 	void dataTypeMismatchShouldFailBatchWrite() throws Exception {
 		RecordType recordType = RecordType.valueOf("bw-test");
 		List<Record> someRecords = createSomeRecords(recordType, 2);
