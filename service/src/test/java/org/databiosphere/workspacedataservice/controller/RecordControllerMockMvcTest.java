@@ -28,6 +28,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -37,8 +38,7 @@ import java.util.UUID;
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -76,6 +76,31 @@ class RecordControllerMockMvcTest {
 		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
 				.file(file)).andExpect(status().isBadRequest());
+	}
+
+	/**
+	 * Slightly strange test to show loss of precision as a result of storing a large
+	 * integer in WDS.  If we switch to using BigDecimal throughout we should be able to
+	 * to change the test to start asserting equality
+	 * @throws Exception
+	 */
+	@Test
+	@Transactional
+	void storeLargeIntegerValue() throws Exception {
+		StringBuilder tsvContent = new StringBuilder("sys_name\tbigint\n");
+		String bigIntValue = "11111111111111111111111111111111";
+		tsvContent.append(1 + "\t" + bigIntValue + "\n");
+		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
+				tsvContent.toString().getBytes());
+
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
+		String recordType = "big-int-value";
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
+				.file(file)).andExpect(status().isOk());
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
+				recordType, "1")).andReturn();
+		RecordResponse recordResponse = mapper.readValue(mvcResult.getResponse().getContentAsString(), RecordResponse.class);
+		assertNotEquals(new BigInteger(bigIntValue), recordResponse.recordAttributes().getAttributeValue("bigint"));
 	}
 
 	@Test
