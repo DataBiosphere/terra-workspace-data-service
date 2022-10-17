@@ -40,9 +40,8 @@ class FullStackRecordControllerTest {
 	private static HttpHeaders headers;
 	private static UUID instanceId;
 	private static final String versionId = "v0.2";
+	private final ObjectMapper mapper = new ObjectMapper();
 
-	@Autowired
-	private ObjectMapper mapper;
 	@BeforeAll
 	static void setUp() {
 		headers = new HttpHeaders();

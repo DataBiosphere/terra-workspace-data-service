@@ -82,7 +82,7 @@ class DataTypeInfererTest {
 		RecordAttributes firstAttrs = RecordAttributes.empty().putAttribute("boolean", null).putAttribute("long", null);
 		Record first = new Record("first", RecordType.valueOf("test-inference"), firstAttrs);
 		RecordAttributes secondAttrs = RecordAttributes.empty().putAttribute("boolean", "true").putAttribute("long",
-				new BigInteger("-999999"));
+				-999999);
 		Record second = new Record("second", RecordType.valueOf("test-inference"), secondAttrs);
 		Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(List.of(first, second),
 				InBoundDataSource.JSON);
@@ -106,7 +106,7 @@ class DataTypeInfererTest {
 
 	private static RecordAttributes getSomeAttrs() {
 		return new RecordAttributes(
-				Map.of("int_val", new BigInteger("4747"), "string_val", "Abracadabra Open Sesame", "json_val", "[\"a\", \"b\"]",
+				Map.of("int_val", 4747, "string_val", "Abracadabra Open Sesame", "json_val", "[\"a\", \"b\"]",
 						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00", "number_or_string", "47"));
 	}
 

@@ -7,7 +7,7 @@ import java.util.Map;
 
 public enum DataTypeMapping {
 	BOOLEAN(Boolean.class, "boolean"), DATE(LocalDate.class, "date"), DATE_TIME(LocalDateTime.class,
-			"timestamp with time zone"), STRING(String.class, "text"), JSON(String.class,
+			"timestamptz"), STRING(String.class, "text"), JSON(String.class,
 					"jsonb"), NULL(String.class, "text"), NUMBER(Double.class, "numeric");
 
 	private Class javaType;
