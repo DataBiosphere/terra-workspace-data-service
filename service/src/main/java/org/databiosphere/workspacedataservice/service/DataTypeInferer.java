@@ -8,7 +8,6 @@ import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -126,7 +125,7 @@ public class DataTypeInferer {
 			return NULL;
 		}
 
-		if (val instanceof BigDecimal || val instanceof BigInteger) {
+		if (val instanceof Integer || val instanceof Double || val instanceof Long || val instanceof BigInteger) {
 			return NUMBER;
 		}
 
@@ -156,7 +155,7 @@ public class DataTypeInferer {
 
 	public boolean isNumericValue(String sVal) {
 		try {
-			new BigDecimal(sVal);
+			Double.valueOf(sVal);
 			return true;
 		} catch (NumberFormatException e) {
 			return false;

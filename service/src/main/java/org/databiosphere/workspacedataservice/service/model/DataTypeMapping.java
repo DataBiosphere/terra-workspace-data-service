@@ -1,15 +1,15 @@
 package org.databiosphere.workspacedataservice.service.model;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public enum DataTypeMapping {
 	BOOLEAN(Boolean.class, "boolean"), DATE(LocalDate.class, "date"), DATE_TIME(LocalDateTime.class,
-			"timestamptz"), STRING(String.class, "text"), JSON(String.class,
-					"jsonb"), NULL(String.class, "text"), NUMBER(BigDecimal.class, "numeric");
+			"timestamp with time zone"), STRING(String.class, "text"), JSON(String.class,
+					"jsonb"), NULL(String.class, "text"), NUMBER(Double.class, "numeric");
 
 	private Class javaType;
 

@@ -1,16 +1,15 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.math.BigInteger;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -22,7 +21,7 @@ public class RecordRequestTest {
 	@Test
 	void testJsonDeserialization() throws JsonProcessingException {
 		RecordAttributes recordAttributes = new RecordAttributes(
-				Map.of("foo", "bar", "num", new BigInteger("123"), "bool", true, "anotherstring", "hello world"));
+				Map.of("foo", "bar", "num", 123, "bool", true, "anotherstring", "hello world"));
 
 		RecordRequest expected = new RecordRequest(recordAttributes);
 

@@ -592,29 +592,6 @@ class RecordControllerMockMvcTest {
 	}
 
 	@Test
-//	@Transactional
-	void bigNumbersShouldNotOverflow() throws Exception {
-		String recordId = "recordId";
-		RecordAttributes attributes = RecordAttributes.empty()
-				.putAttribute("bigInt", new BigInteger("9223372036854775809"))
-				.putAttribute("bigFloat", new BigDecimal("9223372036854775809.55556666"));
-		RecordRequest recordRequest = new RecordRequest(attributes);
-		String reccordType = "bigNumTest";
-		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-						reccordType, recordId).content(mapper.writeValueAsString(recordRequest))
-						.contentType(MediaType.APPLICATION_JSON))
-				.andExpect(status().is2xxSuccessful());
-		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				reccordType, recordId).contentType(MediaType.APPLICATION_JSON)).andReturn();
-		RecordResponse recordResponse = mapper.readValue(mvcResult.getResponse().getContentAsString(),
-				RecordResponse.class);
-		System.out.println(mvcResult.getResponse().getContentAsString());
-//		assertEquals(recordResponse.recordAttributes().getAttributeValue("bigInt"), new BigInteger("9223372036854775809"));
-		assertEquals(new BigDecimal("9223372036854775809.55556666"), recordResponse.recordAttributes().getAttributeValue("bigFloat"));
-
-	}
-
-	@Test
 	@Transactional
 	void batchWriteInsertShouldSucceed() throws Exception {
 		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
