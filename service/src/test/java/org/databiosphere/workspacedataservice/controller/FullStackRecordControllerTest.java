@@ -4,18 +4,37 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedata.model.ErrorResponse;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
+import org.databiosphere.workspacedataservice.shared.model.BatchOperation;
+import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.databiosphere.workspacedataservice.shared.model.*;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
+import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
+import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
+import org.databiosphere.workspacedataservice.shared.model.SortDirection;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,6 +58,7 @@ class FullStackRecordControllerTest {
 	private static UUID instanceId;
 	private static final String versionId = "v0.2";
 	private final ObjectMapper mapper = new ObjectMapper();
+
 	@BeforeAll
 	static void setUp() {
 		headers = new HttpHeaders();
@@ -285,7 +305,7 @@ class FullStackRecordControllerTest {
 		assertThat(response.getBody().getMessage())
 				.contains("Some of the records in your request don't have the proper data for the record type");
 		assertThat(response.getBody().getMessage()).contains(
-				"is a STRING in the request but is defined as DOUBLE in the record type definition for bw-test");
+				"is a STRING in the request but is defined as NUMBER in the record type definition for bw-test");
 	}
 
 	@Test

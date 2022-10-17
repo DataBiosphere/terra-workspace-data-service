@@ -1,13 +1,11 @@
 package org.databiosphere.workspacedataservice;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.in;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.math.BigInteger;
 import java.util.*;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
-import org.databiosphere.workspacedata.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.InBoundDataSource;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -25,7 +23,7 @@ class DataTypeInfererTest {
 		Map<String, DataTypeMapping> result = inferer.inferTypes(getSomeAttrs(), InBoundDataSource.JSON);
 		Map<String, DataTypeMapping> expected = new HashMap<>();
 		expected.put("string_val", DataTypeMapping.STRING);
-		expected.put("int_val", DataTypeMapping.LONG);
+		expected.put("int_val", DataTypeMapping.NUMBER);
 		expected.put("json_val", DataTypeMapping.JSON);
 		expected.put("date_val", DataTypeMapping.DATE);
 		expected.put("date_time_val", DataTypeMapping.DATE_TIME);
@@ -36,10 +34,8 @@ class DataTypeInfererTest {
 
 	@Test
 	void selectBestTypes() {
-		assertThat(inferer.selectBestType(DataTypeMapping.LONG, DataTypeMapping.DOUBLE))
-				.as("longs can be expressed as doubles but not the other way around").isEqualTo(DataTypeMapping.DOUBLE);
-		assertThat(inferer.selectBestType(DataTypeMapping.NULL, DataTypeMapping.DOUBLE))
-				.as("null values should not affect typing for non null values").isEqualTo(DataTypeMapping.DOUBLE);
+		assertThat(inferer.selectBestType(DataTypeMapping.NULL, DataTypeMapping.NUMBER))
+				.as("null values should not affect typing for non null values").isEqualTo(DataTypeMapping.NUMBER);
 		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.STRING))
 				.as("if types are identical, return the type").isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.BOOLEAN))
@@ -51,11 +47,11 @@ class DataTypeInfererTest {
 		Map<String, DataTypeMapping> result = inferer.inferTypes(getSomeTsvAttrs(), InBoundDataSource.TSV);
 		Map<String, DataTypeMapping> expected = new HashMap<>();
 		expected.put("string_val", DataTypeMapping.STRING);
-		expected.put("int_val", DataTypeMapping.LONG);
+		expected.put("int_val", DataTypeMapping.NUMBER);
 		expected.put("json_val", DataTypeMapping.JSON);
 		expected.put("date_val", DataTypeMapping.DATE);
 		expected.put("date_time_val", DataTypeMapping.DATE_TIME);
-		expected.put("number_or_string", DataTypeMapping.LONG);
+		expected.put("number_or_string", DataTypeMapping.NUMBER);
 
 		assertEquals(expected, result);
 	}
@@ -78,7 +74,7 @@ class DataTypeInfererTest {
 		Record second = new Record("second", RecordType.valueOf("test-inference"), secondAttrs);
 		Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(List.of(first, second), InBoundDataSource.TSV);
 		assertThat(inferredSchema).as("Should still get BOOLEAN and LONG for types despite null values in one record")
-				.isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.LONG));
+				.isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.NUMBER));
 	}
 
 	@Test
@@ -91,7 +87,7 @@ class DataTypeInfererTest {
 		Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(List.of(first, second),
 				InBoundDataSource.JSON);
 		assertThat(inferredSchema).as("Should still get BOOLEAN and LONG for types despite null values in one record")
-				.isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.LONG));
+				.isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.NUMBER));
 	}
 
 	@Test

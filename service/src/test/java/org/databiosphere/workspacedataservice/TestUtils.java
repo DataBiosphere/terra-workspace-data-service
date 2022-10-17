@@ -4,10 +4,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class TestUtils {
 

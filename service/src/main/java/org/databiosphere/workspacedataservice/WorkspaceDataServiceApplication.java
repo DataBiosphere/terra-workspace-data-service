@@ -14,13 +14,12 @@ import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-
-import javax.sql.DataSource;
-
 import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import javax.sql.DataSource;
 
 @SpringBootApplication
 public class WorkspaceDataServiceApplication {
@@ -28,7 +27,8 @@ public class WorkspaceDataServiceApplication {
 	@Bean
 	public ObjectMapper objectMapper() {
 		return JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
-				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false).findAndAddModules().build();
+				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+				.findAndAddModules().build();
 	}
 
 	@Bean
