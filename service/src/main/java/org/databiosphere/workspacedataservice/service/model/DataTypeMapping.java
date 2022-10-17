@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.service.model;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
