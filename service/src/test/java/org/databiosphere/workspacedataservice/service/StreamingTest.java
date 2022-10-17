@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.service;
 
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.IOException;
 import java.util.List;
@@ -11,7 +10,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.shared.model.OperationType.DELETE;
 import static org.databiosphere.workspacedataservice.shared.model.OperationType.UPSERT;
 
-@SpringBootTest
 class StreamingTest {
 
 	@Test

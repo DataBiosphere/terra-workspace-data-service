@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.springframework.boot.test.context.TestConfiguration;
