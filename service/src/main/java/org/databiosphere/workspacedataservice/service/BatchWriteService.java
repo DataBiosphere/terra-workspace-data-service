@@ -49,12 +49,10 @@ public class BatchWriteService {
 	private final int batchSize;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchWriteService.class);
-	private final ObjectMapper objectMapper;
 
-	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize, ObjectMapper objectMapper) {
+	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize) {
 		this.recordDao = recordDao;
 		this.batchSize = batchSize;
-		this.objectMapper = objectMapper;
 	}
 
 	public Map<String, DataTypeMapping> addOrUpdateColumnIfNeeded(UUID instanceId, RecordType recordType,
@@ -184,7 +182,7 @@ public class BatchWriteService {
 	@Transactional
 	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType) {
 		int recordsAffected = 0;
-		try (StreamingWriteHandler streamingWriteHandler = new StreamingWriteHandler(is, objectMapper)) {
+		try (StreamingWriteHandler streamingWriteHandler = new StreamingWriteHandler(is)) {
 			Map<String, DataTypeMapping> schema = null;
 			boolean firstUpsertBatch = true;
 			for (StreamingWriteHandler.WriteStreamInfo info = streamingWriteHandler.readRecords(batchSize); !info

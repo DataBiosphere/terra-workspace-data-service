@@ -4,8 +4,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.List;
 
 public class TestUtils {
