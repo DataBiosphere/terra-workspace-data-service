@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import org.apache.commons.csv.CSVFormat;
@@ -47,12 +48,15 @@ public class BatchWriteService {
 
 	private final int batchSize;
 
+	private final ObjectMapper objectMapper;
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchWriteService.class);
 
-	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize, DataTypeInferer inf) {
+	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize, DataTypeInferer inf, ObjectMapper objectMapper) {
 		this.recordDao = recordDao;
 		this.batchSize = batchSize;
 		this.inferer = inf;
+		this.objectMapper = objectMapper;
 	}
 
 	public Map<String, DataTypeMapping> addOrUpdateColumnIfNeeded(UUID instanceId, RecordType recordType,
@@ -182,7 +186,7 @@ public class BatchWriteService {
 	@Transactional
 	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType) {
 		int recordsAffected = 0;
-		try (StreamingWriteHandler streamingWriteHandler = new StreamingWriteHandler(is)) {
+		try (StreamingWriteHandler streamingWriteHandler = new StreamingWriteHandler(is, objectMapper)) {
 			Map<String, DataTypeMapping> schema = null;
 			boolean firstUpsertBatch = true;
 			for (StreamingWriteHandler.WriteStreamInfo info = streamingWriteHandler.readRecords(batchSize); !info

@@ -4,6 +4,8 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,7 +20,7 @@ public class TestUtils {
 				.putAttribute("attr2", RandomUtils.nextFloat()).putAttribute("attr3", "2022-11-01")
 				.putAttribute("attr4", RandomStringUtils.randomNumeric(5)).putAttribute("attr5", RandomUtils.nextLong())
 				.putAttribute("attr-dt", "2022-03-01T12:00:03").putAttribute("attr-json", "{\"foo\":\"bar\"}")
-				.putAttribute("attr-boolean", "TruE").putAttribute("z-array-of-number-double", List.of(99.9, 88, -77.1, 47, 47))
+				.putAttribute("attr-boolean", "TruE").putAttribute("z-array-of-number-double", List.of(new BigDecimal("99.9"), new BigInteger("88"), new BigDecimal("-77.1"), new BigInteger("47"), new BigInteger("47")))
 				.putAttribute("z-array-of-boolean", List.of("True", "False", false))
 				.putAttribute("z-array-of-number-long", "[1,2,3,4,5,80000001]")
 				.putAttribute("z-array-of-string", "[\"Ross\", \"Chandler\", \"Joey\"]")
@@ -36,14 +38,14 @@ public class TestUtils {
 	private static String getStringBySeed(int seed) {
 		return List.of("abc", "def", "ghi", "jkl", "mno", "pqr", "stu", "vwx").get(seed % 8);
 	}
-	private static int getIntBySeed(int seed) {
-		return List.of(3, 1, 4, 15, 9, 2, 6, 5).get(seed % 8);
+	private static BigInteger getIntBySeed(int seed) {
+		return new BigInteger(List.of(3, 1, 4, 15, 9, 2, 6, 5).get(seed % 8).toString());
 	}
-	private static float getFloatBySeed(int seed) {
+	private static BigDecimal getFloatBySeed(int seed) {
 		// In order ascending order: 6.626070e-34f, 1.602e-19f, 6.674e-11f, 1.4142f,
 		// 1.61803f, 2.7182f, 3.14159f, 2.99792448e8f
-		return List.of(3.14159f, 2.7182f, 1.4142f, 1.61803f, 6.674e-11f, 2.99792448e8f, 6.626070e-34f, 1.602e-19f)
-				.get(seed % 8);
+		return new BigDecimal(List.of(3.14159f, 2.7182f, 1.4142f, 1.61803f, 6.674e-11f, 2.99792448e8f, 6.626070e-34f, 1.602e-19f)
+				.get(seed % 8).toString());
 	}
 	private static String getDateBySeed(int seed) {
 		return List

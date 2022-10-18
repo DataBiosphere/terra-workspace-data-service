@@ -14,7 +14,7 @@ public enum DataTypeMapping {
 	STRING(null, "text", false, "?"),
 	JSON(null, "jsonb", false, "?::jsonb"),
 	NUMBER(null, "numeric", false, "?"),
-	ARRAY_OF_NUMBER(Double[].class, "numeric[]", true, "?::numeric[]"),
+	ARRAY_OF_NUMBER(String[].class, "numeric[]", true, "?::numeric[]"),
 	ARRAY_OF_DATE(String[].class, "date[]", true, "?::date[]"),
 	ARRAY_OF_DATE_TIME(String[].class, "timestamp with time zone[]", true, "?::timestamp with time zone[]"),
 	ARRAY_OF_STRING(String[].class, "text[]", true, "?"),

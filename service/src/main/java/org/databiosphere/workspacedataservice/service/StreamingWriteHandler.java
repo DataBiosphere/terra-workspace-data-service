@@ -3,8 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.shared.model.BatchOperation;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -23,10 +22,9 @@ public class StreamingWriteHandler implements Closeable {
 
 	private final InputStream inputStream;
 
-	public StreamingWriteHandler(InputStream inputStream) throws IOException {
+	public StreamingWriteHandler(InputStream inputStream, ObjectMapper objectMapper) throws IOException {
 		this.inputStream = inputStream;
-		JsonMapper mapper = JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS).build();
-		JsonFactory factory = new JsonFactory(mapper);
+		JsonFactory factory = new JsonFactory(objectMapper.copy());
 		parser = factory.createParser(inputStream);
 		if (parser.nextToken() != JsonToken.START_ARRAY) {
 			throw new IllegalArgumentException("Expected content to be an array");
