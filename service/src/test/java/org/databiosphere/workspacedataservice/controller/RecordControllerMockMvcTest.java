@@ -194,6 +194,7 @@ class RecordControllerMockMvcTest {
 	}
 
 	@Test
+	@Transactional
 	void uploadTsvAndVerifySchema() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
 				RecordControllerMockMvcTest.class.getResourceAsStream("/small-test.tsv"));
