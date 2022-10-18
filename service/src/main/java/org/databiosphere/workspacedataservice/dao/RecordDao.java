@@ -39,7 +39,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +50,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
@@ -376,22 +374,22 @@ public class RecordDao {
 	}
 
 	private Object getArrayValues(Object attVal, DataTypeMapping typeMapping) {
-		if (attVal instanceof ArrayList<?> valAsList) {
+		if (attVal instanceof List<?> valAsList) {
 			return getListAsArray(valAsList, typeMapping);
 		}
-		return inferer.getArrayOfType(attVal.toString(), typeMapping.getJavaType());
+		return inferer.getArrayOfType(attVal.toString(), typeMapping.getJavaArrayTypeForDbWrites());
 	}
 
-	private Object[] getListAsArray(ArrayList<?> attVal, DataTypeMapping typeMapping) {
+	private Object[] getListAsArray(List<?> attVal, DataTypeMapping typeMapping) {
 		switch (typeMapping){
 			case ARRAY_OF_STRING:
 			case ARRAY_OF_DATE:
 			case ARRAY_OF_DATE_TIME:
-				return attVal.toArray(new String[0]);
-			case ARRAY_OF_BOOLEAN:
-				return attVal.toArray(new Boolean[0]);
 			case ARRAY_OF_NUMBER:
 				return attVal.stream().map(Object::toString).toList().toArray(new String[0]);
+			case ARRAY_OF_BOOLEAN:
+				//accept all casings of True and False if they're strings
+				return attVal.stream().map(Object::toString).map(String::toLowerCase).toList().toArray(new String[0]);
 			default:
 				throw new IllegalArgumentException("Unhandled array type " + typeMapping);
 		}

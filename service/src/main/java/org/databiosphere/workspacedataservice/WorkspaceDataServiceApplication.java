@@ -33,7 +33,6 @@ public class WorkspaceDataServiceApplication {
 	public ObjectMapper objectMapper() {
 		JsonMapper mapper = JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
 				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-				.configure(DeserializationFeature.ACCEPT_FLOAT_AS_INT, false)
 				.findAndAddModules().build();
 		mapper.coercionConfigFor(LogicalType.Boolean).setCoercion(CoercionInputShape.Integer, CoercionAction.Fail);
 		mapper.coercionConfigFor(LogicalType.Float).setCoercion(CoercionInputShape.String, CoercionAction.Fail);

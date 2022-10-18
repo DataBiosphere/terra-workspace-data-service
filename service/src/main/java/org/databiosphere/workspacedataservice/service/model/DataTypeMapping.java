@@ -1,27 +1,25 @@
 package org.databiosphere.workspacedataservice.service.model;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public enum DataTypeMapping {
-	NULL(String.class, "text", false, "?"),
+	NULL(null, "text", false, "?"),
 	EMPTY_ARRAY(String[].class, "text", true, "?"),
-	BOOLEAN(Boolean.class, "boolean", false, "?"),
-	DATE(LocalDate.class, "date", false, "?"),
-	DATE_TIME(LocalDateTime.class, "timestamp with time zone", false, "?"),
-	STRING(String.class, "text", false, "?"),
-	JSON(String.class, "jsonb", false, "?::jsonb"),
-	NUMBER(Double.class, "numeric", false, "?"),
+	BOOLEAN(null, "boolean", false, "?"),
+	DATE(null, "date", false, "?"),
+	DATE_TIME(null, "timestamp with time zone", false, "?"),
+	STRING(null, "text", false, "?"),
+	JSON(null, "jsonb", false, "?::jsonb"),
+	NUMBER(null, "numeric", false, "?"),
 	ARRAY_OF_NUMBER(Double[].class, "numeric[]", true, "?::numeric[]"),
 	ARRAY_OF_DATE(String[].class, "date[]", true, "?::date[]"),
 	ARRAY_OF_DATE_TIME(String[].class, "timestamp with time zone[]", true, "?::timestamp with time zone[]"),
 	ARRAY_OF_STRING(String[].class, "text[]", true, "?"),
-	ARRAY_OF_BOOLEAN(Boolean[].class, "boolean[]", true, "?");
+	ARRAY_OF_BOOLEAN(Boolean[].class, "boolean[]", true, "?::boolean[]");
 
-	private Class javaType;
+	private Class javaArrayTypeForDbWrites;
 
 	private String postgresType;
 
@@ -36,7 +34,7 @@ public enum DataTypeMapping {
 	}
 
 	DataTypeMapping(Class javaType, String postgresType, boolean isArrayType, String writePlaceholder) {
-		this.javaType = javaType;
+		this.javaArrayTypeForDbWrites = javaType;
 		this.postgresType = postgresType;
 		this.isArrayType = isArrayType;
 		this.writePlaceholder = writePlaceholder;
@@ -45,8 +43,8 @@ public enum DataTypeMapping {
 	DataTypeMapping() {
 	}
 
-	public Class getJavaType() {
-		return javaType;
+	public Class getJavaArrayTypeForDbWrites() {
+		return javaArrayTypeForDbWrites;
 	}
 
 	public String getPostgresType() {

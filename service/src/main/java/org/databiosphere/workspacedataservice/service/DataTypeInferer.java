@@ -92,14 +92,17 @@ public class DataTypeInferer {
 		if (RelationUtils.isRelationValue(val)) {
 			return STRING;
 		}
-		//libreoffice at least uses left and right quotes which cause problems when we try to parse as JSON
-		sVal = sVal.replaceAll("[“”]", "\"");
 		// when we load from TSV, numbers are converted to strings, we need to go back
 		// to numbers
 		if (isNumericValue(sVal)) {
 			return NUMBER;
 		}
-		return getTypeMappingFromString(sVal);
+		return getTypeMappingFromString(replaceLeftRightQuotes(sVal));
+	}
+
+	//libreoffice at least uses left and right quotes which cause problems when we try to parse as JSON
+	private String replaceLeftRightQuotes(String val){
+		return val.replaceAll("[“”]", "\"");
 	}
 
 	private DataTypeMapping getTypeMappingFromString(String sVal) {
@@ -191,7 +194,6 @@ public class DataTypeInferer {
 		}
 	}
 
-
 	public boolean isValidJson(String val) {
 		JsonNode jsonNode = parseToJsonNode(val);
 		return jsonNode != null && jsonNode.isObject();
@@ -221,11 +223,12 @@ public class DataTypeInferer {
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Double[].class))){
 			return ARRAY_OF_NUMBER;
 		}
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, LocalDate[].class))){
-			return ARRAY_OF_DATE;
-		}
+		//order matters an array of LocalDateTime will be parsed to LocalDate
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, LocalDateTime[].class))){
 			return ARRAY_OF_DATE_TIME;
+		}
+		if(ArrayUtils.isNotEmpty(getArrayOfType(val, LocalDate[].class))){
+			return ARRAY_OF_DATE;
 		}
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, String[].class))){
 			return ARRAY_OF_STRING;
@@ -238,7 +241,7 @@ public class DataTypeInferer {
 
 	public <T> T[] getArrayOfType(String val, Class<T[]> clazz) {
 		try {
-			return objectMapper.readValue(val.replaceAll("[“”]", "\""), clazz);
+			return objectMapper.readValue(replaceLeftRightQuotes(val), clazz);
 		} catch (JsonProcessingException e) {
 			return null;
 		}

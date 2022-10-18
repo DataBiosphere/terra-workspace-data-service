@@ -223,6 +223,10 @@ class RecordControllerMockMvcTest {
 		assertEquals("ARRAY_OF_NUMBER", schema.attributes().get(9).datatype());
 		assertEquals("z_z_boolean_array", schema.attributes().get(10).name());
 		assertEquals("ARRAY_OF_BOOLEAN", schema.attributes().get(10).datatype());
+		assertEquals("zz_array_of_date", schema.attributes().get(11).name());
+		assertEquals("ARRAY_OF_DATE", schema.attributes().get(11).datatype());
+		assertEquals("zz_array_of_datetime", schema.attributes().get(12).name());
+		assertEquals("ARRAY_OF_DATE_TIME", schema.attributes().get(12).datatype());
 		MockMultipartFile alter = new MockMultipartFile("records", "change_json_to_text.tsv",
 				MediaType.TEXT_PLAIN_VALUE, "sys_name\tjson\na\tfoo\n".getBytes());
 		mockMvc.perform(
@@ -615,6 +619,24 @@ class RecordControllerMockMvcTest {
 				RecordTypeSchema.class);
 
 		assertEquals(expected, actual);
+	}
+
+	@Test
+	@Transactional
+	void incompatibleArrayWritesShouldChangeToStringArray() throws Exception {
+		String recordType = "test-type";
+		List<Record> someRecords = createSomeRecords(recordType, 1);
+		RecordRequest recordRequest = new RecordRequest(someRecords.get(0).getAttributes().putAttribute("array-of-date", List.of("should switch to array of string")));
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						recordType, "new_id").content(mapper.writeValueAsString(recordRequest))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().is2xxSuccessful());
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, recordType))
+				.andExpect(status().isOk()).andReturn();
+		RecordTypeSchema actual = mapper.readValue(mvcResult.getResponse().getContentAsString(),
+				RecordTypeSchema.class);
+		assertEquals("ARRAY_OF_STRING", actual.attributes().get(0).datatype());
+
 	}
 
 	@Test
