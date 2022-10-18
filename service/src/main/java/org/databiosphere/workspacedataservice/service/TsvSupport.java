@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.QuoteMode;
@@ -7,6 +8,7 @@ import org.databiosphere.workspacedataservice.service.model.ReservedNames;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -31,9 +33,12 @@ public class TsvSupport {
 		private final CSVPrinter csvPrinter;
 		private final List<String> attributeNames;
 
-		public RecordEmitter(CSVPrinter csvPrinter, List<String> attributeNames) {
+		private final ObjectMapper objectMapper;
+
+		public RecordEmitter(CSVPrinter csvPrinter, List<String> attributeNames, ObjectMapper objectMapper) {
 			this.csvPrinter = csvPrinter;
 			this.attributeNames = attributeNames;
+			this.objectMapper = objectMapper;
 		}
 
 		@Override
@@ -41,7 +46,8 @@ public class TsvSupport {
 			try {
 				csvPrinter.print(rcd.getId());
 				for (String attributeName : attributeNames) {
-					csvPrinter.print(rcd.getAttributeValue(attributeName));
+					Object attributeValue = rcd.getAttributeValue(attributeName);
+					csvPrinter.print(attributeValue != null && attributeValue.getClass().isArray() ? objectMapper.writeValueAsString(attributeValue) : attributeValue);
 				}
 				csvPrinter.println();
 			} catch (IOException e) {

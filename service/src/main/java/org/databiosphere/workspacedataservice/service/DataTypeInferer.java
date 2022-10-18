@@ -9,7 +9,9 @@ import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 
+import java.math.BigInteger;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
@@ -65,12 +67,6 @@ public class DataTypeInferer {
 		if (existing.isArrayType() && newMapping.isArrayType() && Set.of(existing, newMapping).contains(EMPTY_ARRAY)) {
 			return newMapping != EMPTY_ARRAY ? newMapping : existing;
 		}
-		if (Set.of(newMapping, existing).equals(Set.of(LONG, DOUBLE))) {
-			return DOUBLE;
-		}
-		if(Set.of(newMapping, existing).equals(Set.of(ARRAY_OF_DOUBLE, ARRAY_OF_LONG))){
-			return ARRAY_OF_DOUBLE;
-		}
 		if(newMapping.isArrayType() && existing.isArrayType()){
 			return ARRAY_OF_STRING;
 		}
@@ -100,11 +96,8 @@ public class DataTypeInferer {
 		sVal = sVal.replaceAll("[“”]", "\"");
 		// when we load from TSV, numbers are converted to strings, we need to go back
 		// to numbers
-		if (isLongValue(sVal)) {
-			return LONG;
-		}
-		if (isDoubleValue(sVal)) {
-			return DOUBLE;
+		if (isNumericValue(sVal)) {
+			return NUMBER;
 		}
 		return getTypeMappingFromString(sVal);
 	}
@@ -150,12 +143,8 @@ public class DataTypeInferer {
 			return NULL;
 		}
 
-		if (val instanceof Long || val instanceof Integer) {
-			return LONG;
-		}
-
-		if (val instanceof Double || val instanceof Float) {
-			return DOUBLE;
+		if (val instanceof Integer || val instanceof Double || val instanceof Long || val instanceof BigInteger) {
+			return NUMBER;
 		}
 
 		if (val instanceof Boolean) {
@@ -185,18 +174,9 @@ public class DataTypeInferer {
 		throw new IllegalArgumentException("Unhandled inbound data source " + dataSource);
 	}
 
-	public boolean isLongValue(String sVal) {
+	public boolean isNumericValue(String sVal) {
 		try {
-			Long.parseLong(sVal);
-			return true;
-		} catch (NumberFormatException e) {
-			return false;
-		}
-	}
-
-	public boolean isDoubleValue(String sVal) {
-		try {
-			Double.parseDouble(sVal);
+			Double.valueOf(sVal);
 			return true;
 		} catch (NumberFormatException e) {
 			return false;
@@ -210,6 +190,7 @@ public class DataTypeInferer {
 			return null;
 		}
 	}
+
 
 	public boolean isValidJson(String val) {
 		JsonNode jsonNode = parseToJsonNode(val);
@@ -237,11 +218,14 @@ public class DataTypeInferer {
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Boolean[].class))){
 			return ARRAY_OF_BOOLEAN;
 		}
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Long[].class))){
-			return ARRAY_OF_LONG;
-		}
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Double[].class))){
-			return ARRAY_OF_DOUBLE;
+			return ARRAY_OF_NUMBER;
+		}
+		if(ArrayUtils.isNotEmpty(getArrayOfType(val, LocalDate[].class))){
+			return ARRAY_OF_DATE;
+		}
+		if(ArrayUtils.isNotEmpty(getArrayOfType(val, LocalDateTime[].class))){
+			return ARRAY_OF_DATE_TIME;
 		}
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, String[].class))){
 			return ARRAY_OF_STRING;
@@ -254,7 +238,7 @@ public class DataTypeInferer {
 
 	public <T> T[] getArrayOfType(String val, Class<T[]> clazz) {
 		try {
-			return objectMapper.readValue(val, clazz);
+			return objectMapper.readValue(val.replaceAll("[“”]", "\""), clazz);
 		} catch (JsonProcessingException e) {
 			return null;
 		}

@@ -27,7 +27,7 @@ class DataTypeInfererTest {
 		Map<String, DataTypeMapping> expected = new HashMap<>();
 		expected.put("array_of_string", DataTypeMapping.ARRAY_OF_STRING);
 		expected.put("string_val", DataTypeMapping.STRING);
-		expected.put("int_val", DataTypeMapping.LONG);
+		expected.put("int_val", DataTypeMapping.NUMBER);
 		expected.put("json_val", DataTypeMapping.JSON);
 		expected.put("date_val", DataTypeMapping.DATE);
 		expected.put("date_time_val", DataTypeMapping.DATE_TIME);
@@ -38,10 +38,8 @@ class DataTypeInfererTest {
 
 	@Test
 	void selectBestTypes() {
-		assertThat(inferer.selectBestType(DataTypeMapping.LONG, DataTypeMapping.DOUBLE))
-				.as("longs can be expressed as doubles but not the other way around").isEqualTo(DataTypeMapping.DOUBLE);
-		assertThat(inferer.selectBestType(DataTypeMapping.NULL, DataTypeMapping.DOUBLE))
-				.as("null values should not affect typing for non null values").isEqualTo(DataTypeMapping.DOUBLE);
+		assertThat(inferer.selectBestType(DataTypeMapping.NULL, DataTypeMapping.NUMBER))
+				.as("null values should not affect typing for non null values").isEqualTo(DataTypeMapping.NUMBER);
 		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.STRING))
 				.as("if types are identical, return the type").isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.BOOLEAN))
@@ -53,11 +51,11 @@ class DataTypeInfererTest {
 		Map<String, DataTypeMapping> result = inferer.inferTypes(getSomeTsvAttrs(), InBoundDataSource.TSV);
 		Map<String, DataTypeMapping> expected = new HashMap<>();
 		expected.put("string_val", DataTypeMapping.STRING);
-		expected.put("int_val", DataTypeMapping.LONG);
+		expected.put("int_val", DataTypeMapping.NUMBER);
 		expected.put("json_val", DataTypeMapping.JSON);
 		expected.put("date_val", DataTypeMapping.DATE);
 		expected.put("date_time_val", DataTypeMapping.DATE_TIME);
-		expected.put("number_or_string", DataTypeMapping.LONG);
+		expected.put("number_or_string", DataTypeMapping.NUMBER);
 
 		assertEquals(expected, result);
 	}
@@ -80,7 +78,7 @@ class DataTypeInfererTest {
 		Record second = new Record("second", RecordType.valueOf("test-inference"), secondAttrs);
 		Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(List.of(first, second), InBoundDataSource.TSV);
 		assertThat(inferredSchema).as("Should still get BOOLEAN and LONG for types despite null values in one record")
-				.isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.LONG));
+				.isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.NUMBER));
 	}
 
 	@Test
@@ -93,7 +91,7 @@ class DataTypeInfererTest {
 		Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(List.of(first, second),
 				InBoundDataSource.JSON);
 		assertThat(inferredSchema).as("Should still get BOOLEAN and LONG for types despite null values in one record")
-				.isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.LONG));
+				.isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.NUMBER));
 	}
 
 	@Test
@@ -108,9 +106,9 @@ class DataTypeInfererTest {
 		assertThat(inferer.inferType("12345", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.inferType("12345A", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.inferType("[\"Hello!\"]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
-		assertThat(inferer.inferType("[12345]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_LONG);
+		assertThat(inferer.inferType("[12345]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
 		assertThat(inferer.inferType("[true, false, true]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_BOOLEAN);
-		assertThat(inferer.inferType("[11.1, 12, 14]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_DOUBLE);
+		assertThat(inferer.inferType("[11.1, 12, 14]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
 	}
 
 	@Test
@@ -121,7 +119,7 @@ class DataTypeInfererTest {
 		assertThat(inferer.inferType("[\"11\", 99, \"foo\"]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
 		assertThat(inferer.inferType("", InBoundDataSource.TSV)).isEqualTo(DataTypeMapping.NULL);
 		assertThat(inferer.inferType("", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
-		assertThat(inferer.inferType("[11, 99, -3.14]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_DOUBLE);
+		assertThat(inferer.inferType("[11, 99, -3.14]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
 		assertThat(inferer.inferType("[11, 99, -3.14, 09]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.inferType("[]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.EMPTY_ARRAY);
 	}

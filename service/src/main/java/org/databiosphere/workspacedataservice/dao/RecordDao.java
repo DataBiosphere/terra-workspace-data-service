@@ -39,6 +39,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
@@ -353,17 +356,14 @@ public class RecordDao {
 			return RelationUtils.getRelationValue(attVal);
 		}
 		if (attVal instanceof String sVal) {
-			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.LONG, inferer::isLongValue, sVal)) {
-				return Long.parseLong(sVal);
-			}
-			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.DOUBLE, inferer::isDoubleValue, sVal)) {
-				return Double.parseDouble(sVal);
+			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.NUMBER, inferer::isNumericValue, sVal)) {
+				return Double.valueOf(sVal);
 			}
 			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.BOOLEAN, inferer::isValidBoolean, sVal)) {
 				return Boolean.parseBoolean(sVal);
 			}
 			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.DATE, inferer::isValidDate, sVal)) {
-				return LocalDate.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE);
+				return LocalDate.parse(sVal, ISO_LOCAL_DATE);
 			}
 			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.DATE_TIME, inferer::isValidDateTime, sVal)) {
 				return LocalDateTime.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
@@ -385,21 +385,13 @@ public class RecordDao {
 	private Object[] getListAsArray(ArrayList<?> attVal, DataTypeMapping typeMapping) {
 		switch (typeMapping){
 			case ARRAY_OF_STRING:
+			case ARRAY_OF_DATE:
+			case ARRAY_OF_DATE_TIME:
 				return attVal.toArray(new String[0]);
 			case ARRAY_OF_BOOLEAN:
 				return attVal.toArray(new Boolean[0]);
-			case ARRAY_OF_DOUBLE:
-				List<Object> doubleList = attVal.stream().map(i -> {
-					if (i instanceof Integer){
-						return (double) ((Integer) i).intValue();
-					}
-					else {
-						return i;
-					}
-				}).toList();
-				return doubleList.toArray(new Double[0]);
-			case ARRAY_OF_LONG:
-				return attVal.toArray(new Long[0]);
+			case ARRAY_OF_NUMBER:
+				return attVal.stream().map(Object::toString).toList().toArray(new String[0]);
 			default:
 				throw new IllegalArgumentException("Unhandled array type " + typeMapping);
 		}
@@ -433,8 +425,9 @@ public class RecordDao {
 				+ (schema.size() == 1 ? "do nothing" : "do update set " + genColUpsertUpdates(colNames));
 	}
 
+
 	private String getInsertParamList(List<DataTypeMapping> colTypes) {
-		return colTypes.stream().map(type -> type.getPostgresType().equalsIgnoreCase("jsonb") ? "? :: jsonb" : "?")
+		return colTypes.stream().map(DataTypeMapping::getWritePlaceholder)
 				.collect(Collectors.joining(", "));
 	}
 
