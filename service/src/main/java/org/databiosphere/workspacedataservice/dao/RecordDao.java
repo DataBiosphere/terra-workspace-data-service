@@ -382,10 +382,7 @@ public class RecordDao {
 
 	private Object[] getListAsArray(List<?> attVal, DataTypeMapping typeMapping) {
 		switch (typeMapping){
-			case ARRAY_OF_STRING:
-			case ARRAY_OF_DATE:
-			case ARRAY_OF_DATE_TIME:
-			case ARRAY_OF_NUMBER:
+			case ARRAY_OF_STRING, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_NUMBER:
 				return attVal.stream().map(Object::toString).toList().toArray(new String[0]);
 			case ARRAY_OF_BOOLEAN:
 				//accept all casings of True and False if they're strings
