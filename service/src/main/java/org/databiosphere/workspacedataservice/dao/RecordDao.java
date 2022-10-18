@@ -385,7 +385,8 @@ public class RecordDao {
 				return attVal.stream().map(Object::toString).toList().toArray(new String[0]);
 			case ARRAY_OF_BOOLEAN:
 				//accept all casings of True and False if they're strings
-				return attVal.stream().map(Object::toString).map(String::toLowerCase).toList().toArray(new String[0]);
+				return attVal.stream().map(Object::toString).map(String::toLowerCase)
+						.map(Boolean::parseBoolean).toList().toArray(new Boolean[0]);
 			default:
 				throw new IllegalArgumentException("Unhandled array type " + typeMapping);
 		}

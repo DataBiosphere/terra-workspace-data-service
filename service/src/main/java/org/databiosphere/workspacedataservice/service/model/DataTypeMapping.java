@@ -18,7 +18,7 @@ public enum DataTypeMapping {
 	ARRAY_OF_DATE(String[].class, "date[]", true, "?::date[]"),
 	ARRAY_OF_DATE_TIME(String[].class, "timestamp with time zone[]", true, "?::timestamp with time zone[]"),
 	ARRAY_OF_STRING(String[].class, "text[]", true, "?"),
-	ARRAY_OF_BOOLEAN(Boolean[].class, "boolean[]", true, "?::boolean[]");
+	ARRAY_OF_BOOLEAN(Boolean[].class, "boolean[]", true, "?");
 
 	private Class javaArrayTypeForDbWrites;
 
