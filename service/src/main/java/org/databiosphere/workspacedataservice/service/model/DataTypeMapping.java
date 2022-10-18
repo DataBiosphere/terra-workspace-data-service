@@ -1,12 +1,13 @@
 package org.databiosphere.workspacedataservice.service.model;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
 public enum DataTypeMapping {
 	NULL(null, "text", false, "?"),
-	EMPTY_ARRAY(String[].class, "text", true, "?"),
+	EMPTY_ARRAY(String[].class, "text[]", true, "?"),
 	BOOLEAN(null, "boolean", false, "?"),
 	DATE(null, "date", false, "?"),
 	DATE_TIME(null, "timestamp with time zone", false, "?"),
@@ -30,7 +31,7 @@ public enum DataTypeMapping {
 	private static final Map<String, DataTypeMapping> MAPPING_BY_PG_TYPE = new HashMap<>();
 
 	static {
-		Arrays.stream(DataTypeMapping.values()).forEach(e -> MAPPING_BY_PG_TYPE.put(e.getPostgresType(), e));
+		Arrays.stream(DataTypeMapping.values()).filter(v -> !EnumSet.of(EMPTY_ARRAY, NULL).contains(v)).forEach(e -> MAPPING_BY_PG_TYPE.put(e.getPostgresType(), e));
 	}
 
 	DataTypeMapping(Class javaType, String postgresType, boolean isArrayType, String writePlaceholder) {
