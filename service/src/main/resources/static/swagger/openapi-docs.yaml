@@ -617,11 +617,13 @@ components:
           "stringAttr": "string",
           "numericAttr": 123,
           "booleanAttr": true,
+          "date": "2021-01-22"
           "relationAttr": "terra-wds:/target-type/target-id",
           "arrayString": ["green", "read"],
           "arrayBoolean": [true, false],
-          "arrayDouble": [12821.112, 0.12121211],
-          "arrayLong": [1,2,3]
+          "arrayNumber": [12821.112, 0.12121211, 18],
+          "arrayDate": ["2012-09-01", "2022-01-01"],
+          "arrayDateTime": ["2021-03-03T19:00:00"]
         }
     RecordAttributeDefinition:
       required:
