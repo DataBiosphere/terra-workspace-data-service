@@ -50,7 +50,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
@@ -361,7 +360,7 @@ public class RecordDao {
 				return Boolean.parseBoolean(sVal);
 			}
 			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.DATE, inferer::isValidDate, sVal)) {
-				return LocalDate.parse(sVal, ISO_LOCAL_DATE);
+				return LocalDate.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE);
 			}
 			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.DATE_TIME, inferer::isValidDateTime, sVal)) {
 				return LocalDateTime.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
