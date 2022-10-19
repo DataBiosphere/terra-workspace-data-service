@@ -44,5 +44,5 @@ jobs:
         uses: broadinstitute/gh-action-pypi-publish@master
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
-          packages_dir: ./data-repo-client/dist
+          packages_dir: ./wds-client/dist
           skip_existing: true
