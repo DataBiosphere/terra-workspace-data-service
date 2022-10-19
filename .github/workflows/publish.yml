@@ -3,9 +3,6 @@ on:
   create:
       tags:
         - '*'
-  push:
-    branches:
-      - aj-628-python-client
 
 jobs:
   publish-job:
@@ -25,15 +22,15 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
         
-     # - name: Build all projects without running tests
-      #  run: ./gradlew --build-cache build -x test
+      - name: Build all projects without running tests
+        run: ./gradlew --build-cache build -x test
 
-    #  - name: Publish API client to Artifactory
-     #   run: ./gradlew --build-cache :client:artifactoryPublish
-      #  env:
-       #   ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-        #  ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
-         # ARTIFACTORY_REPO_KEY: libs-snapshot-local
+      - name: Publish API client to Artifactory
+        run: ./gradlew --build-cache :client:artifactoryPublish
+        env:
+          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+          ARTIFACTORY_REPO_KEY: libs-snapshot-local
   python-client-job:
       uses: ./.github/workflows/release-python-client.yaml
       secrets:
