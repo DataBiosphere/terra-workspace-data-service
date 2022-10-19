@@ -2,7 +2,11 @@ name: Publish Python client to PyPI
 
 on:
   workflow_call:
-
+    secrets:
+      GITHUB_TOKEN:
+        required: true
+      PYPI_API_TOKEN:
+        required: true
 jobs:
   build-n-publish:
     name: Build and publish Python client to PyPI
