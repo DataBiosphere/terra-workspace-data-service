@@ -28,11 +28,11 @@ jobs:
       - name: Build all projects without running tests
         run: ./gradlew --build-cache build -x test
 
-      - name: Publish API client to Artifactory
-        run: ./gradlew --build-cache :client:artifactoryPublish
-        env:
-          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
-          ARTIFACTORY_REPO_KEY: libs-snapshot-local
+    #  - name: Publish API client to Artifactory
+     #   run: ./gradlew --build-cache :client:artifactoryPublish
+      #  env:
+       #   ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+        #  ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+         # ARTIFACTORY_REPO_KEY: libs-snapshot-local
   python-client-job:
       uses: DataBiosphere/terra-workspace-data-service/.github/workflows/release-python-client.yaml@main
