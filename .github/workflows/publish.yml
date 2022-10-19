@@ -31,3 +31,5 @@ jobs:
           ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
           ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
           ARTIFACTORY_REPO_KEY: libs-snapshot-local
+      - name: Publish Python client
+        uses: DataBiosphere/terra-workspace-data-service/.github/workflows/release-pythonclient.yaml@main
