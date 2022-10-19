@@ -40,3 +40,9 @@ jobs:
         working-directory: ./wds-client
         run: >-
           python -m build --sdist --wheel --outdir dist/ .
+      - name: Publish distribution to PyPI
+        uses: broadinstitute/gh-action-pypi-publish@master
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages_dir: ./data-repo-client/dist
+          skip_existing: true
