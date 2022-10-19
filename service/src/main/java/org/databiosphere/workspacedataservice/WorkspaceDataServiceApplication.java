@@ -27,8 +27,7 @@ public class WorkspaceDataServiceApplication {
 	@Bean
 	public ObjectMapper objectMapper() {
 		return JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
-				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-				.findAndAddModules().build();
+				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false).findAndAddModules().build();
 	}
 
 	@Bean
@@ -71,7 +70,9 @@ public class WorkspaceDataServiceApplication {
 		return new WebMvcConfigurer() {
 			@Override
 			public void addCorsMappings(@NonNull CorsRegistry registry) {
-				registry.addMapping("/**").allowedOrigins("*");
+				registry.addMapping("/**").allowedMethods("DELETE", "GET", "HEAD", "PATCH", "POST", "PUT")
+						.allowedOrigins("*");
+
 			}
 
 			@Override
