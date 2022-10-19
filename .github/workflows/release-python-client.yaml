@@ -4,7 +4,7 @@ on:
   workflow_dispatch: {}
   push:
     branches:
-      - aj-628-python-client
+      - main
 
 jobs:
   build-n-publish:
