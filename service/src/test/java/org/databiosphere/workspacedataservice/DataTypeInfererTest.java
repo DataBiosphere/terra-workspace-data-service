@@ -3,6 +3,8 @@ package org.databiosphere.workspacedataservice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
@@ -44,6 +46,10 @@ class DataTypeInfererTest {
 				.as("if types are identical, return the type").isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.BOOLEAN))
 				.as("should generalize to string/text type").isEqualTo(DataTypeMapping.STRING);
+		assertThat(inferer.selectBestType(DataTypeMapping.DATE, DataTypeMapping.DATE_TIME))
+				.as("should convert date to datetime").isEqualTo(DataTypeMapping.DATE_TIME);
+		assertThat(inferer.selectBestType(DataTypeMapping.ARRAY_OF_DATE, DataTypeMapping.ARRAY_OF_DATE_TIME))
+				.as("should convert array of date to array of datetime").isEqualTo(DataTypeMapping.ARRAY_OF_DATE_TIME);
 	}
 
 	@Test
