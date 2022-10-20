@@ -342,7 +342,7 @@ class RecordControllerMockMvcTest {
 		MockHttpServletResponse res = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, "record_0")).andExpect(status().isOk()).andReturn().getResponse();
 		RecordResponse recordResponse = mapper.readValue(res.getContentAsString(), RecordResponse.class);
-		assertEquals(recordResponse.recordId(), "record_0");
+		assertEquals("record_0", recordResponse.recordId());
 		assertEquals("[1776-07-04, 1999-12-31]", recordResponse.recordAttributes().getAttributeValue("array-of-date").toString());
 		assertEquals("[2021-01-06T13:30:00, 1980-10-31T23:59:00]", recordResponse.recordAttributes().getAttributeValue("array-of-datetime").toString());
 	}
