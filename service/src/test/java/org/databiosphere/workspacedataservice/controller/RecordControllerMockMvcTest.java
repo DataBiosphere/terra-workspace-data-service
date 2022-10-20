@@ -176,7 +176,6 @@ class RecordControllerMockMvcTest {
 
 		actual = mapper.readValue(mvcResult.getResponse().getContentAsString(),
 				RecordTypeSchema.class);
-		//type should change
 		assertEquals("ARRAY_OF_NUMBER", actual.attributes().get(0).datatype());
 	}
 

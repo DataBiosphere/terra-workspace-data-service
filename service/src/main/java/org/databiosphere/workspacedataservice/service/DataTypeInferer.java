@@ -206,11 +206,16 @@ public class DataTypeInferer {
 
 	private <T> DataTypeMapping findArrayType(List<T> list){
 		DataTypeMapping bestMapping = null;
-		for (Object o : list) {
-			if(bestMapping == null){
-				bestMapping = inferType(o, InBoundDataSource.JSON);
-			} else {
-				bestMapping = selectBestType(bestMapping, inferType(o, InBoundDataSource.JSON));
+		// find the distinct inferred types from the input
+		List<DataTypeMapping> inferredTypes = list.stream()
+				.map(item -> inferType(item, InBoundDataSource.JSON))
+				.distinct()
+				.toList();
+		if (inferredTypes.size() == 1) {
+			bestMapping = inferredTypes.get(0);
+		} else {
+			for (DataTypeMapping type : inferredTypes) {
+				bestMapping = selectBestType(bestMapping, type);
 			}
 		}
 		return DataTypeMapping.getArrayTypeForBase(bestMapping);
