@@ -3,6 +3,8 @@ package org.databiosphere.workspacedataservice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -92,7 +94,7 @@ class DataTypeInfererTest {
 		RecordAttributes firstAttrs = RecordAttributes.empty().putAttribute("boolean", null).putAttribute("long", null);
 		Record first = new Record("first", RecordType.valueOf("test-inference"), firstAttrs);
 		RecordAttributes secondAttrs = RecordAttributes.empty().putAttribute("boolean", "true").putAttribute("long",
-				-999999);
+				new BigInteger("-999999"));
 		Record second = new Record("second", RecordType.valueOf("test-inference"), secondAttrs);
 		Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(List.of(first, second),
 				InBoundDataSource.JSON);
@@ -132,7 +134,7 @@ class DataTypeInfererTest {
 
 	private static RecordAttributes getSomeAttrs() {
 		return new RecordAttributes(
-				Map.of("int_val", 4747, "string_val", "Abracadabra Open Sesame", "json_val", "{\"list\": [\"a\", \"b\"]}",
+				Map.of("int_val", new BigDecimal("4747"), "string_val", "Abracadabra Open Sesame", "json_val", "{\"list\": [\"a\", \"b\"]}",
 						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00", "number_or_string", "47", "array_of_string", List.of("red", "yellow")));
 	}
 

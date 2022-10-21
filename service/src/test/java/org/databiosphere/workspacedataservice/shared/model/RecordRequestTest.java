@@ -7,6 +7,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.math.BigInteger;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -21,7 +22,7 @@ public class RecordRequestTest {
 	@Test
 	void testJsonDeserialization() throws JsonProcessingException {
 		RecordAttributes recordAttributes = new RecordAttributes(
-				Map.of("foo", "bar", "num", 123, "bool", true, "anotherstring", "hello world"));
+				Map.of("foo", "bar", "num", new BigInteger("123"), "bool", true, "anotherstring", "hello world"));
 
 		RecordRequest expected = new RecordRequest(recordAttributes);
 

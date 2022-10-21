@@ -29,6 +29,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -89,9 +90,10 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void storeLargeIntegerValue() throws Exception {
-		StringBuilder tsvContent = new StringBuilder("sys_name\tbigint\n");
+		StringBuilder tsvContent = new StringBuilder("sys_name\tbigint\tbigfloat\n");
 		String bigIntValue = "11111111111111111111111111111111";
-		tsvContent.append(1 + "\t" + bigIntValue + "\n");
+		String bigFloatValue = "11111111111111111111111111111111.2222222222";
+		tsvContent.append(1 + "\t" + bigIntValue + "\t" + bigFloatValue +"\n");
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
 
@@ -102,7 +104,8 @@ class RecordControllerMockMvcTest {
 		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, "1")).andReturn();
 		RecordResponse recordResponse = mapper.readValue(mvcResult.getResponse().getContentAsString(), RecordResponse.class);
-		assertNotEquals(new BigInteger(bigIntValue), recordResponse.recordAttributes().getAttributeValue("bigint"));
+		assertEquals(new BigInteger(bigIntValue), recordResponse.recordAttributes().getAttributeValue("bigint"));
+		assertEquals(new BigDecimal(bigFloatValue), recordResponse.recordAttributes().getAttributeValue("bigfloat"));
 	}
 
 	@Test
@@ -194,7 +197,6 @@ class RecordControllerMockMvcTest {
 	}
 
 	@Test
-	@Transactional
 	void uploadTsvAndVerifySchema() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
 				RecordControllerMockMvcTest.class.getResourceAsStream("/small-test.tsv"));

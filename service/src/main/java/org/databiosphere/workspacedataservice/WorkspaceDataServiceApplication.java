@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -32,6 +34,9 @@ public class WorkspaceDataServiceApplication {
 	public ObjectMapper objectMapper() {
 		JsonMapper mapper = JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
 				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+				.configure(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN, true)
+				.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
+				.configure(DeserializationFeature.USE_BIG_INTEGER_FOR_INTS, true)
 				.findAndAddModules().build();
 		mapper.coercionConfigFor(LogicalType.Boolean).setCoercion(CoercionInputShape.Integer, CoercionAction.Fail);
 		mapper.coercionConfigFor(LogicalType.Float).setCoercion(CoercionInputShape.String, CoercionAction.Fail);
