@@ -3,9 +3,6 @@ on:
   create:
       tags:
         - '*'
-  push:
-    branches:
-      - aj-628-python-client
 
 jobs:
   publish-job:
