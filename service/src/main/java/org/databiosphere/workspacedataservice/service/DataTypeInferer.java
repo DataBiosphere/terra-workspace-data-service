@@ -3,12 +3,15 @@ package org.databiosphere.workspacedataservice.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 
+import java.math.BigInteger;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
@@ -20,7 +23,11 @@ import static org.databiosphere.workspacedataservice.service.model.DataTypeMappi
 
 public class DataTypeInferer {
 
-	private ObjectMapper objectMapper = new ObjectMapper();
+	private final ObjectMapper objectMapper;
+
+	public DataTypeInferer(ObjectMapper mapper) {
+		this.objectMapper = mapper;
+	}
 
 	public Map<String, DataTypeMapping> inferTypes(RecordAttributes updatedAtts, InBoundDataSource dataSource) {
 		Map<String, DataTypeMapping> result = new HashMap<>();
@@ -57,8 +64,17 @@ public class DataTypeInferer {
 		if (newMapping == NULL || existing == NULL) {
 			return newMapping != NULL ? newMapping : existing;
 		}
-		if (Set.of(newMapping, existing).equals(Set.of(LONG, DOUBLE))) {
-			return DOUBLE;
+		if (existing.isArrayType() && newMapping.isArrayType() && Set.of(existing, newMapping).contains(EMPTY_ARRAY)) {
+			return newMapping != EMPTY_ARRAY ? newMapping : existing;
+		}
+		if(newMapping == DATE_TIME && existing == DATE){
+			return DATE_TIME;
+		}
+		if(newMapping == ARRAY_OF_DATE_TIME && existing == ARRAY_OF_DATE){
+			return ARRAY_OF_DATE_TIME;
+		}
+		if(newMapping.isArrayType() && existing.isArrayType()) {
+			return ARRAY_OF_STRING;
 		}
 		return STRING;
 	}
@@ -84,13 +100,15 @@ public class DataTypeInferer {
 		}
 		// when we load from TSV, numbers are converted to strings, we need to go back
 		// to numbers
-		if (isLongValue(sVal)) {
-			return LONG;
+		if (isNumericValue(sVal)) {
+			return NUMBER;
 		}
-		if (isDoubleValue(sVal)) {
-			return DOUBLE;
-		}
-		return getTypeMappingFromString(sVal);
+		return getTypeMappingFromString(replaceLeftRightQuotes(sVal));
+	}
+
+	//libreoffice at least uses left and right quotes which cause problems when we try to parse as JSON
+	private String replaceLeftRightQuotes(String val){
+		return val.replaceAll("[“”]", "\"");
 	}
 
 	private DataTypeMapping getTypeMappingFromString(String sVal) {
@@ -105,6 +123,9 @@ public class DataTypeInferer {
 		}
 		if (isValidJson(sVal)) {
 			return JSON;
+		}
+		if(isArray(sVal)){
+			return findArrayTypeFromJson(sVal);
 		}
 		return STRING;
 	}
@@ -131,12 +152,8 @@ public class DataTypeInferer {
 			return NULL;
 		}
 
-		if (val instanceof Long || val instanceof Integer) {
-			return LONG;
-		}
-
-		if (val instanceof Double || val instanceof Float) {
-			return DOUBLE;
+		if (val instanceof Integer || val instanceof Double || val instanceof Long || val instanceof BigInteger) {
+			return NUMBER;
 		}
 
 		if (val instanceof Boolean) {
@@ -145,6 +162,9 @@ public class DataTypeInferer {
 
 		if (RelationUtils.isRelationValue(val)) {
 			return STRING;
+		}
+		if(val instanceof List<?> listVal){
+			return findArrayType(listVal);
 		}
 
 		return getTypeMappingFromString(val.toString());
@@ -163,30 +183,78 @@ public class DataTypeInferer {
 		throw new IllegalArgumentException("Unhandled inbound data source " + dataSource);
 	}
 
-	public boolean isLongValue(String sVal) {
+	public boolean isNumericValue(String sVal) {
 		try {
-			Long.parseLong(sVal);
+			Double.valueOf(sVal);
 			return true;
 		} catch (NumberFormatException e) {
 			return false;
 		}
 	}
 
-	public boolean isDoubleValue(String sVal) {
+	private JsonNode parseToJsonNode(String val){
 		try {
-			Double.parseDouble(sVal);
-			return true;
-		} catch (NumberFormatException e) {
-			return false;
+			return objectMapper.readTree(val);
+		} catch (JsonProcessingException e) {
+			return null;
 		}
 	}
 
 	public boolean isValidJson(String val) {
+		JsonNode jsonNode = parseToJsonNode(val);
+		return jsonNode != null && jsonNode.isObject();
+	}
+
+	public boolean isArray(String val){
+		JsonNode jsonNode = parseToJsonNode(val);
+		return jsonNode != null && jsonNode.isArray();
+	}
+
+	private <T> DataTypeMapping findArrayType(List<T> list){
+		DataTypeMapping bestMapping = null;
+		// find the distinct inferred types from the input
+		List<DataTypeMapping> inferredTypes = list.stream()
+				.map(item -> inferType(item, InBoundDataSource.JSON))
+				.distinct()
+				.toList();
+		if (inferredTypes.size() == 1) {
+			bestMapping = inferredTypes.get(0);
+		} else {
+			for (DataTypeMapping type : inferredTypes) {
+				bestMapping = selectBestType(bestMapping, type);
+			}
+		}
+		return DataTypeMapping.getArrayTypeForBase(bestMapping);
+	}
+
+	private DataTypeMapping findArrayTypeFromJson(String val)  {
+		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Boolean[].class))){
+			return ARRAY_OF_BOOLEAN;
+		}
+		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Double[].class))){
+			return ARRAY_OF_NUMBER;
+		}
+		//order matters an array of LocalDateTime will be parsed to LocalDate
+		if(ArrayUtils.isNotEmpty(getArrayOfType(val, LocalDateTime[].class))){
+			return ARRAY_OF_DATE_TIME;
+		}
+		if(ArrayUtils.isNotEmpty(getArrayOfType(val, LocalDate[].class))){
+			return ARRAY_OF_DATE;
+		}
+		if(ArrayUtils.isNotEmpty(getArrayOfType(val, String[].class))){
+			return ARRAY_OF_STRING;
+		}
+		if(getArrayOfType(val, String[].class) != null){
+			return EMPTY_ARRAY;
+		}
+		throw new IllegalArgumentException("Unsupported array type " + val);
+	}
+
+	public <T> T[] getArrayOfType(String val, Class<T[]> clazz) {
 		try {
-			JsonNode jsonNode = objectMapper.readTree(val);
-			return jsonNode.isArray() || jsonNode.isObject();
+			return objectMapper.readValue(replaceLeftRightQuotes(val), clazz);
 		} catch (JsonProcessingException e) {
-			return false;
+			return null;
 		}
 	}
 

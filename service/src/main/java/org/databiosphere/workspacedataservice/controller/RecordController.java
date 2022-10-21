@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.csv.CSVPrinter;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
@@ -64,10 +65,13 @@ public class RecordController {
 	private final DataTypeInferer inferer;
 	private final BatchWriteService batchWriteService;
 
-	public RecordController(RecordDao recordDao, BatchWriteService batchWriteService) {
+	private final ObjectMapper objectMapper;
+
+	public RecordController(RecordDao recordDao, BatchWriteService batchWriteService, DataTypeInferer inf, ObjectMapper objectMapper) {
 		this.recordDao = recordDao;
 		this.batchWriteService = batchWriteService;
-		this.inferer = new DataTypeInferer();
+		this.inferer = inf;
+		this.objectMapper = objectMapper;
 	}
 
 	@PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
@@ -136,7 +140,7 @@ public class RecordController {
 			try (CSVPrinter writer = TsvSupport.getOutputFormat(headers)
 					.print(new OutputStreamWriter(httpResponseOutputStream))) {
 				TsvSupport.RecordEmitter recordEmitter = new TsvSupport.RecordEmitter(writer,
-						headers.subList(1, headers.size()));
+						headers.subList(1, headers.size()), objectMapper);
 				allRecords.forEach(recordEmitter);
 			}
 		};

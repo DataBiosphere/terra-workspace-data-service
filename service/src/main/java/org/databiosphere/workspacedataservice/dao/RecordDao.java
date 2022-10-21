@@ -15,6 +15,7 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.postgresql.jdbc.PgArray;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,10 +31,12 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -57,18 +60,18 @@ import static org.databiosphere.workspacedataservice.service.model.exception.Inv
 @Repository
 public class RecordDao {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(RecordDao.class);
-
 	private final NamedParameterJdbcTemplate namedTemplate;
 
 	private final NamedParameterJdbcTemplate templateForStreaming;
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(RecordDao.class);
+
 	private final DataTypeInferer inferer;
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
-			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming) {
+			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf) {
 		this.namedTemplate = namedTemplate;
 		this.templateForStreaming = templateForStreaming;
-		this.inferer = new DataTypeInferer();
+		this.inferer = inf;
 	}
 
 	public boolean instanceSchemaExists(UUID instanceId) {
@@ -127,7 +130,7 @@ public class RecordDao {
 		params.addValue("tableName", recordType.getName());
 		params.addValue("recordName", RECORD_ID);
 		return namedTemplate
-				.query("select column_name, data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
+				.query("select column_name, udt_name::regtype as data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
 						+ "and table_name = :tableName and column_name != :recordName", params, rs -> {
 							Map<String, DataTypeMapping> result = new HashMap<>();
 							while (rs.next()) {
@@ -352,11 +355,8 @@ public class RecordDao {
 			return RelationUtils.getRelationValue(attVal);
 		}
 		if (attVal instanceof String sVal) {
-			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.LONG, inferer::isLongValue, sVal)) {
-				return Long.parseLong(sVal);
-			}
-			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.DOUBLE, inferer::isDoubleValue, sVal)) {
-				return Double.parseDouble(sVal);
+			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.NUMBER, inferer::isNumericValue, sVal)) {
+				return Double.valueOf(sVal);
 			}
 			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.BOOLEAN, inferer::isValidBoolean, sVal)) {
 				return Boolean.parseBoolean(sVal);
@@ -368,7 +368,31 @@ public class RecordDao {
 				return LocalDateTime.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 			}
 		}
+		if(typeMapping.isArrayType()){
+			return getArrayValues(attVal, typeMapping);
+		}
 		return attVal;
+	}
+
+	private Object getArrayValues(Object attVal, DataTypeMapping typeMapping) {
+		if (attVal instanceof List<?> valAsList) {
+			return getListAsArray(valAsList, typeMapping);
+		}
+		return inferer.getArrayOfType(attVal.toString(), typeMapping.getJavaArrayTypeForDbWrites());
+	}
+
+	private Object[] getListAsArray(List<?> attVal, DataTypeMapping typeMapping) {
+		switch (typeMapping){
+			case ARRAY_OF_STRING, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_NUMBER:
+				return attVal.stream().map(Object::toString).toList().toArray(new String[0]);
+			case ARRAY_OF_BOOLEAN:
+				//accept all casings of True and False if they're strings
+				return attVal.stream().map(Object::toString).map(String::toLowerCase)
+						.map(Boolean::parseBoolean).toList().toArray(new Boolean[0]);
+			default:
+				throw new IllegalArgumentException("Unhandled array type " + typeMapping);
+		}
+
 	}
 
 	private boolean stringIsCompatibleWithType(boolean typesMatch,
@@ -398,8 +422,9 @@ public class RecordDao {
 				+ (schema.size() == 1 ? "do nothing" : "do update set " + genColUpsertUpdates(colNames));
 	}
 
+
 	private String getInsertParamList(List<DataTypeMapping> colTypes) {
-		return colTypes.stream().map(type -> type.getPostgresType().equalsIgnoreCase("jsonb") ? "? :: jsonb" : "?")
+		return colTypes.stream().map(DataTypeMapping::getWritePlaceholder)
 				.collect(Collectors.joining(", "));
 	}
 
@@ -472,6 +497,13 @@ public class RecordDao {
 							object = ts.toLocalDateTime();
 						} else if (object instanceof PGobject pGobject) {
 							object = pGobject.getValue();
+						} else if (object instanceof PgArray pgArray) {
+							object = pgArray.getArray();
+							if(object.getClass() == Timestamp[].class) {
+								object = convertToLocalDateTime(object);
+							} else if(object.getClass() == Date[].class) {
+								object = convertToLocalDate(object);
+							}
 						}
 
 						attributes.putAttribute(columnName, object);
@@ -482,6 +514,24 @@ public class RecordDao {
 				throw new RuntimeException(e);
 			}
 		}
+
+		private LocalDateTime[] convertToLocalDateTime(Object object) {
+			Timestamp[] tzArray = (Timestamp[]) object;
+			LocalDateTime[] result = new LocalDateTime[tzArray.length];
+			for (int i = 0; i < tzArray.length; i++) {
+				result[i] = tzArray[i].toLocalDateTime();
+			}
+			return result;
+		}
+		private LocalDate[] convertToLocalDate(Object object) {
+			Date[] tzArray = (Date[]) object;
+			LocalDate[] result = new LocalDate[tzArray.length];
+			for (int i = 0; i < tzArray.length; i++) {
+				result[i] = tzArray[i].toLocalDate();
+			}
+			return result;
+		}
+
 	}
 
 	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, String recordId,

@@ -43,15 +43,16 @@ public class BatchWriteService {
 
 	private final RecordDao recordDao;
 
-	private final DataTypeInferer inferer = new DataTypeInferer();
+	private final DataTypeInferer inferer;
 
 	private final int batchSize;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchWriteService.class);
 
-	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize) {
+	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize, DataTypeInferer inf) {
 		this.recordDao = recordDao;
 		this.batchSize = batchSize;
+		this.inferer = inf;
 	}
 
 	public Map<String, DataTypeMapping> addOrUpdateColumnIfNeeded(UUID instanceId, RecordType recordType,

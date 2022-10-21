@@ -3,8 +3,12 @@ package org.databiosphere.workspacedataservice;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.cfg.CoercionAction;
+import com.fasterxml.jackson.databind.cfg.CoercionInputShape;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.type.LogicalType;
 import com.zaxxer.hikari.HikariDataSource;
+import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -14,21 +18,30 @@ import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-
-import javax.sql.DataSource;
-
 import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import javax.sql.DataSource;
 
 @SpringBootApplication
 public class WorkspaceDataServiceApplication {
 
 	@Bean
 	public ObjectMapper objectMapper() {
-		return JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
-				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false).findAndAddModules().build();
+		JsonMapper mapper = JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+				.findAndAddModules().build();
+		mapper.coercionConfigFor(LogicalType.Boolean).setCoercion(CoercionInputShape.Integer, CoercionAction.Fail);
+		mapper.coercionConfigFor(LogicalType.Float).setCoercion(CoercionInputShape.String, CoercionAction.Fail);
+		mapper.coercionConfigFor(LogicalType.Integer).setCoercion(CoercionInputShape.String, CoercionAction.Fail);
+		return mapper;
+	}
+
+	@Bean
+	public DataTypeInferer inferer(ObjectMapper mapper){
+		return new DataTypeInferer(mapper);
 	}
 
 	@Bean
@@ -71,7 +84,9 @@ public class WorkspaceDataServiceApplication {
 		return new WebMvcConfigurer() {
 			@Override
 			public void addCorsMappings(@NonNull CorsRegistry registry) {
-				registry.addMapping("/**").allowedOrigins("*");
+				registry.addMapping("/**").allowedMethods("DELETE", "GET", "HEAD", "PATCH", "POST", "PUT")
+						.allowedOrigins("*");
+
 			}
 
 			@Override

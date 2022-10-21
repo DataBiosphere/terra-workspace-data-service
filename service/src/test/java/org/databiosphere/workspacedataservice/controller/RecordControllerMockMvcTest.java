@@ -7,8 +7,14 @@ import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.shared.model.BatchOperation;
+import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.databiosphere.workspacedataservice.shared.model.*;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
+import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
+import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,21 +22,24 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import java.util.*;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -38,7 +47,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class RecordControllerMockMvcTest {
 
-	private final ObjectMapper mapper = new ObjectMapper();
+	@Autowired
+	private ObjectMapper mapper;
 	@Autowired
 	private MockMvc mockMvc;
 
@@ -70,6 +80,31 @@ class RecordControllerMockMvcTest {
 				.file(file)).andExpect(status().isBadRequest());
 	}
 
+	/**
+	 * Slightly strange test to show loss of precision as a result of storing a large
+	 * integer in WDS.  If we switch to using BigDecimal throughout we should be able to
+	 * to change the test to start asserting equality
+	 * @throws Exception
+	 */
+	@Test
+	@Transactional
+	void storeLargeIntegerValue() throws Exception {
+		StringBuilder tsvContent = new StringBuilder("sys_name\tbigint\n");
+		String bigIntValue = "11111111111111111111111111111111";
+		tsvContent.append(1 + "\t" + bigIntValue + "\n");
+		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
+				tsvContent.toString().getBytes());
+
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
+		String recordType = "big-int-value";
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
+				.file(file)).andExpect(status().isOk());
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
+				recordType, "1")).andReturn();
+		RecordResponse recordResponse = mapper.readValue(mvcResult.getResponse().getContentAsString(), RecordResponse.class);
+		assertNotEquals(new BigInteger(bigIntValue), recordResponse.recordAttributes().getAttributeValue("bigint"));
+	}
+
 	@Test
 	@Transactional
 	void tsvWithNoRowIdShouldReturn400() throws Exception {
@@ -98,7 +133,56 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	void tsvWithMissingRelationShouldFail(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
+	void nullAndNonNullArraysShouldChooseProperType() throws Exception {
+		StringBuilder tsvContent = new StringBuilder("sys_name\tarray\n");
+		//empty string/nulls
+		for (int i = 0; i < 10; i++) {
+			tsvContent.append(i + "null\t" + "\n");
+		}
+		//empty array
+		for (int i = 0; i < 10; i++) {
+			tsvContent.append(i + "empty\t[]\n");
+		}
+		//array of long
+		for (int i = 0; i < 10; i++) {
+			tsvContent.append(i + "valid\t[12]\n");
+		}
+		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
+				tsvContent.toString().getBytes());
+
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
+		String type = "tsv-record-type";
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, type)
+				.file(file)).andExpect(status().isOk());
+
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, type))
+				.andExpect(status().isOk()).andReturn();
+
+		RecordTypeSchema actual = mapper.readValue(mvcResult.getResponse().getContentAsString(),
+				RecordTypeSchema.class);
+		assertEquals("ARRAY_OF_NUMBER", actual.attributes().get(0).datatype());
+
+		//upload a second time, this time with array of double
+		StringBuilder secondUpload = new StringBuilder("sys_name\tarray\n");
+		//array of long
+		for (int i = 0; i < 10; i++) {
+			secondUpload.append(i + "valid\t[12.99]\n");
+		}
+		file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
+				secondUpload.toString().getBytes());
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, type)
+				.file(file)).andExpect(status().isOk());
+		mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, type))
+				.andExpect(status().isOk()).andReturn();
+
+		actual = mapper.readValue(mvcResult.getResponse().getContentAsString(),
+				RecordTypeSchema.class);
+		assertEquals("ARRAY_OF_NUMBER", actual.attributes().get(0).datatype());
+	}
+
+	@Test
+	@Transactional
+	void tsvWithMissingRelationShouldFail() throws Exception {
 
 		MockMultipartFile file = new MockMultipartFile("records", "simple_bad_relation.tsv", MediaType.TEXT_PLAIN_VALUE,
 				("sys_name\trelation\na\t" + RelationUtils.createRelationString(RecordType.valueOf("missing"), "QQ")
@@ -126,12 +210,24 @@ class RecordControllerMockMvcTest {
 				RecordTypeSchema.class);
 		assertEquals("date", schema.attributes().get(0).name());
 		assertEquals("DATE", schema.attributes().get(0).datatype());
-		assertEquals("DOUBLE", schema.attributes().get(1).datatype());
+		assertEquals("NUMBER", schema.attributes().get(1).datatype());
 		assertEquals("double", schema.attributes().get(1).name());
 		assertEquals("json", schema.attributes().get(4).name());
 		assertEquals("JSON", schema.attributes().get(4).datatype());
-		assertEquals("LONG", schema.attributes().get(5).datatype());
+		assertEquals("NUMBER", schema.attributes().get(5).datatype());
 		assertEquals("long", schema.attributes().get(5).name());
+		assertEquals("z_array_of_string", schema.attributes().get(7).name());
+		assertEquals("ARRAY_OF_STRING", schema.attributes().get(7).datatype());
+		assertEquals("z_double_array", schema.attributes().get(8).name());
+		assertEquals("ARRAY_OF_NUMBER", schema.attributes().get(8).datatype());
+		assertEquals("z_long_array", schema.attributes().get(9).name());
+		assertEquals("ARRAY_OF_NUMBER", schema.attributes().get(9).datatype());
+		assertEquals("z_z_boolean_array", schema.attributes().get(10).name());
+		assertEquals("ARRAY_OF_BOOLEAN", schema.attributes().get(10).datatype());
+		assertEquals("zz_array_of_date", schema.attributes().get(11).name());
+		assertEquals("ARRAY_OF_DATE", schema.attributes().get(11).datatype());
+		assertEquals("zz_array_of_datetime", schema.attributes().get(12).name());
+		assertEquals("ARRAY_OF_DATE_TIME", schema.attributes().get(12).datatype());
 		MockMultipartFile alter = new MockMultipartFile("records", "change_json_to_text.tsv",
 				MediaType.TEXT_PLAIN_VALUE, "sys_name\tjson\na\tfoo\n".getBytes());
 		mockMvc.perform(
@@ -240,10 +336,15 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void createAndRetrieveRecord() throws Exception {
+
 		RecordType recordType = RecordType.valueOf("samples");
 		createSomeRecords(recordType, 1);
-		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				recordType, "record_0")).andExpect(status().isOk()).andExpect(jsonPath("$.id", is("record_0")));
+		MockHttpServletResponse res = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				recordType, "record_0")).andExpect(status().isOk()).andReturn().getResponse();
+		RecordResponse recordResponse = mapper.readValue(res.getContentAsString(), RecordResponse.class);
+		assertEquals("record_0", recordResponse.recordId());
+		assertEquals("[1776-07-04, 1999-12-31]", recordResponse.recordAttributes().getAttributeValue("array-of-date").toString());
+		assertEquals("[2021-01-06T13:30:00, 1980-10-31T23:59:00]", recordResponse.recordAttributes().getAttributeValue("array-of-datetime").toString());
 	}
 
 	@Test
@@ -502,12 +603,18 @@ class RecordControllerMockMvcTest {
 						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 
-		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("attr-boolean", "BOOLEAN", null),
+		List<AttributeSchema> expectedAttributes = Arrays.asList(
+				new AttributeSchema("array-of-date", "ARRAY_OF_DATE", null),
+				new AttributeSchema("array-of-datetime", "ARRAY_OF_DATE_TIME", null),
+				new AttributeSchema("array-of-string", "ARRAY_OF_STRING", null),
+				new AttributeSchema("attr-boolean", "BOOLEAN", null),
 				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
 				new AttributeSchema("attr-ref", "RELATION", referencedType),
-				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "DOUBLE", null),
+				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "NUMBER", null),
 				new AttributeSchema("attr3", "DATE", null), new AttributeSchema("attr4", "STRING", null),
-				new AttributeSchema("attr5", "LONG", null));
+				new AttributeSchema("attr5", "NUMBER", null), new AttributeSchema("z-array-of-boolean", "ARRAY_OF_BOOLEAN", null),
+				new AttributeSchema("z-array-of-number-double", "ARRAY_OF_NUMBER", null),
+				new AttributeSchema("z-array-of-number-long", "ARRAY_OF_NUMBER", null), new AttributeSchema("z-array-of-string", "ARRAY_OF_STRING", null));
 
 		RecordTypeSchema expected = new RecordTypeSchema(type, expectedAttributes, 1);
 
@@ -518,6 +625,24 @@ class RecordControllerMockMvcTest {
 				RecordTypeSchema.class);
 
 		assertEquals(expected, actual);
+	}
+
+	@Test
+	@Transactional
+	void incompatibleArrayWritesShouldChangeToStringArray() throws Exception {
+		String recordType = "test-type";
+		List<Record> someRecords = createSomeRecords(recordType, 1);
+		RecordRequest recordRequest = new RecordRequest(someRecords.get(0).getAttributes().putAttribute("array-of-date", List.of("should switch to array of string")));
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						recordType, "new_id").content(mapper.writeValueAsString(recordRequest))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().is2xxSuccessful());
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, recordType))
+				.andExpect(status().isOk()).andReturn();
+		RecordTypeSchema actual = mapper.readValue(mvcResult.getResponse().getContentAsString(),
+				RecordTypeSchema.class);
+		assertEquals("ARRAY_OF_STRING", actual.attributes().get(0).datatype());
+
 	}
 
 	@Test
@@ -539,11 +664,15 @@ class RecordControllerMockMvcTest {
 		RecordType type3 = RecordType.valueOf("thirdType");
 		createSomeRecords(type3, 10, instId);
 
-		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("attr-boolean", "BOOLEAN", null),
+		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("array-of-date", "ARRAY_OF_DATE", null),
+				new AttributeSchema("array-of-datetime", "ARRAY_OF_DATE_TIME", null),
+				new AttributeSchema("array-of-string", "ARRAY_OF_STRING", null), new AttributeSchema("attr-boolean", "BOOLEAN", null),
 				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
-				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "DOUBLE", null),
+				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "NUMBER", null),
 				new AttributeSchema("attr3", "DATE", null), new AttributeSchema("attr4", "STRING", null),
-				new AttributeSchema("attr5", "LONG", null));
+				new AttributeSchema("attr5", "NUMBER", null), new AttributeSchema("z-array-of-boolean", "ARRAY_OF_BOOLEAN", null),
+				new AttributeSchema("z-array-of-number-double", "ARRAY_OF_NUMBER", null),
+				new AttributeSchema("z-array-of-number-long", "ARRAY_OF_NUMBER", null), new AttributeSchema("z-array-of-string", "ARRAY_OF_STRING", null));
 
 		List<RecordTypeSchema> expectedSchemas = Arrays.asList(new RecordTypeSchema(type1, expectedAttributes, 1),
 				new RecordTypeSchema(type2, expectedAttributes, 2),
