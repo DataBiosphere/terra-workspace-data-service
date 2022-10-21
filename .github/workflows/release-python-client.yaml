@@ -26,9 +26,9 @@ jobs:
       - name: Use Node.js ${{matrix.node-version }}
         uses: actions/setup-node@v2
         with:
-          node-version: 14
+          node-version: 18
       - name: Install openapi-generator-cli
-        run: npm install openapitools/openapi-generator-cli@1.0.18-4.3.1 -g
+        run: npm install @openapitools/openapi-generator-cli@1.0.18-4.3.1 -g
       - name: Generate Python client
         run: |
           openapi-generator-cli generate \
