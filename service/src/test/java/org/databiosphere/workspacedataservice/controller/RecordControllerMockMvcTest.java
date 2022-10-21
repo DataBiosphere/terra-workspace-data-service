@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -179,7 +180,6 @@ class RecordControllerMockMvcTest {
 
 		actual = mapper.readValue(mvcResult.getResponse().getContentAsString(),
 				RecordTypeSchema.class);
-		//type should change
 		assertEquals("ARRAY_OF_NUMBER", actual.attributes().get(0).datatype());
 	}
 
@@ -338,10 +338,15 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void createAndRetrieveRecord() throws Exception {
+
 		RecordType recordType = RecordType.valueOf("samples");
 		createSomeRecords(recordType, 1);
-		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				recordType, "record_0")).andExpect(status().isOk()).andExpect(jsonPath("$.id", is("record_0")));
+		MockHttpServletResponse res = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				recordType, "record_0")).andExpect(status().isOk()).andReturn().getResponse();
+		RecordResponse recordResponse = mapper.readValue(res.getContentAsString(), RecordResponse.class);
+		assertEquals("record_0", recordResponse.recordId());
+		assertEquals("[1776-07-04, 1999-12-31]", recordResponse.recordAttributes().getAttributeValue("array-of-date").toString());
+		assertEquals("[2021-01-06T13:30:00, 1980-10-31T23:59:00]", recordResponse.recordAttributes().getAttributeValue("array-of-datetime").toString());
 	}
 
 	@Test

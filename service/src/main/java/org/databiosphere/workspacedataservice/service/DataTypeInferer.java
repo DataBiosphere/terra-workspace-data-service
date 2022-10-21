@@ -68,7 +68,16 @@ public class DataTypeInferer {
 		if (existing.isArrayType() && newMapping.isArrayType() && Set.of(existing, newMapping).contains(EMPTY_ARRAY)) {
 			return newMapping != EMPTY_ARRAY ? newMapping : existing;
 		}
-		if(newMapping.isArrayType() && existing.isArrayType()){
+		if (existing.isArrayType() && newMapping.isArrayType() && Set.of(existing, newMapping).contains(EMPTY_ARRAY)) {
+			return newMapping != EMPTY_ARRAY ? newMapping : existing;
+		}
+		if(newMapping == DATE_TIME && existing == DATE){
+			return DATE_TIME;
+		}
+		if(newMapping == ARRAY_OF_DATE_TIME && existing == ARRAY_OF_DATE){
+			return ARRAY_OF_DATE_TIME;
+		}
+		if(newMapping.isArrayType() && existing.isArrayType()) {
 			return ARRAY_OF_STRING;
 		}
 		return STRING;
@@ -207,11 +216,16 @@ public class DataTypeInferer {
 
 	private <T> DataTypeMapping findArrayType(List<T> list){
 		DataTypeMapping bestMapping = null;
-		for (Object o : list) {
-			if(bestMapping == null){
-				bestMapping = inferType(o, InBoundDataSource.JSON);
-			} else {
-				bestMapping = selectBestType(bestMapping, inferType(o, InBoundDataSource.JSON));
+		// find the distinct inferred types from the input
+		List<DataTypeMapping> inferredTypes = list.stream()
+				.map(item -> inferType(item, InBoundDataSource.JSON))
+				.distinct()
+				.toList();
+		if (inferredTypes.size() == 1) {
+			bestMapping = inferredTypes.get(0);
+		} else {
+			for (DataTypeMapping type : inferredTypes) {
+				bestMapping = selectBestType(bestMapping, type);
 			}
 		}
 		return DataTypeMapping.getArrayTypeForBase(bestMapping);

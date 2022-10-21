@@ -32,10 +32,12 @@ import org.springframework.stereotype.Repository;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -498,6 +500,11 @@ public class RecordDao {
 							object = pGobject.getValue();
 						} else if (object instanceof PgArray pgArray) {
 							object = pgArray.getArray();
+							if(object.getClass() == Timestamp[].class) {
+								object = convertToLocalDateTime(object);
+							} else if(object.getClass() == Date[].class) {
+								object = convertToLocalDate(object);
+							}
 						}
 
 						attributes.putAttribute(columnName, object);
@@ -508,6 +515,24 @@ public class RecordDao {
 				throw new RuntimeException(e);
 			}
 		}
+
+		private LocalDateTime[] convertToLocalDateTime(Object object) {
+			Timestamp[] tzArray = (Timestamp[]) object;
+			LocalDateTime[] result = new LocalDateTime[tzArray.length];
+			for (int i = 0; i < tzArray.length; i++) {
+				result[i] = tzArray[i].toLocalDateTime();
+			}
+			return result;
+		}
+		private LocalDate[] convertToLocalDate(Object object) {
+			Date[] tzArray = (Date[]) object;
+			LocalDate[] result = new LocalDate[tzArray.length];
+			for (int i = 0; i < tzArray.length; i++) {
+				result[i] = tzArray[i].toLocalDate();
+			}
+			return result;
+		}
+
 	}
 
 	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, String recordId,
