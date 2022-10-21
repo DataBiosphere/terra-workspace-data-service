@@ -28,16 +28,14 @@ jobs:
         with:
           node-version: 14
       - name: Install openapi-generator-cli
-        run: npm install @openapitools/openapi-generator-cli -g
-      - name: set version to 4.3.1
-        run: openapi-generator-cli version-manager set 4.3.1
+        run: npm install @openapitools/openapi-generator-cli@1.0.18-4.3.1 -g
       - name: Generate Python client
         run: |
           openapi-generator-cli generate \
           -i service/src/main/resources/static/swagger/openapi-docs.yaml \
           -g python \
           -o wds-client \
-          --additional-properties=projectName=wds-client,packageName=wds_client,packageVersion=${{ steps.apiprevioustag.outputs.tag }} \
+          --additional-properties=projectName=wds-client,packageName=wds_client,packageVersion=${{ steps.apiprevioustag.outputs.tag }}-SNAPSHOT \
           --skip-validate-spec
       - name: Install pypa/build
         working-directory: ./wds-client
