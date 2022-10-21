@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: 14
       - name: Install openapi-generator-cli
-        run: npm install @openapitools/openapi-generator-cli@1.0.18-4.3.1 -g
+        run: npm install openapitools/openapi-generator-cli@1.0.18-4.3.1 -g
       - name: Generate Python client
         run: |
           openapi-generator-cli generate \
