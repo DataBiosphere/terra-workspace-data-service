@@ -3,7 +3,8 @@ package org.databiosphere.workspacedataservice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.math.BigInteger;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
@@ -13,15 +14,20 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
+@SpringBootTest
 class DataTypeInfererTest {
 
-	DataTypeInferer inferer = new DataTypeInferer();
+	@Autowired
+	DataTypeInferer inferer;
 
 	@Test
 	void inferTypesJsonSource() {
 		Map<String, DataTypeMapping> result = inferer.inferTypes(getSomeAttrs(), InBoundDataSource.JSON);
 		Map<String, DataTypeMapping> expected = new HashMap<>();
+		expected.put("array_of_string", DataTypeMapping.ARRAY_OF_STRING);
 		expected.put("string_val", DataTypeMapping.STRING);
 		expected.put("int_val", DataTypeMapping.NUMBER);
 		expected.put("json_val", DataTypeMapping.JSON);
@@ -40,6 +46,10 @@ class DataTypeInfererTest {
 				.as("if types are identical, return the type").isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.BOOLEAN))
 				.as("should generalize to string/text type").isEqualTo(DataTypeMapping.STRING);
+		assertThat(inferer.selectBestType(DataTypeMapping.DATE, DataTypeMapping.DATE_TIME))
+				.as("should convert date to datetime").isEqualTo(DataTypeMapping.DATE_TIME);
+		assertThat(inferer.selectBestType(DataTypeMapping.ARRAY_OF_DATE, DataTypeMapping.ARRAY_OF_DATE_TIME))
+				.as("should convert array of date to array of datetime").isEqualTo(DataTypeMapping.ARRAY_OF_DATE_TIME);
 	}
 
 	@Test
@@ -101,18 +111,34 @@ class DataTypeInfererTest {
 				.isEqualTo(DataTypeMapping.DATE_TIME);
 		assertThat(inferer.inferType("12345", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.inferType("12345A", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
-		assertThat(inferer.inferType("[\"12345\"]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.JSON);
+		assertThat(inferer.inferType("[\"Hello!\"]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
+		assertThat(inferer.inferType("[12345]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
+		assertThat(inferer.inferType("[true, false, true]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_BOOLEAN);
+		assertThat(inferer.inferType("[11.1, 12, 14]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
+	}
+
+	@Test
+	void ambiguousConversions() {
+		assertThat(inferer.inferType("[true, \"false\", \"True\"]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_BOOLEAN);
+		assertThat(inferer.inferType("[true, \"false\", True]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
+		assertThat(inferer.inferType("[\"11\", \"99\"]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
+		assertThat(inferer.inferType("[\"11\", 99, \"foo\"]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
+		assertThat(inferer.inferType("", InBoundDataSource.TSV)).isEqualTo(DataTypeMapping.NULL);
+		assertThat(inferer.inferType("", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
+		assertThat(inferer.inferType("[11, 99, -3.14]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
+		assertThat(inferer.inferType("[11, 99, -3.14, 09]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
+		assertThat(inferer.inferType("[]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.EMPTY_ARRAY);
 	}
 
 	private static RecordAttributes getSomeAttrs() {
 		return new RecordAttributes(
-				Map.of("int_val", 4747, "string_val", "Abracadabra Open Sesame", "json_val", "[\"a\", \"b\"]",
-						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00", "number_or_string", "47"));
+				Map.of("int_val", 4747, "string_val", "Abracadabra Open Sesame", "json_val", "{\"list\": [\"a\", \"b\"]}",
+						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00", "number_or_string", "47", "array_of_string", List.of("red", "yellow")));
 	}
 
 	private static RecordAttributes getSomeTsvAttrs() {
 		return new RecordAttributes(
-				Map.of("int_val", "4747", "string_val", "Abracadabra Open Sesame", "json_val", "[\"a\", \"b\"]",
+				Map.of("int_val", "4747", "string_val", "Abracadabra Open Sesame", "json_val", "{\"list\": [\"a\", \"b\"]}",
 						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00", "number_or_string", "47"));
 	}
 }
