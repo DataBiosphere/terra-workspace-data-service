@@ -1,5 +1,8 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
@@ -38,6 +41,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -68,11 +72,16 @@ public class RecordDao {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RecordDao.class);
 
 	private final DataTypeInferer inferer;
+
+	private final ObjectMapper objectMapper;
+
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
 			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf) {
+					 @Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, ObjectMapper objectMapper) {
 		this.namedTemplate = namedTemplate;
 		this.templateForStreaming = templateForStreaming;
 		this.inferer = inf;
+		this.objectMapper = objectMapper;
 	}
 
 	public boolean instanceSchemaExists(UUID instanceId) {
@@ -123,7 +132,7 @@ public class RecordDao {
 				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by "
 						+ (sortAttribute == null ? RECORD_ID : quote(sortAttribute)) + " " + sortDirection + " limit "
 						+ pageSize + " offset " + offset,
-				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType))));
+				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType)), objectMapper));
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
@@ -309,7 +318,7 @@ public class RecordDao {
 	public Stream<Record> streamAllRecordsForType(UUID instanceId, RecordType recordType) {
 		return templateForStreaming.getJdbcTemplate().queryForStream(
 				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + RECORD_ID,
-				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType))));
+				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType)), objectMapper));
 	}
 
 	public String getFkSql(Set<Relation> relations, UUID instanceId) {
@@ -367,6 +376,14 @@ public class RecordDao {
 			}
 			if (stringIsCompatibleWithType(typeMapping == DataTypeMapping.DATE_TIME, inferer::isValidDateTime, sVal)) {
 				return LocalDateTime.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+			}
+		}
+		if(attVal instanceof Map<?,?> || attVal instanceof List<?>){
+			try {
+				return objectMapper.writeValueAsString(attVal);
+			} catch (JsonProcessingException e) {
+				LOGGER.error("Could write Map or List to string", e);
+				throw new RuntimeException(e);
 			}
 		}
 		if(typeMapping.isArrayType()){
@@ -468,14 +485,18 @@ public class RecordDao {
 	}
 
 	private record RecordRowMapper(RecordType recordType,
-			Map<String, RecordType> referenceColToTable) implements RowMapper<Record> {
+			Map<String, RecordType> referenceColToTable, ObjectMapper objectMapper) implements RowMapper<Record> {
 
 		@Override
 		public Record mapRow(ResultSet rs, int rowNum) throws SQLException {
-			return new Record(rs.getString(RECORD_ID), recordType, getAttributes(rs));
+			try {
+				return new Record(rs.getString(RECORD_ID), recordType, getAttributes(rs));
+			} catch (JsonProcessingException e) {
+				throw new RuntimeException(e);
+			}
 		}
 
-		private RecordAttributes getAttributes(ResultSet rs) {
+		private RecordAttributes getAttributes(ResultSet rs) throws JsonProcessingException {
 			try {
 				ResultSetMetaData metaData = rs.getMetaData();
 				RecordAttributes attributes = RecordAttributes.empty();
@@ -506,7 +527,9 @@ public class RecordDao {
 								object = convertToLocalDate(object);
 							}
 						}
-
+						if(metaData.getColumnType(j) == Types.OTHER && object instanceof String sObj){
+							object = objectMapper.readValue(sObj, new TypeReference<Map<String, Object>>(){});
+						}
 						attributes.putAttribute(columnName, object);
 					}
 				}
@@ -542,7 +565,7 @@ public class RecordDao {
 			return Optional.ofNullable(namedTemplate.queryForObject(
 					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + RECORD_ID
 							+ " = :recordId",
-					new MapSqlParameterSource("recordId", recordId), new RecordRowMapper(recordType, refColMapping)));
+					new MapSqlParameterSource("recordId", recordId), new RecordRowMapper(recordType, refColMapping, objectMapper)));
 		} catch (EmptyResultDataAccessException e) {
 			return Optional.empty();
 		}

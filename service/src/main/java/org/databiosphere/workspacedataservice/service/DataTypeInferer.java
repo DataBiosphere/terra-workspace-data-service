@@ -168,6 +168,10 @@ public class DataTypeInferer {
 			return findArrayType(listVal);
 		}
 
+		if(val instanceof Map){
+			return JSON;
+		}
+
 		return getTypeMappingFromString(val.toString());
 	}
 
