@@ -68,9 +68,6 @@ public class DataTypeInferer {
 		if (existing.isArrayType() && newMapping.isArrayType() && Set.of(existing, newMapping).contains(EMPTY_ARRAY)) {
 			return newMapping != EMPTY_ARRAY ? newMapping : existing;
 		}
-		if (existing.isArrayType() && newMapping.isArrayType() && Set.of(existing, newMapping).contains(EMPTY_ARRAY)) {
-			return newMapping != EMPTY_ARRAY ? newMapping : existing;
-		}
 		if(newMapping == DATE_TIME && existing == DATE){
 			return DATE_TIME;
 		}
