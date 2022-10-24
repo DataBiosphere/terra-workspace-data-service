@@ -4,8 +4,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
@@ -15,6 +13,32 @@ import java.util.List;
 public class TestUtils {
 
 	private TestUtils() {
+	}
+
+	public static String getExpectedAllAttributesJsonText(){
+		return "{\"id\":\"newRecordId\",\"type\":\"all-types\",\"attributes\":{\"array-of-number\":[1,2,3]," +
+				"\"array_of_boolean\":[true,false,true,true],\"array_of_date\":[\"2021-11-03\",\"2021-11-04\"]," +
+				"\"array_of_date_time\":[\"2021-11-03T07:30:00\",\"2021-11-03T07:30:00\"]," +
+				"\"array_of_string\":[\"a\",\"b\",\"c\",\"12\"],\"boolean\":false,\"date\":\"2021-11-03\"," +
+				"\"date-time\":\"2021-11-03T07:30:00\",\"empty-array\":[],\"json\":{\"age\":22}," +
+				"\"null\":null,\"number\":47,\"string\":\"Broad Institute\"},\"metadata\":{\"provenance\":\"TODO: RECORDMETADATA\"}}";
+	}
+	public static RecordAttributes getAllTypesAttributesForTsv(){
+		return RecordAttributes.empty()
+				.putAttribute("null", "")
+				.putAttribute("empty-array", "[]")
+				.putAttribute("boolean", "false")
+				.putAttribute("date", "2021-11-03")
+				.putAttribute("date-time", "2021-11-03T07:30:00")
+				.putAttribute("string", "Broad Institute")
+				.putAttribute("json", "{\"age\": 22}")
+				.putAttribute("number", "47")
+				.putAttribute("array-of-number", "[1, 2, 3]")
+				.putAttribute("array_of_date", "[\"2021-11-03\", \"2021-11-04\"]")
+				.putAttribute("array_of_date_time", "[\"2021-11-03T07:30:00\", \"2021-11-03T07:30:00\"]")
+				.putAttribute("array_of_string", "[\"a\", \"b\", \"c\", 12]")
+				.putAttribute("array_of_boolean", "[true, false, true, \"TRUE\"]");
+
 	}
 
 	public static RecordAttributes generateRandomAttributes() {

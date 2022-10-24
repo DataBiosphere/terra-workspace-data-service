@@ -2,8 +2,10 @@ package org.databiosphere.workspacedataservice.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
@@ -32,15 +34,17 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -120,7 +124,54 @@ class RecordControllerMockMvcTest {
 		Object attributeValue = recordResponse.recordAttributes().getAttributeValue("json-attr");
 		assertTrue(attributeValue instanceof Map, "jsonb data should deserialize to a map, " +
 				"before getting serialized to json in the final response");
+	}
 
+	@Test
+	void writeAndReadAllDataTypesJson() throws Exception {
+		String rt = "all-types";
+		LocalDateTime dateTime = LocalDateTime.of(2021, 11, 3, 7, 30);
+		RecordAttributes attributes = RecordAttributes.empty()
+				.putAttribute("null", null)
+				.putAttribute("empty-array", new ArrayList<>())
+				.putAttribute("boolean", false)
+				.putAttribute("date", LocalDate.of(2021, 11, 3))
+				.putAttribute("date-time", dateTime)
+				.putAttribute("string", "Broad Institute")
+				.putAttribute("json", Map.of("age", 22))
+				.putAttribute("number", 47)
+				.putAttribute("array-of-number", List.of(1, 2, 3))
+				.putAttribute("array_of_date", List.of(LocalDate.of(2021, 11, 3), LocalDate.of(2021, 11, 4)))
+				.putAttribute("array_of_date_time", List.of(dateTime, dateTime))
+				.putAttribute("array_of_string", List.of("a", "b", "c", 12))
+				.putAttribute("array_of_boolean", List.of(true, false, true, "TRUE"));
+		String rId = "newRecordId";
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						rt, rId).content(mapper.writeValueAsString(new RecordRequest(attributes)))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isCreated());
+		String jsonRes = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				rt, rId)).andReturn().getResponse().getContentAsString();
+		assertEquals(TestUtils.getExpectedAllAttributesJsonText(), jsonRes);
+
+	}
+
+	@Test
+	void writeAndReadAllDataTypesTsv() throws Exception {
+		String rt = "all-types";
+		String recordId = "newRecordId";
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
+		RecordAttributes attributes = TestUtils.getAllTypesAttributesForTsv();
+		assertEquals(DataTypeMapping.values().length, attributes.attributeSet().size());
+		String tsv = "sys_name\t"+attributes.attributeSet().stream().map(Map.Entry::getKey).collect(Collectors.joining("\t")) + "\n";
+		tsv += recordId+"\t" + attributes.attributeSet().stream().map(e -> e.getValue().toString()).collect(Collectors.joining("\t")) + "\n";
+
+		MockMultipartFile file = new MockMultipartFile("records", "generated.tsv", MediaType.TEXT_PLAIN_VALUE,
+				tsv.getBytes());
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId,
+				rt).file(file)).andExpect(status().isOk());
+		String jsonRes = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				rt, recordId)).andReturn().getResponse().getContentAsString();
+		assertEquals(TestUtils.getExpectedAllAttributesJsonText(), jsonRes);
 	}
 
 	@Test
