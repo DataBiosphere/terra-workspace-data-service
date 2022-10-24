@@ -183,6 +183,7 @@ public class BatchWriteService {
 	 * @param recordType
 	 * @return number of records updated
 	 */
+	@Transactional
 	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType) {
 		int recordsAffected = 0;
 		try (StreamingWriteHandler streamingWriteHandler = new StreamingWriteHandler(is, objectMapper)) {

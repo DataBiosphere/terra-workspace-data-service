@@ -377,7 +377,7 @@ public class RecordDao {
 				return LocalDateTime.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 			}
 		}
-		if(attVal instanceof Map<?,?> || attVal instanceof List<?>){
+		if(attVal instanceof Map<?,?>){
 			try {
 				return objectMapper.writeValueAsString(attVal);
 			} catch (JsonProcessingException e) {
