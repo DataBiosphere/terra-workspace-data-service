@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -81,12 +82,6 @@ class RecordControllerMockMvcTest {
 				.file(file)).andExpect(status().isBadRequest());
 	}
 
-	/**
-	 * Slightly strange test to show loss of precision as a result of storing a large
-	 * integer in WDS.  If we switch to using BigDecimal throughout we should be able to
-	 * to change the test to start asserting equality
-	 * @throws Exception
-	 */
 	@Test
 	@Transactional
 	void storeLargeIntegerValue() throws Exception {
@@ -106,6 +101,26 @@ class RecordControllerMockMvcTest {
 		RecordResponse recordResponse = mapper.readValue(mvcResult.getResponse().getContentAsString(), RecordResponse.class);
 		assertEquals(new BigInteger(bigIntValue), recordResponse.recordAttributes().getAttributeValue("bigint"));
 		assertEquals(new BigDecimal(bigFloatValue), recordResponse.recordAttributes().getAttributeValue("bigfloat"));
+	}
+
+	@Test
+	@Transactional
+	void writeAndReadJson() throws Exception {
+		String rt = "jsonb-type";
+		RecordAttributes attributes = new RecordAttributes(Map.of("json-attr", Map.of("name", "Bella", "age_in_months", 8)));
+		// create new record with new record type
+		String rId = "newRecordId";
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						rt, rId).content(mapper.writeValueAsString(new RecordRequest(attributes)))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isCreated());
+		MockHttpServletResponse res = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				rt, rId)).andExpect(jsonPath("$.attributes.json-attr.age_in_months", is(8))).andReturn().getResponse();
+		RecordResponse recordResponse = mapper.readValue(res.getContentAsString(), RecordResponse.class);
+		Object attributeValue = recordResponse.recordAttributes().getAttributeValue("json-attr");
+		assertTrue(attributeValue instanceof Map, "jsonb data should deserialize to a map, " +
+				"before getting serialized to json in the final response");
+
 	}
 
 	@Test
