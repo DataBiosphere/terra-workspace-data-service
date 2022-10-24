@@ -19,7 +19,6 @@ import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.postgresql.jdbc.PgArray;
-import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -41,7 +40,6 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -538,7 +536,7 @@ public class RecordDao {
 			return object;
 		}
 
-		private Object getArrayValue(Object object, DataTypeMapping typeMapping) throws SQLException {
+		private Object getArrayValue(Object object, DataTypeMapping typeMapping) {
 			if(typeMapping == DataTypeMapping.ARRAY_OF_DATE_TIME){
 				return convertToLocalDateTime(object);
 			} else if(typeMapping == DataTypeMapping.ARRAY_OF_DATE){
