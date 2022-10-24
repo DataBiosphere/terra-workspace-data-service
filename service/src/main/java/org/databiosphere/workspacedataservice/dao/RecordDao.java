@@ -381,7 +381,7 @@ public class RecordDao {
 			try {
 				return objectMapper.writeValueAsString(attVal);
 			} catch (JsonProcessingException e) {
-				LOGGER.error("Could write Map or List to string", e);
+				LOGGER.error("Could not serialize Map to json string", e);
 				throw new RuntimeException(e);
 			}
 		}
