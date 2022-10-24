@@ -76,8 +76,7 @@ public class RecordDao {
 	private final ObjectMapper objectMapper;
 
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
-			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf) {
-					 @Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, ObjectMapper objectMapper) {
+			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf, ObjectMapper objectMapper) {
 		this.namedTemplate = namedTemplate;
 		this.templateForStreaming = templateForStreaming;
 		this.inferer = inf;
