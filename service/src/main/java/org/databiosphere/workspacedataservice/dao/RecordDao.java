@@ -131,7 +131,7 @@ public class RecordDao {
 				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by "
 						+ (sortAttribute == null ? RECORD_ID : quote(sortAttribute)) + " " + sortDirection + " limit "
 						+ pageSize + " offset " + offset,
-				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType)), objectMapper));
+				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType)), objectMapper, getExistingTableSchema(instanceId, recordType)));
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
@@ -317,7 +317,7 @@ public class RecordDao {
 	public Stream<Record> streamAllRecordsForType(UUID instanceId, RecordType recordType) {
 		return templateForStreaming.getJdbcTemplate().queryForStream(
 				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + RECORD_ID,
-				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType)), objectMapper));
+				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType)), objectMapper, getExistingTableSchema(instanceId, recordType)));
 	}
 
 	public String getFkSql(Set<Relation> relations, UUID instanceId) {
@@ -484,7 +484,7 @@ public class RecordDao {
 	}
 
 	private record RecordRowMapper(RecordType recordType,
-			Map<String, RecordType> referenceColToTable, ObjectMapper objectMapper) implements RowMapper<Record> {
+			Map<String, RecordType> referenceColToTable, ObjectMapper objectMapper, Map<String, DataTypeMapping> schema) implements RowMapper<Record> {
 
 		@Override
 		public Record mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -510,32 +510,41 @@ public class RecordDao {
 						attributes.putAttribute(columnName, RelationUtils
 								.createRelationString(referenceColToTable.get(columnName), rs.getString(columnName)));
 					} else {
-						Object object = rs.getObject(columnName);
-
-						if (object instanceof java.sql.Date date) {
-							object = date.toLocalDate();
-						} else if (object instanceof java.sql.Timestamp ts) {
-							object = ts.toLocalDateTime();
-						} else if (object instanceof PGobject pGobject) {
-							object = pGobject.getValue();
-						} else if (object instanceof PgArray pgArray) {
-							object = pgArray.getArray();
-							if(object.getClass() == Timestamp[].class) {
-								object = convertToLocalDateTime(object);
-							} else if(object.getClass() == Date[].class) {
-								object = convertToLocalDate(object);
-							}
-						}
-						if(metaData.getColumnType(j) == Types.OTHER && object instanceof String sObj){
-							object = objectMapper.readValue(sObj, new TypeReference<Map<String, Object>>(){});
-						}
-						attributes.putAttribute(columnName, object);
+						attributes.putAttribute(columnName, getAttributeValueForType(rs.getObject(columnName), schema.get(columnName)));
 					}
 				}
 				return attributes;
 			} catch (SQLException e) {
 				throw new RuntimeException(e);
 			}
+		}
+
+		private Object getAttributeValueForType(Object object, DataTypeMapping typeMapping) throws SQLException, JsonProcessingException {
+			if(object == null){
+				return null;
+			}
+			if (object instanceof java.sql.Date date && typeMapping == DataTypeMapping.DATE) {
+				return date.toLocalDate();
+			}
+			if (object instanceof java.sql.Timestamp ts && typeMapping == DataTypeMapping.DATE_TIME) {
+				return ts.toLocalDateTime();
+			}
+			if(typeMapping.isArrayType() && object instanceof PgArray pgArray){
+				return getArrayValue(pgArray.getArray(), typeMapping);
+			}
+			if(typeMapping == DataTypeMapping.JSON){
+				return objectMapper.readValue(object.toString(), new TypeReference<Map<String, Object>>(){});
+			}
+			return object;
+		}
+
+		private Object getArrayValue(Object object, DataTypeMapping typeMapping) throws SQLException {
+			if(typeMapping == DataTypeMapping.ARRAY_OF_DATE_TIME){
+				return convertToLocalDateTime(object);
+			} else if(typeMapping == DataTypeMapping.ARRAY_OF_DATE){
+				return convertToLocalDate(object);
+			}
+			return object;
 		}
 
 		private LocalDateTime[] convertToLocalDateTime(Object object) {
@@ -564,7 +573,7 @@ public class RecordDao {
 			return Optional.ofNullable(namedTemplate.queryForObject(
 					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + RECORD_ID
 							+ " = :recordId",
-					new MapSqlParameterSource("recordId", recordId), new RecordRowMapper(recordType, refColMapping, objectMapper)));
+					new MapSqlParameterSource("recordId", recordId), new RecordRowMapper(recordType, refColMapping, objectMapper, getExistingTableSchema(instanceId, recordType))));
 		} catch (EmptyResultDataAccessException e) {
 			return Optional.empty();
 		}
