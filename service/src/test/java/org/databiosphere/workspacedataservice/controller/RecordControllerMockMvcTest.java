@@ -127,6 +127,7 @@ class RecordControllerMockMvcTest {
 	}
 
 	@Test
+	@Transactional
 	void writeAndReadAllDataTypesJson() throws Exception {
 		String rt = "all-types";
 		RecordAttributes attributes = TestUtils.getAllTypesAttributesForJson();
@@ -142,6 +143,7 @@ class RecordControllerMockMvcTest {
 	}
 
 	@Test
+	@Transactional
 	void writeAndReadAllDataTypesTsv() throws Exception {
 		String rt = "all-types";
 		String recordId = "newRecordId";
@@ -249,6 +251,7 @@ class RecordControllerMockMvcTest {
 	}
 
 	@Test
+	@Transactional
 	void uploadTsvAndVerifySchema() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
 				RecordControllerMockMvcTest.class.getResourceAsStream("/small-test.tsv"));
@@ -376,6 +379,7 @@ class RecordControllerMockMvcTest {
 	}
 
 	@Test
+	@Transactional
 	void ensurePatchShowsAllFields() throws Exception {
 		RecordType recordType1 = RecordType.valueOf("recordType1");
 		createSomeRecords(recordType1, 1);
