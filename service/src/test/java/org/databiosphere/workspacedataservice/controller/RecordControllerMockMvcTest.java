@@ -129,21 +129,8 @@ class RecordControllerMockMvcTest {
 	@Test
 	void writeAndReadAllDataTypesJson() throws Exception {
 		String rt = "all-types";
-		LocalDateTime dateTime = LocalDateTime.of(2021, 11, 3, 7, 30);
-		RecordAttributes attributes = RecordAttributes.empty()
-				.putAttribute("null", null)
-				.putAttribute("empty-array", new ArrayList<>())
-				.putAttribute("boolean", false)
-				.putAttribute("date", LocalDate.of(2021, 11, 3))
-				.putAttribute("date-time", dateTime)
-				.putAttribute("string", "Broad Institute")
-				.putAttribute("json", Map.of("age", 22))
-				.putAttribute("number", 47)
-				.putAttribute("array-of-number", List.of(1, 2, 3))
-				.putAttribute("array_of_date", List.of(LocalDate.of(2021, 11, 3), LocalDate.of(2021, 11, 4)))
-				.putAttribute("array_of_date_time", List.of(dateTime, dateTime))
-				.putAttribute("array_of_string", List.of("a", "b", "c", 12))
-				.putAttribute("array_of_boolean", List.of(true, false, true, "TRUE"));
+		RecordAttributes attributes = TestUtils.getAllTypesAttributesForJson();
+		assertEquals(attributes.attributeSet().size(), DataTypeMapping.values().length);
 		String rId = "newRecordId";
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 						rt, rId).content(mapper.writeValueAsString(new RecordRequest(attributes)))
@@ -152,7 +139,6 @@ class RecordControllerMockMvcTest {
 		String jsonRes = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				rt, rId)).andReturn().getResponse().getContentAsString();
 		assertEquals(TestUtils.getExpectedAllAttributesJsonText(), jsonRes);
-
 	}
 
 	@Test
