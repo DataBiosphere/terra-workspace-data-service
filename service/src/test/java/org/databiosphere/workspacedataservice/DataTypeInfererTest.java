@@ -113,23 +113,25 @@ class DataTypeInfererTest {
 				.isEqualTo(DataTypeMapping.DATE_TIME);
 		assertThat(inferer.inferType("12345", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.inferType("12345A", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
-		assertThat(inferer.inferType("[\"Hello!\"]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
-		assertThat(inferer.inferType("[12345]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
-		assertThat(inferer.inferType("[true, false, true]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_BOOLEAN);
-		assertThat(inferer.inferType("[11.1, 12, 14]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
+		assertThat(inferer.inferType(List.of("Hello!"), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
+		assertThat(inferer.inferType(List.of(new BigInteger("12345")), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
+		assertThat(inferer.inferType(List.of(true, false, true), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_BOOLEAN);
+		assertThat(inferer.inferType(List.of(new BigDecimal("11.1"), new BigDecimal("12"), new BigDecimal("14")), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
 	}
 
 	@Test
 	void ambiguousConversions() {
-		assertThat(inferer.inferType("[true, \"false\", \"True\"]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_BOOLEAN);
-		assertThat(inferer.inferType("[true, \"false\", True]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
-		assertThat(inferer.inferType("[\"11\", \"99\"]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
-		assertThat(inferer.inferType("[\"11\", 99, \"foo\"]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
+		assertThat(inferer.inferType(List.of(true, "false", "True"), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_BOOLEAN);
+		assertThat(inferer.inferType(List.of("11", "99"), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
+		assertThat(inferer.inferType(List.of("11", new BigDecimal("99"), "foo"), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
 		assertThat(inferer.inferType("", InBoundDataSource.TSV)).isEqualTo(DataTypeMapping.NULL);
 		assertThat(inferer.inferType("", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
-		assertThat(inferer.inferType("[11, 99, -3.14]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
+		assertThat(inferer.inferType(List.of(new BigInteger("11"), new BigInteger("99"), new BigDecimal("-3.14")), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
+		assertThat(inferer.inferType(List.of(new BigInteger("11"), new BigInteger("99"), new BigDecimal("-3.14"), "09"), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
+		assertThat(inferer.inferType(Collections.emptyList(), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.EMPTY_ARRAY);
+		assertThat(inferer.inferType("[11, 99, -3.14, 09]", InBoundDataSource.TSV)).isEqualTo(DataTypeMapping.STRING);
+		assertThat(inferer.inferType("[a]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.inferType("[11, 99, -3.14, 09]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
-		assertThat(inferer.inferType("[]", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.EMPTY_ARRAY);
 	}
 
 	private static RecordAttributes getSomeAttrs() {
