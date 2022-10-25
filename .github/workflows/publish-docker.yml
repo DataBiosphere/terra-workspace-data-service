@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - aj-637-cromwhelm
   workflow_dispatch:
 
 env:
