@@ -251,7 +251,6 @@ class RecordControllerMockMvcTest {
 	}
 
 	@Test
-	@Transactional
 	void uploadTsvAndVerifySchema() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
 				RecordControllerMockMvcTest.class.getResourceAsStream("/small-test.tsv"));
@@ -819,8 +818,8 @@ class RecordControllerMockMvcTest {
 	}
 
 	@Test
-	@Transactional
 	void batchInsertShouldFailWithInvalidRelationExistingRecordType() throws Exception {
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		RecordType recordType = RecordType.valueOf("relationBatchInsert");
 		createSomeRecords(recordType, 2);
 		List<BatchOperation> batchOperations = List.of(
