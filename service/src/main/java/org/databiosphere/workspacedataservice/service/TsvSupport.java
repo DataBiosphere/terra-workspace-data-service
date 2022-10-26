@@ -19,7 +19,8 @@ public class TsvSupport {
 	public static final String ROW_ID_COLUMN_NAME = ReservedNames.RECORD_ID;
 
 	public static CSVFormat getUploadFormat() {
-		return CSVFormat.DEFAULT.builder().setHeader().setDelimiter('\t').setQuoteMode(QuoteMode.MINIMAL).build();
+		return CSVFormat.DEFAULT.builder().setHeader().setDelimiter('\t')
+				.setQuoteMode(QuoteMode.MINIMAL).build();
 	}
 
 	public static CSVFormat getOutputFormat(List<String> headers) {
@@ -46,9 +47,7 @@ public class TsvSupport {
 				csvPrinter.print(rcd.getId());
 				for (String attributeName : attributeNames) {
 					Object attributeValue = rcd.getAttributeValue(attributeName);
-					csvPrinter.print(attributeValue != null && attributeValue.getClass().isArray()
-							? objectMapper.writeValueAsString(attributeValue)
-							: attributeValue);
+					csvPrinter.print(attributeValue != null && attributeValue.getClass().isArray() ? objectMapper.writeValueAsString(attributeValue) : attributeValue);
 				}
 				csvPrinter.println();
 			} catch (IOException e) {

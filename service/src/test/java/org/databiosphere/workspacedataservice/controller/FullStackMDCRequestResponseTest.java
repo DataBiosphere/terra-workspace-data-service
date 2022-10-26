@@ -34,13 +34,16 @@ class FullStackMDCRequestResponseTest {
 	void responseShouldContainUniqueId() {
 		HttpHeaders headers = new HttpHeaders();
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
-		ResponseEntity<String> resp = restTemplate.exchange("/{instanceId}/types/{version}", HttpMethod.GET,
-				requestEntity, String.class, instanceId, versionId);
+		ResponseEntity<String> resp = restTemplate.exchange("/{instanceId}/types/{version}",
+				HttpMethod.GET,
+				requestEntity,
+				String.class,
+				instanceId, versionId);
 
 		List<String> actualResponseHeaders = resp.getHeaders().get(MDCServletRequestListener.RESPONSE_HEADER);
 		assertNotNull(actualResponseHeaders);
 		assertEquals(1, actualResponseHeaders.size());
-		assertDoesNotThrow(() -> UUID.fromString(actualResponseHeaders.get(0)));
+		assertDoesNotThrow( () -> UUID.fromString(actualResponseHeaders.get(0)) );
 	}
 
 	// "strings" input should match MDCFilter.INCOMING_HEADERS
@@ -52,8 +55,11 @@ class FullStackMDCRequestResponseTest {
 		headers.add(requestHeaderName, requestHeaderValue);
 
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
-		ResponseEntity<String> resp = restTemplate.exchange("/{instanceId}/types/{version}", HttpMethod.GET,
-				requestEntity, String.class, instanceId, versionId);
+		ResponseEntity<String> resp = restTemplate.exchange("/{instanceId}/types/{version}",
+				HttpMethod.GET,
+				requestEntity,
+				String.class,
+				instanceId, versionId);
 
 		List<String> actualResponseHeaders = resp.getHeaders().get(MDCServletRequestListener.RESPONSE_HEADER);
 		assertNotNull(actualResponseHeaders);
@@ -69,13 +75,16 @@ class FullStackMDCRequestResponseTest {
 		headers.add(requestHeaderName, " "); // just a space value
 
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
-		ResponseEntity<String> resp = restTemplate.exchange("/{instanceId}/types/{version}", HttpMethod.GET,
-				requestEntity, String.class, instanceId, versionId);
+		ResponseEntity<String> resp = restTemplate.exchange("/{instanceId}/types/{version}",
+				HttpMethod.GET,
+				requestEntity,
+				String.class,
+				instanceId, versionId);
 
 		List<String> actualResponseHeaders = resp.getHeaders().get(MDCServletRequestListener.RESPONSE_HEADER);
 		assertNotNull(actualResponseHeaders);
 		assertEquals(1, actualResponseHeaders.size());
-		assertDoesNotThrow(() -> UUID.fromString(actualResponseHeaders.get(0)));
+		assertDoesNotThrow( () -> UUID.fromString(actualResponseHeaders.get(0)) );
 	}
 
 	@Test
@@ -88,8 +97,11 @@ class FullStackMDCRequestResponseTest {
 		headers.add("x-b3-traceid", requestHeaderValue); // highest priority
 
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
-		ResponseEntity<String> resp = restTemplate.exchange("/{instanceId}/types/{version}", HttpMethod.GET,
-				requestEntity, String.class, instanceId, versionId);
+		ResponseEntity<String> resp = restTemplate.exchange("/{instanceId}/types/{version}",
+				HttpMethod.GET,
+				requestEntity,
+				String.class,
+				instanceId, versionId);
 
 		List<String> actualResponseHeaders = resp.getHeaders().get(MDCServletRequestListener.RESPONSE_HEADER);
 		assertNotNull(actualResponseHeaders);
@@ -105,8 +117,11 @@ class FullStackMDCRequestResponseTest {
 		headers.add("x-request-id", requestHeaderValue);
 
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
-		ResponseEntity<String> resp = restTemplate.exchange("/{instanceId}/types/{version}", HttpMethod.GET,
-				requestEntity, String.class, instanceId, versionId);
+		ResponseEntity<String> resp = restTemplate.exchange("/{instanceId}/types/{version}",
+				HttpMethod.GET,
+				requestEntity,
+				String.class,
+				instanceId, versionId);
 
 		List<String> actualResponseHeaders = resp.getHeaders().get(MDCServletRequestListener.RESPONSE_HEADER);
 		assertNotNull(actualResponseHeaders);
@@ -114,5 +129,6 @@ class FullStackMDCRequestResponseTest {
 		assertEquals(64, actualResponseHeaders.get(0).length());
 		assertTrue(requestHeaderValue.startsWith(actualResponseHeaders.get(0)));
 	}
+
 
 }
