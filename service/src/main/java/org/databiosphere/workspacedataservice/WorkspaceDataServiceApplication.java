@@ -36,7 +36,8 @@ public class WorkspaceDataServiceApplication {
 				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
 				.configure(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN, true)
 				.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
-				.configure(DeserializationFeature.USE_BIG_INTEGER_FOR_INTS, true).findAndAddModules().build();
+				.configure(DeserializationFeature.USE_BIG_INTEGER_FOR_INTS, true)
+				.findAndAddModules().build();
 		mapper.coercionConfigFor(LogicalType.Boolean).setCoercion(CoercionInputShape.Integer, CoercionAction.Fail);
 		mapper.coercionConfigFor(LogicalType.Float).setCoercion(CoercionInputShape.String, CoercionAction.Fail);
 		mapper.coercionConfigFor(LogicalType.Integer).setCoercion(CoercionInputShape.String, CoercionAction.Fail);
@@ -44,7 +45,7 @@ public class WorkspaceDataServiceApplication {
 	}
 
 	@Bean
-	public DataTypeInferer inferer(ObjectMapper mapper) {
+	public DataTypeInferer inferer(ObjectMapper mapper){
 		return new DataTypeInferer(mapper);
 	}
 
