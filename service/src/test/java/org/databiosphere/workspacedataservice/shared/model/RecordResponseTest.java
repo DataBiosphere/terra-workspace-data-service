@@ -24,9 +24,8 @@ public class RecordResponseTest {
 		RecordType recordType = RecordType.valueOf("test-type");
 		RecordAttributes recordAttributes = new RecordAttributes(
 				Map.of("foo", "bar", "num", 123, "bool", true, "anotherstring", "hello world"));
-		RecordMetadata recordMetadata = new RecordMetadata("test-provenance");
 
-		RecordResponse recordResponse = new RecordResponse(recordId, recordType, recordAttributes, recordMetadata);
+		RecordResponse recordResponse = new RecordResponse(recordId, recordType, recordAttributes);
 
 		String actual = jacksonObjectMapper.writeValueAsString(recordResponse);
 
@@ -40,9 +39,6 @@ public class RecordResponseTest {
 				    "bool": true,
 				    "foo": "bar",
 				    "num": 123
-				  },
-				  "metadata": {
-				    "provenance": "test-provenance"
 				  }
 				}""";
 

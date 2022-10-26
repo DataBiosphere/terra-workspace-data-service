@@ -23,7 +23,7 @@ public class TestUtils {
 				"\"array_of_date_time\":[\"2021-11-03T07:30:00\",\"2021-11-03T07:30:00\"]," +
 				"\"array_of_string\":[\"a\",\"b\",\"c\",\"12\"],\"boolean\":false,\"date\":\"2021-11-03\"," +
 				"\"date-time\":\"2021-11-03T07:30:00\",\"empty-array\":[],\"json\":{\"age\":22}," +
-				"\"null\":null,\"number\":47,\"string\":\"Broad Institute\"},\"metadata\":{\"provenance\":\"TODO: RECORDMETADATA\"}}";
+				"\"null\":null,\"number\":47,\"string\":\"Broad Institute\"}}";
 	}
 
 	public static RecordAttributes getAllTypesAttributesForJson(){

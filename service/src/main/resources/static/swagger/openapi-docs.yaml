@@ -593,7 +593,6 @@ components:
       required:
         - id
         - type
-        - metadata
         - attributes
       type: object
       properties:
@@ -606,9 +605,6 @@ components:
         attributes:
           $ref: '#/components/schemas/RecordAttributes'
           description: KVPs of record attributes
-        metadata:
-          $ref: '#/components/schemas/RecordMetadata'
-          description: Provenance and other record metadata. May not be present in v0.2.
     RecordAttributes:
       type: object
       additionalProperties: true
@@ -634,8 +630,6 @@ components:
           description: Attribute name
     RecordId:
       type: string
-    RecordMetadata:
-      type: object
     RecordQueryResponse:
       required:
         - searchRequest
