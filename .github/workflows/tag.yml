@@ -29,7 +29,7 @@ jobs:
       needs: tag-job
       uses: ./.github/workflows/release-python-client.yaml
       with:
-        new-tag: ${{ needs.tag-job.outputs.new_tag }}-SNAPSHOT
+        new-tag: ${{ needs.tag-job.outputs.new_tag }}
       secrets:
         PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
   java-client-job:
@@ -41,7 +41,7 @@ jobs:
       needs: tag-job
       uses: ./.github/workflows/publish-docker.yml
       with:
-        new-tag: ${{ needs.tag-job.outputs.new_tag }}-SNAPSHOT
+        new-tag: ${{ needs.tag-job.outputs.new_tag }}
       secrets:
         ACR_SP_PASSWORD: ${{ secrets.ACR_SP_PASSWORD }}
         ACR_SP_USER: ${{ secrets.ACR_SP_USER }}
