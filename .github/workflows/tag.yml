@@ -32,7 +32,7 @@ jobs:
       secrets:
         PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
   java-client-job:
-      uses: ./.github/workflows/publish.yaml
+      uses: ./.github/workflows/publish.yml
       secrets:
         PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
   docker-image-job:
