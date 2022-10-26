@@ -1,10 +1,17 @@
 name: Publish Docker Images to GCR and ACR
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-
+  workflow_call:
+    inputs:
+      new-tag:
+        required: true
+        type: string
+    secrets:
+      ACR_SP_PASSWORD:
+        required: true
+      ACR_SP_USER:
+        required: true
+      BROADBOT_TOKEN:
+        required: true
 env:
   SERVICE_NAME: ${{ github.event.repository.name }}
   GCR_REGISTRY: us.gcr.io
