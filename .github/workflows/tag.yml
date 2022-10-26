@@ -3,6 +3,7 @@ on:
   push:
     branches:
     - main
+    - aj-641-versions
 
 jobs:
   tag-job:
