@@ -39,7 +39,7 @@ public class RecordResponseTest {
 				    "bool": true,
 				    "foo": "bar",
 				    "num": 123
-				  },
+				  }
 				}""";
 
 		// compare, ignoring whitespace
