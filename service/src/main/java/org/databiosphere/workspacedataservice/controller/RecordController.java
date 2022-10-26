@@ -81,7 +81,7 @@ public class RecordController {
 		validateVersion(version);
 		checkRecordTypeExists(instanceId, recordType);
 		Record singleRecord = recordDao
-				.getSingleRecord(instanceId, recordType, recordId, recordDao.getRelationCols(instanceId, recordType))
+				.getSingleRecord(instanceId, recordType, recordId)
 				.orElseThrow(() -> new MissingObjectException("Record"));
 		RecordAttributes incomingAtts = recordRequest.recordAttributes();
 		RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAtts).getAttributes();
@@ -105,7 +105,7 @@ public class RecordController {
 		validateInstance(instanceId);
 		checkRecordTypeExists(instanceId, recordType);
 		Record result = recordDao
-				.getSingleRecord(instanceId, recordType, recordId, recordDao.getRelationCols(instanceId, recordType))
+				.getSingleRecord(instanceId, recordType, recordId)
 				.orElseThrow(() -> new MissingObjectException("Record"));
 		RecordResponse response = new RecordResponse(recordId, recordType, result.getAttributes(),
 				new RecordMetadata("TODO: RECORDMETADATA"));

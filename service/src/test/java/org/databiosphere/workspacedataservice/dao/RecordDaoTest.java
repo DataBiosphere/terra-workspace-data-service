@@ -45,11 +45,11 @@ class RecordDaoTest {
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord), new HashMap<>());
 
 		// make sure record is fetched
-		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId, Collections.emptyList()).get();
+		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId).get();
 		assertEquals(testRecord, search);
 
 		// nonexistent record should be null
-		Optional<Record> none = recordDao.getSingleRecord(instanceId, recordType, "noRecord", Collections.emptyList());
+		Optional<Record> none = recordDao.getSingleRecord(instanceId, recordType, "noRecord");
 		assertEquals(none, Optional.empty());
 	}
 
@@ -75,12 +75,12 @@ class RecordDaoTest {
 
 		List<Relation> relations = recordDao.getRelationCols(instanceId, recordType);
 
-		Record testRecordFetched = recordDao.getSingleRecord(instanceId, recordType, recordId, relations).get();
+		Record testRecordFetched = recordDao.getSingleRecord(instanceId, recordType, recordId).get();
 		// Relation attribute should be in the form of "terra-wds:/recordType/recordId"
 		assertEquals(RelationUtils.createRelationString(recordType, refRecordId),
 				testRecordFetched.getAttributeValue("relationAttr").toString());
 
-		Record referencedRecordFetched = recordDao.getSingleRecord(instanceId, recordType, refRecordId, relations)
+		Record referencedRecordFetched = recordDao.getSingleRecord(instanceId, recordType, refRecordId)
 				.get();
 		// Null relation attribute should be null
 		assertNull(referencedRecordFetched.getAttributeValue("relationAttr"));
@@ -96,7 +96,7 @@ class RecordDaoTest {
 		Record testRecord = new Record(recordId, recordType, RecordAttributes.empty());
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord), new HashMap<>());
 
-		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId, Collections.emptyList()).get();
+		Record search = recordDao.getSingleRecord(instanceId, recordType, recordId).get();
 		assertEquals(testRecord, search, "Created record should match entered record");
 
 		// create record with attributes
@@ -105,7 +105,7 @@ class RecordDaoTest {
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(recordWithAttr),
 				new HashMap<>(Map.of("foo", DataTypeMapping.STRING)));
 
-		search = recordDao.getSingleRecord(instanceId, recordType, attrId, Collections.emptyList()).get();
+		search = recordDao.getSingleRecord(instanceId, recordType, attrId).get();
 		assertEquals(recordWithAttr, search, "Created record with attributes should match entered record");
 	}
 
@@ -130,7 +130,7 @@ class RecordDaoTest {
 				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.STRING)));
 
 		Record search = recordDao
-				.getSingleRecord(instanceId, recordType, recordId, recordDao.getRelationCols(instanceId, recordType))
+				.getSingleRecord(instanceId, recordType, recordId)
 				.get();
 		assertEquals(testRecord, search, "Created record with references should match entered record");
 	}
@@ -157,8 +157,7 @@ class RecordDaoTest {
 		recordDao.deleteSingleRecord(instanceId, recordType, "testRecord");
 
 		// make sure record not fetched
-		Optional<Record> none = recordDao.getSingleRecord(instanceId, recordType, "testRecord",
-				Collections.emptyList());
+		Optional<Record> none = recordDao.getSingleRecord(instanceId, recordType, "testRecord");
 		assertEquals(Optional.empty(), none, "Deleted record should not be found");
 	}
 

@@ -129,7 +129,7 @@ public class RecordDao {
 				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by "
 						+ (sortAttribute == null ? RECORD_ID : quote(sortAttribute)) + " " + sortDirection + " limit "
 						+ pageSize + " offset " + offset,
-				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType)), objectMapper, getExistingTableSchema(instanceId, recordType)));
+				new RecordRowMapper(recordType, objectMapper, instanceId));
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
@@ -315,7 +315,7 @@ public class RecordDao {
 	public Stream<Record> streamAllRecordsForType(UUID instanceId, RecordType recordType) {
 		return templateForStreaming.getJdbcTemplate().queryForStream(
 				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + RECORD_ID,
-				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType)), objectMapper, getExistingTableSchema(instanceId, recordType)));
+				new RecordRowMapper(recordType, objectMapper, instanceId));
 	}
 
 	public String getFkSql(Set<Relation> relations, UUID instanceId) {
@@ -481,8 +481,23 @@ public class RecordDao {
 		}
 	}
 
-	private record RecordRowMapper(RecordType recordType,
-			Map<String, RecordType> referenceColToTable, ObjectMapper objectMapper, Map<String, DataTypeMapping> schema) implements RowMapper<Record> {
+	private class RecordRowMapper implements RowMapper<Record> {
+
+		private final RecordType recordType;
+
+		private final Map<String, RecordType> referenceColToTable;
+
+		private final ObjectMapper objectMapper;
+
+		private final Map<String, DataTypeMapping> schema;
+
+		public RecordRowMapper(RecordType recordType, ObjectMapper objectMapper, UUID instanceId){
+
+			this.recordType = recordType;
+			this.objectMapper = objectMapper;
+			this.schema = RecordDao.this.getExistingTableSchema(instanceId, recordType);
+			this.referenceColToTable = RecordDao.this.getRelationColumnsByName(RecordDao.this.getRelationCols(instanceId, recordType));
+		}
 
 		@Override
 		public Record mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -564,14 +579,12 @@ public class RecordDao {
 
 	}
 
-	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, String recordId,
-			List<Relation> referenceCols) {
-		Map<String, RecordType> refColMapping = getRelationColumnsByName(referenceCols);
+	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
 		try {
 			return Optional.ofNullable(namedTemplate.queryForObject(
 					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + RECORD_ID
 							+ " = :recordId",
-					new MapSqlParameterSource("recordId", recordId), new RecordRowMapper(recordType, refColMapping, objectMapper, getExistingTableSchema(instanceId, recordType))));
+					new MapSqlParameterSource("recordId", recordId), new RecordRowMapper(recordType,objectMapper, instanceId)));
 		} catch (EmptyResultDataAccessException e) {
 			return Optional.empty();
 		}
@@ -591,7 +604,7 @@ public class RecordDao {
 				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), RecordType.class);
 	}
 
-	private static Map<String, RecordType> getRelationColumnsByName(List<Relation> referenceCols) {
+	Map<String, RecordType> getRelationColumnsByName(List<Relation> referenceCols) {
 		return referenceCols.stream()
 				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
 	}
