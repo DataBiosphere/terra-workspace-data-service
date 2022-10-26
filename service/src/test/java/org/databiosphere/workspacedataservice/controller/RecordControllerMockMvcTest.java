@@ -1,8 +1,11 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
@@ -31,15 +34,17 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -81,12 +86,6 @@ class RecordControllerMockMvcTest {
 				.file(file)).andExpect(status().isBadRequest());
 	}
 
-	/**
-	 * Slightly strange test to show loss of precision as a result of storing a large
-	 * integer in WDS.  If we switch to using BigDecimal throughout we should be able to
-	 * to change the test to start asserting equality
-	 * @throws Exception
-	 */
 	@Test
 	@Transactional
 	void storeLargeIntegerValue() throws Exception {
@@ -106,6 +105,61 @@ class RecordControllerMockMvcTest {
 		RecordResponse recordResponse = mapper.readValue(mvcResult.getResponse().getContentAsString(), RecordResponse.class);
 		assertEquals(new BigInteger(bigIntValue), recordResponse.recordAttributes().getAttributeValue("bigint"));
 		assertEquals(new BigDecimal(bigFloatValue), recordResponse.recordAttributes().getAttributeValue("bigfloat"));
+	}
+
+	@Test
+	@Transactional
+	void writeAndReadJson() throws Exception {
+		String rt = "jsonb-type";
+		RecordAttributes attributes = new RecordAttributes(Map.of("json-attr", Map.of("name", "Bella", "age_in_months", 8)));
+		// create new record with new record type
+		String rId = "newRecordId";
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						rt, rId).content(mapper.writeValueAsString(new RecordRequest(attributes)))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isCreated());
+		MockHttpServletResponse res = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				rt, rId)).andExpect(jsonPath("$.attributes.json-attr.age_in_months", is(8))).andReturn().getResponse();
+		RecordResponse recordResponse = mapper.readValue(res.getContentAsString(), RecordResponse.class);
+		Object attributeValue = recordResponse.recordAttributes().getAttributeValue("json-attr");
+		assertTrue(attributeValue instanceof Map, "jsonb data should deserialize to a map, " +
+				"before getting serialized to json in the final response");
+	}
+
+	@Test
+	@Transactional
+	void writeAndReadAllDataTypesJson() throws Exception {
+		String rt = "all-types";
+		RecordAttributes attributes = TestUtils.getAllTypesAttributesForJson();
+		assertEquals(attributes.attributeSet().size(), DataTypeMapping.values().length);
+		String rId = "newRecordId";
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						rt, rId).content(mapper.writeValueAsString(new RecordRequest(attributes)))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isCreated());
+		String jsonRes = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				rt, rId)).andReturn().getResponse().getContentAsString();
+		assertEquals(TestUtils.getExpectedAllAttributesJsonText(), jsonRes);
+	}
+
+	@Test
+	@Transactional
+	void writeAndReadAllDataTypesTsv() throws Exception {
+		String rt = "all-types";
+		String recordId = "newRecordId";
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
+		RecordAttributes attributes = TestUtils.getAllTypesAttributesForTsv();
+		assertEquals(DataTypeMapping.values().length, attributes.attributeSet().size());
+		String tsv = "sys_name\t"+attributes.attributeSet().stream().map(Map.Entry::getKey).collect(Collectors.joining("\t")) + "\n";
+		tsv += recordId+"\t" + attributes.attributeSet().stream().map(e -> e.getValue().toString()).collect(Collectors.joining("\t")) + "\n";
+
+		MockMultipartFile file = new MockMultipartFile("records", "generated.tsv", MediaType.TEXT_PLAIN_VALUE,
+				tsv.getBytes());
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId,
+				rt).file(file)).andExpect(status().isOk());
+		String jsonRes = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				rt, recordId)).andReturn().getResponse().getContentAsString();
+		assertEquals(TestUtils.getExpectedAllAttributesJsonText(), jsonRes);
 	}
 
 	@Test
@@ -197,6 +251,7 @@ class RecordControllerMockMvcTest {
 	}
 
 	@Test
+	@Transactional
 	void uploadTsvAndVerifySchema() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
 				RecordControllerMockMvcTest.class.getResourceAsStream("/small-test.tsv"));
@@ -324,6 +379,7 @@ class RecordControllerMockMvcTest {
 	}
 
 	@Test
+	@Transactional
 	void ensurePatchShowsAllFields() throws Exception {
 		RecordType recordType1 = RecordType.valueOf("recordType1");
 		createSomeRecords(recordType1, 1);
@@ -745,6 +801,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void batchInsertShouldFailWithInvalidRelation() throws Exception {
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId)).andExpect(status().is2xxSuccessful());
 		RecordType recordType = RecordType.valueOf("relationBatchInsert");
 		List<BatchOperation> batchOperations = List.of(
 				new BatchOperation(
@@ -765,6 +822,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void batchInsertShouldFailWithInvalidRelationExistingRecordType() throws Exception {
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId)).andExpect(status().is2xxSuccessful());
 		RecordType recordType = RecordType.valueOf("relationBatchInsert");
 		createSomeRecords(recordType, 2);
 		List<BatchOperation> batchOperations = List.of(

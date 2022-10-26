@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -168,6 +169,10 @@ public class DataTypeInferer {
 			return findArrayType(listVal);
 		}
 
+		if(val instanceof Map){
+			return JSON;
+		}
+
 		return getTypeMappingFromString(val.toString());
 	}
 
@@ -212,15 +217,15 @@ public class DataTypeInferer {
 	}
 
 	private <T> DataTypeMapping findArrayType(List<T> list){
-		DataTypeMapping bestMapping = null;
-		// find the distinct inferred types from the input
+		if(CollectionUtils.isEmpty(list)){
+			return EMPTY_ARRAY;
+		}
 		List<DataTypeMapping> inferredTypes = list.stream()
 				.map(item -> inferType(item, InBoundDataSource.JSON))
 				.distinct()
 				.toList();
-		if (inferredTypes.size() == 1) {
-			bestMapping = inferredTypes.get(0);
-		} else {
+		DataTypeMapping bestMapping = inferredTypes.get(0);
+		if (inferredTypes.size() > 1) {
 			for (DataTypeMapping type : inferredTypes) {
 				bestMapping = selectBestType(bestMapping, type);
 			}

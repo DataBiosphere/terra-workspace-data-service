@@ -1,5 +1,8 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
@@ -16,7 +19,6 @@ import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.postgresql.jdbc.PgArray;
-import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -68,11 +70,15 @@ public class RecordDao {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RecordDao.class);
 
 	private final DataTypeInferer inferer;
+
+	private final ObjectMapper objectMapper;
+
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
-			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf) {
+			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf, ObjectMapper objectMapper) {
 		this.namedTemplate = namedTemplate;
 		this.templateForStreaming = templateForStreaming;
 		this.inferer = inf;
+		this.objectMapper = objectMapper;
 	}
 
 	public boolean instanceSchemaExists(UUID instanceId) {
@@ -123,7 +129,7 @@ public class RecordDao {
 				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by "
 						+ (sortAttribute == null ? RECORD_ID : quote(sortAttribute)) + " " + sortDirection + " limit "
 						+ pageSize + " offset " + offset,
-				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType))));
+				new RecordRowMapper(recordType, objectMapper, instanceId));
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
@@ -309,7 +315,7 @@ public class RecordDao {
 	public Stream<Record> streamAllRecordsForType(UUID instanceId, RecordType recordType) {
 		return templateForStreaming.getJdbcTemplate().queryForStream(
 				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + RECORD_ID,
-				new RecordRowMapper(recordType, getRelationColumnsByName(getRelationCols(instanceId, recordType))));
+				new RecordRowMapper(recordType, objectMapper, instanceId));
 	}
 
 	public String getFkSql(Set<Relation> relations, UUID instanceId) {
@@ -369,6 +375,14 @@ public class RecordDao {
 				return LocalDateTime.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 			}
 		}
+		if(attVal instanceof Map<?,?>){
+			try {
+				return objectMapper.writeValueAsString(attVal);
+			} catch (JsonProcessingException e) {
+				LOGGER.error("Could not serialize Map to json string", e);
+				throw new RuntimeException(e);
+			}
+		}
 		if(typeMapping.isArrayType()){
 			return getArrayValues(attVal, typeMapping);
 		}
@@ -384,7 +398,7 @@ public class RecordDao {
 
 	private Object[] getListAsArray(List<?> attVal, DataTypeMapping typeMapping) {
 		switch (typeMapping){
-			case ARRAY_OF_STRING, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_NUMBER:
+			case ARRAY_OF_STRING, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_NUMBER, EMPTY_ARRAY:
 				return attVal.stream().map(Object::toString).toList().toArray(new String[0]);
 			case ARRAY_OF_BOOLEAN:
 				//accept all casings of True and False if they're strings
@@ -467,15 +481,34 @@ public class RecordDao {
 		}
 	}
 
-	private record RecordRowMapper(RecordType recordType,
-			Map<String, RecordType> referenceColToTable) implements RowMapper<Record> {
+	private class RecordRowMapper implements RowMapper<Record> {
+
+		private final RecordType recordType;
+
+		private final Map<String, RecordType> referenceColToTable;
+
+		private final ObjectMapper objectMapper;
+
+		private final Map<String, DataTypeMapping> schema;
+
+		public RecordRowMapper(RecordType recordType, ObjectMapper objectMapper, UUID instanceId){
+
+			this.recordType = recordType;
+			this.objectMapper = objectMapper;
+			this.schema = RecordDao.this.getExistingTableSchema(instanceId, recordType);
+			this.referenceColToTable = RecordDao.this.getRelationColumnsByName(RecordDao.this.getRelationCols(instanceId, recordType));
+		}
 
 		@Override
 		public Record mapRow(ResultSet rs, int rowNum) throws SQLException {
-			return new Record(rs.getString(RECORD_ID), recordType, getAttributes(rs));
+			try {
+				return new Record(rs.getString(RECORD_ID), recordType, getAttributes(rs));
+			} catch (JsonProcessingException e) {
+				throw new RuntimeException(e);
+			}
 		}
 
-		private RecordAttributes getAttributes(ResultSet rs) {
+		private RecordAttributes getAttributes(ResultSet rs) throws JsonProcessingException {
 			try {
 				ResultSetMetaData metaData = rs.getMetaData();
 				RecordAttributes attributes = RecordAttributes.empty();
@@ -490,30 +523,41 @@ public class RecordDao {
 						attributes.putAttribute(columnName, RelationUtils
 								.createRelationString(referenceColToTable.get(columnName), rs.getString(columnName)));
 					} else {
-						Object object = rs.getObject(columnName);
-
-						if (object instanceof java.sql.Date date) {
-							object = date.toLocalDate();
-						} else if (object instanceof java.sql.Timestamp ts) {
-							object = ts.toLocalDateTime();
-						} else if (object instanceof PGobject pGobject) {
-							object = pGobject.getValue();
-						} else if (object instanceof PgArray pgArray) {
-							object = pgArray.getArray();
-							if(object.getClass() == Timestamp[].class) {
-								object = convertToLocalDateTime(object);
-							} else if(object.getClass() == Date[].class) {
-								object = convertToLocalDate(object);
-							}
-						}
-
-						attributes.putAttribute(columnName, object);
+						attributes.putAttribute(columnName, getAttributeValueForType(rs.getObject(columnName), schema.get(columnName)));
 					}
 				}
 				return attributes;
 			} catch (SQLException e) {
 				throw new RuntimeException(e);
 			}
+		}
+
+		private Object getAttributeValueForType(Object object, DataTypeMapping typeMapping) throws SQLException, JsonProcessingException {
+			if(object == null){
+				return null;
+			}
+			if (object instanceof java.sql.Date date && typeMapping == DataTypeMapping.DATE) {
+				return date.toLocalDate();
+			}
+			if (object instanceof java.sql.Timestamp ts && typeMapping == DataTypeMapping.DATE_TIME) {
+				return ts.toLocalDateTime();
+			}
+			if(typeMapping.isArrayType() && object instanceof PgArray pgArray){
+				return getArrayValue(pgArray.getArray(), typeMapping);
+			}
+			if(typeMapping == DataTypeMapping.JSON){
+				return objectMapper.readValue(object.toString(), new TypeReference<Map<String, Object>>(){});
+			}
+			return object;
+		}
+
+		private Object getArrayValue(Object object, DataTypeMapping typeMapping) {
+			if(typeMapping == DataTypeMapping.ARRAY_OF_DATE_TIME){
+				return convertToLocalDateTime(object);
+			} else if(typeMapping == DataTypeMapping.ARRAY_OF_DATE){
+				return convertToLocalDate(object);
+			}
+			return object;
 		}
 
 		private LocalDateTime[] convertToLocalDateTime(Object object) {
@@ -535,14 +579,12 @@ public class RecordDao {
 
 	}
 
-	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, String recordId,
-			List<Relation> referenceCols) {
-		Map<String, RecordType> refColMapping = getRelationColumnsByName(referenceCols);
+	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
 		try {
 			return Optional.ofNullable(namedTemplate.queryForObject(
 					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + RECORD_ID
 							+ " = :recordId",
-					new MapSqlParameterSource("recordId", recordId), new RecordRowMapper(recordType, refColMapping)));
+					new MapSqlParameterSource("recordId", recordId), new RecordRowMapper(recordType,objectMapper, instanceId)));
 		} catch (EmptyResultDataAccessException e) {
 			return Optional.empty();
 		}
@@ -562,7 +604,7 @@ public class RecordDao {
 				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), RecordType.class);
 	}
 
-	private static Map<String, RecordType> getRelationColumnsByName(List<Relation> referenceCols) {
+	Map<String, RecordType> getRelationColumnsByName(List<Relation> referenceCols) {
 		return referenceCols.stream()
 				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
 	}
