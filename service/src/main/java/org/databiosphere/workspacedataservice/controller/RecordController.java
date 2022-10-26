@@ -17,7 +17,6 @@ import org.databiosphere.workspacedataservice.service.model.exception.MissingObj
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
-import org.databiosphere.workspacedataservice.shared.model.RecordMetadata;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
@@ -67,7 +66,8 @@ public class RecordController {
 
 	private final ObjectMapper objectMapper;
 
-	public RecordController(RecordDao recordDao, BatchWriteService batchWriteService, DataTypeInferer inf, ObjectMapper objectMapper) {
+	public RecordController(RecordDao recordDao, BatchWriteService batchWriteService, DataTypeInferer inf,
+			ObjectMapper objectMapper) {
 		this.recordDao = recordDao;
 		this.batchWriteService = batchWriteService;
 		this.inferer = inf;
@@ -92,8 +92,7 @@ public class RecordController {
 		Map<String, DataTypeMapping> updatedSchema = batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType,
 				typeMapping, existingTableSchema, records);
 		recordDao.batchUpsert(instanceId, recordType, records, updatedSchema);
-		RecordResponse response = new RecordResponse(recordId, recordType, singleRecord.getAttributes(),
-				new RecordMetadata("TODO: SUPERFRESH"));
+		RecordResponse response = new RecordResponse(recordId, recordType, singleRecord.getAttributes());
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
@@ -107,8 +106,7 @@ public class RecordController {
 		Record result = recordDao
 				.getSingleRecord(instanceId, recordType, recordId, recordDao.getRelationCols(instanceId, recordType))
 				.orElseThrow(() -> new MissingObjectException("Record"));
-		RecordResponse response = new RecordResponse(recordId, recordType, result.getAttributes(),
-				new RecordMetadata("TODO: RECORDMETADATA"));
+		RecordResponse response = new RecordResponse(recordId, recordType, result.getAttributes());
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
@@ -175,7 +173,7 @@ public class RecordController {
 				searchRequest.getOffset(), searchRequest.getSort().name().toLowerCase(),
 				searchRequest.getSortAttribute(), instanceId);
 		List<RecordResponse> recordList = records.stream().map(
-				r -> new RecordResponse(r.getId(), r.getRecordType(), r.getAttributes(), new RecordMetadata("UNUSED")))
+				r -> new RecordResponse(r.getId(), r.getRecordType(), r.getAttributes()))
 				.toList();
 		return new RecordQueryResponse(searchRequest, recordList, totalRecords);
 	}
@@ -192,8 +190,7 @@ public class RecordController {
 			recordDao.createSchema(instanceId);
 		}
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
-			RecordResponse response = new RecordResponse(recordId, recordType, recordRequest.recordAttributes(),
-					new RecordMetadata("TODO"));
+			RecordResponse response = new RecordResponse(recordId, recordType, recordRequest.recordAttributes());
 			Record newRecord = new Record(recordId, recordType, recordRequest);
 			createRecordTypeAndInsertRecords(instanceId, newRecord, recordType, requestSchema);
 			return new ResponseEntity<>(response, status);
@@ -211,8 +208,7 @@ public class RecordController {
 			Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
 			combinedSchema.putAll(requestSchema);
 			recordDao.batchUpsert(instanceId, recordType, records, combinedSchema);
-			RecordResponse response = new RecordResponse(recordId, recordType, attributesInRequest,
-					new RecordMetadata("TODO"));
+			RecordResponse response = new RecordResponse(recordId, recordType, attributesInRequest);
 			return new ResponseEntity<>(response, status);
 		}
 	}

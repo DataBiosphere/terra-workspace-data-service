@@ -130,16 +130,17 @@ public class RecordDao {
 		MapSqlParameterSource params = new MapSqlParameterSource("instanceId", instanceId.toString());
 		params.addValue("tableName", recordType.getName());
 		params.addValue("recordName", RECORD_ID);
-		return namedTemplate
-				.query("select column_name, udt_name::regtype as data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
-						+ "and table_name = :tableName and column_name != :recordName", params, rs -> {
-							Map<String, DataTypeMapping> result = new HashMap<>();
-							while (rs.next()) {
-								result.put(rs.getString("column_name"),
-										DataTypeMapping.fromPostgresType(rs.getString("data_type")));
-							}
-							return result;
-						});
+		return namedTemplate.query(
+				"select column_name, udt_name::regtype as data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
+						+ "and table_name = :tableName and column_name != :recordName",
+				params, rs -> {
+					Map<String, DataTypeMapping> result = new HashMap<>();
+					while (rs.next()) {
+						result.put(rs.getString("column_name"),
+								DataTypeMapping.fromPostgresType(rs.getString("data_type")));
+					}
+					return result;
+				});
 	}
 
 	public void addColumn(UUID instanceId, RecordType recordType, String columnName, DataTypeMapping colType) {
@@ -369,7 +370,7 @@ public class RecordDao {
 				return LocalDateTime.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 			}
 		}
-		if(typeMapping.isArrayType()){
+		if (typeMapping.isArrayType()) {
 			return getArrayValues(attVal, typeMapping);
 		}
 		return attVal;
@@ -383,21 +384,21 @@ public class RecordDao {
 	}
 
 	private Object[] getListAsArray(List<?> attVal, DataTypeMapping typeMapping) {
-		switch (typeMapping){
-			case ARRAY_OF_STRING, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_NUMBER:
+		switch (typeMapping) {
+			case ARRAY_OF_STRING, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_NUMBER :
 				return attVal.stream().map(Object::toString).toList().toArray(new String[0]);
-			case ARRAY_OF_BOOLEAN:
-				//accept all casings of True and False if they're strings
-				return attVal.stream().map(Object::toString).map(String::toLowerCase)
-						.map(Boolean::parseBoolean).toList().toArray(new Boolean[0]);
-			default:
+			case ARRAY_OF_BOOLEAN :
+				// accept all casings of True and False if they're strings
+				return attVal.stream().map(Object::toString).map(String::toLowerCase).map(Boolean::parseBoolean)
+						.toList().toArray(new Boolean[0]);
+			default :
 				throw new IllegalArgumentException("Unhandled array type " + typeMapping);
 		}
 
 	}
 
-	private boolean stringIsCompatibleWithType(boolean typesMatch,
-											   Predicate<String> typeCheckPredicate, String attVal) {
+	private boolean stringIsCompatibleWithType(boolean typesMatch, Predicate<String> typeCheckPredicate,
+			String attVal) {
 		return typesMatch && typeCheckPredicate.test(attVal);
 	}
 
@@ -423,10 +424,8 @@ public class RecordDao {
 				+ (schema.size() == 1 ? "do nothing" : "do update set " + genColUpsertUpdates(colNames));
 	}
 
-
 	private String getInsertParamList(List<DataTypeMapping> colTypes) {
-		return colTypes.stream().map(DataTypeMapping::getWritePlaceholder)
-				.collect(Collectors.joining(", "));
+		return colTypes.stream().map(DataTypeMapping::getWritePlaceholder).collect(Collectors.joining(", "));
 	}
 
 	private String getInsertColList(List<String> existingTableSchema) {
@@ -500,9 +499,9 @@ public class RecordDao {
 							object = pGobject.getValue();
 						} else if (object instanceof PgArray pgArray) {
 							object = pgArray.getArray();
-							if(object.getClass() == Timestamp[].class) {
+							if (object.getClass() == Timestamp[].class) {
 								object = convertToLocalDateTime(object);
-							} else if(object.getClass() == Date[].class) {
+							} else if (object.getClass() == Date[].class) {
 								object = convertToLocalDate(object);
 							}
 						}

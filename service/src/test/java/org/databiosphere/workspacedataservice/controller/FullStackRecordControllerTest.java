@@ -133,8 +133,10 @@ class FullStackRecordControllerTest {
 		body = executeQuery(recordType, RecordQueryResponse.class, sortByFloat).getBody();
 		assertThat(body.records()).hasSize(limit);
 		assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr2"))
-				.as("Record with attr2 2.99792448e8f should be first record in descending order").isEqualTo(new BigInteger("299792448"));
-		assertThat(body.records().get(4).recordAttributes().getAttributeValue("attr2")).isEqualTo(new BigDecimal("1.4142"));
+				.as("Record with attr2 2.99792448e8f should be first record in descending order")
+				.isEqualTo(new BigInteger("299792448"));
+		assertThat(body.records().get(4).recordAttributes().getAttributeValue("attr2"))
+				.isEqualTo(new BigDecimal("1.4142"));
 		SearchRequest sortByInt = new SearchRequest(limit, offset, SortDirection.ASC, "attr3");
 		body = executeQuery(recordType, RecordQueryResponse.class, sortByInt).getBody();
 		assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr3"))

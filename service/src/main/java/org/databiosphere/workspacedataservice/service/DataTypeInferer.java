@@ -68,13 +68,13 @@ public class DataTypeInferer {
 		if (existing.isArrayType() && newMapping.isArrayType() && Set.of(existing, newMapping).contains(EMPTY_ARRAY)) {
 			return newMapping != EMPTY_ARRAY ? newMapping : existing;
 		}
-		if(newMapping == DATE_TIME && existing == DATE){
+		if (newMapping == DATE_TIME && existing == DATE) {
 			return DATE_TIME;
 		}
-		if(newMapping == ARRAY_OF_DATE_TIME && existing == ARRAY_OF_DATE){
+		if (newMapping == ARRAY_OF_DATE_TIME && existing == ARRAY_OF_DATE) {
 			return ARRAY_OF_DATE_TIME;
 		}
-		if(newMapping.isArrayType() && existing.isArrayType()) {
+		if (newMapping.isArrayType() && existing.isArrayType()) {
 			return ARRAY_OF_STRING;
 		}
 		return STRING;
@@ -107,8 +107,9 @@ public class DataTypeInferer {
 		return getTypeMappingFromString(replaceLeftRightQuotes(sVal));
 	}
 
-	//libreoffice at least uses left and right quotes which cause problems when we try to parse as JSON
-	private String replaceLeftRightQuotes(String val){
+	// libreoffice at least uses left and right quotes which cause problems when we
+	// try to parse as JSON
+	private String replaceLeftRightQuotes(String val) {
 		return val.replaceAll("[“”]", "\"");
 	}
 
@@ -125,7 +126,7 @@ public class DataTypeInferer {
 		if (isValidJson(sVal)) {
 			return JSON;
 		}
-		if(isArray(sVal)){
+		if (isArray(sVal)) {
 			return findArrayTypeFromJson(sVal);
 		}
 		return STRING;
@@ -164,7 +165,7 @@ public class DataTypeInferer {
 		if (RelationUtils.isRelationValue(val)) {
 			return STRING;
 		}
-		if(val instanceof List<?> listVal){
+		if (val instanceof List<?> listVal) {
 			return findArrayType(listVal);
 		}
 
@@ -193,7 +194,7 @@ public class DataTypeInferer {
 		}
 	}
 
-	private JsonNode parseToJsonNode(String val){
+	private JsonNode parseToJsonNode(String val) {
 		try {
 			return objectMapper.readTree(val);
 		} catch (JsonProcessingException e) {
@@ -206,18 +207,16 @@ public class DataTypeInferer {
 		return jsonNode != null && jsonNode.isObject();
 	}
 
-	public boolean isArray(String val){
+	public boolean isArray(String val) {
 		JsonNode jsonNode = parseToJsonNode(val);
 		return jsonNode != null && jsonNode.isArray();
 	}
 
-	private <T> DataTypeMapping findArrayType(List<T> list){
+	private <T> DataTypeMapping findArrayType(List<T> list) {
 		DataTypeMapping bestMapping = null;
 		// find the distinct inferred types from the input
-		List<DataTypeMapping> inferredTypes = list.stream()
-				.map(item -> inferType(item, InBoundDataSource.JSON))
-				.distinct()
-				.toList();
+		List<DataTypeMapping> inferredTypes = list.stream().map(item -> inferType(item, InBoundDataSource.JSON))
+				.distinct().toList();
 		if (inferredTypes.size() == 1) {
 			bestMapping = inferredTypes.get(0);
 		} else {
@@ -228,24 +227,24 @@ public class DataTypeInferer {
 		return DataTypeMapping.getArrayTypeForBase(bestMapping);
 	}
 
-	private DataTypeMapping findArrayTypeFromJson(String val)  {
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Boolean[].class))){
+	private DataTypeMapping findArrayTypeFromJson(String val) {
+		if (ArrayUtils.isNotEmpty(getArrayOfType(val, Boolean[].class))) {
 			return ARRAY_OF_BOOLEAN;
 		}
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Double[].class))){
+		if (ArrayUtils.isNotEmpty(getArrayOfType(val, Double[].class))) {
 			return ARRAY_OF_NUMBER;
 		}
-		//order matters an array of LocalDateTime will be parsed to LocalDate
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, LocalDateTime[].class))){
+		// order matters an array of LocalDateTime will be parsed to LocalDate
+		if (ArrayUtils.isNotEmpty(getArrayOfType(val, LocalDateTime[].class))) {
 			return ARRAY_OF_DATE_TIME;
 		}
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, LocalDate[].class))){
+		if (ArrayUtils.isNotEmpty(getArrayOfType(val, LocalDate[].class))) {
 			return ARRAY_OF_DATE;
 		}
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, String[].class))){
+		if (ArrayUtils.isNotEmpty(getArrayOfType(val, String[].class))) {
 			return ARRAY_OF_STRING;
 		}
-		if(getArrayOfType(val, String[].class) != null){
+		if (getArrayOfType(val, String[].class) != null) {
 			return EMPTY_ARRAY;
 		}
 		throw new IllegalArgumentException("Unsupported array type " + val);
