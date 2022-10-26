@@ -100,7 +100,7 @@ jobs:
 
       - name: Build, assemble, and test
         id: build-test
-        run: ./gradlew test
+        run: ./gradlew --build-cache test
 
       - name: Upload Test Reports
         if: always()
