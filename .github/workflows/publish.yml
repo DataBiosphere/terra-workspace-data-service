@@ -1,8 +1,11 @@
-name: Publish
-on: 
-  create:
-      tags:
-        - '*'
+name: Publish Java Client
+on:
+  workflow_call:
+    secrets:
+      ARTIFACTORY_USERNAME:
+        required: true
+      ARTIFACTORY_PASSWORD:
+        required: true
 
 jobs:
   publish-job:
