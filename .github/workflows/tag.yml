@@ -36,7 +36,7 @@ jobs:
       secrets:
         PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
   docker-image-job:
-      uses: ./.github/workflows/publish-docker.yaml
+      uses: ./.github/workflows/publish-docker.yml
       with:
         new-tag: ${{ jobs.tag-job.outputs.new_tag }}-SNAPSHOT
       secrets:
