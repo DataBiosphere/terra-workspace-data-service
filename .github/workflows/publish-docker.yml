@@ -75,3 +75,26 @@ jobs:
           --username ${{ secrets.ACR_SP_USER }} \
           --password-stdin
           docker push ${{ steps.acr-image-name.outputs.name }}
+          
+      - name: Clone Cromwhelm
+        uses: actions/checkout@v2
+        with:
+          repository: broadinstitute/cromwhelm
+          token: ${{ secrets.BROADBOT_TOKEN }} # Has to be set at checkout AND later when pushing to work
+          path: cromwhelm
+          
+      - name: Update WDS image tag for CBAS Helm Chart in cromwhelm
+        env:
+          BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
+        run: |
+          set -e
+          cd cromwhelm
+          git checkout main
+          HELM_CUR_TAG=$(grep "/terra-workspace-data-service:" terra-batch-libchart/values.yaml | sed "s,.*/terra-workspace-data-service:,,")
+          HELM_NEW_TAG=${{ steps.setHash.outputs.git_short_sha }}
+          [[ -n "$HELM_CUR_TAG" && -n "$HELM_NEW_TAG" ]]
+          sed -i "s/$HELM_CUR_TAG/$HELM_NEW_TAG/" terra-batch-libchart/values.yaml
+          git config --global user.name "broadbot"
+          git config --global user.email "broadbot@broadinstitute.org"
+          git commit -am "Auto update WDS version to $HELM_NEW_TAG"
+          git push https://broadbot:$BROADBOT_TOKEN@github.com/broadinstitute/cromwhelm.git main
