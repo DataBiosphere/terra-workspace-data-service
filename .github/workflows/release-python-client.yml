@@ -22,11 +22,6 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: 3.7
-#       - name: Get previous tag
-#         id: apiprevioustag
-#         uses: "broadinstitute/github-action-get-previous-tag@master"
-#         env:
-#           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
       - name: Use Node.js ${{matrix.node-version }}
         uses: actions/setup-node@v2
         with:
