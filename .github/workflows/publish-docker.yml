@@ -38,13 +38,13 @@ jobs:
           git_short_sha=$(git rev-parse --short HEAD)
           echo $git_short_sha
           echo "::set-output name=git_short_sha::${git_short_sha}"
-      - name: Construct GCR docker image name and tag
+      - name: Construct GCR docker image name
         id: gcr-image-name
-        run: echo ::set-output name=name::${GCR_REGISTRY}/${GOOGLE_PROJECT}/${SERVICE_NAME}
+        run: echo "name=${GCR_REGISTRY}/${GOOGLE_PROJECT}/${SERVICE_NAME}" >> $GITHUB_OUTPUT
 
-      - name: Construct ACR docker image name and tag
+      - name: Construct ACR docker image name
         id: acr-image-name
-        run: echo ::set-output name=name::${ACR_REGISTRY}/${SERVICE_NAME}
+        run: echo "name={ACR_REGISTRY}/${SERVICE_NAME}" >> $GITHUB_OUTPUT$
 
       - name: Build image locally with jib
         run: |
