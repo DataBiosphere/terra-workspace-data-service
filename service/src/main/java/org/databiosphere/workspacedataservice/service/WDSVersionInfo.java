@@ -1,0 +1,31 @@
+package org.databiosphere.workspacedataservice.service;
+
+import java.io.FileNotFoundException;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Scanner;
+import java.io.File;
+
+public class WDSVersionInfo {
+    /**
+     * WDSVersionInfo is a utility class that parses a VERSION.txt file into a ResponseBody.
+     *
+     * The VERSION.txt file contains relevant version metadata for WDS. Via GitHub Actions, VERSION.txt
+     * is updated upon each merge in the `main` branch of WDS.
+     */
+
+    // Working directory when invoked in API is terra-workspace-data-service/service/
+    private static final String VERSION_FILE_LOCATION = "/src/main/resources/VERSION.txt";
+
+    public Map<String, String> getWDSVersionInfo() throws FileNotFoundException {
+
+        File versionFile = new File(System.getProperty("user.dir") + VERSION_FILE_LOCATION);
+        Scanner versionScanner = new Scanner(versionFile);
+        Map<String,String> versionDetailsMap = new HashMap<>();
+        versionDetailsMap.put("gitShortSHA", versionScanner.nextLine());
+        versionDetailsMap.put("semanticVersion", versionScanner.nextLine());
+
+        return versionDetailsMap;
+    }
+
+}

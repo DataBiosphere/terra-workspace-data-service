@@ -23,7 +23,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.databiosphere.workspacedataservice.shared.model.TsvUploadResponse;
-import org.databiosphere.workspacedataservice.shared.model.WDSVersionInfo;
+import org.databiosphere.workspacedataservice.service.WDSVersionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -262,9 +262,9 @@ public class RecordController {
 	}
 
 	@GetMapping("/version")
-	public ResponseEntity<List<String>> getWDSVersion() throws FileNotFoundException {
-		List<String> awesomeDeets = new WDSVersionInfo().getWDSVersionInfo();
-		return new ResponseEntity<>(awesomeDeets, HttpStatus.OK);
+	public ResponseEntity<Map<String, String> > getWDSVersion() throws FileNotFoundException {
+		Map<String, String> versionInfo = new WDSVersionInfo().getWDSVersionInfo();
+		return new ResponseEntity<>(versionInfo, HttpStatus.OK);
 	}
 
 	private RecordTypeSchema getSchemaDescription(UUID instanceId, RecordType recordType) {
