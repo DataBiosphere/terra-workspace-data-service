@@ -23,6 +23,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.databiosphere.workspacedataservice.shared.model.TsvUploadResponse;
+import org.databiosphere.workspacedataservice.shared.model.WDSVersionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -42,10 +43,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -261,6 +259,12 @@ public class RecordController {
 		List<RecordTypeSchema> result = allRecordTypes.stream()
 				.map(recordType -> getSchemaDescription(instanceId, recordType)).toList();
 		return new ResponseEntity<>(result, HttpStatus.OK);
+	}
+
+	@GetMapping("/version")
+	public ResponseEntity<List<String>> getWDSVersion() throws FileNotFoundException {
+		List<String> awesomeDeets = new WDSVersionInfo().getWDSVersionInfo();
+		return new ResponseEntity<>(awesomeDeets, HttpStatus.OK);
 	}
 
 	private RecordTypeSchema getSchemaDescription(UUID instanceId, RecordType recordType) {

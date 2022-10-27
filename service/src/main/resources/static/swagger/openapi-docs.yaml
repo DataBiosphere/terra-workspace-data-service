@@ -36,11 +36,7 @@ paths:
         - General WDS Info
       responses:
         200:
-          description: Version information retrieved :D
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          description: WDS version information retrieved
   /{instanceid}/records/{v}/{type}/{id}:
     get:
       summary: Get record
