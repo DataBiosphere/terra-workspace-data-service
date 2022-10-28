@@ -19,9 +19,6 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: Where is JQ at?
-        run: jq --version
-
       - name: Build all projects without running tests
         run: ./gradlew --build-cache build -x test
 
