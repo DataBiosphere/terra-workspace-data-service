@@ -10,11 +10,6 @@ on:
 
 jobs:
   tag-job:
-    - name: Set commit short hash
-      id: setHash
-      run: |
-
-        echo "::set-output name=git_short_sha::${git_short_sha}"
     runs-on: ubuntu-latest
     steps:
       - name: Bump versions in WDS VERSION.txt file
@@ -24,7 +19,7 @@ jobs:
           cd service/
           set -e
           cat VERSION.txt
-          sed -i "2 s/.*/$git_short_sha/" VERSION.txt
+          sed -i "2 s/.*/${{ git_short_sha }}/" VERSION.txt
           sed -i "3 s/.*/hello/" VERSION.txt
           cat VERSION.txt
 
