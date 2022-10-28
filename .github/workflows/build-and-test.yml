@@ -82,7 +82,7 @@ jobs:
         run: |
           pwd
           ls
-          cd service/
+          cd service
           ls
           cd src/
           ls
@@ -92,7 +92,6 @@ jobs:
           ls
           cd org/
           ls
-          cd resources/
           ls
 #          cd service/src/main/java/org/resources
 #          set -e
