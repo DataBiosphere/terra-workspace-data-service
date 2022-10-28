@@ -80,33 +80,17 @@ jobs:
       - uses: actions/checkout@v2
       - name: Bump versions in WDS VERSION.txt file
         run: |
-          pwd
-          ls
-          cd service
           ls
           pwd
-          cd src/
+          set -e
+          cat VERSION.txt
+          echo ${{ steps.setHash.outputs.git_short_sha }}
+          sed -i "1 s/.*/goodbye/" VERSION.txt
+          sed -i "2 s/.*/hello/" VERSION.txt
+          cat VERSION.txt
+          ${{ steps.setHash.outputs.git_short_sha }}
           ls
-          pwd
-          cd main/
-          ls
-          pwd
-          cd java/
-          ls
-          pwd
-          cd org/
-          ls
-          pwd
-#          cd service/src/main/java/org/resources
-#          set -e
-#          cat VERSION.txt
-#          echo ${{ steps.setHash.outputs.git_short_sha }}
-#          sed -i "1 s/.*/goodbye/" VERSION.txt
-#          sed -i "2 s/.*/hello/" VERSION.txt
-#          cat VERSION.txt
-#          ${{ steps.setHash.outputs.git_short_sha }}
-#          ls
-#          env
+          env
 
       - name: Initialize Postgres DB
         env:

@@ -15,11 +15,11 @@ public class WDSVersionInfo {
      */
 
     // Working directory when invoked in API is terra-workspace-data-service/service/
-    private static final String VERSION_FILE_LOCATION = "/src/main/resources/VERSION.txt";
+    private static final String VERSION_FILE_LOCATION = "VERSION.txt";
 
     public Map<String, String> getWDSVersionInfo() throws FileNotFoundException {
 
-        File versionFile = new File(System.getProperty("user.dir") + VERSION_FILE_LOCATION);
+        File versionFile = new File(VERSION_FILE_LOCATION);
         Scanner versionScanner = new Scanner(versionFile);
         Map<String,String> versionDetailsMap = new HashMap<>();
         versionDetailsMap.put("gitShortSHA", versionScanner.nextLine());
