@@ -20,12 +20,13 @@ public class WDSVersionInfo {
     public Map<String, String> getWDSVersionInfo() throws FileNotFoundException {
 
         File versionFile = new File(VERSION_FILE_LOCATION);
-        Scanner versionScanner = new Scanner(versionFile);
-        Map<String,String> versionDetailsMap = new HashMap<>();
-        versionDetailsMap.put("gitShortSHA", versionScanner.nextLine());
-        versionDetailsMap.put("semanticVersion", versionScanner.nextLine());
-
+        Map<String, String> versionDetailsMap = new HashMap<>();
+        try (Scanner versionScanner = new Scanner(versionFile)){
+            versionDetailsMap.put("gitShortSHA", versionScanner.nextLine());
+            versionDetailsMap.put("semanticVersion", versionScanner.nextLine());
+        }
         return versionDetailsMap;
+
     }
 
 }

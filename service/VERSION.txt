@@ -1,3 +1,2 @@
-# This file stores versioning info that can be retrieved via WDS's API at /version
 1.2.3
 sha123
