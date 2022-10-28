@@ -20,7 +20,7 @@ jobs:
           cache: 'gradle'
 
       - name: Build all projects without running tests
-        run: ./gradlew --build-cache build -x test
+        run: jq && ./gradlew --build-cache build -x test
 
   sonarqube:
     needs: [ build ]
