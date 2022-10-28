@@ -78,21 +78,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Bump versions in WDS VERSION.txt file
-        run: |
-          ls
-          pwd
-          cd service/
-          set -e
-          cat VERSION.txt
-          echo ${{ steps.setHash.outputs.git_short_sha }}
-          sed -i "1 s/.*/goodbye/" VERSION.txt
-          sed -i "2 s/.*/hello/" VERSION.txt
-          cat VERSION.txt
-          ${{ steps.setHash.outputs.git_short_sha }}
-          ls
-          env
-
       - name: Initialize Postgres DB
         env:
           PGPASSWORD: postgres
