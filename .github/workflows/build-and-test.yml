@@ -80,8 +80,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: Bump versions in WDS VERSION.txt file
         run: |
+          pwd
+          cd service/src/main/java/org/resources/
           set -e
-          cd service/src/main/java/org/resources
           cat VERSION.txt
           echo ${{ steps.setHash.outputs.git_short_sha }}
           sed -i "1 s/.*/goodbye/" VERSION.txt
