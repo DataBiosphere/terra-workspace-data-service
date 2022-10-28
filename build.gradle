@@ -10,6 +10,7 @@ plugins {
     id 'org.hidetake.swagger.generator' version '2.19.2' apply false
     id 'java'
     id 'com.diffplug.spotless' version '6.8.0'
+    id "com.gorylenko.gradle-git-properties" version "2.4.1"
 }
 
 repositories { mavenCentral() }
