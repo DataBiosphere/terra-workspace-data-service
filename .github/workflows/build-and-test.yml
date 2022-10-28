@@ -78,9 +78,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
       - name: Bump versions in WDS VERSION.txt file
-        env:
         run: |
           set -e
           cd service/src/main/java/org/resources
