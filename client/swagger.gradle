@@ -21,9 +21,10 @@ dependencies {
 	implementation "org.glassfish.jersey.connectors:jersey-jdk-connector:$jersey_version"
 }
 
+generateSwaggerCode.dependsOn ':service:generateOpenApiDocs'
 
 generateSwaggerCode {
-	inputFile = file('../service/src/main/resources/static/swagger/openapi-docs.yaml')
+	inputFile = file('../service/build/openapi.json')
 	language = 'java'
 	library = 'jersey2'
 
