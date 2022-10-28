@@ -84,15 +84,19 @@ jobs:
           ls
           cd service
           ls
+          pwd
           cd src/
           ls
+          pwd
           cd main/
           ls
+          pwd
           cd java/
           ls
+          pwd
           cd org/
           ls
-          ls
+          pwd
 #          cd service/src/main/java/org/resources
 #          set -e
 #          cat VERSION.txt
