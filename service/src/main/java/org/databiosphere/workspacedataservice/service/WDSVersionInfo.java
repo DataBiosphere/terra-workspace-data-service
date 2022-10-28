@@ -11,9 +11,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class WDSVersionInfo {
     /**
-     * WDSVersionInfo is a utility class that parses a VERSION.txt file into a valid payload for a ResponseEntity.
+     * WDSVersionInfo is a utility class that parses a VERSION.json file into a valid payload for a ResponseEntity.
      *
-     * The VERSION.txt file contains relevant version metadata for WDS. Via GitHub Actions, VERSION.txt
+     * The VERSION.json file contains relevant version metadata for WDS. Via GitHub Actions, VERSION.json
      * is updated upon each merge in the `main` branch of WDS.
      */
 
