@@ -266,7 +266,7 @@ public class RecordController {
 	}
 
 	@GetMapping("/version")
-	public ResponseEntity<Map<String, String>> getWDSVersion() throws FileNotFoundException {
+	public ResponseEntity<Map<String, String>> getWDSVersion() throws IOException {
 		Map<String, String> versionInfo = new WDSVersionInfo().getWDSVersionInfo();
 		return new ResponseEntity<>(versionInfo, HttpStatus.OK);
 	}

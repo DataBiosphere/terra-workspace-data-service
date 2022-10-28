@@ -1,10 +1,13 @@
 package org.databiosphere.workspacedataservice.service;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Scanner;
 import java.io.File;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class WDSVersionInfo {
     /**
@@ -15,16 +18,12 @@ public class WDSVersionInfo {
      */
 
     // Working directory when invoked in API is terra-workspace-data-service/service/
-    private static final String VERSION_FILE_LOCATION = "VERSION.txt";
+    private static final String VERSION_FILE_LOCATION = "VERSION.json";
 
-    public Map<String, String> getWDSVersionInfo() throws FileNotFoundException {
+    public Map<String, String> getWDSVersionInfo() throws IOException {
 
-        File versionFile = new File(VERSION_FILE_LOCATION);
-        Map<String, String> versionDetailsMap = new HashMap<>();
-        try (Scanner versionScanner = new Scanner(versionFile)){
-            versionDetailsMap.put("gitShortSHA", versionScanner.nextLine());
-            versionDetailsMap.put("semanticVersion", versionScanner.nextLine());
-        }
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String,String> versionDetailsMap = mapper.readValue(new File(VERSION_FILE_LOCATION), Map.class);
         return versionDetailsMap;
 
     }
