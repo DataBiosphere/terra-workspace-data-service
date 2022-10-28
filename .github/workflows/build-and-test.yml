@@ -78,6 +78,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
       - name: Initialize Postgres DB
         env:
           PGPASSWORD: postgres

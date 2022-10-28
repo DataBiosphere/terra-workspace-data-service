@@ -1,0 +1,54 @@
+name: Publish Python client to PyPI
+
+on:
+  workflow_call:
+    inputs:
+      new-tag:
+        required: true
+        type: string
+    secrets:
+      PYPI_API_TOKEN:
+        required: true
+jobs:
+  build-n-publish:
+    name: Build and publish Python client to PyPI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
+      - name: Use Node.js ${{matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18
+      - name: Install openapi-generator-cli
+        run: npm install @openapitools/openapi-generator-cli -g
+      - name: set version to 4.3.1
+        run: openapi-generator-cli version-manager set 4.3.1
+      - name: Generate Python client
+        run: |
+          openapi-generator-cli generate \
+          -i service/src/main/resources/static/swagger/openapi-docs.yaml \
+          -g python \
+          -o wds-client \
+          --additional-properties=projectName=wds-client,packageName=wds_client,packageVersion=${{ inputs.new-tag }} \
+          --skip-validate-spec
+      - name: Install pypa/build
+        working-directory: ./wds-client
+        run: >-
+          python -m pip install build --user
+      - name: Build a binary wheel and a source tarball
+        working-directory: ./wds-client
+        run: >-
+          python -m build --sdist --wheel --outdir dist/ .
+      - name: Publish distribution to PyPI
+        uses: broadinstitute/gh-action-pypi-publish@master
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages_dir: ./wds-client/dist
+          skip_existing: true

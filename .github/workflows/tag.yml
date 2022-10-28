@@ -1,37 +1,26 @@
 name: Tag
 on:
   push:
-    paths-ignore: [ '*.md' ]
-  pull_request:
-    branches: [ '**' ]
-#  push:
-#    branches:
-#    - main
+    branches:
+    - main
 
 jobs:
   tag-job:
     runs-on: ubuntu-latest
     steps:
-      - name: Bump versions in WDS VERSION.txt file
-        run: |
-          git_short_sha=$(git rev-parse --short HEAD)
-          echo $git_short_sha
-          cd service/
-          set -e
-          cat VERSION.txt
-          sed -i "2 s/.*/${{ git_short_sha }}/" VERSION.txt
-          sed -i "3 s/.*/hello/" VERSION.txt
-          cat VERSION.txt
-
-#      - name: Bump the tag to a new version
-#        # https://github.com/DataBiosphere/github-actions/tree/master/actions/bumper
-#        uses: databiosphere/github-actions/actions/bumper@bumper-0.0.6
-#        id: tag
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
-#          DEFAULT_BUMP: patch
-#          RELEASE_BRANCHES: main
-#          VERSION_FILE_PATH: build.gradle
-#          VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
-#          VERSION_SUFFIX: SNAPSHOT
-
+      - name: Checkout current code
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.BROADBOT_TOKEN }} # this allows the push to succeed later
+          
+      - name: Bump the tag to a new version
+        # https://github.com/DataBiosphere/github-actions/tree/master/actions/bumper
+        uses: databiosphere/github-actions/actions/bumper@bumper-0.0.6
+        id: tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
+          DEFAULT_BUMP: patch
+          RELEASE_BRANCHES: main
+          VERSION_FILE_PATH: build.gradle
+          VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
+          VERSION_SUFFIX: SNAPSHOT
