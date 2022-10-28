@@ -13,9 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Bump versions in WDS VERSION.txt file
-        env:
-          VERSION_FILE_PATH: build.gradle
-          VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
         run: |
           set -e
           pwd

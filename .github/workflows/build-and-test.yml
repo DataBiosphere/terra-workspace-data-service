@@ -81,11 +81,15 @@ jobs:
 
       - name: Bump versions in WDS VERSION.txt file
         env:
-          VERSION_FILE_PATH: build.gradle
-          VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
         run: |
           set -e
-          pwd
+          cd service/src/main/java/org/resources
+          cat VERSION.txt
+          echo ${{ steps.setHash.outputs.git_short_sha }}
+          sed -i "1 s/.*/goodbye/" VERSION.txt
+          sed -i "2 s/.*/hello/" VERSION.txt
+          cat VERSION.txt
+          ${{ steps.setHash.outputs.git_short_sha }}
           ls
           env
 
