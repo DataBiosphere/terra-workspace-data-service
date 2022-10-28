@@ -82,6 +82,7 @@ jobs:
         run: |
           ls
           pwd
+          cd service/
           set -e
           cat VERSION.txt
           echo ${{ steps.setHash.outputs.git_short_sha }}
