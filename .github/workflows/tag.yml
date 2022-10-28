@@ -1,26 +1,37 @@
 name: Tag
 on:
   push:
-    branches:
-    - main
+    paths-ignore: [ '*.md' ]
+  pull_request:
+    branches: [ '**' ]
+#  push:
+#    branches:
+#    - main
 
 jobs:
   tag-job:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout current code
-        uses: actions/checkout@v2
-        with:
-          token: ${{ secrets.BROADBOT_TOKEN }} # this allows the push to succeed later
-          
-      - name: Bump the tag to a new version
-        # https://github.com/DataBiosphere/github-actions/tree/master/actions/bumper
-        uses: databiosphere/github-actions/actions/bumper@bumper-0.0.6
-        id: tag
+      - name: Where am I?
+      - name: Bump versions in WDS VERSION.txt file
         env:
-          GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
-          DEFAULT_BUMP: patch
-          RELEASE_BRANCHES: main
           VERSION_FILE_PATH: build.gradle
           VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
-          VERSION_SUFFIX: SNAPSHOT
+        run: |
+          set -e
+          pwd
+          ls
+          env
+
+#      - name: Bump the tag to a new version
+#        # https://github.com/DataBiosphere/github-actions/tree/master/actions/bumper
+#        uses: databiosphere/github-actions/actions/bumper@bumper-0.0.6
+#        id: tag
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
+#          DEFAULT_BUMP: patch
+#          RELEASE_BRANCHES: main
+#          VERSION_FILE_PATH: build.gradle
+#          VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
+#          VERSION_SUFFIX: SNAPSHOT
+
