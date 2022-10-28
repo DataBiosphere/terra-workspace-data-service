@@ -364,7 +364,7 @@ class FullStackRecordControllerTest {
 	void getWDSVersionValuesReturned() {
 		ResponseEntity<Map> response =
 				restTemplate.exchange("/version", HttpMethod.GET, new HttpEntity<>(headers), Map.class);
-		assertThat(response.getStatusCode()).isIn(HttpStatus.CREATED, HttpStatus.OK);
+		assertThat(response.getStatusCode()).isIn(HttpStatus.OK);
 		assertThat(response.getBody().containsKey("gitShortSHA"));
 		assertThat(response.getBody().containsKey("semanticVersion"));
 	}
