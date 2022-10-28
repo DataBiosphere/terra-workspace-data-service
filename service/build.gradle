@@ -5,6 +5,10 @@ plugins {
 	id 'org.sonarqube'
 }
 
+springBoot {
+	buildInfo()
+}
+
 repositories {
 	mavenCentral()
 	maven { url 'https://broadinstitute.jfrog.io/artifactory/libs-snapshot' }
@@ -25,7 +29,6 @@ jib {
 
 dependencies {
 
-	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -33,13 +36,13 @@ dependencies {
 	implementation 'org.apache.commons:commons-csv:1.9.0'
 	implementation 'com.google.guava:guava:31.1-jre'
 	implementation 'org.postgresql:postgresql'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.webjars:webjars-locator-core:0.52'
 	runtimeOnly 'org.webjars.npm:swagger-ui-dist:4.12.0'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
 	testImplementation project(':client')
-
 }
 
 sonarqube {

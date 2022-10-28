@@ -26,17 +26,7 @@ tags:
     description: Instance APIs
   - name: Schema
     description: Schema Manipulation APIs (coming soon)
-  - name: General WDS Info
-    description: APIs related to general information of WDS
 paths:
-  /version:
-    get:
-      summary: Gets version information inclusive of the most recent semantic version and git short SHA
-      tags:
-        - General WDS Info
-      responses:
-        200:
-          description: WDS version information retrieved
   /{instanceid}/records/{v}/{type}/{id}:
     get:
       summary: Get record

@@ -353,20 +353,10 @@ class FullStackRecordControllerTest {
 		assertThat(error.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 		// record_0 should still be present since the above deletion is transactional
 		// and should fail upon 'missing'
-		ResponseEntity<RecordResponse> response = restTemplate.exchange(
+		ResponseEntity<RecordResponse> rresponse = restTemplate.exchange(
 				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.GET, new HttpEntity<>(headers),
 				RecordResponse.class, instanceId, versionId, recordType, "record_0");
-		assertThat(response.getBody().recordId()).isEqualTo("record_0");
-	}
-
-	@Test
-	@Transactional
-	void getWDSVersionValuesReturned() {
-		ResponseEntity<Map> response =
-				restTemplate.exchange("/version", HttpMethod.GET, new HttpEntity<>(headers), Map.class);
-		assertThat(response.getStatusCode()).isIn(HttpStatus.OK);
-		assertThat(response.getBody().containsKey("gitShortSHA"));
-		assertThat(response.getBody().containsKey("semanticVersion"));
+		assertThat(rresponse.getBody().recordId()).isEqualTo("record_0");
 	}
 
 }
