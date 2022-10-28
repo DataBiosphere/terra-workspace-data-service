@@ -79,6 +79,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Bump versions in WDS VERSION.txt file
+        env:
+          VERSION_FILE_PATH: build.gradle
+          VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
+        run: |
+          set -e
+          pwd
+          ls
+          env
+
       - name: Initialize Postgres DB
         env:
           PGPASSWORD: postgres

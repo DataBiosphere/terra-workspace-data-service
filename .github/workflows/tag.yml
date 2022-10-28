@@ -12,7 +12,6 @@ jobs:
   tag-job:
     runs-on: ubuntu-latest
     steps:
-      - name: Where am I?
       - name: Bump versions in WDS VERSION.txt file
         env:
           VERSION_FILE_PATH: build.gradle
