@@ -1,11 +1,8 @@
 package org.databiosphere.workspacedataservice.service;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Scanner;
 import java.io.File;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
