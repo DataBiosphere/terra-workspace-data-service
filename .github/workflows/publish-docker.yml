@@ -12,8 +12,6 @@ on:
         required: true
       BROADBOT_TOKEN:
         required: true
-  pull_request:
-    types: [opened]
     
 env:
   SERVICE_NAME: ${{ github.event.repository.name }}
