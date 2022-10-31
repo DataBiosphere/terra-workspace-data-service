@@ -1,10 +1,17 @@
 name: Publish Docker Images to GCR and ACR
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-
+  workflow_call:
+    inputs:
+      new-tag:
+        required: true
+        type: string
+    secrets:
+      ACR_SP_PASSWORD:
+        required: true
+      ACR_SP_USER:
+        required: true
+      BROADBOT_TOKEN:
+        required: true
 env:
   SERVICE_NAME: ${{ github.event.repository.name }}
   GCR_REGISTRY: us.gcr.io
@@ -31,24 +38,28 @@ jobs:
           git_short_sha=$(git rev-parse --short HEAD)
           echo $git_short_sha
           echo "::set-output name=git_short_sha::${git_short_sha}"
-      - name: Construct GCR docker image name and tag
+      - name: Construct GCR docker image name
         id: gcr-image-name
-        run: echo ::set-output name=name::${GCR_REGISTRY}/${GOOGLE_PROJECT}/${SERVICE_NAME}:${{ steps.setHash.outputs.git_short_sha }}
+        run: echo "name=${GCR_REGISTRY}/${GOOGLE_PROJECT}/${SERVICE_NAME}" >> $GITHUB_OUTPUT
 
-      - name: Construct ACR docker image name and tag
+      - name: Construct ACR docker image name
         id: acr-image-name
-        run: echo ::set-output name=name::${ACR_REGISTRY}/${SERVICE_NAME}:${{ steps.setHash.outputs.git_short_sha }}
+        run: echo "name={ACR_REGISTRY}/${SERVICE_NAME}" >> $GITHUB_OUTPUT$
 
       - name: Build image locally with jib
         run: |
           ./gradlew --build-cache jibDockerBuild \
-          --image=${{ steps.gcr-image-name.outputs.name }} \
+          --image=${{ steps.gcr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} \
           -Djib.console=plain
+          
+      - name: Add version tag to GCR
+        run: docker image tag ${{ steps.gcr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} ${{ steps.gcr-image-name.outputs.name }}:${{ inputs.new-tag }}
+          
       - name: Run Trivy vulnerability scanner
         # Link to the github location of the action https://github.com/broadinstitute/dsp-appsec-trivy-action
         uses: broadinstitute/dsp-appsec-trivy-action@v1
         with:
-          image: ${{ steps.gcr-image-name.outputs.name }}
+          image: ${{ steps.gcr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }}
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v0
@@ -64,17 +75,20 @@ jobs:
         run: gcloud auth configure-docker --quiet
 
       - name: Push GCR image
-        run: docker push  ${{ steps.gcr-image-name.outputs.name }}
+        run: docker push --all-tags ${{ steps.gcr-image-name.outputs.name }}
 
       - name: Re-tag image for ACR
-        run: docker tag ${{ steps.gcr-image-name.outputs.name }} ${{ steps.acr-image-name.outputs.name }}
+        run: docker tag ${{ steps.gcr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} ${{ steps.acr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }}
+
+      - name: Add version tag to ACR
+        run: docker image tag ${{ steps.acr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} ${{ steps.acr-image-name.outputs.name }}:${{ inputs.new-tag }}
 
       - name: Push image to Azure
         run: |
           echo ${{ secrets.ACR_SP_PASSWORD }} | docker login ${ACR_REGISTRY} \
           --username ${{ secrets.ACR_SP_USER }} \
           --password-stdin
-          docker push ${{ steps.acr-image-name.outputs.name }}
+          docker push --all-tags ${{ steps.acr-image-name.outputs.name }}
           
       - name: Clone Cromwhelm
         uses: actions/checkout@v2

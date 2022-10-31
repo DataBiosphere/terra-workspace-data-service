@@ -7,6 +7,8 @@ on:
 jobs:
   tag-job:
     runs-on: ubuntu-latest
+    outputs:
+          new_tag: ${{ steps.tag.outputs.tag }}
     steps:
       - name: Checkout current code
         uses: actions/checkout@v2
@@ -24,3 +26,24 @@ jobs:
           VERSION_FILE_PATH: build.gradle
           VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
           VERSION_SUFFIX: SNAPSHOT
+  python-client-job:
+      needs: tag-job
+      uses: ./.github/workflows/release-python-client.yml
+      with:
+        new-tag: ${{ needs.tag-job.outputs.new_tag }}
+      secrets:
+        PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+  java-client-job:
+      uses: ./.github/workflows/publish-java-client.yml
+      secrets:
+        ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+        ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+  docker-image-job:
+      needs: tag-job
+      uses: ./.github/workflows/publish-docker.yml
+      with:
+        new-tag: ${{ needs.tag-job.outputs.new_tag }}
+      secrets:
+        ACR_SP_PASSWORD: ${{ secrets.ACR_SP_PASSWORD }}
+        ACR_SP_USER: ${{ secrets.ACR_SP_USER }}
+        BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
