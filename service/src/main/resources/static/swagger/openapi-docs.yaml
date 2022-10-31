@@ -29,15 +29,7 @@ tags:
   - name: General WDS Information
     description: Information regarding versioning, health, info, etc. for WDS
 paths:
-  /actuator/info:
-    get:
-      summary: Gets related git and build info for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#info for details)
-      tags:
-        - General WDS Information
-      responses:
-        200:
-          description: Info retrieved
-  /actuator/health:
+  /status:
     get:
       summary: Gets health status for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#health for details)
       tags:
@@ -45,6 +37,14 @@ paths:
       responses:
         200:
           description: Health status retrieved
+  /version:
+    get:
+      summary: Gets related git and build version info for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#info for details)
+      tags:
+        - General WDS Information
+      responses:
+        200:
+          description: Info retrieved
   /{instanceid}/records/{v}/{type}/{id}:
     get:
       summary: Get record
