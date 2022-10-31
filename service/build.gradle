@@ -3,7 +3,6 @@ plugins {
 	id 'com.google.cloud.tools.jib'
 	id 'org.hidetake.swagger.generator'
 	id 'org.sonarqube'
-	id "org.springdoc.openapi-gradle-plugin" version "1.4.0"
 }
 
 repositories {
@@ -33,8 +32,6 @@ dependencies {
 	implementation 'org.apache.commons:commons-csv:1.9.0'
 	implementation 'com.google.guava:guava:31.1-jre'
 	implementation 'org.postgresql:postgresql'
-	implementation 'org.springdoc:springdoc-openapi-ui:1.6.12'
-	implementation "io.swagger.core.v3:swagger-annotations:2.2.4"
 	implementation 'org.webjars:webjars-locator-core:0.52'
 	runtimeOnly 'org.webjars.npm:swagger-ui-dist:4.12.0'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
