@@ -44,7 +44,7 @@ jobs:
 
       - name: Construct ACR docker image name
         id: acr-image-name
-        run: echo "name={ACR_REGISTRY}/${SERVICE_NAME}" >> $GITHUB_OUTPUT$
+        run: echo "name=${ACR_REGISTRY}/${SERVICE_NAME}" >> $GITHUB_OUTPUT$
 
       - name: Build image locally with jib
         run: |
