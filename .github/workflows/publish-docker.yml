@@ -12,6 +12,9 @@ on:
         required: true
       BROADBOT_TOKEN:
         required: true
+  pull_request:
+    types: [opened]
+    
 env:
   SERVICE_NAME: ${{ github.event.repository.name }}
   GCR_REGISTRY: us.gcr.io
@@ -44,7 +47,7 @@ jobs:
 
       - name: Construct ACR docker image name
         id: acr-image-name
-        run: echo "name=${ACR_REGISTRY}/${SERVICE_NAME}" >> $GITHUB_OUTPUT$
+        run: echo "name=${ACR_REGISTRY}/${SERVICE_NAME}" >> $GITHUB_OUTPUT
 
       - name: Build image locally with jib
         run: |
