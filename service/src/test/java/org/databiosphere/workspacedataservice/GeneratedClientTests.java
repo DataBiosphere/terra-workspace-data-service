@@ -73,9 +73,11 @@ public class GeneratedClientTests {
         createNewInstance(instanceId);
         RecordsApi recordsApi = new RecordsApi(apiClient);
         String recordType = "type1";
-        createRecord(recordsApi, "id1", recordType);
+        String recordId = "id1";
+        createRecord(recordsApi, recordId, recordType);
         RecordQueryResponse response = recordsApi.queryRecords(new SearchRequest(), instanceId.toString(), version, recordType);
         assertThat(response.getTotalRecords()).isEqualTo(1);
+        assertThat(response.getRecords().get(0).getId()).isEqualTo(recordId);
     }
 
     private void createRecord(RecordsApi recordsApi, String recordId, String recordType) throws ApiException {
@@ -88,11 +90,12 @@ public class GeneratedClientTests {
         createNewInstance(instanceId);
         String recordType = "FOO";
         createRecord(new RecordsApi(apiClient), "id1", recordType);
+        createRecord(new RecordsApi(apiClient), "id1", recordType+"_new");
         SchemaApi schemaApi = new SchemaApi(apiClient);
         RecordTypeSchema schema = schemaApi.describeRecordType(instanceId.toString(), version, recordType);
-        assertThat(schema.getName()).isEqualTo("FOO");
+        assertThat(schema.getName()).isEqualTo(recordType);
         List<RecordTypeSchema> schemas = schemaApi.describeAllRecordTypes(instanceId.toString(), version);
-        assertThat(schemas.size()).isEqualTo(1);
+        assertThat(schemas.size()).isEqualTo(2);
     }
 
     @Test
