@@ -12,7 +12,6 @@ import org.databiosphere.workspacedata.model.RecordResponse;
 import org.databiosphere.workspacedata.model.RecordTypeSchema;
 import org.databiosphere.workspacedata.model.SearchRequest;
 import org.databiosphere.workspacedata.model.TsvUploadResponse;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,11 +22,11 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.UUID;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.in;
+import static org.assertj.core.api.Assertions.assertThat;
+
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class GeneratedClientTests {
+class GeneratedClientTests {
 
     private ApiClient apiClient;
     @LocalServerPort
@@ -95,7 +94,7 @@ public class GeneratedClientTests {
         RecordTypeSchema schema = schemaApi.describeRecordType(instanceId.toString(), version, recordType);
         assertThat(schema.getName()).isEqualTo(recordType);
         List<RecordTypeSchema> schemas = schemaApi.describeAllRecordTypes(instanceId.toString(), version);
-        assertThat(schemas.size()).isEqualTo(2);
+        assertThat(schemas).hasSize(2);
     }
 
     @Test
@@ -111,7 +110,7 @@ public class GeneratedClientTests {
         recordAttributes.put(attributeName, "Goodbye");
         recordsApi.updateRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId);
         RecordResponse record = recordsApi.getRecord(instanceId.toString(), version, entityType, recordId);
-        assertThat(record.getAttributes().get(attributeName)).isEqualTo("Goodbye");
+        assertThat(record.getAttributes()).containsEntry(attributeName, "Goodbye");
     }
 
     private void createNewInstance(UUID instanceId) throws ApiException {
