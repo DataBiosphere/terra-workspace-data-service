@@ -1,8 +1,11 @@
-name: Publish
-on: 
-  create:
-      tags:
-        - '*'
+name: Publish Java Client
+on:
+  workflow_call:
+    secrets:
+      ARTIFACTORY_USERNAME:
+        required: true
+      ARTIFACTORY_PASSWORD:
+        required: true
 
 jobs:
   publish-job:
@@ -31,7 +34,3 @@ jobs:
           ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
           ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
           ARTIFACTORY_REPO_KEY: libs-snapshot-local
-  python-client-job:
-      uses: ./.github/workflows/release-python-client.yaml
-      secrets:
-        PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
