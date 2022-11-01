@@ -36,19 +36,13 @@ class GeneratedClientTests {
     private final String version = "v0.2";
 
     @BeforeEach
-    void init(){
+    void init() throws ApiException {
         apiClient = new ApiClient();
         apiClient.setBasePath("http://localhost:" + port);
-    }
-
-    @Test
-    void createInstance() throws ApiException {
         createNewInstance(instanceId);
     }
-
     @Test
     void uploadTsv() throws ApiException, URISyntaxException {
-        createNewInstance(instanceId);
         RecordsApi recordsApi = new RecordsApi(apiClient);
         TsvUploadResponse tsvUploadResponse = recordsApi.uploadTSV(
                 new File(this.getClass().getResource("/small-test.tsv").toURI()),
@@ -58,7 +52,6 @@ class GeneratedClientTests {
 
     @Test
     void putAndGetRecords() throws ApiException {
-        createNewInstance(instanceId);
         RecordsApi recordsApi = new RecordsApi(apiClient);
         String recordId = "id1";
         String recordType = "FOO";
@@ -69,7 +62,6 @@ class GeneratedClientTests {
 
     @Test
     void putAndQuery() throws ApiException {
-        createNewInstance(instanceId);
         RecordsApi recordsApi = new RecordsApi(apiClient);
         String recordType = "type1";
         String recordId = "id1";
@@ -86,7 +78,6 @@ class GeneratedClientTests {
 
     @Test
     void describeTypes() throws ApiException {
-        createNewInstance(instanceId);
         String recordType = "FOO";
         createRecord(new RecordsApi(apiClient), "id1", recordType);
         createRecord(new RecordsApi(apiClient), "id1", recordType+"_new");
@@ -99,7 +90,6 @@ class GeneratedClientTests {
 
     @Test
     void putPatchAndGetRecord() throws ApiException {
-        createNewInstance(instanceId);
         RecordsApi recordsApi = new RecordsApi(apiClient);
         String recordId = "id1";
         String entityType = "FOO";
