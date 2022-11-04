@@ -21,13 +21,21 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.lang.NonNull;
+import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.sql.DataSource;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {
+		"org.databiosphere.workspacedataservice",
+		// Transaction management and DB retry configuration
+		"bio.terra.common.retry.transaction",
+})
+@EnableRetry
+@EnableTransactionManagement
 public class WorkspaceDataServiceApplication {
 
 	@Bean

@@ -1,5 +1,8 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import bio.terra.common.db.ReadTransaction;
+import bio.terra.common.db.WriteTransaction;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -81,16 +84,19 @@ public class RecordDao {
 		this.objectMapper = objectMapper;
 	}
 
+	@ReadTransaction
 	public boolean instanceSchemaExists(UUID instanceId) {
 		return Boolean.TRUE.equals(namedTemplate.queryForObject(
 				"select exists(select from information_schema.schemata WHERE schema_name = :workspaceSchema)",
 				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), Boolean.class));
 	}
 
+	@WriteTransaction
 	public void createSchema(UUID instanceId) {
 		namedTemplate.getJdbcTemplate().update("create schema " + quote(instanceId.toString()));
 	}
 
+	@ReadTransaction
 	public boolean recordTypeExists(UUID instanceId, RecordType recordType) {
 		return Boolean.TRUE.equals(namedTemplate.queryForObject(
 				"select exists(select from pg_tables where schemaname = :instanceId AND tablename  = :recordType)",
@@ -100,6 +106,7 @@ public class RecordDao {
 	}
 
 	@SuppressWarnings("squid:S2077")
+	@WriteTransaction
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
 			Set<Relation> relations) {
 
@@ -115,6 +122,7 @@ public class RecordDao {
 		}
 	}
 
+	@ReadTransaction
 	private String getQualifiedTableName(RecordType recordType, UUID instanceId) {
 		// N.B. recordType is sql-validated in its constructor, so we don't need it here
 		return quote(instanceId.toString()) + "."
@@ -122,6 +130,7 @@ public class RecordDao {
 	}
 
 	@SuppressWarnings("squid:S2077")
+	@ReadTransaction
 	public List<Record> queryForRecords(RecordType recordType, int pageSize, int offset, String sortDirection,
 			String sortAttribute, UUID instanceId) {
 		LOGGER.info("queryForRecords: {}", recordType.getName());
@@ -132,6 +141,7 @@ public class RecordDao {
 				new RecordRowMapper(recordType, objectMapper, instanceId));
 	}
 
+	@ReadTransaction
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
 		MapSqlParameterSource params = new MapSqlParameterSource("instanceId", instanceId.toString());
 		params.addValue("tableName", recordType.getName());
@@ -148,11 +158,13 @@ public class RecordDao {
 						});
 	}
 
+	@WriteTransaction
 	public void addColumn(UUID instanceId, RecordType recordType, String columnName, DataTypeMapping colType) {
 		addColumn(instanceId, recordType, columnName, colType, null);
 	}
 
 	@SuppressWarnings("squid:S2077")
+	@WriteTransaction
 	public void addColumn(UUID instanceId, RecordType recordType, String columnName, DataTypeMapping colType,
 			RecordType referencedType) {
 		try {
@@ -171,6 +183,7 @@ public class RecordDao {
 	}
 
 	@SuppressWarnings("squid:S2077")
+	@WriteTransaction
 	public void changeColumn(UUID instanceId, RecordType recordType, String columnName, DataTypeMapping newColType) {
 		namedTemplate.getJdbcTemplate()
 				.update("alter table " + getQualifiedTableName(recordType, instanceId) + " alter column "
@@ -195,6 +208,7 @@ public class RecordDao {
 	// The expectation is that the record type already matches the schema and
 	// attributes given, as
 	// that's dealt with earlier in the code.
+	@WriteTransaction
 	public void batchUpsert(UUID instanceId, RecordType recordType, List<Record> records,
 			Map<String, DataTypeMapping> schema) {
 		List<RecordColumn> schemaAsList = getSchemaWithRowId(schema);
@@ -259,6 +273,7 @@ public class RecordDao {
 		return e.getRootCause()instanceof SQLException sqlException && sqlException.getSQLState().equals("42804");
 	}
 
+	@WriteTransaction
 	public boolean deleteSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
 		try {
 			return namedTemplate.update("delete from " + getQualifiedTableName(recordType, instanceId) + " where "
@@ -271,6 +286,7 @@ public class RecordDao {
 		}
 	}
 
+	@WriteTransaction
 	public void addForeignKeyForReference(RecordType recordType, RecordType referencedRecordType, UUID instanceId,
 			String relationColName) {
 		try {
@@ -312,6 +328,8 @@ public class RecordDao {
 		}
 	}
 
+	// TODO: using @ReadTransaction here fails a unit test - do we need different transaction semantics for streaming?
+	// @ReadTransaction
 	public Stream<Record> streamAllRecordsForType(UUID instanceId, RecordType recordType) {
 		return templateForStreaming.getJdbcTemplate().queryForStream(
 				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + RECORD_ID,
@@ -328,6 +346,7 @@ public class RecordDao {
 				.collect(Collectors.joining(", \n"));
 	}
 
+	@ReadTransaction
 	public List<Relation> getRelationCols(UUID instanceId, RecordType recordType) {
 		return namedTemplate.query(
 				"SELECT kcu.column_name, ccu.table_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu "
@@ -340,6 +359,7 @@ public class RecordDao {
 	}
 
 	@SuppressWarnings("squid:S2077")
+	@ReadTransaction
 	public int countRecords(UUID instanceId, RecordType recordType) {
 		return namedTemplate.getJdbcTemplate()
 				.queryForObject("select count(*) from " + getQualifiedTableName(recordType, instanceId), Integer.class);
@@ -448,6 +468,7 @@ public class RecordDao {
 	}
 
 	@SuppressWarnings("squid:S2077")
+	@WriteTransaction
 	public void batchDelete(UUID instanceId, RecordType recordType, List<Record> records) {
 		List<String> recordIds = records.stream().map(Record::getId).toList();
 		try {
@@ -579,6 +600,7 @@ public class RecordDao {
 
 	}
 
+	@ReadTransaction
 	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
 		try {
 			return Optional.ofNullable(namedTemplate.queryForObject(
@@ -590,6 +612,7 @@ public class RecordDao {
 		}
 	}
 
+	@ReadTransaction
 	public boolean recordExists(UUID instanceId, RecordType recordType, String recordId) {
 		return Boolean.TRUE
 				.equals(namedTemplate.queryForObject(
@@ -598,6 +621,7 @@ public class RecordDao {
 						new MapSqlParameterSource("recordId", recordId), Boolean.class));
 	}
 
+	@ReadTransaction
 	public List<RecordType> getAllRecordTypes(UUID instanceId) {
 		return namedTemplate.queryForList(
 				"select tablename from pg_tables WHERE schemaname = :workspaceSchema order by tablename",
@@ -609,6 +633,7 @@ public class RecordDao {
 				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
 	}
 
+	@WriteTransaction
 	public void deleteRecordType(UUID instanceId, RecordType recordType) {
 		try {
 			namedTemplate.getJdbcTemplate().update("drop table " + getQualifiedTableName(recordType, instanceId));
