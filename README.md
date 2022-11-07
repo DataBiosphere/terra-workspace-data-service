@@ -126,18 +126,3 @@ dependencies {
     implementation(group: 'org.databiosphere', name: 'workspacedataservice-client', version: 'x.x.x')
 ```
 The latest version can be seen under [Tags](https://github.com/DataBiosphere/terra-workspace-data-service/tags).
-
-## Code Formatting
-This repository uses [Spotless](https://github.com/diffplug/spotless) for code formatting.
-
-To check code formatting without making any changes, run:
-```bash
-./gradlew spotlessCheck
-```
-
-To automatically format your code:
-```bash
-./gradlew spotlessApply
-```
-
-See the Spotless documentation for more information.

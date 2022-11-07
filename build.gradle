@@ -9,7 +9,6 @@ plugins {
     id 'idea'
     id 'org.hidetake.swagger.generator' version '2.19.2' apply false
     id 'java'
-    id 'com.diffplug.spotless' version '6.8.0'
     id 'com.gorylenko.gradle-git-properties' version '2.4.1'
 }
 
@@ -21,7 +20,6 @@ subprojects {
 
     apply plugin: 'idea'
     apply plugin: 'java'
-    apply plugin: 'com.diffplug.spotless'
     apply plugin: 'org.hidetake.swagger.generator'
 
     ext {
@@ -47,27 +45,6 @@ subprojects {
 }
 
 idea.project.jdkName = '17'
-
-// Spotless configuration
-spotless {
-    java {
-        eclipse()
-        target '**/*.java'
-        targetExclude("${buildDir}/**", "**/generated/**")
-    }
-    format 'misc', {
-        // define the files to apply `misc` to
-        target '*.gradle', '*.md', '.gitignore'
-
-        // N.B. checks for tabs vs. spaces but does not check the number of spaces
-        // https://github.com/diffplug/spotless/issues/794
-        indentWithSpaces()
-        trimTrailingWhitespace()
-        endWithNewline()
-    }
-}
-
-build.dependsOn spotlessApply
 
 tasks.named('test') {
     useJUnitPlatform()
