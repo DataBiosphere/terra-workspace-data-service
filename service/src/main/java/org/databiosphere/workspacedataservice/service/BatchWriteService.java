@@ -9,6 +9,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.model.ReservedNames;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
@@ -37,6 +38,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.service.TsvSupport.ROW_ID_COLUMN_NAME;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 
 @Service
@@ -184,7 +186,7 @@ public class BatchWriteService {
 	 * @return number of records updated
 	 */
 	@Transactional
-	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType, String recordId) {
+	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType) {
 		int recordsAffected = 0;
 		try (StreamingWriteHandler streamingWriteHandler = new StreamingWriteHandler(is, objectMapper)) {
 			Map<String, DataTypeMapping> schema = null;
@@ -194,7 +196,7 @@ public class BatchWriteService {
 				List<Record> records = info.getRecords();
 				if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
 					schema = inferer.inferTypes(records, InBoundDataSource.JSON);
-					createOrModifyRecordType(instanceId, recordType, schema, records, recordId);
+					createOrModifyRecordType(instanceId, recordType, schema, records, RECORD_ID);
 					firstUpsertBatch = false;
 				}
 				writeBatch(instanceId, recordType, schema, info, records);

@@ -116,7 +116,7 @@ class RecordControllerMockMvcTest {
 		// create new record with new record type
 		String rId = "newRecordId";
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-						rt, rId).content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID)))
+						rt, rId).content(mapper.writeValueAsString(new RecordRequest(attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isCreated());
 		MockHttpServletResponse res = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
@@ -135,7 +135,7 @@ class RecordControllerMockMvcTest {
 		assertEquals(attributes.attributeSet().size(), DataTypeMapping.values().length);
 		String rId = "newRecordId";
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-						rt, rId).content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID)))
+						rt, rId).content(mapper.writeValueAsString(new RecordRequest(attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isCreated());
 		String jsonRes = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
@@ -321,7 +321,7 @@ class RecordControllerMockMvcTest {
 		String recordType = "sys_my_type";
 		RecordAttributes attributes = RecordAttributes.empty();
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				recordType, "recordId").content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID)))
+				recordType, "recordId").content(mapper.writeValueAsString(new RecordRequest(attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isBadRequest()).andExpect(result -> assertTrue(
 						result.getResolvedException() instanceof MethodArgumentTypeMismatchException));
@@ -336,7 +336,7 @@ class RecordControllerMockMvcTest {
 		illegalAttribute.putAttribute("sys_foo", "some_val");
 		mockMvc.perform(patch("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				recordType1, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(illegalAttribute, ROW_ID))))
+						.content(mapper.writeValueAsString(new RecordRequest(illegalAttribute))))
 				.andExpect(status().isBadRequest())
 				.andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidNameException));
 	}
@@ -348,20 +348,20 @@ class RecordControllerMockMvcTest {
 		RecordAttributes attributes = new RecordAttributes(Map.of("foo", "bar", "num", 123));
 		// create new record with new record type
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				newRecordType, "newRecordId").content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID)))
+				newRecordType, "newRecordId").content(mapper.writeValueAsString(new RecordRequest(attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isCreated());
 
 		RecordAttributes attributes2 = new RecordAttributes(Map.of("foo", "baz", "num", 888));
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				newRecordType, "newRecordId2").content(mapper.writeValueAsString(new RecordRequest(attributes2, ROW_ID)))
+				newRecordType, "newRecordId2").content(mapper.writeValueAsString(new RecordRequest(attributes2)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isCreated());
 
 		// now update the second new record
 		RecordAttributes attributes3 = new RecordAttributes(Map.of("foo", "updated", "num", 999));
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				newRecordType, "newRecordId2").content(mapper.writeValueAsString(new RecordRequest(attributes3, ROW_ID)))
+				newRecordType, "newRecordId2").content(mapper.writeValueAsString(new RecordRequest(attributes3)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk());
 	}
@@ -374,7 +374,7 @@ class RecordControllerMockMvcTest {
 		newAttributes.putAttribute("new-attr", "some_val");
 		mockMvc.perform(put("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				recordType1, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(newAttributes, ROW_ID))))
+						.content(mapper.writeValueAsString(new RecordRequest(newAttributes))))
 				.andExpect(content().string(containsString("\"attr3\":null")))
 				.andExpect(content().string(containsString("\"attr-dt\":null"))).andExpect(status().isOk());
 	}
@@ -388,7 +388,7 @@ class RecordControllerMockMvcTest {
 		newAttributes.putAttribute("new-attr", "some_val");
 		mockMvc.perform(patch("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				recordType1, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(newAttributes, ROW_ID))))
+						.content(mapper.writeValueAsString(new RecordRequest(newAttributes))))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.attributes.new-attr", is("some_val")));
 	}
 
@@ -418,7 +418,7 @@ class RecordControllerMockMvcTest {
 		attributes.putAttribute("sample-ref", ref);
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.attributes.sample-ref", is(ref)));
 	}
 
@@ -433,7 +433,7 @@ class RecordControllerMockMvcTest {
 		attributes.putAttribute("sample-ref", ref);
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isNotFound())
 				.andExpect(result -> assertTrue(result.getResolvedException() instanceof MissingObjectException));
 	}
@@ -450,7 +450,7 @@ class RecordControllerMockMvcTest {
 		attributes.putAttribute("sample-ref", ref);
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isForbidden())
 				.andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidRelationException));
 	}
@@ -465,7 +465,7 @@ class RecordControllerMockMvcTest {
 		attributes.putAttribute("attr3", newTextValue);
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, "record_1").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isCreated()).andExpect(jsonPath("$.attributes.attr3", is(newTextValue)));
 	}
 
@@ -478,7 +478,7 @@ class RecordControllerMockMvcTest {
 		attributes.putAttribute("attr-boolean", true);
 		String recordId = "record_missing";
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				recordType, recordId).content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID)))
+				recordType, recordId).content(mapper.writeValueAsString(new RecordRequest(attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isNotFound());
 	}
@@ -493,7 +493,7 @@ class RecordControllerMockMvcTest {
 		attributes.putAttribute("sample-ref", ref);
 
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				recordType, recordId).content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID)))
+				recordType, recordId).content(mapper.writeValueAsString(new RecordRequest(attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isNotFound())
 				.andExpect(result -> assertTrue(result.getResolvedException() instanceof MissingObjectException));
@@ -512,7 +512,7 @@ class RecordControllerMockMvcTest {
 		attributes.putAttribute("ref-attr", ref);
 		// Add referencing attribute to referring_Type
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				referringType, recordId).content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID)))
+				referringType, recordId).content(mapper.writeValueAsString(new RecordRequest(attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk());
 		// Create a new referring_Type that puts a reference to a non-existent
@@ -522,7 +522,7 @@ class RecordControllerMockMvcTest {
 		new_attributes.putAttribute("ref-attr", invalid_ref);
 
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				referringType, "new_record").content(mapper.writeValueAsString(new RecordRequest(new_attributes, ROW_ID)))
+				referringType, "new_record").content(mapper.writeValueAsString(new RecordRequest(new_attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isBadRequest());
 	}
@@ -536,7 +536,7 @@ class RecordControllerMockMvcTest {
 		String ref = RelationUtils.createRelationString(RecordType.valueOf("missing"), "missing_also");
 		attributes.putAttribute("attr1", ref);
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				recordType, "record_0").content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID)))
+				recordType, "record_0").content(mapper.writeValueAsString(new RecordRequest(attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isForbidden())
 				.andExpect(result -> assertTrue(result.getResolvedException().getMessage()
@@ -575,7 +575,7 @@ class RecordControllerMockMvcTest {
 		attributes.putAttribute("sample-ref", ref);
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 		mockMvc.perform(delete("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referencedType, "record_0")).andExpect(status().isBadRequest());
@@ -612,7 +612,7 @@ class RecordControllerMockMvcTest {
 		attributes.putAttribute("sample-ref", ref);
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 
 		mockMvc.perform(delete("/{instanceId}/types/{version}/{recordType}", instanceId, versionId, referencedType))
@@ -632,7 +632,7 @@ class RecordControllerMockMvcTest {
 		// Create relation column
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 
 		// Delete record from referencing type
@@ -659,7 +659,7 @@ class RecordControllerMockMvcTest {
 
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, type,
 				"record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID))))
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isOk()).andExpect(content().string(containsString(ref)));
 
 		List<AttributeSchema> expectedAttributes = Arrays.asList(
@@ -691,7 +691,7 @@ class RecordControllerMockMvcTest {
 	void incompatibleArrayWritesShouldChangeToStringArray() throws Exception {
 		String recordType = "test-type";
 		List<Record> someRecords = createSomeRecords(recordType, 1);
-		RecordRequest recordRequest = new RecordRequest(someRecords.get(0).getAttributes().putAttribute("array-of-date", List.of("should switch to array of string")), ROW_ID);
+		RecordRequest recordRequest = new RecordRequest(someRecords.get(0).getAttributes().putAttribute("array-of-date", List.of("should switch to array of string")));
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 						recordType, "new_id").content(mapper.writeValueAsString(recordRequest))
 						.contentType(MediaType.APPLICATION_JSON))
@@ -765,7 +765,7 @@ class RecordControllerMockMvcTest {
 		for (int i = 0; i < numRecords; i++) {
 			String recordId = "record_" + i;
 			RecordAttributes attributes = generateRandomAttributes();
-			RecordRequest recordRequest = new RecordRequest(attributes, ROW_ID);
+			RecordRequest recordRequest = new RecordRequest(attributes);
 			mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instId, versionId,
 					recordType, recordId).content(mapper.writeValueAsString(recordRequest))
 							.contentType(MediaType.APPLICATION_JSON))
@@ -875,7 +875,7 @@ class RecordControllerMockMvcTest {
 		attributes.putAttribute("dateAttr", dateString);
 		// create record in db
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				recordType, "recordId").content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID)))
+				recordType, "recordId").content(mapper.writeValueAsString(new RecordRequest(attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isCreated());
 		// retrieve as single record
@@ -909,7 +909,7 @@ class RecordControllerMockMvcTest {
 		attributes.putAttribute("datetimeAttr", datetimeString);
 		// create record in db
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				recordType, "recordId").content(mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID)))
+				recordType, "recordId").content(mapper.writeValueAsString(new RecordRequest(attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isCreated());
 		// retrieve as single record

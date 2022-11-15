@@ -192,7 +192,7 @@ public class RecordController {
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
 			RecordResponse response = new RecordResponse(recordId, recordType, recordRequest.recordAttributes());
 			Record newRecord = new Record(recordId, recordType, recordRequest);
-			createRecordTypeAndInsertRecords(instanceId, newRecord, recordType, requestSchema, recordRequest.recordTypeRowIdentifier() == null ? "row_id" : recordRequest.recordTypeRowIdentifier());
+			createRecordTypeAndInsertRecords(instanceId, newRecord, recordType, requestSchema, ReservedNames.RECORD_ID);
 			return new ResponseEntity<>(response, status);
 		} else {
 			Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
@@ -295,10 +295,9 @@ public class RecordController {
 
 	@PostMapping("/{instanceid}/batch/{v}/{type}")
 	public ResponseEntity<BatchResponse> streamingWrite(@PathVariable("instanceid") UUID instanceId,
-			@PathVariable("v") String version, @PathVariable("type") RecordType recordType,
-														@PathVariable(value = "recordId", required = false) String recordId, InputStream is) {
+			@PathVariable("v") String version, @PathVariable("type") RecordType recordType, InputStream is) {
 		validateVersion(version);
-		int recordsModified = batchWriteService.consumeWriteStream(is, instanceId, recordType, recordId == null ? "sys_name" : recordId);
+		int recordsModified = batchWriteService.consumeWriteStream(is, instanceId, recordType);
 		return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
 	}
 

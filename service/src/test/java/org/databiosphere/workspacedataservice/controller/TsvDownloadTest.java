@@ -39,7 +39,7 @@ class TsvDownloadTest {
 		UUID instanceId = UUID.randomUUID();
 		recordController.createInstance(instanceId, version);
 		InputStream is = TsvDownloadTest.class.getResourceAsStream("/batch_write_tsv_data.json");
-		ResponseEntity<BatchResponse> response = recordController.streamingWrite(instanceId, version, recordType, RECORD_ID, is);
+		ResponseEntity<BatchResponse> response = recordController.streamingWrite(instanceId, version, recordType, is);
 		assertThat(response.getStatusCodeValue()).isEqualTo(200);
 		HttpHeaders headers = new HttpHeaders();
 		ResponseEntity<Resource> stream = restTemplate.exchange("/{instanceId}/tsv/{version}/{recordType}",

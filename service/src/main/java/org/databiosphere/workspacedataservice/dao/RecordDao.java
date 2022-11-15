@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Streams;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.InBoundDataSource;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -46,7 +45,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +56,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.RECORD_TYPE;
 
@@ -91,22 +88,17 @@ public class RecordDao {
 
 	public void createSchema(UUID instanceId) {
 		namedTemplate.getJdbcTemplate().update("create schema " + quote(instanceId.toString()));
-		namedTemplate.getJdbcTemplate().update("create table " + quote(instanceId.toString()) + ".sys_record_type_identifiers ( record_type varchar not null, record_id varchar not null, primary key (record_type))");
 	}
 
 	public String getRecordIdColumn(RecordType recordType, UUID instanceId){
-		return namedTemplate.queryForObject("select record_id from " + getQualifiedTableName("sys_record_type_identifiers", instanceId) + " where record_type = :recordType",
-				new MapSqlParameterSource("recordType", recordType.getName()), String.class);
-	}
-
-	public void setRecordIdColumn(RecordType recordType, UUID instanceId, String recordTypeRowIdentifier){
 		MapSqlParameterSource params = new MapSqlParameterSource("recordType", recordType.getName());
-		params.addValue("recordTypeRowIdentifier", recordTypeRowIdentifier);
-		namedTemplate.update("insert into " + getQualifiedTableName("sys_record_type_identifiers", instanceId)
-				+ "(record_type, record_id) values (:recordType, :recordTypeRowIdentifier)", params);
+		params.addValue("instanceId", instanceId.toString());
+		return namedTemplate.queryForObject("select kcu.column_name FROM information_schema.table_constraints tc " +
+						"JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema " +
+						"JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema " +
+						"WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = :instanceId AND tc.table_name= :recordType",
+				params, String.class);
 	}
-
-
 
 	public boolean recordTypeExists(UUID instanceId, RecordType recordType) {
 		return Boolean.TRUE.equals(namedTemplate.queryForObject(
@@ -120,7 +112,6 @@ public class RecordDao {
 	@Transactional
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
 								 Set<Relation> relations, String recordTypePrimaryKey) {
-		setRecordIdColumn(recordType, instanceId, recordTypePrimaryKey);
 		String columnDefs = genColumnDefs(tableInfo, recordTypePrimaryKey);
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(recordType, instanceId)
@@ -140,11 +131,6 @@ public class RecordDao {
 		// N.B. recordType is sql-validated in its constructor, so we don't need it here
 		return quote(instanceId.toString()) + "."
 				+ quote(SqlUtils.validateSqlString(recordType.getName(), RECORD_TYPE));
-	}
-
-	private String getQualifiedTableName(String tableName, UUID instanceId) {
-		// N.B. recordType is sql-validated in its constructor, so we don't need it here
-		return quote(instanceId.toString()) + "." + tableName;
 	}
 
 	@SuppressWarnings("squid:S2077")
@@ -236,7 +222,7 @@ public class RecordDao {
 	}
 
 	private List<RecordColumn> getSchemaWithRowId(Map<String, DataTypeMapping> schema, String recordIdColumn) {
-		return Stream.concat(Stream.of(new RecordColumn(recordIdColumn, DataTypeMapping.STRING)), schema.entrySet().stream().map(e -> new RecordColumn(e.getKey(), e.getValue()))).collect(Collectors.toSet()).stream().toList();
+		return Stream.concat(Stream.of(new RecordColumn(recordIdColumn, DataTypeMapping.STRING)), schema.entrySet().stream().map(e -> new RecordColumn(e.getKey(), e.getValue()))).toList();
 	}
 
 	public void batchUpsertWithErrorCapture(UUID instanceId, RecordType recordType, List<Record> records,
