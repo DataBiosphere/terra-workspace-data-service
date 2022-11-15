@@ -113,12 +113,12 @@ public class RecordController {
 	@PostMapping("/{instanceId}/tsv/{version}/{recordType}/{recordId}")
 	public ResponseEntity<TsvUploadResponse> tsvUpload(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			@PathVariable("recordId") String recordId, @RequestParam("records") MultipartFile records) throws IOException {
+			@PathVariable(name="recordId", required = false) String recordId, @RequestParam("records") MultipartFile records) throws IOException {
 		validateInstance(instanceId);
 		validateVersion(version);
 		int recordsModified;
 		try (InputStreamReader inputStreamReader = new InputStreamReader(records.getInputStream())) {
-			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType, recordId);
+			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType, recordId == null ? "sys_name": recordId);
 		}
 		return new ResponseEntity<>(new TsvUploadResponse(recordsModified, "Updated " + recordType.toString()),
 				HttpStatus.OK);
@@ -296,9 +296,9 @@ public class RecordController {
 	@PostMapping("/{instanceid}/batch/{v}/{type}")
 	public ResponseEntity<BatchResponse> streamingWrite(@PathVariable("instanceid") UUID instanceId,
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType,
-														@PathVariable("recordId") String recordId, InputStream is) {
+														@PathVariable(value = "recordId", required = false) String recordId, InputStream is) {
 		validateVersion(version);
-		int recordsModified = batchWriteService.consumeWriteStream(is, instanceId, recordType, recordId);
+		int recordsModified = batchWriteService.consumeWriteStream(is, instanceId, recordType, recordId == null ? "sys_name" : recordId);
 		return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
 	}
 
@@ -311,7 +311,6 @@ public class RecordController {
 	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, RecordType recordType,
 												  Map<String, DataTypeMapping> requestSchema, String recordTypePrimaryKey) {
 		List<Record> records = Collections.singletonList(newRecord);
-		recordDao.setRecordIdColumn(recordType, instanceId, recordTypePrimaryKey);
 		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records), recordTypePrimaryKey);
 		recordDao.batchUpsert(instanceId, recordType, records, requestSchema);
 	}

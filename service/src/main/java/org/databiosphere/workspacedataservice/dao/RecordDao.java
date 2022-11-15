@@ -118,7 +118,7 @@ public class RecordDao {
 	@SuppressWarnings("squid:S2077")
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
 								 Set<Relation> relations, String recordTypePrimaryKey) {
-
+		setRecordIdColumn(recordType, instanceId, recordTypePrimaryKey);
 		String columnDefs = genColumnDefs(tableInfo, recordTypePrimaryKey);
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(recordType, instanceId)
@@ -159,9 +159,10 @@ public class RecordDao {
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
 		MapSqlParameterSource params = new MapSqlParameterSource("instanceId", instanceId.toString());
 		params.addValue("tableName", recordType.getName());
+		params.addValue("recordTypeRowIdentifier", getRecordIdColumn(recordType, instanceId));
 		return namedTemplate
 				.query("select column_name, udt_name::regtype as data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
-						+ "and table_name = :tableName ", params, rs -> {
+						+ "and table_name = :tableName and column_name != :recordTypeRowIdentifier", params, rs -> {
 							Map<String, DataTypeMapping> result = new HashMap<>();
 							while (rs.next()) {
 								result.put(rs.getString("column_name"),
@@ -538,7 +539,7 @@ public class RecordDao {
 
 				for (int j = 1; j <= metaData.getColumnCount(); j++) {
 					String columnName = metaData.getColumnName(j);
-					if (columnName.startsWith(RESERVED_NAME_PREFIX)) {
+					if (columnName.equals(getRecordIdColumn(recordType, instanceId))) {
 						continue;
 					}
 					if (referenceColToTable.size() > 0 && referenceColToTable.containsKey(columnName)
@@ -623,7 +624,7 @@ public class RecordDao {
 
 	public List<RecordType> getAllRecordTypes(UUID instanceId) {
 		return namedTemplate.queryForList(
-				"select tablename from pg_tables WHERE schemaname = :workspaceSchema order by tablename",
+				"select tablename from pg_tables WHERE schemaname = :workspaceSchema and tablename not like 'sys%' order by tablename",
 				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), RecordType.class);
 	}
 

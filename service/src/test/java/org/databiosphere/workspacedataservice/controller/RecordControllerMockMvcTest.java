@@ -83,7 +83,7 @@ class RecordControllerMockMvcTest {
 				"col1\tcol2\n".getBytes());
 
 		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}/sys_name", instanceId, versionId, "tsv-record-type")
 				.file(file)).andExpect(status().isBadRequest());
 	}
 
@@ -99,7 +99,7 @@ class RecordControllerMockMvcTest {
 
 		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		String recordType = "big-int-value";
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}/sys_name", instanceId, versionId, recordType)
 				.file(file)).andExpect(status().isOk());
 		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				recordType, "1")).andReturn();
@@ -156,7 +156,7 @@ class RecordControllerMockMvcTest {
 
 		MockMultipartFile file = new MockMultipartFile("records", "generated.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsv.getBytes());
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId,
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}/sys_name", instanceId, versionId,
 				rt).file(file)).andExpect(status().isOk());
 		String jsonRes = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				rt, recordId)).andReturn().getResponse().getContentAsString();
@@ -170,7 +170,7 @@ class RecordControllerMockMvcTest {
 				"col1\tcol2\nfoo\tbar\n".getBytes());
 
 		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}/sys_name", instanceId, versionId, "tsv-record-type")
 				.file(file)).andExpect(status().isBadRequest());
 	}
 
@@ -185,7 +185,7 @@ class RecordControllerMockMvcTest {
 				tsvContent.toString().getBytes());
 
 		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}/sys_name", instanceId, versionId, "tsv-record-type")
 				.file(file)).andExpect(status().isOk());
 	}
 
@@ -210,7 +210,7 @@ class RecordControllerMockMvcTest {
 
 		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		String type = "tsv-record-type";
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, type)
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}/sys_name", instanceId, versionId, type)
 				.file(file)).andExpect(status().isOk());
 
 		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, type))
@@ -228,7 +228,7 @@ class RecordControllerMockMvcTest {
 		}
 		file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				secondUpload.toString().getBytes());
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, type)
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}/sys_name", instanceId, versionId, type)
 				.file(file)).andExpect(status().isOk());
 		mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, type))
 				.andExpect(status().isOk()).andReturn();
@@ -247,7 +247,7 @@ class RecordControllerMockMvcTest {
 						+ "\n").getBytes());
 
 		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}/sys_name", instanceId, versionId, "tsv-record-type")
 				.file(file)).andExpect(status().isNotFound());
 	}
 
@@ -289,7 +289,7 @@ class RecordControllerMockMvcTest {
 		MockMultipartFile alter = new MockMultipartFile("records", "change_json_to_text.tsv",
 				MediaType.TEXT_PLAIN_VALUE, "sys_name\tjson\na\tfoo\n".getBytes());
 		mockMvc.perform(
-				multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType).file(alter))
+				multipart("/{instanceId}/tsv/{version}/{recordType}/sys_name", instanceId, versionId, recordType).file(alter))
 				.andExpect(status().isOk());
 		schemaResult = mockMvc.perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType))
 				.andReturn();

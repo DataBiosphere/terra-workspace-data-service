@@ -34,7 +34,7 @@ class RecordDaoTest {
 		instanceId = UUID.randomUUID();
 		recordType = RecordType.valueOf("testRecordType");
 		recordDao.createSchema(instanceId);
-		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType, Collections.emptySet(), RECORD_ID);
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType, Collections.emptySet(), "row_id");
 	}
 
 	@Test
