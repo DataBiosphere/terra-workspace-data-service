@@ -46,7 +46,7 @@ class GeneratedClientTests {
         RecordsApi recordsApi = new RecordsApi(apiClient);
         TsvUploadResponse tsvUploadResponse = recordsApi.uploadTSV(
                 new File(this.getClass().getResource("/small-test.tsv").toURI()),
-                instanceId.toString(), version, "foo");
+                instanceId.toString(), version, "foo", "sys_name");
         assertThat(tsvUploadResponse.getRecordsModified()).isEqualTo(2);
     }
 

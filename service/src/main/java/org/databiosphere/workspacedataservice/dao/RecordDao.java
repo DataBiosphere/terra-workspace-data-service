@@ -32,6 +32,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -116,6 +117,7 @@ public class RecordDao {
 	}
 
 	@SuppressWarnings("squid:S2077")
+	@Transactional
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
 								 Set<Relation> relations, String recordTypePrimaryKey) {
 		setRecordIdColumn(recordType, instanceId, recordTypePrimaryKey);

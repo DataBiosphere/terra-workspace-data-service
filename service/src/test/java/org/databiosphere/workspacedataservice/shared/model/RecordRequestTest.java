@@ -33,7 +33,8 @@ public class RecordRequestTest {
 				    "num": 123,
 				    "bool": true,
 				    "anotherstring": "hello world"
-				  }
+				  },
+				  "recordTypeRowIdentifier": "row_id"
 				}""";
 
 		RecordRequest actual = jacksonObjectMapper.readValue(inputJsonString, RecordRequest.class);
