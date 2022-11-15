@@ -104,23 +104,20 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void deleteInstanceContainingData() throws Exception {
-		UUID uuid = UUID.randomUUID();
-		// creating the instance should 201
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isCreated());
 		RecordAttributes attributes = new RecordAttributes(Map.of("foo", "bar", "num", 123));
 		// create "to" record, which will be the target of a relation
-		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", uuid, versionId,
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 						"to", "1").content(mapper.writeValueAsString(new RecordRequest(attributes)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isCreated());
 		// create "from" record, with a relation to "to"
 		RecordAttributes attributes2 = new RecordAttributes(Map.of("relation", "terra-wds:/to/1"));
-		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", uuid, versionId,
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 						"from", "2").content(mapper.writeValueAsString(new RecordRequest(attributes2)))
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isCreated());
 		// delete existing instance should 200
-		mockMvc.perform(delete("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isOk());
+		mockMvc.perform(delete("/instances/{version}/{instanceId}", versionId, instanceId)).andExpect(status().isOk());
 	}
 
 	@Test
