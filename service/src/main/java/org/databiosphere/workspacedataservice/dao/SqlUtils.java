@@ -20,7 +20,7 @@ public class SqlUtils {
 	}
 
 	public static String validateSqlString(String name, InvalidNameException.NameType nameType) {
-		if (containsDisallowedSqlCharacter(name) || name.startsWith(ReservedNames.RESERVED_NAME_PREFIX)) {
+		if (containsDisallowedSqlCharacter(name)) {
 			throw new InvalidNameException(nameType);
 		}
 		return name;

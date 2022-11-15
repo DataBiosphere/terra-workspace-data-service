@@ -24,7 +24,7 @@ public class RecordRequestTest {
 		RecordAttributes recordAttributes = new RecordAttributes(
 				Map.of("foo", "bar", "num", new BigInteger("123"), "bool", true, "anotherstring", "hello world"));
 
-		RecordRequest expected = new RecordRequest(recordAttributes);
+		RecordRequest expected = new RecordRequest(recordAttributes, "row_id");
 
 		String inputJsonString = """
 				{

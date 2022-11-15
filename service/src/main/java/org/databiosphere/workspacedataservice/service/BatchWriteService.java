@@ -116,7 +116,7 @@ public class BatchWriteService {
 	}
 
 	@Transactional
-	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType) throws IOException {
+	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType, String recordTypePrimaryKey) throws IOException {
 		CSVFormat csvFormat = TsvSupport.getUploadFormat();
 		CSVParser rows = csvFormat.parse(is);
 		List<Record> batch = new ArrayList<>();
@@ -125,10 +125,10 @@ public class BatchWriteService {
 		int recordsProcessed = 0;
 		for (CSVRecord row : rows) {
 			Map<String, Object> m = (Map) row.toMap();
-			m.remove(ROW_ID_COLUMN_NAME);
+			m.remove(recordTypePrimaryKey);
 			changeEmptyStringsToNulls(m);
 			try {
-				batch.add(new Record(row.get(ROW_ID_COLUMN_NAME), recordType, new RecordAttributes(m)));
+				batch.add(new Record(row.get(recordTypePrimaryKey), recordType, new RecordAttributes(m)));
 			} catch (IllegalArgumentException ex) {
 				LOGGER.error("IllegalArgument exception while reading tsv", ex);
 				throw new InvalidTsvException(
@@ -137,7 +137,7 @@ public class BatchWriteService {
 			recordsProcessed++;
 			if (batch.size() >= batchSize) {
 				if (firstUpsertBatch) {
-					schema = createOrUpdateSchema(instanceId, recordType, batch);
+					schema = createOrUpdateSchema(instanceId, recordType, batch, recordTypePrimaryKey);
 					firstUpsertBatch = false;
 				}
 				recordDao.batchUpsert(instanceId, recordType, batch, schema);
@@ -148,7 +148,7 @@ public class BatchWriteService {
 			if (batch.isEmpty()) {
 				throw new InvalidTsvException("We could not parse any data rows in your tsv file.");
 			}
-			schema = createOrUpdateSchema(instanceId, recordType, batch);
+			schema = createOrUpdateSchema(instanceId, recordType, batch, recordTypePrimaryKey);
 		}
 		recordDao.batchUpsert(instanceId, recordType, batch, schema);
 		return recordsProcessed;
@@ -169,9 +169,9 @@ public class BatchWriteService {
 	}
 
 	private Map<String, DataTypeMapping> createOrUpdateSchema(UUID instanceId, RecordType recordType,
-			List<Record> batch) {
+															  List<Record> batch, String recordTypePrimaryKey) {
 		Map<String, DataTypeMapping> schema = inferer.inferTypes(batch, InBoundDataSource.TSV);
-		return createOrModifyRecordType(instanceId, recordType, schema, batch);
+		return createOrModifyRecordType(instanceId, recordType, schema, batch, recordTypePrimaryKey);
 	}
 
 	/**
@@ -184,7 +184,7 @@ public class BatchWriteService {
 	 * @return number of records updated
 	 */
 	@Transactional
-	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType) {
+	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType, String recordId) {
 		int recordsAffected = 0;
 		try (StreamingWriteHandler streamingWriteHandler = new StreamingWriteHandler(is, objectMapper)) {
 			Map<String, DataTypeMapping> schema = null;
@@ -194,7 +194,7 @@ public class BatchWriteService {
 				List<Record> records = info.getRecords();
 				if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
 					schema = inferer.inferTypes(records, InBoundDataSource.JSON);
-					createOrModifyRecordType(instanceId, recordType, schema, records);
+					createOrModifyRecordType(instanceId, recordType, schema, records, recordId);
 					firstUpsertBatch = false;
 				}
 				writeBatch(instanceId, recordType, schema, info, records);
@@ -207,9 +207,9 @@ public class BatchWriteService {
 	}
 
 	private Map<String, DataTypeMapping> createOrModifyRecordType(UUID instanceId, RecordType recordType,
-			Map<String, DataTypeMapping> schema, List<Record> records) {
+																  Map<String, DataTypeMapping> schema, List<Record> records, String recordTypePrimaryKey) {
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
-			recordDao.createRecordType(instanceId, schema, recordType, RelationUtils.findRelations(records));
+			recordDao.createRecordType(instanceId, schema, recordType, RelationUtils.findRelations(records), recordTypePrimaryKey);
 		} else {
 			return addOrUpdateColumnIfNeeded(instanceId, recordType, schema,
 					recordDao.getExistingTableSchema(instanceId, recordType), records);

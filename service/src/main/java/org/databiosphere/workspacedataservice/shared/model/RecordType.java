@@ -39,9 +39,6 @@ public class RecordType {
 	}
 
 	public void validate() {
-		if (name.startsWith(RESERVED_NAME_PREFIX)) {
-			throw new InvalidNameException(InvalidNameException.NameType.RECORD_TYPE);
-		}
 		SqlUtils.validateSqlString(name, InvalidNameException.NameType.RECORD_TYPE);
 	}
 

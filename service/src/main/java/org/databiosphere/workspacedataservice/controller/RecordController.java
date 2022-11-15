@@ -110,15 +110,15 @@ public class RecordController {
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
-	@PostMapping("/{instanceId}/tsv/{version}/{recordType}")
+	@PostMapping("/{instanceId}/tsv/{version}/{recordType}/{recordId}")
 	public ResponseEntity<TsvUploadResponse> tsvUpload(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			@RequestParam("records") MultipartFile records) throws IOException {
+			@PathVariable("recordId") String recordId, @RequestParam("records") MultipartFile records) throws IOException {
 		validateInstance(instanceId);
 		validateVersion(version);
 		int recordsModified;
 		try (InputStreamReader inputStreamReader = new InputStreamReader(records.getInputStream())) {
-			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType);
+			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType, recordId);
 		}
 		return new ResponseEntity<>(new TsvUploadResponse(recordsModified, "Updated " + recordType.toString()),
 				HttpStatus.OK);
@@ -192,7 +192,7 @@ public class RecordController {
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
 			RecordResponse response = new RecordResponse(recordId, recordType, recordRequest.recordAttributes());
 			Record newRecord = new Record(recordId, recordType, recordRequest);
-			createRecordTypeAndInsertRecords(instanceId, newRecord, recordType, requestSchema);
+			createRecordTypeAndInsertRecords(instanceId, newRecord, recordType, requestSchema, recordRequest.recordTypeRowIdentifier() == null ? "row_id" : recordRequest.recordTypeRowIdentifier());
 			return new ResponseEntity<>(response, status);
 		} else {
 			Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
@@ -229,7 +229,7 @@ public class RecordController {
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") String recordId) {
 		validateVersion(version);
-		boolean recordFound = recordDao.deleteSingleRecord(instanceId, recordType, recordId);
+		boolean recordFound = recordDao.deleteSingleRecord(instanceId, recordType, recordId, recordDao.getRecordIdColumn(recordType, instanceId));
 		return recordFound ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
 
@@ -295,9 +295,10 @@ public class RecordController {
 
 	@PostMapping("/{instanceid}/batch/{v}/{type}")
 	public ResponseEntity<BatchResponse> streamingWrite(@PathVariable("instanceid") UUID instanceId,
-			@PathVariable("v") String version, @PathVariable("type") RecordType recordType, InputStream is) {
+			@PathVariable("v") String version, @PathVariable("type") RecordType recordType,
+														@PathVariable("recordId") String recordId, InputStream is) {
 		validateVersion(version);
-		int recordsModified = batchWriteService.consumeWriteStream(is, instanceId, recordType);
+		int recordsModified = batchWriteService.consumeWriteStream(is, instanceId, recordType, recordId);
 		return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
 	}
 
@@ -308,9 +309,10 @@ public class RecordController {
 	}
 
 	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, RecordType recordType,
-			Map<String, DataTypeMapping> requestSchema) {
+												  Map<String, DataTypeMapping> requestSchema, String recordTypePrimaryKey) {
 		List<Record> records = Collections.singletonList(newRecord);
-		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records));
+		recordDao.setRecordIdColumn(recordType, instanceId, recordTypePrimaryKey);
+		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records), recordTypePrimaryKey);
 		recordDao.batchUpsert(instanceId, recordType, records, requestSchema);
 	}
 }

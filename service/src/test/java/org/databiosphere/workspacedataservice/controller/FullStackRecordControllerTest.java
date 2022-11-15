@@ -54,6 +54,7 @@ import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAtt
 		"spring.main.allow-bean-definition-overriding=true"})
 @Import(SmallBatchWriteTestConfig.class)
 class FullStackRecordControllerTest {
+	private static final String ROW_ID = "row_id";
 	@Autowired
 	private TestRestTemplate restTemplate;
 	private static HttpHeaders headers;
@@ -73,7 +74,7 @@ class FullStackRecordControllerTest {
 	@Transactional
 	void testBadRecordTypeNames() throws JsonProcessingException {
 		HttpEntity<String> requestEntity = new HttpEntity<>(
-				mapper.writeValueAsString(new RecordRequest(RecordAttributes.empty())), headers);
+				mapper.writeValueAsString(new RecordRequest(RecordAttributes.empty(), ROW_ID)), headers);
 		List<String> badNames = List.of("); drop table users;", "$$foo.bar", "...", "&Q$(*^@$(*");
 		for (String badName : badNames) {
 			ResponseEntity<ErrorResponse> response = restTemplate.exchange(
@@ -188,7 +189,7 @@ class FullStackRecordControllerTest {
 			RecordAttributes attributes = RecordAttributes.empty();
 			attributes.putAttribute(badName, "foo");
 			HttpEntity<String> requestEntity = new HttpEntity<>(
-					mapper.writeValueAsString(new RecordRequest(attributes)), headers);
+					mapper.writeValueAsString(new RecordRequest(attributes, ROW_ID)), headers);
 			ResponseEntity<ErrorResponse> response = restTemplate.exchange(
 					"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT, requestEntity,
 					ErrorResponse.class, instanceId, versionId, "sample", "sample_1");
@@ -206,7 +207,7 @@ class FullStackRecordControllerTest {
 				RelationUtils.createRelationString(RecordType.valueOf("non_existent"), "recordId"));
 		attrs.putAttribute("attr_ref_2",
 				RelationUtils.createRelationString(RecordType.valueOf("non_existent_2"), "recordId"));
-		HttpEntity<String> requestEntity = new HttpEntity<>(mapper.writeValueAsString(new RecordRequest(attrs)),
+		HttpEntity<String> requestEntity = new HttpEntity<>(mapper.writeValueAsString(new RecordRequest(attrs, ROW_ID)),
 				headers);
 		ResponseEntity<ErrorResponse> response = restTemplate.exchange(
 				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT, requestEntity,
@@ -223,7 +224,7 @@ class FullStackRecordControllerTest {
 		RecordType referencedRecordType = RecordType.valueOf("referenced-type");
 		createSomeRecords(referencedRecordType, 1);
 		attrs.putAttribute("attr_ref", RelationUtils.createRelationString(referencedRecordType, "missing-id"));
-		HttpEntity<String> requestEntity = new HttpEntity<>(mapper.writeValueAsString(new RecordRequest(attrs)),
+		HttpEntity<String> requestEntity = new HttpEntity<>(mapper.writeValueAsString(new RecordRequest(attrs, ROW_ID)),
 				headers);
 		ResponseEntity<ErrorResponse> response = restTemplate.exchange(
 				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT, requestEntity,
@@ -264,7 +265,7 @@ class FullStackRecordControllerTest {
 					? "record_" + i
 					: recordIdSupplier[0].get();
 			RecordAttributes attributes = generateRandomAttributes();
-			RecordRequest recordRequest = new RecordRequest(attributes);
+			RecordRequest recordRequest = new RecordRequest(attributes, ROW_ID);
 			ResponseEntity<String> response = restTemplate.exchange(
 					"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT,
 					new HttpEntity<>(mapper.writeValueAsString(recordRequest), headers), String.class, instanceId,
@@ -280,7 +281,7 @@ class FullStackRecordControllerTest {
 		for (int i = 0; i < numRecords; i++) {
 			String recordId = "record_" + i;
 			RecordAttributes attributes = generateNonRandomAttributes(i);
-			RecordRequest recordRequest = new RecordRequest(attributes);
+			RecordRequest recordRequest = new RecordRequest(attributes, ROW_ID);
 			ResponseEntity<String> response = restTemplate.exchange(
 					"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT,
 					new HttpEntity<>(mapper.writeValueAsString(recordRequest), headers), String.class, instanceId,

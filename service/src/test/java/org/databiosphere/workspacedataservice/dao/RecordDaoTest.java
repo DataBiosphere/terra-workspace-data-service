@@ -17,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
@@ -33,7 +34,7 @@ class RecordDaoTest {
 		instanceId = UUID.randomUUID();
 		recordType = RecordType.valueOf("testRecordType");
 		recordDao.createSchema(instanceId);
-		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType, Collections.emptySet());
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType, Collections.emptySet(), RECORD_ID);
 	}
 
 	@Test
@@ -154,7 +155,7 @@ class RecordDaoTest {
 		Record testRecord = new Record(recordId, recordType, RecordAttributes.empty());
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord), new HashMap<>());
 
-		recordDao.deleteSingleRecord(instanceId, recordType, "testRecord");
+		recordDao.deleteSingleRecord(instanceId, recordType, "testRecord", "row_id");
 
 		// make sure record not fetched
 		Optional<Record> none = recordDao.getSingleRecord(instanceId, recordType, "testRecord");
@@ -183,7 +184,7 @@ class RecordDaoTest {
 
 		// Should throw an error
 		assertThrows(ResponseStatusException.class, () -> {
-			recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord");
+			recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord", "row_id");
 		}, "Exception should be thrown when attempting to delete related record");
 	}
 	@Test
@@ -194,7 +195,7 @@ class RecordDaoTest {
 		assertTrue(typesList.contains(recordType));
 
 		RecordType newRecordType = RecordType.valueOf("newRecordType");
-		recordDao.createRecordType(instanceId, Collections.emptyMap(), newRecordType, Collections.emptySet());
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), newRecordType, Collections.emptySet(), RECORD_ID);
 
 		List<RecordType> newTypesList = recordDao.getAllRecordTypes(instanceId);
 		assertEquals(2, newTypesList.size());
@@ -241,7 +242,7 @@ class RecordDaoTest {
 	void testDeleteRecordTypeWithRelation() {
 		RecordType recordTypeName = recordType;
 		RecordType referencedType = RecordType.valueOf("referencedType");
-		recordDao.createRecordType(instanceId, Collections.emptyMap(), referencedType, Collections.emptySet());
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), referencedType, Collections.emptySet(), RECORD_ID);
 
 		recordDao.addColumn(instanceId, recordTypeName, "relation", DataTypeMapping.STRING, referencedType);
 
