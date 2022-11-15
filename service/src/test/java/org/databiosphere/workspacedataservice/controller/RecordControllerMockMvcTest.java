@@ -77,11 +77,49 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void deleteInstance() throws Exception {
+		UUID uuid = UUID.randomUUID();
+		// delete nonexistent instance should 404
+		mockMvc.perform(delete("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isNotFound());
+		// creating the instance should 201
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isCreated());
+		// delete existing instance should 200
+		mockMvc.perform(delete("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isOk());
+		// deleting again should 404
+		mockMvc.perform(delete("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isNotFound());
+		// creating again should 201
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isCreated());
+	}
+
+	@Test
+	@Transactional
+	void deleteInstanceContainingData() throws Exception {
+		UUID uuid = UUID.randomUUID();
+		// creating the instance should 201
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isCreated());
+		RecordAttributes attributes = new RecordAttributes(Map.of("foo", "bar", "num", 123));
+		// create "to" record, which will be the target of a relation
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", uuid, versionId,
+						"to", "1").content(mapper.writeValueAsString(new RecordRequest(attributes)))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isCreated());
+		// create "from" record, with a relation to "to"
+		RecordAttributes attributes2 = new RecordAttributes(Map.of("relation", "terra-wds:/to/1"));
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", uuid, versionId,
+						"from", "2").content(mapper.writeValueAsString(new RecordRequest(attributes2)))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isCreated());
+		// delete existing instance should 200
+		mockMvc.perform(delete("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isOk());
+	}
+
+	@Test
+	@Transactional
 	void tsvWithNoRowsShouldReturn400() throws Exception {
+		createInstance(instanceId);
 		MockMultipartFile file = new MockMultipartFile("records", "no_data.tsv", MediaType.TEXT_PLAIN_VALUE,
 				"col1\tcol2\n".getBytes());
 
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
 				.file(file)).andExpect(status().isBadRequest());
 	}
@@ -89,6 +127,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void storeLargeIntegerValue() throws Exception {
+		createInstance(instanceId);
 		StringBuilder tsvContent = new StringBuilder("sys_name\tbigint\tbigfloat\n");
 		String bigIntValue = "11111111111111111111111111111111";
 		String bigFloatValue = "11111111111111111111111111111111.2222222222";
@@ -96,7 +135,6 @@ class RecordControllerMockMvcTest {
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
 
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		String recordType = "big-int-value";
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
 				.file(file)).andExpect(status().isOk());
@@ -110,6 +148,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void writeAndReadJson() throws Exception {
+		createInstance(instanceId);
 		String rt = "jsonb-type";
 		RecordAttributes attributes = new RecordAttributes(Map.of("json-attr", Map.of("name", "Bella", "age_in_months", 8)));
 		// create new record with new record type
@@ -129,6 +168,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void writeAndReadAllDataTypesJson() throws Exception {
+		createInstance(instanceId);
 		String rt = "all-types";
 		RecordAttributes attributes = TestUtils.getAllTypesAttributesForJson();
 		assertEquals(attributes.attributeSet().size(), DataTypeMapping.values().length);
@@ -145,9 +185,9 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void writeAndReadAllDataTypesTsv() throws Exception {
+		createInstance(instanceId);
 		String rt = "all-types";
 		String recordId = "newRecordId";
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		RecordAttributes attributes = TestUtils.getAllTypesAttributesForTsv();
 		assertEquals(DataTypeMapping.values().length, attributes.attributeSet().size());
 		String tsv = "sys_name\t"+attributes.attributeSet().stream().map(Map.Entry::getKey).collect(Collectors.joining("\t")) + "\n";
@@ -165,10 +205,10 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void tsvWithNoRowIdShouldReturn400() throws Exception {
+		createInstance(instanceId);
 		MockMultipartFile file = new MockMultipartFile("records", "no_row_id.tsv", MediaType.TEXT_PLAIN_VALUE,
 				"col1\tcol2\nfoo\tbar\n".getBytes());
 
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
 				.file(file)).andExpect(status().isBadRequest());
 	}
@@ -176,6 +216,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void simpleTsvUploadWithBatchingShouldSucceed(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
+		createInstance(instanceId);
 		StringBuilder tsvContent = new StringBuilder("sys_name\tcol1\n");
 		for (int i = 0; i < batchSize + 1; i++) {
 			tsvContent.append(i + "\ttada" + i + "\n");
@@ -183,7 +224,6 @@ class RecordControllerMockMvcTest {
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
 
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
 				.file(file)).andExpect(status().isOk());
 	}
@@ -191,6 +231,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void nullAndNonNullArraysShouldChooseProperType() throws Exception {
+		createInstance(instanceId);
 		StringBuilder tsvContent = new StringBuilder("sys_name\tarray\n");
 		//empty string/nulls
 		for (int i = 0; i < 10; i++) {
@@ -207,7 +248,6 @@ class RecordControllerMockMvcTest {
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
 
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		String type = "tsv-record-type";
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, type)
 				.file(file)).andExpect(status().isOk());
@@ -240,12 +280,11 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void tsvWithMissingRelationShouldFail() throws Exception {
-
+		createInstance(instanceId);
 		MockMultipartFile file = new MockMultipartFile("records", "simple_bad_relation.tsv", MediaType.TEXT_PLAIN_VALUE,
 				("sys_name\trelation\na\t" + RelationUtils.createRelationString(RecordType.valueOf("missing"), "QQ")
 						+ "\n").getBytes());
 
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
 				.file(file)).andExpect(status().isNotFound());
 	}
@@ -253,10 +292,10 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void uploadTsvAndVerifySchema() throws Exception {
+		createInstance(instanceId);
 		MockMultipartFile file = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
 				RecordControllerMockMvcTest.class.getResourceAsStream("/small-test.tsv"));
 
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		String recordType = "tsv-types";
 		mockMvc.perform(
 				multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType).file(file))
@@ -301,6 +340,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void tryFetchingMissingRecordType() throws Exception {
+		createInstance(instanceId);
 		mockMvc.perform(get("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				"missing", "missing-2")).andExpect(status().isNotFound());
 	}
@@ -308,6 +348,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void tryFetchingMissingRecord() throws Exception {
+		createInstance(instanceId);
 		RecordType recordType1 = RecordType.valueOf("recordType1");
 		createSomeRecords(recordType1, 1);
 		mockMvc.perform(get("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
@@ -317,6 +358,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void tryCreatingIllegallyNamedRecordType() throws Exception {
+		createInstance(instanceId);
 		String recordType = "sys_my_type";
 		RecordAttributes attributes = RecordAttributes.empty();
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
@@ -329,6 +371,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void updateWithIllegalAttributeName() throws Exception {
+		createInstance(instanceId);
 		RecordType recordType1 = RecordType.valueOf("illegalName");
 		createSomeRecords(recordType1, 1);
 		RecordAttributes illegalAttribute = RecordAttributes.empty();
@@ -343,6 +386,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void putNewRecord() throws Exception {
+		createInstance(instanceId);
 		String newRecordType = "newRecordType";
 		RecordAttributes attributes = new RecordAttributes(Map.of("foo", "bar", "num", 123));
 		// create new record with new record type
@@ -367,6 +411,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void ensurePutShowsNewlyNullFields() throws Exception {
+		createInstance(instanceId);
 		RecordType recordType1 = RecordType.valueOf("recordType1");
 		createSomeRecords(recordType1, 1);
 		RecordAttributes newAttributes = RecordAttributes.empty();
@@ -381,6 +426,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void ensurePatchShowsAllFields() throws Exception {
+		createInstance(instanceId);
 		RecordType recordType1 = RecordType.valueOf("recordType1");
 		createSomeRecords(recordType1, 1);
 		RecordAttributes newAttributes = RecordAttributes.empty();
@@ -394,7 +440,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void createAndRetrieveRecord() throws Exception {
-
+		createInstance(instanceId);
 		RecordType recordType = RecordType.valueOf("samples");
 		createSomeRecords(recordType, 1);
 		MockHttpServletResponse res = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
@@ -408,6 +454,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void createRecordWithReferences() throws Exception {
+		createInstance(instanceId);
 		RecordType referencedType = RecordType.valueOf("ref_participants");
 		RecordType referringType = RecordType.valueOf("ref_samples");
 		createSomeRecords(referencedType, 3);
@@ -424,6 +471,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void referencingMissingTableFails() throws Exception {
+		createInstance(instanceId);
 		RecordType referencedType = RecordType.valueOf("missing");
 		RecordType referringType = RecordType.valueOf("ref_samples-2");
 		createSomeRecords(referringType, 1);
@@ -440,6 +488,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void referencingMissingRecordFails() throws Exception {
+		createInstance(instanceId);
 		RecordType referencedType = RecordType.valueOf("ref_participants-2");
 		RecordType referringType = RecordType.valueOf("ref_samples-3");
 		createSomeRecords(referencedType, 3);
@@ -457,6 +506,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void expandColumnDefForNewData() throws Exception {
+		createInstance(instanceId);
 		RecordType recordType = RecordType.valueOf("to-alter");
 		createSomeRecords(recordType, 1);
 		RecordAttributes attributes = RecordAttributes.empty();
@@ -471,6 +521,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void patchMissingRecord() throws Exception {
+		createInstance(instanceId);
 		RecordType recordType = RecordType.valueOf("to-patch");
 		createSomeRecords(recordType, 1);
 		RecordAttributes attributes = RecordAttributes.empty();
@@ -485,6 +536,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void putRecordWithMissingTableReference() throws Exception {
+		createInstance(instanceId);
 		String recordType = "record-type-missing-table-ref";
 		String recordId = "record_0";
 		RecordAttributes attributes = RecordAttributes.empty();
@@ -501,6 +553,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void putRecordWithMismatchedReference() throws Exception {
+		createInstance(instanceId);
 		RecordType referencedType = RecordType.valueOf("referenced_Type");
 		RecordType referringType = RecordType.valueOf("referring_Type");
 		String recordId = "record_0";
@@ -529,6 +582,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void tryToAssignReferenceToNonRefColumn() throws Exception {
+		createInstance(instanceId);
 		RecordType recordType = RecordType.valueOf("ref-alter");
 		createSomeRecords(recordType, 1);
 		RecordAttributes attributes = RecordAttributes.empty();
@@ -545,6 +599,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void deleteRecord() throws Exception {
+		createInstance(instanceId);
 		RecordType recordType = RecordType.valueOf("samples");
 		createSomeRecords(recordType, 1);
 		mockMvc.perform(delete("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
@@ -556,6 +611,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void deleteMissingRecord() throws Exception {
+		createInstance(instanceId);
 		RecordType recordType = RecordType.valueOf("samples");
 		createSomeRecords(recordType, 1);
 		mockMvc.perform(delete("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
@@ -565,6 +621,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void deleteReferencedRecord() throws Exception {
+		createInstance(instanceId);
 		RecordType referencedType = RecordType.valueOf("ref_participants");
 		RecordType referringType = RecordType.valueOf("ref_samples");
 		createSomeRecords(referencedType, 1);
@@ -583,6 +640,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void deleteRecordType() throws Exception {
+		createInstance(instanceId);
 		String recordType = "recordType";
 		createSomeRecords(recordType, 3);
 		mockMvc.perform(delete("/{instanceId}/types/{v}/{type}", instanceId, versionId, recordType))
@@ -594,6 +652,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void deleteNonExistentRecordType() throws Exception {
+		createInstance(instanceId);
 		String recordType = "recordType";
 		mockMvc.perform(delete("/{instanceId}/types/{version}/{recordType}", instanceId, versionId, recordType))
 				.andExpect(status().isNotFound());
@@ -602,6 +661,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void deleteReferencedRecordType() throws Exception {
+		createInstance(instanceId);
 		RecordType referencedType = RecordType.valueOf("ref_participants");
 		RecordType referringType = RecordType.valueOf("ref_samples");
 		createSomeRecords(referencedType, 3);
@@ -621,6 +681,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void deleteReferencedRecordTypeWithNoRecords() throws Exception {
+		createInstance(instanceId);
 		RecordType referencedType = RecordType.valueOf("ref_participants");
 		RecordType referringType = RecordType.valueOf("ref_samples");
 		createSomeRecords(referencedType, 3);
@@ -646,6 +707,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void describeType() throws Exception {
+		createInstance(instanceId);
 		RecordType type = RecordType.valueOf("recordType");
 		createSomeRecords(type, 1);
 
@@ -688,6 +750,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void incompatibleArrayWritesShouldChangeToStringArray() throws Exception {
+		createInstance(instanceId);
 		String recordType = "test-type";
 		List<Record> someRecords = createSomeRecords(recordType, 1);
 		RecordRequest recordRequest = new RecordRequest(someRecords.get(0).getAttributes().putAttribute("array-of-date", List.of("should switch to array of string")));
@@ -706,6 +769,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void describeNonexistentType() throws Exception {
+		createInstance(instanceId);
 		mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, "noType"))
 				.andExpect(status().isNotFound());
 	}
@@ -715,6 +779,7 @@ class RecordControllerMockMvcTest {
 	void describeAllTypes() throws Exception {
 		// replace instanceId for this test so only these records are found
 		UUID instId = UUID.randomUUID();
+		createInstance(instId);
 		RecordType type1 = RecordType.valueOf("firstType");
 		createSomeRecords(type1, 1, instId);
 		RecordType type2 = RecordType.valueOf("secondType");
@@ -751,6 +816,11 @@ class RecordControllerMockMvcTest {
 		mockMvc.perform(get("/{instanceId}/types/{v}", UUID.randomUUID(), versionId)).andExpect(status().isNotFound());
 	}
 
+	private void createInstance(UUID instanceId) throws Exception {
+		mockMvc.perform(post("/instances/{v}/{instanceid}",
+				versionId, instanceId).content("")).andExpect(status().isCreated());
+	}
+
 	private List<Record> createSomeRecords(String recordType, int numRecords) throws Exception {
 		return createSomeRecords(RecordType.valueOf(recordType), numRecords, instanceId);
 	}
@@ -777,7 +847,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void batchWriteInsertShouldSucceed() throws Exception {
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
+		createInstance(instanceId);
 		String recordId = "foo";
 		String newBatchRecordType = "new-record-type";
 		Record record = new Record(recordId, RecordType.valueOf(newBatchRecordType),
@@ -801,7 +871,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void batchInsertShouldFailWithInvalidRelation() throws Exception {
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId)).andExpect(status().is2xxSuccessful());
+		createInstance(instanceId);
 		RecordType recordType = RecordType.valueOf("relationBatchInsert");
 		List<BatchOperation> batchOperations = List.of(
 				new BatchOperation(
@@ -822,7 +892,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void batchInsertShouldFailWithInvalidRelationExistingRecordType() throws Exception {
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId)).andExpect(status().is2xxSuccessful());
+		createInstance(instanceId);
 		RecordType recordType = RecordType.valueOf("relationBatchInsert");
 		createSomeRecords(recordType, 2);
 		List<BatchOperation> batchOperations = List.of(
@@ -844,6 +914,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void mixOfUpsertAndDeleteShouldSucceed() throws Exception {
+		createInstance(instanceId);
 		RecordType recordType = RecordType.valueOf("forBatch");
 		List<Record> records = createSomeRecords(recordType, 2);
 		Record upsertRcd = records.get(1);
@@ -868,6 +939,7 @@ class RecordControllerMockMvcTest {
 		// Postgres;
 		// other tests verify that.
 		UUID instanceId = UUID.randomUUID();
+		createInstance(instanceId);
 		RecordType recordType = RecordType.valueOf("test-type");
 		RecordAttributes attributes = RecordAttributes.empty();
 		String dateString = "1911-01-21";
@@ -902,6 +974,7 @@ class RecordControllerMockMvcTest {
 		// timestamp in Postgres;
 		// other tests verify that.
 		UUID instanceId = UUID.randomUUID();
+		createInstance(instanceId);
 		RecordType recordType = RecordType.valueOf("test-type");
 		RecordAttributes attributes = RecordAttributes.empty();
 		String datetimeString = "1911-01-21T13:45:43";

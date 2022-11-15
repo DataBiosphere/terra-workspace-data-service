@@ -14,7 +14,9 @@ import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.databiosphere.workspacedataservice.shared.model.SortDirection;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,6 +44,7 @@ import java.util.function.Supplier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestUtils.generateNonRandomAttributes;
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * This test spins up a web server and the full Spring Boot web stack. It was
@@ -67,6 +70,22 @@ class FullStackRecordControllerTest {
 		headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		instanceId = UUID.randomUUID();
+	}
+
+	@BeforeEach
+	void beforeEach() {
+		ResponseEntity<String> response = restTemplate.exchange("/instances/{v}/{instanceid}", HttpMethod.POST,
+				new HttpEntity<>("", headers), String.class,
+				versionId, instanceId);
+		assertEquals(HttpStatus.CREATED, response.getStatusCode());
+	}
+
+	@AfterEach
+	void afterEach() {
+		ResponseEntity<String> response = restTemplate.exchange("/instances/{v}/{instanceid}", HttpMethod.DELETE,
+				new HttpEntity<>("", headers), String.class,
+				versionId, instanceId);
+		assertEquals(HttpStatus.OK, response.getStatusCode());
 	}
 
 	@Test

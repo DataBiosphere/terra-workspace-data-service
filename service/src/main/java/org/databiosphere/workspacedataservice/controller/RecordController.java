@@ -183,12 +183,10 @@ public class RecordController {
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") String recordId, @RequestBody RecordRequest recordRequest) {
 		validateVersion(version);
+		validateInstance(instanceId);
 		RecordAttributes attributesInRequest = recordRequest.recordAttributes();
 		Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest, InBoundDataSource.JSON);
 		HttpStatus status = HttpStatus.CREATED;
-		if (!recordDao.instanceSchemaExists(instanceId)) {
-			recordDao.createSchema(instanceId);
-		}
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
 			RecordResponse response = new RecordResponse(recordId, recordType, recordRequest.recordAttributes());
 			Record newRecord = new Record(recordId, recordType, recordRequest);
@@ -222,6 +220,17 @@ public class RecordController {
 		}
 		recordDao.createSchema(instanceId);
 		return new ResponseEntity<>(HttpStatus.CREATED);
+	}
+
+	@DeleteMapping("/instances/{version}/{instanceId}")
+	public ResponseEntity<String> deleteInstance(@PathVariable("instanceId") UUID instanceId,
+												 @PathVariable("version") String version) {
+		validateVersion(version);
+		if (!recordDao.instanceSchemaExists(instanceId)) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "This instance does not exist");
+		}
+		recordDao.dropSchema(instanceId);
+		return new ResponseEntity<>(HttpStatus.OK);
 	}
 
 	@DeleteMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")

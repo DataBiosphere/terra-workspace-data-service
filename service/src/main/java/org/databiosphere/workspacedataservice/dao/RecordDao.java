@@ -91,6 +91,10 @@ public class RecordDao {
 		namedTemplate.getJdbcTemplate().update("create schema " + quote(instanceId.toString()));
 	}
 
+	public void dropSchema(UUID instanceId) {
+		namedTemplate.getJdbcTemplate().update("drop schema " + quote(instanceId.toString()) + " cascade");
+	}
+
 	public boolean recordTypeExists(UUID instanceId, RecordType recordType) {
 		return Boolean.TRUE.equals(namedTemplate.queryForObject(
 				"select exists(select from pg_tables where schemaname = :instanceId AND tablename  = :recordType)",
