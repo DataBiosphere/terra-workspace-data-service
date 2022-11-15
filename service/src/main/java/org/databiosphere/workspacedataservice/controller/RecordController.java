@@ -79,6 +79,7 @@ public class RecordController {
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") String recordId, @RequestBody RecordRequest recordRequest) {
 		validateVersion(version);
+		validateInstance(instanceId);
 		checkRecordTypeExists(instanceId, recordType);
 		Record singleRecord = recordDao
 				.getSingleRecord(instanceId, recordType, recordId)
@@ -114,8 +115,8 @@ public class RecordController {
 	public ResponseEntity<TsvUploadResponse> tsvUpload(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@RequestParam("records") MultipartFile records) throws IOException {
-		validateInstance(instanceId);
 		validateVersion(version);
+		validateInstance(instanceId);
 		int recordsModified;
 		try (InputStreamReader inputStreamReader = new InputStreamReader(records.getInputStream())) {
 			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType);
@@ -150,7 +151,10 @@ public class RecordController {
 	@PostMapping("/{instanceid}/search/{version}/{recordType}")
 	public RecordQueryResponse queryForEntities(@PathVariable("instanceid") UUID instanceId,
 			@PathVariable("recordType") RecordType recordType,
+			@PathVariable("version") String version,
 			@RequestBody(required = false) SearchRequest searchRequest) {
+		validateVersion(version);
+		validateInstance(instanceId);
 		checkRecordTypeExists(instanceId, recordType);
 		if (null == searchRequest) {
 			searchRequest = new SearchRequest();
@@ -226,9 +230,7 @@ public class RecordController {
 	public ResponseEntity<String> deleteInstance(@PathVariable("instanceId") UUID instanceId,
 												 @PathVariable("version") String version) {
 		validateVersion(version);
-		if (!recordDao.instanceSchemaExists(instanceId)) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "This instance does not exist");
-		}
+		validateInstance(instanceId);
 		recordDao.dropSchema(instanceId);
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
@@ -238,6 +240,7 @@ public class RecordController {
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") String recordId) {
 		validateVersion(version);
+		validateInstance(instanceId);
 		boolean recordFound = recordDao.deleteSingleRecord(instanceId, recordType, recordId);
 		return recordFound ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
@@ -256,6 +259,7 @@ public class RecordController {
 	public ResponseEntity<RecordTypeSchema> describeRecordType(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType) {
 		validateVersion(version);
+		validateInstance(instanceId);
 		checkRecordTypeExists(instanceId, recordType);
 		RecordTypeSchema result = getSchemaDescription(instanceId, recordType);
 		return new ResponseEntity<>(result, HttpStatus.OK);
@@ -306,6 +310,7 @@ public class RecordController {
 	public ResponseEntity<BatchResponse> streamingWrite(@PathVariable("instanceid") UUID instanceId,
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType, InputStream is) {
 		validateVersion(version);
+		validateInstance(instanceId);
 		int recordsModified = batchWriteService.consumeWriteStream(is, instanceId, recordType);
 		return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
 	}
