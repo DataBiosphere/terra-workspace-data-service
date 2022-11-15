@@ -91,6 +91,7 @@ public class RecordDao {
 		namedTemplate.getJdbcTemplate().update("create schema " + quote(instanceId.toString()));
 	}
 
+	@SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
 	public void dropSchema(UUID instanceId) {
 		namedTemplate.getJdbcTemplate().update("drop schema " + quote(instanceId.toString()) + " cascade");
 	}
