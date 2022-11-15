@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -19,7 +18,6 @@ import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,8 +34,6 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -67,7 +63,8 @@ class RecordControllerMockMvcTest {
 	@BeforeEach
 	void beforeEach() throws Exception {
 		instanceId = UUID.randomUUID();
-		createInstance(instanceId);
+		mockMvc.perform(post("/instances/{v}/{instanceid}",
+				versionId, instanceId).content("")).andExpect(status().isCreated());
 	}
 
 	@AfterEach
@@ -754,15 +751,12 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void describeAllTypes() throws Exception {
-		// replace instanceId for this test so only these records are found
-		UUID instId = UUID.randomUUID();
-		createInstance(instId);
 		RecordType type1 = RecordType.valueOf("firstType");
-		createSomeRecords(type1, 1, instId);
+		createSomeRecords(type1, 1, instanceId);
 		RecordType type2 = RecordType.valueOf("secondType");
-		createSomeRecords(type2, 2, instId);
+		createSomeRecords(type2, 2, instanceId);
 		RecordType type3 = RecordType.valueOf("thirdType");
-		createSomeRecords(type3, 10, instId);
+		createSomeRecords(type3, 10, instanceId);
 
 		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("array-of-date", "ARRAY_OF_DATE", null),
 				new AttributeSchema("array-of-datetime", "ARRAY_OF_DATE_TIME", null),
@@ -778,7 +772,7 @@ class RecordControllerMockMvcTest {
 				new RecordTypeSchema(type2, expectedAttributes, 2),
 				new RecordTypeSchema(type3, expectedAttributes, 10));
 
-		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}", instId, versionId))
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}", instanceId, versionId))
 				.andExpect(status().isOk()).andReturn();
 
 		List<RecordTypeSchema> actual = Arrays
@@ -791,11 +785,6 @@ class RecordControllerMockMvcTest {
 	@Transactional
 	void describeAllTypesNoInstance() throws Exception {
 		mockMvc.perform(get("/{instanceId}/types/{v}", UUID.randomUUID(), versionId)).andExpect(status().isNotFound());
-	}
-
-	private void createInstance(UUID instanceId) throws Exception {
-		mockMvc.perform(post("/instances/{v}/{instanceid}",
-				versionId, instanceId).content("")).andExpect(status().isCreated());
 	}
 
 	private List<Record> createSomeRecords(String recordType, int numRecords) throws Exception {
@@ -911,8 +900,6 @@ class RecordControllerMockMvcTest {
 		// N.B. This test does not assert that the date attribute is saved as a date in
 		// Postgres;
 		// other tests verify that.
-		UUID instanceId = UUID.randomUUID();
-		createInstance(instanceId);
 		RecordType recordType = RecordType.valueOf("test-type");
 		RecordAttributes attributes = RecordAttributes.empty();
 		String dateString = "1911-01-21";
@@ -946,8 +933,6 @@ class RecordControllerMockMvcTest {
 		// N.B. This test does not assert that the datetime attribute is saved as a
 		// timestamp in Postgres;
 		// other tests verify that.
-		UUID instanceId = UUID.randomUUID();
-		createInstance(instanceId);
 		RecordType recordType = RecordType.valueOf("test-type");
 		RecordAttributes attributes = RecordAttributes.empty();
 		String datetimeString = "1911-01-21T13:45:43";
