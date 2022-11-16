@@ -210,7 +210,7 @@ public class BatchWriteService {
 	}
 
 	private Map<String, DataTypeMapping> createOrModifyRecordType(UUID instanceId, RecordType recordType,
-																  Map<String, DataTypeMapping> schema, List<Record> records, String recordTypePrimaryKey) {
+			Map<String, DataTypeMapping> schema, List<Record> records, String recordTypePrimaryKey) {
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
 			recordDao.createRecordType(instanceId, schema, recordType, RelationUtils.findRelations(records), recordTypePrimaryKey);
 		} else {
