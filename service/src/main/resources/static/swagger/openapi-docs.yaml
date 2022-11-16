@@ -206,7 +206,7 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /{instanceid}/tsv/{v}/{type}/{recordTypeRowIdentifier}:
+  /{instanceid}/tsv/{v}/{type}/{recordTypePrimaryKey}:
     post:
       summary: Import records to a record type from a tsv file
       description: Upload a tsv to modify or create records in a record type.  This operation will insert or update records.
@@ -217,7 +217,7 @@ paths:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
         - $ref: '#/components/parameters/recordTypePathParam'
-        - $ref: '#/components/parameters/recordTypeRowIdentifierPathParam'
+        - $ref: '#/components/parameters/recordTypePrimaryKeyPathParam'
       requestBody:
         content:
           multipart/form-data:
@@ -480,8 +480,8 @@ components:
       required: true
       schema:
         type: string
-    recordTypeRowIdentifierPathParam:
-      name: recordTypeRowIdentifier
+    recordTypePrimaryKeyPathParam:
+      name: recordTypePrimaryKey
       in: path
       description: the column to uniquely identify a record
       required: true

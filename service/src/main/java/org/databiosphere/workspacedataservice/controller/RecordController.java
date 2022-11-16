@@ -132,7 +132,7 @@ public class RecordController {
 		validateVersion(version);
 		validateInstance(instanceId);
 		checkRecordTypeExists(instanceId, recordType);
-		List<String> headers = new ArrayList<>(Collections.singletonList(ReservedNames.RECORD_ID));
+		List<String> headers = new ArrayList<>(Collections.singletonList(recordDao.getPrimaryKeyColumn(recordType, instanceId)));
 		headers.addAll(recordDao.getExistingTableSchema(instanceId, recordType).keySet());
 		Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType);
 
