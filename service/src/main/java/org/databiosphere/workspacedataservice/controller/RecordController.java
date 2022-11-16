@@ -51,6 +51,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -110,15 +111,16 @@ public class RecordController {
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
-	@PostMapping("/{instanceId}/tsv/{version}/{recordType}/{recordId}")
+	@PostMapping({"/{instanceId}/tsv/{version}/{recordType}/{uniqueRowIdentifierColumn}", "/{instanceId}/tsv/{version}/{recordType}"} )
 	public ResponseEntity<TsvUploadResponse> tsvUpload(@PathVariable("instanceId") UUID instanceId,
-			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			@PathVariable(name="recordId", required = false) String recordId, @RequestParam("records") MultipartFile records) throws IOException {
+			   @PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
+			   @PathVariable(name= "uniqueRowIdentifierColumn", required = false) Optional<String> uniqueRowIdentifierColumn,
+               @RequestParam("records") MultipartFile records) throws IOException {
 		validateInstance(instanceId);
 		validateVersion(version);
 		int recordsModified;
 		try (InputStreamReader inputStreamReader = new InputStreamReader(records.getInputStream())) {
-			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType, recordId == null ? "sys_name": recordId);
+			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType, uniqueRowIdentifierColumn);
 		}
 		return new ResponseEntity<>(new TsvUploadResponse(recordsModified, "Updated " + recordType.toString()),
 				HttpStatus.OK);

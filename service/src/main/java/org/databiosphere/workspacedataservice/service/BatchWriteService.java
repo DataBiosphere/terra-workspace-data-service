@@ -9,7 +9,6 @@ import org.apache.commons.csv.CSVRecord;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
-import org.databiosphere.workspacedataservice.service.model.ReservedNames;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
@@ -33,11 +32,11 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.databiosphere.workspacedataservice.service.TsvSupport.ROW_ID_COLUMN_NAME;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 
@@ -118,28 +117,30 @@ public class BatchWriteService {
 	}
 
 	@Transactional
-	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType, String recordTypePrimaryKey) throws IOException {
+	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType, Optional<String> uniqueRowIdentifierColumn) throws IOException {
 		CSVFormat csvFormat = TsvSupport.getUploadFormat();
 		CSVParser rows = csvFormat.parse(is);
+		String leftMostColumn = rows.getHeaderMap().keySet().iterator().next();
 		List<Record> batch = new ArrayList<>();
 		boolean firstUpsertBatch = true;
 		Map<String, DataTypeMapping> schema = null;
+		String uniqueIdentifierAsString = uniqueRowIdentifierColumn.orElse(leftMostColumn);
 		int recordsProcessed = 0;
 		for (CSVRecord row : rows) {
 			Map<String, Object> m = (Map) row.toMap();
-			m.remove(recordTypePrimaryKey);
+			m.remove(uniqueIdentifierAsString);
 			changeEmptyStringsToNulls(m);
 			try {
-				batch.add(new Record(row.get(recordTypePrimaryKey), recordType, new RecordAttributes(m)));
+				batch.add(new Record(row.get(uniqueIdentifierAsString), recordType, new RecordAttributes(m)));
 			} catch (IllegalArgumentException ex) {
 				LOGGER.error("IllegalArgument exception while reading tsv", ex);
 				throw new InvalidTsvException(
-						"Uploaded TSV is missing " + recordTypePrimaryKey + " to uniquely identify each row");
+						"Uploaded TSV is missing " + uniqueRowIdentifierColumn + " to uniquely identify each row");
 			}
 			recordsProcessed++;
 			if (batch.size() >= batchSize) {
 				if (firstUpsertBatch) {
-					schema = createOrUpdateSchema(instanceId, recordType, batch, recordTypePrimaryKey);
+					schema = createOrUpdateSchema(instanceId, recordType, batch, uniqueIdentifierAsString);
 					firstUpsertBatch = false;
 				}
 				recordDao.batchUpsert(instanceId, recordType, batch, schema);
@@ -150,7 +151,7 @@ public class BatchWriteService {
 			if (batch.isEmpty()) {
 				throw new InvalidTsvException("We could not parse any data rows in your tsv file.");
 			}
-			schema = createOrUpdateSchema(instanceId, recordType, batch, recordTypePrimaryKey);
+			schema = createOrUpdateSchema(instanceId, recordType, batch, uniqueIdentifierAsString);
 		}
 		recordDao.batchUpsert(instanceId, recordType, batch, schema);
 		return recordsProcessed;
