@@ -65,6 +65,7 @@ public class RecordDao {
 
 	private static final String PRIMARY_KEY_COLUMN_CACHE = "primaryKeys";
 	private static final String INSTANCE_ID = "instanceId";
+	private static final String RECORD_ID = "recordId";
 	private final NamedParameterJdbcTemplate namedTemplate;
 
 	private final NamedParameterJdbcTemplate templateForStreaming;
@@ -281,10 +282,10 @@ public class RecordDao {
 		return e.getRootCause()instanceof SQLException sqlException && sqlException.getSQLState().equals("42804");
 	}
 
-	public boolean deleteSingleRecord(UUID instanceId, RecordType recordType, String recordId, String recordTypeRowIdentifier) {
+	public boolean deleteSingleRecord(UUID instanceId, RecordType recordType, String recordId, String recordTypePrimaryKey) {
 		try {
 			return namedTemplate.update("delete from " + getQualifiedTableName(recordType, instanceId) + " where "
-					+ recordTypeRowIdentifier + " = :recordId", new MapSqlParameterSource("recordId", recordId)) == 1;
+					+ recordTypePrimaryKey + " = :recordId", new MapSqlParameterSource(RECORD_ID, recordId)) == 1;
 		} catch (DataIntegrityViolationException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForTableRelation(sqlEx);
@@ -608,7 +609,7 @@ public class RecordDao {
 			return Optional.ofNullable(namedTemplate.queryForObject(
 					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + getPrimaryKeyColumn(recordType, instanceId)
 							+ " = :recordId",
-					new MapSqlParameterSource("recordId", recordId), new RecordRowMapper(recordType,objectMapper, instanceId)));
+					new MapSqlParameterSource(RECORD_ID, recordId), new RecordRowMapper(recordType,objectMapper, instanceId)));
 		} catch (EmptyResultDataAccessException e) {
 			return Optional.empty();
 		}
@@ -619,7 +620,7 @@ public class RecordDao {
 				.equals(namedTemplate.queryForObject(
 						"select exists(select * from " + getQualifiedTableName(recordType, instanceId) + " where "
 								+ getPrimaryKeyColumn(recordType, instanceId) + " = :recordId)",
-						new MapSqlParameterSource("recordId", recordId), Boolean.class));
+						new MapSqlParameterSource(RECORD_ID, recordId), Boolean.class));
 	}
 
 	public List<RecordType> getAllRecordTypes(UUID instanceId) {

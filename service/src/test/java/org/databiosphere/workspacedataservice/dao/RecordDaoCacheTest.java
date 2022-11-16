@@ -16,12 +16,11 @@ import org.springframework.test.util.AopTestUtils;
 import java.util.Collections;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ContextConfiguration
 @SpringBootTest
-public class RecordDaoCacheTest {
+class RecordDaoCacheTest {
 
     @Autowired
     private RecordDao recordDao;
