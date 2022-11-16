@@ -115,7 +115,7 @@ public class RecordDao {
 	@SuppressWarnings("squid:S2077")
 	@CacheEvict(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
-								 Set<Relation> relations, String recordTypePrimaryKey) {
+			Set<Relation> relations, String recordTypePrimaryKey) {
 		String columnDefs = genColumnDefs(tableInfo, recordTypePrimaryKey);
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(recordType, instanceId)
@@ -624,7 +624,7 @@ public class RecordDao {
 
 	public List<RecordType> getAllRecordTypes(UUID instanceId) {
 		return namedTemplate.queryForList(
-				"select tablename from pg_tables WHERE schemaname = :workspaceSchema and tablename not like 'sys%' order by tablename",
+				"select tablename from pg_tables WHERE schemaname = :workspaceSchema order by tablename",
 				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), RecordType.class);
 	}
 

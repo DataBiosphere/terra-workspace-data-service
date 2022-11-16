@@ -16,7 +16,6 @@ public class TsvSupport {
 
 	private TsvSupport() {
 	}
-	public static final String ROW_ID_COLUMN_NAME = ReservedNames.RECORD_ID;
 
 	public static CSVFormat getUploadFormat() {
 		return CSVFormat.DEFAULT.builder().setHeader().setDelimiter('\t')

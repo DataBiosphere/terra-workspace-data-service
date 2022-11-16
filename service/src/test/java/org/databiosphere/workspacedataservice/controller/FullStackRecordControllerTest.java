@@ -54,7 +54,6 @@ import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAtt
 		"spring.main.allow-bean-definition-overriding=true"})
 @Import(SmallBatchWriteTestConfig.class)
 class FullStackRecordControllerTest {
-	private static final String ROW_ID = "row_id";
 	@Autowired
 	private TestRestTemplate restTemplate;
 	private static HttpHeaders headers;

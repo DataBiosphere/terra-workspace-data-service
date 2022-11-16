@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordDaoTest {
 
+	private static final String PRIMARY_KEY = "row_id";
 	@Autowired
 	RecordDao recordDao;
 	UUID instanceId;
@@ -34,7 +35,7 @@ class RecordDaoTest {
 		instanceId = UUID.randomUUID();
 		recordType = RecordType.valueOf("testRecordType");
 		recordDao.createSchema(instanceId);
-		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType, Collections.emptySet(), "row_id");
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType, Collections.emptySet(), PRIMARY_KEY);
 	}
 
 	@Test
@@ -155,7 +156,7 @@ class RecordDaoTest {
 		Record testRecord = new Record(recordId, recordType, RecordAttributes.empty());
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord), new HashMap<>());
 
-		recordDao.deleteSingleRecord(instanceId, recordType, "testRecord", "row_id");
+		recordDao.deleteSingleRecord(instanceId, recordType, "testRecord", PRIMARY_KEY);
 
 		// make sure record not fetched
 		Optional<Record> none = recordDao.getSingleRecord(instanceId, recordType, "testRecord");
@@ -184,7 +185,7 @@ class RecordDaoTest {
 
 		// Should throw an error
 		assertThrows(ResponseStatusException.class, () -> {
-			recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord", "row_id");
+			recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord", PRIMARY_KEY);
 		}, "Exception should be thrown when attempting to delete related record");
 	}
 	@Test

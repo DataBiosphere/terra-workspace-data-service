@@ -172,7 +172,7 @@ public class BatchWriteService {
 	}
 
 	private Map<String, DataTypeMapping> createOrUpdateSchema(UUID instanceId, RecordType recordType,
-															  List<Record> batch, String recordTypePrimaryKey) {
+			List<Record> batch, String recordTypePrimaryKey) {
 		Map<String, DataTypeMapping> schema = inferer.inferTypes(batch, InBoundDataSource.TSV);
 		return createOrModifyRecordType(instanceId, recordType, schema, batch, recordTypePrimaryKey);
 	}
