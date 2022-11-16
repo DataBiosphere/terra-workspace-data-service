@@ -9,6 +9,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
@@ -83,21 +84,21 @@ public class BatchWriteService {
 	private void validateRelationsAndAddColumns(UUID instanceId, RecordType recordType,
 			Map<String, DataTypeMapping> requestSchema, List<Record> records, Map<String, DataTypeMapping> colsToAdd,
 			Map<String, DataTypeMapping> existingSchema) {
-		Set<Relation> relations = RelationUtils.findRelations(records);
+		RelationCollection relations = RelationUtils.findRelations(records);
 		List<Relation> existingRelations = recordDao.getRelationCols(instanceId, recordType);
 		Set<String> existingRelationCols = existingRelations.stream().map(Relation::relationColName)
 				.collect(Collectors.toSet());
 		// look for case where requested relation column already exists as a
 		// non-relational column
-		for (Relation relation : relations) {
+		for (Relation relation : relations.relations()) {
 			String col = relation.relationColName();
 			if (!existingRelationCols.contains(col) && existingSchema.containsKey(col)) {
 				throw new InvalidRelationException("It looks like you're attempting to assign a relation "
 						+ "to an existing attribute that was not configured for relations");
 			}
 		}
-		relations.addAll(existingRelations);
-		Map<String, List<Relation>> allRefCols = relations.stream()
+		relations.relations().addAll(existingRelations);
+		Map<String, List<Relation>> allRefCols = relations.relations().stream()
 				.collect(Collectors.groupingBy(Relation::relationColName));
 		if (allRefCols.values().stream().anyMatch(l -> l.size() > 1)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,

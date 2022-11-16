@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -34,14 +33,13 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.hamcrest.Matchers.*;
@@ -294,8 +292,8 @@ class RecordControllerMockMvcTest {
 				.andReturn();
 		schema = mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
 		assertEquals("json", schema.attributes().get(4).name());
-		// data type should downgrade to string
-		assertEquals("STRING", schema.attributes().get(4).datatype());
+		// data type should downgrade to RELATION
+		assertEquals("RELATION", schema.attributes().get(4).datatype());
 	}
 
 	@Test
@@ -419,6 +417,71 @@ class RecordControllerMockMvcTest {
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.attributes.sample-ref", is(ref)));
+	}
+
+	@Test
+	@Transactional
+	void createRecordWithReferenceArray() throws Exception {
+		RecordType referencedType = RecordType.valueOf("ref_participants");
+		RecordType referringType = RecordType.valueOf("ref_samples");
+		createSomeRecords(referencedType, 3);
+		RecordAttributes attributes = RecordAttributes.empty();
+		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(referencedType, "record_" + i)).collect(Collectors.toList());
+		attributes.putAttribute("rel-arr", relArr);
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
+				.andExpect(status().isCreated()).andExpect(jsonPath("$.attributes.rel-arr", is(relArr)));
+	}
+
+	@Test
+	@Transactional
+	void createRecordWithReferenceArrayMissingTable() throws Exception {
+		RecordType referencedType = RecordType.valueOf("ref_participants");
+		RecordType referringType = RecordType.valueOf("ref_samples");
+		RecordAttributes attributes = RecordAttributes.empty();
+		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(referencedType, "record_" + i)).collect(Collectors.toList());
+		attributes.putAttribute("rel-arr", relArr);
+
+		//Expect failure if relation table doesn't exist
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	@Transactional
+	void createRecordWithReferenceArrayMissingRecord() throws Exception {
+		RecordType referencedType = RecordType.valueOf("ref_participants");
+		RecordType referringType = RecordType.valueOf("ref_samples");
+		RecordAttributes attributes = RecordAttributes.empty();
+		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(referencedType, "record_" + i)).collect(Collectors.toList());
+		attributes.putAttribute("rel-arr", relArr);
+		createSomeRecords(referencedType, 2);
+		//Expect failure if only one relation is missing
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	@Transactional
+	void createRecordWithMixedReferenceArray() throws Exception {
+		RecordType referencedType = RecordType.valueOf("ref_participants");
+		RecordType referringType = RecordType.valueOf("ref_samples");
+		RecordAttributes attributes = RecordAttributes.empty();
+		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(referencedType, "record_" + i)).collect(Collectors.toList());
+		attributes.putAttribute("rel-arr", relArr);
+		createSomeRecords(referencedType, 2);
+//		//Expect failure if only one relation refers to a different table
+		relArr.set(2, RelationUtils.createRelationString(RecordType.valueOf("nonExistantType"), "no_record"));
+		attributes.putAttribute("rel-arr", relArr);
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
+				.andExpect(status().isNotFound());
 	}
 
 	@Test

@@ -10,6 +10,8 @@ import org.databiosphere.workspacedataservice.service.InBoundDataSource;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.model.RelationCollection;
+import org.databiosphere.workspacedataservice.service.model.RelationValue;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchDeleteException;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
@@ -101,12 +103,39 @@ public class RecordDao {
 
 	@SuppressWarnings("squid:S2077")
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
-			Set<Relation> relations) {
-
-		String columnDefs = genColumnDefs(tableInfo);
+			RelationCollection relations) {
+		//Only make columns for attributes that are not arrays of relations
+		//TODO Use relations.relationArrays?
+		Map<Boolean, Map<String, DataTypeMapping>> relationArraysOrNot = tableInfo.entrySet().stream().collect(Collectors.partitioningBy(
+				entry -> entry.getValue() == DataTypeMapping.ARRAY_OF_RELATION, Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+		String columnDefs = genColumnDefs(relationArraysOrNot.get(false));
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(recordType, instanceId)
-					+ "( " + columnDefs + (!relations.isEmpty() ? ", " + getFkSql(relations, instanceId) : "") + ")");
+					+ "( " + columnDefs + (!relations.relations().isEmpty() ? ", " + getFkSql(relations.relations(), instanceId) : "") + ")");
+			for (Relation relationArray : relations.relationArrays()){
+				createRelationJoinTable(instanceId, relationArray.relationColName(), recordType, relationArray.relationRecordType());
+			}
+		} catch (DataAccessException e) {
+			if (e.getRootCause()instanceof SQLException sqlEx) {
+				checkForMissingTable(sqlEx);
+			}
+			throw e;
+		}
+	}
+
+	@SuppressWarnings("squid:S2077")
+	public void createRelationJoinTable(UUID instanceId, String tableName, RecordType referringRecordType,
+								 RecordType referencedRecordType) {
+
+		//Possibly temporary fake recordTypes and relations to make existing methods work for this situation
+		String fromCol = "from_" + referringRecordType.getName() + "_key";
+		String toCol = "to_" + referencedRecordType.getName() + "_key";
+		String columnDefs =  quote(fromCol) + " text, " + quote(toCol) + " text";
+		RecordType joinType = RecordType.valueOf(tableName);
+		Set<Relation> relations = Set.of(new Relation(fromCol, referringRecordType), new Relation(toCol, referencedRecordType));
+		try {
+			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(joinType, instanceId) +
+					"( " + columnDefs +  (!relations.isEmpty() ? ", " + getFkSql(relations, instanceId) : "") + ")");
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingTable(sqlEx);
@@ -201,6 +230,18 @@ public class RecordDao {
 		try {
 			namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(instanceId, recordType, schemaAsList),
 					getInsertBatchArgs(records, schemaAsList));
+		} catch (DataAccessException e) {
+			if (e.getRootCause()instanceof SQLException sqlEx) {
+				checkForMissingRecord(sqlEx);
+			}
+			throw e;
+		}
+	}
+
+	public void insertIntoJoin(UUID instanceId, Relation column, RecordType recordType, List<RelationValue> relations){
+		try {
+			namedTemplate.getJdbcTemplate().batchUpdate(genJoinInsertStatement(instanceId, column, recordType),
+					getJoinInsertBatchArgs(relations));
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingRecord(sqlEx);
@@ -339,6 +380,13 @@ public class RecordDao {
 						RecordType.valueOf(rs.getString("table_name"))));
 	}
 
+	//TODO: Find the referenced table and return a list of Relations
+	public List<String> getRelationArrayCols(UUID instanceId, RecordType recordType) {
+		return namedTemplate.queryForList(
+				"SELECT table_name FROM information_schema.table_constraints WHERE constraint_type = 'FOREIGN KEY' AND table_schema = :workspace AND constraint_name = :constraintName",
+				Map.of("workspace", instanceId.toString(), "constraintName", "fk_from_" + recordType.getName() + "_key"), String.class);
+	}
+
 	@SuppressWarnings("squid:S2077")
 	public int countRecords(UUID instanceId, RecordType recordType) {
 		return namedTemplate.getJdbcTemplate()
@@ -429,12 +477,27 @@ public class RecordDao {
 		return row;
 	}
 
+	private List<Object[]> getJoinInsertBatchArgs(List<RelationValue> relations) {
+		return relations.stream().map(r -> new Object[]{r.fromRecord().getId(), r.toRecord().getId()}).toList();
+	}
+
 	private String genInsertStatement(UUID instanceId, RecordType recordType, List<RecordColumn> schema) {
 		List<String> colNames = schema.stream().map(RecordColumn::colName).toList();
 		List<DataTypeMapping> colTypes = schema.stream().map(RecordColumn::typeMapping).toList();
 		return "insert into " + getQualifiedTableName(recordType, instanceId) + "(" + getInsertColList(colNames)
 				+ ") values (" + getInsertParamList(colTypes) + ") " + "on conflict (" + RECORD_ID + ") "
 				+ (schema.size() == 1 ? "do nothing" : "do update set " + genColUpsertUpdates(colNames));
+	}
+
+	private String genJoinInsertStatement(UUID instanceId, Relation relation, RecordType recordType) {
+		//TODO: rename join table, method for getting that name.
+		//TODO: method for getting from/to col names in join table
+		RecordType joinType = RecordType.valueOf(relation.relationColName());
+		String fromCol = "from_" + recordType.getName() + "_key";
+		String toCol = "to_" + relation.relationRecordType().getName() + "_key";
+		String columnDefs =  "(" + quote(fromCol) + ", " + quote(toCol) + ")";
+		return "insert into " + getQualifiedTableName(joinType, instanceId) + columnDefs
+				+ " values (?,?) "; //TODO: Do I need on conflict and if so, how
 	}
 
 
@@ -600,7 +663,7 @@ public class RecordDao {
 
 	public List<RecordType> getAllRecordTypes(UUID instanceId) {
 		return namedTemplate.queryForList(
-				"select tablename from pg_tables WHERE schemaname = :workspaceSchema order by tablename",
+				"select tablename from pg_tables WHERE schemaname = :workspaceSchema and hasindexes is true order by tablename",
 				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), RecordType.class);
 	}
 

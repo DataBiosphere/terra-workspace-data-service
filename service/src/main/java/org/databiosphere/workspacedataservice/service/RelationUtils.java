@@ -7,6 +7,7 @@ import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.springframework.web.util.UriComponents;
@@ -23,16 +24,22 @@ public class RelationUtils {
 	 *            - all records whose references to check
 	 * @return Set of Relation for all referencing attributes
 	 */
-	public static Set<Relation> findRelations(List<Record> records) {
-		Set<Relation> result = new HashSet<>();
+	public static RelationCollection findRelations(List<Record> records) {
+		Set<Relation> relations = new HashSet<>();
+		Set<Relation> relationArrays = new HashSet<>();
 		for (Record record : records) {
 			for (Map.Entry<String, Object> entry : record.attributeSet()) {
 				if (isRelationValue(entry.getValue())) {
-					result.add(new Relation(entry.getKey(), getTypeValue(entry.getValue())));
+					relations.add(new Relation(entry.getKey(), getTypeValue(entry.getValue())));
+					//TODO Use DataTypeInferer instead of repeating code here, check whole array
+				} else if (entry.getValue() instanceof List<?> listVal){
+					if (isRelationValue(listVal.get(0))){
+						relationArrays.add(new Relation(entry.getKey(), getTypeValue(listVal.get(0))));
+					}
 				}
 			}
 		}
-		return result;
+		return new RelationCollection(relations, relationArrays);
 	}
 
 	public static RecordType getTypeValue(Object obj) {

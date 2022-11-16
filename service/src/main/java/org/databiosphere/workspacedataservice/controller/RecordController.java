@@ -8,11 +8,7 @@ import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.InBoundDataSource;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.TsvSupport;
-import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
-import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
-import org.databiosphere.workspacedataservice.service.model.Relation;
-import org.databiosphere.workspacedataservice.service.model.ReservedNames;
+import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -311,6 +307,31 @@ public class RecordController {
 			Map<String, DataTypeMapping> requestSchema) {
 		List<Record> records = Collections.singletonList(newRecord);
 		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records));
-		recordDao.batchUpsert(instanceId, recordType, records, requestSchema);
+//		recordDao.batchUpsert(instanceId, recordType, records, requestSchema);
+		prepareAndUpsert(instanceId, recordType, records, requestSchema);
 	}
+
+	private void prepareAndUpsert(UUID instanceId, RecordType recordType, List<Record> records,
+						Map<String, DataTypeMapping> requestSchema) {
+		//Take out relation arrays
+		Map<Boolean, Map<String, DataTypeMapping>> relationArraysOrNot = requestSchema.entrySet().stream().collect(Collectors.partitioningBy(
+				entry -> entry.getValue() == DataTypeMapping.ARRAY_OF_RELATION, Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+		Map<String, List<RelationValue>> relationArrayValues = new HashMap<>();
+		for (Record record : records) {
+			Map<Boolean, Map<String, Object>> withOrWithoutRelArrs = record.attributeSet().stream().collect(Collectors.partitioningBy(
+					entry -> relationArraysOrNot.get(true).containsKey(entry.getValue()), Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+			record.setAttributes(new RecordAttributes(withOrWithoutRelArrs.get(false)));
+			for (Map.Entry<String, Object> attr : withOrWithoutRelArrs.get(true).entrySet()) {
+				List<RelationValue> relList = relationArrayValues.getOrDefault(attr.getKey(), new ArrayList<>());
+				relList.add(new RelationValue(record, new Record(RelationUtils.getRelationValue(attr.getValue()), RelationUtils.getTypeValue(attr.getValue()), new RecordAttributes(Collections.emptyMap()))));
+				relationArrayValues.put(attr.getKey(), relList);
+			}
+		}
+			recordDao.batchUpsert(instanceId, recordType, records, relationArraysOrNot.get(false));
+			for (Map.Entry<String, List<RelationValue>> rel : relationArrayValues.entrySet()) {
+				//TODO: All of this, less messy
+				RecordType toType = rel.getValue().get(0).toRecord().getRecordType();
+				recordDao.insertIntoJoin(instanceId, new Relation(rel.getKey(), toType), recordType, rel.getValue());
+			}
+		}
 }
