@@ -270,7 +270,7 @@ paths:
                 $ref: '#/components/schemas/BatchResponse'
   /instances/{v}/{instanceid}:
     post:
-      summary: Create an instance (unstable)
+      summary: Create an instance
       description: Create an instance with the given UUID. This API is liable to change.
       operationId: createWDSInstance
       tags:
@@ -283,6 +283,27 @@ paths:
           description: Success
         409:
           description: Conflict - schema already exists.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete an instance
+      description: |
+        Delete the instance with the given UUID. This API is liable to change.
+
+        THIS WILL DELETE ALL DATA WITHIN THE INSTANCE. Be certain this is what you want to do.
+      operationId: deleteWDSInstance
+      tags:
+        - Instances
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+      responses:
+        200:
+          description: Success
+        404:
+          description: Not Found - instance does not exist.
           content:
             'application/json':
               schema:
