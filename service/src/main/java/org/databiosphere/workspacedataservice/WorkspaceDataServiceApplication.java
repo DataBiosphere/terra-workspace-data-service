@@ -17,6 +17,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -28,6 +29,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import javax.sql.DataSource;
 
 @SpringBootApplication
+@EnableCaching
 public class WorkspaceDataServiceApplication {
 
 	@Bean

@@ -22,6 +22,8 @@ import org.postgresql.jdbc.PgArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -73,7 +75,7 @@ public class RecordDao {
 	private final ObjectMapper objectMapper;
 
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
-			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf, ObjectMapper objectMapper) {
+					 @Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf, ObjectMapper objectMapper) {
 		this.namedTemplate = namedTemplate;
 		this.templateForStreaming = templateForStreaming;
 		this.inferer = inf;
@@ -90,6 +92,7 @@ public class RecordDao {
 		namedTemplate.getJdbcTemplate().update("create schema " + quote(instanceId.toString()));
 	}
 
+	@Cacheable(value = "primaryKeys", key = "{ #recordType.name, #instanceId.toString()}")
 	public String getRecordIdColumn(RecordType recordType, UUID instanceId){
 		MapSqlParameterSource params = new MapSqlParameterSource("recordType", recordType.getName());
 		params.addValue("instanceId", instanceId.toString());
@@ -109,7 +112,7 @@ public class RecordDao {
 	}
 
 	@SuppressWarnings("squid:S2077")
-	@Transactional
+	@CacheEvict(value = "primaryKeys", key = "{ #recordType.name, #instanceId.toString()}")
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
 								 Set<Relation> relations, String recordTypePrimaryKey) {
 		String columnDefs = genColumnDefs(tableInfo, recordTypePrimaryKey);
@@ -226,12 +229,13 @@ public class RecordDao {
 	}
 
 	public void batchUpsertWithErrorCapture(UUID instanceId, RecordType recordType, List<Record> records,
-			Map<String, DataTypeMapping> schema) {
+			Map<String, DataTypeMapping> schema, String primaryKey) {
 		try {
 			batchUpsert(instanceId, recordType, records, schema);
 		} catch (DataAccessException e) {
 			if (isDataMismatchException(e)) {
 				Map<String, DataTypeMapping> recordTypeSchemaWithoutId = new HashMap<>(schema);
+				recordTypeSchemaWithoutId.remove(primaryKey);
 				List<String> rowErrors = checkEachRow(records, recordTypeSchemaWithoutId);
 				if (!rowErrors.isEmpty()) {
 					throw new BatchWriteException(rowErrors);

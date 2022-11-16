@@ -134,7 +134,7 @@ public class BatchWriteService {
 			} catch (IllegalArgumentException ex) {
 				LOGGER.error("IllegalArgument exception while reading tsv", ex);
 				throw new InvalidTsvException(
-						"Uploaded TSV is missing " + ROW_ID_COLUMN_NAME + " to uniquely identify each row");
+						"Uploaded TSV is missing " + recordTypePrimaryKey + " to uniquely identify each row");
 			}
 			recordsProcessed++;
 			if (batch.size() >= batchSize) {
@@ -222,7 +222,7 @@ public class BatchWriteService {
 	private void writeBatch(UUID instanceId, RecordType recordType, Map<String, DataTypeMapping> schema,
 			StreamingWriteHandler.WriteStreamInfo info, List<Record> records) throws BatchWriteException {
 		if (info.getOperationType() == OperationType.UPSERT) {
-			recordDao.batchUpsertWithErrorCapture(instanceId, recordType, records, schema);
+			recordDao.batchUpsertWithErrorCapture(instanceId, recordType, records, schema, RECORD_ID);
 		} else if (info.getOperationType() == OperationType.DELETE) {
 			recordDao.batchDelete(instanceId, recordType, records);
 		}
