@@ -194,7 +194,7 @@ public class RecordController {
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
 			RecordResponse response = new RecordResponse(recordId, recordType, recordRequest.recordAttributes());
 			Record newRecord = new Record(recordId, recordType, recordRequest);
-			createRecordTypeAndInsertRecords(instanceId, newRecord, recordType, requestSchema, ReservedNames.RECORD_ID);
+			createRecordTypeAndInsertRecords(instanceId, newRecord, recordType, requestSchema);
 			return new ResponseEntity<>(response, status);
 		} else {
 			Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
@@ -231,7 +231,7 @@ public class RecordController {
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") String recordId) {
 		validateVersion(version);
-		boolean recordFound = recordDao.deleteSingleRecord(instanceId, recordType, recordId, recordDao.getRecordIdColumn(recordType, instanceId));
+		boolean recordFound = recordDao.deleteSingleRecord(instanceId, recordType, recordId, recordDao.getPrimaryKeyColumn(recordType, instanceId));
 		return recordFound ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
 
@@ -310,9 +310,9 @@ public class RecordController {
 	}
 
 	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, RecordType recordType,
-												  Map<String, DataTypeMapping> requestSchema, String recordTypePrimaryKey) {
+			Map<String, DataTypeMapping> requestSchema) {
 		List<Record> records = Collections.singletonList(newRecord);
-		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records), recordTypePrimaryKey);
+		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records), ReservedNames.RECORD_ID);
 		recordDao.batchUpsert(instanceId, recordType, records, requestSchema);
 	}
 }

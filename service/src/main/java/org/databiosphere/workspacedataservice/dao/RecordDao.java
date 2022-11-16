@@ -33,7 +33,6 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -64,6 +63,7 @@ import static org.databiosphere.workspacedataservice.service.model.exception.Inv
 @Repository
 public class RecordDao {
 
+	private static final String PRIMARY_KEY_COLUMN_CACHE = "primaryKeys";
 	private final NamedParameterJdbcTemplate namedTemplate;
 
 	private final NamedParameterJdbcTemplate templateForStreaming;
@@ -75,7 +75,7 @@ public class RecordDao {
 	private final ObjectMapper objectMapper;
 
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
-					 @Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf, ObjectMapper objectMapper) {
+			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf, ObjectMapper objectMapper) {
 		this.namedTemplate = namedTemplate;
 		this.templateForStreaming = templateForStreaming;
 		this.inferer = inf;
@@ -92,8 +92,8 @@ public class RecordDao {
 		namedTemplate.getJdbcTemplate().update("create schema " + quote(instanceId.toString()));
 	}
 
-	@Cacheable(value = "primaryKeys", key = "{ #recordType.name, #instanceId.toString()}")
-	public String getRecordIdColumn(RecordType recordType, UUID instanceId){
+	@Cacheable(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
+	public String getPrimaryKeyColumn(RecordType recordType, UUID instanceId){
 		MapSqlParameterSource params = new MapSqlParameterSource("recordType", recordType.getName());
 		params.addValue("instanceId", instanceId.toString());
 		return namedTemplate.queryForObject("select kcu.column_name FROM information_schema.table_constraints tc " +
@@ -112,7 +112,7 @@ public class RecordDao {
 	}
 
 	@SuppressWarnings("squid:S2077")
-	@CacheEvict(value = "primaryKeys", key = "{ #recordType.name, #instanceId.toString()}")
+	@CacheEvict(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
 								 Set<Relation> relations, String recordTypePrimaryKey) {
 		String columnDefs = genColumnDefs(tableInfo, recordTypePrimaryKey);
@@ -123,6 +123,7 @@ public class RecordDao {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingTable(sqlEx);
 			}
+			//this exception is thrown from getFkSql if the referenced relation doesn't exist
 			if(e instanceof EmptyResultDataAccessException){
 				throw new MissingObjectException("Record type for relation");
 			}
@@ -142,7 +143,7 @@ public class RecordDao {
 		LOGGER.info("queryForRecords: {}", recordType.getName());
 		return namedTemplate.getJdbcTemplate().query(
 				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by "
-						+ (sortAttribute == null ? getRecordIdColumn(recordType, instanceId) : quote(sortAttribute)) + " " + sortDirection + " limit "
+						+ (sortAttribute == null ? getPrimaryKeyColumn(recordType, instanceId) : quote(sortAttribute)) + " " + sortDirection + " limit "
 						+ pageSize + " offset " + offset,
 				new RecordRowMapper(recordType, objectMapper, instanceId));
 	}
@@ -150,7 +151,7 @@ public class RecordDao {
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
 		MapSqlParameterSource params = new MapSqlParameterSource("instanceId", instanceId.toString());
 		params.addValue("tableName", recordType.getName());
-		params.addValue("recordTypeRowIdentifier", getRecordIdColumn(recordType, instanceId));
+		params.addValue("recordTypeRowIdentifier", getPrimaryKeyColumn(recordType, instanceId));
 		return namedTemplate
 				.query("select column_name, udt_name::regtype as data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
 						+ "and table_name = :tableName and column_name != :recordTypeRowIdentifier", params, rs -> {
@@ -193,8 +194,8 @@ public class RecordDao {
 						+ newColType.getPostgresType());
 	}
 
-	private String genColumnDefs(Map<String, DataTypeMapping> tableInfo, String recordId) {
-		return recordId + " text primary key"
+	private String genColumnDefs(Map<String, DataTypeMapping> tableInfo, String primaryKeyCol) {
+		return primaryKeyCol + " text primary key"
 				+ (tableInfo.size() > 0
 						? ", " + tableInfo.entrySet().stream()
 								.map(e -> quote(SqlUtils.validateSqlString(e.getKey(), ATTRIBUTE)) + " "
@@ -211,11 +212,11 @@ public class RecordDao {
 	// attributes given, as
 	// that's dealt with earlier in the code.
 	public void batchUpsert(UUID instanceId, RecordType recordType, List<Record> records,
-			Map<String, DataTypeMapping> schema) {
-		List<RecordColumn> schemaAsList = getSchemaWithRowId(schema, getRecordIdColumn(recordType, instanceId));
+			Map<String, DataTypeMapping> schema, String primaryKeyColumn) {
+		List<RecordColumn> schemaAsList = getSchemaWithRowId(schema, primaryKeyColumn);
 		try {
-			namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(instanceId, recordType, schemaAsList, getRecordIdColumn(recordType, instanceId)),
-					getInsertBatchArgs(records, schemaAsList, getRecordIdColumn(recordType, instanceId)));
+			namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(instanceId, recordType, schemaAsList, primaryKeyColumn),
+					getInsertBatchArgs(records, schemaAsList, primaryKeyColumn));
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingRecord(sqlEx);
@@ -224,6 +225,12 @@ public class RecordDao {
 		}
 	}
 
+	public void batchUpsert(UUID instanceId, RecordType recordType, List<Record> records,
+							Map<String, DataTypeMapping> schema){
+		batchUpsert(instanceId, recordType, records, schema, getPrimaryKeyColumn(recordType, instanceId));
+	}
+
+
 	private List<RecordColumn> getSchemaWithRowId(Map<String, DataTypeMapping> schema, String recordIdColumn) {
 		return Stream.concat(Stream.of(new RecordColumn(recordIdColumn, DataTypeMapping.STRING)), schema.entrySet().stream().map(e -> new RecordColumn(e.getKey(), e.getValue()))).toList();
 	}
@@ -231,7 +238,7 @@ public class RecordDao {
 	public void batchUpsertWithErrorCapture(UUID instanceId, RecordType recordType, List<Record> records,
 			Map<String, DataTypeMapping> schema, String primaryKey) {
 		try {
-			batchUpsert(instanceId, recordType, records, schema);
+			batchUpsert(instanceId, recordType, records, schema, primaryKey);
 		} catch (DataAccessException e) {
 			if (isDataMismatchException(e)) {
 				Map<String, DataTypeMapping> recordTypeSchemaWithoutId = new HashMap<>(schema);
@@ -328,7 +335,7 @@ public class RecordDao {
 
 	public Stream<Record> streamAllRecordsForType(UUID instanceId, RecordType recordType) {
 		return templateForStreaming.getJdbcTemplate().queryForStream(
-				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + getRecordIdColumn(recordType, instanceId),
+				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + getPrimaryKeyColumn(recordType, instanceId),
 				new RecordRowMapper(recordType, objectMapper, instanceId));
 	}
 
@@ -337,7 +344,7 @@ public class RecordDao {
 		return relations.stream()
 				.map(r -> "constraint " + quote("fk_" + SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE))
 						+ " foreign key (" + quote(SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE))
-						+ ") references " + getQualifiedTableName(r.relationRecordType(), instanceId) + "(" + getRecordIdColumn(r.relationRecordType(), instanceId)
+						+ ") references " + getQualifiedTableName(r.relationRecordType(), instanceId) + "(" + getPrimaryKeyColumn(r.relationRecordType(), instanceId)
 						+ ")")
 				.collect(Collectors.joining(", \n"));
 	}
@@ -466,7 +473,7 @@ public class RecordDao {
 		List<String> recordIds = records.stream().map(Record::getId).toList();
 		try {
 			int[] rowCounts = namedTemplate.getJdbcTemplate().batchUpdate(
-					"delete from" + getQualifiedTableName(recordType, instanceId) + " where " + getRecordIdColumn(recordType, instanceId) + " = ?",
+					"delete from" + getQualifiedTableName(recordType, instanceId) + " where " + getPrimaryKeyColumn(recordType, instanceId) + " = ?",
 					new BatchPreparedStatementSetter() {
 						@Override
 						public void setValues(PreparedStatement ps, int i) throws SQLException {
@@ -504,21 +511,21 @@ public class RecordDao {
 		private final ObjectMapper objectMapper;
 
 		private final Map<String, DataTypeMapping> schema;
-		private final UUID instanceId;
+
+		private final String primaryKeyColumn;
 
 		public RecordRowMapper(RecordType recordType, ObjectMapper objectMapper, UUID instanceId){
-
 			this.recordType = recordType;
 			this.objectMapper = objectMapper;
 			this.schema = RecordDao.this.getExistingTableSchema(instanceId, recordType);
-			this.instanceId = instanceId;
+			this.primaryKeyColumn = getPrimaryKeyColumn(recordType, instanceId);
 			this.referenceColToTable = RecordDao.this.getRelationColumnsByName(RecordDao.this.getRelationCols(instanceId, recordType));
 		}
 
 		@Override
-		public Record mapRow(ResultSet rs, int rowNum) throws SQLException {
+		public Record mapRow(ResultSet rs, int rowNum) throws SQLException{
 			try {
-				return new Record(rs.getString(getRecordIdColumn(recordType, instanceId)), recordType, getAttributes(rs));
+				return new Record(rs.getString(primaryKeyColumn), recordType, getAttributes(rs));
 			} catch (JsonProcessingException e) {
 				throw new RuntimeException(e);
 			}
@@ -531,7 +538,7 @@ public class RecordDao {
 
 				for (int j = 1; j <= metaData.getColumnCount(); j++) {
 					String columnName = metaData.getColumnName(j);
-					if (columnName.equals(getRecordIdColumn(recordType, instanceId))) {
+					if (columnName.equals(primaryKeyColumn)) {
 						continue;
 					}
 					if (referenceColToTable.size() > 0 && referenceColToTable.containsKey(columnName)
@@ -598,7 +605,7 @@ public class RecordDao {
 	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
 		try {
 			return Optional.ofNullable(namedTemplate.queryForObject(
-					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + getRecordIdColumn(recordType, instanceId)
+					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + getPrimaryKeyColumn(recordType, instanceId)
 							+ " = :recordId",
 					new MapSqlParameterSource("recordId", recordId), new RecordRowMapper(recordType,objectMapper, instanceId)));
 		} catch (EmptyResultDataAccessException e) {
@@ -610,7 +617,7 @@ public class RecordDao {
 		return Boolean.TRUE
 				.equals(namedTemplate.queryForObject(
 						"select exists(select * from " + getQualifiedTableName(recordType, instanceId) + " where "
-								+ getRecordIdColumn(recordType, instanceId) + " = :recordId)",
+								+ getPrimaryKeyColumn(recordType, instanceId) + " = :recordId)",
 						new MapSqlParameterSource("recordId", recordId), Boolean.class));
 	}
 

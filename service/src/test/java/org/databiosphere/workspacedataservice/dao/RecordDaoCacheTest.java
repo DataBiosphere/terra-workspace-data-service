@@ -52,9 +52,9 @@ public class RecordDaoCacheTest {
         reset(mock);
 
         instanceId = UUID.randomUUID();
-        when(mock.getRecordIdColumn(eq(RecordType.valueOf("foo")), eq(instanceId)))
+        when(mock.getPrimaryKeyColumn(eq(RecordType.valueOf("foo")), eq(instanceId)))
                 .thenReturn("sys_name");
-        when(mock.getRecordIdColumn(eq(RecordType.valueOf("bar")), eq(instanceId)))
+        when(mock.getPrimaryKeyColumn(eq(RecordType.valueOf("bar")), eq(instanceId)))
                 .thenReturn("sys_name");
     }
 
@@ -62,20 +62,20 @@ public class RecordDaoCacheTest {
     void foo(){
         RecordType rt = RecordType.valueOf("foo");
         RecordType rtBar = RecordType.valueOf("bar");
-        recordDao.getRecordIdColumn(rt, instanceId);
-        recordDao.getRecordIdColumn(rt, instanceId);
-        recordDao.getRecordIdColumn(rtBar, instanceId);
+        recordDao.getPrimaryKeyColumn(rt, instanceId);
+        recordDao.getPrimaryKeyColumn(rt, instanceId);
+        recordDao.getPrimaryKeyColumn(rtBar, instanceId);
         //the second call should be cached and not increment invocations
-        verify(mock, times(1)).getRecordIdColumn(rt, instanceId);
-        verify(mock, times(1)).getRecordIdColumn(rtBar, instanceId);
+        verify(mock, times(1)).getPrimaryKeyColumn(rt, instanceId);
+        verify(mock, times(1)).getPrimaryKeyColumn(rtBar, instanceId);
         //this should evict the entry for rt+instance
         recordDao.createRecordType(instanceId, Collections.emptyMap(), rt, Collections.emptySet(), "blah");
-        recordDao.getRecordIdColumn(rt, instanceId);
+        recordDao.getPrimaryKeyColumn(rt, instanceId);
         //should still cach
-        recordDao.getRecordIdColumn(rtBar, instanceId);
+        recordDao.getPrimaryKeyColumn(rtBar, instanceId);
         //since the createRecordType call should evict invocations should tick up one
-        verify(mock, times(2)).getRecordIdColumn(rt, instanceId);
+        verify(mock, times(2)).getPrimaryKeyColumn(rt, instanceId);
         //should stay at 1 since it was never evicted
-        verify(mock, times(1)).getRecordIdColumn(rtBar, instanceId);
+        verify(mock, times(1)).getPrimaryKeyColumn(rtBar, instanceId);
     }
 }
