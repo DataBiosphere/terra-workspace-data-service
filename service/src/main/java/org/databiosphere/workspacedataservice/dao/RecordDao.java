@@ -64,6 +64,7 @@ import static org.databiosphere.workspacedataservice.service.model.exception.Inv
 public class RecordDao {
 
 	private static final String PRIMARY_KEY_COLUMN_CACHE = "primaryKeys";
+	private static final String INSTANCE_ID = "instanceId";
 	private final NamedParameterJdbcTemplate namedTemplate;
 
 	private final NamedParameterJdbcTemplate templateForStreaming;
@@ -95,7 +96,7 @@ public class RecordDao {
 	@Cacheable(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
 	public String getPrimaryKeyColumn(RecordType recordType, UUID instanceId){
 		MapSqlParameterSource params = new MapSqlParameterSource("recordType", recordType.getName());
-		params.addValue("instanceId", instanceId.toString());
+		params.addValue(INSTANCE_ID, instanceId.toString());
 		return namedTemplate.queryForObject("select kcu.column_name FROM information_schema.table_constraints tc " +
 						"JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema " +
 						"JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema " +
@@ -107,7 +108,7 @@ public class RecordDao {
 		return Boolean.TRUE.equals(namedTemplate.queryForObject(
 				"select exists(select from pg_tables where schemaname = :instanceId AND tablename  = :recordType)",
 				new MapSqlParameterSource(
-						Map.of("instanceId", instanceId.toString(), "recordType", recordType.getName())),
+						Map.of(INSTANCE_ID, instanceId.toString(), "recordType", recordType.getName())),
 				Boolean.class));
 	}
 
@@ -149,7 +150,7 @@ public class RecordDao {
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
-		MapSqlParameterSource params = new MapSqlParameterSource("instanceId", instanceId.toString());
+		MapSqlParameterSource params = new MapSqlParameterSource(INSTANCE_ID, instanceId.toString());
 		params.addValue("tableName", recordType.getName());
 		params.addValue("recordTypeRowIdentifier", getPrimaryKeyColumn(recordType, instanceId));
 		return namedTemplate

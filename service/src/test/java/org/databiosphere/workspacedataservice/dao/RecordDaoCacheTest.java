@@ -31,7 +31,7 @@ public class RecordDaoCacheTest {
 
     @EnableCaching
     @Configuration
-    public static class CachingTestConfig {
+    static class CachingTestConfig {
 
         @Bean
         public RecordDao mockedRecordDao() {
@@ -52,14 +52,14 @@ public class RecordDaoCacheTest {
         reset(mock);
 
         instanceId = UUID.randomUUID();
-        when(mock.getPrimaryKeyColumn(eq(RecordType.valueOf("foo")), eq(instanceId)))
+        when(mock.getPrimaryKeyColumn(RecordType.valueOf("foo"), instanceId))
                 .thenReturn("sys_name");
-        when(mock.getPrimaryKeyColumn(eq(RecordType.valueOf("bar")), eq(instanceId)))
+        when(mock.getPrimaryKeyColumn(RecordType.valueOf("bar"), instanceId))
                 .thenReturn("sys_name");
     }
 
     @Test
-    void foo(){
+    void verifyCaching(){
         RecordType rt = RecordType.valueOf("foo");
         RecordType rtBar = RecordType.valueOf("bar");
         recordDao.getPrimaryKeyColumn(rt, instanceId);
