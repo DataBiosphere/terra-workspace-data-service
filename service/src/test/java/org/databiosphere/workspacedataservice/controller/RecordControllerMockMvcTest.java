@@ -333,6 +333,8 @@ class RecordControllerMockMvcTest {
 		assertEquals("json", schema.attributes().get(4).name());
 		// data type should downgrade to string
 		assertEquals("STRING", schema.attributes().get(4).datatype());
+		//make sure left most column (sys_name) is used as id
+		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, recordType, "a")).andExpect(status().isOk());
 	}
 
 	@Test

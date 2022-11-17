@@ -120,7 +120,7 @@ public class BatchWriteService {
 	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType, Optional<String> uniqueRowIdentifierColumn) throws IOException {
 		CSVFormat csvFormat = TsvSupport.getUploadFormat();
 		CSVParser rows = csvFormat.parse(is);
-		String leftMostColumn = rows.getHeaderMap().keySet().iterator().next();
+		String leftMostColumn = rows.getHeaderNames().get(0);
 		List<Record> batch = new ArrayList<>();
 		boolean firstUpsertBatch = true;
 		Map<String, DataTypeMapping> schema = null;
