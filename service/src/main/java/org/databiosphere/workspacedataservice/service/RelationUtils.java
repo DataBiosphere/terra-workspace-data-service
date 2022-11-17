@@ -32,7 +32,7 @@ public class RelationUtils {
 				if (isRelationValue(entry.getValue())) {
 					relations.add(new Relation(entry.getKey(), getTypeValue(entry.getValue())));
 					//TODO Use DataTypeInferer instead of repeating code here, check whole array
-				} else if (entry.getValue() instanceof List<?> listVal){
+				} else if (entry.getValue() instanceof List<?> listVal && !listVal.isEmpty()){
 					if (isRelationValue(listVal.get(0))){
 						relationArrays.add(new Relation(entry.getKey(), getTypeValue(listVal.get(0))));
 					}

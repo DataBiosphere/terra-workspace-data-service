@@ -98,7 +98,7 @@ public class DataTypeInferer {
 		String sVal = val.toString();
 
 		if (RelationUtils.isRelationValue(val)) {
-			return STRING;
+			return RELATION;
 		}
 		// when we load from TSV, numbers are converted to strings, we need to go back
 		// to numbers
@@ -163,7 +163,7 @@ public class DataTypeInferer {
 		}
 
 		if (RelationUtils.isRelationValue(val)) {
-			return STRING;
+			return RELATION;
 		}
 		if(val instanceof List<?> listVal){
 			return findArrayType(listVal);
@@ -248,6 +248,10 @@ public class DataTypeInferer {
 			return ARRAY_OF_DATE;
 		}
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, String[].class))){
+			//TODO Don't repeat casting to array?  Check every value?
+			if (RelationUtils.isRelationValue(getArrayOfType(val, String[].class)[0])){
+				return ARRAY_OF_RELATION;
+			}
 			return ARRAY_OF_STRING;
 		}
 		if(getArrayOfType(val, String[].class) != null){

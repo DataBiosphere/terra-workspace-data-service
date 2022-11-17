@@ -91,6 +91,9 @@ public class RecordDao {
 
 	public void createSchema(UUID instanceId) {
 		namedTemplate.getJdbcTemplate().update("create schema " + quote(instanceId.toString()));
+		//Add domains to distinguish relations and arrays of relations from strings and arrays of strings
+		namedTemplate.getJdbcTemplate().update("create domain " + quote(instanceId.toString()) + ".relation as text");
+		namedTemplate.getJdbcTemplate().update("create domain " + quote(instanceId.toString()) + ".array_of_relation as text[]");
 	}
 
 	public boolean recordTypeExists(UUID instanceId, RecordType recordType) {
@@ -108,7 +111,7 @@ public class RecordDao {
 		//TODO Use relations.relationArrays?
 		Map<Boolean, Map<String, DataTypeMapping>> relationArraysOrNot = tableInfo.entrySet().stream().collect(Collectors.partitioningBy(
 				entry -> entry.getValue() == DataTypeMapping.ARRAY_OF_RELATION, Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-		String columnDefs = genColumnDefs(relationArraysOrNot.get(false));
+		String columnDefs = genColumnDefs(instanceId, relationArraysOrNot.get(false));
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(recordType, instanceId)
 					+ "( " + columnDefs + (!relations.relations().isEmpty() ? ", " + getFkSql(relations.relations(), instanceId) : "") + ")");
@@ -166,7 +169,7 @@ public class RecordDao {
 		params.addValue("tableName", recordType.getName());
 		params.addValue("recordName", RECORD_ID);
 		return namedTemplate
-				.query("select column_name, udt_name::regtype as data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
+				.query("select column_name, coalesce(domain_name, udt_name::regtype::varchar) as data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
 						+ "and table_name = :tableName and column_name != :recordName", params, rs -> {
 							Map<String, DataTypeMapping> result = new HashMap<>();
 							while (rs.next()) {
@@ -187,7 +190,7 @@ public class RecordDao {
 		try {
 			namedTemplate.getJdbcTemplate()
 					.update("alter table " + getQualifiedTableName(recordType, instanceId) + " add column "
-							+ quote(SqlUtils.validateSqlString(columnName, ATTRIBUTE)) + " " + colType.getPostgresType()
+							+ quote(SqlUtils.validateSqlString(columnName, ATTRIBUTE)) + " " + getPostgresType(instanceId, colType)
 							+ (referencedType != null
 									? " references " + getQualifiedTableName(referencedType, instanceId)
 									: ""));
@@ -199,20 +202,27 @@ public class RecordDao {
 		}
 	}
 
+	private String getPostgresType(UUID instanceId, DataTypeMapping colType){
+		if (colType == DataTypeMapping.ARRAY_OF_RELATION || colType == DataTypeMapping.RELATION){
+			return quote(instanceId.toString()) + "." + colType.getPostgresType();
+		}
+		return colType.getPostgresType();
+	}
+
 	@SuppressWarnings("squid:S2077")
 	public void changeColumn(UUID instanceId, RecordType recordType, String columnName, DataTypeMapping newColType) {
 		namedTemplate.getJdbcTemplate()
 				.update("alter table " + getQualifiedTableName(recordType, instanceId) + " alter column "
 						+ quote(SqlUtils.validateSqlString(columnName, ATTRIBUTE)) + " TYPE "
-						+ newColType.getPostgresType());
+						+ getPostgresType(instanceId, newColType));
 	}
 
-	private String genColumnDefs(Map<String, DataTypeMapping> tableInfo) {
+	private String genColumnDefs(UUID instanceId, Map<String, DataTypeMapping> tableInfo) {
 		return RECORD_ID + " text primary key"
 				+ (tableInfo.size() > 0
 						? ", " + tableInfo.entrySet().stream()
 								.map(e -> quote(SqlUtils.validateSqlString(e.getKey(), ATTRIBUTE)) + " "
-										+ e.getValue().getPostgresType())
+										+ getPostgresType(instanceId, e.getValue()))
 								.collect(Collectors.joining(", "))
 						: "");
 	}
@@ -495,7 +505,7 @@ public class RecordDao {
 		RecordType joinType = RecordType.valueOf(relation.relationColName());
 		String fromCol = "from_" + recordType.getName() + "_key";
 		String toCol = "to_" + relation.relationRecordType().getName() + "_key";
-		String columnDefs =  "(" + quote(fromCol) + ", " + quote(toCol) + ")";
+		String columnDefs =  " (" + quote(fromCol) + ", " + quote(toCol) + ")";
 		return "insert into " + getQualifiedTableName(joinType, instanceId) + columnDefs
 				+ " values (?,?) "; //TODO: Do I need on conflict and if so, how
 	}

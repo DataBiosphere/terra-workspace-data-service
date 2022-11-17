@@ -12,14 +12,14 @@ public enum DataTypeMapping {
 	DATE(null, "date", false, "?"),
 	DATE_TIME(null, "timestamp with time zone", false, "?"),
 	STRING(null, "text", false, "?"),
-	RELATION(null, "text", false, "?"),
+	RELATION(null, "relation", false, "?"),
 	JSON(null, "jsonb", false, "?::jsonb"),
 	NUMBER(null, "numeric", false, "?"),
 	ARRAY_OF_NUMBER(Double[].class, "numeric[]", true, "?::numeric[]"),
 	ARRAY_OF_DATE(String[].class, "date[]", true, "?::date[]"),
 	ARRAY_OF_DATE_TIME(String[].class, "timestamp with time zone[]", true, "?::timestamp with time zone[]"),
 	ARRAY_OF_STRING(String[].class, "text[]", true, "?"),
-	ARRAY_OF_RELATION(String[].class, "", true, "?"),
+	ARRAY_OF_RELATION(String[].class, "array_of_relation", true, "?"),
 	ARRAY_OF_BOOLEAN(Boolean[].class, "boolean[]", true, "?");
 
 	private Class javaArrayTypeForDbWrites;
