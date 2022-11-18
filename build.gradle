@@ -10,13 +10,14 @@ plugins {
     id 'org.hidetake.swagger.generator' version '2.19.2' apply false
     id 'java'
     id 'com.gorylenko.gradle-git-properties' version '2.4.1'
+    id 'jacoco'
 }
 
 repositories { mavenCentral() }
 
 subprojects {
     group = 'org.databiosphere'
-    version = '0.2.2-SNAPSHOT'
+    version = '0.2.5-SNAPSHOT'
 
     apply plugin: 'idea'
     apply plugin: 'java'

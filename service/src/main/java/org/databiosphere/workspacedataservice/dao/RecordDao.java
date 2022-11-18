@@ -97,6 +97,11 @@ public class RecordDao {
 		namedTemplate.getJdbcTemplate().update("create domain " + quote(instanceId.toString()) + ".array_of_relation as text[]");
 	}
 
+	@SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
+	public void dropSchema(UUID instanceId) {
+		namedTemplate.getJdbcTemplate().update("drop schema " + quote(instanceId.toString()) + " cascade");
+	}
+
 	public boolean recordTypeExists(UUID instanceId, RecordType recordType) {
 		return Boolean.TRUE.equals(namedTemplate.queryForObject(
 				"select exists(select from pg_tables where schemaname = :instanceId AND tablename  = :recordType)",

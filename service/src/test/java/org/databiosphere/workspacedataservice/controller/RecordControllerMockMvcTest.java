@@ -16,7 +16,8 @@ import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -59,9 +60,21 @@ class RecordControllerMockMvcTest {
 
 	private static String versionId = "v0.2";
 
-	@BeforeAll
-	private static void createWorkspace() {
+	@BeforeEach
+	void beforeEach() throws Exception {
 		instanceId = UUID.randomUUID();
+		mockMvc.perform(post("/instances/{v}/{instanceid}",
+				versionId, instanceId).content("")).andExpect(status().isCreated());
+	}
+
+	@AfterEach
+	void afterEach() throws Exception {
+		try {
+			mockMvc.perform(delete("/instances/{v}/{instanceid}",
+					versionId, instanceId).content("")).andExpect(status().isOk());
+		} catch (Throwable t)  {
+			 // noop - if we fail to delete the instance, don't fail the test
+		}
 	}
 
 	@Test
@@ -74,11 +87,45 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void deleteInstance() throws Exception {
+		UUID uuid = UUID.randomUUID();
+		// delete nonexistent instance should 404
+		mockMvc.perform(delete("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isNotFound());
+		// creating the instance should 201
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isCreated());
+		// delete existing instance should 200
+		mockMvc.perform(delete("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isOk());
+		// deleting again should 404
+		mockMvc.perform(delete("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isNotFound());
+		// creating again should 201
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isCreated());
+	}
+
+	@Test
+	@Transactional
+	void deleteInstanceContainingData() throws Exception {
+		RecordAttributes attributes = new RecordAttributes(Map.of("foo", "bar", "num", 123));
+		// create "to" record, which will be the target of a relation
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						"to", "1").content(mapper.writeValueAsString(new RecordRequest(attributes)))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isCreated());
+		// create "from" record, with a relation to "to"
+		RecordAttributes attributes2 = new RecordAttributes(Map.of("relation", "terra-wds:/to/1"));
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						"from", "2").content(mapper.writeValueAsString(new RecordRequest(attributes2)))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isCreated());
+		// delete existing instance should 200
+		mockMvc.perform(delete("/instances/{version}/{instanceId}", versionId, instanceId)).andExpect(status().isOk());
+	}
+
+	@Test
+	@Transactional
 	void tsvWithNoRowsShouldReturn400() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "no_data.tsv", MediaType.TEXT_PLAIN_VALUE,
 				"col1\tcol2\n".getBytes());
 
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
 				.file(file)).andExpect(status().isBadRequest());
 	}
@@ -93,7 +140,6 @@ class RecordControllerMockMvcTest {
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
 
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		String recordType = "big-int-value";
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
 				.file(file)).andExpect(status().isOk());
@@ -144,7 +190,6 @@ class RecordControllerMockMvcTest {
 	void writeAndReadAllDataTypesTsv() throws Exception {
 		String rt = "all-types";
 		String recordId = "newRecordId";
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		RecordAttributes attributes = TestUtils.getAllTypesAttributesForTsv();
 //		assertEquals(DataTypeMapping.values().length, attributes.attributeSet().size());
 		String tsv = "sys_name\t"+attributes.attributeSet().stream().map(Map.Entry::getKey).collect(Collectors.joining("\t")) + "\n";
@@ -165,7 +210,6 @@ class RecordControllerMockMvcTest {
 		MockMultipartFile file = new MockMultipartFile("records", "no_row_id.tsv", MediaType.TEXT_PLAIN_VALUE,
 				"col1\tcol2\nfoo\tbar\n".getBytes());
 
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
 				.file(file)).andExpect(status().isBadRequest());
 	}
@@ -180,7 +224,6 @@ class RecordControllerMockMvcTest {
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
 
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
 				.file(file)).andExpect(status().isOk());
 	}
@@ -204,7 +247,6 @@ class RecordControllerMockMvcTest {
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
 
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		String type = "tsv-record-type";
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, type)
 				.file(file)).andExpect(status().isOk());
@@ -237,12 +279,10 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void tsvWithMissingRelationShouldFail() throws Exception {
-
 		MockMultipartFile file = new MockMultipartFile("records", "simple_bad_relation.tsv", MediaType.TEXT_PLAIN_VALUE,
 				("sys_name\trelation\na\t" + RelationUtils.createRelationString(RecordType.valueOf("missing"), "QQ")
 						+ "\n").getBytes());
 
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
 				.file(file)).andExpect(status().isNotFound());
 	}
@@ -253,7 +293,6 @@ class RecordControllerMockMvcTest {
 		MockMultipartFile file = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
 				RecordControllerMockMvcTest.class.getResourceAsStream("/small-test.tsv"));
 
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		String recordType = "tsv-types";
 		mockMvc.perform(
 				multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType).file(file))
@@ -391,7 +430,6 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void createAndRetrieveRecord() throws Exception {
-
 		RecordType recordType = RecordType.valueOf("samples");
 		createSomeRecords(recordType, 1);
 		MockHttpServletResponse res = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
@@ -510,7 +548,7 @@ class RecordControllerMockMvcTest {
 		String ref = RelationUtils.createRelationString(referencedType, "record_99");
 		attributes.putAttribute("sample-ref", ref);
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isForbidden())
 				.andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidRelationException));
@@ -775,14 +813,12 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void describeAllTypes() throws Exception {
-		// replace instanceId for this test so only these records are found
-		UUID instId = UUID.randomUUID();
 		RecordType type1 = RecordType.valueOf("firstType");
-		createSomeRecords(type1, 1, instId);
+		createSomeRecords(type1, 1, instanceId);
 		RecordType type2 = RecordType.valueOf("secondType");
-		createSomeRecords(type2, 2, instId);
+		createSomeRecords(type2, 2, instanceId);
 		RecordType type3 = RecordType.valueOf("thirdType");
-		createSomeRecords(type3, 10, instId);
+		createSomeRecords(type3, 10, instanceId);
 
 		List<AttributeSchema> expectedAttributes = Arrays.asList(new AttributeSchema("array-of-date", "ARRAY_OF_DATE", null),
 				new AttributeSchema("array-of-datetime", "ARRAY_OF_DATE_TIME", null),
@@ -798,7 +834,7 @@ class RecordControllerMockMvcTest {
 				new RecordTypeSchema(type2, expectedAttributes, 2),
 				new RecordTypeSchema(type3, expectedAttributes, 10));
 
-		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}", instId, versionId))
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}", instanceId, versionId))
 				.andExpect(status().isOk()).andReturn();
 
 		List<RecordTypeSchema> actual = Arrays
@@ -839,7 +875,6 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void batchWriteInsertShouldSucceed() throws Exception {
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId));
 		String recordId = "foo";
 		String newBatchRecordType = "new-record-type";
 		Record record = new Record(recordId, RecordType.valueOf(newBatchRecordType),
@@ -863,7 +898,6 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void batchInsertShouldFailWithInvalidRelation() throws Exception {
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId)).andExpect(status().is2xxSuccessful());
 		RecordType recordType = RecordType.valueOf("relationBatchInsert");
 		List<BatchOperation> batchOperations = List.of(
 				new BatchOperation(
@@ -884,7 +918,6 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void batchInsertShouldFailWithInvalidRelationExistingRecordType() throws Exception {
-		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, instanceId)).andExpect(status().is2xxSuccessful());
 		RecordType recordType = RecordType.valueOf("relationBatchInsert");
 		createSomeRecords(recordType, 2);
 		List<BatchOperation> batchOperations = List.of(
@@ -929,7 +962,6 @@ class RecordControllerMockMvcTest {
 		// N.B. This test does not assert that the date attribute is saved as a date in
 		// Postgres;
 		// other tests verify that.
-		UUID instanceId = UUID.randomUUID();
 		RecordType recordType = RecordType.valueOf("test-type");
 		RecordAttributes attributes = RecordAttributes.empty();
 		String dateString = "1911-01-21";
@@ -963,7 +995,6 @@ class RecordControllerMockMvcTest {
 		// N.B. This test does not assert that the datetime attribute is saved as a
 		// timestamp in Postgres;
 		// other tests verify that.
-		UUID instanceId = UUID.randomUUID();
 		RecordType recordType = RecordType.valueOf("test-type");
 		RecordAttributes attributes = RecordAttributes.empty();
 		String datetimeString = "1911-01-21T13:45:43";

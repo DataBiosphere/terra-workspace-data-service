@@ -4,6 +4,7 @@ plugins {
 	id 'org.hidetake.swagger.generator'
 	id 'org.sonarqube'
 	id 'com.gorylenko.gradle-git-properties'
+	id 'jacoco'
 }
 
 springBoot {
@@ -60,5 +61,12 @@ tasks.named('test') {
 	testLogging {
 		events = ["passed", "failed", "skipped", "started"]
 		exceptionFormat = "full"
+	}
+}
+
+jacocoTestReport {
+	reports {
+		// sonarqube requires XML coverage output to upload coverage data
+		xml.required = true
 	}
 }
