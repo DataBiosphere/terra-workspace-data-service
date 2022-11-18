@@ -32,7 +32,7 @@ public class CachedQueryDao {
 
     @Cacheable(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
     public String getPrimaryKeyColumn(RecordType recordType, UUID instanceId){
-        LOGGER.warn("Calling the db to retrieve primary key for {}", recordType.getName());
+        LOGGER.warn("Calling the db to retrieve primary key for {}.{}", instanceId, recordType.getName());
         MapSqlParameterSource params = new MapSqlParameterSource("recordType", recordType.getName());
         params.addValue("instanceId", instanceId.toString());
         return namedTemplate.queryForObject("select kcu.column_name FROM information_schema.table_constraints tc " +

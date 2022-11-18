@@ -2,6 +2,8 @@ package org.databiosphere.workspacedataservice.shared.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Preconditions;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 import java.util.Set;
@@ -17,6 +19,7 @@ public class Record {
 	private RecordAttributes attributes;
 
 	public Record(String id, RecordType recordType, RecordAttributes attributes) {
+		Preconditions.checkArgument(StringUtils.isNotBlank(id));
 		this.id = id;
 		this.recordType = recordType;
 		this.attributes = attributes;
