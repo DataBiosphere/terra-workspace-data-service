@@ -51,6 +51,10 @@ public class Record {
 		this.attributes = attributes;
 	}
 
+	public void setAttributeValue(String attributeName, Object value){
+		this.attributes.putAttribute(attributeName, value);
+	}
+
 	// convenience methods for attribute manipulation
 	public Object getAttributeValue(String attributeName) {
 		return this.attributes.getAttributeValue(attributeName);

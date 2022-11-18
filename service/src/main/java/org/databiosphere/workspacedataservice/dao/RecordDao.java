@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.InBoundDataSource;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -126,18 +127,23 @@ public class RecordDao {
 		}
 	}
 
+	private String getJoinTableName(UUID instanceId, String tableName, RecordType referringRecordType){
+		//Use RESERVED_NAME_PREFIX to ensure no collision with user-named tables.
+		//RecordType name has already been sql-validated
+		String fullName = RESERVED_NAME_PREFIX + referringRecordType.getName() + "_" + SqlUtils.validateSqlString(tableName, ATTRIBUTE);
+		return quote(instanceId.toString()) + "." + quote(fullName);
+	}
+
 	@SuppressWarnings("squid:S2077")
 	public void createRelationJoinTable(UUID instanceId, String tableName, RecordType referringRecordType,
 								 RecordType referencedRecordType) {
-
-		//Possibly temporary fake recordTypes and relations to make existing methods work for this situation
+		//Possibly temporary fake relations to make existing methods work for this situation
 		String fromCol = "from_" + referringRecordType.getName() + "_key";
 		String toCol = "to_" + referencedRecordType.getName() + "_key";
 		String columnDefs =  quote(fromCol) + " text, " + quote(toCol) + " text";
-		RecordType joinType = RecordType.valueOf(tableName);
 		Set<Relation> relations = Set.of(new Relation(fromCol, referringRecordType), new Relation(toCol, referencedRecordType));
 		try {
-			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(joinType, instanceId) +
+			namedTemplate.getJdbcTemplate().update("create table " + getJoinTableName(instanceId, tableName, referringRecordType) +
 					"( " + columnDefs +  (!relations.isEmpty() ? ", " + getFkSql(relations, instanceId) : "") + ")");
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
@@ -390,11 +396,36 @@ public class RecordDao {
 						RecordType.valueOf(rs.getString("table_name"))));
 	}
 
-	//TODO: Find the referenced table and return a list of Relations
-	public List<String> getRelationArrayCols(UUID instanceId, RecordType recordType) {
-		return namedTemplate.queryForList(
-				"SELECT table_name FROM information_schema.table_constraints WHERE constraint_type = 'FOREIGN KEY' AND table_schema = :workspace AND constraint_name = :constraintName",
-				Map.of("workspace", instanceId.toString(), "constraintName", "fk_from_" + recordType.getName() + "_key"), String.class);
+	public List<Relation> getRelationArrayCols(UUID instanceId, RecordType recordType) {
+		return namedTemplate.query("select table_name, column_name from information_schema.key_column_usage where constraint_schema = :workspace "
+				+ " and table_name like :tableNamePattern and column_name like 'to_%_key'",
+				Map.of("workspace", instanceId.toString(), "tableNamePattern",  RESERVED_NAME_PREFIX +
+						recordType.getName() + "%"),
+				new RelationRowMapper(recordType));
+	}
+
+	private class RelationRowMapper implements RowMapper<Relation> {
+
+		private RecordType recordType;
+		public RelationRowMapper(RecordType recordType){
+			this.recordType = recordType;
+		}
+		@Override
+		public Relation mapRow(ResultSet rs, int rowNum) throws SQLException {
+			return new Relation(getAttributeFromTableName(rs.getString("table_name")), getRecordTypeFromConstraint(rs.getString("column_name")));
+		}
+
+		private RecordType getRecordTypeFromConstraint(String constraint){
+			//constraint should be to_tablename_key
+			return RecordType.valueOf(StringUtils.removeEnd(StringUtils.removeStart(constraint, "to_"), "_key"));
+		}
+
+		private String getAttributeFromTableName(String tableName){
+			//table will be RESERVED_NAME_PREFIX_fromTable_attribute
+			return StringUtils.removeStart(tableName,RESERVED_NAME_PREFIX + this.recordType.getName() + "_");
+		}
+
+
 	}
 
 	@SuppressWarnings("squid:S2077")
@@ -500,13 +531,11 @@ public class RecordDao {
 	}
 
 	private String genJoinInsertStatement(UUID instanceId, Relation relation, RecordType recordType) {
-		//TODO: rename join table, method for getting that name.
 		//TODO: method for getting from/to col names in join table
-		RecordType joinType = RecordType.valueOf(relation.relationColName());
 		String fromCol = "from_" + recordType.getName() + "_key";
 		String toCol = "to_" + relation.relationRecordType().getName() + "_key";
 		String columnDefs =  " (" + quote(fromCol) + ", " + quote(toCol) + ")";
-		return "insert into " + getQualifiedTableName(joinType, instanceId) + columnDefs
+		return "insert into " + getJoinTableName(instanceId, relation.relationColName(), recordType) + columnDefs
 				+ " values (?,?) "; //TODO: Do I need on conflict and if so, how
 	}
 
@@ -661,6 +690,15 @@ public class RecordDao {
 		} catch (EmptyResultDataAccessException e) {
 			return Optional.empty();
 		}
+	}
+
+	public List<String> getRelationArrayValues(UUID instanceId, Relation column, Record record){
+		String joinTableName = getJoinTableName(instanceId, column.relationColName(), record.getRecordType());
+		String fromCol = joinTableName + ".\"from_" + record.getRecordType().getName() + "_key\"";
+		String toCol = joinTableName + ".\"to_" + column.relationRecordType().getName() + "_key\"";
+		return namedTemplate.queryForList(
+				"select " + toCol + " from " + joinTableName + " where " + fromCol + " = :recordId",
+				new MapSqlParameterSource( "recordId", record.getId()), String.class);
 	}
 
 	public boolean recordExists(UUID instanceId, RecordType recordType, String recordId) {

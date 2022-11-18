@@ -4,6 +4,7 @@ import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
+import org.databiosphere.workspacedataservice.service.model.RelationValue;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -289,44 +290,33 @@ class RecordDaoTest {
 		recordDao.createRelationJoinTable(instanceId, "refArray", recordType,
 				secondRecordType);
 
-		List<String> relationArrays = recordDao.getRelationArrayCols(instanceId, recordType);
+		List<Relation> relationArrays = recordDao.getRelationArrayCols(instanceId, recordType);
 		assertEquals(1, relationArrays.size());
-		assertTrue(relationArrays.contains("refArray"));
+		assertTrue(relationArrays.contains(new Relation("refArray", secondRecordType)));
 	}
 
 	@Test
 	@Transactional
 	void testCreateRecordTypeWithRelationArray() {
-		// add some records to be relations
-
-		//TODO: Remove attributes?  Include schema in upsert call?
-		String refRecordId = "referencedRecord1";
-		Record referencedRecord = new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
-		String refRecordId2 = "referencedRecord12";
-		Record referencedRecord2 = new Record(refRecordId2, recordType, new RecordAttributes(Map.of("foo", "bar2")));
-		recordDao.batchUpsert(instanceId, recordType, List.of(referencedRecord, referencedRecord2), new HashMap<>());
-
 		RecordType relationarrayType = RecordType.valueOf("relationArrayType");
 		Relation singleRelation = new Relation("refAttr", recordType);
 		Relation arrayRelation = new Relation("relArrAttr", recordType);
 		recordDao.createRecordType(instanceId, Map.of("stringAttr", DataTypeMapping.STRING, "refAttr", DataTypeMapping.RELATION, "relArrAttr", DataTypeMapping.ARRAY_OF_RELATION), relationarrayType,
 				new RelationCollection(Set.of(singleRelation), Set.of(arrayRelation)));
 
-		//TODO Should getExistingTableSchema return relationArrayCols as well?
-//		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchema(instanceId, relationarrayType);
-//		assertEquals(3, schema.size());
-//		assertEquals(DataTypeMapping.STRING, schema.get("stringAttr"));
-//		assertEquals(DataTypeMapping.RELATION, schema.get("refAttr"));
-//		assertEquals(DataTypeMapping.ARRAY_OF_RELATION, schema.get("relArrAttr"));
+		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchema(instanceId, relationarrayType);
+		assertEquals(2, schema.size());
+		assertEquals(DataTypeMapping.STRING, schema.get("stringAttr"));
+		assertEquals(DataTypeMapping.RELATION, schema.get("refAttr"));
 		List<Relation> relationCols = recordDao.getRelationCols(instanceId, relationarrayType);
 		assertEquals(List.of(singleRelation), relationCols);
-		List<String> relationArrayCols = recordDao.getRelationArrayCols(instanceId, relationarrayType);
-		assertEquals(List.of("relArrAttr"), relationArrayCols);
+		List<Relation> relationArrayCols = recordDao.getRelationArrayCols(instanceId, relationarrayType);
+		assertEquals(List.of(arrayRelation), relationArrayCols);
 	}
 
 	@Test
 	@Transactional
-	void testCreateRecordWithRelationArray() {
+	void testCreateAndGetRecordWithRelationArray() {
 		// add some records to be relations
 		String refRecordId = "referencedRecord1";
 		Record referencedRecord = new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
@@ -345,13 +335,36 @@ class RecordDaoTest {
 		Record recordWithRelationArray = new Record(relArrId, relationArrayType, new RecordAttributes(Map.of("relArrAttr", List.of(RelationUtils.createRelationString(recordType, refRecordId), RelationUtils.createRelationString(recordType, refRecordId2)))));
 		recordDao.batchUpsert(instanceId, relationArrayType, Collections.singletonList(recordWithRelationArray), new HashMap<>());
 
+		//BatchUpsert does not include relation arrays
 		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchema(instanceId, relationArrayType);
 		assertEquals(2, schema.size());
-		List<String> relationArrayCols = recordDao.getRelationArrayCols(instanceId, relationArrayType);
-		assertEquals(List.of("relArrAttr"), relationArrayCols);
+		List<Relation> relationArrayCols = recordDao.getRelationArrayCols(instanceId, relationArrayType);
+		assertEquals(List.of(arrayRelation), relationArrayCols);
 		Record record = recordDao.getSingleRecord(instanceId, relationArrayType, relArrId).get();
 		assertNotNull(record);
+		assertEquals(null, record.getAttributeValue("relArrAttr"));
+
+		//Join values are inserted manually
+		recordDao.insertIntoJoin(instanceId, arrayRelation, relationArrayType, List.of(new RelationValue(record, referencedRecord), new RelationValue(record, referencedRecord2)));
+		List<String> relationValues = recordDao.getRelationArrayValues(instanceId, arrayRelation, record);
+		assertEquals(2, relationValues.size());
+		assertEquals(List.of(refRecordId, refRecordId2), relationValues);
 	}
 
+	@Test
+	@Transactional
+	void testGetRelationArrayColumns(){
+		//Add relation array columns to a type
+		RecordType relationarrayType = RecordType.valueOf("relationArrayType");
+		Relation arrayRelation1 = new Relation("relArr1", recordType);
+		Relation arrayRelation2 = new Relation("relArr2", recordType);
+		recordDao.createRecordType(instanceId, Map.of( "relArr1", DataTypeMapping.ARRAY_OF_RELATION, "relArr2", DataTypeMapping.ARRAY_OF_RELATION), relationarrayType,
+				new RelationCollection(Collections.emptySet(), Set.of(arrayRelation1, arrayRelation2)));
+
+		List<Relation> cols = recordDao.getRelationArrayCols(instanceId, relationarrayType);
+		assertEquals(2, cols.size());
+		assertTrue(cols.contains(arrayRelation1));
+		assertTrue(cols.contains(arrayRelation2));
+	}
 
 }
