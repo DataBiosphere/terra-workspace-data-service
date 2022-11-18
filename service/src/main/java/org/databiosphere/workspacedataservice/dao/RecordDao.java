@@ -109,7 +109,6 @@ public class RecordDao {
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
 			RelationCollection relations) {
 		//Only make columns for attributes that are not arrays of relations
-		//TODO Use relations.relationArrays?
 		Map<Boolean, Map<String, DataTypeMapping>> relationArraysOrNot = tableInfo.entrySet().stream().collect(Collectors.partitioningBy(
 				entry -> entry.getValue() == DataTypeMapping.ARRAY_OF_RELATION, Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 		String columnDefs = genColumnDefs(instanceId, relationArraysOrNot.get(false));

@@ -173,7 +173,7 @@ public class RecordController {
 
 //		if (searchRequest.getSortAttribute() != null && !recordDao.getExistingTableSchema(instanceId, recordType)
 //				.keySet().contains(searchRequest.getSortAttribute())) {
-		if (searchRequest.getSortAttribute() != null && getFullTableSchema(instanceId, recordType)
+		if (searchRequest.getSortAttribute() != null && !getFullTableSchema(instanceId, recordType)
 				.keySet().contains(searchRequest.getSortAttribute())) {
 			throw new MissingObjectException("Requested sort attribute");
 		}
@@ -356,8 +356,11 @@ public class RecordController {
 				entry -> entry.getValue() == DataTypeMapping.ARRAY_OF_RELATION, Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 		Map<Relation, List<RelationValue>> relationArrayValues = new HashMap<>();
 		for (Record record : records) {
-			Map<Boolean, Map<String, Object>> withRelArrs = record.attributeSet().stream().collect(Collectors.partitioningBy(
-					entry -> relationArrays.get(true).containsKey(entry.getKey()), Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+			//Cannot use streaming here - collecting a stream to a map cannot accept null values for the map value
+			Map<Boolean, Map<String, Object>> withRelArrs = Map.of(true, new HashMap<>(), false, new HashMap<>());
+			for (Map.Entry<String, Object> attribute : record.attributeSet()){
+				withRelArrs.get(relationArrays.get(true).containsKey(attribute.getKey())).put(attribute.getKey(), attribute.getValue());
+			}
 			record.setAttributes(new RecordAttributes(withRelArrs.get(false)));
 			for (Map.Entry<String, Object> attr : withRelArrs.get(true).entrySet()) {
 				//TODO A nicer way to do all this
