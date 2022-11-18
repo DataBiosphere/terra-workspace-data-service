@@ -79,13 +79,11 @@ public class RecordController {
 		RecordAttributes incomingAtts = recordRequest.recordAttributes();
 		RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAtts).getAttributes();
 		Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts, InBoundDataSource.JSON);
-//		Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
 		Map<String, DataTypeMapping> existingTableSchema = getFullTableSchema(instanceId, recordType);
 		singleRecord.setAttributes(allAttrs);
 		List<Record> records = Collections.singletonList(singleRecord);
 		Map<String, DataTypeMapping> updatedSchema = batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType,
 				typeMapping, existingTableSchema, records);
-//		recordDao.batchUpsert(instanceId, recordType, records, updatedSchema);
 		prepareAndUpsert(instanceId, recordType, records, updatedSchema);
 		RecordResponse response = new RecordResponse(recordId, recordType, singleRecord.getAttributes());
 		return new ResponseEntity<>(response, HttpStatus.OK);
@@ -98,9 +96,6 @@ public class RecordController {
 		validateVersion(version);
 		validateInstance(instanceId);
 		checkRecordTypeExists(instanceId, recordType);
-//		Record result = recordDao
-//				.getSingleRecord(instanceId, recordType, recordId)
-//				.orElseThrow(() -> new MissingObjectException("Record"));
 		Record result = getSingleRecord(instanceId, recordType, recordId);
 		RecordResponse response = new RecordResponse(recordId, recordType, result.getAttributes());
 		return new ResponseEntity<>(response, HttpStatus.OK);
@@ -142,7 +137,6 @@ public class RecordController {
 		validateInstance(instanceId);
 		checkRecordTypeExists(instanceId, recordType);
 		List<String> headers = new ArrayList<>(Collections.singletonList(ReservedNames.RECORD_ID));
-//		headers.addAll(recordDao.getExistingTableSchema(instanceId, recordType).keySet());
 		headers.addAll(getFullTableSchema(instanceId, recordType).keySet());
 		Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType);
 
@@ -174,9 +168,6 @@ public class RecordController {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"Limit must be more than 0 and can't exceed " + MAX_RECORDS + ", and offset must be positive.");
 		}
-
-//		if (searchRequest.getSortAttribute() != null && !recordDao.getExistingTableSchema(instanceId, recordType)
-//				.keySet().contains(searchRequest.getSortAttribute())) {
 		if (searchRequest.getSortAttribute() != null && !getFullTableSchema(instanceId, recordType)
 				.keySet().contains(searchRequest.getSortAttribute())) {
 			throw new MissingObjectException("Requested sort attribute");
@@ -186,9 +177,6 @@ public class RecordController {
 			return new RecordQueryResponse(searchRequest, Collections.emptyList(), totalRecords);
 		}
 		LOGGER.info("queryForEntities: {}", recordType.getName());
-//		List<Record> records = recordDao.queryForRecords(recordType, searchRequest.getLimit(),
-//				searchRequest.getOffset(), searchRequest.getSort().name().toLowerCase(),
-//				searchRequest.getSortAttribute(), instanceId);
 		List<Record> records = queryForRecords(recordType, searchRequest.getLimit(),
 				searchRequest.getOffset(), searchRequest.getSort().name().toLowerCase(),
 				searchRequest.getSortAttribute(), instanceId);
@@ -228,7 +216,6 @@ public class RecordController {
 			createRecordTypeAndInsertRecords(instanceId, newRecord, recordType, requestSchema);
 			return new ResponseEntity<>(response, status);
 		} else {
-//			Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
 			Map<String, DataTypeMapping> existingTableSchema = getFullTableSchema(instanceId, recordType);
 			// null out any attributes that already exist but aren't in the request
 			existingTableSchema.keySet().forEach(attr -> attributesInRequest.putAttributeIfAbsent(attr, null));
@@ -241,7 +228,6 @@ public class RecordController {
 					records);
 			Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
 			combinedSchema.putAll(requestSchema);
-//			recordDao.batchUpsert(instanceId, recordType, records, combinedSchema);
 			prepareAndUpsert(instanceId, recordType, records, combinedSchema);
 			RecordResponse response = new RecordResponse(recordId, recordType, attributesInRequest);
 			return new ResponseEntity<>(response, status);
@@ -310,7 +296,6 @@ public class RecordController {
 	}
 
 	private RecordTypeSchema getSchemaDescription(UUID instanceId, RecordType recordType) {
-//		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchema(instanceId, recordType);
 		Map<String, DataTypeMapping> schema = getFullTableSchema(instanceId, recordType);
 		Map<String, RecordType> relations = recordDao.getRelationCols(instanceId, recordType).stream()
 				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
@@ -359,7 +344,6 @@ public class RecordController {
 			Map<String, DataTypeMapping> requestSchema) {
 		List<Record> records = Collections.singletonList(newRecord);
 		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records));
-//		recordDao.batchUpsert(instanceId, recordType, records, requestSchema);
 		prepareAndUpsert(instanceId, recordType, records, requestSchema);
 	}
 
@@ -405,6 +389,5 @@ public class RecordController {
 		}
 		return schema;
 	}
-
 
 }

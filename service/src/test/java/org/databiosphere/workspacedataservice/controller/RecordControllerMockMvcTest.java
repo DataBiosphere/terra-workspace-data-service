@@ -744,7 +744,7 @@ class RecordControllerMockMvcTest {
 	}
 
 	@Test
-//	@Transactional
+	@Transactional
 	void describeType() throws Exception {
 		RecordType type = RecordType.valueOf("recordType");
 		createSomeRecords(type, 1);
