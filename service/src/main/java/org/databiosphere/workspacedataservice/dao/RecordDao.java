@@ -23,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -57,13 +56,13 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.PRIMARY_KEY_COLUMN_CACHE;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.RECORD_TYPE;
 
 @Repository
 public class RecordDao {
 
-	private static final String PRIMARY_KEY_COLUMN_CACHE = "primaryKeys";
 	private static final String INSTANCE_ID = "instanceId";
 	private static final String RECORD_ID = "recordId";
 	private final NamedParameterJdbcTemplate namedTemplate;
@@ -75,13 +74,15 @@ public class RecordDao {
 	private final DataTypeInferer inferer;
 
 	private final ObjectMapper objectMapper;
+	private final CachedQueryDao cachedQueryDao;
 
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
-			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf, ObjectMapper objectMapper) {
+			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf, ObjectMapper objectMapper, CachedQueryDao cachedQueryDao) {
 		this.namedTemplate = namedTemplate;
 		this.templateForStreaming = templateForStreaming;
 		this.inferer = inf;
 		this.objectMapper = objectMapper;
+		this.cachedQueryDao = cachedQueryDao;
 	}
 
 	public boolean instanceSchemaExists(UUID instanceId) {
@@ -94,16 +95,6 @@ public class RecordDao {
 		namedTemplate.getJdbcTemplate().update("create schema " + quote(instanceId.toString()));
 	}
 
-	@Cacheable(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
-	public String getPrimaryKeyColumn(RecordType recordType, UUID instanceId){
-		MapSqlParameterSource params = new MapSqlParameterSource("recordType", recordType.getName());
-		params.addValue(INSTANCE_ID, instanceId.toString());
-		return namedTemplate.queryForObject("select kcu.column_name FROM information_schema.table_constraints tc " +
-						"JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema " +
-						"JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema " +
-						"WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = :instanceId AND tc.table_name = :recordType",
-				params, String.class);
-	}
 
 	@SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
 	public void dropSchema(UUID instanceId) {
@@ -150,7 +141,7 @@ public class RecordDao {
 		LOGGER.info("queryForRecords: {}", recordType.getName());
 		return namedTemplate.getJdbcTemplate().query(
 				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by "
-						+ (sortAttribute == null ? getPrimaryKeyColumn(recordType, instanceId) : quote(sortAttribute)) + " " + sortDirection + " limit "
+						+ (sortAttribute == null ? cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId) : quote(sortAttribute)) + " " + sortDirection + " limit "
 						+ pageSize + " offset " + offset,
 				new RecordRowMapper(recordType, objectMapper, instanceId));
 	}
@@ -158,15 +149,14 @@ public class RecordDao {
 	public List<String> getAllAttributeNames(UUID instanceId, RecordType recordType) {
 		MapSqlParameterSource params = new MapSqlParameterSource(INSTANCE_ID, instanceId.toString());
 		params.addValue("tableName", recordType.getName());
-		params.addValue("reservedCols", "sys_%");
 		return namedTemplate.queryForList("select column_name from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
-						+ "and table_name = :tableName and column_name not like :reservedCols", params, String.class);
+						+ "and table_name = :tableName", params, String.class);
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchemaLessPrimaryKey(UUID instanceId, RecordType recordType) {
 		MapSqlParameterSource params = new MapSqlParameterSource(INSTANCE_ID, instanceId.toString());
 		params.addValue("tableName", recordType.getName());
-		params.addValue("recordTypeRowIdentifier", getPrimaryKeyColumn(recordType, instanceId));
+		params.addValue("recordTypeRowIdentifier", cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId));
 		return namedTemplate
 				.query("select column_name, udt_name::regtype as data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
 						+ "and table_name = :tableName and column_name != :recordTypeRowIdentifier", params, rs -> {
@@ -242,7 +232,7 @@ public class RecordDao {
 
 	public void batchUpsert(UUID instanceId, RecordType recordType, List<Record> records,
 							Map<String, DataTypeMapping> schema){
-		batchUpsert(instanceId, recordType, records, schema, getPrimaryKeyColumn(recordType, instanceId));
+		batchUpsert(instanceId, recordType, records, schema, cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId));
 	}
 
 
@@ -296,7 +286,7 @@ public class RecordDao {
 	}
 
 	public boolean deleteSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
-		String recordTypePrimaryKey = getPrimaryKeyColumn(recordType, instanceId);
+		String recordTypePrimaryKey = cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId);
 		try {
 			return namedTemplate.update("delete from " + getQualifiedTableName(recordType, instanceId) + " where "
 					+ recordTypePrimaryKey + " = :recordId", new MapSqlParameterSource(RECORD_ID, recordId)) == 1;
@@ -351,7 +341,7 @@ public class RecordDao {
 
 	public Stream<Record> streamAllRecordsForType(UUID instanceId, RecordType recordType) {
 		return templateForStreaming.getJdbcTemplate().queryForStream(
-				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + getPrimaryKeyColumn(recordType, instanceId),
+				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId),
 				new RecordRowMapper(recordType, objectMapper, instanceId));
 	}
 
@@ -360,7 +350,7 @@ public class RecordDao {
 		return relations.stream()
 				.map(r -> "constraint " + quote("fk_" + SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE))
 						+ " foreign key (" + quote(SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE))
-						+ ") references " + getQualifiedTableName(r.relationRecordType(), instanceId) + "(" + getPrimaryKeyColumn(r.relationRecordType(), instanceId)
+						+ ") references " + getQualifiedTableName(r.relationRecordType(), instanceId) + "(" + cachedQueryDao.getPrimaryKeyColumn(r.relationRecordType(), instanceId)
 						+ ")")
 				.collect(Collectors.joining(", \n"));
 	}
@@ -489,7 +479,7 @@ public class RecordDao {
 		List<String> recordIds = records.stream().map(Record::getId).toList();
 		try {
 			int[] rowCounts = namedTemplate.getJdbcTemplate().batchUpdate(
-					"delete from" + getQualifiedTableName(recordType, instanceId) + " where " + getPrimaryKeyColumn(recordType, instanceId) + " = ?",
+					"delete from" + getQualifiedTableName(recordType, instanceId) + " where " + cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId) + " = ?",
 					new BatchPreparedStatementSetter() {
 						@Override
 						public void setValues(PreparedStatement ps, int i) throws SQLException {
@@ -534,7 +524,7 @@ public class RecordDao {
 			this.recordType = recordType;
 			this.objectMapper = objectMapper;
 			this.schema = RecordDao.this.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
-			this.primaryKeyColumn = getPrimaryKeyColumn(recordType, instanceId);
+			this.primaryKeyColumn = cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId);
 			this.referenceColToTable = RecordDao.this.getRelationColumnsByName(RecordDao.this.getRelationCols(instanceId, recordType));
 		}
 
@@ -621,7 +611,7 @@ public class RecordDao {
 	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
 		try {
 			return Optional.ofNullable(namedTemplate.queryForObject(
-					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + getPrimaryKeyColumn(recordType, instanceId)
+					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)
 							+ " = :recordId",
 					new MapSqlParameterSource(RECORD_ID, recordId), new RecordRowMapper(recordType,objectMapper, instanceId)));
 		} catch (EmptyResultDataAccessException e) {
@@ -633,7 +623,7 @@ public class RecordDao {
 		return Boolean.TRUE
 				.equals(namedTemplate.queryForObject(
 						"select exists(select * from " + getQualifiedTableName(recordType, instanceId) + " where "
-								+ getPrimaryKeyColumn(recordType, instanceId) + " = :recordId)",
+								+ cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId) + " = :recordId)",
 						new MapSqlParameterSource(RECORD_ID, recordId), Boolean.class));
 	}
 

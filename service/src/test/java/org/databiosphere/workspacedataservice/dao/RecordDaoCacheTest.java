@@ -1,9 +1,11 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import org.databiosphere.workspacedataservice.service.model.ReservedNames;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -23,9 +25,13 @@ import static org.mockito.Mockito.*;
 class RecordDaoCacheTest {
 
     @Autowired
+    @Qualifier("test")
+    private CachedQueryDao cqDao;
+
+    @Autowired
     private RecordDao recordDao;
 
-    private RecordDao mock;
+    private CachedQueryDao mock;
     private UUID instanceId;
 
     @EnableCaching
@@ -33,20 +39,26 @@ class RecordDaoCacheTest {
     static class CachingTestConfig {
 
         @Bean
-        public RecordDao mockedRecordDao() {
-            return mock(RecordDao.class);
+        @Qualifier("test")
+        public CachedQueryDao mockedCqDao() {
+            return mock(CachedQueryDao.class);
         }
 
         @Bean
         public CacheManager cacheManager() {
-            return new ConcurrentMapCacheManager("primaryKeys");
+            return new ConcurrentMapCacheManager(ReservedNames.PRIMARY_KEY_COLUMN_CACHE);
+        }
+
+        @Bean
+        public RecordDao mockedRecordDao(){
+            return mock(RecordDao.class);
         }
 
     }
 
     @BeforeEach
     void setUp() {
-        mock = AopTestUtils.getTargetObject(recordDao);
+        mock = AopTestUtils.getTargetObject(cqDao);
 
         reset(mock);
 
@@ -61,17 +73,17 @@ class RecordDaoCacheTest {
     void verifyCaching(){
         RecordType rt = RecordType.valueOf("foo");
         RecordType rtBar = RecordType.valueOf("bar");
-        recordDao.getPrimaryKeyColumn(rt, instanceId);
-        recordDao.getPrimaryKeyColumn(rt, instanceId);
-        recordDao.getPrimaryKeyColumn(rtBar, instanceId);
+        cqDao.getPrimaryKeyColumn(rt, instanceId);
+        cqDao.getPrimaryKeyColumn(rt, instanceId);
+        cqDao.getPrimaryKeyColumn(rtBar, instanceId);
         //the second call should be cached and not increment invocations
         verify(mock, times(1)).getPrimaryKeyColumn(rt, instanceId);
         verify(mock, times(1)).getPrimaryKeyColumn(rtBar, instanceId);
         //this should evict the entry for rt+instance
         recordDao.createRecordType(instanceId, Collections.emptyMap(), rt, Collections.emptySet(), "blah");
-        recordDao.getPrimaryKeyColumn(rt, instanceId);
+        cqDao.getPrimaryKeyColumn(rt, instanceId);
         //should still cach
-        recordDao.getPrimaryKeyColumn(rtBar, instanceId);
+        cqDao.getPrimaryKeyColumn(rtBar, instanceId);
         //since the createRecordType call should evict invocations should tick up one
         verify(mock, times(2)).getPrimaryKeyColumn(rt, instanceId);
         //should stay at 1 since it was never evicted
