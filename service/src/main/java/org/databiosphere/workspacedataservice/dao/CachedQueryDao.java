@@ -12,6 +12,13 @@ import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.PRIMARY_KEY_COLUMN_CACHE;
 
+/**
+ * Note in order for @Cacheable to function properly callers need to be outside the class where
+ * the @Cacheable method is specified. All getPrimaryKeyColumns calls are currently in
+ * RecordDao so we that method could not belong to that class and still work properly with caching
+ * so it's been moved here.  Any future db methods that should be cached that are invoked from RecordDao
+ * can be added here.
+ */
 @Repository
 public class CachedQueryDao {
 
