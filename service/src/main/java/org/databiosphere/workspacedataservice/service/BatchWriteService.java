@@ -215,7 +215,7 @@ public class BatchWriteService {
 			recordDao.createRecordType(instanceId, schema, recordType, RelationUtils.findRelations(records), recordTypePrimaryKey);
 		} else {
 			return addOrUpdateColumnIfNeeded(instanceId, recordType, schema,
-					recordDao.getExistingTableSchema(instanceId, recordType), records);
+					recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType), records);
 		}
 		return schema;
 	}

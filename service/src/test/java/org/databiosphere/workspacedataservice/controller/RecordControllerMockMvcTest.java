@@ -339,6 +339,13 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void tryDeletingMissingRecordType() throws Exception {
+		mockMvc.perform(delete("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId, "missing", "missing-also"))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	@Transactional
 	void tryFetchingMissingRecordType() throws Exception {
 		mockMvc.perform(get("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
 				"missing", "missing-2")).andExpect(status().isNotFound());

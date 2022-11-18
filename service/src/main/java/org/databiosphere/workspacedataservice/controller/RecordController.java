@@ -46,7 +46,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -88,7 +87,7 @@ public class RecordController {
 		RecordAttributes incomingAtts = recordRequest.recordAttributes();
 		RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAtts).getAttributes();
 		Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts, InBoundDataSource.JSON);
-		Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
+		Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
 		singleRecord.setAttributes(allAttrs);
 		List<Record> records = Collections.singletonList(singleRecord);
 		Map<String, DataTypeMapping> updatedSchema = batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType,
@@ -133,8 +132,7 @@ public class RecordController {
 		validateVersion(version);
 		validateInstance(instanceId);
 		checkRecordTypeExists(instanceId, recordType);
-		List<String> headers = new ArrayList<>(Collections.singletonList(recordDao.getPrimaryKeyColumn(recordType, instanceId)));
-		headers.addAll(recordDao.getExistingTableSchema(instanceId, recordType).keySet());
+		List<String> headers = recordDao.getAllAttributeNames(instanceId, recordType);
 		Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType);
 
 		StreamingResponseBody responseBody = httpResponseOutputStream -> {
@@ -166,7 +164,7 @@ public class RecordController {
 					"Limit must be more than 0 and can't exceed " + MAX_RECORDS + ", and offset must be positive.");
 		}
 
-		if (searchRequest.getSortAttribute() != null && !recordDao.getExistingTableSchema(instanceId, recordType)
+		if (searchRequest.getSortAttribute() != null && !recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType)
 				.keySet().contains(searchRequest.getSortAttribute())) {
 			throw new MissingObjectException("Requested sort attribute");
 		}
@@ -199,7 +197,7 @@ public class RecordController {
 			createRecordTypeAndInsertRecords(instanceId, newRecord, recordType, requestSchema);
 			return new ResponseEntity<>(response, status);
 		} else {
-			Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
+			Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
 			// null out any attributes that already exist but aren't in the request
 			existingTableSchema.keySet().forEach(attr -> attributesInRequest.putAttributeIfAbsent(attr, null));
 			if (recordDao.recordExists(instanceId, recordType, recordId)) {
@@ -243,7 +241,8 @@ public class RecordController {
 			@PathVariable("recordId") String recordId) {
 		validateVersion(version);
 		validateInstance(instanceId);
-		boolean recordFound = recordDao.deleteSingleRecord(instanceId, recordType, recordId, recordDao.getPrimaryKeyColumn(recordType, instanceId));
+		checkRecordTypeExists(instanceId, recordType);
+		boolean recordFound = recordDao.deleteSingleRecord(instanceId, recordType, recordId);
 		return recordFound ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
 
@@ -279,7 +278,7 @@ public class RecordController {
 	}
 
 	private RecordTypeSchema getSchemaDescription(UUID instanceId, RecordType recordType) {
-		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchema(instanceId, recordType);
+		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
 		Map<String, RecordType> relations = recordDao.getRelationCols(instanceId, recordType).stream()
 				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
 		List<AttributeSchema> attrSchema = schema.entrySet().stream().sorted(Map.Entry.comparingByKey())

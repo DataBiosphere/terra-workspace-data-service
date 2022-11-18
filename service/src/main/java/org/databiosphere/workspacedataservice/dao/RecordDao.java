@@ -155,7 +155,15 @@ public class RecordDao {
 				new RecordRowMapper(recordType, objectMapper, instanceId));
 	}
 
-	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
+	public List<String> getAllAttributeNames(UUID instanceId, RecordType recordType) {
+		MapSqlParameterSource params = new MapSqlParameterSource(INSTANCE_ID, instanceId.toString());
+		params.addValue("tableName", recordType.getName());
+		params.addValue("reservedCols", "sys_%");
+		return namedTemplate.queryForList("select column_name from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
+						+ "and table_name = :tableName and column_name not like :reservedCols", params, String.class);
+	}
+
+	public Map<String, DataTypeMapping> getExistingTableSchemaLessPrimaryKey(UUID instanceId, RecordType recordType) {
 		MapSqlParameterSource params = new MapSqlParameterSource(INSTANCE_ID, instanceId.toString());
 		params.addValue("tableName", recordType.getName());
 		params.addValue("recordTypeRowIdentifier", getPrimaryKeyColumn(recordType, instanceId));
@@ -287,7 +295,8 @@ public class RecordDao {
 		return e.getRootCause()instanceof SQLException sqlException && sqlException.getSQLState().equals("42804");
 	}
 
-	public boolean deleteSingleRecord(UUID instanceId, RecordType recordType, String recordId, String recordTypePrimaryKey) {
+	public boolean deleteSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
+		String recordTypePrimaryKey = getPrimaryKeyColumn(recordType, instanceId);
 		try {
 			return namedTemplate.update("delete from " + getQualifiedTableName(recordType, instanceId) + " where "
 					+ recordTypePrimaryKey + " = :recordId", new MapSqlParameterSource(RECORD_ID, recordId)) == 1;
@@ -524,7 +533,7 @@ public class RecordDao {
 		public RecordRowMapper(RecordType recordType, ObjectMapper objectMapper, UUID instanceId){
 			this.recordType = recordType;
 			this.objectMapper = objectMapper;
-			this.schema = RecordDao.this.getExistingTableSchema(instanceId, recordType);
+			this.schema = RecordDao.this.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
 			this.primaryKeyColumn = getPrimaryKeyColumn(recordType, instanceId);
 			this.referenceColToTable = RecordDao.this.getRelationColumnsByName(RecordDao.this.getRelationCols(instanceId, recordType));
 		}

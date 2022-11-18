@@ -156,7 +156,7 @@ class RecordDaoTest {
 		Record testRecord = new Record(recordId, recordType, RecordAttributes.empty());
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord), new HashMap<>());
 
-		recordDao.deleteSingleRecord(instanceId, recordType, "testRecord", PRIMARY_KEY);
+		recordDao.deleteSingleRecord(instanceId, recordType, "testRecord");
 
 		// make sure record not fetched
 		Optional<Record> none = recordDao.getSingleRecord(instanceId, recordType, "testRecord");
@@ -185,7 +185,7 @@ class RecordDaoTest {
 
 		// Should throw an error
 		assertThrows(ResponseStatusException.class, () -> {
-			recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord", PRIMARY_KEY);
+			recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord");
 		}, "Exception should be thrown when attempting to delete related record");
 	}
 	@Test
