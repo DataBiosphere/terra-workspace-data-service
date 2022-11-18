@@ -111,10 +111,10 @@ public class RecordController {
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
-	@PostMapping({"/{instanceId}/tsv/{version}/{recordType}/{uniqueRowIdentifierColumn}", "/{instanceId}/tsv/{version}/{recordType}"} )
+	@PostMapping( "/{instanceId}/tsv/{version}/{recordType}")
 	public ResponseEntity<TsvUploadResponse> tsvUpload(@PathVariable("instanceId") UUID instanceId,
 			   @PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			   @PathVariable(name= "uniqueRowIdentifierColumn", required = false) Optional<String> uniqueRowIdentifierColumn,
+			   @RequestParam(name= "uniqueRowIdentifierColumn", required = false) Optional<String> uniqueRowIdentifierColumn,
                @RequestParam("records") MultipartFile records) throws IOException {
 		validateVersion(version);
 		validateInstance(instanceId);
