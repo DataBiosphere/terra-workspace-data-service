@@ -13,11 +13,11 @@ import java.util.UUID;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.PRIMARY_KEY_COLUMN_CACHE;
 
 /**
- * Note in order for @Cacheable to function properly callers need to be outside the class where
- * the @Cacheable method is specified. All getPrimaryKeyColumns calls are currently in
- * RecordDao so we that method could not belong to that class and still work properly with caching
- * so it's been moved here.  Any future db methods that should be cached that are invoked from RecordDao
- * can be added here.
+ * In order for @Cacheable to function properly callers need to be outside the class where
+ * the @Cacheable method is specified.
+ * https://stackoverflow.com/questions/16899604/spring-cache-cacheable-not-working-while-calling-from-another-method-of-the-s
+ * Many getPrimaryKeyColumn calls are in RecordDao thus that method can't belong to that class and still work properly with caching
+ * so it's been moved here.  Any future db methods that should be cached that are invoked from RecordDao can be added here as well.
  */
 @Repository
 public class CachedQueryDao {
@@ -30,14 +30,6 @@ public class CachedQueryDao {
         this.namedTemplate = namedTemplate;
     }
 
-    /**
-     * Note in order for @Cacheable to function properly callers need to be outside the class,
-     * all getPrimaryKeyColumns calls are currently in RecordDao so this method and class exists to ensure
-     * caching works properly for those invocations.
-     * @param recordType
-     * @param instanceId
-     * @return
-     */
     @Cacheable(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
     public String getPrimaryKeyColumn(RecordType recordType, UUID instanceId){
         LOGGER.warn("Calling the db to retrieve primary key for {}", recordType.getName());
