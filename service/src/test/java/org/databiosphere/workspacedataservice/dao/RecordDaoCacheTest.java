@@ -80,11 +80,12 @@ class RecordDaoCacheTest {
         verify(mock, times(1)).getPrimaryKeyColumn(rt, instanceId);
         verify(mock, times(1)).getPrimaryKeyColumn(rtBar, instanceId);
         //this should evict the entry for rt+instance
-        recordDao.createRecordType(instanceId, Collections.emptyMap(), rt, Collections.emptySet(), "blah");
+        recordDao.deleteRecordType(instanceId,  rt);
         cqDao.getPrimaryKeyColumn(rt, instanceId);
-        //should still cach
+        //should go back to caching
         cqDao.getPrimaryKeyColumn(rtBar, instanceId);
-        //since the createRecordType call should evict invocations should tick up one
+        cqDao.getPrimaryKeyColumn(rtBar, instanceId);
+        //since the deleteRecordType call should evict invocations should tick up one
         verify(mock, times(2)).getPrimaryKeyColumn(rt, instanceId);
         //should stay at 1 since it was never evicted
         verify(mock, times(1)).getPrimaryKeyColumn(rtBar, instanceId);

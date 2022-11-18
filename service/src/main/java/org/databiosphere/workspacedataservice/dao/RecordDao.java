@@ -110,7 +110,6 @@ public class RecordDao {
 	}
 
 	@SuppressWarnings("squid:S2077")
-	@CacheEvict(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
 			Set<Relation> relations, String recordTypePrimaryKey) {
 		String columnDefs = genColumnDefs(tableInfo, recordTypePrimaryKey);
@@ -638,6 +637,11 @@ public class RecordDao {
 				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
 	}
 
+	/**
+	 * In order for @CacheEvict to function properly, it needs to be invoked outside
+	 * of this class.  Callers keep that in mind :)
+	 */
+	@CacheEvict(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
 	public void deleteRecordType(UUID instanceId, RecordType recordType) {
 		try {
 			namedTemplate.getJdbcTemplate().update("drop table " + getQualifiedTableName(recordType, instanceId));
