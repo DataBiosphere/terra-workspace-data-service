@@ -215,6 +215,16 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void tsvWithEmptyStringIdentifier() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "empty_row_id.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"col1\tcol2\n\tbar\n".getBytes());
+
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-missing-rowid")
+				.file(file)).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@Transactional
 	void tsvWithSpecifiedRowIdentifierColumn() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "specified_id.tsv", MediaType.TEXT_PLAIN_VALUE,
 				"col1\tcol2\nfoo\tbar\n".getBytes());

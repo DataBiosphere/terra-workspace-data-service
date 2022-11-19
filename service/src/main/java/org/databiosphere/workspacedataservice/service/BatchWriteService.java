@@ -135,7 +135,8 @@ public class BatchWriteService {
 			} catch (IllegalArgumentException ex) {
 				LOGGER.error("IllegalArgument exception while reading tsv", ex);
 				throw new InvalidTsvException(
-						"Uploaded TSV is missing " + uniqueRowIdentifierColumn + " to uniquely identify each row");
+						"Uploaded TSV is either missing the " + uniqueRowIdentifierColumn
+								+ " column or has a null or empty string value in that column");
 			}
 			recordsProcessed++;
 			if (batch.size() >= batchSize) {
