@@ -46,11 +46,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -87,7 +87,7 @@ public class RecordController {
 		RecordAttributes incomingAtts = recordRequest.recordAttributes();
 		RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAtts).getAttributes();
 		Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts, InBoundDataSource.JSON);
-		Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
+		Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
 		singleRecord.setAttributes(allAttrs);
 		List<Record> records = Collections.singletonList(singleRecord);
 		Map<String, DataTypeMapping> updatedSchema = batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType,
@@ -111,15 +111,16 @@ public class RecordController {
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
-	@PostMapping("/{instanceId}/tsv/{version}/{recordType}")
+	@PostMapping( "/{instanceId}/tsv/{version}/{recordType}")
 	public ResponseEntity<TsvUploadResponse> tsvUpload(@PathVariable("instanceId") UUID instanceId,
-			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			@RequestParam("records") MultipartFile records) throws IOException {
+			   @PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
+			   @RequestParam(name= "uniqueRowIdentifierColumn", required = false) Optional<String> uniqueRowIdentifierColumn,
+               @RequestParam("records") MultipartFile records) throws IOException {
 		validateVersion(version);
 		validateInstance(instanceId);
 		int recordsModified;
 		try (InputStreamReader inputStreamReader = new InputStreamReader(records.getInputStream())) {
-			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType);
+			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType, uniqueRowIdentifierColumn);
 		}
 		return new ResponseEntity<>(new TsvUploadResponse(recordsModified, "Updated " + recordType.toString()),
 				HttpStatus.OK);
@@ -131,8 +132,7 @@ public class RecordController {
 		validateVersion(version);
 		validateInstance(instanceId);
 		checkRecordTypeExists(instanceId, recordType);
-		List<String> headers = new ArrayList<>(Collections.singletonList(ReservedNames.RECORD_ID));
-		headers.addAll(recordDao.getExistingTableSchema(instanceId, recordType).keySet());
+		List<String> headers = recordDao.getAllAttributeNames(instanceId, recordType);
 		Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType);
 
 		StreamingResponseBody responseBody = httpResponseOutputStream -> {
@@ -164,7 +164,7 @@ public class RecordController {
 					"Limit must be more than 0 and can't exceed " + MAX_RECORDS + ", and offset must be positive.");
 		}
 
-		if (searchRequest.getSortAttribute() != null && !recordDao.getExistingTableSchema(instanceId, recordType)
+		if (searchRequest.getSortAttribute() != null && !recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType)
 				.keySet().contains(searchRequest.getSortAttribute())) {
 			throw new MissingObjectException("Requested sort attribute");
 		}
@@ -197,7 +197,7 @@ public class RecordController {
 			createRecordTypeAndInsertRecords(instanceId, newRecord, recordType, requestSchema);
 			return new ResponseEntity<>(response, status);
 		} else {
-			Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
+			Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
 			// null out any attributes that already exist but aren't in the request
 			existingTableSchema.keySet().forEach(attr -> attributesInRequest.putAttributeIfAbsent(attr, null));
 			if (recordDao.recordExists(instanceId, recordType, recordId)) {
@@ -241,6 +241,7 @@ public class RecordController {
 			@PathVariable("recordId") String recordId) {
 		validateVersion(version);
 		validateInstance(instanceId);
+		checkRecordTypeExists(instanceId, recordType);
 		boolean recordFound = recordDao.deleteSingleRecord(instanceId, recordType, recordId);
 		return recordFound ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
@@ -277,7 +278,7 @@ public class RecordController {
 	}
 
 	private RecordTypeSchema getSchemaDescription(UUID instanceId, RecordType recordType) {
-		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchema(instanceId, recordType);
+		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
 		Map<String, RecordType> relations = recordDao.getRelationCols(instanceId, recordType).stream()
 				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
 		List<AttributeSchema> attrSchema = schema.entrySet().stream().sorted(Map.Entry.comparingByKey())
@@ -324,7 +325,7 @@ public class RecordController {
 	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, RecordType recordType,
 			Map<String, DataTypeMapping> requestSchema) {
 		List<Record> records = Collections.singletonList(newRecord);
-		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records));
+		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records), ReservedNames.RECORD_ID);
 		recordDao.batchUpsert(instanceId, recordType, records, requestSchema);
 	}
 }

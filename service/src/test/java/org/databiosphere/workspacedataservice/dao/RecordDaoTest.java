@@ -17,12 +17,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordDaoTest {
 
+	private static final String PRIMARY_KEY = "row_id";
 	@Autowired
 	RecordDao recordDao;
 	UUID instanceId;
@@ -33,7 +35,7 @@ class RecordDaoTest {
 		instanceId = UUID.randomUUID();
 		recordType = RecordType.valueOf("testRecordType");
 		recordDao.createSchema(instanceId);
-		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType, Collections.emptySet());
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType, Collections.emptySet(), PRIMARY_KEY);
 	}
 
 	@Test
@@ -194,7 +196,7 @@ class RecordDaoTest {
 		assertTrue(typesList.contains(recordType));
 
 		RecordType newRecordType = RecordType.valueOf("newRecordType");
-		recordDao.createRecordType(instanceId, Collections.emptyMap(), newRecordType, Collections.emptySet());
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), newRecordType, Collections.emptySet(), RECORD_ID);
 
 		List<RecordType> newTypesList = recordDao.getAllRecordTypes(instanceId);
 		assertEquals(2, newTypesList.size());
@@ -241,7 +243,7 @@ class RecordDaoTest {
 	void testDeleteRecordTypeWithRelation() {
 		RecordType recordTypeName = recordType;
 		RecordType referencedType = RecordType.valueOf("referencedType");
-		recordDao.createRecordType(instanceId, Collections.emptyMap(), referencedType, Collections.emptySet());
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), referencedType, Collections.emptySet(), RECORD_ID);
 
 		recordDao.addColumn(instanceId, recordTypeName, "relation", DataTypeMapping.STRING, referencedType);
 
