@@ -181,14 +181,15 @@ public class BatchWriteService {
 	/**
 	 * All or nothing, write all the operations successfully in the InputStream or
 	 * write none.
-	 * 
+	 *
 	 * @param is
 	 * @param instanceId
 	 * @param recordType
+	 * @param uniqueRowIdentifierColumn
 	 * @return number of records updated
 	 */
 	@Transactional
-	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType) {
+	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> uniqueRowIdentifierColumn) {
 		int recordsAffected = 0;
 		try (StreamingWriteHandler streamingWriteHandler = new StreamingWriteHandler(is, objectMapper)) {
 			Map<String, DataTypeMapping> schema = null;
@@ -198,7 +199,7 @@ public class BatchWriteService {
 				List<Record> records = info.getRecords();
 				if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
 					schema = inferer.inferTypes(records, InBoundDataSource.JSON);
-					createOrModifyRecordType(instanceId, recordType, schema, records, RECORD_ID);
+					createOrModifyRecordType(instanceId, recordType, schema, records, uniqueRowIdentifierColumn.orElse(RECORD_ID));
 					firstUpsertBatch = false;
 				}
 				writeBatch(instanceId, recordType, schema, info, records);
