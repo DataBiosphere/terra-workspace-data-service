@@ -19,6 +19,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
@@ -83,8 +84,18 @@ public class WorkspaceDataServiceApplication {
 		return jdbcTemplate;
 	}
 
-	// CORS: allow Ajax requests from anywhere for all endpoints.
+	/**
+	 * Configure CORS response headers.
+	 *
+	 * When running behind Terra's Azure Relay, the Relay handles CORS response headers, so WDS should not;
+	 * the two CORS configurations will conflict.
+	 *
+	 * When running WDS locally for development - i.e. not behind a Relay - you may need to enable headers.
+	 * To do so, activate the "local" Spring profile by setting spring.profiles.active=local in
+	 * application.properties (or other Spring techniques for activating a profile)
+	 */
 	@Bean
+	@Profile("local")
 	public WebMvcConfigurer corsConfigurer() {
 		return new WebMvcConfigurer() {
 			@Override
@@ -93,7 +104,15 @@ public class WorkspaceDataServiceApplication {
 						.allowedOrigins("*");
 
 			}
+		};
+	}
 
+	/**
+	 * Configure the app for asynchronous request processing.
+	 */
+	@Bean
+	public WebMvcConfigurer asyncConfigurer() {
+		return new WebMvcConfigurer() {
 			@Override
 			public void configureAsyncSupport(@NonNull AsyncSupportConfigurer configurer) {
 				configurer.setDefaultTimeout(-1);
