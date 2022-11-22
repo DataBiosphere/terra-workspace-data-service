@@ -64,6 +64,10 @@ class TsvInputFormatsTest {
 	}
 
 	private static Stream<Arguments> provideInputFormats() {
+		/* Arguments are tuples:
+			- first value is the text that would be contained in a TSV cell
+			- second value is the expected Java type that WDS would create, after saving the TSV and re-retrieving the record.
+		 */
 		return Stream.of(
 				Arguments.of("", null),
 				Arguments.of(" ", " "),
