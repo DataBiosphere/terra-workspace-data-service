@@ -52,13 +52,16 @@ public class BatchWriteService {
 
 	private final ObjectMapper objectMapper;
 
+	private final RecordService recordService;
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchWriteService.class);
 
-	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize, DataTypeInferer inf, ObjectMapper objectMapper) {
+	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize, DataTypeInferer inf, ObjectMapper objectMapper, RecordService recordService) {
 		this.recordDao = recordDao;
 		this.batchSize = batchSize;
 		this.inferer = inf;
 		this.objectMapper = objectMapper;
+		this.recordService = recordService;
 	}
 
 	public Map<String, DataTypeMapping> addOrUpdateColumnIfNeeded(UUID instanceId, RecordType recordType,
@@ -225,7 +228,7 @@ public class BatchWriteService {
 	private void writeBatch(UUID instanceId, RecordType recordType, Map<String, DataTypeMapping> schema,
 			StreamingWriteHandler.WriteStreamInfo info, List<Record> records) throws BatchWriteException {
 		if (info.getOperationType() == OperationType.UPSERT) {
-			recordDao.batchUpsertWithErrorCapture(instanceId, recordType, records, schema, RECORD_ID);
+			recordService.batchUpsertWithErrorCapture(instanceId, recordType, records, schema, RECORD_ID);
 		} else if (info.getOperationType() == OperationType.DELETE) {
 			recordDao.batchDelete(instanceId, recordType, records);
 		}

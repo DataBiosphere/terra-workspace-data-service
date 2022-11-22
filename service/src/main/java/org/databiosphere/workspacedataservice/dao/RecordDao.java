@@ -315,51 +315,6 @@ public class RecordDao {
 		return Stream.concat(Stream.of(new RecordColumn(recordIdColumn, DataTypeMapping.STRING)), schema.entrySet().stream().map(e -> new RecordColumn(e.getKey(), e.getValue()))).toList();
 	}
 
-	public void batchUpsertWithErrorCapture(UUID instanceId, RecordType recordType, List<Record> records,
-			Map<String, DataTypeMapping> schema, String primaryKey) {
-		try {
-			batchUpsert(instanceId, recordType, records, schema, primaryKey);
-		} catch (DataAccessException e) {
-			if (isDataMismatchException(e)) {
-				Map<String, DataTypeMapping> recordTypeSchemaWithoutId = new HashMap<>(schema);
-				recordTypeSchemaWithoutId.remove(primaryKey);
-				List<String> rowErrors = checkEachRow(records, recordTypeSchemaWithoutId);
-				if (!rowErrors.isEmpty()) {
-					throw new BatchWriteException(rowErrors);
-				}
-			}
-			throw e;
-		}
-	}
-
-	private List<String> checkEachRow(List<Record> records, Map<String, DataTypeMapping> recordTypeSchema) {
-		List<String> result = new ArrayList<>();
-		for (Record rcd : records) {
-			Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(rcd.getAttributes(),
-					InBoundDataSource.JSON);
-			if (!schemaForRecord.equals(recordTypeSchema)) {
-				MapDifference<String, DataTypeMapping> difference = Maps.difference(schemaForRecord, recordTypeSchema);
-				Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference
-						.entriesDiffering();
-				result.add(convertSchemaDiffToErrorMessage(differenceMap, rcd));
-			}
-		}
-		return result;
-	}
-
-	private String convertSchemaDiffToErrorMessage(
-			Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap, Record rcd) {
-		return differenceMap.keySet().stream()
-				.map(attr -> rcd.getId() + "." + attr + " is a " + differenceMap.get(attr).leftValue()
-						+ " in the request but is defined as " + differenceMap.get(attr).rightValue()
-						+ " in the record type definition for " + rcd.getRecordType())
-				.collect(Collectors.joining("\n"));
-	}
-
-	private boolean isDataMismatchException(DataAccessException e) {
-		return e.getRootCause()instanceof SQLException sqlException && sqlException.getSQLState().equals("42804");
-	}
-
 	public boolean deleteSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
 		String recordTypePrimaryKey = cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId);
 		try {
@@ -534,7 +489,7 @@ public class RecordDao {
 
 	private Object[] getListAsArray(List<?> attVal, DataTypeMapping typeMapping) {
 		switch (typeMapping){
-			case ARRAY_OF_STRING, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_NUMBER, EMPTY_ARRAY:
+			case ARRAY_OF_STRING, ARRAY_OF_RELATION, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_NUMBER, EMPTY_ARRAY:
 				return attVal.stream().map(Object::toString).toList().toArray(new String[0]);
 			case ARRAY_OF_BOOLEAN:
 				//accept all casings of True and False if they're strings

@@ -31,7 +31,7 @@ public class RelationUtils {
 			for (Map.Entry<String, Object> entry : record.attributeSet()) {
 				if (isRelationValue(entry.getValue())) {
 					relations.add(new Relation(entry.getKey(), getTypeValue(entry.getValue())));
-					//TODO verify that all relation types match?
+					//TODO verify that all relation types match?  distinguish between tsv & json source
 				} else if (entry.getValue() instanceof List<?> listVal && !listVal.isEmpty() && listVal.stream().allMatch(RelationUtils::isRelationValue)){
 					relationArrays.add(new Relation(entry.getKey(), getTypeValue(listVal.get(0))));
 				}

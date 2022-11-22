@@ -3,13 +3,8 @@ package org.databiosphere.workspacedataservice.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.csv.CSVPrinter;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.service.BatchWriteService;
-import org.databiosphere.workspacedataservice.service.DataTypeInferer;
-import org.databiosphere.workspacedataservice.service.InBoundDataSource;
-import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.TsvSupport;
+import org.databiosphere.workspacedataservice.service.*;
 import org.databiosphere.workspacedataservice.service.model.*;
-import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -55,15 +50,17 @@ public class RecordController {
 	private final RecordDao recordDao;
 	private final DataTypeInferer inferer;
 	private final BatchWriteService batchWriteService;
+	private final RecordService recordService;
 
 	private final ObjectMapper objectMapper;
 
 	public RecordController(RecordDao recordDao, BatchWriteService batchWriteService, DataTypeInferer inf,
-			ObjectMapper objectMapper) {
+			ObjectMapper objectMapper, RecordService recordService) {
 		this.recordDao = recordDao;
 		this.batchWriteService = batchWriteService;
 		this.inferer = inf;
 		this.objectMapper = objectMapper;
+		this.recordService = recordService;
 	}
 
 	@PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
@@ -84,7 +81,7 @@ public class RecordController {
 		List<Record> records = Collections.singletonList(singleRecord);
 		Map<String, DataTypeMapping> updatedSchema = batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType,
 				typeMapping, existingTableSchema, records);
-		prepareAndUpsert(instanceId, recordType, records, updatedSchema);
+		recordService.prepareAndUpsert(instanceId, recordType, records, updatedSchema);
 		RecordResponse response = new RecordResponse(recordId, recordType, singleRecord.getAttributes());
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
@@ -232,7 +229,7 @@ public class RecordController {
 					records);
 			Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
 			combinedSchema.putAll(requestSchema);
-			prepareAndUpsert(instanceId, recordType, records, combinedSchema);
+			recordService.prepareAndUpsert(instanceId, recordType, records, combinedSchema);
 			RecordResponse response = new RecordResponse(recordId, recordType, attributesInRequest);
 			return new ResponseEntity<>(response, status);
 		}
@@ -349,41 +346,7 @@ public class RecordController {
 			Map<String, DataTypeMapping> requestSchema) {
 		List<Record> records = Collections.singletonList(newRecord);
 		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records), ReservedNames.RECORD_ID);
-		prepareAndUpsert(instanceId, recordType, records, requestSchema);
-	}
-
-	private void prepareAndUpsert(UUID instanceId, RecordType recordType, List<Record> records,
-						Map<String, DataTypeMapping> requestSchema) {
-		//Take out relation arrays
-		Map<Boolean, Map<String, DataTypeMapping>> relationArrays = requestSchema.entrySet().stream().collect(Collectors.partitioningBy(
-				entry -> entry.getValue() == DataTypeMapping.ARRAY_OF_RELATION, Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-		Map<Relation, List<RelationValue>> relationArrayValues = new HashMap<>();
-		for (Record rec : records) {
-			//Cannot use streaming here - collecting a stream to a map cannot accept null values for the map value
-			Map<Boolean, Map<String, Object>> withRelArrs = Map.of(true, new HashMap<>(), false, new HashMap<>());
-			for (Map.Entry<String, Object> attribute : rec.attributeSet()){
-				withRelArrs.get(relationArrays.get(true).containsKey(attribute.getKey())).put(attribute.getKey(), attribute.getValue());
-			}
-			rec.setAttributes(new RecordAttributes(withRelArrs.get(false)));
-			for (Map.Entry<String, Object> attr : withRelArrs.get(true).entrySet()) {
-				//TODO A nicer way to do all this
-				List<String> rels = (List<String>) attr.getValue();
-				Relation relDef = new Relation(attr.getKey(), RelationUtils.getTypeValue(rels.get(0)));
-				List<RelationValue> relList = relationArrayValues.getOrDefault(relDef, new ArrayList<>());
-				for (String r : rels){
-					if (!RelationUtils.getTypeValue(r).equals(relDef.relationRecordType())){
-						throw new InvalidRelationException("It looks like you're attempting to assign a relation "
-								+ "to multiple rec types");
-					}
-					relList.add(new RelationValue(rec, new Record(RelationUtils.getRelationValue(r), RelationUtils.getTypeValue(r), new RecordAttributes(Collections.emptyMap()))));
-				}
-				relationArrayValues.put(relDef, relList);
-			}
-		}
-		recordDao.batchUpsert(instanceId, recordType, records, relationArrays.get(false));
-		for (Map.Entry<Relation, List<RelationValue>> rel : relationArrayValues.entrySet()) {
-			recordDao.insertIntoJoin(instanceId, rel.getKey(), recordType, rel.getValue());
-		}
+		recordService.prepareAndUpsert(instanceId, recordType, records, requestSchema);
 	}
 
 	private Map<String, DataTypeMapping> getFullTableSchema(UUID instanceId, RecordType recordType){
