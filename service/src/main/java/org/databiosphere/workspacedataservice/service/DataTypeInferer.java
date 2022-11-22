@@ -16,10 +16,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
 
@@ -247,14 +244,14 @@ public class DataTypeInferer {
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, LocalDate[].class))){
 			return ARRAY_OF_DATE;
 		}
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, String[].class))){
-			//TODO Don't repeat casting to array?  Check every value?
-			if (RelationUtils.isRelationValue(getArrayOfType(val, String[].class)[0])){
+		String[] stringArr = getArrayOfType(val, String[].class);
+		if(ArrayUtils.isNotEmpty(stringArr)){
+			if (Arrays.stream(stringArr).allMatch(str -> RelationUtils.isRelationValue(str))){
 				return ARRAY_OF_RELATION;
 			}
 			return ARRAY_OF_STRING;
 		}
-		if(getArrayOfType(val, String[].class) != null){
+		if(stringArr != null){
 			return EMPTY_ARRAY;
 		}
 		throw new IllegalArgumentException("Unsupported array type " + val);

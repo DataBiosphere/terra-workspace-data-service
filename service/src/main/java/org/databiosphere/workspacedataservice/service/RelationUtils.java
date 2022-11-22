@@ -31,9 +31,9 @@ public class RelationUtils {
 			for (Map.Entry<String, Object> entry : record.attributeSet()) {
 				if (isRelationValue(entry.getValue())) {
 					relations.add(new Relation(entry.getKey(), getTypeValue(entry.getValue())));
-					//TODO Use DataTypeInferer instead of repeating code here, check whole array
+					//TODO verify that all relation types match?
 				} else if (entry.getValue() instanceof List<?> listVal && !listVal.isEmpty()){
-					if (isRelationValue(listVal.get(0))){
+					if (listVal.stream().allMatch(item -> isRelationValue(item))){
 						relationArrays.add(new Relation(entry.getKey(), getTypeValue(listVal.get(0))));
 					}
 				}

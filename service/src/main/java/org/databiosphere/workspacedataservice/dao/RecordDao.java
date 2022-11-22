@@ -141,11 +141,14 @@ public class RecordDao {
 		}
 	}
 
-	private String getJoinTableName(UUID instanceId, String tableName, RecordType referringRecordType){
+	private String getJoinTableName(String tableName, RecordType referringRecordType){
 		//Use RESERVED_NAME_PREFIX to ensure no collision with user-named tables.
 		//RecordType name has already been sql-validated
-		String fullName = RESERVED_NAME_PREFIX + referringRecordType.getName() + "_" + SqlUtils.validateSqlString(tableName, ATTRIBUTE);
-		return quote(instanceId.toString()) + "." + quote(fullName);
+		return quote(RESERVED_NAME_PREFIX + referringRecordType.getName() + "_" + SqlUtils.validateSqlString(tableName, ATTRIBUTE));
+	}
+
+	private String getQualifiedJoinTableName(UUID instanceId, String tableName, RecordType referringRecordType){
+		return quote(instanceId.toString()) + "." + getJoinTableName(tableName, referringRecordType);
 	}
 
 	@SuppressWarnings("squid:S2077")
@@ -157,7 +160,7 @@ public class RecordDao {
 		String columnDefs =  quote(fromCol) + " text, " + quote(toCol) + " text";
 		Set<Relation> relations = Set.of(new Relation(fromCol, referringRecordType), new Relation(toCol, referencedRecordType));
 		try {
-			namedTemplate.getJdbcTemplate().update("create table " + getJoinTableName(instanceId, tableName, referringRecordType) +
+			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedJoinTableName(instanceId, tableName, referringRecordType) +
 					"( " + columnDefs +  (!relations.isEmpty() ? ", " + getFkSql(relations, instanceId) : "") + ")");
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
@@ -189,11 +192,12 @@ public class RecordDao {
 	}
 
 	public List<String> getAllAttributeNames(UUID instanceId, RecordType recordType) {
-		//TODO: add in relation-array columns
 		MapSqlParameterSource params = new MapSqlParameterSource(INSTANCE_ID, instanceId.toString());
 		params.addValue("tableName", recordType.getName());
-		return namedTemplate.queryForList("select column_name from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
+		List<String> mostColumns = namedTemplate.queryForList("select column_name from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
 						+ "and table_name = :tableName", params, String.class);
+		mostColumns.addAll(getRelationArrayCols(instanceId, recordType).stream().map(rel -> rel.relationColName()).collect(Collectors.toList()));
+		return mostColumns;
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchemaLessPrimaryKey(UUID instanceId, RecordType recordType) {
@@ -429,10 +433,12 @@ public class RecordDao {
 	}
 
 	public List<Relation> getRelationArrayCols(UUID instanceId, RecordType recordType) {
-		return namedTemplate.query("select table_name, column_name from information_schema.key_column_usage where constraint_schema = :workspace "
-				+ " and table_name like :tableNamePattern and column_name like 'to_%_key'",
-				Map.of("workspace", instanceId.toString(), "tableNamePattern",  RESERVED_NAME_PREFIX +
-						recordType.getName() + "%"),
+//		return namedTemplate.query("select table_name, column_name from information_schema.key_column_usage where constraint_schema = :workspace "
+//				+ " and table_name like :tableNamePattern and column_name like 'to_%_key'",
+		return namedTemplate.query(	"select kcu1.table_name, kcu1.column_name from information_schema.key_column_usage kcu1 join information_schema.key_column_usage kcu2 "
+				+ "on kcu1.table_name = kcu2.table_name where kcu1.constraint_schema = :workspace and kcu2.constraint_name = :from_table_constraint"
+				+ " and kcu2.constraint_name != kcu1.constraint_name",
+		Map.of("workspace", instanceId.toString(), "from_table_constraint",  "fk_from_" + recordType.getName() + "_key"),
 				new RelationRowMapper(recordType));
 	}
 
@@ -567,7 +573,7 @@ public class RecordDao {
 		String fromCol = "from_" + recordType.getName() + "_key";
 		String toCol = "to_" + relation.relationRecordType().getName() + "_key";
 		String columnDefs =  " (" + quote(fromCol) + ", " + quote(toCol) + ")";
-		return "insert into " + getJoinTableName(instanceId, relation.relationColName(), recordType) + columnDefs
+		return "insert into " + getQualifiedJoinTableName(instanceId, relation.relationColName(), recordType) + columnDefs
 				+ " values (?,?) "; //TODO: Do I need on conflict and if so, how
 	}
 
@@ -727,9 +733,9 @@ public class RecordDao {
 	}
 
 	public List<String> getRelationArrayValues(UUID instanceId, Relation column, Record record){
-		String joinTableName = getJoinTableName(instanceId, column.relationColName(), record.getRecordType());
-		String fromCol = joinTableName + ".\"from_" + record.getRecordType().getName() + "_key\"";
-		String toCol = joinTableName + ".\"to_" + column.relationRecordType().getName() + "_key\"";
+		String joinTableName = getQualifiedJoinTableName(instanceId, column.relationColName(), record.getRecordType());
+		String fromCol = getJoinTableName(column.relationColName(), record.getRecordType()) + "." + quote("from_" + record.getRecordType().getName() + "_key");
+		String toCol = getJoinTableName(column.relationColName(), record.getRecordType()) + "." + quote("to_" + column.relationRecordType().getName() + "_key");
 		return namedTemplate.queryForList(
 				"select " + toCol + " from " + joinTableName + " where " + fromCol + " = :recordId",
 				new MapSqlParameterSource( "recordId", record.getId()), String.class);

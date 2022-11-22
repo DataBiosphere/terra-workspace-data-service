@@ -188,11 +188,15 @@ public class RecordController {
 
 	private List<Record> queryForRecords(RecordType recordType, int pageSize, int offset, String sortDirection,
 										 String sortAttribute, UUID instanceId){
+		List<Relation> relationArrays = recordDao.getRelationArrayCols(instanceId, recordType);
+		//TODO: Sort by relation array attribute
+		//For now, defaulting to sorting by primary key if sort attribute is a relation array column
+		if (relationArrays.stream().map(rel -> rel.relationColName()).collect(Collectors.toList()).contains(sortAttribute)){
+			sortAttribute = null;
+		}
 		List<Record> records = recordDao.queryForRecords(recordType, pageSize,
 				offset, sortDirection, sortAttribute, instanceId);
-		//TODO: Sort by relation array attribute
 		for (Record record : records){
-			List<Relation> relationArrays = recordDao.getRelationArrayCols(instanceId, recordType);
 			for (Relation rel : relationArrays){
 				List<String> relArr = recordDao.getRelationArrayValues(instanceId, rel, record);
 				record.setAttributeValue(rel.relationColName(), relArr);
