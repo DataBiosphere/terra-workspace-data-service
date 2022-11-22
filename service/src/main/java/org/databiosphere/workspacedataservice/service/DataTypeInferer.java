@@ -246,7 +246,7 @@ public class DataTypeInferer {
 		}
 		String[] stringArr = getArrayOfType(val, String[].class);
 		if(ArrayUtils.isNotEmpty(stringArr)){
-			if (Arrays.stream(stringArr).allMatch(str -> RelationUtils.isRelationValue(str))){
+			if (Arrays.stream(stringArr).allMatch(RelationUtils::isRelationValue)){
 				return ARRAY_OF_RELATION;
 			}
 			return ARRAY_OF_STRING;

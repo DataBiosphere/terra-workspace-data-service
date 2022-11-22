@@ -32,10 +32,8 @@ public class RelationUtils {
 				if (isRelationValue(entry.getValue())) {
 					relations.add(new Relation(entry.getKey(), getTypeValue(entry.getValue())));
 					//TODO verify that all relation types match?
-				} else if (entry.getValue() instanceof List<?> listVal && !listVal.isEmpty()){
-					if (listVal.stream().allMatch(item -> isRelationValue(item))){
-						relationArrays.add(new Relation(entry.getKey(), getTypeValue(listVal.get(0))));
-					}
+				} else if (entry.getValue() instanceof List<?> listVal && !listVal.isEmpty() && listVal.stream().allMatch(RelationUtils::isRelationValue)){
+					relationArrays.add(new Relation(entry.getKey(), getTypeValue(listVal.get(0))));
 				}
 			}
 		}

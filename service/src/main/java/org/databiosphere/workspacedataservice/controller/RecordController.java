@@ -191,15 +191,15 @@ public class RecordController {
 		List<Relation> relationArrays = recordDao.getRelationArrayCols(instanceId, recordType);
 		//TODO: Sort by relation array attribute
 		//For now, defaulting to sorting by primary key if sort attribute is a relation array column
-		if (relationArrays.stream().map(rel -> rel.relationColName()).collect(Collectors.toList()).contains(sortAttribute)){
+		if (relationArrays.stream().map(Relation::relationColName).toList().contains(sortAttribute)){
 			sortAttribute = null;
 		}
 		List<Record> records = recordDao.queryForRecords(recordType, pageSize,
 				offset, sortDirection, sortAttribute, instanceId);
-		for (Record record : records){
+		for (Record rec : records){
 			for (Relation rel : relationArrays){
-				List<String> relArr = recordDao.getRelationArrayValues(instanceId, rel, record);
-				record.setAttributeValue(rel.relationColName(), relArr);
+				List<String> relArr = recordDao.getRelationArrayValues(instanceId, rel, rec);
+				rec.setAttributeValue(rel.relationColName(), relArr);
 			}
 		}
 		return records;
@@ -358,13 +358,13 @@ public class RecordController {
 		Map<Boolean, Map<String, DataTypeMapping>> relationArrays = requestSchema.entrySet().stream().collect(Collectors.partitioningBy(
 				entry -> entry.getValue() == DataTypeMapping.ARRAY_OF_RELATION, Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 		Map<Relation, List<RelationValue>> relationArrayValues = new HashMap<>();
-		for (Record record : records) {
+		for (Record rec : records) {
 			//Cannot use streaming here - collecting a stream to a map cannot accept null values for the map value
 			Map<Boolean, Map<String, Object>> withRelArrs = Map.of(true, new HashMap<>(), false, new HashMap<>());
-			for (Map.Entry<String, Object> attribute : record.attributeSet()){
+			for (Map.Entry<String, Object> attribute : rec.attributeSet()){
 				withRelArrs.get(relationArrays.get(true).containsKey(attribute.getKey())).put(attribute.getKey(), attribute.getValue());
 			}
-			record.setAttributes(new RecordAttributes(withRelArrs.get(false)));
+			rec.setAttributes(new RecordAttributes(withRelArrs.get(false)));
 			for (Map.Entry<String, Object> attr : withRelArrs.get(true).entrySet()) {
 				//TODO A nicer way to do all this
 				List<String> rels = (List<String>) attr.getValue();
@@ -373,9 +373,9 @@ public class RecordController {
 				for (String r : rels){
 					if (!RelationUtils.getTypeValue(r).equals(relDef.relationRecordType())){
 						throw new InvalidRelationException("It looks like you're attempting to assign a relation "
-								+ "to multiple record types");
+								+ "to multiple rec types");
 					}
-					relList.add(new RelationValue(record, new Record(RelationUtils.getRelationValue(r), RelationUtils.getTypeValue(r), new RecordAttributes(Collections.emptyMap()))));
+					relList.add(new RelationValue(rec, new Record(RelationUtils.getRelationValue(r), RelationUtils.getTypeValue(r), new RecordAttributes(Collections.emptyMap()))));
 				}
 				relationArrayValues.put(relDef, relList);
 			}

@@ -151,13 +151,22 @@ public class RecordDao {
 		return quote(instanceId.toString()) + "." + getJoinTableName(tableName, referringRecordType);
 	}
 
+	private String getFromColumnName(RecordType referringRecordType){
+		return "from_" + referringRecordType.getName() + "_key";
+	}
+
+	private String getToColumnName(RecordType referencedRecordType){
+		return "to_" + referencedRecordType.getName() + "_key";
+
+	}
+
 	@SuppressWarnings("squid:S2077")
 	public void createRelationJoinTable(UUID instanceId, String tableName, RecordType referringRecordType,
 								 RecordType referencedRecordType) {
-		//Possibly temporary fake relations to make existing methods work for this situation
-		String fromCol = "from_" + referringRecordType.getName() + "_key";
-		String toCol = "to_" + referencedRecordType.getName() + "_key";
+		String fromCol = getFromColumnName(referringRecordType);
+		String toCol = getToColumnName(referencedRecordType);
 		String columnDefs =  quote(fromCol) + " text, " + quote(toCol) + " text";
+		//Possibly temporary fake relations to make existing methods work for this situation
 		Set<Relation> relations = Set.of(new Relation(fromCol, referringRecordType), new Relation(toCol, referencedRecordType));
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedJoinTableName(instanceId, tableName, referringRecordType) +
@@ -569,9 +578,8 @@ public class RecordDao {
 	}
 
 	private String genJoinInsertStatement(UUID instanceId, Relation relation, RecordType recordType) {
-		//TODO: method for getting from/to col names in join table
-		String fromCol = "from_" + recordType.getName() + "_key";
-		String toCol = "to_" + relation.relationRecordType().getName() + "_key";
+		String fromCol = getFromColumnName(recordType);
+		String toCol = getToColumnName(relation.relationRecordType());
 		String columnDefs =  " (" + quote(fromCol) + ", " + quote(toCol) + ")";
 		return "insert into " + getQualifiedJoinTableName(instanceId, relation.relationColName(), recordType) + columnDefs
 				+ " values (?,?) "; //TODO: Do I need on conflict and if so, how
@@ -734,8 +742,8 @@ public class RecordDao {
 
 	public List<String> getRelationArrayValues(UUID instanceId, Relation column, Record record){
 		String joinTableName = getQualifiedJoinTableName(instanceId, column.relationColName(), record.getRecordType());
-		String fromCol = getJoinTableName(column.relationColName(), record.getRecordType()) + "." + quote("from_" + record.getRecordType().getName() + "_key");
-		String toCol = getJoinTableName(column.relationColName(), record.getRecordType()) + "." + quote("to_" + column.relationRecordType().getName() + "_key");
+		String fromCol = getJoinTableName(column.relationColName(), record.getRecordType()) + "." + quote(getFromColumnName(record.getRecordType()));
+		String toCol = getJoinTableName(column.relationColName(), record.getRecordType()) + "." + quote(getToColumnName(column.relationRecordType()));
 		return namedTemplate.queryForList(
 				"select " + toCol + " from " + joinTableName + " where " + fromCol + " = :recordId",
 				new MapSqlParameterSource( "recordId", record.getId()), String.class);
