@@ -99,17 +99,18 @@ class TsvInputFormatsTest {
 				Arguments.of("true", Boolean.TRUE),
 				Arguments.of("TRUE", Boolean.TRUE),
 				Arguments.of("tRuE", Boolean.TRUE),
+				Arguments.of("[true, TRUE, tRuE]", new Boolean[]{Boolean.TRUE, Boolean.TRUE, Boolean.TRUE}), // TODO: fails
 				Arguments.of("5", BigDecimal.valueOf(5)),
 				Arguments.of("5.67", BigDecimal.valueOf(5.67d)),
 				Arguments.of("005", BigDecimal.valueOf(5)),
 				Arguments.of("[1,5]", toBigDecimals(new int[]{1,5})),
 				Arguments.of("[1,5.67]", new BigDecimal[]{BigDecimal.valueOf(1), BigDecimal.valueOf(5.67)}),
-				Arguments.of("[1,005]", toBigDecimals(new int[]{1,5})) // fails
-				// TODO: smart-quotes
-				// TODO: string-escaping
-				// TODO: relations
-				// TODO: dates
-				// TODO: datetimes
+				Arguments.of("[1,005]", toBigDecimals(new int[]{1,5})) // TODO: fails
+				// TODO: smart-quotes?
+				// TODO: string-escaping for special characters
+				// TODO: relations, arrays of relations
+				// TODO: dates, arrays of dates
+				// TODO: datetimes, arrays of datetimes
 		);
 	}
 
