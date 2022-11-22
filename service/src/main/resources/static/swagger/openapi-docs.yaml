@@ -82,6 +82,7 @@ paths:
         - $ref: '#/components/parameters/versionPathParam'
         - $ref: '#/components/parameters/recordTypePathParam'
         - $ref: '#/components/parameters/recordIdPathParam'
+        - $ref: '#/components/parameters/recordTypePrimaryKey'
       requestBody:
         $ref: '#/components/requestBodies/RecordRequestBody'
       responses:
@@ -260,6 +261,7 @@ paths:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
         - $ref: '#/components/parameters/recordTypePathParam'
+        - $ref: '#/components/parameters/recordTypePrimaryKey'
       requestBody:
         $ref: '#/components/requestBodies/BatchRequestBody'
       responses:

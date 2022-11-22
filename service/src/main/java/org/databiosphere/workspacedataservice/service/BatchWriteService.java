@@ -202,7 +202,7 @@ public class BatchWriteService {
 					createOrModifyRecordType(instanceId, recordType, schema, records, uniqueRowIdentifierColumn.orElse(RECORD_ID));
 					firstUpsertBatch = false;
 				}
-				writeBatch(instanceId, recordType, schema, info, records);
+				writeBatch(instanceId, recordType, schema, info, records, uniqueRowIdentifierColumn);
 				recordsAffected += records.size();
 			}
 		} catch (IOException e) {
@@ -223,9 +223,9 @@ public class BatchWriteService {
 	}
 
 	private void writeBatch(UUID instanceId, RecordType recordType, Map<String, DataTypeMapping> schema,
-			StreamingWriteHandler.WriteStreamInfo info, List<Record> records) throws BatchWriteException {
+							StreamingWriteHandler.WriteStreamInfo info, List<Record> records, Optional<String> uniqueRowIdentifierColumn) throws BatchWriteException {
 		if (info.getOperationType() == OperationType.UPSERT) {
-			recordDao.batchUpsertWithErrorCapture(instanceId, recordType, records, schema, RECORD_ID);
+			recordDao.batchUpsertWithErrorCapture(instanceId, recordType, records, schema, uniqueRowIdentifierColumn.orElse(RECORD_ID));
 		} else if (info.getOperationType() == OperationType.DELETE) {
 			recordDao.batchDelete(instanceId, recordType, records);
 		}

@@ -82,7 +82,7 @@ class GeneratedClientTests {
 
     private void createRecord(RecordsApi recordsApi, String recordId, String recordType) throws ApiException {
         recordsApi.createOrReplaceRecord(new RecordRequest().attributes(new RecordAttributes()),
-                instanceId.toString(), version, recordType, recordId);
+                instanceId.toString(), version, recordType, recordId, null);
     }
 
     @Test
@@ -105,7 +105,7 @@ class GeneratedClientTests {
         String attributeName = "attr1";
         RecordAttributes recordAttributes = new RecordAttributes();
         recordAttributes.put(attributeName, "Hello");
-        recordsApi.createOrReplaceRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId);
+        recordsApi.createOrReplaceRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId, null);
         recordAttributes.put(attributeName, "Goodbye");
         recordsApi.updateRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId);
         RecordResponse record = recordsApi.getRecord(instanceId.toString(), version, entityType, recordId);
