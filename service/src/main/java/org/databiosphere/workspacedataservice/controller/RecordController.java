@@ -364,7 +364,7 @@ public class RecordController {
 				//TODO A nicer way to do all this
 				List<String> rels = (List<String>) attr.getValue();
 				Relation relDef = new Relation(attr.getKey(), RelationUtils.getTypeValue(rels.get(0)));
-				List<RelationValue> relList = relationArrayValues.getOrDefault(attr.getKey(), new ArrayList<>());
+				List<RelationValue> relList = relationArrayValues.getOrDefault(relDef, new ArrayList<>());
 				for (String r : rels){
 					if (!RelationUtils.getTypeValue(r).equals(relDef.relationRecordType())){
 						throw new InvalidRelationException("It looks like you're attempting to assign a relation "
