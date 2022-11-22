@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -48,9 +49,9 @@ class TsvDownloadTest {
 	}
 	@Test
 	void tsvUploadWithChoosenPrimaryKeyFollowedByDownload() throws IOException {
-		StringBuilder tsvContent = new StringBuilder("col_1\tcol_2\tsample_id\n");
+		StringBuilder tsvContent = new StringBuilder("col_1\tcol_2\tattr-1\tsample_id\n");
 		String recordId = "bazinga";
-		tsvContent.append("Fido\tJerry\t" + recordId + "\n");
+		tsvContent.append("Fido\tJerry\t-99\t" + recordId + "\n");
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
 		String recordType = "tsv-pk-test";
@@ -61,10 +62,13 @@ class TsvDownloadTest {
 		CSVFormat csvFormat = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).setDelimiter("\t")
 				.setQuoteMode(QuoteMode.MINIMAL).build();
 		InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
-		Iterable<CSVRecord> records = new CSVParser(reader, csvFormat);
-		Iterator<CSVRecord> iterator = records.iterator();
+		CSVParser parser = new CSVParser(reader, csvFormat);
+		Map<String, Integer> headerMap = parser.getHeaderMap();
+		assertThat(headerMap).isEqualTo(Map.of("sample_id", 0, "attr-1", 1, "col_1", 2, "col_2", 3));
+		Iterator<CSVRecord> iterator = ((Iterable<CSVRecord>) parser).iterator();
 		CSVRecord rcd = iterator.next();
 		assertThat(rcd.get("sample_id")).isEqualTo("bazinga");
+		assertThat(rcd.get("attr-1")).isEqualTo("-99");
 		assertThat(rcd.get("col_1")).isEqualTo("Fido");
 		assertThat(rcd.get("col_2")).isEqualTo("Jerry");
 		assertThat(iterator.hasNext()).isFalse();

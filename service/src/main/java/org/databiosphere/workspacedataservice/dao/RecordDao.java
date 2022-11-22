@@ -14,6 +14,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.BatchDelet
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.shared.model.AttributeComparator;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
@@ -45,6 +46,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -148,8 +150,10 @@ public class RecordDao {
 	public List<String> getAllAttributeNames(UUID instanceId, RecordType recordType) {
 		MapSqlParameterSource params = new MapSqlParameterSource(INSTANCE_ID, instanceId.toString());
 		params.addValue("tableName", recordType.getName());
-		return namedTemplate.queryForList("select column_name from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
-						+ "and table_name = :tableName", params, String.class);
+		List<String> attributeNames = namedTemplate.queryForList("select column_name from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
+				+ "and table_name = :tableName", params, String.class);
+		Collections.sort(attributeNames, new AttributeComparator(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)));
+		return attributeNames;
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchemaLessPrimaryKey(UUID instanceId, RecordType recordType) {
