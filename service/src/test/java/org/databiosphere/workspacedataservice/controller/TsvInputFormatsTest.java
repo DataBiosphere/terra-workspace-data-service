@@ -1,63 +1,38 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
-import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
-import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
-import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
-import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.databiosphere.workspacedataservice.shared.model.*;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 
-import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 class TsvInputFormatsTest {
 
-	@Autowired
-	private ObjectMapper mapper;
+//	@Autowired
+//	private ObjectMapper mapper;
 	@Autowired
 	private MockMvc mockMvc;
 	@Autowired
@@ -65,7 +40,7 @@ class TsvInputFormatsTest {
 
 	private static UUID instanceId;
 
-	private static String versionId = "v0.2";
+	private static final String versionId = "v0.2";
 
 	@BeforeEach
 	void beforeEach() throws Exception {
@@ -85,10 +60,6 @@ class TsvInputFormatsTest {
 	}
 
 	private static BigDecimal[] toBigDecimals(int[] nums) {
-		return Arrays.stream(nums).mapToObj(BigDecimal::valueOf).toList().toArray(new BigDecimal[nums.length]);
-	}
-
-	private static BigDecimal[] toBigDecimals(double[] nums) {
 		return Arrays.stream(nums).mapToObj(BigDecimal::valueOf).toList().toArray(new BigDecimal[nums.length]);
 	}
 
@@ -143,8 +114,11 @@ class TsvInputFormatsTest {
 				assertEquals(expected, actual);
 			}
 		}
-
 	}
+
+	/* TODO: add a second unit test, or a second class, that asserts behavior of various inputs to a table that already
+		exists and whose schema is already defined.
+	 */
 
 
 }
