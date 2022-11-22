@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.shared.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
+import java.text.Collator;
 import java.util.*;
 
 /**
@@ -31,6 +32,27 @@ public class RecordAttributes {
 		this.attributes = new TreeMap<>(attributes);
 	}
 
+	public RecordAttributes(Map<String, Object> attributes, String primaryKey) {
+		AttributeComparator comparator = new AttributeComparator(primaryKey);
+		this.attributes = new TreeMap<>(comparator);
+		this.attributes.putAll(attributes);
+	}
+
+	private record AttributeComparator(String primaryKey) implements Comparator<String> {
+
+		@Override
+		public int compare(String o1, String o2) {
+			if (o1.equals(primaryKey)) {
+				return -1;
+			}
+			if (o2.equals(primaryKey)) {
+				return 1;
+			}
+			Collator collator = Collator.getInstance();
+			return collator.compare(o1, o2);
+		}
+	}
+
 	/**
 	 * creates a RecordAttributes with no keys/values
 	 * 
@@ -38,6 +60,10 @@ public class RecordAttributes {
 	 */
 	public static RecordAttributes empty() {
 		return new RecordAttributes(Collections.emptyMap());
+	}
+
+	public static RecordAttributes empty(String primaryKeyColumn) {
+		return new RecordAttributes(Collections.emptyMap(), primaryKeyColumn);
 	}
 
 	// ========== accessors

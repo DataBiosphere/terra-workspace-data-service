@@ -539,11 +539,12 @@ public class RecordDao {
 		private RecordAttributes getAttributes(ResultSet rs) throws JsonProcessingException {
 			try {
 				ResultSetMetaData metaData = rs.getMetaData();
-				RecordAttributes attributes = RecordAttributes.empty();
+				RecordAttributes attributes = RecordAttributes.empty(primaryKeyColumn);
 
 				for (int j = 1; j <= metaData.getColumnCount(); j++) {
 					String columnName = metaData.getColumnName(j);
 					if (columnName.equals(primaryKeyColumn)) {
+						attributes.putAttribute(primaryKeyColumn, rs.getString(primaryKeyColumn));
 						continue;
 					}
 					if (referenceColToTable.size() > 0 && referenceColToTable.containsKey(columnName)
