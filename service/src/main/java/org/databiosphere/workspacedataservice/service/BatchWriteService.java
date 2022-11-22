@@ -33,11 +33,12 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.databiosphere.workspacedataservice.service.TsvSupport.ROW_ID_COLUMN_NAME;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 
 @Service
@@ -117,28 +118,31 @@ public class BatchWriteService {
 	}
 
 	@Transactional
-	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType) throws IOException {
+	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType, Optional<String> uniqueRowIdentifierColumn) throws IOException {
 		CSVFormat csvFormat = TsvSupport.getUploadFormat();
 		CSVParser rows = csvFormat.parse(is);
+		String leftMostColumn = rows.getHeaderNames().get(0);
 		List<Record> batch = new ArrayList<>();
 		boolean firstUpsertBatch = true;
 		Map<String, DataTypeMapping> schema = null;
+		String uniqueIdentifierAsString = uniqueRowIdentifierColumn.orElse(leftMostColumn);
 		int recordsProcessed = 0;
 		for (CSVRecord row : rows) {
 			Map<String, Object> m = (Map) row.toMap();
-			m.remove(ROW_ID_COLUMN_NAME);
+			m.remove(uniqueIdentifierAsString);
 			changeEmptyStringsToNulls(m);
 			try {
-				batch.add(new Record(row.get(ROW_ID_COLUMN_NAME), recordType, new RecordAttributes(m)));
+				batch.add(new Record(row.get(uniqueIdentifierAsString), recordType, new RecordAttributes(m)));
 			} catch (IllegalArgumentException ex) {
 				LOGGER.error("IllegalArgument exception while reading tsv", ex);
 				throw new InvalidTsvException(
-						"Uploaded TSV is missing " + ROW_ID_COLUMN_NAME + " to uniquely identify each row");
+						"Uploaded TSV is either missing the " + uniqueRowIdentifierColumn
+								+ " column or has a null or empty string value in that column");
 			}
 			recordsProcessed++;
 			if (batch.size() >= batchSize) {
 				if (firstUpsertBatch) {
-					schema = createOrUpdateSchema(instanceId, recordType, batch);
+					schema = createOrUpdateSchema(instanceId, recordType, batch, uniqueIdentifierAsString);
 					firstUpsertBatch = false;
 				}
 				recordDao.batchUpsert(instanceId, recordType, batch, schema);
@@ -149,7 +153,7 @@ public class BatchWriteService {
 			if (batch.isEmpty()) {
 				throw new InvalidTsvException("We could not parse any data rows in your tsv file.");
 			}
-			schema = createOrUpdateSchema(instanceId, recordType, batch);
+			schema = createOrUpdateSchema(instanceId, recordType, batch, uniqueIdentifierAsString);
 		}
 		recordDao.batchUpsert(instanceId, recordType, batch, schema);
 		return recordsProcessed;
@@ -170,9 +174,9 @@ public class BatchWriteService {
 	}
 
 	private Map<String, DataTypeMapping> createOrUpdateSchema(UUID instanceId, RecordType recordType,
-			List<Record> batch) {
+			List<Record> batch, String recordTypePrimaryKey) {
 		Map<String, DataTypeMapping> schema = inferer.inferTypes(batch, InBoundDataSource.TSV);
-		return createOrModifyRecordType(instanceId, recordType, schema, batch);
+		return createOrModifyRecordType(instanceId, recordType, schema, batch, recordTypePrimaryKey);
 	}
 
 	/**
@@ -195,7 +199,7 @@ public class BatchWriteService {
 				List<Record> records = info.getRecords();
 				if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
 					schema = inferer.inferTypes(records, InBoundDataSource.JSON);
-					createOrModifyRecordType(instanceId, recordType, schema, records);
+					createOrModifyRecordType(instanceId, recordType, schema, records, RECORD_ID);
 					firstUpsertBatch = false;
 				}
 				writeBatch(instanceId, recordType, schema, info, records);
@@ -208,12 +212,12 @@ public class BatchWriteService {
 	}
 
 	private Map<String, DataTypeMapping> createOrModifyRecordType(UUID instanceId, RecordType recordType,
-			Map<String, DataTypeMapping> schema, List<Record> records) {
+			Map<String, DataTypeMapping> schema, List<Record> records, String recordTypePrimaryKey) {
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
-			recordDao.createRecordType(instanceId, schema, recordType, RelationUtils.findRelations(records));
+			recordDao.createRecordType(instanceId, schema, recordType, RelationUtils.findRelations(records), recordTypePrimaryKey);
 		} else {
 			return addOrUpdateColumnIfNeeded(instanceId, recordType, schema,
-					recordDao.getExistingTableSchema(instanceId, recordType), records);
+					recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType), records);
 		}
 		return schema;
 	}
@@ -221,7 +225,7 @@ public class BatchWriteService {
 	private void writeBatch(UUID instanceId, RecordType recordType, Map<String, DataTypeMapping> schema,
 			StreamingWriteHandler.WriteStreamInfo info, List<Record> records) throws BatchWriteException {
 		if (info.getOperationType() == OperationType.UPSERT) {
-			recordDao.batchUpsertWithErrorCapture(instanceId, recordType, records, schema);
+			recordDao.batchUpsertWithErrorCapture(instanceId, recordType, records, schema, RECORD_ID);
 		} else if (info.getOperationType() == OperationType.DELETE) {
 			recordDao.batchDelete(instanceId, recordType, records);
 		}

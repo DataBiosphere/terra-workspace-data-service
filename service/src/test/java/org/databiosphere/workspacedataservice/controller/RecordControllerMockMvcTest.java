@@ -50,7 +50,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 class RecordControllerMockMvcTest {
-
 	@Autowired
 	private ObjectMapper mapper;
 	@Autowired
@@ -206,12 +205,35 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	void tsvWithNoRowIdShouldReturn400() throws Exception {
+	void tsvWithMissingRowIdentifierColumn() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "no_row_id.tsv", MediaType.TEXT_PLAIN_VALUE,
 				"col1\tcol2\nfoo\tbar\n".getBytes());
 
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}?uniqueRowIdentifierColumn=missing_row_id", instanceId, versionId, "tsv-missing-rowid")
 				.file(file)).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@Transactional
+	void tsvWithEmptyStringIdentifier() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "empty_row_id.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"col1\tcol2\n\tbar\n".getBytes());
+
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-missing-rowid")
+				.file(file)).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@Transactional
+	void tsvWithSpecifiedRowIdentifierColumn() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "specified_id.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"col1\tcol2\nfoo\tbar\n".getBytes());
+
+		String recordType = "tsv_specified_row_id";
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}?uniqueRowIdentifierColumn=col2", instanceId, versionId, recordType)
+				.file(file)).andExpect(status().isOk());
+		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, recordType, "bar"))
+				.andExpect(status().isOk());
 	}
 
 	@Test
@@ -224,7 +246,7 @@ class RecordControllerMockMvcTest {
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
 
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv_batching")
 				.file(file)).andExpect(status().isOk());
 	}
 
@@ -332,6 +354,15 @@ class RecordControllerMockMvcTest {
 		assertEquals("json", schema.attributes().get(4).name());
 		// data type should downgrade to STRING
 		assertEquals("STRING", schema.attributes().get(4).datatype());
+		//make sure left most column (sys_name) is used as id
+		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, recordType, "a")).andExpect(status().isOk());
+	}
+
+	@Test
+	@Transactional
+	void tryDeletingMissingRecordType() throws Exception {
+		mockMvc.perform(delete("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId, "missing", "missing-also"))
+				.andExpect(status().isNotFound());
 	}
 
 	@Test

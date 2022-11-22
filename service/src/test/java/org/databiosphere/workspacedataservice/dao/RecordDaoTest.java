@@ -19,12 +19,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordDaoTest {
 
+	private static final String PRIMARY_KEY = "row_id";
 	@Autowired
 	RecordDao recordDao;
 	UUID instanceId;
@@ -35,7 +37,7 @@ class RecordDaoTest {
 		instanceId = UUID.randomUUID();
 		recordType = RecordType.valueOf("testRecordType");
 		recordDao.createSchema(instanceId);
-		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType, new RelationCollection(Collections.emptySet(), Collections.emptySet()));
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType, new RelationCollection(Collections.emptySet(), Collections.emptySet()), PRIMARY_KEY);
 	}
 
 	@Test
@@ -196,7 +198,7 @@ class RecordDaoTest {
 		assertTrue(typesList.contains(recordType));
 
 		RecordType newRecordType = RecordType.valueOf("newRecordType");
-		recordDao.createRecordType(instanceId, Collections.emptyMap(), newRecordType, new RelationCollection(Collections.emptySet(), Collections.emptySet()));
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), newRecordType, new RelationCollection(Collections.emptySet(), Collections.emptySet()), RECORD_ID);
 
 		List<RecordType> newTypesList = recordDao.getAllRecordTypes(instanceId);
 		assertEquals(2, newTypesList.size());
@@ -214,7 +216,7 @@ class RecordDaoTest {
 		RecordType relationArrayType = RecordType.valueOf("relationArrayType");
 		Relation arrayRelation = new Relation("relArrAttr", recordType);
 		recordDao.createRecordType(instanceId, Map.of( "relArrAttr", DataTypeMapping.ARRAY_OF_RELATION), relationArrayType,
-				new RelationCollection(Collections.emptySet(), Set.of(arrayRelation)));
+				new RelationCollection(Collections.emptySet(), Set.of(arrayRelation)), RECORD_ID);
 
 		List<RecordType> newTypesList = recordDao.getAllRecordTypes(instanceId);
 		assertEquals(2, newTypesList.size());
@@ -261,7 +263,7 @@ class RecordDaoTest {
 	void testDeleteRecordTypeWithRelation() {
 		RecordType recordTypeName = recordType;
 		RecordType referencedType = RecordType.valueOf("referencedType");
-		recordDao.createRecordType(instanceId, Collections.emptyMap(), referencedType, new RelationCollection(Collections.emptySet(), Collections.emptySet()));
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), referencedType, new RelationCollection(Collections.emptySet(), Collections.emptySet()), RECORD_ID);
 
 		recordDao.addColumn(instanceId, recordTypeName, "relation", DataTypeMapping.STRING, referencedType);
 
@@ -285,7 +287,7 @@ class RecordDaoTest {
 	@Transactional
 	void testCreateRelationJoinTable(){
 		RecordType secondRecordType = RecordType.valueOf("secondRecordType");
-		recordDao.createRecordType(instanceId, Collections.emptyMap(), secondRecordType, new RelationCollection(Collections.emptySet(), Collections.emptySet()));
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), secondRecordType, new RelationCollection(Collections.emptySet(), Collections.emptySet()), RECORD_ID);
 
 		recordDao.createRelationJoinTable(instanceId, "refArray", recordType,
 				secondRecordType);
@@ -302,9 +304,9 @@ class RecordDaoTest {
 		Relation singleRelation = new Relation("refAttr", recordType);
 		Relation arrayRelation = new Relation("relArrAttr", recordType);
 		recordDao.createRecordType(instanceId, Map.of("stringAttr", DataTypeMapping.STRING, "refAttr", DataTypeMapping.RELATION, "relArrAttr", DataTypeMapping.ARRAY_OF_RELATION), relationarrayType,
-				new RelationCollection(Set.of(singleRelation), Set.of(arrayRelation)));
+				new RelationCollection(Set.of(singleRelation), Set.of(arrayRelation)), RECORD_ID);
 
-		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchema(instanceId, relationarrayType);
+		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, relationarrayType);
 		assertEquals(2, schema.size());
 		assertEquals(DataTypeMapping.STRING, schema.get("stringAttr"));
 		assertEquals(DataTypeMapping.RELATION, schema.get("refAttr"));
@@ -328,7 +330,7 @@ class RecordDaoTest {
 		RecordType relationArrayType = RecordType.valueOf("relationArrayType");
 		Relation arrayRelation = new Relation("relArrAttr", recordType);
 		recordDao.createRecordType(instanceId, Map.of("stringAttr", DataTypeMapping.STRING, "refAttr", DataTypeMapping.RELATION, "relArrAttr", DataTypeMapping.ARRAY_OF_RELATION), relationArrayType,
-				new RelationCollection(Collections.emptySet(), Set.of(arrayRelation)));
+				new RelationCollection(Collections.emptySet(), Set.of(arrayRelation)), RECORD_ID);
 
 		//Create record with relation array
 		String relArrId = "recordWithRelationArr";
@@ -336,7 +338,7 @@ class RecordDaoTest {
 		recordDao.batchUpsert(instanceId, relationArrayType, Collections.singletonList(recordWithRelationArray), new HashMap<>());
 
 		//BatchUpsert does not include relation arrays
-		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchema(instanceId, relationArrayType);
+		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, relationArrayType);
 		assertEquals(2, schema.size());
 		List<Relation> relationArrayCols = recordDao.getRelationArrayCols(instanceId, relationArrayType);
 		assertEquals(List.of(arrayRelation), relationArrayCols);
@@ -359,7 +361,7 @@ class RecordDaoTest {
 		Relation arrayRelation1 = new Relation("relArr1", recordType);
 		Relation arrayRelation2 = new Relation("relArr2", recordType);
 		recordDao.createRecordType(instanceId, Map.of( "relArr1", DataTypeMapping.ARRAY_OF_RELATION, "relArr2", DataTypeMapping.ARRAY_OF_RELATION), relationarrayType,
-				new RelationCollection(Collections.emptySet(), Set.of(arrayRelation1, arrayRelation2)));
+				new RelationCollection(Collections.emptySet(), Set.of(arrayRelation1, arrayRelation2)), RECORD_ID);
 
 		List<Relation> cols = recordDao.getRelationArrayCols(instanceId, relationarrayType);
 		assertEquals(2, cols.size());

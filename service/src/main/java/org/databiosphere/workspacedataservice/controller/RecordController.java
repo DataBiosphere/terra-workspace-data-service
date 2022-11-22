@@ -116,15 +116,16 @@ public class RecordController {
 		return result;
 	}
 
-	@PostMapping("/{instanceId}/tsv/{version}/{recordType}")
+	@PostMapping( "/{instanceId}/tsv/{version}/{recordType}")
 	public ResponseEntity<TsvUploadResponse> tsvUpload(@PathVariable("instanceId") UUID instanceId,
-			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			@RequestParam("records") MultipartFile records) throws IOException {
+			   @PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
+			   @RequestParam(name= "uniqueRowIdentifierColumn", required = false) Optional<String> uniqueRowIdentifierColumn,
+               @RequestParam("records") MultipartFile records) throws IOException {
 		validateVersion(version);
 		validateInstance(instanceId);
 		int recordsModified;
 		try (InputStreamReader inputStreamReader = new InputStreamReader(records.getInputStream())) {
-			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType);
+			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType, uniqueRowIdentifierColumn);
 		}
 		return new ResponseEntity<>(new TsvUploadResponse(recordsModified, "Updated " + recordType.toString()),
 				HttpStatus.OK);
@@ -136,8 +137,7 @@ public class RecordController {
 		validateVersion(version);
 		validateInstance(instanceId);
 		checkRecordTypeExists(instanceId, recordType);
-		List<String> headers = new ArrayList<>(Collections.singletonList(ReservedNames.RECORD_ID));
-		headers.addAll(getFullTableSchema(instanceId, recordType).keySet());
+		List<String> headers = recordDao.getAllAttributeNames(instanceId, recordType);
 		Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType);
 
 		StreamingResponseBody responseBody = httpResponseOutputStream -> {
@@ -260,6 +260,7 @@ public class RecordController {
 			@PathVariable("recordId") String recordId) {
 		validateVersion(version);
 		validateInstance(instanceId);
+		checkRecordTypeExists(instanceId, recordType);
 		boolean recordFound = recordDao.deleteSingleRecord(instanceId, recordType, recordId);
 		return recordFound ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
@@ -343,7 +344,7 @@ public class RecordController {
 	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, RecordType recordType,
 			Map<String, DataTypeMapping> requestSchema) {
 		List<Record> records = Collections.singletonList(newRecord);
-		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records));
+		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records), ReservedNames.RECORD_ID);
 		prepareAndUpsert(instanceId, recordType, records, requestSchema);
 	}
 
@@ -383,7 +384,7 @@ public class RecordController {
 
 	private Map<String, DataTypeMapping> getFullTableSchema(UUID instanceId, RecordType recordType){
 		List<Relation> relationArrays = recordDao.getRelationArrayCols(instanceId, recordType);
-		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchema(instanceId, recordType);
+		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
 		for (Relation rel : relationArrays){
 			schema.put(rel.relationColName(), DataTypeMapping.ARRAY_OF_RELATION);
 		}
