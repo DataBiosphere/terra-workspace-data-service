@@ -3,8 +3,11 @@ package org.databiosphere.workspacedataservice.shared.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-import java.text.Collator;
-import java.util.*;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Represents the attributes of a Record.
