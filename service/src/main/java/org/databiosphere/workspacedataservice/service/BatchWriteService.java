@@ -148,7 +148,8 @@ public class BatchWriteService {
 					schema = createOrUpdateSchema(instanceId, recordType, batch, uniqueIdentifierAsString);
 					firstUpsertBatch = false;
 				}
-				recordDao.batchUpsert(instanceId, recordType, batch, schema);
+//				recordDao.batchUpsert(instanceId, recordType, batch, schema);
+				recordService.prepareAndUpsert(instanceId, recordType, batch, schema);
 				batch.clear();
 			}
 		}
@@ -158,7 +159,8 @@ public class BatchWriteService {
 			}
 			schema = createOrUpdateSchema(instanceId, recordType, batch, uniqueIdentifierAsString);
 		}
-		recordDao.batchUpsert(instanceId, recordType, batch, schema);
+//		recordDao.batchUpsert(instanceId, recordType, batch, schema);
+		recordService.prepareAndUpsert(instanceId, recordType, batch, schema);
 		return recordsProcessed;
 	}
 

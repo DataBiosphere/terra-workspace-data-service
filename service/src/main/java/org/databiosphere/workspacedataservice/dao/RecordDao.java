@@ -3,18 +3,14 @@ package org.databiosphere.workspacedataservice.dao;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.MapDifference;
-import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
-import org.databiosphere.workspacedataservice.service.InBoundDataSource;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.service.model.RelationValue;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchDeleteException;
-import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -35,6 +31,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -117,6 +114,7 @@ public class RecordDao {
 	}
 
 	@SuppressWarnings("squid:S2077")
+	@Transactional
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
 			RelationCollection relations, String recordTypePrimaryKey) {
 		//Only make columns for attributes that are not arrays of relations
@@ -205,7 +203,7 @@ public class RecordDao {
 		params.addValue("tableName", recordType.getName());
 		List<String> mostColumns = namedTemplate.queryForList("select column_name from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
 						+ "and table_name = :tableName", params, String.class);
-		mostColumns.addAll(getRelationArrayCols(instanceId, recordType).stream().map(rel -> rel.relationColName()).collect(Collectors.toList()));
+		mostColumns.addAll(getRelationArrayCols(instanceId, recordType).stream().map(Relation::relationColName).toList());
 		return mostColumns;
 	}
 
@@ -695,13 +693,13 @@ public class RecordDao {
 		}
 	}
 
-	public List<String> getRelationArrayValues(UUID instanceId, Relation column, Record record){
-		String joinTableName = getQualifiedJoinTableName(instanceId, column.relationColName(), record.getRecordType());
-		String fromCol = getJoinTableName(column.relationColName(), record.getRecordType()) + "." + quote(getFromColumnName(record.getRecordType()));
-		String toCol = getJoinTableName(column.relationColName(), record.getRecordType()) + "." + quote(getToColumnName(column.relationRecordType()));
+	public List<String> getRelationArrayValues(UUID instanceId, Relation column, Record rec){
+		String joinTableName = getQualifiedJoinTableName(instanceId, column.relationColName(), rec.getRecordType());
+		String fromCol = getJoinTableName(column.relationColName(), rec.getRecordType()) + "." + quote(getFromColumnName(rec.getRecordType()));
+		String toCol = getJoinTableName(column.relationColName(), rec.getRecordType()) + "." + quote(getToColumnName(column.relationRecordType()));
 		return namedTemplate.queryForList(
 				"select " + toCol + " from " + joinTableName + " where " + fromCol + " = :recordId",
-				new MapSqlParameterSource( "recordId", record.getId()), String.class);
+				new MapSqlParameterSource( RECORD_ID, rec.getId()), String.class);
 	}
 
 	public boolean recordExists(UUID instanceId, RecordType recordType, String recordId) {

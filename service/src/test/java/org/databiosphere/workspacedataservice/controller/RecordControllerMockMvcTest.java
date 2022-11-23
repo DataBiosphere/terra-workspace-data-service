@@ -508,7 +508,7 @@ class RecordControllerMockMvcTest {
 		RecordType referencedType = RecordType.valueOf("ref_participants");
 		RecordType referringType = RecordType.valueOf("ref_samples");
 		RecordAttributes attributes = RecordAttributes.empty();
-		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(referencedType, "record_" + i)).collect(Collectors.toList());
+		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(RecordType.valueOf("notype"+i), "record_" + i)).collect(Collectors.toList());
 		attributes.putAttribute("rel-arr", relArr);
 
 		//Expect failure if relation table doesn't exist

@@ -8,6 +8,7 @@ import java.util.Set;
 import com.google.common.base.Preconditions;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.springframework.web.util.UriComponents;
@@ -31,8 +32,11 @@ public class RelationUtils {
 			for (Map.Entry<String, Object> entry : record.attributeSet()) {
 				if (isRelationValue(entry.getValue())) {
 					relations.add(new Relation(entry.getKey(), getTypeValue(entry.getValue())));
-					//TODO verify that all relation types match?  distinguish between tsv & json source
+					//TODO distinguish between tsv & json source
 				} else if (entry.getValue() instanceof List<?> listVal && !listVal.isEmpty() && listVal.stream().allMatch(RelationUtils::isRelationValue)){
+					if (listVal.stream().map(RelationUtils::getTypeValue).distinct().count() > 1){
+						throw new InvalidRelationException("All relations in an array must relate to the same table");
+					}
 					relationArrays.add(new Relation(entry.getKey(), getTypeValue(listVal.get(0))));
 				}
 			}
