@@ -199,7 +199,7 @@ public class RecordDao {
 	}
 
 	private String genColumnDefs(Map<String, DataTypeMapping> tableInfo, String primaryKeyCol) {
-		return primaryKeyCol + " text primary key"
+		return quote(primaryKeyCol) + " text primary key"
 				+ (tableInfo.size() > 0
 						? ", " + tableInfo.entrySet().stream()
 								.map(e -> quote(SqlUtils.validateSqlString(e.getKey(), ATTRIBUTE)) + " "
@@ -459,7 +459,7 @@ public class RecordDao {
 		List<String> colNames = schema.stream().map(RecordColumn::colName).toList();
 		List<DataTypeMapping> colTypes = schema.stream().map(RecordColumn::typeMapping).toList();
 		return "insert into " + getQualifiedTableName(recordType, instanceId) + "(" + getInsertColList(colNames)
-				+ ") values (" + getInsertParamList(colTypes) + ") " + "on conflict (" + recordTypeIdenifier + ") "
+				+ ") values (" + getInsertParamList(colTypes) + ") " + "on conflict (" + quote(recordTypeIdenifier) + ") "
 				+ (schema.size() == 1 ? "do nothing" : "do update set " + genColUpsertUpdates(colNames, recordTypeIdenifier));
 	}
 
@@ -610,7 +610,7 @@ public class RecordDao {
 	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
 		try {
 			return Optional.ofNullable(namedTemplate.queryForObject(
-					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)
+					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId))
 							+ " = :recordId",
 					new MapSqlParameterSource(RECORD_ID, recordId), new RecordRowMapper(recordType,objectMapper, instanceId)));
 		} catch (EmptyResultDataAccessException e) {
