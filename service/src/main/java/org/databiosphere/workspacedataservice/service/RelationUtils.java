@@ -1,10 +1,8 @@
 package org.databiosphere.workspacedataservice.service;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Preconditions;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
@@ -18,38 +16,63 @@ public class RelationUtils {
 
 	public static final String RELATION_IDENTIFIER = "terra-wds";
 
-	/**
-	 * Determines if any attributes reference another table
-	 *
-	 * @param records
-	 *            - all records whose references to check
-	 * @return Set of Relation for all referencing attributes
-	 */
-	public static RelationCollection findRelations(List<Record> records) {
-		Set<Relation> relations = new HashSet<>();
-		Set<Relation> relationArrays = new HashSet<>();
-		for (Record record : records) {
-			for (Map.Entry<String, Object> entry : record.attributeSet()) {
-				if (isRelationValue(entry.getValue())) {
-					relations.add(new Relation(entry.getKey(), getTypeValue(entry.getValue())));
-					//TODO distinguish between tsv & json source?
-				} else if (entry.getValue() instanceof List<?> listVal && !listVal.isEmpty() && listVal.stream().allMatch(RelationUtils::isRelationValue)){
-					relationArrays.add(new Relation(entry.getKey(), getTypeValueForArray(listVal)));
-				}
-			}
-		}
-		return new RelationCollection(relations, relationArrays);
-	}
+//	//extremely temporary, just to explore what I'll need to do
+//	public static final DataTypeInferer inferer = new DataTypeInferer(new JsonMapper());
+
+//	/**
+//	 * Determines if any attributes reference another table
+//	 *
+//	 * @param records
+//	 *            - all records whose references to check
+//	 * @return Set of Relation for all referencing attributes
+//	 */
+//	public static RelationCollection findRelations(List<Record> records) {
+//		Set<Relation> relations = new HashSet<>();
+//		Set<Relation> relationArrays = new HashSet<>();
+//		for (Record record : records) {
+//			for (Map.Entry<String, Object> entry : record.attributeSet()) {
+//				if (isRelationValue(entry.getValue())) {
+//					relations.add(new Relation(entry.getKey(), getTypeValue(entry.getValue())));
+//					//TODO distinguish between tsv & json source?
+//				} else {
+////					List<String> arr = getArrayFromObj(entry.getValue());
+////					if (arr != null && !arr.isEmpty() && arr.stream().allMatch(RelationUtils::isRelationValue)){
+//					if(entry.getValue() instanceof List<?> arr && !arr.isEmpty() && arr.stream().allMatch(RelationUtils::isRelationValue)){
+//						relationArrays.add(new Relation(entry.getKey(), getTypeValueForArray(arr)));
+//					}
+//				}
+//			}
+//		}
+//		return new RelationCollection(relations, relationArrays);
+//	}
+
+//	public static List<String> getArrayFromObj(Object obj){
+//		if (obj == null) return null;
+//		if (inferer.isArray(obj.toString())){
+//			return Arrays.asList(inferer.getArrayOfType(obj.toString(), String[].class));
+//		}
+//		if (obj instanceof List<?> listval) {
+//			return (List<String>) listval;
+//		}
+//		return null;
+//	}
 
 	public static RecordType getTypeValue(Object obj) {
 		return RecordType.valueOf(splitRelationIdentifier(obj)[0]);
 	}
 
-	public static RecordType getTypeValueForArray(List<?> listVal) {
+	public static RecordType getTypeValueForList(List<?> listVal) {
 		if (listVal.stream().map(RelationUtils::getTypeValue).distinct().count() > 1){
 			throw new InvalidRelationException("All relations in an array must relate to the same table");
 		}
 		return getTypeValue(listVal.get(0));
+	}
+
+	public static RecordType getTypeValueForArray(String[] arr) {
+		if (Arrays.asList(arr).stream().map(RelationUtils::getTypeValue).distinct().count() > 1){
+			throw new InvalidRelationException("All relations in an array must relate to the same table");
+		}
+		return getTypeValue(arr[0]);
 	}
 
 	private static String[] splitRelationIdentifier(Object obj) {

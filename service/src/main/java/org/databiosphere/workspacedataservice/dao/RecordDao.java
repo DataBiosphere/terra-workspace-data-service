@@ -117,10 +117,7 @@ public class RecordDao {
 	@Transactional
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
 			RelationCollection relations, String recordTypePrimaryKey) {
-		//Only make columns for attributes that are not arrays of relations
-		Map<Boolean, Map<String, DataTypeMapping>> relationArraysOrNot = tableInfo.entrySet().stream().collect(Collectors.partitioningBy(
-				entry -> entry.getValue() == DataTypeMapping.ARRAY_OF_RELATION, Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-		String columnDefs = genColumnDefs(instanceId, relationArraysOrNot.get(false), recordTypePrimaryKey);
+		String columnDefs = genColumnDefs(instanceId, tableInfo, recordTypePrimaryKey);
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(recordType, instanceId)
 					+ "( " + columnDefs + (!relations.relations().isEmpty() ? ", " + getFkSql(relations.relations(), instanceId) : "") + ")");

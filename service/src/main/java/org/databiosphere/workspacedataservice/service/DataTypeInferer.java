@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.springframework.util.CollectionUtils;
@@ -281,5 +283,36 @@ public class DataTypeInferer {
 			return false;
 		}
 		return true;
+	}
+
+	/**
+	 * Finds all attributes that reference another table
+	 *
+	 * @param records
+	 *            - all records whose references to check
+	 * @return Set of Relation for all referencing attributes
+	 */
+	public RelationCollection findRelations(List<Record> records) {
+		Set<Relation> relations = new HashSet<>();
+		Set<Relation> relationArrays = new HashSet<>();
+		for (Record record : records) {
+			for (Map.Entry<String, Object> entry : record.attributeSet()) {
+				if (RelationUtils.isRelationValue(entry.getValue())) {
+					relations.add(new Relation(entry.getKey(), RelationUtils.getTypeValue(entry.getValue())));
+					//TODO distinguish between tsv & json source
+				} else {
+//					if (inferTypeForJsonSource(entry.getValue()) == ARRAY_OF_RELATION){
+//						relationArrays.add(new Relation(entry.getKey(), RelationUtils.getTypeValueForArray(getArrayOfType(entry.getValue().toString(), String[].class))));
+//					}
+//					else if(inferTypeForTsvSource(entry.getValue()) == ARRAY_OF_RELATION){
+//						relationArrays.add(new Relation(entry.getKey(), RelationUtils.getTypeValueForList((List<String>) entry.getValue())));
+//					}
+					if (entry.getValue() instanceof List<?> listVal && !listVal.isEmpty() && listVal.stream().allMatch(RelationUtils::isRelationValue)){
+					   relationArrays.add(new Relation(entry.getKey(), RelationUtils.getTypeValueForList(listVal)));
+				   }
+				}
+			}
+		}
+		return new RelationCollection(relations, relationArrays);
 	}
 }

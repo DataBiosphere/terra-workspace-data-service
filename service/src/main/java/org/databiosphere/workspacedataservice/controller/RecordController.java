@@ -345,7 +345,7 @@ public class RecordController {
 	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, RecordType recordType,
 			Map<String, DataTypeMapping> requestSchema) {
 		List<Record> records = Collections.singletonList(newRecord);
-		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records), ReservedNames.RECORD_ID);
+		recordDao.createRecordType(instanceId, requestSchema, recordType, inferer.findRelations(records), ReservedNames.RECORD_ID);
 		recordService.prepareAndUpsert(instanceId, recordType, records, requestSchema);
 	}
 

@@ -39,38 +39,37 @@ public class RecordService {
 
         public void prepareAndUpsert(UUID instanceId, RecordType recordType, List<Record> records,
                                   Map<String, DataTypeMapping> requestSchema, String primaryKey) {
-        //Take out relation arrays
-        Map<Boolean, Map<String, DataTypeMapping>> relationArrays = requestSchema.entrySet().stream().collect(Collectors.partitioningBy(
-                entry -> entry.getValue() == DataTypeMapping.ARRAY_OF_RELATION, Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+            //Identify relation arrays
+            Map<String, DataTypeMapping> relationArrays = requestSchema.entrySet().stream()
+                    .filter(entry -> entry.getValue() == DataTypeMapping.ARRAY_OF_RELATION)
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         Map<Relation, List<RelationValue>> relationArrayValues = new HashMap<>();
         for (Record rec : records) {
             //Cannot use streaming here - collecting a stream to a map cannot accept null values for the map value
-            Map<Boolean, Map<String, Object>> withRelArrs = Map.of(true, new HashMap<>(), false, new HashMap<>());
             for (Map.Entry<String, Object> attribute : rec.attributeSet()){
-                withRelArrs.get(relationArrays.get(true).containsKey(attribute.getKey())).put(attribute.getKey(), attribute.getValue());
-            }
-            rec.setAttributes(new RecordAttributes(withRelArrs.get(false)));
-            for (Map.Entry<String, Object> attr : withRelArrs.get(true).entrySet()) {
                 //TODO A nicer way to do all this?
-                List<String> rels;
-                if (attr.getValue() instanceof List<?>){
-                    rels = (List<String>) attr.getValue();
-                } else {
-                    rels = Arrays.asList(inferer.getArrayOfType(attr.getValue().toString(), String[].class));
-                }
-                Relation relDef = new Relation(attr.getKey(), RelationUtils.getTypeValue(rels.get(0)));
-                List<RelationValue> relList = relationArrayValues.getOrDefault(relDef, new ArrayList<>());
-                for (String r : rels){
-                    if (!RelationUtils.getTypeValue(r).equals(relDef.relationRecordType())){
-                        throw new InvalidRelationException("It looks like you're attempting to assign a relation "
-                                + "to multiple record types");
+                if (relationArrays.containsKey(attribute.getKey())){
+                    List<String> rels;
+                    if (attribute.getValue() instanceof List<?>){
+                        rels = (List<String>) attribute.getValue();
+                    } else {
+                        rels = Arrays.asList(inferer.getArrayOfType(attribute.getValue().toString(), String[].class));
                     }
-                    relList.add(new RelationValue(rec, new Record(RelationUtils.getRelationValue(r), RelationUtils.getTypeValue(r), new RecordAttributes(Collections.emptyMap()))));
+                    //TODO Create/Use relationutils or datatypeinferer method(s)
+                    Relation relDef = new Relation(attribute.getKey(), RelationUtils.getTypeValue(rels.get(0)));
+                    List<RelationValue> relList = relationArrayValues.getOrDefault(relDef, new ArrayList<>());
+                    for (String r : rels){
+                        if (!RelationUtils.getTypeValue(r).equals(relDef.relationRecordType())){
+                            throw new InvalidRelationException("It looks like you're attempting to assign a relation "
+                                    + "to multiple record types");
+                        }
+                        relList.add(new RelationValue(rec, new Record(RelationUtils.getRelationValue(r), RelationUtils.getTypeValue(r), new RecordAttributes(Collections.emptyMap()))));
+                    }
+                    relationArrayValues.put(relDef, relList);
                 }
-                relationArrayValues.put(relDef, relList);
             }
         }
-        recordDao.batchUpsert(instanceId, recordType, records, relationArrays.get(false), primaryKey);
+        recordDao.batchUpsert(instanceId, recordType, records, requestSchema, primaryKey);
         for (Map.Entry<Relation, List<RelationValue>> rel : relationArrayValues.entrySet()) {
             recordDao.insertIntoJoin(instanceId, rel.getKey(), recordType, rel.getValue());
         }

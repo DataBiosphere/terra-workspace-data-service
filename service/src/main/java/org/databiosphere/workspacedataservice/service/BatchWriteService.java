@@ -88,7 +88,7 @@ public class BatchWriteService {
 	private void validateRelationsAndAddColumns(UUID instanceId, RecordType recordType,
 			Map<String, DataTypeMapping> requestSchema, List<Record> records, Map<String, DataTypeMapping> colsToAdd,
 			Map<String, DataTypeMapping> existingSchema) {
-		RelationCollection relations = RelationUtils.findRelations(records);
+		RelationCollection relations = inferer.findRelations(records);
 		List<Relation> existingRelations = recordDao.getRelationCols(instanceId, recordType);
 		Set<String> existingRelationCols = existingRelations.stream().map(Relation::relationColName)
 				.collect(Collectors.toSet());
@@ -217,7 +217,7 @@ public class BatchWriteService {
 	private Map<String, DataTypeMapping> createOrModifyRecordType(UUID instanceId, RecordType recordType,
 			Map<String, DataTypeMapping> schema, List<Record> records, String recordTypePrimaryKey) {
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
-			recordDao.createRecordType(instanceId, schema, recordType, RelationUtils.findRelations(records), recordTypePrimaryKey);
+			recordDao.createRecordType(instanceId, schema, recordType, inferer.findRelations(records), recordTypePrimaryKey);
 		} else {
 			return addOrUpdateColumnIfNeeded(instanceId, recordType, schema,
 					recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType), records);
