@@ -340,7 +340,7 @@ public class RecordDao {
 
 	public Stream<Record> streamAllRecordsForType(UUID instanceId, RecordType recordType) {
 		return templateForStreaming.getJdbcTemplate().queryForStream(
-				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId),
+				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)),
 				new RecordRowMapper(recordType, objectMapper, instanceId));
 	}
 

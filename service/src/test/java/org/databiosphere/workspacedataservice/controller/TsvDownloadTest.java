@@ -9,6 +9,8 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -46,15 +48,15 @@ class TsvDownloadTest {
 		instanceId = UUID.randomUUID();
 		recordController.createInstance(instanceId, version);
 	}
-	@Test
-	void tsvUploadWithChoosenPrimaryKeyFollowedByDownload() throws IOException {
-		StringBuilder tsvContent = new StringBuilder("col_1\tcol_2\tsample_id\n");
-		String recordId = "bazinga";
-		tsvContent.append("Fido\tJerry\t" + recordId + "\n");
+
+	@ParameterizedTest(name = "PK name {0} should be honored")
+	@ValueSource(strings = {"Alfalfa", "buckWheat", "boo-yah", "sample id", "sample_id", "buttHead", "may 12 sample"})
+	void tsvUploadWithChoosenPrimaryKeyFollowedByDownload(String primaryKeyName) throws IOException {
+		String recordId = primaryKeyName + "_val";
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
-				tsvContent.toString().getBytes());
-		String recordType = "tsv-pk-test";
-		recordController.tsvUpload(instanceId, version, RecordType.valueOf(recordType), Optional.of("sample_id"), file);
+				("col_1\tcol_2\t" + primaryKeyName + "\n" + "Fido\tJerry\t" + recordId + "\n").getBytes());
+		String recordType = primaryKeyName+"_rt";
+		recordController.tsvUpload(instanceId, version, RecordType.valueOf(recordType), Optional.of(primaryKeyName), file);
 		ResponseEntity<Resource> stream = restTemplate.exchange("/{instanceId}/tsv/{version}/{recordType}",
 				HttpMethod.GET, new HttpEntity<>(new HttpHeaders()), Resource.class, instanceId, version, recordType);
 		InputStream inputStream = stream.getBody().getInputStream();
@@ -64,7 +66,7 @@ class TsvDownloadTest {
 		Iterable<CSVRecord> records = new CSVParser(reader, csvFormat);
 		Iterator<CSVRecord> iterator = records.iterator();
 		CSVRecord rcd = iterator.next();
-		assertThat(rcd.get("sample_id")).isEqualTo("bazinga");
+		assertThat(rcd.get(primaryKeyName)).isEqualTo(primaryKeyName+"_val");
 		assertThat(rcd.get("col_1")).isEqualTo("Fido");
 		assertThat(rcd.get("col_2")).isEqualTo("Jerry");
 		assertThat(iterator.hasNext()).isFalse();
