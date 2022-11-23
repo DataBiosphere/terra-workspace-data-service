@@ -32,12 +32,9 @@ public class RelationUtils {
 			for (Map.Entry<String, Object> entry : record.attributeSet()) {
 				if (isRelationValue(entry.getValue())) {
 					relations.add(new Relation(entry.getKey(), getTypeValue(entry.getValue())));
-					//TODO distinguish between tsv & json source
+					//TODO distinguish between tsv & json source?
 				} else if (entry.getValue() instanceof List<?> listVal && !listVal.isEmpty() && listVal.stream().allMatch(RelationUtils::isRelationValue)){
-					if (listVal.stream().map(RelationUtils::getTypeValue).distinct().count() > 1){
-						throw new InvalidRelationException("All relations in an array must relate to the same table");
-					}
-					relationArrays.add(new Relation(entry.getKey(), getTypeValue(listVal.get(0))));
+					relationArrays.add(new Relation(entry.getKey(), getTypeValueForArray(listVal)));
 				}
 			}
 		}
@@ -46,6 +43,13 @@ public class RelationUtils {
 
 	public static RecordType getTypeValue(Object obj) {
 		return RecordType.valueOf(splitRelationIdentifier(obj)[0]);
+	}
+
+	public static RecordType getTypeValueForArray(List<?> listVal) {
+		if (listVal.stream().map(RelationUtils::getTypeValue).distinct().count() > 1){
+			throw new InvalidRelationException("All relations in an array must relate to the same table");
+		}
+		return getTypeValue(listVal.get(0));
 	}
 
 	private static String[] splitRelationIdentifier(Object obj) {

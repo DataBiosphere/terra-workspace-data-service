@@ -51,14 +51,14 @@ public class RecordService {
             }
             rec.setAttributes(new RecordAttributes(withRelArrs.get(false)));
             for (Map.Entry<String, Object> attr : withRelArrs.get(true).entrySet()) {
-                //TODO A nicer way to do all this
-                List<String> rels = (List<String>) attr.getValue();
-                Relation relDef = new Relation(attr.getKey(), RelationUtils.getTypeValue(rels.get(0)));
+                //TODO A nicer way to do all this?
+                String[] rels = inferer.getArrayOfType(attr.getValue().toString(), String[].class);
+                Relation relDef = new Relation(attr.getKey(), RelationUtils.getTypeValue(rels[0]));
                 List<RelationValue> relList = relationArrayValues.getOrDefault(relDef, new ArrayList<>());
                 for (String r : rels){
                     if (!RelationUtils.getTypeValue(r).equals(relDef.relationRecordType())){
                         throw new InvalidRelationException("It looks like you're attempting to assign a relation "
-                                + "to multiple rec types");
+                                + "to multiple record types");
                     }
                     relList.add(new RelationValue(rec, new Record(RelationUtils.getRelationValue(r), RelationUtils.getTypeValue(r), new RecordAttributes(Collections.emptyMap()))));
                 }
