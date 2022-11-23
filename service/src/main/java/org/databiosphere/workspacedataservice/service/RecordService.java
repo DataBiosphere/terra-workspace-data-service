@@ -52,8 +52,13 @@ public class RecordService {
             rec.setAttributes(new RecordAttributes(withRelArrs.get(false)));
             for (Map.Entry<String, Object> attr : withRelArrs.get(true).entrySet()) {
                 //TODO A nicer way to do all this?
-                String[] rels = inferer.getArrayOfType(attr.getValue().toString(), String[].class);
-                Relation relDef = new Relation(attr.getKey(), RelationUtils.getTypeValue(rels[0]));
+                List<String> rels;
+                if (attr.getValue() instanceof List<?>){
+                    rels = (List<String>) attr.getValue();
+                } else {
+                    rels = Arrays.asList(inferer.getArrayOfType(attr.getValue().toString(), String[].class));
+                }
+                Relation relDef = new Relation(attr.getKey(), RelationUtils.getTypeValue(rels.get(0)));
                 List<RelationValue> relList = relationArrayValues.getOrDefault(relDef, new ArrayList<>());
                 for (String r : rels){
                     if (!RelationUtils.getTypeValue(r).equals(relDef.relationRecordType())){
