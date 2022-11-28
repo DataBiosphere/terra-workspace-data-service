@@ -140,7 +140,7 @@ public class RecordDao {
 		LOGGER.info("queryForRecords: {}", recordType.getName());
 		return namedTemplate.getJdbcTemplate().query(
 				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by "
-						+ (sortAttribute == null ? cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId) : quote(sortAttribute)) + " " + sortDirection + " limit "
+						+ (sortAttribute == null ? quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)) : quote(sortAttribute)) + " " + sortDirection + " limit "
 						+ pageSize + " offset " + offset,
 				new RecordRowMapper(recordType, objectMapper, instanceId));
 	}
@@ -288,7 +288,7 @@ public class RecordDao {
 		String recordTypePrimaryKey = cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId);
 		try {
 			return namedTemplate.update("delete from " + getQualifiedTableName(recordType, instanceId) + " where "
-					+ recordTypePrimaryKey + " = :recordId", new MapSqlParameterSource(RECORD_ID, recordId)) == 1;
+					+ quote(recordTypePrimaryKey) + " = :recordId", new MapSqlParameterSource(RECORD_ID, recordId)) == 1;
 		} catch (DataIntegrityViolationException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForTableRelation(sqlEx);
@@ -349,7 +349,7 @@ public class RecordDao {
 		return relations.stream()
 				.map(r -> "constraint " + quote("fk_" + SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE))
 						+ " foreign key (" + quote(SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE))
-						+ ") references " + getQualifiedTableName(r.relationRecordType(), instanceId) + "(" + cachedQueryDao.getPrimaryKeyColumn(r.relationRecordType(), instanceId)
+						+ ") references " + getQualifiedTableName(r.relationRecordType(), instanceId) + "(" + quote(cachedQueryDao.getPrimaryKeyColumn(r.relationRecordType(), instanceId))
 						+ ")")
 				.collect(Collectors.joining(", \n"));
 	}
@@ -478,7 +478,7 @@ public class RecordDao {
 		List<String> recordIds = records.stream().map(Record::getId).toList();
 		try {
 			int[] rowCounts = namedTemplate.getJdbcTemplate().batchUpdate(
-					"delete from" + getQualifiedTableName(recordType, instanceId) + " where " + cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId) + " = ?",
+					"delete from" + getQualifiedTableName(recordType, instanceId) + " where " + quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)) + " = ?",
 					new BatchPreparedStatementSetter() {
 						@Override
 						public void setValues(PreparedStatement ps, int i) throws SQLException {
@@ -622,7 +622,7 @@ public class RecordDao {
 		return Boolean.TRUE
 				.equals(namedTemplate.queryForObject(
 						"select exists(select * from " + getQualifiedTableName(recordType, instanceId) + " where "
-								+ cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId) + " = :recordId)",
+								+ quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)) + " = :recordId)",
 						new MapSqlParameterSource(RECORD_ID, recordId), Boolean.class));
 	}
 
