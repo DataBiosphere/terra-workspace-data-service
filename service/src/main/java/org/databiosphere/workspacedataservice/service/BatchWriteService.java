@@ -85,28 +85,43 @@ public class BatchWriteService {
 		return schema;
 	}
 
-	private void validateRelationsAndAddColumns(UUID instanceId, RecordType recordType,
-			Map<String, DataTypeMapping> requestSchema, List<Record> records, Map<String, DataTypeMapping> colsToAdd,
-			Map<String, DataTypeMapping> existingSchema) {
-		RelationCollection relations = inferer.findRelations(records, requestSchema);
-		List<Relation> existingRelations = recordDao.getRelationCols(instanceId, recordType);
+	private void validateRelations(Set<Relation> existingRelations, Set<Relation> newRelations, Map<String, DataTypeMapping> existingSchema){
 		Set<String> existingRelationCols = existingRelations.stream().map(Relation::relationColName)
 				.collect(Collectors.toSet());
 		// look for case where requested relation column already exists as a
 		// non-relational column
-		for (Relation relation : relations.relations()) {
+		for (Relation relation : newRelations) {
 			String col = relation.relationColName();
 			if (!existingRelationCols.contains(col) && existingSchema.containsKey(col)) {
 				throw new InvalidRelationException("It looks like you're attempting to assign a relation "
 						+ "to an existing attribute that was not configured for relations");
 			}
 		}
-		relations.relations().addAll(existingRelations);
+	}
+
+	private void validateRelationsAndAddColumns(UUID instanceId, RecordType recordType,
+			Map<String, DataTypeMapping> requestSchema, List<Record> records, Map<String, DataTypeMapping> colsToAdd,
+			Map<String, DataTypeMapping> existingSchema) {
+		RelationCollection relations = inferer.findRelations(records, requestSchema);
+		RelationCollection existingRelations = new RelationCollection(Set.copyOf(recordDao.getRelationCols(instanceId, recordType)), Set.copyOf(recordDao.getRelationArrayCols(instanceId, recordType)));
+//		// look for case where requested relation column already exists as a
+//		// non-relational column
+		validateRelations(existingRelations.relations(), relations.relations(), existingSchema);
+		// same for relation-array columns
+		validateRelations(existingRelations.relationArrays(), relations.relationArrays(), existingSchema);
+		relations.relations().addAll(existingRelations.relations());
+		relations.relationArrays().addAll(existingRelations.relationArrays());
 		Map<String, List<Relation>> allRefCols = relations.relations().stream()
 				.collect(Collectors.groupingBy(Relation::relationColName));
 		if (allRefCols.values().stream().anyMatch(l -> l.size() > 1)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"Relation attribute can only be assigned to one record type");
+		}
+		Map<String, List<Relation>> allRefArrCols = relations.relationArrays().stream()
+				.collect(Collectors.groupingBy(Relation::relationColName));
+		if (allRefArrCols.values().stream().anyMatch(l -> l.size() > 1)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"Relation array attribute can only be assigned to one record type");
 		}
 		for (Map.Entry<String, DataTypeMapping> entry : colsToAdd.entrySet()) {
 			RecordType referencedRecordType = null;
@@ -116,6 +131,10 @@ public class BatchWriteService {
 				referencedRecordType = allRefCols.get(col).get(0).relationRecordType();
 			}
 			recordDao.addColumn(instanceId, recordType, col, dataType, referencedRecordType);
+			if (allRefArrCols.containsKey(col)){
+				referencedRecordType = allRefArrCols.get(col).get(0).relationRecordType();
+				recordDao.createRelationJoinTable(instanceId, col, recordType, referencedRecordType);
+			}
 			requestSchema.put(col, dataType);
 		}
 	}

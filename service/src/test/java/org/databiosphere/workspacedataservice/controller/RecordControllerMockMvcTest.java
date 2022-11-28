@@ -534,6 +534,26 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void addReferenceArrayColumnToExistingType() throws Exception {
+		RecordType referencedType = RecordType.valueOf("ref_participants");
+		RecordType referringType = RecordType.valueOf("ref_samples");
+		createSomeRecords(referencedType, 3);
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(RecordAttributes.empty()))))
+				.andExpect(status().isCreated());
+		RecordAttributes attributes = RecordAttributes.empty();
+		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(referencedType, "record_" + i)).collect(Collectors.toList());
+		attributes.putAttribute("rel-arr", relArr);
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						referringType, "record_1").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
+				.andExpect(status().isCreated()).andExpect(jsonPath("$.attributes.rel-arr", is(relArr)));
+
+	}
+
+	@Test
+	@Transactional
 	void createRecordWithReferenceArrayMissingTable() throws Exception {
 		RecordType referencedType = RecordType.valueOf("ref_participants");
 		RecordType referringType = RecordType.valueOf("ref_samples");
@@ -954,6 +974,31 @@ class RecordControllerMockMvcTest {
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk());
 		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				newBatchRecordType, recordId).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
+	}
+
+	@Test
+	@Transactional
+	void batchWriteWithRelationsShouldSucceed() throws Exception {
+		RecordType referenced = RecordType.valueOf("referenced");
+		createSomeRecords(referenced, 4);
+		String recordId = "foo";
+		String newBatchRecordType = "new-record-type";
+		List<BatchOperation> ops = new ArrayList<>();
+		for (int i = 0; i < 3; i++){
+			Record record = new Record(recordId+i, RecordType.valueOf(newBatchRecordType),
+					new RecordAttributes(Map.of("relArr", List.of(RelationUtils.createRelationString(referenced, "record_"+i), RelationUtils.createRelationString(referenced, "record_"+(i+1))))));
+			ops.add(new BatchOperation(record, OperationType.UPSERT));
+		}
+		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, newBatchRecordType)
+						.content(mapper.writeValueAsString(ops))
+						.contentType(MediaType.APPLICATION_JSON)).andExpect(jsonPath("$.recordsModified", is(3)))
+				.andExpect(jsonPath("$.message", is("Huzzah"))).andExpect(status().isOk());
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				newBatchRecordType, recordId+"0").contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+		RecordResponse actualSingle = mapper.readValue(mvcResult.getResponse().getContentAsString(),
+				RecordResponse.class);
+		assertEquals(1, actualSingle.recordAttributes().attributeSet().size());
+		assertTrue(actualSingle.recordAttributes().getAttributeValue("relArr").toString().contains(RelationUtils.createRelationString(referenced, "record_1")));
 	}
 
 	@Test

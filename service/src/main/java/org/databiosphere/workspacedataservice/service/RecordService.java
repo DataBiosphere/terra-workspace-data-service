@@ -54,7 +54,7 @@ public class RecordService {
         Map<Relation, List<RelationValue>> relationArrayValues = new HashMap<>();
         for (Record rec : records) {
             for (Map.Entry<String, Object> attribute : rec.attributeSet()){
-                if (relationArrays.containsKey(attribute.getKey())){
+                if (relationArrays.containsKey(attribute.getKey()) && attribute.getValue() != null){
                     //How to read relation list depends on its source, which we don't know here so we have to check
                     List<String> rels;
                     if (attribute.getValue() instanceof List<?>){
