@@ -89,6 +89,7 @@ class RecordDaoTest {
 		recordDao.batchUpsert(instanceId, referencer, Collections.singletonList(referencerRecord), schema, sample_id);
 		recordDao.batchDelete(instanceId, referencer, Collections.singletonList(referencerRecord));
 		recordDao.batchDelete(instanceId, referencedRt, Collections.singletonList(testRecord));
+		assertTrue(recordDao.getSingleRecord(instanceId, referencer, recordId).isEmpty());
 	}
 
 	@Test
