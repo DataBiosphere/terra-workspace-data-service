@@ -37,41 +37,51 @@ public class RecordService {
         prepareAndUpsert(instanceId, recordType, records, requestSchema, RECORD_ID);
     }
 
-        public void prepareAndUpsert(UUID instanceId, RecordType recordType, List<Record> records,
-                                  Map<String, DataTypeMapping> requestSchema, String primaryKey) {
-            //Identify relation arrays
-            Map<String, DataTypeMapping> relationArrays = requestSchema.entrySet().stream()
-                    .filter(entry -> entry.getValue() == DataTypeMapping.ARRAY_OF_RELATION)
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    public void prepareAndUpsert(UUID instanceId, RecordType recordType, List<Record> records,
+                              Map<String, DataTypeMapping> requestSchema, String primaryKey) {
+        //Identify relation arrays
+        Map<String, DataTypeMapping> relationArrays = requestSchema.entrySet().stream()
+                .filter(entry -> entry.getValue() == DataTypeMapping.ARRAY_OF_RELATION)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<Relation, List<RelationValue>> relationArrayValues = getAllRelationArrayValues(records, relationArrays);
+        recordDao.batchUpsert(instanceId, recordType, records, requestSchema, primaryKey);
+        for (Map.Entry<Relation, List<RelationValue>> rel : relationArrayValues.entrySet()) {
+            recordDao.insertIntoJoin(instanceId, rel.getKey(), recordType, rel.getValue());
+        }
+    }
+
+    private Map<Relation, List<RelationValue>> getAllRelationArrayValues(List<Record> records, Map<String, DataTypeMapping> relationArrays){
         Map<Relation, List<RelationValue>> relationArrayValues = new HashMap<>();
         for (Record rec : records) {
-            //Cannot use streaming here - collecting a stream to a map cannot accept null values for the map value
             for (Map.Entry<String, Object> attribute : rec.attributeSet()){
-                //TODO A nicer way to do all this?
                 if (relationArrays.containsKey(attribute.getKey())){
+                    //How to read relation list depends on its source, which we don't know here so we have to check
                     List<String> rels;
                     if (attribute.getValue() instanceof List<?>){
                         rels = (List<String>) attribute.getValue();
                     } else {
                         rels = Arrays.asList(inferer.getArrayOfType(attribute.getValue().toString(), String[].class));
                     }
-                    //TODO Create/Use relationutils or datatypeinferer method(s)
                     Relation relDef = new Relation(attribute.getKey(), RelationUtils.getTypeValue(rels.get(0)));
+                    checkAllRefsMatch(rels, relDef.relationRecordType());
                     List<RelationValue> relList = relationArrayValues.getOrDefault(relDef, new ArrayList<>());
-                    for (String r : rels){
-                        if (!RelationUtils.getTypeValue(r).equals(relDef.relationRecordType())){
-                            throw new InvalidRelationException("It looks like you're attempting to assign a relation "
-                                    + "to multiple record types");
-                        }
-                        relList.add(new RelationValue(rec, new Record(RelationUtils.getRelationValue(r), RelationUtils.getTypeValue(r), new RecordAttributes(Collections.emptyMap()))));
-                    }
+                    relList.addAll(rels.stream().map(r -> getRelVal(rec, r)).toList());
                     relationArrayValues.put(relDef, relList);
                 }
             }
         }
-        recordDao.batchUpsert(instanceId, recordType, records, requestSchema, primaryKey);
-        for (Map.Entry<Relation, List<RelationValue>> rel : relationArrayValues.entrySet()) {
-            recordDao.insertIntoJoin(instanceId, rel.getKey(), recordType, rel.getValue());
+        return relationArrayValues;
+    }
+
+    private RelationValue getRelVal(Record fromRecord, String toString){
+        return new RelationValue(fromRecord, new Record(RelationUtils.getRelationValue(toString), RelationUtils.getTypeValue(toString), new RecordAttributes(Collections.emptyMap())));
+    }
+
+
+    private void checkAllRefsMatch(List<String> rels, RecordType typeToMatch){
+        if (!rels.stream().map(RelationUtils::getTypeValue).allMatch(r -> r.equals(typeToMatch))){
+            throw new InvalidRelationException("It looks like you're attempting to assign a relation "
+                    + "to multiple record types");
         }
     }
 

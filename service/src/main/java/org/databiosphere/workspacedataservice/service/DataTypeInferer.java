@@ -292,24 +292,20 @@ public class DataTypeInferer {
 	 *            - all records whose references to check
 	 * @return Set of Relation for all referencing attributes
 	 */
-	public RelationCollection findRelations(List<Record> records) {
+	public RelationCollection findRelations(List<Record> records, Map<String, DataTypeMapping> schema) {
 		Set<Relation> relations = new HashSet<>();
 		Set<Relation> relationArrays = new HashSet<>();
 		for (Record record : records) {
 			for (Map.Entry<String, Object> entry : record.attributeSet()) {
-				if (RelationUtils.isRelationValue(entry.getValue())) {
+				if (schema.get(entry.getKey()) == RELATION){
 					relations.add(new Relation(entry.getKey(), RelationUtils.getTypeValue(entry.getValue())));
-					//TODO distinguish between tsv & json source
-				} else {
-//					if (inferTypeForJsonSource(entry.getValue()) == ARRAY_OF_RELATION){
-//						relationArrays.add(new Relation(entry.getKey(), RelationUtils.getTypeValueForArray(getArrayOfType(entry.getValue().toString(), String[].class))));
-//					}
-//					else if(inferTypeForTsvSource(entry.getValue()) == ARRAY_OF_RELATION){
-//						relationArrays.add(new Relation(entry.getKey(), RelationUtils.getTypeValueForList((List<String>) entry.getValue())));
-//					}
-					if (entry.getValue() instanceof List<?> listVal && !listVal.isEmpty() && listVal.stream().allMatch(RelationUtils::isRelationValue)){
-					   relationArrays.add(new Relation(entry.getKey(), RelationUtils.getTypeValueForList(listVal)));
-				   }
+					//TODO deal with tsv vs json source a bit smarter
+				} else if (schema.get(entry.getKey()) == ARRAY_OF_RELATION){
+					if (entry.getValue() instanceof List<?> listVal) { //from a json source,
+					    relationArrays.add(new Relation(entry.getKey(), RelationUtils.getTypeValueForList(listVal)));
+					} else { //from a tsv source
+						relationArrays.add(new Relation(entry.getKey(), RelationUtils.getTypeValueForArray(getArrayOfType(entry.getValue().toString(), String[].class))));
+					}
 				}
 			}
 		}

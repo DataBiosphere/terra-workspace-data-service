@@ -252,6 +252,36 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void tsvUploadWithRelationsShouldSucceed() throws Exception {
+		RecordType refType = RecordType.valueOf("refType");
+		createSomeRecords(refType, 3);
+
+		StringBuilder tsvContent = new StringBuilder("sys_name\trel\trelArr\n");
+		String singleRel = RelationUtils.createRelationString(refType, "record_0");
+		String relArr = "[\"" + RelationUtils.createRelationString(refType, "record_1") + "\", \"" + RelationUtils.createRelationString(refType, "record_2") + "\"]";
+		for (int i = 0; i < 5 + 1; i++) {
+			tsvContent.append(i + "\t" +  singleRel + "\t" + relArr + "\n");
+		}
+		MockMultipartFile file = new MockMultipartFile("records", "relation.tsv", MediaType.TEXT_PLAIN_VALUE,
+				tsvContent.toString().getBytes());
+
+		RecordType tsvRelationType = RecordType.valueOf("tsv_relations");
+
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, tsvRelationType)
+				.file(file)).andExpect(status().isOk());
+
+ 		MvcResult result = mockMvc.perform(post("/{instanceId}/search/{version}/{recordType}", instanceId, versionId, tsvRelationType))
+				.andExpect(status().isOk()).andReturn();
+
+		RecordQueryResponse response = mapper.readValue(result.getResponse().getContentAsString(),
+				RecordQueryResponse.class);
+		assertEquals(6, response.totalRecords());
+		RecordAttributes exampleAttributes = response.records().get(0).recordAttributes();
+		assertEquals(singleRel, exampleAttributes.getAttributeValue("rel"));
+	}
+
+	@Test
+	@Transactional
 	void nullAndNonNullArraysShouldChooseProperType() throws Exception {
 		StringBuilder tsvContent = new StringBuilder("sys_name\tarray\n");
 		//empty string/nulls

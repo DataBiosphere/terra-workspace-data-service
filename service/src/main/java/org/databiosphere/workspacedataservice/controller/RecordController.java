@@ -174,32 +174,13 @@ public class RecordController {
 			return new RecordQueryResponse(searchRequest, Collections.emptyList(), totalRecords);
 		}
 		LOGGER.info("queryForEntities: {}", recordType.getName());
-		List<Record> records = queryForRecords(recordType, searchRequest.getLimit(),
+		List<Record> records = recordDao.queryForRecords(recordType, searchRequest.getLimit(),
 				searchRequest.getOffset(), searchRequest.getSort().name().toLowerCase(),
 				searchRequest.getSortAttribute(), instanceId);
 		List<RecordResponse> recordList = records.stream().map(
 				r -> new RecordResponse(r.getId(), r.getRecordType(), r.getAttributes()))
 				.toList();
 		return new RecordQueryResponse(searchRequest, recordList, totalRecords);
-	}
-
-	private List<Record> queryForRecords(RecordType recordType, int pageSize, int offset, String sortDirection,
-										 String sortAttribute, UUID instanceId){
-		List<Relation> relationArrays = recordDao.getRelationArrayCols(instanceId, recordType);
-		//TODO: Sort by relation array attribute
-		//For now, defaulting to sorting by primary key if sort attribute is a relation array column
-		if (relationArrays.stream().map(Relation::relationColName).toList().contains(sortAttribute)){
-			sortAttribute = null;
-		}
-		List<Record> records = recordDao.queryForRecords(recordType, pageSize,
-				offset, sortDirection, sortAttribute, instanceId);
-		for (Record rec : records){
-			for (Relation rel : relationArrays){
-				List<String> relArr = recordDao.getRelationArrayValues(instanceId, rel, rec);
-				rec.setAttributeValue(rel.relationColName(), relArr);
-			}
-		}
-		return records;
 	}
 
 	@PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
@@ -345,7 +326,7 @@ public class RecordController {
 	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, RecordType recordType,
 			Map<String, DataTypeMapping> requestSchema) {
 		List<Record> records = Collections.singletonList(newRecord);
-		recordDao.createRecordType(instanceId, requestSchema, recordType, inferer.findRelations(records), ReservedNames.RECORD_ID);
+		recordDao.createRecordType(instanceId, requestSchema, recordType, inferer.findRelations(records, requestSchema), ReservedNames.RECORD_ID);
 		recordService.prepareAndUpsert(instanceId, recordType, records, requestSchema);
 	}
 
