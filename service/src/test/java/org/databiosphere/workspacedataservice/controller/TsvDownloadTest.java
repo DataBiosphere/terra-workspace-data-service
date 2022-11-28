@@ -52,9 +52,8 @@ class TsvDownloadTest {
 	@ParameterizedTest(name = "PK name {0} should be honored")
 	@ValueSource(strings = {"Alfalfa", "buckWheat", "boo-yah", "sample id", "sample_id", "buttHead", "may 12 sample"})
 	void tsvUploadWithChoosenPrimaryKeyFollowedByDownload(String primaryKeyName) throws IOException {
-		String recordId = primaryKeyName + "_val";
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
-				("col_1\tcol_2\t" + primaryKeyName + "\n" + "Fido\tJerry\t" + recordId + "\n").getBytes());
+				("col_1\tcol_2\t" + primaryKeyName + "\n" + "Fido\tJerry\t" + primaryKeyName + "\n").getBytes());
 		String recordType = primaryKeyName+"_rt";
 		recordController.tsvUpload(instanceId, version, RecordType.valueOf(recordType), Optional.of(primaryKeyName), file);
 		ResponseEntity<Resource> stream = restTemplate.exchange("/{instanceId}/tsv/{version}/{recordType}",
@@ -66,7 +65,7 @@ class TsvDownloadTest {
 		Iterable<CSVRecord> records = new CSVParser(reader, csvFormat);
 		Iterator<CSVRecord> iterator = records.iterator();
 		CSVRecord rcd = iterator.next();
-		assertThat(rcd.get(primaryKeyName)).isEqualTo(primaryKeyName+"_val");
+		assertThat(rcd.get(primaryKeyName)).isEqualTo(primaryKeyName);
 		assertThat(rcd.get("col_1")).isEqualTo("Fido");
 		assertThat(rcd.get("col_2")).isEqualTo("Jerry");
 		assertThat(iterator.hasNext()).isFalse();
