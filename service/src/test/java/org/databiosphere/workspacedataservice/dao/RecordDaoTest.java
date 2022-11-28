@@ -39,6 +39,11 @@ class RecordDaoTest {
 		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType, Collections.emptySet(), PRIMARY_KEY);
 	}
 
+	@AfterEach
+	void cleanUp(){
+		recordDao.dropSchema(instanceId);
+	}
+
 
 	@Test
 	@Transactional
