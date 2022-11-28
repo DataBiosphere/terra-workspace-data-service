@@ -295,8 +295,8 @@ public class DataTypeInferer {
 	public RelationCollection findRelations(List<Record> records, Map<String, DataTypeMapping> schema) {
 		Set<Relation> relations = new HashSet<>();
 		Set<Relation> relationArrays = new HashSet<>();
-		for (Record record : records) {
-			for (Map.Entry<String, Object> entry : record.attributeSet()) {
+		for (Record rec : records) {
+			for (Map.Entry<String, Object> entry : rec.attributeSet()) {
 				if (schema.get(entry.getKey()) == RELATION){
 					relations.add(new Relation(entry.getKey(), RelationUtils.getTypeValue(entry.getValue())));
 					//TODO deal with tsv vs json source a bit smarter

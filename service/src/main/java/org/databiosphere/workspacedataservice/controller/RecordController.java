@@ -76,7 +76,7 @@ public class RecordController {
 		RecordAttributes incomingAtts = recordRequest.recordAttributes();
 		RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAtts).getAttributes();
 		Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts, InBoundDataSource.JSON);
-		Map<String, DataTypeMapping> existingTableSchema = getFullTableSchema(instanceId, recordType);
+		Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
 		singleRecord.setAttributes(allAttrs);
 		List<Record> records = Collections.singletonList(singleRecord);
 		Map<String, DataTypeMapping> updatedSchema = batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType,
@@ -165,7 +165,7 @@ public class RecordController {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"Limit must be more than 0 and can't exceed " + MAX_RECORDS + ", and offset must be positive.");
 		}
-		if (searchRequest.getSortAttribute() != null && !getFullTableSchema(instanceId, recordType)
+		if (searchRequest.getSortAttribute() != null && !recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType)
 				.keySet().contains(searchRequest.getSortAttribute())) {
 			throw new MissingObjectException("Requested sort attribute");
 		}
@@ -198,7 +198,7 @@ public class RecordController {
 			createRecordTypeAndInsertRecords(instanceId, newRecord, recordType, requestSchema);
 			return new ResponseEntity<>(response, status);
 		} else {
-			Map<String, DataTypeMapping> existingTableSchema = getFullTableSchema(instanceId, recordType);
+			Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
 			// null out any attributes that already exist but aren't in the request
 			existingTableSchema.keySet().forEach(attr -> attributesInRequest.putAttributeIfAbsent(attr, null));
 			if (recordDao.recordExists(instanceId, recordType, recordId)) {
@@ -279,7 +279,7 @@ public class RecordController {
 	}
 
 	private RecordTypeSchema getSchemaDescription(UUID instanceId, RecordType recordType) {
-		Map<String, DataTypeMapping> schema = getFullTableSchema(instanceId, recordType);
+		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
 		Map<String, RecordType> relations = recordDao.getRelationCols(instanceId, recordType).stream()
 				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
 		List<AttributeSchema> attrSchema = schema.entrySet().stream().sorted(Map.Entry.comparingByKey())
@@ -328,15 +328,6 @@ public class RecordController {
 		List<Record> records = Collections.singletonList(newRecord);
 		recordDao.createRecordType(instanceId, requestSchema, recordType, inferer.findRelations(records, requestSchema), ReservedNames.RECORD_ID);
 		recordService.prepareAndUpsert(instanceId, recordType, records, requestSchema);
-	}
-
-	private Map<String, DataTypeMapping> getFullTableSchema(UUID instanceId, RecordType recordType){
-		List<Relation> relationArrays = recordDao.getRelationArrayCols(instanceId, recordType);
-		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
-		for (Relation rel : relationArrays){
-			schema.put(rel.relationColName(), DataTypeMapping.ARRAY_OF_RELATION);
-		}
-		return schema;
 	}
 
 }

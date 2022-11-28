@@ -165,7 +165,7 @@ public class RecordDao {
 		Set<Relation> relations = Set.of(new Relation(fromCol, referringRecordType), new Relation(toCol, referencedRecordType));
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedJoinTableName(instanceId, tableName, referringRecordType) +
-					"( " + columnDefs +  (!relations.isEmpty() ? ", " + getFkSql(relations, instanceId) : "") + ")");
+					"( " + columnDefs + ", " + getFkSql(relations, instanceId) + ")");
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingTable(sqlEx);
