@@ -149,7 +149,7 @@ public class RecordController {
 	}
 
 	@PostMapping("/{instanceid}/search/{version}/{recordType}")
-	public RecordQueryResponse queryForEntities(@PathVariable("instanceid") UUID instanceId,
+	public RecordQueryResponse queryForRecords(@PathVariable("instanceid") UUID instanceId,
 			@PathVariable("recordType") RecordType recordType,
 			@PathVariable("version") String version,
 			@RequestBody(required = false) SearchRequest searchRequest) {

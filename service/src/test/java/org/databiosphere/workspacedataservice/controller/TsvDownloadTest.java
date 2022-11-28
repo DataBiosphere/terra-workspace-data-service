@@ -17,6 +17,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.servlet.function.ServerRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,8 +58,9 @@ class TsvDownloadTest {
 				("col_1\tcol_2\t" + primaryKeyName + "\n" + "Fido\tJerry\t" + primaryKeyName + "_val\n").getBytes());
 		String recordType = primaryKeyName+"_rt";
 		recordController.tsvUpload(instanceId, version, RecordType.valueOf(recordType), Optional.of(primaryKeyName), file);
+		HttpHeaders headers = new HttpHeaders();
 		ResponseEntity<Resource> stream = restTemplate.exchange("/{instanceId}/tsv/{version}/{recordType}",
-				HttpMethod.GET, new HttpEntity<>(new HttpHeaders()), Resource.class, instanceId, version, recordType);
+				HttpMethod.GET, new HttpEntity<>(headers), Resource.class, instanceId, version, recordType);
 		InputStream inputStream = stream.getBody().getInputStream();
 		CSVFormat csvFormat = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).setDelimiter("\t")
 				.setQuoteMode(QuoteMode.MINIMAL).build();
@@ -71,8 +73,6 @@ class TsvDownloadTest {
 		assertThat(rcd.get("col_2")).isEqualTo("Jerry");
 		assertThat(iterator.hasNext()).isFalse();
 		reader.close();
-		assertEquals(restTemplate.exchange("/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.GET,
-				new HttpEntity<>(new HttpHeaders()), String.class, instanceId, version, recordType, primaryKeyName+"_val").getStatusCodeValue(), HttpStatus.OK.value());
 	}
 
 	@Test
