@@ -198,10 +198,8 @@ public class RecordDao {
 	public List<String> getAllAttributeNames(UUID instanceId, RecordType recordType) {
 		MapSqlParameterSource params = new MapSqlParameterSource(INSTANCE_ID, instanceId.toString());
 		params.addValue("tableName", recordType.getName());
-		List<String> mostColumns = namedTemplate.queryForList("select column_name from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
+		return namedTemplate.queryForList("select column_name from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
 						+ "and table_name = :tableName", params, String.class);
-		mostColumns.addAll(getRelationArrayCols(instanceId, recordType).stream().map(Relation::relationColName).toList());
-		return mostColumns;
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchemaLessPrimaryKey(UUID instanceId, RecordType recordType) {

@@ -93,24 +93,9 @@ public class RecordController {
 		validateVersion(version);
 		validateInstance(instanceId);
 		checkRecordTypeExists(instanceId, recordType);
-		Record result = getSingleRecord(instanceId, recordType, recordId);
+		Record result = recordDao.getSingleRecord(instanceId, recordType, recordId).orElseThrow(() -> new MissingObjectException("Record"));
 		RecordResponse response = new RecordResponse(recordId, recordType, result.getAttributes());
 		return new ResponseEntity<>(response, HttpStatus.OK);
-	}
-
-	private Record getSingleRecord(UUID instanceId, RecordType recordType, String recordId){
-		Record result = recordDao
-				.getSingleRecord(instanceId, recordType, recordId)
-				.orElseThrow(() -> new MissingObjectException("Record"));
-		List<Relation> relationArrays = recordDao.getRelationArrayCols(instanceId, recordType);
-		if (relationArrays.isEmpty()){
-			return result;
-		}
-		for (Relation rel : relationArrays){
-			List<String> relArr = recordDao.getRelationArrayValues(instanceId, rel, result);
-			result.setAttributeValue(rel.relationColName(), relArr);
-		}
-		return result;
 	}
 
 	@PostMapping( "/{instanceId}/tsv/{version}/{recordType}")
