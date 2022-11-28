@@ -29,6 +29,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.in;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class TsvDownloadTest {
@@ -53,7 +54,7 @@ class TsvDownloadTest {
 	@ValueSource(strings = {"Alfalfa", "buckWheat", "boo-yah", "sample id", "sample_id", "buttHead", "may 12 sample"})
 	void tsvUploadWithChoosenPrimaryKeyFollowedByDownload(String primaryKeyName) throws IOException {
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
-				("col_1\tcol_2\t" + primaryKeyName + "\n" + "Fido\tJerry\t" + primaryKeyName + "\n").getBytes());
+				("col_1\tcol_2\t" + primaryKeyName + "\n" + "Fido\tJerry\t" + primaryKeyName + "_val\n").getBytes());
 		String recordType = primaryKeyName+"_rt";
 		recordController.tsvUpload(instanceId, version, RecordType.valueOf(recordType), Optional.of(primaryKeyName), file);
 		ResponseEntity<Resource> stream = restTemplate.exchange("/{instanceId}/tsv/{version}/{recordType}",
@@ -65,11 +66,13 @@ class TsvDownloadTest {
 		Iterable<CSVRecord> records = new CSVParser(reader, csvFormat);
 		Iterator<CSVRecord> iterator = records.iterator();
 		CSVRecord rcd = iterator.next();
-		assertThat(rcd.get(primaryKeyName)).isEqualTo(primaryKeyName);
+		assertThat(rcd.get(primaryKeyName)).isEqualTo(primaryKeyName+"_val");
 		assertThat(rcd.get("col_1")).isEqualTo("Fido");
 		assertThat(rcd.get("col_2")).isEqualTo("Jerry");
 		assertThat(iterator.hasNext()).isFalse();
 		reader.close();
+		assertEquals(restTemplate.exchange("/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.GET,
+				new HttpEntity<>(new HttpHeaders()), String.class, instanceId, version, recordType, primaryKeyName+"_val").getStatusCodeValue(), HttpStatus.OK.value());
 	}
 
 	@Test
