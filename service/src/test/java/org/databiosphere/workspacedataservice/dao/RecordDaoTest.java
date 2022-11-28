@@ -206,7 +206,6 @@ class RecordDaoTest {
 	}
 
 	@Test
-	@Transactional
 	void testDeleteRelatedRecord() {
 		// make sure columns are in recordType, as this will be taken care of before we
 		// get to the dao
@@ -281,7 +280,6 @@ class RecordDaoTest {
 	}
 
 	@Test
-	@Transactional
 	void testDeleteRecordTypeWithRelation() {
 		RecordType recordTypeName = recordType;
 		RecordType referencedType = RecordType.valueOf("referencedType");
