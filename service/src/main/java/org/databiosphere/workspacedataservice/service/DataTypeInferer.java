@@ -16,10 +16,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
 
@@ -45,6 +42,7 @@ public class DataTypeInferer {
 			if (rcd.getAttributes() == null) {
 				continue;
 			}
+			System.out.println(rcd.getAttributes());
 			Map<String, DataTypeMapping> inferred = inferTypes(rcd.getAttributes(), dataSource);
 			for (Map.Entry<String, DataTypeMapping> entry : inferred.entrySet()) {
 				DataTypeMapping inferredType = entry.getValue();
@@ -58,7 +56,9 @@ public class DataTypeInferer {
 		return result;
 	}
 
+	// TODO: Aaron
 	public DataTypeMapping selectBestType(DataTypeMapping existing, DataTypeMapping newMapping) {
+
 		if (existing == newMapping) {
 			return existing;
 		}
@@ -75,7 +75,10 @@ public class DataTypeInferer {
 		if(newMapping == ARRAY_OF_DATE_TIME && existing == ARRAY_OF_DATE){
 			return ARRAY_OF_DATE_TIME;
 		}
-		if(newMapping.isArrayType() && existing.isArrayType()) {
+		if(newMapping.isArrayType()) {
+			if (existing.isArrayType()) {
+				return ARRAY_OF_STRING;
+			}
 			return ARRAY_OF_STRING;
 		}
 		return STRING;
@@ -127,6 +130,7 @@ public class DataTypeInferer {
 			return JSON;
 		}
 		if(isArray(sVal)){
+			// TODO: Aaron
 			return findArrayTypeFromJson(sVal);
 		}
 		return STRING;
@@ -216,6 +220,7 @@ public class DataTypeInferer {
 		return jsonNode != null && jsonNode.isArray();
 	}
 
+	// TODO: Aaron
 	private <T> DataTypeMapping findArrayType(List<T> list){
 		if(CollectionUtils.isEmpty(list)){
 			return EMPTY_ARRAY;
@@ -234,6 +239,7 @@ public class DataTypeInferer {
 	}
 
 	private DataTypeMapping findArrayTypeFromJson(String val)  {
+		// TODO: Aaron
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Boolean[].class))){
 			return ARRAY_OF_BOOLEAN;
 		}
@@ -248,6 +254,12 @@ public class DataTypeInferer {
 			return ARRAY_OF_DATE;
 		}
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, String[].class))){
+			String lowerCaseString = val.toLowerCase();
+			if (lowerCaseString.contains("true") || lowerCaseString.contains("false")) {
+				// try to assume that it is a boolean array
+				int i = 1;
+				return ARRAY_OF_BOOLEAN;
+			}
 			return ARRAY_OF_STRING;
 		}
 		if(getArrayOfType(val, String[].class) != null){

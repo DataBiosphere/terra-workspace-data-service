@@ -172,6 +172,8 @@ public class BatchWriteService {
 	private Map<String, DataTypeMapping> createOrUpdateSchema(UUID instanceId, RecordType recordType,
 			List<Record> batch) {
 		// TODO: Aaron
+		System.out.println(4324234);
+		System.out.println(batch);
 		Map<String, DataTypeMapping> schema = inferer.inferTypes(batch, InBoundDataSource.TSV);
 		return createOrModifyRecordType(instanceId, recordType, schema, batch);
 	}
