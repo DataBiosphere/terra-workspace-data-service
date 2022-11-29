@@ -618,6 +618,10 @@ public class RecordDao {
 		}
 	}
 
+	public String getPrimaryKeyColumn(RecordType type, UUID instanceId){
+		return cachedQueryDao.getPrimaryKeyColumn(type, instanceId);
+	}
+
 	public boolean recordExists(UUID instanceId, RecordType recordType, String recordId) {
 		return Boolean.TRUE
 				.equals(namedTemplate.queryForObject(
