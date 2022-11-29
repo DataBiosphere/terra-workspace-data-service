@@ -16,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -31,8 +32,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class TsvInputFormatsTest {
 
-//	@Autowired
-//	private ObjectMapper mapper;
 	@Autowired
 	private MockMvc mockMvc;
 	@Autowired
@@ -60,8 +59,6 @@ class TsvInputFormatsTest {
 	}
 
 	private static BigDecimal[] toBigDecimals(int[] nums) {
-		System.out.println(nums);
-		System.out.println(Arrays.stream(nums).mapToObj(BigDecimal::valueOf).toList());
 		return Arrays.stream(nums).mapToObj(BigDecimal::valueOf).toList().toArray(new BigDecimal[nums.length]);
 	}
 
@@ -77,11 +74,11 @@ class TsvInputFormatsTest {
 //				Arguments.of("TRUE", Boolean.TRUE),
 //				Arguments.of("tRuE", Boolean.TRUE),
 //				Arguments.of("True", Boolean.TRUE),
-//				Arguments.of("false", Boolean.FALSE),
+//				Arguments.of("false", Boolean.FALSE)
 //				Arguments.of("FALSE", Boolean.FALSE),
 //				Arguments.of("fAlSe", Boolean.FALSE),
 //				Arguments.of("False", Boolean.FALSE),
-				Arguments.of("[true, TRUE, tRuE]", new Boolean[]{Boolean.TRUE, Boolean.TRUE, Boolean.TRUE}) // TODO: fails
+				Arguments.of("[\"true\", \"TRUE\", \"tRuE\"]", new Boolean[]{Boolean.TRUE, Boolean.TRUE, Boolean.TRUE}) // TODO: fails
 //				Arguments.of("5", BigDecimal.valueOf(5)),
 //				Arguments.of("5.67", BigDecimal.valueOf(5.67d)),
 //				Arguments.of("005", BigDecimal.valueOf(5)),

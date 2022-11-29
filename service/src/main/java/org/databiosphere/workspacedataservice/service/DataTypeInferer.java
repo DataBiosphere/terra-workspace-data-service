@@ -42,7 +42,6 @@ public class DataTypeInferer {
 			if (rcd.getAttributes() == null) {
 				continue;
 			}
-			System.out.println(rcd.getAttributes());
 			Map<String, DataTypeMapping> inferred = inferTypes(rcd.getAttributes(), dataSource);
 			for (Map.Entry<String, DataTypeMapping> entry : inferred.entrySet()) {
 				DataTypeMapping inferredType = entry.getValue();
@@ -98,13 +97,14 @@ public class DataTypeInferer {
 		if (StringUtils.isEmpty((String) val)) {
 			return NULL;
 		}
-		String sVal = val.toString();
 
 		if (RelationUtils.isRelationValue(val)) {
 			return STRING;
 		}
 		// when we load from TSV, numbers are converted to strings, we need to go back
 		// to numbers
+		String sVal = val.toString();
+
 		if (isNumericValue(sVal)) {
 			return NUMBER;
 		}
@@ -130,7 +130,6 @@ public class DataTypeInferer {
 			return JSON;
 		}
 		if(isArray(sVal)){
-			// TODO: Aaron
 			return findArrayTypeFromJson(sVal);
 		}
 		return STRING;
@@ -154,6 +153,7 @@ public class DataTypeInferer {
 		// if there are non-null values in the batch this return value will let those
 		// values determine the
 		// underlying SQL data type
+
 		if (val == null) {
 			return NULL;
 		}
@@ -169,6 +169,7 @@ public class DataTypeInferer {
 		if (RelationUtils.isRelationValue(val)) {
 			return STRING;
 		}
+
 		if(val instanceof List<?> listVal){
 			return findArrayType(listVal);
 		}
@@ -216,6 +217,9 @@ public class DataTypeInferer {
 	}
 
 	public boolean isArray(String val){
+		if (val.toLowerCase().contains("true") || val.toLowerCase().contains("false")) {
+			return true;
+		}
 		JsonNode jsonNode = parseToJsonNode(val);
 		return jsonNode != null && jsonNode.isArray();
 	}
@@ -239,10 +243,7 @@ public class DataTypeInferer {
 	}
 
 	private DataTypeMapping findArrayTypeFromJson(String val)  {
-		// TODO: Aaron
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Boolean[].class))){
-			return ARRAY_OF_BOOLEAN;
-		}
+
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Double[].class))){
 			return ARRAY_OF_NUMBER;
 		}
@@ -254,10 +255,7 @@ public class DataTypeInferer {
 			return ARRAY_OF_DATE;
 		}
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, String[].class))){
-			String lowerCaseString = val.toLowerCase();
-			if (lowerCaseString.contains("true") || lowerCaseString.contains("false")) {
-				// try to assume that it is a boolean array
-				int i = 1;
+			if(ArrayUtils.isNotEmpty(getArrayOfType(val.toLowerCase(), Boolean[].class))){
 				return ARRAY_OF_BOOLEAN;
 			}
 			return ARRAY_OF_STRING;
