@@ -56,10 +56,6 @@ public class Record {
 		return this.attributes.getAttributeValue(attributeName);
 	}
 
-	public Object setAttributeValue(String attributeName, String valueToSet) {
-		return this.attributes.putAttribute(attributeName, valueToSet);
-	}
-
 	public Set<Map.Entry<String, Object>> attributeSet() {
 		return this.attributes.attributeSet();
 	}

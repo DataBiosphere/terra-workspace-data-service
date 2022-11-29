@@ -16,7 +16,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
 
@@ -31,13 +34,7 @@ public class DataTypeInferer {
 	public Map<String, DataTypeMapping> inferTypes(RecordAttributes updatedAtts, InBoundDataSource dataSource) {
 		Map<String, DataTypeMapping> result = new HashMap<>();
 		for (Map.Entry<String, Object> entry : updatedAtts.attributeSet()) {
-			DataTypeMapping inferredType = inferType(entry.getValue(), dataSource);
-//			if (inferredType == ARRAY_OF_BOOLEAN) {
-//				String currentRecordInput = rcd.getAttributeValue("input").toString();
-//				String lowerCaseBooleanStr = currentRecordInput.toLowerCase();
-//				rcd.getAttributes().putAttribute("input", lowerCaseBooleanStr);
-//			}
-			result.put(entry.getKey(), inferredType);
+			result.put(entry.getKey(), inferType(entry.getValue(), dataSource));
 		}
 		return result;
 	}
@@ -56,13 +53,6 @@ public class DataTypeInferer {
 					String lowerCaseBooleanStr = currentRecordInput.toLowerCase();
 					rcd.getAttributes().putAttribute(entry.getKey(), lowerCaseBooleanStr);
 				}
-//					// TODO: Aaron -- breaking tests
-////					for ( Map.Entry<String, DataTypeMapping> r : rcd.getAttributes().attributeSet()) {
-////						String currentRecordInput = rcd.getAttributeValue("input").toString();
-////						String lowerCaseBooleanStr = currentRecordInput.toLowerCase();
-////						rcd.getAttributes().putAttribute("input", lowerCaseBooleanStr);
-////					}
-////				}
 				if (result.containsKey(entry.getKey()) && result.get(entry.getKey()) != inferredType) {
 					result.put(entry.getKey(), selectBestType(result.get(entry.getKey()), inferredType));
 				} else {
@@ -74,7 +64,6 @@ public class DataTypeInferer {
 	}
 
 	public DataTypeMapping selectBestType(DataTypeMapping existing, DataTypeMapping newMapping) {
-
 		if (existing == newMapping) {
 			return existing;
 		}
@@ -91,9 +80,6 @@ public class DataTypeInferer {
 		if(newMapping == ARRAY_OF_DATE_TIME && existing == ARRAY_OF_DATE){
 			return ARRAY_OF_DATE_TIME;
 		}
-//		if(newMapping == ARRAY_OF_BOOLEAN && existing == ARRAY_OF_BOOLEAN){
-//			return ARRAY_OF_BOOLEAN;
-//		}
 		if(newMapping.isArrayType() && existing.isArrayType()) {
 			return ARRAY_OF_STRING;
 		}
@@ -170,7 +156,6 @@ public class DataTypeInferer {
 		// if there are non-null values in the batch this return value will let those
 		// values determine the
 		// underlying SQL data type
-
 		if (val == null) {
 			return NULL;
 		}
@@ -197,8 +182,8 @@ public class DataTypeInferer {
 
 		// We convert string value to all lowercase for corner case of Boolean values expressed in different formats
 		// e.g. `True`, `TRUE` -- Postgres looks for specifically `true`
-		String lowerCseVal = val.toString().toLowerCase();
-		return getTypeMappingFromString(lowerCseVal);
+		String lowerCaseVal = val.toString().toLowerCase();
+		return getTypeMappingFromString(lowerCaseVal);
 	}
 
 	public boolean isValidBoolean(String sVal) {
@@ -259,6 +244,9 @@ public class DataTypeInferer {
 	}
 
 	private DataTypeMapping findArrayTypeFromJson(String val)  {
+		if(ArrayUtils.isNotEmpty(getArrayOfType(val.toLowerCase(), Boolean[].class))){
+			return ARRAY_OF_BOOLEAN;
+		}
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Double[].class))){
 			return ARRAY_OF_NUMBER;
 		}

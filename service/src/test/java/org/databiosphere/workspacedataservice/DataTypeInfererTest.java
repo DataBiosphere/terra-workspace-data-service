@@ -46,7 +46,6 @@ class DataTypeInfererTest {
 				.as("null values should not affect typing for non null values").isEqualTo(DataTypeMapping.NUMBER);
 		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.STRING))
 				.as("if types are identical, return the type").isEqualTo(DataTypeMapping.STRING);
-		// TODO: Aaron
 		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.BOOLEAN))
 				.as("should generalize to string/text type").isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.selectBestType(DataTypeMapping.DATE, DataTypeMapping.DATE_TIME))
