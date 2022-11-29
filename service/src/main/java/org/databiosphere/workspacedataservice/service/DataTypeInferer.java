@@ -60,7 +60,6 @@ public class DataTypeInferer {
 		return result;
 	}
 
-	// TODO: Aaron
 	public DataTypeMapping selectBestType(DataTypeMapping existing, DataTypeMapping newMapping) {
 
 		if (existing == newMapping) {
@@ -229,7 +228,6 @@ public class DataTypeInferer {
 		return jsonNode != null && jsonNode.isArray();
 	}
 
-	// TODO: Aaron
 	private <T> DataTypeMapping findArrayType(List<T> list){
 		if(CollectionUtils.isEmpty(list)){
 			return EMPTY_ARRAY;

@@ -100,7 +100,7 @@ class TsvInputFormatsTest {
 	@MethodSource("provideInputFormats")
 	void tsvInputFormatTest(String input, Object expected) throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
-				("sys_name\tinput\n" + 1 + "\t" + input + "\n").getBytes());
+				("sys_name\tinput\n" + 1 + "\t" + input + "\n" + 2 + "\t" + input + "\n").getBytes());
 
 		String recordType = RandomStringUtils.randomAlphabetic(16);
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
