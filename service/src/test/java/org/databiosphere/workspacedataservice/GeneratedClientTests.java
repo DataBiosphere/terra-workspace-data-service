@@ -95,6 +95,7 @@ class GeneratedClientTests {
         assertThat(schema.getName()).isEqualTo(recordType);
         List<RecordTypeSchema> schemas = schemaApi.describeAllRecordTypes(instanceId.toString(), version);
         assertThat(schemas).hasSize(2);
+        assertThat(schemas.get(0).getPrimaryKey()).isEqualTo("sys_name");
     }
 
     @Test
