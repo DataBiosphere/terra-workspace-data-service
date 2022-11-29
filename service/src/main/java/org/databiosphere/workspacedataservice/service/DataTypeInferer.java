@@ -244,7 +244,7 @@ public class DataTypeInferer {
 	}
 
 	private DataTypeMapping findArrayTypeFromJson(String val)  {
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val.toLowerCase(), Boolean[].class))){
+		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Boolean[].class))){
 			return ARRAY_OF_BOOLEAN;
 		}
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Double[].class))){
