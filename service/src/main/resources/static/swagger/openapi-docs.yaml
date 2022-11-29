@@ -701,7 +701,7 @@ components:
         - name
         - attributes
         - count
-        - uniqueRowIdentifier
+        - primaryKey
       type: object
       properties:
         name:
@@ -714,9 +714,9 @@ components:
         count:
           type: integer
           description: Number of records of this type
-        uniqueRowIdentifier:
+        primaryKey:
           type: string
-          description: Attribute name that contains the value to uniquely identify each record.
+          description: Attribute name that contains the value to uniquely identify each record, defined as a primary key column in the underlying table.
     ErrorResponse:
       required:
         - status
