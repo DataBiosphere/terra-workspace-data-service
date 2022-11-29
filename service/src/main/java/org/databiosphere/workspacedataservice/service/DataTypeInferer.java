@@ -31,7 +31,13 @@ public class DataTypeInferer {
 	public Map<String, DataTypeMapping> inferTypes(RecordAttributes updatedAtts, InBoundDataSource dataSource) {
 		Map<String, DataTypeMapping> result = new HashMap<>();
 		for (Map.Entry<String, Object> entry : updatedAtts.attributeSet()) {
-			result.put(entry.getKey(), inferType(entry.getValue(), dataSource));
+			DataTypeMapping inferredType = inferType(entry.getValue(), dataSource);
+//			if (inferredType == ARRAY_OF_BOOLEAN) {
+//				String currentRecordInput = rcd.getAttributeValue("input").toString();
+//				String lowerCaseBooleanStr = currentRecordInput.toLowerCase();
+//				rcd.getAttributes().putAttribute("input", lowerCaseBooleanStr);
+//			}
+			result.put(entry.getKey(), inferredType);
 		}
 		return result;
 	}
@@ -46,10 +52,17 @@ public class DataTypeInferer {
 			for (Map.Entry<String, DataTypeMapping> entry : inferred.entrySet()) {
 				DataTypeMapping inferredType = entry.getValue();
 				if (inferredType == ARRAY_OF_BOOLEAN) {
-					String currentRecordInput = rcd.getAttributeValue("input").toString();
+					String currentRecordInput = rcd.getAttributeValue(entry.getKey()).toString();
 					String lowerCaseBooleanStr = currentRecordInput.toLowerCase();
-					rcd.getAttributes().putAttribute("input", lowerCaseBooleanStr);
+					rcd.getAttributes().putAttribute(entry.getKey(), lowerCaseBooleanStr);
 				}
+//					// TODO: Aaron -- breaking tests
+////					for ( Map.Entry<String, DataTypeMapping> r : rcd.getAttributes().attributeSet()) {
+////						String currentRecordInput = rcd.getAttributeValue("input").toString();
+////						String lowerCaseBooleanStr = currentRecordInput.toLowerCase();
+////						rcd.getAttributes().putAttribute("input", lowerCaseBooleanStr);
+////					}
+////				}
 				if (result.containsKey(entry.getKey()) && result.get(entry.getKey()) != inferredType) {
 					result.put(entry.getKey(), selectBestType(result.get(entry.getKey()), inferredType));
 				} else {
