@@ -45,6 +45,11 @@ public class DataTypeInferer {
 			Map<String, DataTypeMapping> inferred = inferTypes(rcd.getAttributes(), dataSource);
 			for (Map.Entry<String, DataTypeMapping> entry : inferred.entrySet()) {
 				DataTypeMapping inferredType = entry.getValue();
+				if (inferredType == ARRAY_OF_BOOLEAN) {
+					String currentRecordInput = rcd.getAttributeValue("input").toString();
+					String lowerCaseBooleanStr = currentRecordInput.toLowerCase();
+					rcd.getAttributes().putAttribute("input", lowerCaseBooleanStr);
+				}
 				if (result.containsKey(entry.getKey()) && result.get(entry.getKey()) != inferredType) {
 					result.put(entry.getKey(), selectBestType(result.get(entry.getKey()), inferredType));
 				} else {
@@ -74,10 +79,10 @@ public class DataTypeInferer {
 		if(newMapping == ARRAY_OF_DATE_TIME && existing == ARRAY_OF_DATE){
 			return ARRAY_OF_DATE_TIME;
 		}
-		if(newMapping.isArrayType()) {
-			if (existing.isArrayType()) {
-				return ARRAY_OF_STRING;
-			}
+//		if(newMapping == ARRAY_OF_BOOLEAN && existing == ARRAY_OF_BOOLEAN){
+//			return ARRAY_OF_BOOLEAN;
+//		}
+		if(newMapping.isArrayType() && existing.isArrayType()) {
 			return ARRAY_OF_STRING;
 		}
 		return STRING;
@@ -157,7 +162,6 @@ public class DataTypeInferer {
 		if (val == null) {
 			return NULL;
 		}
-
 		if (val instanceof BigDecimal || val instanceof BigInteger) {
 			return NUMBER;
 		}
@@ -179,10 +183,10 @@ public class DataTypeInferer {
 			return JSON;
 		}
 
-		// Convert string value to all lowercase for corner case of Boolean values expressed in different formats
+		// We convert string value to all lowercase for corner case of Boolean values expressed in different formats
 		// e.g. `True`, `TRUE` -- Postgres looks for specifically `true`
-		String lowercaseVal = val.toString().toLowerCase();
-		return getTypeMappingFromString(lowercaseVal);
+		String lowerCseVal = val.toString().toLowerCase();
+		return getTypeMappingFromString(lowerCseVal);
 	}
 
 	public boolean isValidBoolean(String sVal) {
@@ -244,7 +248,6 @@ public class DataTypeInferer {
 	}
 
 	private DataTypeMapping findArrayTypeFromJson(String val)  {
-
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Double[].class))){
 			return ARRAY_OF_NUMBER;
 		}

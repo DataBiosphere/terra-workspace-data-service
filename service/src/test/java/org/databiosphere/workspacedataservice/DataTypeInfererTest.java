@@ -116,6 +116,7 @@ class DataTypeInfererTest {
 		assertThat(inferer.inferType("12345A", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.inferType(List.of("Hello!"), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
 		assertThat(inferer.inferType(List.of(new BigInteger("12345")), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
+		assertThat(inferer.inferType(List.of("true", "False", "TRUE", "fALSE"), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_BOOLEAN);
 		assertThat(inferer.inferType(List.of(true, false, true), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_BOOLEAN);
 		assertThat(inferer.inferType(List.of(new BigDecimal("11.1"), new BigDecimal("12"), new BigDecimal("14")), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
 	}

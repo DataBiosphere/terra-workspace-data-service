@@ -68,23 +68,24 @@ class TsvInputFormatsTest {
 			- second value is the expected Java type that WDS would create, after saving the TSV and re-retrieving the record.
 		 */
 		return Stream.of(
-//				Arguments.of("", null),
-//				Arguments.of(" ", " "),
-//				Arguments.of("true", Boolean.TRUE),
-//				Arguments.of("TRUE", Boolean.TRUE),
-//				Arguments.of("tRuE", Boolean.TRUE),
-//				Arguments.of("True", Boolean.TRUE),
-//				Arguments.of("false", Boolean.FALSE)
-//				Arguments.of("FALSE", Boolean.FALSE),
-//				Arguments.of("fAlSe", Boolean.FALSE),
-//				Arguments.of("False", Boolean.FALSE),
-				Arguments.of("[\"true\", \"TRUE\", \"tRuE\"]", new Boolean[]{Boolean.TRUE, Boolean.TRUE, Boolean.TRUE}) // TODO: fails
-//				Arguments.of("5", BigDecimal.valueOf(5)),
-//				Arguments.of("5.67", BigDecimal.valueOf(5.67d)),
-//				Arguments.of("005", BigDecimal.valueOf(5)),
-//				Arguments.of("[1,5]", toBigDecimals(new int[]{1,5}))
-//				Arguments.of("[1,5.67]", new BigDecimal[]{BigDecimal.valueOf(1), BigDecimal.valueOf(5.67)})
-//				Arguments.of("[1,005]", toBigDecimals(new int[]{1,5})) // TODO: fails
+				Arguments.of("", null),
+				Arguments.of(" ", " "),
+				Arguments.of("true", Boolean.TRUE),
+				Arguments.of("TRUE", Boolean.TRUE),
+				Arguments.of("tRuE", Boolean.TRUE),
+				Arguments.of("True", Boolean.TRUE),
+				Arguments.of("false", Boolean.FALSE),
+				Arguments.of("FALSE", Boolean.FALSE),
+				Arguments.of("fAlSe", Boolean.FALSE),
+				Arguments.of("False", Boolean.FALSE),
+				Arguments.of("[\"true\", \"TRUE\", \"tRuE\"]", new Boolean[]{Boolean.TRUE, Boolean.TRUE, Boolean.TRUE}),
+				Arguments.of("[\"true\", \"false\", \"true\"]", new Boolean[]{Boolean.TRUE, Boolean.FALSE, Boolean.TRUE}),
+				Arguments.of("5", BigDecimal.valueOf(5)),
+				Arguments.of("5.67", BigDecimal.valueOf(5.67d)),
+				Arguments.of("005", BigDecimal.valueOf(5)),
+				Arguments.of("[1,5]", toBigDecimals(new int[]{1,5})),
+				Arguments.of("[1,5.67]", new BigDecimal[]{BigDecimal.valueOf(1), BigDecimal.valueOf(5.67)})
+				// TODO: numbers with leading zeros
 				// TODO: smart-quotes?
 				// TODO: string-escaping for special characters
 				// TODO: relations, arrays of relations
