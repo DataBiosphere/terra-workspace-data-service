@@ -170,6 +170,7 @@ public class DataTypeInferer {
 			return STRING;
 		}
 
+		// TODO: Check this case as well
 		if(val instanceof List<?> listVal){
 			return findArrayType(listVal);
 		}
@@ -178,7 +179,10 @@ public class DataTypeInferer {
 			return JSON;
 		}
 
-		return getTypeMappingFromString(val.toString());
+		// Convert string value to all lowercase for corner case of Boolean values expressed in different formats
+		// e.g. `True`, `TRUE` -- Postgres looks for specifically `true`
+		String lowercaseVal = val.toString().toLowerCase();
+		return getTypeMappingFromString(lowercaseVal);
 	}
 
 	public boolean isValidBoolean(String sVal) {
@@ -217,9 +221,6 @@ public class DataTypeInferer {
 	}
 
 	public boolean isArray(String val){
-		if (val.toLowerCase().contains("true") || val.toLowerCase().contains("false")) {
-			return true;
-		}
 		JsonNode jsonNode = parseToJsonNode(val);
 		return jsonNode != null && jsonNode.isArray();
 	}
