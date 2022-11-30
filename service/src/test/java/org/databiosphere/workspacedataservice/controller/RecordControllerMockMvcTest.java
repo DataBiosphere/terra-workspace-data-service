@@ -42,15 +42,17 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
-import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 class RecordControllerMockMvcTest {
-
 	@Autowired
 	private ObjectMapper mapper;
 	@Autowired
@@ -206,12 +208,35 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
-	void tsvWithNoRowIdShouldReturn400() throws Exception {
+	void tsvWithMissingRowIdentifierColumn() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "no_row_id.tsv", MediaType.TEXT_PLAIN_VALUE,
 				"col1\tcol2\nfoo\tbar\n".getBytes());
 
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}?uniqueRowIdentifierColumn=missing_row_id", instanceId, versionId, "tsv-missing-rowid")
 				.file(file)).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@Transactional
+	void tsvWithEmptyStringIdentifier() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "empty_row_id.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"col1\tcol2\n\tbar\n".getBytes());
+
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-missing-rowid")
+				.file(file)).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@Transactional
+	void tsvWithSpecifiedRowIdentifierColumn() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "specified_id.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"col1\tcol2\nfoo\tbar\n".getBytes());
+
+		String recordType = "tsv_specified_row_id";
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}?uniqueRowIdentifierColumn=col2", instanceId, versionId, recordType)
+				.file(file)).andExpect(status().isOk());
+		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, recordType, "bar"))
+				.andExpect(status().isOk());
 	}
 
 	@Test
@@ -224,7 +249,7 @@ class RecordControllerMockMvcTest {
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
 
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-record-type")
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv_batching")
 				.file(file)).andExpect(status().isOk());
 	}
 
@@ -332,6 +357,15 @@ class RecordControllerMockMvcTest {
 		assertEquals("json", schema.attributes().get(4).name());
 		// data type should downgrade to string
 		assertEquals("STRING", schema.attributes().get(4).datatype());
+		//make sure left most column (sys_name) is used as id
+		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, recordType, "a")).andExpect(status().isOk());
+	}
+
+	@Test
+	@Transactional
+	void tryDeletingMissingRecordType() throws Exception {
+		mockMvc.perform(delete("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId, "missing", "missing-also"))
+				.andExpect(status().isNotFound());
 	}
 
 	@Test
@@ -709,7 +743,7 @@ class RecordControllerMockMvcTest {
 				new AttributeSchema("z-array-of-number-double", "ARRAY_OF_NUMBER", null),
 				new AttributeSchema("z-array-of-number-long", "ARRAY_OF_NUMBER", null), new AttributeSchema("z-array-of-string", "ARRAY_OF_STRING", null));
 
-		RecordTypeSchema expected = new RecordTypeSchema(type, expectedAttributes, 1);
+		RecordTypeSchema expected = new RecordTypeSchema(type, expectedAttributes, 1, RECORD_ID);
 
 		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, type))
 				.andExpect(status().isOk()).andReturn();
@@ -765,9 +799,9 @@ class RecordControllerMockMvcTest {
 				new AttributeSchema("z-array-of-number-double", "ARRAY_OF_NUMBER", null),
 				new AttributeSchema("z-array-of-number-long", "ARRAY_OF_NUMBER", null), new AttributeSchema("z-array-of-string", "ARRAY_OF_STRING", null));
 
-		List<RecordTypeSchema> expectedSchemas = Arrays.asList(new RecordTypeSchema(type1, expectedAttributes, 1),
-				new RecordTypeSchema(type2, expectedAttributes, 2),
-				new RecordTypeSchema(type3, expectedAttributes, 10));
+		List<RecordTypeSchema> expectedSchemas = Arrays.asList(new RecordTypeSchema(type1, expectedAttributes, 1, RECORD_ID),
+				new RecordTypeSchema(type2, expectedAttributes, 2, RECORD_ID),
+				new RecordTypeSchema(type3, expectedAttributes, 10, RECORD_ID));
 
 		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/types/{v}", instanceId, versionId))
 				.andExpect(status().isOk()).andReturn();

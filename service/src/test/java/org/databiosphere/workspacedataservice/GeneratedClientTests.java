@@ -46,7 +46,16 @@ class GeneratedClientTests {
         RecordsApi recordsApi = new RecordsApi(apiClient);
         TsvUploadResponse tsvUploadResponse = recordsApi.uploadTSV(
                 new File(this.getClass().getResource("/small-test.tsv").toURI()),
-                instanceId.toString(), version, "foo");
+                instanceId.toString(), version, "foo", null);
+        assertThat(tsvUploadResponse.getRecordsModified()).isEqualTo(2);
+    }
+
+    @Test
+    void uploadTsvWithDifferentColId() throws ApiException, URISyntaxException {
+        RecordsApi recordsApi = new RecordsApi(apiClient);
+        TsvUploadResponse tsvUploadResponse = recordsApi.uploadTSV(
+                new File(this.getClass().getResource("/small-test-no-sys.tsv").toURI()),
+                instanceId.toString(), version, "foo", "greeting");
         assertThat(tsvUploadResponse.getRecordsModified()).isEqualTo(2);
     }
 
@@ -86,6 +95,7 @@ class GeneratedClientTests {
         assertThat(schema.getName()).isEqualTo(recordType);
         List<RecordTypeSchema> schemas = schemaApi.describeAllRecordTypes(instanceId.toString(), version);
         assertThat(schemas).hasSize(2);
+        assertThat(schemas.get(0).getPrimaryKey()).isEqualTo("sys_name");
     }
 
     @Test
