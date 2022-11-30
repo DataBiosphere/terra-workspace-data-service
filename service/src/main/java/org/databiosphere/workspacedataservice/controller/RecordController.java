@@ -311,8 +311,7 @@ public class RecordController {
 	@PostMapping("/{instanceid}/batch/{v}/{type}")
 	public ResponseEntity<BatchResponse> streamingWrite(@PathVariable("instanceid") UUID instanceId,
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType,
-			@RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey,
-														InputStream is) {
+			@RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey, InputStream is) {
 		validateVersion(version);
 		validateInstance(instanceId);
 		int recordsModified = batchWriteService.consumeWriteStream(is, instanceId, recordType, primaryKey);
