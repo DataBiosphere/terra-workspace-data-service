@@ -212,7 +212,7 @@ class RecordControllerMockMvcTest {
 		MockMultipartFile file = new MockMultipartFile("records", "no_row_id.tsv", MediaType.TEXT_PLAIN_VALUE,
 				"col1\tcol2\nfoo\tbar\n".getBytes());
 
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}?uniqueRowIdentifierColumn=missing_row_id", instanceId, versionId, "tsv-missing-rowid")
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}?primaryKey=missing_row_id", instanceId, versionId, "tsv-missing-rowid")
 				.file(file)).andExpect(status().isBadRequest());
 	}
 
@@ -233,7 +233,7 @@ class RecordControllerMockMvcTest {
 				"col1\tcol2\nfoo\tbar\n".getBytes());
 
 		String recordType = "tsv_specified_row_id";
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}?uniqueRowIdentifierColumn=col2", instanceId, versionId, recordType)
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}?primaryKey=col2", instanceId, versionId, recordType)
 				.file(file)).andExpect(status().isOk());
 		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, recordType, "bar"))
 				.andExpect(status().isOk());

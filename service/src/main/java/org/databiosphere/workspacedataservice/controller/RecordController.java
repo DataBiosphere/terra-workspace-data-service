@@ -114,13 +114,13 @@ public class RecordController {
 	@PostMapping( "/{instanceId}/tsv/{version}/{recordType}")
 	public ResponseEntity<TsvUploadResponse> tsvUpload(@PathVariable("instanceId") UUID instanceId,
 			   @PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			   @RequestParam(name= "uniqueRowIdentifierColumn", required = false) Optional<String> uniqueRowIdentifierColumn,
+			   @RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey,
                @RequestParam("records") MultipartFile records) throws IOException {
 		validateVersion(version);
 		validateInstance(instanceId);
 		int recordsModified;
 		try (InputStreamReader inputStreamReader = new InputStreamReader(records.getInputStream())) {
-			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType, uniqueRowIdentifierColumn);
+			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType, primaryKey);
 		}
 		return new ResponseEntity<>(new TsvUploadResponse(recordsModified, "Updated " + recordType.toString()),
 				HttpStatus.OK);
@@ -185,7 +185,7 @@ public class RecordController {
 	@PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
 	public ResponseEntity<RecordResponse> upsertSingleRecord(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			@PathVariable("recordId") String recordId, @RequestParam(name= "uniqueRowIdentifierColumn", required = false) Optional<String> uniqueRowIdentifierColumn,
+			@PathVariable("recordId") String recordId, @RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey,
 			 @RequestBody RecordRequest recordRequest) {
 		validateVersion(version);
 		validateInstance(instanceId);
@@ -195,7 +195,7 @@ public class RecordController {
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
 			RecordResponse response = new RecordResponse(recordId, recordType, recordRequest.recordAttributes());
 			Record newRecord = new Record(recordId, recordType, recordRequest);
-			createRecordTypeAndInsertRecords(instanceId, newRecord, recordType, requestSchema, uniqueRowIdentifierColumn);
+			createRecordTypeAndInsertRecords(instanceId, newRecord, recordType, requestSchema, primaryKey);
 			return new ResponseEntity<>(response, status);
 		} else {
 			Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
@@ -311,11 +311,11 @@ public class RecordController {
 	@PostMapping("/{instanceid}/batch/{v}/{type}")
 	public ResponseEntity<BatchResponse> streamingWrite(@PathVariable("instanceid") UUID instanceId,
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType,
-			@RequestParam(name= "uniqueRowIdentifierColumn", required = false) Optional<String> uniqueRowIdentifierColumn,
+			@RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey,
 														InputStream is) {
 		validateVersion(version);
 		validateInstance(instanceId);
-		int recordsModified = batchWriteService.consumeWriteStream(is, instanceId, recordType, uniqueRowIdentifierColumn);
+		int recordsModified = batchWriteService.consumeWriteStream(is, instanceId, recordType, primaryKey);
 		return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
 	}
 
@@ -326,9 +326,9 @@ public class RecordController {
 	}
 
 	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, RecordType recordType,
-		Map<String, DataTypeMapping> requestSchema, Optional<String> uniqueRowIdentifierColumn) {
+		Map<String, DataTypeMapping> requestSchema, Optional<String> primaryKey) {
 		List<Record> records = Collections.singletonList(newRecord);
-		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records), uniqueRowIdentifierColumn.orElse(ReservedNames.RECORD_ID));
+		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records), primaryKey.orElse(ReservedNames.RECORD_ID));
 		recordDao.batchUpsert(instanceId, recordType, records, requestSchema);
 	}
 }

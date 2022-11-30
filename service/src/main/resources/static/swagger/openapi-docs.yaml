@@ -503,7 +503,7 @@ components:
       schema:
         type: string
     recordTypePrimaryKey:
-      name: uniqueRowIdentifierColumn
+      name: primaryKey
       in: query
       description: the column to uniquely identify a record
       required: false
