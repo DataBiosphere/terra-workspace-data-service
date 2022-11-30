@@ -181,7 +181,7 @@ public class DataTypeInferer {
 		}
 
 		// We convert string value to all lowercase for corner case of Boolean values expressed in different formats
-		// e.g. `True`, `TRUE` -- Postgres looks for specifically `true`
+		// e.g. `True`, `TRUE` -- WDS looks for specifically `true` to understand an Array of Str. vs Array of Bool.
 		String lowerCaseVal = val.toString().toLowerCase();
 		return getTypeMappingFromString(lowerCaseVal);
 	}
