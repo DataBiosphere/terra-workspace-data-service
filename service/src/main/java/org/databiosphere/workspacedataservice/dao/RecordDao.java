@@ -159,33 +159,29 @@ public class RecordDao {
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
 		MapSqlParameterSource params = new MapSqlParameterSource(INSTANCE_ID, instanceId.toString());
 		params.addValue("tableName", recordType.getName());
-		return namedTemplate
-				.query("select column_name, udt_name::regtype as data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
-						+ "and table_name = :tableName", params, rs -> {
-					Map<String, DataTypeMapping> result = new HashMap<>();
-					while (rs.next()) {
-						result.put(rs.getString("column_name"),
-								DataTypeMapping.fromPostgresType(rs.getString("data_type")));
-					}
-					return result;
-				});
+		String sql = "select column_name, udt_name::regtype as data_type from INFORMATION_SCHEMA.COLUMNS " +
+				"where table_schema = :instanceId and table_name = :tableName";
+		return getTableSchema(sql, params);
 	}
 
+	private Map<String, DataTypeMapping> getTableSchema(String sql, MapSqlParameterSource params){
+		return namedTemplate.query(sql, params, rs -> {
+			Map<String, DataTypeMapping> result = new HashMap<>();
+			while (rs.next()) {
+				result.put(rs.getString("column_name"),
+						DataTypeMapping.fromPostgresType(rs.getString("data_type")));
+			}
+			return result;
+		});
+	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchemaLessPrimaryKey(UUID instanceId, RecordType recordType) {
 		MapSqlParameterSource params = new MapSqlParameterSource(INSTANCE_ID, instanceId.toString());
 		params.addValue("tableName", recordType.getName());
-		params.addValue("recordTypeRowIdentifier", cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId));
-		return namedTemplate
-				.query("select column_name, udt_name::regtype as data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
-						+ "and table_name = :tableName and column_name != :recordTypeRowIdentifier", params, rs -> {
-							Map<String, DataTypeMapping> result = new HashMap<>();
-							while (rs.next()) {
-								result.put(rs.getString("column_name"),
-										DataTypeMapping.fromPostgresType(rs.getString("data_type")));
-							}
-							return result;
-						});
+		params.addValue("primaryKey", cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId));
+		String sql = "select column_name, udt_name::regtype as data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
+				+ "and table_name = :tableName and column_name != :primaryKey";
+		return getTableSchema(sql, params);
 	}
 
 	public void addColumn(UUID instanceId, RecordType recordType, String columnName, DataTypeMapping colType) {
