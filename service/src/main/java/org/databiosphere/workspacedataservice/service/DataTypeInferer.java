@@ -210,7 +210,7 @@ public class DataTypeInferer {
 
 	private JsonNode parseToJsonNode(String val){
 		try {
-			return objectMapper.readTree(val);
+			return objectMapper.readTree(val.toLowerCase());
 		} catch (JsonProcessingException e) {
 			return null;
 		}
@@ -258,9 +258,6 @@ public class DataTypeInferer {
 			return ARRAY_OF_DATE;
 		}
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, String[].class))){
-			if(ArrayUtils.isNotEmpty(getArrayOfType(val.toLowerCase(), Boolean[].class))){
-				return ARRAY_OF_BOOLEAN;
-			}
 			return ARRAY_OF_STRING;
 		}
 		if(getArrayOfType(val, String[].class) != null){
@@ -271,7 +268,11 @@ public class DataTypeInferer {
 
 	public <T> T[] getArrayOfType(String val, Class<T[]> clazz) {
 		try {
-			return objectMapper.readValue(replaceLeftRightQuotes(val), clazz);
+			String escapedValue = replaceLeftRightQuotes(val);
+			if(clazz.getComponentType() == Boolean.class){
+				escapedValue = escapedValue.toLowerCase();
+			}
+			return objectMapper.readValue(escapedValue, clazz);
 		} catch (JsonProcessingException e) {
 			return null;
 		}
