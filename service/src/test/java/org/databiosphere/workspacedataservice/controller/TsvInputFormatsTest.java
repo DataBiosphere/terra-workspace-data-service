@@ -123,9 +123,11 @@ class TsvInputFormatsTest {
 	@ParameterizedTest(name = "TSV parsing for value {0} should result in {1}, allowing {2} to be subsequently processed")
 	@MethodSource("provideInputFormats")
 	void testTSVInputFormatTest(String initialInput, Object expected, String subsequentInput) throws Exception {
-		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
+		// Construct TSV with initial input values
+		MockMultipartFile file = new MockMultipartFile("records", "first_upload.tsv", MediaType.TEXT_PLAIN_VALUE,
 				("sys_name\tinput\n" + 1 + "\t" + initialInput + "\n").getBytes());
 
+		// Upload TSV first time
 		String recordType = RandomStringUtils.randomAlphabetic(16);
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
 				.file(file)).andExpect(status().isOk());
@@ -134,44 +136,26 @@ class TsvInputFormatsTest {
 		Optional<Record> recOption = recordDao.getSingleRecord(instanceId, RecordType.valueOf(recordType), "1");
 		assertTrue(recOption.isPresent(), "Record should exist after TSV input");
 
+		// Run assertion on output
 		Object actual = recOption.get().getAttributeValue("input");
-
-		// Run assertion
 		evaluateOutputs(expected, actual);
 
-		MockMultipartFile subsequentFile = new MockMultipartFile("records", "subsequent.tsv", MediaType.TEXT_PLAIN_VALUE,
+		// Construct TSV with different input values
+		MockMultipartFile subsequentFile = new MockMultipartFile("records", "subsequent_upload.tsv", MediaType.TEXT_PLAIN_VALUE,
 				("sys_name\tinput\n" + 2 + "\t" + subsequentInput + "\n").getBytes());
 
+		// Upload TSV second time, where it will need to abide by schema generated during first TSV upload
 		recordType = RandomStringUtils.randomAlphabetic(16);
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
 				.file(subsequentFile)).andExpect(status().isOk());
 
+		// Get newly added Record in table
 		recOption = recordDao.getSingleRecord(instanceId, RecordType.valueOf(recordType), "2");
 		assertTrue(recOption.isPresent(), "Record should exist after TSV input");
 
+		// Run assertion on output
 		actual = recOption.get().getAttributeValue("input");
-
 		evaluateOutputs(expected, actual);
 	}
-
-//	/* TODO: add a second unit test, or a second class, that asserts behavior of various inputs to a table that already
-//		exists and whose schema is already defined.
-//	 */
-//	@Transactional
-//	@ParameterizedTest(name = "TSV parsing for value {0} should result in {1}")
-//	@MethodSource("provideInputFormats")
-//	void testTSVExistingTableTest(String input, Object expected) throws Exception {
-//
-//		// Create initial upload
-//		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
-//				("sys_name\tinput\n" + 1 + "\t" + input + "\n").getBytes());
-//
-//		String recordType = RandomStringUtils.randomAlphabetic(16);
-//		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
-//				.file(file)).andExpect(status().isOk());
-//
-//		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
-//				.file(file)).andExpect(status().isOk());
-//	}
 
 }
