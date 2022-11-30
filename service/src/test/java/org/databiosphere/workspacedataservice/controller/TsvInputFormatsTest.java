@@ -84,32 +84,32 @@ class TsvInputFormatsTest {
 				- such value would be the same datatype; however, in some cases, WDS can ingest the value even if represented slightly differently
 		 */
 		return Stream.of(
-				Arguments.of("", null, ""),
-				Arguments.of(" ", " ", " "),
-				Arguments.of("true", Boolean.TRUE, "TRUE"),
-				Arguments.of("TRUE", Boolean.TRUE, "true"),
-				Arguments.of("tRuE", Boolean.TRUE, "true"),
-				Arguments.of("True", Boolean.TRUE, "true"),
-				Arguments.of("false", Boolean.FALSE, "FALSE"),
-				Arguments.of("FALSE", Boolean.FALSE, "false"),
-				Arguments.of("fAlSe", Boolean.FALSE, "false"),
-				Arguments.of("False", Boolean.FALSE, "false"),
+//				Arguments.of("", null, ""),
+//				Arguments.of(" ", " ", " "),
+//				Arguments.of("true", Boolean.TRUE, "TRUE"),
+//				Arguments.of("TRUE", Boolean.TRUE, "true"),
+//				Arguments.of("tRuE", Boolean.TRUE, "true"),
+//				Arguments.of("True", Boolean.TRUE, "true"),
+//				Arguments.of("false", Boolean.FALSE, "FALSE"),
+//				Arguments.of("FALSE", Boolean.FALSE, "false"),
+//				Arguments.of("fAlSe", Boolean.FALSE, "false"),
+//				Arguments.of("False", Boolean.FALSE, "false"),
 				Arguments.of(
 						"[\"true\", \"TRUE\", \"tRuE\"]",
 						new Boolean[]{Boolean.TRUE, Boolean.TRUE, Boolean.TRUE},
 						"[\"TRUE\", \"true\", \"True\"]"
-				),
-				Arguments.of(
-						"[\"true\", \"false\", \"true\"]",
-						new Boolean[]{Boolean.TRUE, Boolean.FALSE, Boolean.TRUE},
-						"[\"TRUE\", \"fALSE\", \"True\"]"
-				),
-				Arguments.of("5", BigDecimal.valueOf(5), "5"),
-				Arguments.of("5.67", BigDecimal.valueOf(5.67d), "5.67"),
-				Arguments.of("005", BigDecimal.valueOf(5),"005"),
-				Arguments.of("[1,5]", toBigDecimals(new int[]{1,5}), "[1,5]"),
-				Arguments.of("[1,5.67]", new BigDecimal[]{BigDecimal.valueOf(1), BigDecimal.valueOf(5.67)}, "[1,5.67]")
-				// TODO: array of numbers with leading zeros
+				)
+//				Arguments.of(
+//						"[\"true\", \"false\", \"true\"]",
+//						new Boolean[]{Boolean.TRUE, Boolean.FALSE, Boolean.TRUE},
+//						"[\"TRUE\", \"fALSE\", \"True\"]"
+//				),
+//				Arguments.of("5", BigDecimal.valueOf(5), "5"),
+//				Arguments.of("5.67", BigDecimal.valueOf(5.67d), "5.67"),
+//				Arguments.of("005", BigDecimal.valueOf(5),"005"),
+//				Arguments.of("[1,5]", toBigDecimals(new int[]{1,5}), "[1,5]"),
+//				Arguments.of("[1,5.67]", new BigDecimal[]{BigDecimal.valueOf(1), BigDecimal.valueOf(5.67)}, "[1,5.67]")
+//				// TODO: array of numbers with leading zeros
 				// TODO: smart-quotes?
 				// TODO: string-escaping for special characters
 				// TODO: relations, arrays of relations
@@ -145,7 +145,6 @@ class TsvInputFormatsTest {
 				("sys_name\tinput\n" + 2 + "\t" + subsequentInput + "\n").getBytes());
 
 		// Upload TSV second time, where it will need to abide by schema generated during first TSV upload
-		recordType = RandomStringUtils.randomAlphabetic(16);
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
 				.file(subsequentFile)).andExpect(status().isOk());
 
