@@ -58,7 +58,7 @@ public class TestUtils {
 				.putAttribute("array_of_date", "[\"2021-11-03\", \"2021-11-04\"]")
 				.putAttribute("array_of_date_time", "[\"2021-11-03T07:30:00\", \"2021-11-03T07:30:00\"]")
 				.putAttribute("array_of_string", "[\"a\", \"b\", \"c\", 12]")
-				.putAttribute("array_of_boolean", "[true, false, true, \"TRUE\"]");
+				.putAttribute("array_of_boolean", "[true, false, true, TRUE]");
 
 	}
 
