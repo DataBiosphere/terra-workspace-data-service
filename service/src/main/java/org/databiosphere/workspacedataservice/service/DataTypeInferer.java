@@ -48,11 +48,6 @@ public class DataTypeInferer {
 			Map<String, DataTypeMapping> inferred = inferTypes(rcd.getAttributes(), dataSource);
 			for (Map.Entry<String, DataTypeMapping> entry : inferred.entrySet()) {
 				DataTypeMapping inferredType = entry.getValue();
-				if (inferredType == ARRAY_OF_BOOLEAN) {
-					String currentRecordInput = rcd.getAttributeValue(entry.getKey()).toString();
-					String lowerCaseBooleanStr = currentRecordInput.toLowerCase();
-					rcd.getAttributes().putAttribute(entry.getKey(), lowerCaseBooleanStr);
-				}
 				if (result.containsKey(entry.getKey()) && result.get(entry.getKey()) != inferredType) {
 					result.put(entry.getKey(), selectBestType(result.get(entry.getKey()), inferredType));
 				} else {
