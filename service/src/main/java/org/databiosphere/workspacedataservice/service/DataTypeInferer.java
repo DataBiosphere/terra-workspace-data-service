@@ -175,10 +175,7 @@ public class DataTypeInferer {
 			return JSON;
 		}
 
-		// We convert string value to all lowercase for corner case of Boolean values expressed in different formats
-		// e.g. `True`, `TRUE` -- WDS looks for specifically `true` to understand an Array of Str. vs Array of Bool.
-		String lowerCaseVal = val.toString().toLowerCase();
-		return getTypeMappingFromString(lowerCaseVal);
+		return getTypeMappingFromString(val.toString());
 	}
 
 	public boolean isValidBoolean(String sVal) {
