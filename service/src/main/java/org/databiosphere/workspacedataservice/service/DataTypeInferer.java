@@ -159,9 +159,11 @@ public class DataTypeInferer {
 		if (val == null) {
 			return NULL;
 		}
+
 		if (val instanceof BigDecimal || val instanceof BigInteger) {
 			return NUMBER;
 		}
+
 		if (val instanceof Boolean) {
 			return BOOLEAN;
 		}
@@ -169,6 +171,7 @@ public class DataTypeInferer {
 		if (RelationUtils.isRelationValue(val)) {
 			return STRING;
 		}
+
 		if(val instanceof List<?> listVal){
 			return findArrayType(listVal);
 		}
