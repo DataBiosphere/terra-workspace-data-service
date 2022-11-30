@@ -334,18 +334,18 @@ class RecordControllerMockMvcTest {
 		assertEquals("JSON", schema.attributes().get(4).datatype());
 		assertEquals("NUMBER", schema.attributes().get(5).datatype());
 		assertEquals("long", schema.attributes().get(5).name());
-		assertEquals("z_array_of_string", schema.attributes().get(7).name());
-		assertEquals("ARRAY_OF_STRING", schema.attributes().get(7).datatype());
-		assertEquals("z_double_array", schema.attributes().get(8).name());
-		assertEquals("ARRAY_OF_NUMBER", schema.attributes().get(8).datatype());
-		assertEquals("z_long_array", schema.attributes().get(9).name());
+		assertEquals("z_array_of_string", schema.attributes().get(8).name());
+		assertEquals("ARRAY_OF_STRING", schema.attributes().get(8).datatype());
+		assertEquals("z_double_array", schema.attributes().get(9).name());
 		assertEquals("ARRAY_OF_NUMBER", schema.attributes().get(9).datatype());
-		assertEquals("z_z_boolean_array", schema.attributes().get(10).name());
-		assertEquals("ARRAY_OF_BOOLEAN", schema.attributes().get(10).datatype());
-		assertEquals("zz_array_of_date", schema.attributes().get(11).name());
-		assertEquals("ARRAY_OF_DATE", schema.attributes().get(11).datatype());
-		assertEquals("zz_array_of_datetime", schema.attributes().get(12).name());
-		assertEquals("ARRAY_OF_DATE_TIME", schema.attributes().get(12).datatype());
+		assertEquals("z_long_array", schema.attributes().get(10).name());
+		assertEquals("ARRAY_OF_NUMBER", schema.attributes().get(10).datatype());
+		assertEquals("z_z_boolean_array", schema.attributes().get(11).name());
+		assertEquals("ARRAY_OF_BOOLEAN", schema.attributes().get(11).datatype());
+		assertEquals("zz_array_of_date", schema.attributes().get(12).name());
+		assertEquals("ARRAY_OF_DATE", schema.attributes().get(12).datatype());
+		assertEquals("zz_array_of_datetime", schema.attributes().get(13).name());
+		assertEquals("ARRAY_OF_DATE_TIME", schema.attributes().get(13).datatype());
 		MockMultipartFile alter = new MockMultipartFile("records", "change_json_to_text.tsv",
 				MediaType.TEXT_PLAIN_VALUE, "sys_name\tjson\na\tfoo\n".getBytes());
 		mockMvc.perform(
@@ -739,8 +739,8 @@ class RecordControllerMockMvcTest {
 				new AttributeSchema("attr-ref", "RELATION", referencedType),
 				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "NUMBER", null),
 				new AttributeSchema("attr3", "DATE", null), new AttributeSchema("attr4", "STRING", null),
-				new AttributeSchema("attr5", "NUMBER", null), new AttributeSchema("z-array-of-boolean", "ARRAY_OF_BOOLEAN", null),
-				new AttributeSchema("z-array-of-number-double", "ARRAY_OF_NUMBER", null),
+				new AttributeSchema("attr5", "NUMBER", null), new AttributeSchema("sys_name", "STRING", null),
+				new AttributeSchema("z-array-of-boolean", "ARRAY_OF_BOOLEAN", null), new AttributeSchema("z-array-of-number-double", "ARRAY_OF_NUMBER", null),
 				new AttributeSchema("z-array-of-number-long", "ARRAY_OF_NUMBER", null), new AttributeSchema("z-array-of-string", "ARRAY_OF_STRING", null));
 
 		RecordTypeSchema expected = new RecordTypeSchema(type, expectedAttributes, 1, RECORD_ID);
@@ -795,7 +795,8 @@ class RecordControllerMockMvcTest {
 				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
 				new AttributeSchema("attr1", "STRING", null), new AttributeSchema("attr2", "NUMBER", null),
 				new AttributeSchema("attr3", "DATE", null), new AttributeSchema("attr4", "STRING", null),
-				new AttributeSchema("attr5", "NUMBER", null), new AttributeSchema("z-array-of-boolean", "ARRAY_OF_BOOLEAN", null),
+				new AttributeSchema("attr5", "NUMBER", null), new AttributeSchema("sys_name", "STRING", null),
+				new AttributeSchema("z-array-of-boolean", "ARRAY_OF_BOOLEAN", null),
 				new AttributeSchema("z-array-of-number-double", "ARRAY_OF_NUMBER", null),
 				new AttributeSchema("z-array-of-number-long", "ARRAY_OF_NUMBER", null), new AttributeSchema("z-array-of-string", "ARRAY_OF_STRING", null));
 

@@ -66,19 +66,15 @@ class TsvDownloadTest {
 		CSVFormat csvFormat = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).setDelimiter("\t")
 				.setQuoteMode(QuoteMode.MINIMAL).build();
 		InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
-		CSVParser parser = new CSVParser(reader, csvFormat);
-		Map<String, Integer> headerMap = parser.getHeaderMap();
-		assertThat(headerMap).isEqualTo(Map.of("sample_id", 0, "attr-1", 1, "col_1", 2, "col_2", 3));
-		Iterator<CSVRecord> iterator = ((Iterable<CSVRecord>) parser).iterator();
+		Iterable<CSVRecord> records = new CSVParser(reader, csvFormat);
+		Iterator<CSVRecord> iterator = records.iterator();
 		CSVRecord rcd = iterator.next();
 		assertThat(rcd.get(primaryKeyName)).isEqualTo(primaryKeyName+"_val");
-		assertThat(rcd.get("attr-1")).isEqualTo("-99");
 		assertThat(rcd.get("col_1")).isEqualTo("Fido");
 		assertThat(rcd.get("col_2")).isEqualTo("Jerry");
 		assertThat(iterator.hasNext()).isFalse();
 		reader.close();
 	}
-
 	@Test
 	void batchWriteFollowedByTsvDownload() throws IOException {
 		RecordType recordType = RecordType.valueOf("tsv-test");
