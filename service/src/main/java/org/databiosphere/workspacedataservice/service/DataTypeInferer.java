@@ -252,9 +252,6 @@ public class DataTypeInferer {
 			return ARRAY_OF_DATE;
 		}
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, String[].class))){
-			if(ArrayUtils.isNotEmpty(getArrayOfType(val.toLowerCase(), Boolean[].class))){
-				return ARRAY_OF_BOOLEAN;
-			}
 			return ARRAY_OF_STRING;
 		}
 		if(getArrayOfType(val, String[].class) != null){
