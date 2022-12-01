@@ -24,10 +24,7 @@ public class RelationUtils {
 	}
 
 	public static RecordType getTypeValueForArray(String[] arr) {
-		if (Arrays.asList(arr).stream().map(RelationUtils::getTypeValue).distinct().count() > 1){
-			throw new InvalidRelationException("All relations in an array must relate to the same table");
-		}
-		return getTypeValue(arr[0]);
+		return getTypeValueForList(Arrays.asList(arr));
 	}
 
 	private static String[] splitRelationIdentifier(Object obj) {

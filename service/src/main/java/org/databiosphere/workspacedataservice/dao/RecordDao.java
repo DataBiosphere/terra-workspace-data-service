@@ -136,14 +136,14 @@ public class RecordDao {
 		}
 	}
 
-	private String getJoinTableName(String tableName, RecordType referringRecordType){
+	private String getJoinTableName(String relationColumnName, RecordType fromTable){
 		//Use RESERVED_NAME_PREFIX to ensure no collision with user-named tables.
 		//RecordType name has already been sql-validated
-		return quote(RESERVED_NAME_PREFIX + referringRecordType.getName() + "_" + SqlUtils.validateSqlString(tableName, ATTRIBUTE));
+		return quote(RESERVED_NAME_PREFIX + fromTable.getName() + "_" + SqlUtils.validateSqlString(relationColumnName, ATTRIBUTE));
 	}
 
-	private String getQualifiedJoinTableName(UUID instanceId, String tableName, RecordType referringRecordType){
-		return quote(instanceId.toString()) + "." + getJoinTableName(tableName, referringRecordType);
+	private String getQualifiedJoinTableName(UUID instanceId, String relationColumnName, RecordType fromTable){
+		return quote(instanceId.toString()) + "." + getJoinTableName(relationColumnName, fromTable);
 	}
 
 	private String getFromColumnName(RecordType referringRecordType){

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
@@ -174,9 +175,11 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void writeAndReadAllDataTypesJson() throws Exception {
+		//Create target records - note that getAllTypesAttributesForJson expects relations to be "target-record"
+		createSomeRecords(RecordType.valueOf("target-record"), 2);
 		String rt = "all-types";
 		RecordAttributes attributes = TestUtils.getAllTypesAttributesForJson();
-//		assertEquals(attributes.attributeSet().size(), DataTypeMapping.values().length);
+		assertEquals(attributes.attributeSet().size(), DataTypeMapping.values().length);
 		String rId = "newRecordId";
 		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 						rt, rId).content(mapper.writeValueAsString(new RecordRequest(attributes)))
@@ -190,10 +193,12 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void writeAndReadAllDataTypesTsv() throws Exception {
+		//Create target records - note that getAllTypesAttributesForTsv expects relations to be "target-record"
+		createSomeRecords(RecordType.valueOf("target-record"), 2);
 		String rt = "all-types";
 		String recordId = "newRecordId";
 		RecordAttributes attributes = TestUtils.getAllTypesAttributesForTsv();
-//		assertEquals(DataTypeMapping.values().length, attributes.attributeSet().size());
+		assertEquals(DataTypeMapping.values().length, attributes.attributeSet().size());
 		String tsv = "sys_name\t"+attributes.attributeSet().stream().map(Map.Entry::getKey).collect(Collectors.joining("\t")) + "\n";
 		tsv += recordId+"\t" + attributes.attributeSet().stream().map(e -> e.getValue().toString()).collect(Collectors.joining("\t")) + "\n";
 
@@ -262,7 +267,7 @@ class RecordControllerMockMvcTest {
 		StringBuilder tsvContent = new StringBuilder("sys_name\trel\trelArr\n");
 		String singleRel = RelationUtils.createRelationString(refType, "record_0");
 		String relArr = "[\"" + RelationUtils.createRelationString(refType, "record_1") + "\", \"" + RelationUtils.createRelationString(refType, "record_2") + "\"]";
-		for (int i = 0; i < 5 + 1; i++) {
+		for (int i = 0; i < 6; i++) {
 			tsvContent.append(i + "\t" +  singleRel + "\t" + relArr + "\n");
 		}
 		MockMultipartFile file = new MockMultipartFile("records", "relation.tsv", MediaType.TEXT_PLAIN_VALUE,

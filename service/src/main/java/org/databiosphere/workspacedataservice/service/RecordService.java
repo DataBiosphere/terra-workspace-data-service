@@ -13,6 +13,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -37,8 +38,10 @@ public class RecordService {
         prepareAndUpsert(instanceId, recordType, records, requestSchema, RECORD_ID);
     }
 
+
+    @Transactional
     public void prepareAndUpsert(UUID instanceId, RecordType recordType, List<Record> records,
-                              Map<String, DataTypeMapping> requestSchema, String primaryKey) {
+                             Map<String, DataTypeMapping> requestSchema, String primaryKey) {
         //Identify relation arrays
         Map<String, DataTypeMapping> relationArrays = requestSchema.entrySet().stream()
                 .filter(entry -> entry.getValue() == DataTypeMapping.ARRAY_OF_RELATION)
@@ -62,8 +65,7 @@ public class RecordService {
                     } else {
                         rels = Arrays.asList(inferer.getArrayOfType(attribute.getValue().toString(), String[].class));
                     }
-                    Relation relDef = new Relation(attribute.getKey(), RelationUtils.getTypeValue(rels.get(0)));
-                    checkAllRefsMatch(rels, relDef.relationRecordType());
+                    Relation relDef = new Relation(attribute.getKey(), RelationUtils.getTypeValueForList(rels));
                     List<RelationValue> relList = relationArrayValues.getOrDefault(relDef, new ArrayList<>());
                     relList.addAll(rels.stream().map(r -> getRelVal(rec, r)).toList());
                     relationArrayValues.put(relDef, relList);
@@ -75,14 +77,6 @@ public class RecordService {
 
     private RelationValue getRelVal(Record fromRecord, String toString){
         return new RelationValue(fromRecord, new Record(RelationUtils.getRelationValue(toString), RelationUtils.getTypeValue(toString), new RecordAttributes(Collections.emptyMap())));
-    }
-
-
-    private void checkAllRefsMatch(List<String> rels, RecordType typeToMatch){
-        if (!rels.stream().map(RelationUtils::getTypeValue).allMatch(r -> r.equals(typeToMatch))){
-            throw new InvalidRelationException("It looks like you're attempting to assign a relation "
-                    + "to multiple record types");
-        }
     }
 
     public void batchUpsertWithErrorCapture(UUID instanceId, RecordType recordType, List<Record> records,
