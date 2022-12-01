@@ -18,10 +18,10 @@ public class TestUtils {
 	}
 
 	public static String getExpectedAllAttributesJsonText(){
-		return "{\"id\":\"newRecordId\",\"type\":\"all-types\",\"attributes\":{\"array-of-number\":[1,2,3]," +
+		return "{\"id\":\"newRecordId\",\"type\":\"all-types\",\"attributes\":{\"sys_name\":\"newRecordId\"," +
 				"\"array_of_boolean\":[true,false,true,true],\"array_of_date\":[\"2021-11-03\",\"2021-11-04\"]," +
 				"\"array_of_date_time\":[\"2021-11-03T07:30:00\",\"2021-11-03T07:30:00\"]," +
-				"\"array_of_string\":[\"a\",\"b\",\"c\",\"12\"],\"boolean\":false,\"date\":\"2021-11-03\"," +
+				"\"array_of_string\":[\"a\",\"b\",\"c\",\"12\"],\"array-of-number\":[1,2,3],\"boolean\":false,\"date\":\"2021-11-03\"," +
 				"\"date-time\":\"2021-11-03T07:30:00\",\"empty-array\":[],\"json\":{\"age\":22}," +
 				"\"null\":null,\"number\":47,\"string\":\"Broad Institute\"}}";
 	}

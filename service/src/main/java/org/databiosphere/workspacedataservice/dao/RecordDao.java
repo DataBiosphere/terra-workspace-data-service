@@ -14,6 +14,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.BatchDelet
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.shared.model.AttributeComparator;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
@@ -45,6 +46,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -148,24 +150,38 @@ public class RecordDao {
 	public List<String> getAllAttributeNames(UUID instanceId, RecordType recordType) {
 		MapSqlParameterSource params = new MapSqlParameterSource(INSTANCE_ID, instanceId.toString());
 		params.addValue("tableName", recordType.getName());
-		return namedTemplate.queryForList("select column_name from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
-						+ "and table_name = :tableName", params, String.class);
+		List<String> attributeNames = namedTemplate.queryForList("select column_name from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
+				+ "and table_name = :tableName", params, String.class);
+		Collections.sort(attributeNames, new AttributeComparator(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)));
+		return attributeNames;
+	}
+
+	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
+		MapSqlParameterSource params = new MapSqlParameterSource(INSTANCE_ID, instanceId.toString());
+		params.addValue("tableName", recordType.getName());
+		String sql = "select column_name, udt_name::regtype as data_type from INFORMATION_SCHEMA.COLUMNS " +
+				"where table_schema = :instanceId and table_name = :tableName";
+		return getTableSchema(sql, params);
+	}
+
+	private Map<String, DataTypeMapping> getTableSchema(String sql, MapSqlParameterSource params){
+		return namedTemplate.query(sql, params, rs -> {
+			Map<String, DataTypeMapping> result = new HashMap<>();
+			while (rs.next()) {
+				result.put(rs.getString("column_name"),
+						DataTypeMapping.fromPostgresType(rs.getString("data_type")));
+			}
+			return result;
+		});
 	}
 
 	public Map<String, DataTypeMapping> getExistingTableSchemaLessPrimaryKey(UUID instanceId, RecordType recordType) {
 		MapSqlParameterSource params = new MapSqlParameterSource(INSTANCE_ID, instanceId.toString());
 		params.addValue("tableName", recordType.getName());
-		params.addValue("recordTypeRowIdentifier", cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId));
-		return namedTemplate
-				.query("select column_name, udt_name::regtype as data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
-						+ "and table_name = :tableName and column_name != :recordTypeRowIdentifier", params, rs -> {
-							Map<String, DataTypeMapping> result = new HashMap<>();
-							while (rs.next()) {
-								result.put(rs.getString("column_name"),
-										DataTypeMapping.fromPostgresType(rs.getString("data_type")));
-							}
-							return result;
-						});
+		params.addValue("primaryKey", cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId));
+		String sql = "select column_name, udt_name::regtype as data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
+				+ "and table_name = :tableName and column_name != :primaryKey";
+		return getTableSchema(sql, params);
 	}
 
 	public void addColumn(UUID instanceId, RecordType recordType, String columnName, DataTypeMapping colType) {
@@ -539,11 +555,12 @@ public class RecordDao {
 		private RecordAttributes getAttributes(ResultSet rs) throws JsonProcessingException {
 			try {
 				ResultSetMetaData metaData = rs.getMetaData();
-				RecordAttributes attributes = RecordAttributes.empty();
+				RecordAttributes attributes = RecordAttributes.empty(primaryKeyColumn);
 
 				for (int j = 1; j <= metaData.getColumnCount(); j++) {
 					String columnName = metaData.getColumnName(j);
 					if (columnName.equals(primaryKeyColumn)) {
+						attributes.putAttribute(primaryKeyColumn, rs.getString(primaryKeyColumn));
 						continue;
 					}
 					if (referenceColToTable.size() > 0 && referenceColToTable.containsKey(columnName)
