@@ -102,7 +102,7 @@ class RecordControllerMockMvcTest {
 	}
 
 	@Test
-	void secondBatchWriteWithPKSpecifiedShouldFail() throws Exception {
+	void secondBatchWriteWithPKChangeShouldFail() throws Exception {
 		String newBatchRecordType = "pk-record-type-change";
 		Record record = new Record("foo1", RecordType.valueOf(newBatchRecordType), new RecordAttributes(Map.of("attr1", "attr-val")));
 
