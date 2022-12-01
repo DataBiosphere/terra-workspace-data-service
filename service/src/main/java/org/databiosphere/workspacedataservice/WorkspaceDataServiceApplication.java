@@ -41,7 +41,6 @@ public class WorkspaceDataServiceApplication {
 				.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
 				.configure(DeserializationFeature.USE_BIG_INTEGER_FOR_INTS, true)
 				.findAndAddModules().build();
-		mapper.coercionConfigFor(LogicalType.Boolean).setCoercion(CoercionInputShape.String, CoercionAction.Fail);
 		mapper.coercionConfigFor(LogicalType.Boolean).setCoercion(CoercionInputShape.Integer, CoercionAction.Fail);
 		mapper.coercionConfigFor(LogicalType.Float).setCoercion(CoercionInputShape.String, CoercionAction.Fail);
 		mapper.coercionConfigFor(LogicalType.Integer).setCoercion(CoercionInputShape.String, CoercionAction.Fail);

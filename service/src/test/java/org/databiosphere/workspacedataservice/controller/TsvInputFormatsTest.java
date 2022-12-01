@@ -110,9 +110,9 @@ class TsvInputFormatsTest {
 						"[TRUE, fALSE, True]"
 				),
 				Arguments.of(
-						"[\"True\", \"false\", \"true\"]",
-						new String[]{"True", "false", "true"},
-						"[\"TRUE\", \"fALSE\", \"True\"]"
+						"[\"True\", \"false\", \"true   \"]",
+						new Boolean[]{Boolean.TRUE, Boolean.FALSE, Boolean.TRUE},
+						"[\"TRUE\", \"fALSE\", \"True    \"]"
 				),
 				Arguments.of("5", BigDecimal.valueOf(5), "5"),
 				Arguments.of("5.67", BigDecimal.valueOf(5.67d), "5.67"),

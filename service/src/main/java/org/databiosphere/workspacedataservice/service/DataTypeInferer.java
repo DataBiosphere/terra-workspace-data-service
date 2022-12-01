@@ -252,6 +252,9 @@ public class DataTypeInferer {
 			return ARRAY_OF_DATE;
 		}
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, String[].class))){
+			if(ArrayUtils.isNotEmpty(getArrayOfType(val.toLowerCase(), Boolean[].class))){
+				return ARRAY_OF_BOOLEAN;
+			}
 			return ARRAY_OF_STRING;
 		}
 		if(getArrayOfType(val, String[].class) != null){
@@ -264,7 +267,8 @@ public class DataTypeInferer {
 		try {
 			String escapedValue = replaceLeftRightQuotes(val);
 			if(clazz.getComponentType() == Boolean.class){
-				escapedValue = escapedValue.toLowerCase();
+				// Ensure that potential additional quotes do not surround the boolean values
+				escapedValue = escapedValue.toLowerCase().replaceAll("\"","");
 			}
 			return objectMapper.readValue(escapedValue, clazz);
 		} catch (JsonProcessingException e) {
