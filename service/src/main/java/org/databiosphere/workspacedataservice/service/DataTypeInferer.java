@@ -202,6 +202,8 @@ public class DataTypeInferer {
 
 	private JsonNode parseToJsonNode(String val){
 		try {
+			// We call .toLowerCase() to ensure that WDS interprets all different inputted spellings of boolean values
+			// as booleans - e.g. `TRUE`, `tRUe`, or `true` ---> `true`
 			return objectMapper.readTree(val.toLowerCase());
 		} catch (JsonProcessingException e) {
 			return null;

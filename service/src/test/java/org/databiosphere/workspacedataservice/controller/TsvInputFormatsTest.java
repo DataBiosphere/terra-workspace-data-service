@@ -93,7 +93,7 @@ class TsvInputFormatsTest {
 				Arguments.of("FALSE", Boolean.FALSE, "false"),
 				Arguments.of("fAlSe", Boolean.FALSE, "false"),
 				Arguments.of("False", Boolean.FALSE, "false"),
-//				Arguments.of("\"false\"", String.valueOf("\"False\""), "\"fAlSe\"") // TODO: Fix in next PR
+				Arguments.of("\"false\"", Boolean.FALSE, "\"fAlSe\""),
 				Arguments.of(
 						"[true, TRUE, tRuE]",
 						new Boolean[]{Boolean.TRUE, Boolean.TRUE, Boolean.TRUE},
