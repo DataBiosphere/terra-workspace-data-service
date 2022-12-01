@@ -9,6 +9,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.InvalidRel
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -40,6 +41,12 @@ class RecordDaoTest {
 		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType, new RelationCollection(Collections.emptySet(), Collections.emptySet()), PRIMARY_KEY);
 	}
 
+	@AfterEach
+	void cleanUp(){
+		recordDao.dropSchema(instanceId);
+	}
+
+
 	@Test
 	@Transactional
 	void testGetSingleRecord() {
@@ -55,6 +62,41 @@ class RecordDaoTest {
 		// nonexistent record should be null
 		Optional<Record> none = recordDao.getSingleRecord(instanceId, recordType, "noRecord");
 		assertEquals(none, Optional.empty());
+	}
+
+	@Test
+	void deleteAndQueryFunkyPrimaryKeyValues(){
+		RecordType funkyPk = RecordType.valueOf("funkyPk");
+		String sample_id = "Sample ID";
+		String recordId = "1199";
+		Record testRecord = new Record(recordId, funkyPk, RecordAttributes.empty());
+		recordDao.createRecordType(instanceId, Map.of("attr1", DataTypeMapping.STRING), funkyPk, Collections.emptySet(), sample_id);
+		recordDao.batchUpsert(instanceId, funkyPk, Collections.singletonList(testRecord), Collections.emptyMap(), sample_id);
+		List<Record> queryRes = recordDao.queryForRecords(funkyPk, 10, 0, "ASC", null, instanceId);
+		assertEquals(1, queryRes.size());
+		assertTrue(recordDao.recordExists(instanceId, funkyPk, recordId));
+		assertTrue(recordDao.getSingleRecord(instanceId, funkyPk, recordId).isPresent());
+		assertTrue(recordDao.deleteSingleRecord(instanceId, funkyPk, recordId));
+	}
+
+	@Test
+	void batchDeleteAndTestRelationsFunkyPrimaryKeyValues(){
+		RecordType referencedRt = RecordType.valueOf("referenced");
+		String sample_id = "Sample ID";
+		String recordId = "1199";
+		Record testRecord = new Record(recordId, referencedRt, RecordAttributes.empty());
+		Map<String, DataTypeMapping> schema = Map.of("attr1", DataTypeMapping.STRING);
+		recordDao.createRecordType(instanceId, schema, referencedRt, Collections.emptySet(), sample_id);
+		recordDao.batchUpsert(instanceId, referencedRt, Collections.singletonList(testRecord), Collections.emptyMap(), sample_id);
+		RecordType referencer = RecordType.valueOf("referencer");
+		recordDao.createRecordType(instanceId, schema, referencer,
+				Collections.singleton(new Relation("attr1", referencedRt)), sample_id);
+		Record referencerRecord = new Record(recordId, referencer,
+				RecordAttributes.empty().putAttribute("attr1", RelationUtils.createRelationString(referencedRt, recordId)));
+		recordDao.batchUpsert(instanceId, referencer, Collections.singletonList(referencerRecord), schema, sample_id);
+		recordDao.batchDelete(instanceId, referencer, Collections.singletonList(referencerRecord));
+		recordDao.batchDelete(instanceId, referencedRt, Collections.singletonList(testRecord));
+		assertTrue(recordDao.getSingleRecord(instanceId, referencer, recordId).isEmpty());
 	}
 
 	@Test
@@ -166,7 +208,6 @@ class RecordDaoTest {
 	}
 
 	@Test
-	@Transactional
 	void testDeleteRelatedRecord() {
 		// make sure columns are in recordType, as this will be taken care of before we
 		// get to the dao
@@ -259,7 +300,6 @@ class RecordDaoTest {
 	}
 
 	@Test
-	@Transactional
 	void testDeleteRecordTypeWithRelation() {
 		RecordType recordTypeName = recordType;
 		RecordType referencedType = RecordType.valueOf("referencedType");
