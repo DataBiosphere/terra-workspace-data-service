@@ -112,6 +112,8 @@ public class RecordDao {
 	@SuppressWarnings("squid:S2077")
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
 			Set<Relation> relations, String recordTypePrimaryKey) {
+		//this handles the case where the user incorrectly includes the primary key data in the attributes
+		tableInfo = Maps.filterKeys(tableInfo, k -> !k.equals(recordTypePrimaryKey));
 		String columnDefs = genColumnDefs(tableInfo, recordTypePrimaryKey);
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(recordType, instanceId)
@@ -236,7 +238,10 @@ public class RecordDao {
 
 
 	private List<RecordColumn> getSchemaWithRowId(Map<String, DataTypeMapping> schema, String recordIdColumn) {
-		return Stream.concat(Stream.of(new RecordColumn(recordIdColumn, DataTypeMapping.STRING)), schema.entrySet().stream().map(e -> new RecordColumn(e.getKey(), e.getValue()))).toList();
+		//we collect to a set first to handle the case where the user has included their primary key data in attributes
+		return Stream.concat(Stream.of(new RecordColumn(recordIdColumn, DataTypeMapping.STRING)),
+				schema.entrySet().stream().map(e -> new RecordColumn(e.getKey(), e.getValue())))
+				.collect(Collectors.toSet()).stream().toList();
 	}
 
 	public void batchUpsertWithErrorCapture(UUID instanceId, RecordType recordType, List<Record> records,

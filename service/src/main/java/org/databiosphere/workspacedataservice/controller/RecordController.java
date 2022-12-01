@@ -14,6 +14,7 @@ import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.ReservedNames;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.service.model.exception.NewPrimaryKeyException;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -118,6 +119,9 @@ public class RecordController {
                @RequestParam("records") MultipartFile records) throws IOException {
 		validateVersion(version);
 		validateInstance(instanceId);
+		if(recordDao.recordTypeExists(instanceId, recordType)){
+			validatePrimaryKey(instanceId, recordType, primaryKey);
+		}
 		int recordsModified;
 		try (InputStreamReader inputStreamReader = new InputStreamReader(records.getInputStream())) {
 			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType, primaryKey);
@@ -198,6 +202,7 @@ public class RecordController {
 			createRecordTypeAndInsertRecords(instanceId, newRecord, recordType, requestSchema, primaryKey);
 			return new ResponseEntity<>(response, status);
 		} else {
+			validatePrimaryKey(instanceId, recordType, primaryKey);
 			Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
 			// null out any attributes that already exist but aren't in the request
 			existingTableSchema.keySet().forEach(attr -> attributesInRequest.putAttributeIfAbsent(attr, null));
@@ -213,6 +218,12 @@ public class RecordController {
 			recordDao.batchUpsert(instanceId, recordType, records, combinedSchema);
 			RecordResponse response = new RecordResponse(recordId, recordType, attributesInRequest);
 			return new ResponseEntity<>(response, status);
+		}
+	}
+
+	private void validatePrimaryKey(UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
+		if (primaryKey.isPresent() && !primaryKey.get().equals(recordDao.getPrimaryKeyColumn(recordType, instanceId))) {
+			throw new NewPrimaryKeyException(primaryKey.get(), recordDao.getPrimaryKeyColumn(recordType, instanceId), recordType);
 		}
 	}
 
@@ -314,6 +325,9 @@ public class RecordController {
 			@RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey, InputStream is) {
 		validateVersion(version);
 		validateInstance(instanceId);
+		if(recordDao.recordTypeExists(instanceId, recordType)){
+			validatePrimaryKey(instanceId, recordType, primaryKey);
+		}
 		int recordsModified = batchWriteService.consumeWriteStream(is, instanceId, recordType, primaryKey);
 		return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
 	}
