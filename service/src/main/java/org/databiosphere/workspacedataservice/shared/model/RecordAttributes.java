@@ -3,7 +3,11 @@ package org.databiosphere.workspacedataservice.shared.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Represents the attributes of a Record.
@@ -31,6 +35,13 @@ public class RecordAttributes {
 		this.attributes = new TreeMap<>(attributes);
 	}
 
+	public RecordAttributes(Map<String, Object> attributes, String primaryKey) {
+		AttributeComparator comparator = new AttributeComparator(primaryKey);
+		this.attributes = new TreeMap<>(comparator);
+		this.attributes.putAll(attributes);
+	}
+
+
 	/**
 	 * creates a RecordAttributes with no keys/values
 	 * 
@@ -38,6 +49,10 @@ public class RecordAttributes {
 	 */
 	public static RecordAttributes empty() {
 		return new RecordAttributes(Collections.emptyMap());
+	}
+
+	public static RecordAttributes empty(String primaryKeyColumn) {
+		return new RecordAttributes(Collections.emptyMap(), primaryKeyColumn);
 	}
 
 	// ========== accessors
