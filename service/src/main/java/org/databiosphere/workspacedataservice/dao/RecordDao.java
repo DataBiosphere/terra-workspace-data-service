@@ -252,7 +252,7 @@ public class RecordDao {
 			throw e;
 		}
 	}
-	
+
 	@SuppressWarnings("squid:S2077")
 	public void changeColumn(UUID instanceId, RecordType recordType, String columnName, DataTypeMapping newColType) {
 		namedTemplate.getJdbcTemplate()
@@ -716,7 +716,7 @@ public class RecordDao {
 
 	public List<RecordType> getAllRecordTypes(UUID instanceId) {
 		return namedTemplate.queryForList(
-				"select tablename from pg_tables WHERE schemaname = :workspaceSchema and hasindexes is true order by tablename",
+				"select tablename from pg_tables WHERE schemaname = :workspaceSchema and tablename not like 'sys_%' order by tablename",
 				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), RecordType.class);
 	}
 
