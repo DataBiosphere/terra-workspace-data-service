@@ -223,7 +223,7 @@ public class RecordController {
 
 	private void validatePrimaryKey(UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		if (primaryKey.isPresent() && !primaryKey.get().equals(recordDao.getPrimaryKeyColumn(recordType, instanceId))) {
-			throw new NewPrimaryKeyException(primaryKey.get(), recordDao.getPrimaryKeyColumn(recordType, instanceId), recordType);
+			throw new NewPrimaryKeyException(primaryKey.get(), recordType);
 		}
 	}
 

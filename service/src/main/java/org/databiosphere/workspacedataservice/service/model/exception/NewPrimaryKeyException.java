@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 public class NewPrimaryKeyException extends RuntimeException {
 
 
-	public NewPrimaryKeyException(String oldPk, String newPk, RecordType recordType) {
+	public NewPrimaryKeyException(String oldPk, RecordType recordType) {
 		super("The primary key for " + recordType + " is already set to " + oldPk
-				+ " if you wish to change it to " + newPk + " you'll need to create a new record type.");
+				+ " if you wish to change it you'll need to create a new record type.");
 	}
 }
