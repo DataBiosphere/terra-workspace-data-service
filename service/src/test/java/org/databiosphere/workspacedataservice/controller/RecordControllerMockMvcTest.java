@@ -303,6 +303,29 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void scalarFollowedByArray() throws Exception {
+		String type = "scalar-followed-by-array";
+		String id = "my-id";
+		String attrName = "my-attr";
+
+		RecordAttributes firstPayload = new RecordAttributes(Map.of(attrName, "simple string"));
+		RecordAttributes secondPayload = new RecordAttributes(Map.of(attrName, List.of("array", "of", "strings")));
+
+		// upload the scalar string, should be success
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{id}", instanceId, versionId, type, id)
+						.content(mapper.writeValueAsString(new RecordRequest(firstPayload)))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().is2xxSuccessful());
+
+		// upload the string array into the same attribute, should also be success
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{id}", instanceId, versionId, type, id)
+						.content(mapper.writeValueAsString(new RecordRequest(secondPayload)))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().is2xxSuccessful());
+	}
+
+	@Test
+	@Transactional
 	void tsvWithMissingRelationShouldFail() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "simple_bad_relation.tsv", MediaType.TEXT_PLAIN_VALUE,
 				("sys_name\trelation\na\t" + RelationUtils.createRelationString(RecordType.valueOf("missing"), "QQ")
