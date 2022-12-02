@@ -96,9 +96,6 @@ public class RecordDao {
 
 	public void createSchema(UUID instanceId) {
 		namedTemplate.getJdbcTemplate().update("create schema " + quote(instanceId.toString()));
-		//Add domains to distinguish relations and arrays of relations from strings and arrays of strings
-		namedTemplate.getJdbcTemplate().update("create domain " + quote(instanceId.toString()) + ".relation as text");
-		namedTemplate.getJdbcTemplate().update("create domain " + quote(instanceId.toString()) + ".array_of_relation as text[]");
 	}
 
 
@@ -119,7 +116,7 @@ public class RecordDao {
 	@Transactional
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
 			RelationCollection relations, String recordTypePrimaryKey) {
-		String columnDefs = genColumnDefs(instanceId, tableInfo, recordTypePrimaryKey);
+		String columnDefs = genColumnDefs(tableInfo, recordTypePrimaryKey);
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(recordType, instanceId)
 					+ "( " + columnDefs + (!relations.relations().isEmpty() ? ", " + getFkSql(relations.relations(), instanceId) : "") + ")");
@@ -244,7 +241,7 @@ public class RecordDao {
 		try {
 			namedTemplate.getJdbcTemplate()
 					.update("alter table " + getQualifiedTableName(recordType, instanceId) + " add column "
-							+ quote(SqlUtils.validateSqlString(columnName, ATTRIBUTE)) + " " + getPostgresType(instanceId, colType)
+							+ quote(SqlUtils.validateSqlString(columnName, ATTRIBUTE)) + " " + colType.getPostgresType()
 							+ (referencedType != null
 									? " references " + getQualifiedTableName(referencedType, instanceId)
 									: ""));
@@ -255,28 +252,21 @@ public class RecordDao {
 			throw e;
 		}
 	}
-
-	private String getPostgresType(UUID instanceId, DataTypeMapping colType){
-		if (colType == DataTypeMapping.ARRAY_OF_RELATION || colType == DataTypeMapping.RELATION){
-			return quote(instanceId.toString()) + "." + colType.getPostgresType();
-		}
-		return colType.getPostgresType();
-	}
-
+	
 	@SuppressWarnings("squid:S2077")
 	public void changeColumn(UUID instanceId, RecordType recordType, String columnName, DataTypeMapping newColType) {
 		namedTemplate.getJdbcTemplate()
 				.update("alter table " + getQualifiedTableName(recordType, instanceId) + " alter column "
 						+ quote(SqlUtils.validateSqlString(columnName, ATTRIBUTE)) + " TYPE "
-						+ getPostgresType(instanceId, newColType));
+						+ newColType.getPostgresType());
 	}
 
-	private String genColumnDefs(UUID instanceId, Map<String, DataTypeMapping> tableInfo, String primaryKeyCol) {
+	private String genColumnDefs(Map<String, DataTypeMapping> tableInfo, String primaryKeyCol) {
 		return quote(primaryKeyCol) + " text primary key"
 				+ (tableInfo.size() > 0
 						? ", " + tableInfo.entrySet().stream()
 								.map(e -> quote(SqlUtils.validateSqlString(e.getKey(), ATTRIBUTE)) + " "
-										+ getPostgresType(instanceId, e.getValue()))
+										+ e.getValue().getPostgresType())
 								.collect(Collectors.joining(", "))
 						: "");
 	}
