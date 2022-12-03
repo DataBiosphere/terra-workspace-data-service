@@ -95,13 +95,14 @@ public class DataTypeInferer {
 		if (StringUtils.isEmpty((String) val)) {
 			return NULL;
 		}
-		String sVal = val.toString();
 
 		if (RelationUtils.isRelationValue(val)) {
 			return STRING;
 		}
 		// when we load from TSV, numbers are converted to strings, we need to go back
 		// to numbers
+		String sVal = val.toString();
+
 		if (isNumericValue(sVal)) {
 			return NUMBER;
 		}
@@ -165,6 +166,7 @@ public class DataTypeInferer {
 		if (RelationUtils.isRelationValue(val)) {
 			return STRING;
 		}
+
 		if(val instanceof List<?> listVal){
 			return findArrayType(listVal);
 		}
@@ -200,7 +202,9 @@ public class DataTypeInferer {
 
 	private JsonNode parseToJsonNode(String val){
 		try {
-			return objectMapper.readTree(val);
+			// We call .toLowerCase() to ensure that WDS interprets all different inputted spellings of boolean values
+			// as booleans - e.g. `TRUE`, `tRUe`, or `true` ---> `true`
+			return objectMapper.readTree(val.toLowerCase());
 		} catch (JsonProcessingException e) {
 			return null;
 		}
@@ -258,7 +262,12 @@ public class DataTypeInferer {
 
 	public <T> T[] getArrayOfType(String val, Class<T[]> clazz) {
 		try {
-			return objectMapper.readValue(replaceLeftRightQuotes(val), clazz);
+			String escapedValue = replaceLeftRightQuotes(val);
+			if(clazz.getComponentType() == Boolean.class){
+				// Ensure that potential additional quotes do not surround the boolean values
+				escapedValue = escapedValue.toLowerCase().replaceAll("\"","");
+			}
+			return objectMapper.readValue(escapedValue, clazz);
 		} catch (JsonProcessingException e) {
 			return null;
 		}
