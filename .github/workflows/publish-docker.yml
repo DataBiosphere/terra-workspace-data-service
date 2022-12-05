@@ -94,8 +94,8 @@ jobs:
       - name: Find in commit messages
         uses: cybervoid/gajira-get-issue@v1.0
         with:
-          input-text: ${{ github.ref }}
-          
+          from: commits
+
       - name: Clone Cromwhelm
         uses: actions/checkout@v2
         with:
