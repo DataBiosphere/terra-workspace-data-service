@@ -302,7 +302,6 @@ class RecordControllerMockMvcTest {
 	}
 
 	@Test
-	@Transactional
 	void scalarFollowedByArray() throws Exception {
 		String type = "scalar-followed-by-array";
 		String id = "my-id";
