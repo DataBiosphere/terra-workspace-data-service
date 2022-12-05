@@ -117,14 +117,14 @@ public class BatchWriteService {
 	}
 
 	@Transactional
-	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType, Optional<String> uniqueRowIdentifierColumn) throws IOException {
+	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) throws IOException {
 		CSVFormat csvFormat = TsvSupport.getUploadFormat();
 		CSVParser rows = csvFormat.parse(is);
 		String leftMostColumn = rows.getHeaderNames().get(0);
 		List<Record> batch = new ArrayList<>();
 		boolean firstUpsertBatch = true;
 		Map<String, DataTypeMapping> schema = null;
-		String uniqueIdentifierAsString = uniqueRowIdentifierColumn.orElse(leftMostColumn);
+		String uniqueIdentifierAsString = primaryKey.orElse(leftMostColumn);
 		int recordsProcessed = 0;
 		for (CSVRecord row : rows) {
 			Map<String, Object> m = (Map) row.toMap();
@@ -135,7 +135,7 @@ public class BatchWriteService {
 			} catch (IllegalArgumentException ex) {
 				LOGGER.error("IllegalArgument exception while reading tsv", ex);
 				throw new InvalidTsvException(
-						"Uploaded TSV is either missing the " + uniqueRowIdentifierColumn
+						"Uploaded TSV is either missing the " + primaryKey
 								+ " column or has a null or empty string value in that column");
 			}
 			recordsProcessed++;
@@ -181,14 +181,15 @@ public class BatchWriteService {
 	/**
 	 * All or nothing, write all the operations successfully in the InputStream or
 	 * write none.
-	 * 
+	 *
 	 * @param is
 	 * @param instanceId
 	 * @param recordType
+	 * @param primaryKey
 	 * @return number of records updated
 	 */
 	@Transactional
-	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType) {
+	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		int recordsAffected = 0;
 		try (StreamingWriteHandler streamingWriteHandler = new StreamingWriteHandler(is, objectMapper)) {
 			Map<String, DataTypeMapping> schema = null;
@@ -198,10 +199,10 @@ public class BatchWriteService {
 				List<Record> records = info.getRecords();
 				if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
 					schema = inferer.inferTypes(records, InBoundDataSource.JSON);
-					createOrModifyRecordType(instanceId, recordType, schema, records, RECORD_ID);
+					createOrModifyRecordType(instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
 					firstUpsertBatch = false;
 				}
-				writeBatch(instanceId, recordType, schema, info, records);
+				writeBatch(instanceId, recordType, schema, info, records, primaryKey);
 				recordsAffected += records.size();
 			}
 		} catch (IOException e) {
@@ -222,9 +223,9 @@ public class BatchWriteService {
 	}
 
 	private void writeBatch(UUID instanceId, RecordType recordType, Map<String, DataTypeMapping> schema,
-			StreamingWriteHandler.WriteStreamInfo info, List<Record> records) throws BatchWriteException {
+							StreamingWriteHandler.WriteStreamInfo info, List<Record> records, Optional<String> primaryKey) throws BatchWriteException {
 		if (info.getOperationType() == OperationType.UPSERT) {
-			recordDao.batchUpsertWithErrorCapture(instanceId, recordType, records, schema, RECORD_ID);
+			recordDao.batchUpsertWithErrorCapture(instanceId, recordType, records, schema, primaryKey.orElse(RECORD_ID));
 		} else if (info.getOperationType() == OperationType.DELETE) {
 			recordDao.batchDelete(instanceId, recordType, records);
 		}
