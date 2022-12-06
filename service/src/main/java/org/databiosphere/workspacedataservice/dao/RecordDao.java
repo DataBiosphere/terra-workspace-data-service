@@ -439,7 +439,7 @@ public class RecordDao {
 			return getArrayValues(attVal, typeMapping);
 		}
 		if(attVal instanceof List<?> list && typeMapping == DataTypeMapping.STRING){
-			return list.stream().map(Object::toString).collect(Collectors.joining(","));
+			return "{"+ list.stream().map(Object::toString).collect(Collectors.joining(",")) +"}";
 		}
 		return attVal;
 	}
