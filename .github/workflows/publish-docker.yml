@@ -101,7 +101,7 @@ jobs:
       - name: Update WDS image tag for CBAS Helm Chart in cromwhelm
         env:
           BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
         run: |
           set -e
           cd cromwhelm
