@@ -59,6 +59,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.PRIMARY_KEY_COLUMN_CACHE;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.RECORD_TYPE;
 
@@ -66,7 +67,7 @@ import static org.databiosphere.workspacedataservice.service.model.exception.Inv
 public class RecordDao {
 
 	private static final String INSTANCE_ID = "instanceId";
-	private static final String RECORD_ID = "recordId";
+	private static final String RECORD_ID_PARAM = "recordId";
 	private final NamedParameterJdbcTemplate namedTemplate;
 
 	private final NamedParameterJdbcTemplate templateForStreaming;
@@ -114,6 +115,8 @@ public class RecordDao {
 	@SuppressWarnings("squid:S2077")
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
 			Set<Relation> relations, String recordTypePrimaryKey) {
+		//this handles the case where the user incorrectly includes the primary key data in the attributes
+		tableInfo = Maps.filterKeys(tableInfo, k -> !k.equals(recordTypePrimaryKey));
 		String columnDefs = genColumnDefs(tableInfo, recordTypePrimaryKey);
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(recordType, instanceId)
@@ -215,13 +218,17 @@ public class RecordDao {
 	}
 
 	private String genColumnDefs(Map<String, DataTypeMapping> tableInfo, String primaryKeyCol) {
-		return quote(primaryKeyCol) + " text primary key"
+		return getPrimaryKeyDef(primaryKeyCol)
 				+ (tableInfo.size() > 0
 						? ", " + tableInfo.entrySet().stream()
 								.map(e -> quote(SqlUtils.validateSqlString(e.getKey(), ATTRIBUTE)) + " "
 										+ e.getValue().getPostgresType())
 								.collect(Collectors.joining(", "))
 						: "");
+	}
+
+	private String getPrimaryKeyDef(String primaryKeyCol){
+		return (primaryKeyCol.equals(RECORD_ID) ? quote(primaryKeyCol) : quote(SqlUtils.validateSqlString(primaryKeyCol, ATTRIBUTE))) + " text primary key";
 	}
 
 	private String quote(String toQuote) {
@@ -252,7 +259,10 @@ public class RecordDao {
 
 
 	private List<RecordColumn> getSchemaWithRowId(Map<String, DataTypeMapping> schema, String recordIdColumn) {
-		return Stream.concat(Stream.of(new RecordColumn(recordIdColumn, DataTypeMapping.STRING)), schema.entrySet().stream().map(e -> new RecordColumn(e.getKey(), e.getValue()))).toList();
+		//we collect to a set first to handle the case where the user has included their primary key data in attributes
+		return Stream.concat(Stream.of(new RecordColumn(recordIdColumn, DataTypeMapping.STRING)),
+				schema.entrySet().stream().map(e -> new RecordColumn(e.getKey(), e.getValue())))
+				.collect(Collectors.toSet()).stream().toList();
 	}
 
 	public void batchUpsertWithErrorCapture(UUID instanceId, RecordType recordType, List<Record> records,
@@ -304,7 +314,7 @@ public class RecordDao {
 		String recordTypePrimaryKey = cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId);
 		try {
 			return namedTemplate.update("delete from " + getQualifiedTableName(recordType, instanceId) + " where "
-					+ quote(recordTypePrimaryKey) + " = :recordId", new MapSqlParameterSource(RECORD_ID, recordId)) == 1;
+					+ quote(recordTypePrimaryKey) + " = :recordId", new MapSqlParameterSource(RECORD_ID_PARAM, recordId)) == 1;
 		} catch (DataIntegrityViolationException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForTableRelation(sqlEx);
@@ -632,7 +642,7 @@ public class RecordDao {
 			return Optional.ofNullable(namedTemplate.queryForObject(
 					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId))
 							+ " = :recordId",
-					new MapSqlParameterSource(RECORD_ID, recordId), new RecordRowMapper(recordType,objectMapper, instanceId)));
+					new MapSqlParameterSource(RECORD_ID_PARAM, recordId), new RecordRowMapper(recordType,objectMapper, instanceId)));
 		} catch (EmptyResultDataAccessException e) {
 			return Optional.empty();
 		}
@@ -647,7 +657,7 @@ public class RecordDao {
 				.equals(namedTemplate.queryForObject(
 						"select exists(select * from " + getQualifiedTableName(recordType, instanceId) + " where "
 								+ quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)) + " = :recordId)",
-						new MapSqlParameterSource(RECORD_ID, recordId), Boolean.class));
+						new MapSqlParameterSource(RECORD_ID_PARAM, recordId), Boolean.class));
 	}
 
 	public List<RecordType> getAllRecordTypes(UUID instanceId) {
