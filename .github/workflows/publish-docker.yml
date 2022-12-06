@@ -111,4 +111,6 @@ jobs:
           sed -i "s/$HELM_CUR_TAG/$HELM_NEW_TAG/" terra-batch-libchart/values.yaml
           git config --global user.name "broadbot"
           git config --global user.email "broadbot@broadinstitute.org"
+          git checkout -b aj-test
+          git commit -am "Auto update WDS version to $HELM_NEW_TAG"
           gh pr create --title "Auto update WDS version to $HELM_NEW_TAG" --body "Testing, don't merge"
