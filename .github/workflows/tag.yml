@@ -47,3 +47,4 @@ jobs:
         ACR_SP_PASSWORD: ${{ secrets.ACR_SP_PASSWORD }}
         ACR_SP_USER: ${{ secrets.ACR_SP_USER }}
         BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
+
