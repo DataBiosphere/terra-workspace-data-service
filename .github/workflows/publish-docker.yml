@@ -113,4 +113,5 @@ jobs:
           git config --global user.email "broadbot@broadinstitute.org"
           git checkout -b aj-test
           git commit -am "Auto update WDS version to $HELM_NEW_TAG"
+          git push -u origin aj-test
           gh pr create --title "Auto update WDS version to $HELM_NEW_TAG" --body "Testing, don't merge"
