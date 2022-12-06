@@ -69,15 +69,7 @@ class RecordControllerMockMvcTest {
 				versionId, instanceId).content("")).andExpect(status().isCreated());
 	}
 
-	@AfterEach
-	void afterEach() throws Exception {
-		try {
-			mockMvc.perform(delete("/instances/{v}/{instanceid}",
-					versionId, instanceId).content("")).andExpect(status().isOk());
-		} catch (Throwable t)  {
-			 // noop - if we fail to delete the instance, don't fail the test
-		}
-	}
+
 
 	@Test
 	@Transactional
