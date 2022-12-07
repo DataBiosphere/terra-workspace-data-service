@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -86,6 +87,34 @@ class RecordControllerMockMvcTest {
 		UUID uuid = UUID.randomUUID();
 		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isCreated());
 		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isConflict());
+	}
+
+	@Test
+	void createRecordTypeAndSubsequentlyTryToChangePrimaryKey() throws Exception {
+		String recordType = "pk_change_test";
+		createSomeRecords(recordType, 1);
+		RecordAttributes attributes = generateRandomAttributes();
+		RecordRequest recordRequest = new RecordRequest(attributes);
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}?primaryKey={pk}",
+						instanceId, versionId, recordType, "new_id", "new_pk")
+						.content(mapper.writeValueAsString(recordRequest))
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void secondBatchWriteWithPKChangeShouldFail() throws Exception {
+		String newBatchRecordType = "pk-record-type-change";
+		Record record = new Record("foo1", RecordType.valueOf(newBatchRecordType), new RecordAttributes(Map.of("attr1", "attr-val")));
+
+		BatchOperation op = new BatchOperation(record, OperationType.UPSERT);
+		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}?primaryKey={pk}", instanceId, versionId, newBatchRecordType, "pk1")
+						.content(mapper.writeValueAsString(List.of(op)))
+						.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk());
+		Record record2 = new Record("foo2", RecordType.valueOf(newBatchRecordType), new RecordAttributes(Map.of("attr1", "attr-val")));
+		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}?=primaryKey={pk}", instanceId, versionId, newBatchRecordType, "pkUpdated")
+						.content(mapper.writeValueAsString(List.of(new BatchOperation(record2, OperationType.UPSERT))))
+						.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
 	}
 
 	@Test
@@ -217,7 +246,20 @@ class RecordControllerMockMvcTest {
 		MockMultipartFile file = new MockMultipartFile("records", "no_row_id.tsv", MediaType.TEXT_PLAIN_VALUE,
 				"col1\tcol2\nfoo\tbar\n".getBytes());
 
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}?uniqueRowIdentifierColumn=missing_row_id", instanceId, versionId, "tsv-missing-rowid")
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}?primaryKey=missing_row_id", instanceId, versionId, "tsv-missing-rowid")
+				.file(file)).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void tsvChangePrimaryKeyShouldFail() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "tsv_pk_change.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"col1\tcol2\nfoo\tbar\n".getBytes());
+
+		String recordType = "tsv-pk-change";
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
+				.file(file)).andExpect(status().isOk());
+		//col1 as the left most column would have been selected as PK above, now we try to flip the script and this should return an error
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}?primaryKey=col2", instanceId, versionId, recordType)
 				.file(file)).andExpect(status().isBadRequest());
 	}
 
@@ -238,10 +280,22 @@ class RecordControllerMockMvcTest {
 				"col1\tcol2\nfoo\tbar\n".getBytes());
 
 		String recordType = "tsv_specified_row_id";
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}?uniqueRowIdentifierColumn=col2", instanceId, versionId, recordType)
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}?primaryKey=col2", instanceId, versionId, recordType)
 				.file(file)).andExpect(status().isOk());
 		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, recordType, "bar"))
 				.andExpect(status().isOk());
+	}
+
+	@Test
+	void handlePkDataSpecifiedTwice() throws Exception {
+		String recordType = "over_specified_primary_key";
+		RecordAttributes attributes = RecordAttributes.empty().putAttribute("attr1", "test");
+		RecordRequest recordRequest = new RecordRequest(attributes);
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}?primaryKey={pk}",
+						instanceId, versionId, recordType, "new_id", "attr1")
+						.content(mapper.writeValueAsString(recordRequest))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isCreated());
 	}
 
 	@Test

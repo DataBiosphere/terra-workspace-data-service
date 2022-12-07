@@ -344,7 +344,7 @@ class RecordDaoTest {
 		Relation singleRelation = new Relation("refAttr", recordType);
 		Relation arrayRelation = new Relation("relArrAttr", recordType);
 		recordDao.createRecordType(instanceId, Map.of("stringAttr", DataTypeMapping.STRING, "refAttr", DataTypeMapping.RELATION, "relArrAttr", DataTypeMapping.ARRAY_OF_RELATION), relationarrayType,
-				new RelationCollection(Set.of(singleRelation), Set.of(arrayRelation)), RECORD_ID);
+		new RelationCollection(Set.of(singleRelation), Set.of(arrayRelation)), RECORD_ID);
 
 		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, relationarrayType);
 		assertEquals(3, schema.size());
@@ -372,7 +372,7 @@ class RecordDaoTest {
 		Relation arrayRelation = new Relation("relArrAttr", recordType);
 		Map<String, DataTypeMapping> schema = Map.of("stringAttr", DataTypeMapping.STRING, "refAttr", DataTypeMapping.RELATION, "relArrAttr", DataTypeMapping.ARRAY_OF_RELATION);
 		recordDao.createRecordType(instanceId, schema, relationArrayType,
-				new RelationCollection(Collections.emptySet(), Set.of(arrayRelation)), RECORD_ID);
+		new RelationCollection(Collections.emptySet(), Set.of(arrayRelation)), RECORD_ID);
 
 		//Create record with relation array
 		String relArrId = "recordWithRelationArr";

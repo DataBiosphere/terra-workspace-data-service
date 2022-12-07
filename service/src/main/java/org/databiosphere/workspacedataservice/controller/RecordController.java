@@ -6,6 +6,7 @@ import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.*;
 import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.service.model.exception.NewPrimaryKeyException;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -101,13 +102,16 @@ public class RecordController {
 	@PostMapping( "/{instanceId}/tsv/{version}/{recordType}")
 	public ResponseEntity<TsvUploadResponse> tsvUpload(@PathVariable("instanceId") UUID instanceId,
 			   @PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			   @RequestParam(name= "uniqueRowIdentifierColumn", required = false) Optional<String> uniqueRowIdentifierColumn,
+			   @RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey,
                @RequestParam("records") MultipartFile records) throws IOException {
 		validateVersion(version);
 		validateInstance(instanceId);
+		if(recordDao.recordTypeExists(instanceId, recordType)){
+			validatePrimaryKey(instanceId, recordType, primaryKey);
+		}
 		int recordsModified;
 		try (InputStreamReader inputStreamReader = new InputStreamReader(records.getInputStream())) {
-			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType, uniqueRowIdentifierColumn);
+			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType, primaryKey);
 		}
 		return new ResponseEntity<>(new TsvUploadResponse(recordsModified, "Updated " + recordType.toString()),
 				HttpStatus.OK);
@@ -171,7 +175,8 @@ public class RecordController {
 	@PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
 	public ResponseEntity<RecordResponse> upsertSingleRecord(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			@PathVariable("recordId") String recordId, @RequestBody RecordRequest recordRequest) {
+			@PathVariable("recordId") String recordId, @RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey,
+			 @RequestBody RecordRequest recordRequest) {
 		validateVersion(version);
 		validateInstance(instanceId);
 		RecordAttributes attributesInRequest = recordRequest.recordAttributes();
@@ -180,9 +185,10 @@ public class RecordController {
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
 			RecordResponse response = new RecordResponse(recordId, recordType, recordRequest.recordAttributes());
 			Record newRecord = new Record(recordId, recordType, recordRequest);
-			createRecordTypeAndInsertRecords(instanceId, newRecord, recordType, requestSchema);
+			createRecordTypeAndInsertRecords(instanceId, newRecord, recordType, requestSchema, primaryKey);
 			return new ResponseEntity<>(response, status);
 		} else {
+			validatePrimaryKey(instanceId, recordType, primaryKey);
 			Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
 			// null out any attributes that already exist but aren't in the request
 			existingTableSchema.keySet().forEach(attr -> attributesInRequest.putAttributeIfAbsent(attr, null));
@@ -198,6 +204,12 @@ public class RecordController {
 			recordService.prepareAndUpsert(instanceId, recordType, records, combinedSchema);
 			RecordResponse response = new RecordResponse(recordId, recordType, attributesInRequest);
 			return new ResponseEntity<>(response, status);
+		}
+	}
+
+	private void validatePrimaryKey(UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
+		if (primaryKey.isPresent() && !primaryKey.get().equals(recordDao.getPrimaryKeyColumn(recordType, instanceId))) {
+			throw new NewPrimaryKeyException(primaryKey.get(), recordType);
 		}
 	}
 
@@ -295,10 +307,14 @@ public class RecordController {
 
 	@PostMapping("/{instanceid}/batch/{v}/{type}")
 	public ResponseEntity<BatchResponse> streamingWrite(@PathVariable("instanceid") UUID instanceId,
-			@PathVariable("v") String version, @PathVariable("type") RecordType recordType, InputStream is) {
+			@PathVariable("v") String version, @PathVariable("type") RecordType recordType,
+			@RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey, InputStream is) {
 		validateVersion(version);
 		validateInstance(instanceId);
-		int recordsModified = batchWriteService.consumeWriteStream(is, instanceId, recordType);
+		if(recordDao.recordTypeExists(instanceId, recordType)){
+			validatePrimaryKey(instanceId, recordType, primaryKey);
+		}
+		int recordsModified = batchWriteService.consumeWriteStream(is, instanceId, recordType, primaryKey);
 		return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
 	}
 
@@ -309,10 +325,10 @@ public class RecordController {
 	}
 
 	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, RecordType recordType,
-			Map<String, DataTypeMapping> requestSchema) {
+		Map<String, DataTypeMapping> requestSchema, Optional<String> primaryKey) {
 		List<Record> records = Collections.singletonList(newRecord);
-		recordDao.createRecordType(instanceId, requestSchema, recordType, inferer.findRelations(records, requestSchema), ReservedNames.RECORD_ID);
-		recordService.prepareAndUpsert(instanceId, recordType, records, requestSchema);
+		recordDao.createRecordType(instanceId, requestSchema, recordType, inferer.findRelations(records, requestSchema), primaryKey.orElse(ReservedNames.RECORD_ID));
+		recordService.prepareAndUpsert(instanceId, recordType, records, requestSchema, primaryKey.orElse(ReservedNames.RECORD_ID));
 	}
 
 }
