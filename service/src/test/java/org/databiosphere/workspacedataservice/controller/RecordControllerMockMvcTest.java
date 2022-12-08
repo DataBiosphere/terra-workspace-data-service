@@ -272,7 +272,12 @@ class RecordControllerMockMvcTest {
 	@Transactional
 	void tsvWithDuplicateRowIds() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "duplicate_id.tsv", MediaType.TEXT_PLAIN_VALUE,
-				"idcol\tcol2\n1\tfoo\n1\t\bar\n".getBytes());
+				"""
+                   idcol	col2
+                   1	foo
+                   2	bar
+                   1	baz
+                   3	qux""".stripIndent().getBytes());
 
 		MvcResult mvcResult = mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "duplicate-rowids")
 				.file(file)).andExpect(status().isBadRequest()).andReturn();
