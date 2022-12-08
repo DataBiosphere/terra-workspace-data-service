@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -47,6 +46,7 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -266,6 +266,20 @@ class RecordControllerMockMvcTest {
 
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-missing-rowid")
 				.file(file)).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@Transactional
+	void tsvWithDuplicateRowIds() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "duplicate_id.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"idcol\tcol2\n1\tfoo\n1\t\bar\n".getBytes());
+
+		MvcResult mvcResult = mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "duplicate-rowids")
+				.file(file)).andExpect(status().isBadRequest()).andReturn();
+
+		Exception e = mvcResult.getResolvedException();
+		assertNotNull(e, "expected an InvalidTsvException");
+		assertEquals("TSVs cannot contain duplicate primary key values", e.getMessage());
 	}
 
 	@Test

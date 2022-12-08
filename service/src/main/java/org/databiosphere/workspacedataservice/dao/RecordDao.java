@@ -14,6 +14,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.BatchDelet
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidTsvException;
 import org.databiosphere.workspacedataservice.shared.model.AttributeComparator;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -48,6 +49,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -403,6 +405,11 @@ public class RecordDao {
 	}
 
 	private List<Object[]> getInsertBatchArgs(List<Record> records, List<RecordColumn> cols, String recordTypeRowIdentifier) {
+		// validate that the list of records does not contain any duplicate ids
+		boolean areIdsUnique = records.stream().map(Record::getId).allMatch(new HashSet<>()::add);
+		if (!areIdsUnique) {
+			throw new InvalidTsvException("TSVs cannot contain duplicate primary key values");
+		}
 		return records.stream().map(r -> getInsertArgs(r, cols, recordTypeRowIdentifier)).toList();
 	}
 
