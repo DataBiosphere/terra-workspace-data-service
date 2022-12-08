@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -122,6 +123,7 @@ public class BatchWriteService {
 		CSVParser rows = csvFormat.parse(is);
 		String leftMostColumn = rows.getHeaderNames().get(0);
 		List<Record> batch = new ArrayList<>();
+		HashSet<String> recordIds = new HashSet<>();
 		boolean firstUpsertBatch = true;
 		Map<String, DataTypeMapping> schema = null;
 		String uniqueIdentifierAsString = primaryKey.orElse(leftMostColumn);
@@ -129,9 +131,14 @@ public class BatchWriteService {
 		for (CSVRecord row : rows) {
 			Map<String, Object> m = (Map) row.toMap();
 			m.remove(uniqueIdentifierAsString);
+			String recordId = row.get(uniqueIdentifierAsString);
+			// validate that all record ids in this TSV are unique
+			if (!recordIds.add(recordId)) {
+				throw new InvalidTsvException("TSVs cannot contain duplicate primary key values");
+			}
 			changeEmptyStringsToNulls(m);
 			try {
-				batch.add(new Record(row.get(uniqueIdentifierAsString), recordType, new RecordAttributes(m)));
+				batch.add(new Record(recordId, recordType, new RecordAttributes(m)));
 			} catch (IllegalArgumentException ex) {
 				LOGGER.error("IllegalArgument exception while reading tsv", ex);
 				throw new InvalidTsvException(
@@ -146,6 +153,9 @@ public class BatchWriteService {
 				}
 				recordDao.batchUpsert(instanceId, recordType, batch, schema);
 				batch.clear();
+				// remove the following line to ensure that record ids are unique within the entire TSV,
+				// instead of within a batch; this would have performance implications for very large TSVs.
+				recordIds.clear();
 			}
 		}
 		if (firstUpsertBatch) {

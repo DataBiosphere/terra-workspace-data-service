@@ -405,11 +405,6 @@ public class RecordDao {
 	}
 
 	private List<Object[]> getInsertBatchArgs(List<Record> records, List<RecordColumn> cols, String recordTypeRowIdentifier) {
-		// validate that the list of records does not contain any duplicate ids
-		boolean areIdsUnique = records.stream().map(Record::getId).allMatch(new HashSet<>()::add);
-		if (!areIdsUnique) {
-			throw new InvalidTsvException("TSVs cannot contain duplicate primary key values");
-		}
 		return records.stream().map(r -> getInsertArgs(r, cols, recordTypeRowIdentifier)).toList();
 	}
 
