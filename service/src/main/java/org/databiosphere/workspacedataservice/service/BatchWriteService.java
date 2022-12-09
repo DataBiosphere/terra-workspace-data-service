@@ -156,8 +156,10 @@ public class BatchWriteService {
 				}
 				recordDao.batchUpsert(instanceId, recordType, batch, schema);
 				batch.clear();
-				// remove the following line to enforce that record ids are unique within the entire TSV,
-				// instead of within a batch. This would have performance implications for very large TSVs.
+				// If we want to enforce that record ids are unique within the entire TSV,
+				// instead of within a batch, simply remove the next line.
+				// This would have performance implications for very large TSVs: the `recordIds` HashSet
+				// would need to hold ALL recordIds, reducing its efficiency.
 				recordIds.clear();
 			}
 		}
