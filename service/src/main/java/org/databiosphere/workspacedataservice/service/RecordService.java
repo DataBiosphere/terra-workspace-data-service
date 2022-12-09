@@ -33,12 +33,6 @@ public class RecordService {
         this.inferer = inferer;
     }
 
-    public void prepareAndUpsert(UUID instanceId, RecordType recordType, List<Record> records,
-                                 Map<String, DataTypeMapping> requestSchema) {
-        prepareAndUpsert(instanceId, recordType, records, requestSchema, RECORD_ID);
-    }
-
-
     @Transactional
     public void prepareAndUpsert(UUID instanceId, RecordType recordType, List<Record> records,
                              Map<String, DataTypeMapping> requestSchema, String primaryKey) {

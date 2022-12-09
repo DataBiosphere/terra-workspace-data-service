@@ -167,7 +167,7 @@ public class BatchWriteService {
 					schema = createOrUpdateSchema(instanceId, recordType, batch, uniqueIdentifierAsString);
 					firstUpsertBatch = false;
 				}
-				recordService.prepareAndUpsert(instanceId, recordType, batch, schema);
+				recordService.prepareAndUpsert(instanceId, recordType, batch, schema, uniqueIdentifierAsString);
 				batch.clear();
 			}
 		}

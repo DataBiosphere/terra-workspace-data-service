@@ -82,7 +82,7 @@ public class RecordController {
 		List<Record> records = Collections.singletonList(singleRecord);
 		Map<String, DataTypeMapping> updatedSchema = batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType,
 				typeMapping, existingTableSchema, records);
-		recordService.prepareAndUpsert(instanceId, recordType, records, updatedSchema);
+		recordService.prepareAndUpsert(instanceId, recordType, records, updatedSchema, recordDao.getPrimaryKeyColumn(recordType, instanceId));
 		RecordResponse response = new RecordResponse(recordId, recordType, singleRecord.getAttributes());
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
@@ -201,7 +201,7 @@ public class RecordController {
 					records);
 			Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
 			combinedSchema.putAll(requestSchema);
-			recordService.prepareAndUpsert(instanceId, recordType, records, combinedSchema);
+			recordService.prepareAndUpsert(instanceId, recordType, records, combinedSchema, primaryKey.orElse(ReservedNames.RECORD_ID));
 			RecordResponse response = new RecordResponse(recordId, recordType, attributesInRequest);
 			return new ResponseEntity<>(response, status);
 		}
