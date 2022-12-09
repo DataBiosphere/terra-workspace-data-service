@@ -123,7 +123,7 @@ public class BatchWriteService {
 		CSVParser rows = csvFormat.parse(is);
 		String leftMostColumn = rows.getHeaderNames().get(0);
 		List<Record> batch = new ArrayList<>();
-		HashSet<String> recordIds = new HashSet<>();
+		HashSet<String> recordIds = new HashSet<>(); // this set may be slow for very large TSVs
 		boolean firstUpsertBatch = true;
 		Map<String, DataTypeMapping> schema = null;
 		String uniqueIdentifierAsString = primaryKey.orElse(leftMostColumn);
@@ -156,11 +156,6 @@ public class BatchWriteService {
 				}
 				recordDao.batchUpsert(instanceId, recordType, batch, schema);
 				batch.clear();
-				// If we want to enforce that record ids are unique within the entire TSV,
-				// instead of within a batch, simply remove the next line.
-				// This would have performance implications for very large TSVs: the `recordIds` HashSet
-				// would need to hold ALL recordIds, reducing its efficiency.
-				recordIds.clear();
 			}
 		}
 		if (firstUpsertBatch) {

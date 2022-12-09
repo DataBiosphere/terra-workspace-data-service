@@ -300,26 +300,13 @@ class RecordControllerMockMvcTest {
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
 
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv_batching")
-				.file(file)).andExpect(status().isOk());
+		MvcResult mvcResult = mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv_batching")
+				.file(file)).andExpect(status().isBadRequest()).andReturn();
 
-		// validate that we only wrote ${batchSize} records - the first batch inserted, the second batch updated
-		MvcResult schemaResult = mockMvc.perform(get("/{instanceId}/types/{version}/{recordType}", instanceId, versionId, "tsv_batching"))
-				.andExpect(status().isOk()).andReturn();
-		RecordTypeSchema actualTypeSchema = mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
-		assertEquals(batchSize, actualTypeSchema.count());
-
-		// validate that the second batch overwrote the first batch's values; sample one of the records.
-		// first batch will have inserted values like "tada0_" and second batch updated those to "tada1_"
-		String recordIdToSample = "101";
-		MvcResult getRecordResult = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{id}", instanceId, versionId, "tsv_batching", recordIdToSample))
-				.andExpect(status().isOk()).andReturn();
-		RecordResponse actualRecord = mapper.readValue(getRecordResult.getResponse().getContentAsString(), RecordResponse.class);
-		assertEquals("tada1_" + recordIdToSample, actualRecord.recordAttributes().getAttributeValue("col1"));
-
+		Exception e = mvcResult.getResolvedException();
+		assertNotNull(e, "expected an InvalidTsvException");
+		assertEquals("TSVs cannot contain duplicate primary key values", e.getMessage());
 	}
-
-
 
 	@Test
 	@Transactional
