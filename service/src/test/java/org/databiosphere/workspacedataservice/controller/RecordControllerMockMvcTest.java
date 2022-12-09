@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -47,6 +46,7 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -266,6 +266,46 @@ class RecordControllerMockMvcTest {
 
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv-missing-rowid")
 				.file(file)).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@Transactional
+	void tsvWithDuplicateRowIdsInSameBatch() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "duplicate_id.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"""
+                   idcol	col2
+                   1	foo
+                   2	bar
+                   1	baz
+                   3	qux""".stripIndent().getBytes());
+
+		MvcResult mvcResult = mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "duplicate-rowids")
+				.file(file)).andExpect(status().isBadRequest()).andReturn();
+
+		Exception e = mvcResult.getResolvedException();
+		assertNotNull(e, "expected an InvalidTsvException");
+		assertEquals("TSVs cannot contain duplicate primary key values", e.getMessage());
+	}
+
+	@Test
+	@Transactional
+	void tsvWithDuplicateRowIdsInDifferentBatches(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
+		StringBuilder tsvContent = new StringBuilder("idcol\tcol1\n");
+		// append two separate batches, each of which use the same record ids
+		for (int batch = 0; batch < 2; batch++) {
+			for (int i = 0; i < batchSize; i++) {
+				tsvContent.append(i + "\ttada" + batch + "_" + i + "\n");
+			}
+		}
+		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
+				tsvContent.toString().getBytes());
+
+		MvcResult mvcResult = mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv_batching")
+				.file(file)).andExpect(status().isBadRequest()).andReturn();
+
+		Exception e = mvcResult.getResolvedException();
+		assertNotNull(e, "expected an InvalidTsvException");
+		assertEquals("TSVs cannot contain duplicate primary key values", e.getMessage());
 	}
 
 	@Test
