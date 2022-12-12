@@ -116,5 +116,8 @@ public class TsvConverter {
         return new Record(recordId, recordType, typedAttrs);
     }
 
+    public Stream<Record> rowsToRecords(Stream<Map<String, String>> rows, RecordType recordType, String primaryKey) {
+        return rows.map( m -> tsvRowToRecord(m, recordType, primaryKey));
+    }
 
 }

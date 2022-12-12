@@ -152,7 +152,7 @@ public class BatchWriteService {
 		Stream<Map<String, String>> tsvStream = StreamSupport.stream(
 				Spliterators.spliteratorUnknownSize(tsvIterator, Spliterator.ORDERED), false);
 
-		Stream<Record> recordStream = tsvStream.map( m -> tsvConverter.tsvRowToRecord(m, recordType, resolvedPK));
+		Stream<Record> recordStream = tsvConverter.rowsToRecords(tsvStream, recordType, resolvedPK);
 
 		return consumeWriteStream(recordStream, instanceId, recordType, Optional.of(resolvedPK));
 	}
