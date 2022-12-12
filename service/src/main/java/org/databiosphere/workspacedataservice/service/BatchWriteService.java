@@ -139,6 +139,10 @@ public class BatchWriteService {
 				.with(CsvParser.Feature.EMPTY_STRING_AS_NULL)
 				.readValues(is);
 
+		if (!tsvIterator.hasNext()) {
+			throw new InvalidTsvException("We could not parse any data rows in your tsv file.");
+		}
+
 		// extract column names from the generated schema
 		List<String> colNames;
 		FormatSchema formatSchema = tsvIterator.getParser().getSchema();

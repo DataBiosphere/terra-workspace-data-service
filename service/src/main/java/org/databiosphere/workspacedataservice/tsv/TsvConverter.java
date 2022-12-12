@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.tsv;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.*;
@@ -77,14 +76,14 @@ public class TsvConverter {
                             if (el.isIntegralNumber()) {
                                 return new BigDecimal(el.bigIntegerValue());
                             } else {
-                                return new BigDecimal(el.asDouble());
+                                return new BigDecimal(el.asLong());
                             }
                         }
                         if (el instanceof BooleanNode) {
                             return el.asBoolean();
                         }
                         if (el instanceof TextNode strElement) {
-                            return cellToAttribute(strElement.textValue());
+                            return cellToAttribute(strElement.textValue().trim());
                         }
                         throw new RuntimeException("expected an interpretable element, got: " + el.getClass().getName());
                     }).toList();
@@ -96,12 +95,19 @@ public class TsvConverter {
                         Stream<JsonNode> forceStringElements = StreamSupport.stream(
                                 Spliterators.spliteratorUnknownSize(arrayNode.elements(), Spliterator.ORDERED), false);
 
-                        return forceStringElements.map(el -> el.textValue()).toList();
-
-//                        throw new RuntimeException("found mixed array! --> " + classNames);
+                        List<String> forcedStrings = forceStringElements.map(el -> el.textValue()).toList();
+                        if (forcedStrings.size() > 0) {
+                            return forcedStrings;
+                        } else {
+                            return null;
+                        }
                     }
 
-                    return typedArray;
+                    if (typedArray.size() > 0) {
+                        return typedArray;
+                    } else {
+                        return null;
+                    }
                 } else {
                     throw new RuntimeException("array but not array");
                 }
@@ -125,8 +131,7 @@ public class TsvConverter {
         if (recordId == null || StringUtils.isBlank(recordId.toString())) {
             throw new InvalidTsvException(
                     "Uploaded TSV is either missing the " + primaryKey
-                            + " column or has a null or empty string value in that column"
-            + " ... not in: " + row.keySet());
+                            + " column or has a null or empty string value in that column");
         }
         row.remove(primaryKey);
         RecordAttributes typedAttrs = fromTsvRow(row);
