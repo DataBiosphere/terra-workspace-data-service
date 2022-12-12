@@ -136,18 +136,27 @@ public class BatchWriteService {
 				.readerForMapOf(String.class)
 				.with(tsvHeaderSchema)
 				.with(CsvParser.Feature.SKIP_EMPTY_LINES)
-				// .with(CsvParser.Feature.EMPTY_STRING_AS_NULL)
+				.with(CsvParser.Feature.EMPTY_STRING_AS_NULL)
 				.readValues(is);
 
+		// extract column names from the generated schema
+		List<String> colNames;
+		FormatSchema formatSchema = tsvIterator.getParser().getSchema();
+		if (formatSchema instanceof CsvSchema actualSchema) {
+			colNames = actualSchema.getColumnNames();
+		} else {
+			throw new InvalidTsvException("Could not determine primary key column from format schema: " + formatSchema.getClass().getName());
+		}
+
+		if (primaryKey.isPresent() && !colNames.contains(primaryKey.get())) {
+			throw new InvalidTsvException(
+					"Uploaded TSV is either missing the " + primaryKey
+							+ " column or has a null or empty string value in that column");
+		}
+
 		// determine PK: if not specified by caller, use the leftmost column
-		String resolvedPK = primaryKey.orElseGet( () -> {
-			FormatSchema formatSchema = tsvIterator.getParser().getSchema();
-			if (formatSchema instanceof CsvSchema actualSchema) {
-				return actualSchema.column(0).getName();
-			} else {
-				throw new InvalidTsvException("Could not determine primary key column from format schema: " + formatSchema.getClass().getName());
-			}
-		});
+		String resolvedPK = primaryKey.orElseGet( () -> colNames.get(0) );
+
 
 		Stream<Map<String, String>> tsvStream = StreamSupport.stream(
 				Spliterators.spliteratorUnknownSize(tsvIterator, Spliterator.ORDERED), false);

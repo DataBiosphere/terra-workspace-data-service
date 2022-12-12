@@ -1,10 +1,13 @@
 package org.databiosphere.workspacedataservice.tsv;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.*;
+import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidTsvException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -46,15 +49,16 @@ public class TsvConverter {
         if (inferer.isValidDate(val)) {
             return LocalDate.parse(val, DateTimeFormatter.ISO_LOCAL_DATE);
         }
-        if (inferer.isValidJson(val)) {
-            try {
-                // We call .toLowerCase() to ensure that WDS interprets all different inputted spellings of boolean values
-                // as booleans - e.g. `TRUE`, `tRUe`, or `true` ---> `true`
-                return objectMapper.readTree(val.toLowerCase());
-            } catch (JsonProcessingException e) {
-                return null;
-            }
-        }
+//        if (inferer.isValidJson(val)) {
+//            try {
+//                // We call .toLowerCase() to ensure that WDS interprets all different inputted spellings of boolean values
+//                // as booleans - e.g. `TRUE`, `tRUe`, or `true` ---> `true`
+//                return objectMapper.readValue(val.toString(), new TypeReference<Map<String, Object>>(){});
+//                // return objectMapper.readTree(val.toLowerCase());
+//            } catch (JsonProcessingException e) {
+//                return null;
+//            }
+//        }
         if (inferer.isArray(val)) {
             try {
                 // We call .toLowerCase() to ensure that WDS interprets all different inputted spellings of boolean values
@@ -85,8 +89,16 @@ public class TsvConverter {
                         throw new RuntimeException("expected an interpretable element, got: " + el.getClass().getName());
                     }).toList();
 
-                    if (typedArray.stream().map(i -> i.getClass()).distinct().toList().size() > 1) {
-                        throw new RuntimeException("found mixed array!");
+                    List<String> classNames = typedArray.stream().map(i -> i.getClass().getName()).distinct().toList();
+
+                    if (classNames.size() > 1) {
+                        // TODO: call 'em strings. This could be more graceful.
+                        Stream<JsonNode> forceStringElements = StreamSupport.stream(
+                                Spliterators.spliteratorUnknownSize(arrayNode.elements(), Spliterator.ORDERED), false);
+
+                        return forceStringElements.map(el -> el.textValue()).toList();
+
+//                        throw new RuntimeException("found mixed array! --> " + classNames);
                     }
 
                     return typedArray;
@@ -101,23 +113,35 @@ public class TsvConverter {
     }
 
     public RecordAttributes fromTsvRow(Map<String, String> row) {
-        Map<String, Object> typedAttrs = row.entrySet().stream().map( entry -> {
-            return new AbstractMap.SimpleEntry<>(entry.getKey(), cellToAttribute(entry.getValue()));
-        })
-            .filter(Objects::nonNull)
+        Map<String, Object> typedAttrs = row.entrySet().stream().map( entry ->
+                        new AbstractMap.SimpleEntry<>(entry.getKey(), cellToAttribute(entry.getValue())))
+            .filter(e -> e.getValue() != null)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         return new RecordAttributes(typedAttrs);
     }
 
     public Record tsvRowToRecord(Map<String, String> row, RecordType recordType, String primaryKey) {
-        // TODO: friendlier error if pk doesn't exist in map
-        String recordId = row.get(primaryKey).toString();
+        Object recordId = row.get(primaryKey);
+        if (recordId == null || StringUtils.isBlank(recordId.toString())) {
+            throw new InvalidTsvException(
+                    "Uploaded TSV is either missing the " + primaryKey
+                            + " column or has a null or empty string value in that column"
+            + " ... not in: " + row.keySet());
+        }
+        row.remove(primaryKey);
         RecordAttributes typedAttrs = fromTsvRow(row);
-        return new Record(recordId, recordType, typedAttrs);
+        return new Record(recordId.toString(), recordType, typedAttrs);
     }
 
     public Stream<Record> rowsToRecords(Stream<Map<String, String>> rows, RecordType recordType, String primaryKey) {
-        return rows.map( m -> tsvRowToRecord(m, recordType, primaryKey));
+        HashSet<String> recordIds = new HashSet<>(); // this set may be slow for very large TSVs
+        return rows.map( m -> {
+            Record r = tsvRowToRecord(m, recordType, primaryKey);
+            if (!recordIds.add(r.getId())) {
+                throw new InvalidTsvException("TSVs cannot contain duplicate primary key values");
+            }
+            return r;
+        });
     }
 
 }
