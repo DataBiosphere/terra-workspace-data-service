@@ -1,6 +1,13 @@
 package org.databiosphere.workspacedataservice.service;
 
+import com.fasterxml.jackson.core.FormatSchema;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvParser;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import org.apache.commons.csv.CSVFormat;
@@ -14,10 +21,9 @@ import org.databiosphere.workspacedataservice.service.model.exception.BatchWrite
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidTsvException;
-import org.databiosphere.workspacedataservice.shared.model.OperationType;
+import org.databiosphere.workspacedataservice.shared.model.*;
 import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
-import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.tsv.TsvConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,14 +35,13 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
@@ -52,13 +57,16 @@ public class BatchWriteService {
 
 	private final ObjectMapper objectMapper;
 
+	private final TsvConverter tsvConverter;
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchWriteService.class);
 
-	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize, DataTypeInferer inf, ObjectMapper objectMapper) {
+	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize, DataTypeInferer inf, ObjectMapper objectMapper, TsvConverter tsvConverter) {
 		this.recordDao = recordDao;
 		this.batchSize = batchSize;
 		this.inferer = inf;
 		this.objectMapper = objectMapper;
+		this.tsvConverter = tsvConverter;
 	}
 
 	public Map<String, DataTypeMapping> addOrUpdateColumnIfNeeded(UUID instanceId, RecordType recordType,
@@ -119,6 +127,38 @@ public class BatchWriteService {
 
 	@Transactional
 	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) throws IOException {
+		CsvSchema tsvHeaderSchema = CsvSchema.emptySchema()
+				.withHeader()
+				.withColumnSeparator('\t');
+
+		final CsvMapper mapper = CsvMapper.builder().build();
+		MappingIterator<Map<String, String>> tsvIterator = mapper
+				.readerForMapOf(String.class)
+				.with(tsvHeaderSchema)
+				.with(CsvParser.Feature.SKIP_EMPTY_LINES)
+				// .with(CsvParser.Feature.EMPTY_STRING_AS_NULL)
+				.readValues(is);
+
+		// determine PK: if not specified by caller, use the leftmost column
+		String resolvedPK = primaryKey.orElseGet( () -> {
+			FormatSchema formatSchema = tsvIterator.getParser().getSchema();
+			if (formatSchema instanceof CsvSchema actualSchema) {
+				return actualSchema.column(0).getName();
+			} else {
+				throw new InvalidTsvException("Could not determine primary key column from format schema: " + formatSchema.getClass().getName());
+			}
+		});
+
+		Stream<Map<String, String>> tsvStream = StreamSupport.stream(
+				Spliterators.spliteratorUnknownSize(tsvIterator, Spliterator.ORDERED), false);
+
+		Stream<Record> recordStream = tsvStream.map( m -> tsvConverter.tsvRowToRecord(m, recordType, resolvedPK));
+
+		return consumeWriteStream(recordStream, instanceId, recordType, Optional.of(resolvedPK));
+	}
+
+	@Transactional
+	public int uploadTsvStreamApache(InputStreamReader is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) throws IOException {
 		CSVFormat csvFormat = TsvSupport.getUploadFormat();
 		CSVParser rows = csvFormat.parse(is);
 		String leftMostColumn = rows.getHeaderNames().get(0);
@@ -218,6 +258,34 @@ public class BatchWriteService {
 		} catch (IOException e) {
 			throw new BadStreamingWriteRequestException(e);
 		}
+		return recordsAffected;
+	}
+
+	@Transactional
+	public int consumeWriteStream(Stream<Record> upsertRecords, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
+		int recordsAffected = 0;
+		Map<String, DataTypeMapping> schema = null;
+		boolean firstUpsertBatch = true;
+
+		Spliterator<Record> spliterator = upsertRecords.spliterator();
+
+		while(true) {
+			List<Record> records = new ArrayList<>(batchSize);
+			for (int i = 0; i < batchSize && spliterator.tryAdvance(records::add); i++) {
+				// noop; the action happens in chunk:add
+			}
+			if (records.isEmpty()) break;
+			if (firstUpsertBatch) {
+				schema = inferer.inferTypes(records, InBoundDataSource.JSON);
+				createOrModifyRecordType(instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
+				firstUpsertBatch = false;
+			}
+			StreamingWriteHandler.WriteStreamInfo info = new StreamingWriteHandler.WriteStreamInfo(records, OperationType.UPSERT);
+
+			writeBatch(instanceId, recordType, schema, info, records, primaryKey);
+			recordsAffected += records.size();
+		}
+
 		return recordsAffected;
 	}
 

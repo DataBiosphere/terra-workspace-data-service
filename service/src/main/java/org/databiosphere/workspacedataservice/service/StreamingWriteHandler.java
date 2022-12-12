@@ -72,7 +72,7 @@ public class StreamingWriteHandler implements Closeable {
 		inputStream.close();
 	}
 
-	public class WriteStreamInfo {
+	public static class WriteStreamInfo {
 
 		private final List<Record> records;
 
