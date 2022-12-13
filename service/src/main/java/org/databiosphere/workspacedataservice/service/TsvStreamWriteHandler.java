@@ -8,14 +8,20 @@ import org.databiosphere.workspacedataservice.shared.model.BatchOperation;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.stream.Stream;
 
-public interface StreamingWriteHandler extends Closeable {
+public class TsvStreamWriteHandler implements StreamingWriteHandler {
 
+	private final Spliterator<Record> spliterator;
+
+	public TsvStreamWriteHandler(Stream<Record> upsertRecords) throws IOException {
+		this.spliterator = upsertRecords.spliterator();
+	}
 
 	/**
 	 * Reads numRecords from the stream unless the operation type changes during the
@@ -26,27 +32,19 @@ public interface StreamingWriteHandler extends Closeable {
 	 * @return
 	 * @throws IOException
 	 */
-	public WriteStreamInfo readRecords(int numRecords) throws IOException;
-
-
-	public static class WriteStreamInfo {
-
-		private final List<Record> records;
-
-		private final OperationType operationType;
-
-		public WriteStreamInfo(List<Record> records, OperationType operationType) {
-			this.records = records;
-			this.operationType = operationType;
+	public WriteStreamInfo readRecords(int numRecords) throws IOException {
+		int recordsProcessed = 0;
+		List<Record> result = new ArrayList<>(numRecords);
+		for (int i = 0; i < numRecords && spliterator.tryAdvance(result::add); i++) {
+			// noop; the action happens in result:add
 		}
-
-		public List<Record> getRecords() {
-			return records;
-		}
-
-		public OperationType getOperationType() {
-			return operationType;
-		}
+		return new WriteStreamInfo(result, OperationType.UPSERT);
 	}
+
+	@Override
+	public void close() throws IOException {
+		// noop
+	}
+
 
 }

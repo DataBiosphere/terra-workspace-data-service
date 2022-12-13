@@ -241,21 +241,9 @@ public class BatchWriteService {
 		return createOrModifyRecordType(instanceId, recordType, schema, batch, recordTypePrimaryKey);
 	}
 
-	/**
-	 * All or nothing, write all the operations successfully in the InputStream or
-	 * write none.
-	 *
-	 * @param is
-	 * @param instanceId
-	 * @param recordType
-	 * @param primaryKey
-	 * @return number of records updated
-	 */
-	@Transactional
-	// TODO: break into two parts: 1) use StreamingWriteHandler to get a WriteStreamInfo; 2) process the WriteStreamInfo
-	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
+	private int consumeWriteStream(StreamingWriteHandler streamingWriteHandler, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		int recordsAffected = 0;
-		try (StreamingWriteHandler streamingWriteHandler = new StreamingWriteHandler(is, objectMapper)) {
+		try {
 			Map<String, DataTypeMapping> schema = null;
 			boolean firstUpsertBatch = true;
 			for (StreamingWriteHandler.WriteStreamInfo info = streamingWriteHandler.readRecords(batchSize); !info
@@ -275,32 +263,33 @@ public class BatchWriteService {
 		return recordsAffected;
 	}
 
+
+	/**
+	 * All or nothing, write all the operations successfully in the InputStream or
+	 * write none.
+	 *
+	 * @param is
+	 * @param instanceId
+	 * @param recordType
+	 * @param primaryKey
+	 * @return number of records updated
+	 */
+	@Transactional
+	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
+		try (StreamingWriteHandler streamingWriteHandler = new JsonStreamWriteHandler(is, objectMapper)) {
+			return consumeWriteStream(streamingWriteHandler, instanceId, recordType, primaryKey);
+		} catch (IOException e) {
+			throw new BadStreamingWriteRequestException(e);
+		}
+	}
+
 	@Transactional
 	public int consumeWriteStream(Stream<Record> upsertRecords, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
-		int recordsAffected = 0;
-		Map<String, DataTypeMapping> schema = null;
-		boolean firstUpsertBatch = true;
-
-		Spliterator<Record> spliterator = upsertRecords.spliterator();
-
-		while(true) {
-			List<Record> records = new ArrayList<>(batchSize);
-			for (int i = 0; i < batchSize && spliterator.tryAdvance(records::add); i++) {
-				// noop; the action happens in chunk:add
-			}
-			if (records.isEmpty()) break;
-			if (firstUpsertBatch) {
-				schema = inferer.inferTypes(records, InBoundDataSource.JSON);
-				createOrModifyRecordType(instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
-				firstUpsertBatch = false;
-			}
-			StreamingWriteHandler.WriteStreamInfo info = new StreamingWriteHandler.WriteStreamInfo(records, OperationType.UPSERT);
-
-			writeBatch(instanceId, recordType, schema, info, records, primaryKey);
-			recordsAffected += records.size();
+		try (StreamingWriteHandler streamingWriteHandler = new TsvStreamWriteHandler(upsertRecords)) {
+			return consumeWriteStream(streamingWriteHandler, instanceId, recordType, primaryKey);
+		} catch (IOException e) {
+			throw new BadStreamingWriteRequestException(e);
 		}
-
-		return recordsAffected;
 	}
 
 	private Map<String, DataTypeMapping> createOrModifyRecordType(UUID instanceId, RecordType recordType,
