@@ -5,15 +5,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.*;
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidTsvException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,14 +31,26 @@ public class TsvConverter {
 
     private final ObjectMapper objectMapper;
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(TsvConverter.class);
+
     public TsvConverter(DataTypeInferer inferer, ObjectMapper objectMapper) {
         this.inferer = inferer;
         this.objectMapper = objectMapper;
     }
 
+    private String replaceLeftRightQuotes(String val){
+        return val.replaceAll("[“”]", "\"");
+    }
+
     public Object cellToAttribute(String val) {
+        LOGGER.info("***** cellToAttribute: <" + val + ">");
         if (Objects.isNull(val)) {
             return null;
+        }
+        if (val.startsWith("\"") && val.endsWith("\"")) {
+            String trimmed = val.substring(1, val.length()-1);
+            LOGGER.info("***** for input <" + val + ">, returning trimmed string: " + trimmed);
+            return trimmed;
         }
         if (inferer.isValidBoolean(val)) {
             return Boolean.parseBoolean(val);
@@ -42,11 +58,11 @@ public class TsvConverter {
         if (inferer.isNumericValue(val)) {
             return new BigDecimal(val);
         }
-        if (inferer.isValidDateTime(val)) {
-            return LocalDate.parse(val, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-        }
         if (inferer.isValidDate(val)) {
             return LocalDate.parse(val, DateTimeFormatter.ISO_LOCAL_DATE);
+        }
+        if (inferer.isValidDateTime(val)) {
+            return LocalDateTime.parse(val, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         }
 //        if (inferer.isValidJson(val)) {
 //            try {
@@ -58,11 +74,13 @@ public class TsvConverter {
 //                return null;
 //            }
 //        }
-        if (inferer.isArray(val)) {
+        if (inferer.isArray(replaceLeftRightQuotes(val))) {
+            LOGGER.info("***** for input <" + val + ">, processing as array");
             try {
                 // We call .toLowerCase() to ensure that WDS interprets all different inputted spellings of boolean values
                 // as booleans - e.g. `TRUE`, `tRUe`, or `true` ---> `true`
-                JsonNode node = objectMapper.readTree(val.toLowerCase());
+                JsonNode node = objectMapper.readTree(replaceLeftRightQuotes(val.toLowerCase()));
+                LOGGER.info("***** for input <" + val + ">, parsed is array? " + node.isArray());
                 if (node instanceof ArrayNode arrayNode) {
 
                     Stream<JsonNode> jsonElements = StreamSupport.stream(
@@ -70,23 +88,25 @@ public class TsvConverter {
 
                     List<Object> typedArray = jsonElements.map( el -> {
                         if (el instanceof NullNode) {
+                            LOGGER.info("***** for array element <" + el + ">, returning null");
                             return null;
                         }
-                        if (el instanceof NumericNode) {
-                            if (el.isIntegralNumber()) {
-                                return new BigDecimal(el.bigIntegerValue());
-                            } else {
-                                return new BigDecimal(el.asLong());
-                            }
+                        if (el instanceof NumericNode nn) {
+                            LOGGER.info("***** for array element <" + el + ">, returning BigDecimal");
+                            return new BigDecimal(nn.numberValue().toString());
                         }
-                        if (el instanceof BooleanNode) {
-                            return el.asBoolean();
+                        if (el instanceof BooleanNode bn) {
+                            LOGGER.info("***** for array element <" + el + ">, returning boolean");
+                            return bn.asBoolean();
                         }
                         if (el instanceof TextNode strElement) {
-                            return cellToAttribute(strElement.textValue().trim());
+                            LOGGER.info("***** for array element <" + el + ">, delegating to cellToAttribute");
+                            return cellToAttribute(strElement.toString());
                         }
                         throw new RuntimeException("expected an interpretable element, got: " + el.getClass().getName());
                     }).toList();
+
+                    LOGGER.info("***** for input <" + val + ">, typedArray is: " + typedArray);
 
                     List<String> classNames = typedArray.stream().map(i -> i.getClass().getName()).distinct().toList();
 
@@ -95,35 +115,49 @@ public class TsvConverter {
                         Stream<JsonNode> forceStringElements = StreamSupport.stream(
                                 Spliterators.spliteratorUnknownSize(arrayNode.elements(), Spliterator.ORDERED), false);
 
-                        List<String> forcedStrings = forceStringElements.map(el -> el.textValue()).toList();
+                        LOGGER.info("***** for input <" + val + ">, forcing to strings: " + typedArray);
+
+                        List<String> forcedStrings = forceStringElements.map(el -> {
+                            String tv = el.textValue();
+                            if (Objects.isNull(tv)) {
+                                return el.toString();
+                            } else {
+                                return tv;
+                            }
+                        }).toList();
                         if (forcedStrings.size() > 0) {
+                            LOGGER.info("***** for input <" + val + ">, forcing to strings: " + forcedStrings);
                             return forcedStrings;
                         } else {
                             return null;
                         }
                     }
 
-                    if (typedArray.size() > 0) {
-                        return typedArray;
-                    } else {
-                        return null;
-                    }
+                    return typedArray;
+
                 } else {
                     throw new RuntimeException("array but not array");
                 }
             } catch (JsonProcessingException e) {
+                LOGGER.info("***** for input <" + val + ">, hit error: " + e.getMessage());
                 return null;
             }
         }
+
+        LOGGER.info("***** for input <" + val + ">, defaulting to no translation and returning string.");
+
         return val;
     }
 
     public RecordAttributes fromTsvRow(Map<String, String> row) {
-        Map<String, Object> typedAttrs = row.entrySet().stream().map( entry ->
-                        new AbstractMap.SimpleEntry<>(entry.getKey(), cellToAttribute(entry.getValue())))
-            .filter(e -> e.getValue() != null)
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return new RecordAttributes(typedAttrs);
+        List<AbstractMap.SimpleEntry<String, Object>> typedAttrs = row.entrySet().stream().map(entry ->
+                        new AbstractMap.SimpleEntry<>(entry.getKey(), cellToAttribute(entry.getValue()))).toList();
+        // can't use a collector here because some values can be null
+        Map<String, Object> attrMap = new HashMap<String, Object>();
+        typedAttrs.forEach( entry -> attrMap.put(entry.getKey(), entry.getValue()));
+//            .filter(e -> e.getValue() != null)
+//            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return new RecordAttributes(attrMap);
     }
 
     public Record tsvRowToRecord(Map<String, String> row, RecordType recordType, String primaryKey) {

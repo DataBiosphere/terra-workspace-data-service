@@ -420,6 +420,7 @@ class RecordControllerMockMvcTest {
 				.perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType)).andReturn();
 		RecordTypeSchema schema = mapper.readValue(schemaResult.getResponse().getContentAsString(),
 				RecordTypeSchema.class);
+
 		assertEquals("date", schema.attributes().get(0).name());
 		assertEquals("DATE", schema.attributes().get(0).datatype());
 		assertEquals("NUMBER", schema.attributes().get(1).datatype());

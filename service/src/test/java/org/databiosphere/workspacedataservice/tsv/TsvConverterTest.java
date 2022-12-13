@@ -27,7 +27,10 @@ public class TsvConverterTest {
 			- second value is the expected Java type that the TsvConverter would create for that cell
 		 */
         return Stream.of(
-                Arguments.of("[\"hello\", \"world\"]", Arrays.asList("hello", "world")),
+                Arguments.of("[\"test1\", \"test2\"]", Arrays.asList("test1", "test2")),
+                Arguments.of("[“test1”, “test2”]", Arrays.asList("test1", "test2")), // smart quotes
+                Arguments.of("[\"98\", \"99\"]", Arrays.asList("98", "99")),
+                Arguments.of("[true, false, true]", Arrays.asList(true, false, true)),
                 Arguments.of(" ", " "),
                 Arguments.of("5.67", BigDecimal.valueOf(5.67d))
         );

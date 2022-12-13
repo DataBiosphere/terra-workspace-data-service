@@ -252,6 +252,7 @@ public class BatchWriteService {
 	 * @return number of records updated
 	 */
 	@Transactional
+	// TODO: break into two parts: 1) use StreamingWriteHandler to get a WriteStreamInfo; 2) process the WriteStreamInfo
 	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		int recordsAffected = 0;
 		try (StreamingWriteHandler streamingWriteHandler = new StreamingWriteHandler(is, objectMapper)) {
