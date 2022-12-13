@@ -33,7 +33,6 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 	 * @throws IOException
 	 */
 	public WriteStreamInfo readRecords(int numRecords) throws IOException {
-		int recordsProcessed = 0;
 		List<Record> result = new ArrayList<>(numRecords);
 		for (int i = 0; i < numRecords && spliterator.tryAdvance(result::add); i++) {
 			// noop; the action happens in result:add

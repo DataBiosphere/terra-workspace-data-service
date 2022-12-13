@@ -15,10 +15,10 @@ public class TsvSupport {
 	private TsvSupport() {
 	}
 
-	public static CSVFormat getUploadFormat() {
-		return CSVFormat.DEFAULT.builder().setHeader().setDelimiter('\t')
-				.setQuoteMode(QuoteMode.MINIMAL).build();
-	}
+//	public static CSVFormat getUploadFormat() {
+//		return CSVFormat.DEFAULT.builder().setHeader().setDelimiter('\t')
+//				.setQuoteMode(QuoteMode.MINIMAL).build();
+//	}
 
 	public static CSVFormat getOutputFormat(List<String> headers) {
 		return CSVFormat.DEFAULT.builder().setDelimiter('\t').setQuoteMode(QuoteMode.MINIMAL)

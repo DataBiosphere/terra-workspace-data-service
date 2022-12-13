@@ -81,33 +81,33 @@ public class DataTypeInferer {
 		return STRING;
 	}
 
-	/**
-	 * Our TSV parser gives everything to us as Strings so we try to guess at the
-	 * types from the String representation and choose the stronger typing when we
-	 * can. "" is converted to null which also differs from our JSON handling.
-	 * 
-	 * @se inferTypeForJsonSource
-	 * @param val
-	 * @return
-	 */
-	public DataTypeMapping inferTypeForTsvSource(Object val) {
-		// For TSV we treat null and "" as the null value
-		if (StringUtils.isEmpty((String) val)) {
-			return NULL;
-		}
-
-		if (RelationUtils.isRelationValue(val)) {
-			return STRING;
-		}
-		// when we load from TSV, numbers are converted to strings, we need to go back
-		// to numbers
-		String sVal = val.toString();
-
-		if (isNumericValue(sVal)) {
-			return NUMBER;
-		}
-		return getTypeMappingFromString(replaceLeftRightQuotes(sVal));
-	}
+//	/**
+//	 * Our TSV parser gives everything to us as Strings so we try to guess at the
+//	 * types from the String representation and choose the stronger typing when we
+//	 * can. "" is converted to null which also differs from our JSON handling.
+//	 *
+//	 * @se inferTypeForJsonSource
+//	 * @param val
+//	 * @return
+//	 */
+//	public DataTypeMapping inferTypeForTsvSource(Object val) {
+//		// For TSV we treat null and "" as the null value
+//		if (StringUtils.isEmpty((String) val)) {
+//			return NULL;
+//		}
+//
+//		if (RelationUtils.isRelationValue(val)) {
+//			return STRING;
+//		}
+//		// when we load from TSV, numbers are converted to strings, we need to go back
+//		// to numbers
+//		String sVal = val.toString();
+//
+//		if (isNumericValue(sVal)) {
+//			return NUMBER;
+//		}
+//		return getTypeMappingFromString(replaceLeftRightQuotes(sVal));
+//	}
 
 	//libreoffice at least uses left and right quotes which cause problems when we try to parse as JSON
 	private String replaceLeftRightQuotes(String val){
@@ -183,12 +183,13 @@ public class DataTypeInferer {
 	}
 
 	public DataTypeMapping inferType(Object val, InBoundDataSource dataSource) {
-		if (dataSource == InBoundDataSource.TSV) {
-			return inferTypeForTsvSource(val);
-		} else if (dataSource == InBoundDataSource.JSON) {
+		// TODO: clean this up
+		//		if (dataSource == InBoundDataSource.TSV) {
+//			return inferTypeForTsvSource(val);
+//		} else if (dataSource == InBoundDataSource.JSON) {
 			return inferTypeForJsonSource(val);
-		}
-		throw new IllegalArgumentException("Unhandled inbound data source " + dataSource);
+//		}
+//		throw new IllegalArgumentException("Unhandled inbound data source " + dataSource);
 	}
 
 	public boolean isNumericValue(String sVal) {

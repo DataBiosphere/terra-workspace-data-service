@@ -1,8 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
 import com.fasterxml.jackson.core.FormatSchema;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
@@ -35,9 +33,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -167,79 +162,79 @@ public class BatchWriteService {
 
 		Stream<Record> recordStream = tsvConverter.rowsToRecords(tsvStream, recordType, resolvedPK);
 
-		return consumeWriteStream(recordStream, instanceId, recordType, Optional.of(resolvedPK));
+		return batchWriteTsvStream(recordStream, instanceId, recordType, Optional.of(resolvedPK));
 	}
 
-	@Transactional
-	public int uploadTsvStreamApache(InputStreamReader is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) throws IOException {
-		CSVFormat csvFormat = TsvSupport.getUploadFormat();
-		CSVParser rows = csvFormat.parse(is);
-		String leftMostColumn = rows.getHeaderNames().get(0);
-		List<Record> batch = new ArrayList<>();
-		HashSet<String> recordIds = new HashSet<>(); // this set may be slow for very large TSVs
-		boolean firstUpsertBatch = true;
-		Map<String, DataTypeMapping> schema = null;
-		String uniqueIdentifierAsString = primaryKey.orElse(leftMostColumn);
-		int recordsProcessed = 0;
-		for (CSVRecord row : rows) {
-			Map<String, Object> m = (Map) row.toMap();
-			m.remove(uniqueIdentifierAsString);
-			changeEmptyStringsToNulls(m);
-			String recordId;
-			try {
-				recordId = row.get(uniqueIdentifierAsString);
-				batch.add(new Record(recordId, recordType, new RecordAttributes(m)));
-			} catch (IllegalArgumentException ex) {
-				LOGGER.error("IllegalArgument exception while reading tsv", ex);
-				throw new InvalidTsvException(
-						"Uploaded TSV is either missing the " + primaryKey
-								+ " column or has a null or empty string value in that column");
-			}
-			// validate that all record ids in this TSV are unique
-			// N.B. this happens after the try/catch block above, because
-			// that block enforces the recordId is not null/empty as part of the "new Record()" constructor
-			if (!recordIds.add(recordId)) {
-				throw new InvalidTsvException("TSVs cannot contain duplicate primary key values");
-			}
-			recordsProcessed++;
-			if (batch.size() >= batchSize) {
-				if (firstUpsertBatch) {
-					schema = createOrUpdateSchema(instanceId, recordType, batch, uniqueIdentifierAsString);
-					firstUpsertBatch = false;
-				}
-				recordDao.batchUpsert(instanceId, recordType, batch, schema);
-				batch.clear();
-			}
-		}
-		if (firstUpsertBatch) {
-			if (batch.isEmpty()) {
-				throw new InvalidTsvException("We could not parse any data rows in your tsv file.");
-			}
-			schema = createOrUpdateSchema(instanceId, recordType, batch, uniqueIdentifierAsString);
-		}
-		recordDao.batchUpsert(instanceId, recordType, batch, schema);
-		return recordsProcessed;
-	}
+//	@Transactional
+//	public int uploadTsvStreamApache(InputStreamReader is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) throws IOException {
+//		CSVFormat csvFormat = TsvSupport.getUploadFormat();
+//		CSVParser rows = csvFormat.parse(is);
+//		String leftMostColumn = rows.getHeaderNames().get(0);
+//		List<Record> batch = new ArrayList<>();
+//		HashSet<String> recordIds = new HashSet<>(); // this set may be slow for very large TSVs
+//		boolean firstUpsertBatch = true;
+//		Map<String, DataTypeMapping> schema = null;
+//		String uniqueIdentifierAsString = primaryKey.orElse(leftMostColumn);
+//		int recordsProcessed = 0;
+//		for (CSVRecord row : rows) {
+//			Map<String, Object> m = (Map) row.toMap();
+//			m.remove(uniqueIdentifierAsString);
+//			changeEmptyStringsToNulls(m);
+//			String recordId;
+//			try {
+//				recordId = row.get(uniqueIdentifierAsString);
+//				batch.add(new Record(recordId, recordType, new RecordAttributes(m)));
+//			} catch (IllegalArgumentException ex) {
+//				LOGGER.error("IllegalArgument exception while reading tsv", ex);
+//				throw new InvalidTsvException(
+//						"Uploaded TSV is either missing the " + primaryKey
+//								+ " column or has a null or empty string value in that column");
+//			}
+//			// validate that all record ids in this TSV are unique
+//			// N.B. this happens after the try/catch block above, because
+//			// that block enforces the recordId is not null/empty as part of the "new Record()" constructor
+//			if (!recordIds.add(recordId)) {
+//				throw new InvalidTsvException("TSVs cannot contain duplicate primary key values");
+//			}
+//			recordsProcessed++;
+//			if (batch.size() >= batchSize) {
+//				if (firstUpsertBatch) {
+//					schema = createOrUpdateSchema(instanceId, recordType, batch, uniqueIdentifierAsString);
+//					firstUpsertBatch = false;
+//				}
+//				recordDao.batchUpsert(instanceId, recordType, batch, schema);
+//				batch.clear();
+//			}
+//		}
+//		if (firstUpsertBatch) {
+//			if (batch.isEmpty()) {
+//				throw new InvalidTsvException("We could not parse any data rows in your tsv file.");
+//			}
+//			schema = createOrUpdateSchema(instanceId, recordType, batch, uniqueIdentifierAsString);
+//		}
+//		recordDao.batchUpsert(instanceId, recordType, batch, schema);
+//		return recordsProcessed;
+//	}
 
-	/**
-	 * Should only be called from the TSV upload path, convert empty strings in the
-	 * TSV to nulls for storage in the database
-	 * 
-	 * @param m
-	 */
-	private void changeEmptyStringsToNulls(Map<String, Object> m) {
-		for (Map.Entry<String, Object> entry : m.entrySet()) {
-			if (entry.getValue().toString().isEmpty()) {
-				m.put(entry.getKey(), null);
-			}
-		}
-	}
+//	/**
+//	 * Should only be called from the TSV upload path, convert empty strings in the
+//	 * TSV to nulls for storage in the database
+//	 *
+//	 * @param m
+//	 */
+//	private void changeEmptyStringsToNulls(Map<String, Object> m) {
+//		for (Map.Entry<String, Object> entry : m.entrySet()) {
+//			if (entry.getValue().toString().isEmpty()) {
+//				m.put(entry.getKey(), null);
+//			}
+//		}
+//	}
 
-	private Map<String, DataTypeMapping> createOrUpdateSchema(UUID instanceId, RecordType recordType,
-			List<Record> batch, String recordTypePrimaryKey) {
-		Map<String, DataTypeMapping> schema = inferer.inferTypes(batch, InBoundDataSource.TSV);
-		return createOrModifyRecordType(instanceId, recordType, schema, batch, recordTypePrimaryKey);
-	}
+//	private Map<String, DataTypeMapping> createOrUpdateSchema(UUID instanceId, RecordType recordType,
+//			List<Record> batch, String recordTypePrimaryKey) {
+//		Map<String, DataTypeMapping> schema = inferer.inferTypes(batch, InBoundDataSource.TSV);
+//		return createOrModifyRecordType(instanceId, recordType, schema, batch, recordTypePrimaryKey);
+//	}
 
 	private int consumeWriteStream(StreamingWriteHandler streamingWriteHandler, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		int recordsAffected = 0;
@@ -275,7 +270,7 @@ public class BatchWriteService {
 	 * @return number of records updated
 	 */
 	@Transactional
-	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
+	public int batchWriteJsonStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		try (StreamingWriteHandler streamingWriteHandler = new JsonStreamWriteHandler(is, objectMapper)) {
 			return consumeWriteStream(streamingWriteHandler, instanceId, recordType, primaryKey);
 		} catch (IOException e) {
@@ -284,7 +279,7 @@ public class BatchWriteService {
 	}
 
 	@Transactional
-	public int consumeWriteStream(Stream<Record> upsertRecords, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
+	public int batchWriteTsvStream(Stream<Record> upsertRecords, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		try (StreamingWriteHandler streamingWriteHandler = new TsvStreamWriteHandler(upsertRecords)) {
 			return consumeWriteStream(streamingWriteHandler, instanceId, recordType, primaryKey);
 		} catch (IOException e) {

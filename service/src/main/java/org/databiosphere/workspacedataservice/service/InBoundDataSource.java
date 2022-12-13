@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
 public enum InBoundDataSource {
-	JSON, TSV;
+	// TODO: clean up
+	JSON //, TSV;
 }
