@@ -139,6 +139,7 @@ public class RecordController {
 		List<String> headers = recordDao.getAllAttributeNames(instanceId, recordType);
 		Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType);
 
+		// TODO: consider rewriting this using jackson-dataformat-csv and removing org.apache.commons:commons-csv altogether
 		StreamingResponseBody responseBody = httpResponseOutputStream -> {
 			try (CSVPrinter writer = TsvSupport.getOutputFormat(headers)
 					.print(new OutputStreamWriter(httpResponseOutputStream))) {

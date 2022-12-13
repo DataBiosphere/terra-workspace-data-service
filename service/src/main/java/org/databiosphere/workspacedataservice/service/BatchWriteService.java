@@ -8,9 +8,6 @@ import com.fasterxml.jackson.dataformat.csv.CsvParser;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
@@ -122,10 +119,12 @@ public class BatchWriteService {
 
 	@Transactional
 	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) throws IOException {
+		// read schema (column names) from the input file's header
 		CsvSchema tsvHeaderSchema = CsvSchema.emptySchema()
 				.withHeader()
 				.withColumnSeparator('\t');
 
+		// TODO: consider moving some of these to WorkspaceDataServiceApplication, similar to ObjectMapper
 		final CsvMapper mapper = CsvMapper.builder().build();
 		MappingIterator<Map<String, String>> tsvIterator = mapper
 				.readerForMapOf(String.class)
@@ -134,34 +133,38 @@ public class BatchWriteService {
 				.with(CsvParser.Feature.EMPTY_STRING_AS_NULL)
 				.readValues(is);
 
+		// check for no rows in TSV
 		if (!tsvIterator.hasNext()) {
 			throw new InvalidTsvException("We could not parse any data rows in your tsv file.");
 		}
 
-		// extract column names from the generated schema
+		// extract column names from the schema
 		List<String> colNames;
 		FormatSchema formatSchema = tsvIterator.getParser().getSchema();
 		if (formatSchema instanceof CsvSchema actualSchema) {
 			colNames = actualSchema.getColumnNames();
 		} else {
-			throw new InvalidTsvException("Could not determine primary key column from format schema: " + formatSchema.getClass().getName());
+			throw new InvalidTsvException("Could not determine primary key column; unexpected schema type:" + formatSchema.getSchemaType());
 		}
 
+		// if a primary key is specified, check if it is present in the TSV
 		if (primaryKey.isPresent() && !colNames.contains(primaryKey.get())) {
 			throw new InvalidTsvException(
 					"Uploaded TSV is either missing the " + primaryKey
 							+ " column or has a null or empty string value in that column");
 		}
 
-		// determine PK: if not specified by caller, use the leftmost column
+		// if primary key is not specified, use the leftmost column
 		String resolvedPK = primaryKey.orElseGet( () -> colNames.get(0) );
 
-
+		// convert the tsvIterator to a Stream<Record>, translating the String values in TSV cells
+		// to Java objects. The result should be Records equivalent to how the JSON ObjectMapper
+		// deserializes JSON to Record.
 		Stream<Map<String, String>> tsvStream = StreamSupport.stream(
 				Spliterators.spliteratorUnknownSize(tsvIterator, Spliterator.ORDERED), false);
-
 		Stream<Record> recordStream = tsvConverter.rowsToRecords(tsvStream, recordType, resolvedPK);
 
+		// hand off the Stream<Record> to be batch-written
 		return batchWriteTsvStream(recordStream, instanceId, recordType, Optional.of(resolvedPK));
 	}
 
