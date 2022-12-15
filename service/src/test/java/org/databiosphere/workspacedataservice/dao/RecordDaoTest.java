@@ -386,14 +386,12 @@ class RecordDaoTest {
 		assertEquals(List.of(arrayRelation), relationArrayCols);
 		Record record = recordDao.getSingleRecord(instanceId, relationArrayType, relArrId).get();
 		assertNotNull(record);
-		//Inspecting the values shows they match but the test still fails at this line
-//		assertEquals(relArr, Arrays.asList(record.getAttributeValue("relArrAttr")));
+		String[] actualAttrValue = assertInstanceOf(String[].class, record.getAttributeValue("relArrAttr"));
+		assertIterableEquals(relArr, Arrays.asList(actualAttrValue));
 
-		//Join values are inserted manually
-		recordDao.insertIntoJoin(instanceId, arrayRelation, relationArrayType, List.of(new RelationValue(record, referencedRecord), new RelationValue(record, referencedRecord2)));
-		List<String> relationValues = recordDao.getRelationArrayValues(instanceId, arrayRelation, record);
-		assertEquals(2, relationValues.size());
-		assertEquals(List.of(refRecordId, refRecordId2), relationValues);
+		//The purpose of inserting in to the join is simply to make sure foreign keys are consistent
+		//So all we care about here is not throwing an error
+		assertDoesNotThrow(() -> recordDao.insertIntoJoin(instanceId, arrayRelation, relationArrayType, List.of(new RelationValue(record, referencedRecord), new RelationValue(record, referencedRecord2))));
 	}
 
 	@Test

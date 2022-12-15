@@ -545,7 +545,7 @@ public class RecordDao {
 		String toCol = getToColumnName(relation.relationRecordType());
 		String columnDefs =  " (" + quote(fromCol) + ", " + quote(toCol) + ")";
 		return "insert into " + getQualifiedJoinTableName(instanceId, relation.relationColName(), recordType) + columnDefs
-				+ " values (?,?) "; //TODO: Do I need on conflict and if so, how
+				+ " values (?,?) ";
 	}
 
 
@@ -702,15 +702,6 @@ public class RecordDao {
 		} catch (EmptyResultDataAccessException e) {
 			return Optional.empty();
 		}
-	}
-
-	public List<String> getRelationArrayValues(UUID instanceId, Relation column, Record rec) {
-		String joinTableName = getQualifiedJoinTableName(instanceId, column.relationColName(), rec.getRecordType());
-		String fromCol = getJoinTableName(column.relationColName(), rec.getRecordType()) + "." + quote(getFromColumnName(rec.getRecordType()));
-		String toCol = getJoinTableName(column.relationColName(), rec.getRecordType()) + "." + quote(getToColumnName(column.relationRecordType()));
-		return namedTemplate.queryForList(
-				"select " + toCol + " from " + joinTableName + " where " + fromCol + " = :recordId",
-				new MapSqlParameterSource(RECORD_ID_PARAM, rec.getId()), String.class);
 	}
 
 	public String getPrimaryKeyColumn(RecordType type, UUID instanceId){

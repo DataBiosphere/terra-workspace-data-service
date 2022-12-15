@@ -201,7 +201,7 @@ public class RecordController {
 					records);
 			Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
 			combinedSchema.putAll(requestSchema);
-			recordService.prepareAndUpsert(instanceId, recordType, records, combinedSchema, primaryKey.orElse(ReservedNames.RECORD_ID));
+			recordService.prepareAndUpsert(instanceId, recordType, records, combinedSchema, primaryKey.orElseGet(() -> recordDao.getPrimaryKeyColumn(recordType, instanceId)));
 			RecordResponse response = new RecordResponse(recordId, recordType, attributesInRequest);
 			return new ResponseEntity<>(response, status);
 		}
