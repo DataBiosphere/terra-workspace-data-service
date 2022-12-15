@@ -310,24 +310,28 @@ public class DataTypeInferer {
 		if (relationAttributes.isEmpty() && relationArrayAttributes.isEmpty()) {
 			return new RelationCollection(relations, relationArrays);
 		}
-		for (String relation : relationAttributes){
-			for (Record rec : records) {
-				if (rec.getAttributeValue(relation) != null){
-					relations.add(new Relation(relation, RelationUtils.getTypeValue(rec.getAttributeValue(relation))));
-				}
-			}
-		}
-		for (String relationArr : relationArrayAttributes){
-			for (Record rec : records) {
-				if (rec.getAttributeValue(relationArr) != null){
-					//TODO potentially pre-process attribute values to match no matter their data source
-					if (rec.getAttributeValue(relationArr) instanceof List<?> listVal) { //from a json source,
-						relationArrays.add(new Relation(relationArr, RelationUtils.getTypeValueForList(listVal)));
-					} else { //from a tsv source
-						relationArrays.add(new Relation(relationArr, RelationUtils.getTypeValueForArray(getArrayOfType(rec.getAttributeValue(relationArr).toString(), String[].class))));
-					}
-				}
-			}
+		for (Record rec : records) {
+			// find all scalar attributes for this record whose names are in relationAttributes
+			// and convert them to Relations, then save to the "relations" Set
+			Set<Relation> relationsForThisRecord = rec.attributeSet().stream()
+					.filter( entry -> relationAttributes.contains(entry.getKey()))
+					.map(entry -> new Relation(entry.getKey(), RelationUtils.getTypeValue(entry.getValue())))
+					.collect(Collectors.toSet());
+			relations.addAll(relationsForThisRecord);
+
+			// find all array attributes for this record whose names are in relationArrayAttributes
+			// and convert them to Relations, then save to the "relationArrays" Set
+			Set<Relation> relationArraysForThisRecord = rec.attributeSet().stream()
+					.filter( entry -> relationArrayAttributes.contains(entry.getKey()))
+					.map(entry -> {
+						if (entry.getValue() instanceof List<?> listVal) { //from a json source,
+							return new Relation(entry.getKey(), RelationUtils.getTypeValueForList(listVal));
+						} else { //from a tsv source
+							return new Relation(entry.getKey(), RelationUtils.getTypeValueForArray(getArrayOfType(entry.getValue().toString(), String[].class)));
+						}
+					})
+					.collect(Collectors.toSet());
+			relationArrays.addAll(relationArraysForThisRecord);
 		}
 		return new RelationCollection(relations, relationArrays);
 	}
