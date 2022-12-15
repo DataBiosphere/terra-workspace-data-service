@@ -49,23 +49,26 @@ public class RecordService {
 
     private Map<Relation, List<RelationValue>> getAllRelationArrayValues(List<Record> records, Map<String, DataTypeMapping> relationArrays){
         Map<Relation, List<RelationValue>> relationArrayValues = new HashMap<>();
-        for (Record rec : records) {
-            for (Map.Entry<String, Object> attribute : rec.attributeSet()){
-                if (relationArrays.containsKey(attribute.getKey()) && attribute.getValue() != null){
-                    //How to read relation list depends on its source, which we don't know here so we have to check
-                    List<String> rels;
-                    if (attribute.getValue() instanceof List<?>){
-                        rels = (List<String>) attribute.getValue();
-                    } else {
-                        rels = Arrays.asList(inferer.getArrayOfType(attribute.getValue().toString(), String[].class));
-                    }
-                    Relation relDef = new Relation(attribute.getKey(), RelationUtils.getTypeValueForList(rels));
-                    List<RelationValue> relList = relationArrayValues.getOrDefault(relDef, new ArrayList<>());
-                    relList.addAll(rels.stream().map(r -> getRelVal(rec, r)).toList());
-                    relationArrayValues.put(relDef, relList);
+         for (Record rec : records) {
+            // find relation array attributes for this record
+            List<Map.Entry<String, Object>> arrayAttributesForThisRecord = rec.attributeSet().stream()
+                    .filter(entry -> entry.getValue() != null && relationArrays.containsKey(entry.getKey()))
+                    .toList();
+            for (Map.Entry<String, Object> attribute : arrayAttributesForThisRecord){
+                //How to read relation list depends on its source, which we don't know here so we have to check
+                List<String> rels;
+                if (attribute.getValue() instanceof List<?>){
+                    rels = (List<String>) attribute.getValue();
+                } else {
+                    rels = Arrays.asList(inferer.getArrayOfType(attribute.getValue().toString(), String[].class));
                 }
+                Relation relDef = new Relation(attribute.getKey(), RelationUtils.getTypeValueForList(rels));
+                List<RelationValue> relList = relationArrayValues.getOrDefault(relDef, new ArrayList<>());
+                relList.addAll(rels.stream().map(r -> getRelVal(rec, r)).toList());
+                relationArrayValues.put(relDef, relList);
             }
         }
+
         return relationArrayValues;
     }
 
