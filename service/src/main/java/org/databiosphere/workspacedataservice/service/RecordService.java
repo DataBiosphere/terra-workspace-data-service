@@ -7,7 +7,6 @@ import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationValue;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
-import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -18,8 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 
 @Service
 public class RecordService {
@@ -64,7 +61,7 @@ public class RecordService {
                 }
                 Relation relDef = new Relation(attribute.getKey(), RelationUtils.getTypeValueForList(rels));
                 List<RelationValue> relList = relationArrayValues.getOrDefault(relDef, new ArrayList<>());
-                relList.addAll(rels.stream().map(r -> getRelVal(rec, r)).toList());
+                relList.addAll(rels.stream().map(r -> createRelationValue(rec, r)).toList());
                 relationArrayValues.put(relDef, relList);
             }
         }
@@ -72,7 +69,7 @@ public class RecordService {
         return relationArrayValues;
     }
 
-    private RelationValue getRelVal(Record fromRecord, String toString){
+    private RelationValue createRelationValue(Record fromRecord, String toString){
         return new RelationValue(fromRecord, new Record(RelationUtils.getRelationValue(toString), RelationUtils.getTypeValue(toString), new RecordAttributes(Collections.emptyMap())));
     }
 
