@@ -3,16 +3,8 @@ package org.databiosphere.workspacedataservice.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.csv.CSVPrinter;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.service.BatchWriteService;
-import org.databiosphere.workspacedataservice.service.DataTypeInferer;
-import org.databiosphere.workspacedataservice.service.InBoundDataSource;
-import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.TsvSupport;
-import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
-import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
-import org.databiosphere.workspacedataservice.service.model.Relation;
-import org.databiosphere.workspacedataservice.service.model.ReservedNames;
+import org.databiosphere.workspacedataservice.service.*;
+import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.NewPrimaryKeyException;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
@@ -47,12 +39,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -64,15 +51,17 @@ public class RecordController {
 	private final RecordDao recordDao;
 	private final DataTypeInferer inferer;
 	private final BatchWriteService batchWriteService;
+	private final RecordService recordService;
 
 	private final ObjectMapper objectMapper;
 
 	public RecordController(RecordDao recordDao, BatchWriteService batchWriteService, DataTypeInferer inf,
-			ObjectMapper objectMapper) {
+			ObjectMapper objectMapper, RecordService recordService) {
 		this.recordDao = recordDao;
 		this.batchWriteService = batchWriteService;
 		this.inferer = inf;
 		this.objectMapper = objectMapper;
+		this.recordService = recordService;
 	}
 
 	@PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
@@ -93,7 +82,7 @@ public class RecordController {
 		List<Record> records = Collections.singletonList(singleRecord);
 		Map<String, DataTypeMapping> updatedSchema = batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType,
 				typeMapping, existingTableSchema, records);
-		recordDao.batchUpsert(instanceId, recordType, records, updatedSchema);
+		recordService.prepareAndUpsert(instanceId, recordType, records, updatedSchema, recordDao.getPrimaryKeyColumn(recordType, instanceId));
 		RecordResponse response = new RecordResponse(recordId, recordType, singleRecord.getAttributes());
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
@@ -105,9 +94,7 @@ public class RecordController {
 		validateVersion(version);
 		validateInstance(instanceId);
 		checkRecordTypeExists(instanceId, recordType);
-		Record result = recordDao
-				.getSingleRecord(instanceId, recordType, recordId)
-				.orElseThrow(() -> new MissingObjectException("Record"));
+		Record result = recordDao.getSingleRecord(instanceId, recordType, recordId).orElseThrow(() -> new MissingObjectException("Record"));
 		RecordResponse response = new RecordResponse(recordId, recordType, result.getAttributes());
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
@@ -167,7 +154,6 @@ public class RecordController {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"Limit must be more than 0 and can't exceed " + MAX_RECORDS + ", and offset must be positive.");
 		}
-
 		if (searchRequest.getSortAttribute() != null && !recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType)
 				.keySet().contains(searchRequest.getSortAttribute())) {
 			throw new MissingObjectException("Requested sort attribute");
@@ -215,7 +201,7 @@ public class RecordController {
 					records);
 			Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
 			combinedSchema.putAll(requestSchema);
-			recordDao.batchUpsert(instanceId, recordType, records, combinedSchema);
+			recordService.prepareAndUpsert(instanceId, recordType, records, combinedSchema, primaryKey.orElseGet(() -> recordDao.getPrimaryKeyColumn(recordType, instanceId)));
 			RecordResponse response = new RecordResponse(recordId, recordType, attributesInRequest);
 			return new ResponseEntity<>(response, status);
 		}
@@ -341,7 +327,8 @@ public class RecordController {
 	private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, RecordType recordType,
 		Map<String, DataTypeMapping> requestSchema, Optional<String> primaryKey) {
 		List<Record> records = Collections.singletonList(newRecord);
-		recordDao.createRecordType(instanceId, requestSchema, recordType, RelationUtils.findRelations(records), primaryKey.orElse(ReservedNames.RECORD_ID));
-		recordDao.batchUpsert(instanceId, recordType, records, requestSchema);
+		recordDao.createRecordType(instanceId, requestSchema, recordType, inferer.findRelations(records, requestSchema), primaryKey.orElse(ReservedNames.RECORD_ID));
+		recordService.prepareAndUpsert(instanceId, recordType, records, requestSchema, primaryKey.orElse(ReservedNames.RECORD_ID));
 	}
+
 }
