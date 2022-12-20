@@ -355,7 +355,8 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void tsvUploadWithRelationsShouldSucceed() throws Exception {
-		RecordType refType = RecordType.valueOf("refType");
+		// TODO: use mixed-case for refType to ensure case handling within references
+		RecordType refType = RecordType.valueOf("reftype");
 		createSomeRecords(refType, 3);
 
 		StringBuilder tsvContent = new StringBuilder("sys_name\trel\trelArr\n");

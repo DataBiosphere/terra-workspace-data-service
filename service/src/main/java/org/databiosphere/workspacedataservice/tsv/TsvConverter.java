@@ -95,6 +95,7 @@ public class TsvConverter {
             try {
                 // We call .toLowerCase() to ensure that WDS interprets all different inputted spellings of boolean values
                 // as booleans - e.g. `TRUE`, `tRUe`, or `true` ---> `true`
+                // TODO: don't automatically lower-case this!
                 JsonNode node = objectMapper.readTree(replaceLeftRightQuotes(val.toLowerCase()));
                 LOGGER.info("***** for input <" + val + ">, parsed is array? " + node.isArray());
                 if (node instanceof ArrayNode arrayNode) {
@@ -108,11 +109,15 @@ public class TsvConverter {
                             return null;
                         }
                         if (el instanceof NumericNode nn) {
-                            LOGGER.info("***** for array element <" + el + ">, returning BigDecimal");
-                            if (nn.canConvertToInt()) {
-                                return new BigInteger(nn.numberValue().toString());
-                            } else {
-                                return new BigDecimal(nn.numberValue().toString());
+
+                            try {
+                                BigInteger bigInteger = new BigInteger(nn.numberValue().toString());
+                                LOGGER.info("***** for array element <" + el + ">, returning BigInteger");
+                                return bigInteger;
+                            } catch (NumberFormatException nfe) {
+                                BigDecimal bigDecimal = new BigDecimal(nn.numberValue().toString());
+                                LOGGER.info("***** for array element <" + el + ">, returning BigDecimal");
+                                return bigDecimal;
                             }
                         }
                         if (el instanceof BooleanNode bn) {
@@ -126,11 +131,19 @@ public class TsvConverter {
                         throw new RuntimeException("expected an interpretable element, got: " + el.getClass().getName());
                     }).toList();
 
-                    LOGGER.info("***** for input <" + val + ">, typedArray is: " + typedArray);
+                    if (typedArray.size() > 0) {
+                        LOGGER.info("***** for input <" + val + ">, typedArray contains: " + typedArray.get(0).getClass().getName());
+                    } else {
+                        LOGGER.info("***** for input <" + val + ">, typedArray is empty array");
+                    }
+
+
 
                     List<String> classNames = typedArray.stream().map(i -> i.getClass().getName()).distinct().toList();
 
-                    if (classNames.size() > 1) {
+                    // special case for BigDecimal/BigInteger; TODO: make this cleaner
+                    if (classNames.size() > 1 && !(classNames.size() == 2 && classNames.contains(BigDecimal.class.getName()) && classNames.contains(BigInteger.class.getName()))) {
+
                         // TODO: call 'em strings. This could be more graceful.
                         Stream<JsonNode> forceStringElements = StreamSupport.stream(
                                 Spliterators.spliteratorUnknownSize(arrayNode.elements(), Spliterator.ORDERED), false);
