@@ -1,12 +1,14 @@
 package org.databiosphere.workspacedataservice.tsv;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.*;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidTsvException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -16,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -43,37 +46,50 @@ public class TsvConverter {
     }
 
     public Object cellToAttribute(String val) {
+        /*
+        TODO need to handle:
+            - numbers
+            - booleans
+            - json objects
+            - arrays of any of the previous
+            - quoted values
+        do not need to handle:
+            - dates, datetimes, relations; these are detected later in the processing pipeline
+         */
+
         LOGGER.info("***** cellToAttribute: <" + val + ">");
         if (Objects.isNull(val)) {
             return null;
         }
+        // anything quoted should be a string. This only comes into play when processing array elements;
+        // the CSV reader strips surrounding quotes from top-level values.
         if (val.startsWith("\"") && val.endsWith("\"")) {
             String trimmed = val.substring(1, val.length()-1);
             LOGGER.info("***** for input <" + val + ">, returning trimmed string: " + trimmed);
             return trimmed;
         }
+        // booleans and numbers. TODO: change the "is*" methods in inferer to return their value so we don't parse twice?
         if (inferer.isValidBoolean(val)) {
             return Boolean.parseBoolean(val);
         }
         if (inferer.isNumericValue(val)) {
-            return new BigDecimal(val);
+            try {
+                return new BigInteger(val);
+            } catch (NumberFormatException nfe) {
+                return new BigDecimal(val);
+            }
         }
-        if (inferer.isValidDate(val)) {
-            return LocalDate.parse(val, DateTimeFormatter.ISO_LOCAL_DATE);
+
+        if (inferer.isValidJson(val)) {
+            try {
+                return objectMapper.readValue(val, new TypeReference<Map<String, Object>>(){});
+            } catch (JsonProcessingException jpe) {
+                // this shouldn't happen; if inferer.isValidJson(val) passes, so should the .readValue
+                return val;
+            }
         }
-        if (inferer.isValidDateTime(val)) {
-            return LocalDateTime.parse(val, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-        }
-//        if (inferer.isValidJson(val)) {
-//            try {
-//                // We call .toLowerCase() to ensure that WDS interprets all different inputted spellings of boolean values
-//                // as booleans - e.g. `TRUE`, `tRUe`, or `true` ---> `true`
-//                return objectMapper.readValue(val.toString(), new TypeReference<Map<String, Object>>(){});
-//                // return objectMapper.readTree(val.toLowerCase());
-//            } catch (JsonProcessingException e) {
-//                return null;
-//            }
-//        }
+
+        // date/datetime detection happens later in the pipeline; we just need to deserialize to strings
         if (inferer.isArray(replaceLeftRightQuotes(val))) {
             LOGGER.info("***** for input <" + val + ">, processing as array");
             try {
@@ -93,7 +109,11 @@ public class TsvConverter {
                         }
                         if (el instanceof NumericNode nn) {
                             LOGGER.info("***** for array element <" + el + ">, returning BigDecimal");
-                            return new BigDecimal(nn.numberValue().toString());
+                            if (nn.canConvertToInt()) {
+                                return new BigInteger(nn.numberValue().toString());
+                            } else {
+                                return new BigDecimal(nn.numberValue().toString());
+                            }
                         }
                         if (el instanceof BooleanNode bn) {
                             LOGGER.info("***** for array element <" + el + ">, returning boolean");
@@ -155,8 +175,6 @@ public class TsvConverter {
         // can't use a collector here because some values can be null
         Map<String, Object> attrMap = new HashMap<String, Object>();
         typedAttrs.forEach( entry -> attrMap.put(entry.getKey(), entry.getValue()));
-//            .filter(e -> e.getValue() != null)
-//            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         return new RecordAttributes(attrMap);
     }
 

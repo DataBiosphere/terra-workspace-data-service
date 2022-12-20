@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import com.fasterxml.jackson.core.FormatSchema;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvParser;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
@@ -49,15 +50,18 @@ public class BatchWriteService {
 
 	private final ObjectMapper objectMapper;
 
+	private final ObjectReader tsvReader;
+
 	private final TsvConverter tsvConverter;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchWriteService.class);
 
-	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize, DataTypeInferer inf, ObjectMapper objectMapper, TsvConverter tsvConverter) {
+	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize, DataTypeInferer inf, ObjectMapper objectMapper, ObjectReader tsvReader, TsvConverter tsvConverter) {
 		this.recordDao = recordDao;
 		this.batchSize = batchSize;
 		this.inferer = inf;
 		this.objectMapper = objectMapper;
+		this.tsvReader = tsvReader;
 		this.tsvConverter = tsvConverter;
 	}
 
@@ -118,20 +122,9 @@ public class BatchWriteService {
 	}
 
 	@Transactional
+	// TODO: could simplify to InputStream argument instead of InputStreamReader
 	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) throws IOException {
-		// read schema (column names) from the input file's header
-		CsvSchema tsvHeaderSchema = CsvSchema.emptySchema()
-				.withHeader()
-				.withColumnSeparator('\t');
-
-		// TODO: consider moving some of these to WorkspaceDataServiceApplication, similar to ObjectMapper
-		final CsvMapper mapper = CsvMapper.builder().build();
-		MappingIterator<Map<String, String>> tsvIterator = mapper
-				.readerForMapOf(String.class)
-				.with(tsvHeaderSchema)
-				.with(CsvParser.Feature.SKIP_EMPTY_LINES)
-				.with(CsvParser.Feature.EMPTY_STRING_AS_NULL)
-				.readValues(is);
+		MappingIterator<Map<String, String>> tsvIterator = tsvReader.readValues(is);
 
 		// check for no rows in TSV
 		if (!tsvIterator.hasNext()) {
