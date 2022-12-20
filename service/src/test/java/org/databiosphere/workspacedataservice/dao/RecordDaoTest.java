@@ -85,7 +85,7 @@ class RecordDaoTest {
 		String sample_id = "Sample ID";
 		String recordId = "1199";
 		Record testRecord = new Record(recordId, referencedRt, RecordAttributes.empty());
-		Map<String, DataTypeMapping> schema = Map.of("attr1", DataTypeMapping.STRING);
+		Map<String, DataTypeMapping> schema = Map.of("attr1", DataTypeMapping.RELATION);
 		recordDao.createRecordType(instanceId, schema, referencedRt, new RelationCollection(Collections.emptySet(),Collections.emptySet()), sample_id);
 		recordDao.batchUpsert(instanceId, referencedRt, Collections.singletonList(testRecord), Collections.emptyMap(), sample_id);
 		RecordType referencer = RecordType.valueOf("referencer");
@@ -105,7 +105,7 @@ class RecordDaoTest {
 		// Create two records of the same type, one with a value for a relation
 		// attribute, the other without
 		recordDao.addColumn(instanceId, recordType, "foo", DataTypeMapping.STRING);
-		recordDao.addColumn(instanceId, recordType, "relationAttr", DataTypeMapping.STRING);
+		recordDao.addColumn(instanceId, recordType, "relationAttr", DataTypeMapping.RELATION);
 		recordDao.addForeignKeyForReference(recordType, recordType, instanceId, "relationAttr");
 
 		String refRecordId = "referencedRecord";
@@ -117,7 +117,7 @@ class RecordDaoTest {
 
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(referencedRecord), new HashMap<>());
 		recordDao.batchUpsert(instanceId, recordType, List.of(referencedRecord, testRecord),
-				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "relationAttr", DataTypeMapping.STRING)));
+				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "relationAttr", DataTypeMapping.RELATION)));
 
 		List<Relation> relations = recordDao.getRelationCols(instanceId, recordType);
 
@@ -162,7 +162,7 @@ class RecordDaoTest {
 		// get to the dao
 		recordDao.addColumn(instanceId, recordType, "foo", DataTypeMapping.STRING);
 
-		recordDao.addColumn(instanceId, recordType, "testRecordType", DataTypeMapping.STRING);
+		recordDao.addColumn(instanceId, recordType, "testRecordType", DataTypeMapping.RELATION);
 		recordDao.addForeignKeyForReference(recordType, recordType, instanceId, "testRecordType");
 
 		String refRecordId = "referencedRecord";
@@ -173,7 +173,7 @@ class RecordDaoTest {
 		String reference = RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "referencedRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(Map.of("testRecordType", reference)));
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord),
-				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.STRING)));
+				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.RELATION)));
 
 		Record search = recordDao
 				.getSingleRecord(instanceId, recordType, recordId)
@@ -213,7 +213,7 @@ class RecordDaoTest {
 		// get to the dao
 		recordDao.addColumn(instanceId, recordType, "foo", DataTypeMapping.STRING);
 
-		recordDao.addColumn(instanceId, recordType, "testRecordType", DataTypeMapping.STRING,
+		recordDao.addColumn(instanceId, recordType, "testRecordType", DataTypeMapping.RELATION,
 				RecordType.valueOf("testRecordType"));
 
 		String refRecordId = "referencedRecord";
@@ -224,7 +224,7 @@ class RecordDaoTest {
 		String reference = RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "referencedRecord");
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(Map.of("testRecordType", reference)));
 		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord),
-				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.STRING)));
+				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.RELATION)));
 
 		// Should throw an error
 		assertThrows(ResponseStatusException.class, () -> {
@@ -305,7 +305,7 @@ class RecordDaoTest {
 		RecordType referencedType = RecordType.valueOf("referencedType");
 		recordDao.createRecordType(instanceId, Collections.emptyMap(), referencedType, new RelationCollection(Collections.emptySet(), Collections.emptySet()), RECORD_ID);
 
-		recordDao.addColumn(instanceId, recordTypeName, "relation", DataTypeMapping.STRING, referencedType);
+		recordDao.addColumn(instanceId, recordTypeName, "relation", DataTypeMapping.RELATION, referencedType);
 
 		String refRecordId = "referencedRecord";
 		Record referencedRecord = new Record(refRecordId, referencedType, RecordAttributes.empty());
@@ -315,7 +315,7 @@ class RecordDaoTest {
 		String reference = RelationUtils.createRelationString(referencedType, refRecordId);
 		Record testRecord = new Record(recordId, recordType, new RecordAttributes(Map.of("relation", reference)));
 		recordDao.batchUpsert(instanceId, recordTypeName, Collections.singletonList(testRecord),
-				new HashMap<>(Map.of("relation", DataTypeMapping.STRING)));
+				new HashMap<>(Map.of("relation", DataTypeMapping.RELATION)));
 
 		// Should throw an error
 		assertThrows(ResponseStatusException.class, () -> {

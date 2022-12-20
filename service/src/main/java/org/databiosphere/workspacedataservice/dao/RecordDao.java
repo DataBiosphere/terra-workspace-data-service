@@ -457,7 +457,7 @@ public class RecordDao {
 		if (Objects.isNull(attVal)) {
 			return null;
 		}
-		if (RelationUtils.isRelationValue(attVal) && typeMapping == DataTypeMapping.STRING) {
+		if (RelationUtils.isRelationValue(attVal) && typeMapping == DataTypeMapping.RELATION) {
 			return RelationUtils.getRelationValue(attVal);
 		}
 		if (attVal instanceof String sVal) {
