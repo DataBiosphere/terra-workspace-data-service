@@ -11,6 +11,7 @@ import java.util.*;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.InBoundDataSource;
+import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -36,6 +37,8 @@ class DataTypeInfererTest {
 		expected.put("date_val", DataTypeMapping.DATE);
 		expected.put("date_time_val", DataTypeMapping.DATE_TIME);
 		expected.put("number_or_string", DataTypeMapping.STRING);
+		expected.put("relation", DataTypeMapping.RELATION);
+		expected.put("rel_arr", DataTypeMapping.ARRAY_OF_RELATION);
 
 		assertEquals(expected, result);
 	}
@@ -52,6 +55,10 @@ class DataTypeInfererTest {
 				.as("should convert date to datetime").isEqualTo(DataTypeMapping.DATE_TIME);
 		assertThat(inferer.selectBestType(DataTypeMapping.ARRAY_OF_DATE, DataTypeMapping.ARRAY_OF_DATE_TIME))
 				.as("should convert array of date to array of datetime").isEqualTo(DataTypeMapping.ARRAY_OF_DATE_TIME);
+		assertThat(inferer.selectBestType(DataTypeMapping.ARRAY_OF_STRING, DataTypeMapping.ARRAY_OF_RELATION))
+				.as("should convert array of relation to array of string").isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
+		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.RELATION))
+				.as("should convert array of date to array of datetime").isEqualTo(DataTypeMapping.STRING);
 	}
 
 //	@Test
@@ -64,6 +71,8 @@ class DataTypeInfererTest {
 //		expected.put("date_val", DataTypeMapping.DATE);
 //		expected.put("date_time_val", DataTypeMapping.DATE_TIME);
 //		expected.put("number_or_string", DataTypeMapping.NUMBER);
+//		expected.put("relation", DataTypeMapping.RELATION);
+//		expected.put("rel_arr", DataTypeMapping.ARRAY_OF_RELATION);
 //
 //		assertEquals(expected, result);
 //	}
@@ -117,6 +126,9 @@ class DataTypeInfererTest {
 		assertThat(inferer.inferType(List.of(new BigInteger("12345")), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
 		assertThat(inferer.inferType(List.of(true, false, true), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_BOOLEAN);
 		assertThat(inferer.inferType(List.of(new BigDecimal("11.1"), new BigDecimal("12"), new BigDecimal("14")), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
+		assertThat(inferer.inferType(List.of(RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId"), RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId2"), RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId3")), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_RELATION);
+		assertThat(inferer.inferType(List.of(RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId"), "not a relation string", RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId3")), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
+		assertThat(inferer.inferType(RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId3"), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.RELATION);
 	}
 
 //	@Test
@@ -137,12 +149,19 @@ class DataTypeInfererTest {
 	private static RecordAttributes getSomeAttrs() {
 		return new RecordAttributes(
 				Map.of("int_val", new BigDecimal("4747"), "string_val", "Abracadabra Open Sesame", "json_val", "{\"list\": [\"a\", \"b\"]}",
-						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00", "number_or_string", "47", "array_of_string", List.of("red", "yellow")));
+						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00", "number_or_string", "47", "array_of_string", List.of("red", "yellow"),
+						"relation", RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId"),
+				"rel_arr", List.of(RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId"),
+								RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId2"),
+								RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId3"))));
 	}
 
 //	private static RecordAttributes getSomeTsvAttrs() {
 //		return new RecordAttributes(
 //				Map.of("int_val", "4747", "string_val", "Abracadabra Open Sesame", "json_val", "{\"list\": [\"a\", \"b\"]}",
-//						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00", "number_or_string", "47"));
+//						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00", "number_or_string", "47",
+//						"relation", RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId"),
+//						"rel_arr", "[\""+RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId")+"\", \""
+//				+RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId2")+"\"]"));
 //	}
 }

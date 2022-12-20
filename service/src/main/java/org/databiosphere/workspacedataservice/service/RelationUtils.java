@@ -1,13 +1,9 @@
 package org.databiosphere.workspacedataservice.service;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import com.google.common.base.Preconditions;
-import org.databiosphere.workspacedataservice.service.model.Relation;
-import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -15,28 +11,20 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class RelationUtils {
 
 	public static final String RELATION_IDENTIFIER = "terra-wds";
-
-	/**
-	 * Determines if any attributes reference another table
-	 *
-	 * @param records
-	 *            - all records whose references to check
-	 * @return Set of Relation for all referencing attributes
-	 */
-	public static Set<Relation> findRelations(List<Record> records) {
-		Set<Relation> result = new HashSet<>();
-		for (Record record : records) {
-			for (Map.Entry<String, Object> entry : record.attributeSet()) {
-				if (isRelationValue(entry.getValue())) {
-					result.add(new Relation(entry.getKey(), getTypeValue(entry.getValue())));
-				}
-			}
-		}
-		return result;
-	}
-
+	
 	public static RecordType getTypeValue(Object obj) {
 		return RecordType.valueOf(splitRelationIdentifier(obj)[0]);
+	}
+
+	public static RecordType getTypeValueForList(List<?> listVal) {
+		if (listVal.stream().map(RelationUtils::getTypeValue).distinct().count() > 1){
+			throw new InvalidRelationException("All relations in an array must relate to the same table");
+		}
+		return getTypeValue(listVal.get(0));
+	}
+
+	public static RecordType getTypeValueForArray(String[] arr) {
+		return getTypeValueForList(Arrays.asList(arr));
 	}
 
 	private static String[] splitRelationIdentifier(Object obj) {
