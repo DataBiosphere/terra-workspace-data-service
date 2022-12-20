@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -41,12 +40,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -203,6 +204,8 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void writeAndReadAllDataTypesJson() throws Exception {
+		//Create target records - note that getAllTypesAttributesForJson expects relations to be "target-record"
+		createSomeRecords(RecordType.valueOf("target-record"), 2);
 		String rt = "all-types";
 		RecordAttributes attributes = TestUtils.getAllTypesAttributesForJson();
 		assertEquals(attributes.attributeSet().size(), DataTypeMapping.values().length);
@@ -219,6 +222,8 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void writeAndReadAllDataTypesTsv() throws Exception {
+		//Create target records - note that getAllTypesAttributesForTsv expects relations to be "target-record"
+		createSomeRecords(RecordType.valueOf("target-record"), 2);
 		String rt = "all-types";
 		String recordId = "newRecordId";
 		RecordAttributes attributes = TestUtils.getAllTypesAttributesForTsv();
@@ -270,6 +275,46 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void tsvWithDuplicateRowIdsInSameBatch() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "duplicate_id.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"""
+                   idcol	col2
+                   1	foo
+                   2	bar
+                   1	baz
+                   3	qux""".stripIndent().getBytes());
+
+		MvcResult mvcResult = mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "duplicate-rowids")
+				.file(file)).andExpect(status().isBadRequest()).andReturn();
+
+		Exception e = mvcResult.getResolvedException();
+		assertNotNull(e, "expected an InvalidTsvException");
+		assertEquals("TSVs cannot contain duplicate primary key values", e.getMessage());
+	}
+
+	@Test
+	@Transactional
+	void tsvWithDuplicateRowIdsInDifferentBatches(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
+		StringBuilder tsvContent = new StringBuilder("idcol\tcol1\n");
+		// append two separate batches, each of which use the same record ids
+		for (int batch = 0; batch < 2; batch++) {
+			for (int i = 0; i < batchSize; i++) {
+				tsvContent.append(i + "\ttada" + batch + "_" + i + "\n");
+			}
+		}
+		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
+				tsvContent.toString().getBytes());
+
+		MvcResult mvcResult = mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv_batching")
+				.file(file)).andExpect(status().isBadRequest()).andReturn();
+
+		Exception e = mvcResult.getResolvedException();
+		assertNotNull(e, "expected an InvalidTsvException");
+		assertEquals("TSVs cannot contain duplicate primary key values", e.getMessage());
+	}
+
+	@Test
+	@Transactional
 	void tsvWithSpecifiedRowIdentifierColumn() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "specified_id.tsv", MediaType.TEXT_PLAIN_VALUE,
 				"col1\tcol2\nfoo\tbar\n".getBytes());
@@ -305,6 +350,36 @@ class RecordControllerMockMvcTest {
 
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "tsv_batching")
 				.file(file)).andExpect(status().isOk());
+	}
+
+	@Test
+	@Transactional
+	void tsvUploadWithRelationsShouldSucceed() throws Exception {
+		RecordType refType = RecordType.valueOf("refType");
+		createSomeRecords(refType, 3);
+
+		StringBuilder tsvContent = new StringBuilder("sys_name\trel\trelArr\n");
+		String singleRel = RelationUtils.createRelationString(refType, "record_0");
+		String relArr = "[\"" + RelationUtils.createRelationString(refType, "record_1") + "\", \"" + RelationUtils.createRelationString(refType, "record_2") + "\"]";
+		for (int i = 0; i < 6; i++) {
+			tsvContent.append(i + "\t" +  singleRel + "\t" + relArr + "\n");
+		}
+		MockMultipartFile file = new MockMultipartFile("records", "relation.tsv", MediaType.TEXT_PLAIN_VALUE,
+				tsvContent.toString().getBytes());
+
+		RecordType tsvRelationType = RecordType.valueOf("tsv_relations");
+
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, tsvRelationType)
+				.file(file)).andExpect(status().isOk());
+
+ 		MvcResult result = mockMvc.perform(post("/{instanceId}/search/{version}/{recordType}", instanceId, versionId, tsvRelationType))
+				.andExpect(status().isOk()).andReturn();
+
+		RecordQueryResponse response = mapper.readValue(result.getResponse().getContentAsString(),
+				RecordQueryResponse.class);
+		assertEquals(6, response.totalRecords());
+		RecordAttributes exampleAttributes = response.records().get(0).recordAttributes();
+		assertEquals(singleRel, exampleAttributes.getAttributeValue("rel"));
 	}
 
 	@Test
@@ -432,7 +507,7 @@ class RecordControllerMockMvcTest {
 				.andReturn();
 		schema = mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
 		assertEquals("json", schema.attributes().get(4).name());
-		// data type should downgrade to string
+		// data type should downgrade to STRING
 		assertEquals("STRING", schema.attributes().get(4).datatype());
 		//make sure left most column (sys_name) is used as id
 		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, recordType, "a")).andExpect(status().isOk());
@@ -565,6 +640,91 @@ class RecordControllerMockMvcTest {
 				referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.attributes.sample-ref", is(ref)));
+	}
+
+	@Test
+	@Transactional
+	void createRecordWithReferenceArray() throws Exception {
+		RecordType referencedType = RecordType.valueOf("ref_participants");
+		RecordType referringType = RecordType.valueOf("ref_samples");
+		createSomeRecords(referencedType, 3);
+		RecordAttributes attributes = RecordAttributes.empty();
+		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(referencedType, "record_" + i)).collect(Collectors.toList());
+		attributes.putAttribute("rel-arr", relArr);
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
+				.andExpect(status().isCreated()).andExpect(jsonPath("$.attributes.rel-arr", is(relArr)));
+	}
+
+	@Test
+	@Transactional
+	void addReferenceArrayColumnToExistingType() throws Exception {
+		RecordType referencedType = RecordType.valueOf("ref_participants");
+		RecordType referringType = RecordType.valueOf("ref_samples");
+		createSomeRecords(referencedType, 3);
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(RecordAttributes.empty()))))
+				.andExpect(status().isCreated());
+		RecordAttributes attributes = RecordAttributes.empty();
+		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(referencedType, "record_" + i)).collect(Collectors.toList());
+		attributes.putAttribute("rel-arr", relArr);
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						referringType, "record_1").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
+				.andExpect(status().isCreated()).andExpect(jsonPath("$.attributes.rel-arr", is(relArr)));
+
+	}
+
+	@Test
+	@Transactional
+	void createRecordWithReferenceArrayMissingTable() throws Exception {
+		RecordType referencedType = RecordType.valueOf("ref_participants");
+		RecordType referringType = RecordType.valueOf("ref_samples");
+		RecordAttributes attributes = RecordAttributes.empty();
+		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(referencedType, "record_" + i)).collect(Collectors.toList());
+		attributes.putAttribute("rel-arr", relArr);
+
+		//Expect failure if relation table doesn't exist
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	@Transactional
+	void createRecordWithReferenceArrayMissingRecord() throws Exception {
+		RecordType referencedType = RecordType.valueOf("ref_participants");
+		RecordType referringType = RecordType.valueOf("ref_samples");
+		RecordAttributes attributes = RecordAttributes.empty();
+		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(referencedType, "record_" + i)).collect(Collectors.toList());
+		attributes.putAttribute("rel-arr", relArr);
+		createSomeRecords(referencedType, 2);
+		//Expect failure if only one relation is missing
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	@Transactional
+	void createRecordWithMixedReferenceArray() throws Exception {
+		RecordType referencedType = RecordType.valueOf("ref_participants");
+		RecordType referringType = RecordType.valueOf("ref_samples");
+		RecordAttributes attributes = RecordAttributes.empty();
+		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(referencedType, "record_" + i)).collect(Collectors.toList());
+		attributes.putAttribute("rel-arr", relArr);
+		createSomeRecords(referencedType, 2);
+//		//Expect failure if one relation refers to a different table
+		relArr.set(2, RelationUtils.createRelationString(RecordType.valueOf("nonExistentType"), "record_0"));
+		attributes.putAttribute("rel-arr", relArr);
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
+				.andExpect(status().isForbidden());
 	}
 
 	@Test
@@ -940,6 +1100,31 @@ class RecordControllerMockMvcTest {
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk());
 		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				newBatchRecordType, recordId).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
+	}
+
+	@Test
+	@Transactional
+	void batchWriteWithRelationsShouldSucceed() throws Exception {
+		RecordType referenced = RecordType.valueOf("referenced");
+		createSomeRecords(referenced, 4);
+		String recordId = "foo";
+		String newBatchRecordType = "new-record-type";
+		List<BatchOperation> ops = new ArrayList<>();
+		for (int i = 0; i < 3; i++){
+			Record record = new Record(recordId+i, RecordType.valueOf(newBatchRecordType),
+					new RecordAttributes(Map.of("relArr", List.of(RelationUtils.createRelationString(referenced, "record_"+i), RelationUtils.createRelationString(referenced, "record_"+(i+1))))));
+			ops.add(new BatchOperation(record, OperationType.UPSERT));
+		}
+		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, newBatchRecordType)
+						.content(mapper.writeValueAsString(ops))
+						.contentType(MediaType.APPLICATION_JSON)).andExpect(jsonPath("$.recordsModified", is(3)))
+				.andExpect(jsonPath("$.message", is("Huzzah"))).andExpect(status().isOk());
+		MvcResult mvcResult = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				newBatchRecordType, recordId+"0").contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+		RecordResponse actualSingle = mapper.readValue(mvcResult.getResponse().getContentAsString(),
+				RecordResponse.class);
+		assertEquals(2, actualSingle.recordAttributes().attributeSet().size());
+		assertTrue(actualSingle.recordAttributes().getAttributeValue("relArr").toString().contains(RelationUtils.createRelationString(referenced, "record_1")));
 	}
 
 	@Test

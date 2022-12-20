@@ -2,7 +2,9 @@ package org.databiosphere.workspacedataservice;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -21,13 +23,16 @@ public class TestUtils {
 		return "{\"id\":\"newRecordId\",\"type\":\"all-types\",\"attributes\":{\"sys_name\":\"newRecordId\"," +
 				"\"array_of_boolean\":[true,false,true,true],\"array_of_date\":[\"2021-11-03\",\"2021-11-04\"]," +
 				"\"array_of_date_time\":[\"2021-11-03T07:30:00\",\"2021-11-03T07:30:00\"]," +
+				"\"array_of_relation\":[\"terra-wds:/target-record/record_0\",\"terra-wds:/target-record/record_1\"]," +
 				"\"array_of_string\":[\"a\",\"b\",\"c\",\"12\"],\"array-of-number\":[1,2,3],\"boolean\":false,\"date\":\"2021-11-03\"," +
 				"\"date-time\":\"2021-11-03T07:30:00\",\"empty-array\":[],\"json\":{\"age\":22}," +
-				"\"null\":null,\"number\":47,\"string\":\"Broad Institute\"}}";
+				"\"null\":null,\"number\":47,\"relation\":\"terra-wds:/target-record/record_0\",\"string\":\"Broad Institute\"}}";
 	}
 
 	public static RecordAttributes getAllTypesAttributesForJson(){
 		LocalDateTime dateTime = LocalDateTime.of(2021, 11, 3, 7, 30);
+		//Note that tests will need to create records of type "target-record"
+		RecordType typeForRelation = RecordType.valueOf("target-record");
 		return RecordAttributes.empty()
 				.putAttribute("null", null)
 				.putAttribute("empty-array", new ArrayList<>())
@@ -37,14 +42,17 @@ public class TestUtils {
 				.putAttribute("string", "Broad Institute")
 				.putAttribute("json", Map.of("age", 22))
 				.putAttribute("number", 47)
+				.putAttribute("relation", RelationUtils.createRelationString(typeForRelation, "record_0"))
 				.putAttribute("array-of-number", List.of(1, 2, 3))
 				.putAttribute("array_of_date", List.of(LocalDate.of(2021, 11, 3), LocalDate.of(2021, 11, 4)))
 				.putAttribute("array_of_date_time", List.of(dateTime, dateTime))
 				.putAttribute("array_of_string", List.of("a", "b", "c", 12))
-				.putAttribute("array_of_boolean", List.of(true, false, true, "TRUE"));
-
+				.putAttribute("array_of_boolean", List.of(true, false, true, "TRUE"))
+				.putAttribute("array_of_relation", List.of(RelationUtils.createRelationString(typeForRelation, "record_0"), RelationUtils.createRelationString(typeForRelation, "record_1")));
 	}
 	public static RecordAttributes getAllTypesAttributesForTsv(){
+		//Note that tests will need to create records of type "target-record"
+		RecordType typeForRelation = RecordType.valueOf("target-record");
 		return RecordAttributes.empty()
 				.putAttribute("null", "")
 				.putAttribute("empty-array", "[]")
@@ -54,12 +62,13 @@ public class TestUtils {
 				.putAttribute("string", "Broad Institute")
 				.putAttribute("json", "{\"age\": 22}")
 				.putAttribute("number", "47")
+				.putAttribute("relation", RelationUtils.createRelationString(typeForRelation, "record_0"))
 				.putAttribute("array-of-number", "[1, 2, 3]")
 				.putAttribute("array_of_date", "[\"2021-11-03\", \"2021-11-04\"]")
 				.putAttribute("array_of_date_time", "[\"2021-11-03T07:30:00\", \"2021-11-03T07:30:00\"]")
 				.putAttribute("array_of_string", "[\"a\", \"b\", \"c\", 12]")
-				.putAttribute("array_of_boolean", "[true, false, true, TRUE]");
-
+				.putAttribute("array_of_boolean", "[true, false, true, \"TRUE\"]")
+				.putAttribute("array_of_relation", "[\""+RelationUtils.createRelationString(typeForRelation, "record_0")+"\",\""+RelationUtils.createRelationString(typeForRelation, "record_1")+"\"]");
 	}
 
 	public static RecordAttributes generateRandomAttributes() {

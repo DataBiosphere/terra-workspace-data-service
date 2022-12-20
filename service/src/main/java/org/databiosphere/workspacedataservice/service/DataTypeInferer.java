@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.springframework.util.CollectionUtils;
@@ -16,10 +18,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
 
@@ -97,7 +97,7 @@ public class DataTypeInferer {
 		}
 
 		if (RelationUtils.isRelationValue(val)) {
-			return STRING;
+			return RELATION;
 		}
 		// when we load from TSV, numbers are converted to strings, we need to go back
 		// to numbers
@@ -164,7 +164,7 @@ public class DataTypeInferer {
 		}
 
 		if (RelationUtils.isRelationValue(val)) {
-			return STRING;
+			return RELATION;
 		}
 
 		if(val instanceof List<?> listVal){
@@ -251,10 +251,14 @@ public class DataTypeInferer {
 		if(ArrayUtils.isNotEmpty(getArrayOfType(val, LocalDate[].class))){
 			return ARRAY_OF_DATE;
 		}
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, String[].class))){
+		String[] stringArr = getArrayOfType(val, String[].class);
+		if(ArrayUtils.isNotEmpty(stringArr)){
+			if (Arrays.stream(stringArr).allMatch(RelationUtils::isRelationValue)){
+				return ARRAY_OF_RELATION;
+			}
 			return ARRAY_OF_STRING;
 		}
-		if(getArrayOfType(val, String[].class) != null){
+		if(stringArr != null){
 			return EMPTY_ARRAY;
 		}
 		throw new IllegalArgumentException("Unsupported array type " + val);
@@ -289,5 +293,46 @@ public class DataTypeInferer {
 			return false;
 		}
 		return true;
+	}
+
+	/**
+	 * Finds all attributes that reference another table
+	 *
+	 * @param records
+	 *            - all records whose references to check
+	 * @return Set of Relation for all referencing attributes
+	 */
+	public RelationCollection findRelations(List<Record> records, Map<String, DataTypeMapping> schema) {
+		List<String> relationAttributes = schema.entrySet().stream().filter(attr -> attr.getValue() == RELATION).map(Map.Entry::getKey).toList();
+		List<String> relationArrayAttributes = schema.entrySet().stream().filter(attr -> attr.getValue() == ARRAY_OF_RELATION).map(Map.Entry::getKey).toList();
+		Set<Relation> relations = new HashSet<>();
+		Set<Relation> relationArrays = new HashSet<>();
+		if (relationAttributes.isEmpty() && relationArrayAttributes.isEmpty()) {
+			return new RelationCollection(relations, relationArrays);
+		}
+		for (Record rec : records) {
+			// find all scalar attributes for this record whose names are in relationAttributes
+			// and convert them to Relations, then save to the "relations" Set
+			Set<Relation> relationsForThisRecord = rec.attributeSet().stream()
+					.filter( entry -> relationAttributes.contains(entry.getKey()))
+					.map(entry -> new Relation(entry.getKey(), RelationUtils.getTypeValue(entry.getValue())))
+					.collect(Collectors.toSet());
+			relations.addAll(relationsForThisRecord);
+
+			// find all array attributes for this record whose names are in relationArrayAttributes
+			// and convert them to Relations, then save to the "relationArrays" Set
+			Set<Relation> relationArraysForThisRecord = rec.attributeSet().stream()
+					.filter( entry -> relationArrayAttributes.contains(entry.getKey()))
+					.map(entry -> {
+						if (entry.getValue() instanceof List<?> listVal) { //from a json source,
+							return new Relation(entry.getKey(), RelationUtils.getTypeValueForList(listVal));
+						} else { //from a tsv source
+							return new Relation(entry.getKey(), RelationUtils.getTypeValueForArray(getArrayOfType(entry.getValue().toString(), String[].class)));
+						}
+					})
+					.collect(Collectors.toSet());
+			relationArrays.addAll(relationArraysForThisRecord);
+		}
+		return new RelationCollection(relations, relationArrays);
 	}
 }
