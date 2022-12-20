@@ -432,6 +432,39 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void scalarFollowedByArray() throws Exception {
+		String type = "scalar-followed-by-array";
+		String id = "my-id";
+		String attrName = "my-attr";
+
+		RecordAttributes firstPayload = new RecordAttributes(Map.of(attrName, "simple string"));
+		RecordAttributes secondPayload = new RecordAttributes(Map.of(attrName, List.of("array", "of", "strings")));
+
+		// upload the scalar string, should be success
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{id}", instanceId, versionId, type, id)
+						.content(mapper.writeValueAsString(new RecordRequest(firstPayload)))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().is2xxSuccessful());
+
+		MvcResult firstResult = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{id}", instanceId, versionId, type, id))
+						.andReturn();
+		RecordResponse firstRecord = mapper.readValue(firstResult.getResponse().getContentAsString(), RecordResponse.class);
+		assertEquals("simple string", firstRecord.recordAttributes().getAttributeValue(attrName));
+
+		// upload the string array into the same attribute, should also be success
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{id}", instanceId, versionId, type, id)
+						.content(mapper.writeValueAsString(new RecordRequest(secondPayload)))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().is2xxSuccessful());
+
+		MvcResult secondResult = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{id}", instanceId, versionId, type, id))
+				.andReturn();
+		RecordResponse secondRecord = mapper.readValue(secondResult.getResponse().getContentAsString(), RecordResponse.class);
+		assertEquals("{array,of,strings}", secondRecord.recordAttributes().getAttributeValue(attrName));
+	}
+
+	@Test
+	@Transactional
 	void tsvWithMissingRelationShouldFail() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "simple_bad_relation.tsv", MediaType.TEXT_PLAIN_VALUE,
 				("sys_name\trelation\na\t" + RelationUtils.createRelationString(RecordType.valueOf("missing"), "QQ")

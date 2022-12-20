@@ -457,7 +457,7 @@ public class RecordDao {
 		if (Objects.isNull(attVal)) {
 			return null;
 		}
-		if (RelationUtils.isRelationValue(attVal)) {
+		if (RelationUtils.isRelationValue(attVal) && typeMapping == DataTypeMapping.RELATION) {
 			return RelationUtils.getRelationValue(attVal);
 		}
 		if (attVal instanceof String sVal) {
@@ -484,6 +484,9 @@ public class RecordDao {
 		}
 		if(typeMapping.isArrayType()){
 			return getArrayValues(attVal, typeMapping);
+		}
+		if(attVal instanceof List<?> list && typeMapping == DataTypeMapping.STRING){
+			return "{"+ list.stream().map(Object::toString).collect(Collectors.joining(",")) +"}";
 		}
 		return attVal;
 	}
