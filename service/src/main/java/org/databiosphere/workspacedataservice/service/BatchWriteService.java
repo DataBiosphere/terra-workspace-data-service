@@ -4,8 +4,6 @@ import com.fasterxml.jackson.core.FormatSchema;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvParser;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
@@ -53,19 +51,16 @@ public class BatchWriteService {
 
 	private final ObjectReader tsvReader;
 
-	private final TsvConverter tsvConverter;
-
 	private final RecordService recordService;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchWriteService.class);
 
-	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize, DataTypeInferer inf, ObjectMapper objectMapper, ObjectReader tsvReader, TsvConverter tsvConverter, RecordService recordService) {
+	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize, DataTypeInferer inf, ObjectMapper objectMapper, ObjectReader tsvReader, RecordService recordService) {
 		this.recordDao = recordDao;
 		this.batchSize = batchSize;
 		this.inferer = inf;
 		this.objectMapper = objectMapper;
 		this.tsvReader = tsvReader;
-		this.tsvConverter = tsvConverter;
 		this.recordService = recordService;
 	}
 
@@ -147,7 +142,7 @@ public class BatchWriteService {
 	@Transactional
 	// TODO: could simplify to InputStream argument instead of InputStreamReader
 	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) throws IOException {
-		MappingIterator<Map<String, String>> tsvIterator = tsvReader.readValues(is);
+		MappingIterator<RecordAttributes> tsvIterator = tsvReader.readValues(is);
 
 		// check for no rows in TSV
 		if (!tsvIterator.hasNext()) {
@@ -176,7 +171,8 @@ public class BatchWriteService {
 		// convert the tsvIterator to a Stream<Record>, translating the String values in TSV cells
 		// to Java objects. The result should be Records equivalent to how the JSON ObjectMapper
 		// deserializes JSON to Record.
-		Stream<Map<String, String>> tsvStream = StreamSupport.stream(
+		TsvConverter tsvConverter = new TsvConverter();
+		Stream<RecordAttributes> tsvStream = StreamSupport.stream(
 				Spliterators.spliteratorUnknownSize(tsvIterator, Spliterator.ORDERED), false);
 		Stream<Record> recordStream = tsvConverter.rowsToRecords(tsvStream, recordType, resolvedPK);
 

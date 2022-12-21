@@ -1,8 +1,9 @@
 package org.databiosphere.workspacedataservice.tsv;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -17,9 +18,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
 @SpringBootTest
-public class TsvConverterTest {
+//@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+public class TsvDeserializerTest {
+//    @Autowired
+//    TsvConverter tsvConverter;
+//    @Autowired
+//    DataTypeInferer inferer;
+//    @Autowired
+//    ObjectMapper objectMapper;
+
     @Autowired
-    TsvConverter tsvConverter;
+    TsvDeserializer tsvDeserializer;
 
    private static Stream<Arguments> fixtures() {
 		/* Arguments are sets:
@@ -40,7 +49,7 @@ public class TsvConverterTest {
     @ParameterizedTest(name = "TSV parsing for value <{0}> should result in <{1}>")
     @MethodSource("fixtures")
     void cellToAttributeTest(String input, Object expected) {
-        Object actual = tsvConverter.cellToAttribute(input);
+        Object actual = tsvDeserializer.cellToAttribute(input);
 
         if (expected instanceof List expectedList) {
             assertIterableEquals(expectedList, (List)actual);

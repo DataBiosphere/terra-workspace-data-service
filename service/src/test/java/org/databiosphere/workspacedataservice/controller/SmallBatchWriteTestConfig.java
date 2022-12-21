@@ -6,7 +6,6 @@ import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RecordService;
-import org.databiosphere.workspacedataservice.tsv.TsvConverter;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 
@@ -18,7 +17,7 @@ import org.springframework.context.annotation.Bean;
 public class SmallBatchWriteTestConfig {
 
 	@Bean
-	public BatchWriteService batchWriteService(RecordDao recordDao, DataTypeInferer inf, ObjectMapper objectMapper, ObjectReader tsvReader, TsvConverter tsvConverter, RecordService recordService) {
-		return new BatchWriteService(recordDao, 1, inf, objectMapper, tsvReader, tsvConverter, recordService);
+	public BatchWriteService batchWriteService(RecordDao recordDao, DataTypeInferer inf, ObjectMapper objectMapper, ObjectReader tsvReader, RecordService recordService) {
+		return new BatchWriteService(recordDao, 1, inf, objectMapper, tsvReader, recordService);
 	}
 }

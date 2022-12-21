@@ -25,19 +25,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
 @SpringBootTest
 public class TsvJsonEquivalenceTest {
-    @Autowired
-    private TsvConverter tsvConverter;
+//    @Autowired
+//    private TsvConverter tsvConverter;
 
     @Autowired
     private ObjectReader tsvReader;
@@ -45,29 +44,26 @@ public class TsvJsonEquivalenceTest {
     @Autowired
     private ObjectMapper mapper;
 
-    @Autowired
-    private BatchWriteService batchWriteService;
+//    @Autowired
+//    private BatchWriteService batchWriteService;
 
 
-    // TODO: move to centralized and auto-injected reader
     private RecordAttributes readTsv(String tsvContent) throws IOException {
-
         InputStream inputStream = new ByteArrayInputStream(tsvContent.getBytes());
-
         InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+        MappingIterator<RecordAttributes> tsvIterator = tsvReader.readValues(inputStreamReader);
+        // take the first row from the TSV, and remove its primary key
+        RecordAttributes recordAttributes = tsvIterator.next();
+        recordAttributes.remove(RECORD_ID);
 
-        MappingIterator<Map<String, String>> tsvIterator = tsvReader.readValues(inputStreamReader);
-
-        Map<String, String> tsvRow = tsvIterator.nextValue();
-        Record rec = tsvConverter.tsvRowToRecord(tsvRow, RecordType.valueOf("unused"), "sys_name");
-        return rec.getAttributes();
+        return recordAttributes;
     }
 
     @ParameterizedTest(name = "Scalar deserialization for input <{0}> should be equivalent for TSV and JSON")
     @ValueSource(strings = {"hello world", "terra-wds:/targetType/targetId",
             "2021-10-03", "2021-10-03T19:01:23"})
     void scalarDeserializationQuotedJson(String input) throws IOException {
-        String tsv = "sys_name\tcol1\n123\t" + input + "\n";
+        String tsv = RECORD_ID + "\tcol1\n123\t" + input + "\n";
         String json = """
                 {"attributes":{"col1":"%s"}}
                 """.formatted(input);
@@ -84,7 +80,7 @@ public class TsvJsonEquivalenceTest {
     @ParameterizedTest(name = "Scalar deserialization for input <{0}> should be equivalent for TSV and JSON")
     @ValueSource(strings = {"123.45", "789", "true", "{\"foo\":\"bar\",\"num\":123}"})
     void scalarDeserializationUnquotedJson(String input) throws IOException {
-        String tsv = "sys_name\tcol1\n123\t" + input + "\n";
+        String tsv = RECORD_ID + "\tcol1\n123\t" + input + "\n";
         String json = """
                 {"attributes":{"col1":%s}}
                 """.formatted(input);
@@ -101,7 +97,7 @@ public class TsvJsonEquivalenceTest {
     @ParameterizedTest(name = "Array deserialization for input <{0}> should be equivalent for TSV and JSON")
     @ValueSource(strings = {"[\"hello\",\"world\"]", "[12,34,56]", "[true, false, true]"})
     void arrayDeserialization(String input) throws IOException {
-        String tsv = "sys_name\tcol1\n123\t" + input + "\n";
+        String tsv = RECORD_ID + "\tcol1\n123\t" + input + "\n";
         String json = """
                 {"attributes":{"col1":%s}}
                 """.formatted(input);
