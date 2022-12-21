@@ -58,22 +58,6 @@ class DataTypeInfererTest {
 				.as("should convert array of date to array of datetime").isEqualTo(DataTypeMapping.STRING);
 	}
 
-//	@Test
-//	void inferTypesTsvSource() {
-//		Map<String, DataTypeMapping> result = inferer.inferTypes(getSomeTsvAttrs(), InBoundDataSource.TSV);
-//		Map<String, DataTypeMapping> expected = new HashMap<>();
-//		expected.put("string_val", DataTypeMapping.STRING);
-//		expected.put("int_val", DataTypeMapping.NUMBER);
-//		expected.put("json_val", DataTypeMapping.JSON);
-//		expected.put("date_val", DataTypeMapping.DATE);
-//		expected.put("date_time_val", DataTypeMapping.DATE_TIME);
-//		expected.put("number_or_string", DataTypeMapping.NUMBER);
-//		expected.put("relation", DataTypeMapping.RELATION);
-//		expected.put("rel_arr", DataTypeMapping.ARRAY_OF_RELATION);
-//
-//		assertEquals(expected, result);
-//	}
-
 	@Test
 	void isValidJson() {
 		assertThat(inferer.isValidJson(RandomStringUtils.randomNumeric(10))).isFalse();
@@ -82,18 +66,6 @@ class DataTypeInfererTest {
 		assertThat(inferer.isValidJson("True")).isFalse();
 		assertThat(inferer.isValidJson("{\"foo\":\"bar\"}")).isTrue();
 	}
-
-//	@Test
-//	void nullValuesMixedWithNonNullsShouldStillYieldProperTypeTSV() {
-//		RecordAttributes firstAttrs = RecordAttributes.empty().putAttribute("boolean", "").putAttribute("long", null);
-//		Record first = new Record("first", RecordType.valueOf("test-inference"), firstAttrs);
-//		RecordAttributes secondAttrs = RecordAttributes.empty().putAttribute("boolean", "true").putAttribute("long",
-//				"-999999");
-//		Record second = new Record("second", RecordType.valueOf("test-inference"), secondAttrs);
-//		Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(List.of(first, second), InBoundDataSource.TSV);
-//		assertThat(inferredSchema).as("Should still get BOOLEAN and LONG for types despite null values in one record")
-//				.isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.NUMBER));
-//	}
 
 	@Test
 	void nullValuesMixedWithNonNullsShouldStillYieldProperTypeJSON() {
@@ -153,12 +125,4 @@ class DataTypeInfererTest {
 								RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId3"))));
 	}
 
-//	private static RecordAttributes getSomeTsvAttrs() {
-//		return new RecordAttributes(
-//				Map.of("int_val", "4747", "string_val", "Abracadabra Open Sesame", "json_val", "{\"list\": [\"a\", \"b\"]}",
-//						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00", "number_or_string", "47",
-//						"relation", RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId"),
-//						"rel_arr", "[\""+RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId")+"\", \""
-//				+RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId2")+"\"]"));
-//	}
 }

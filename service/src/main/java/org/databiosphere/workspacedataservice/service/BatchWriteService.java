@@ -168,9 +168,7 @@ public class BatchWriteService {
 		// if primary key is not specified, use the leftmost column
 		String resolvedPK = primaryKey.orElseGet( () -> colNames.get(0) );
 
-		// convert the tsvIterator to a Stream<Record>, translating the String values in TSV cells
-		// to Java objects. The result should be Records equivalent to how the JSON ObjectMapper
-		// deserializes JSON to Record.
+		// convert the tsvIterator, which is a MappingIterator<RecordAttributes>, to a Stream<Record>
 		TsvConverter tsvConverter = new TsvConverter();
 		Stream<RecordAttributes> tsvStream = StreamSupport.stream(
 				Spliterators.spliteratorUnknownSize(tsvIterator, Spliterator.ORDERED), false);
