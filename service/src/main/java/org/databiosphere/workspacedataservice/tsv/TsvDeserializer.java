@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.*;
+import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.slf4j.Logger;
@@ -78,6 +79,9 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
     public Object nodeToObject(JsonNode node) {
         // TSVs deserialize to Strings
         if (node instanceof TextNode textNode) {
+            if (StringUtils.isEmpty(textNode.textValue())) {
+                return null;
+            }
             return cellToAttribute(textNode.textValue());
         }
         if (node instanceof NullNode) {
