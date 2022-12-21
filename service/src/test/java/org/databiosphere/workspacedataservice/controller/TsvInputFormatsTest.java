@@ -48,7 +48,7 @@ class TsvInputFormatsTest {
 	}
 
 	@AfterEach
-	void afterEach() throws Exception {
+	void afterEach() {
 		try {
 			mockMvc.perform(delete("/instances/{v}/{instanceid}",
 					versionId, instanceId).content("")).andExpect(status().isOk());

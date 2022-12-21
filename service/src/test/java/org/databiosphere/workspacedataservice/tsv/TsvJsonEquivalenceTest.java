@@ -35,18 +35,12 @@ import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
 @SpringBootTest
 public class TsvJsonEquivalenceTest {
-//    @Autowired
-//    private TsvConverter tsvConverter;
 
     @Autowired
     private ObjectReader tsvReader;
 
     @Autowired
     private ObjectMapper mapper;
-
-//    @Autowired
-//    private BatchWriteService batchWriteService;
-
 
     private RecordAttributes readTsv(String tsvContent) throws IOException {
         InputStream inputStream = new ByteArrayInputStream(tsvContent.getBytes());

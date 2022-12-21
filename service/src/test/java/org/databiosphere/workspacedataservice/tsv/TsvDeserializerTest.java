@@ -18,14 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
 @SpringBootTest
-//@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TsvDeserializerTest {
-//    @Autowired
-//    TsvConverter tsvConverter;
-//    @Autowired
-//    DataTypeInferer inferer;
-//    @Autowired
-//    ObjectMapper objectMapper;
 
     @Autowired
     TsvDeserializer tsvDeserializer;

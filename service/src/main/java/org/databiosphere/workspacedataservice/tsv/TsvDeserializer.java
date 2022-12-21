@@ -104,8 +104,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
         // quoted values: always return as string. This only comes into play when processing array elements;
         // the CSV reader strips surrounding quotes from top-level values.
         if (val.startsWith("\"") && val.endsWith("\"")) {
-            String trimmed = val.substring(1, val.length()-1);
-            return trimmed;
+            return val.substring(1, val.length()-1);
         }
         // booleans
         // TODO: change the "is*" methods in inferer to return their value so we don't parse twice?
@@ -143,10 +142,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
                     Stream<JsonNode> jsonElements = StreamSupport.stream(
                             Spliterators.spliteratorUnknownSize(arrayNode.elements(), Spliterator.ORDERED), false);
 
-                    List<Object> typedArray = jsonElements.map( el -> arrayElementToObject(el)).toList();
-
-                    return typedArray;
-
+                    return jsonElements.map( el -> arrayElementToObject(el)).toList();
                 } else {
                     throw new RuntimeException("DataTypeInferer.isArray returned true, but the parsed value did not resolve to ArrayNode");
                 }
@@ -172,11 +168,9 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
         }
         if (element instanceof NumericNode nn) {
             try {
-                BigInteger bigInteger = new BigInteger(nn.numberValue().toString());
-                return bigInteger;
+                return new BigInteger(nn.numberValue().toString());
             } catch (NumberFormatException nfe) {
-                BigDecimal bigDecimal = new BigDecimal(nn.numberValue().toString());
-                return bigDecimal;
+                return new BigDecimal(nn.numberValue().toString());
             }
         }
         if (element instanceof BooleanNode bn) {
