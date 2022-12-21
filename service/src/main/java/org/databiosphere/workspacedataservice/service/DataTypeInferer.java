@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
@@ -31,21 +30,21 @@ public class DataTypeInferer {
 		this.objectMapper = mapper;
 	}
 
-	public Map<String, DataTypeMapping> inferTypes(RecordAttributes updatedAtts, InBoundDataSource dataSource) {
+	public Map<String, DataTypeMapping> inferTypes(RecordAttributes updatedAtts) {
 		Map<String, DataTypeMapping> result = new HashMap<>();
 		for (Map.Entry<String, Object> entry : updatedAtts.attributeSet()) {
-			result.put(entry.getKey(), inferType(entry.getValue(), dataSource));
+			result.put(entry.getKey(), inferType(entry.getValue()));
 		}
 		return result;
 	}
 
-	public Map<String, DataTypeMapping> inferTypes(List<Record> records, InBoundDataSource dataSource) {
+	public Map<String, DataTypeMapping> inferTypes(List<Record> records) {
 		Map<String, DataTypeMapping> result = new HashMap<>();
 		for (Record rcd : records) {
 			if (rcd.getAttributes() == null) {
 				continue;
 			}
-			Map<String, DataTypeMapping> inferred = inferTypes(rcd.getAttributes(), dataSource);
+			Map<String, DataTypeMapping> inferred = inferTypes(rcd.getAttributes());
 			for (Map.Entry<String, DataTypeMapping> entry : inferred.entrySet()) {
 				DataTypeMapping inferredType = entry.getValue();
 				if (result.containsKey(entry.getKey()) && result.get(entry.getKey()) != inferredType) {
@@ -154,14 +153,8 @@ public class DataTypeInferer {
 		return sVal.equalsIgnoreCase("true") || sVal.equalsIgnoreCase("false");
 	}
 
-	public DataTypeMapping inferType(Object val, InBoundDataSource dataSource) {
-		// TODO: clean this up
-		//		if (dataSource == InBoundDataSource.TSV) {
-//			return inferTypeForTsvSource(val);
-//		} else if (dataSource == InBoundDataSource.JSON) {
-			return inferTypeForJsonSource(val);
-//		}
-//		throw new IllegalArgumentException("Unhandled inbound data source " + dataSource);
+	public DataTypeMapping inferType(Object val) {
+		return inferTypeForJsonSource(val);
 	}
 
 	public boolean isNumericValue(String sVal) {
@@ -198,7 +191,7 @@ public class DataTypeInferer {
 			return EMPTY_ARRAY;
 		}
 		List<DataTypeMapping> inferredTypes = list.stream()
-				.map(item -> inferType(item, InBoundDataSource.JSON))
+				.map(item -> inferType(item))
 				.distinct()
 				.toList();
 		DataTypeMapping bestMapping = inferredTypes.get(0);

@@ -5,12 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
-import org.databiosphere.workspacedataservice.service.InBoundDataSource;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -28,7 +25,7 @@ class DataTypeInfererTest {
 
 	@Test
 	void inferTypesJsonSource() {
-		Map<String, DataTypeMapping> result = inferer.inferTypes(getSomeAttrs(), InBoundDataSource.JSON);
+		Map<String, DataTypeMapping> result = inferer.inferTypes(getSomeAttrs());
 		Map<String, DataTypeMapping> expected = new HashMap<>();
 		expected.put("array_of_string", DataTypeMapping.ARRAY_OF_STRING);
 		expected.put("string_val", DataTypeMapping.STRING);
@@ -105,30 +102,30 @@ class DataTypeInfererTest {
 		RecordAttributes secondAttrs = RecordAttributes.empty().putAttribute("boolean", "true").putAttribute("long",
 				new BigInteger("-999999"));
 		Record second = new Record("second", RecordType.valueOf("test-inference"), secondAttrs);
-		Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(List.of(first, second),
-				InBoundDataSource.JSON);
+		Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(List.of(first, second)
+		);
 		assertThat(inferredSchema).as("Should still get BOOLEAN and LONG for types despite null values in one record")
 				.isEqualTo(Map.of("boolean", DataTypeMapping.BOOLEAN, "long", DataTypeMapping.NUMBER));
 	}
 
 	@Test
 	void inferSomeTypes() {
-		assertThat(inferer.inferType("True", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.BOOLEAN);
-		assertThat(inferer.inferType("Hello", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
-		assertThat(inferer.inferType("2020-01-01", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.DATE);
-		assertThat(inferer.inferType("2020-01-01T00:10:00", InBoundDataSource.JSON))
+		assertThat(inferer.inferType("True")).isEqualTo(DataTypeMapping.BOOLEAN);
+		assertThat(inferer.inferType("Hello")).isEqualTo(DataTypeMapping.STRING);
+		assertThat(inferer.inferType("2020-01-01")).isEqualTo(DataTypeMapping.DATE);
+		assertThat(inferer.inferType("2020-01-01T00:10:00"))
 				.isEqualTo(DataTypeMapping.DATE_TIME);
-		assertThat(inferer.inferType("2020-01-01T00:10:00", InBoundDataSource.JSON))
+		assertThat(inferer.inferType("2020-01-01T00:10:00"))
 				.isEqualTo(DataTypeMapping.DATE_TIME);
-		assertThat(inferer.inferType("12345", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
-		assertThat(inferer.inferType("12345A", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.STRING);
-		assertThat(inferer.inferType(List.of("Hello!"), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
-		assertThat(inferer.inferType(List.of(new BigInteger("12345")), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
-		assertThat(inferer.inferType(List.of(true, false, true), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_BOOLEAN);
-		assertThat(inferer.inferType(List.of(new BigDecimal("11.1"), new BigDecimal("12"), new BigDecimal("14")), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
-		assertThat(inferer.inferType(List.of(RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId"), RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId2"), RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId3")), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_RELATION);
-		assertThat(inferer.inferType(List.of(RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId"), "not a relation string", RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId3")), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
-		assertThat(inferer.inferType(RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId3"), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.RELATION);
+		assertThat(inferer.inferType("12345")).isEqualTo(DataTypeMapping.STRING);
+		assertThat(inferer.inferType("12345A")).isEqualTo(DataTypeMapping.STRING);
+		assertThat(inferer.inferType(List.of("Hello!"))).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
+		assertThat(inferer.inferType(List.of(new BigInteger("12345")))).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
+		assertThat(inferer.inferType(List.of(true, false, true))).isEqualTo(DataTypeMapping.ARRAY_OF_BOOLEAN);
+		assertThat(inferer.inferType(List.of(new BigDecimal("11.1"), new BigDecimal("12"), new BigDecimal("14")))).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
+		assertThat(inferer.inferType(List.of(RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId"), RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId2"), RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId3")))).isEqualTo(DataTypeMapping.ARRAY_OF_RELATION);
+		assertThat(inferer.inferType(List.of(RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId"), "not a relation string", RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId3")))).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
+		assertThat(inferer.inferType(RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId3"))).isEqualTo(DataTypeMapping.RELATION);
 	}
 
 //	@Test

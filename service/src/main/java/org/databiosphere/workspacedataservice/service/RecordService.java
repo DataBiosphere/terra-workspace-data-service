@@ -93,8 +93,7 @@ public class RecordService {
     private List<String> checkEachRow(List<Record> records, Map<String, DataTypeMapping> recordTypeSchema) {
         List<String> result = new ArrayList<>();
         for (Record rcd : records) {
-            Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(rcd.getAttributes(),
-                    InBoundDataSource.JSON);
+            Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(rcd.getAttributes());
             if (!schemaForRecord.equals(recordTypeSchema)) {
                 MapDifference<String, DataTypeMapping> difference = Maps.difference(schemaForRecord, recordTypeSchema);
                 Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference

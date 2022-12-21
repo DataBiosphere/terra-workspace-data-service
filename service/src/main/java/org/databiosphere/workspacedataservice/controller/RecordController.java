@@ -76,7 +76,7 @@ public class RecordController {
 				.orElseThrow(() -> new MissingObjectException("Record"));
 		RecordAttributes incomingAtts = recordRequest.recordAttributes();
 		RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAtts).getAttributes();
-		Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts, InBoundDataSource.JSON);
+		Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts);
 		Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
 		singleRecord.setAttributes(allAttrs);
 		List<Record> records = Collections.singletonList(singleRecord);
@@ -181,7 +181,7 @@ public class RecordController {
 		validateVersion(version);
 		validateInstance(instanceId);
 		RecordAttributes attributesInRequest = recordRequest.recordAttributes();
-		Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest, InBoundDataSource.JSON);
+		Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
 		HttpStatus status = HttpStatus.CREATED;
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
 			RecordResponse response = new RecordResponse(recordId, recordType, recordRequest.recordAttributes());

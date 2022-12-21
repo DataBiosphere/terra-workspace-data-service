@@ -189,7 +189,7 @@ public class BatchWriteService {
 					.getRecords().isEmpty(); info = streamingWriteHandler.readRecords(batchSize)) {
 				List<Record> records = info.getRecords();
 				if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
-					schema = inferer.inferTypes(records, InBoundDataSource.JSON);
+					schema = inferer.inferTypes(records);
 					createOrModifyRecordType(instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
 					firstUpsertBatch = false;
 				}
