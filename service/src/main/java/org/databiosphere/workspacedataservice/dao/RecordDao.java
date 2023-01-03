@@ -327,6 +327,14 @@ public class RecordDao {
 
 	public boolean deleteSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
 		String recordTypePrimaryKey = cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId);
+		List<Relation> relationArrayCols = getRelationArrayCols(instanceId, recordType);
+		if (!relationArrayCols.isEmpty()){
+			//Remove values from join table first
+			for (Relation rel : relationArrayCols){
+				namedTemplate.update("delete from " + getQualifiedJoinTableName(instanceId, rel.relationColName(), recordType) + " where "
+						+ quote(getFromColumnName(recordType)) + " = :recordId", new MapSqlParameterSource(RECORD_ID_PARAM, recordId));
+			}
+		}
 		try {
 			return namedTemplate.update("delete from " + getQualifiedTableName(recordType, instanceId) + " where "
 					+ quote(recordTypePrimaryKey) + " = :recordId", new MapSqlParameterSource(RECORD_ID_PARAM, recordId)) == 1;
@@ -565,6 +573,26 @@ public class RecordDao {
 	public void batchDelete(UUID instanceId, RecordType recordType, List<Record> records) {
 		List<String> recordIds = records.stream().map(Record::getId).toList();
 		try {
+			List<Relation> relationArrayCols = getRelationArrayCols(instanceId, recordType);
+			if (!relationArrayCols.isEmpty()){
+				//Remove values from join table first
+				for (Relation rel : relationArrayCols) {
+					namedTemplate.getJdbcTemplate().batchUpdate(
+							"delete from" + getQualifiedJoinTableName(instanceId, rel.relationColName(), recordType) + " where " + quote(getFromColumnName(recordType)) + " = ?",
+							new BatchPreparedStatementSetter() {
+								@Override
+								public void setValues(PreparedStatement ps, int i) throws SQLException {
+									ps.setString(1, recordIds.get(i));
+								}
+
+								@Override
+								public int getBatchSize() {
+									return recordIds.size();
+								}
+							});
+				}
+			}
+
 			int[] rowCounts = namedTemplate.getJdbcTemplate().batchUpdate(
 					"delete from" + getQualifiedTableName(recordType, instanceId) + " where " + quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)) + " = ?",
 					new BatchPreparedStatementSetter() {
@@ -736,6 +764,12 @@ public class RecordDao {
 	 */
 	@CacheEvict(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
 	public void deleteRecordType(UUID instanceId, RecordType recordType) {
+		List<Relation> relationArrayCols = getRelationArrayCols(instanceId, recordType);
+		if (!relationArrayCols.isEmpty()){
+			for (Relation rel : relationArrayCols){
+				namedTemplate.getJdbcTemplate().update("drop table " + getQualifiedJoinTableName(instanceId, rel.relationColName(), recordType));
+			}
+		}
 		try {
 			namedTemplate.getJdbcTemplate().update("drop table " + getQualifiedTableName(recordType, instanceId));
 		} catch (DataAccessException e) {
