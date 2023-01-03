@@ -231,6 +231,31 @@ class RecordDaoTest {
 			recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord");
 		}, "Exception should be thrown when attempting to delete related record");
 	}
+
+	@Test
+	void testDeleteRelationArrayRecord() {
+		// make sure columns are in recordType, as this will be taken care of before we
+		// get to the dao
+		recordDao.addColumn(instanceId, recordType, "foo", DataTypeMapping.STRING);
+
+		recordDao.addColumn(instanceId, recordType, "testRecordType", DataTypeMapping.STRING,
+				RecordType.valueOf("testRecordType"));
+
+		String refRecordId = "referencedRecord";
+		Record referencedRecord = new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
+		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(referencedRecord), new HashMap<>());
+
+		String recordId = "testRecord";
+		String reference = RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "referencedRecord");
+		Record testRecord = new Record(recordId, recordType, new RecordAttributes(Map.of("testRecordType", reference)));
+		recordDao.batchUpsert(instanceId, recordType, Collections.singletonList(testRecord),
+				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.STRING)));
+
+		// Should throw an error
+		assertThrows(ResponseStatusException.class, () -> {
+			recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord");
+		}, "Exception should be thrown when attempting to delete related record");
+	}
 	@Test
 	@Transactional
 	void testGetAllRecordTypes() {
