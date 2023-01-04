@@ -35,7 +35,7 @@ jobs:
       - name: Ensure AJ Jira ID is present in the commit message
         id: ensure-jira-id
         run: |
-          JIRA_ID=$(echo '${{ github.event.head_commit.message }}' | grep -Eo '\[?AJ+-[0-9]+\]?')
+          JIRA_ID=$(echo '${{ github.event.head_commit.message }}' | grep -iEo '\[?AJ+-[0-9]+\]?')
           [[ -z "$JIRA_ID" ]] && { echo "No Jira ID found in $1" ; exit 1; }
           echo ::set-output name=JIRA_ID::${JIRA_ID}
 
