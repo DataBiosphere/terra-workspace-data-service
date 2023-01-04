@@ -98,7 +98,7 @@ jobs:
           docker push --all-tags ${{ steps.acr-image-name.outputs.name }}
           
       - name: Clone Cromwhelm
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: broadinstitute/cromwhelm
           token: ${{ secrets.BROADBOT_TOKEN }} # Has to be set at checkout AND later when pushing to work
