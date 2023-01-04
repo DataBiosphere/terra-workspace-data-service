@@ -15,6 +15,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -34,6 +36,9 @@ class RecordDaoTest {
 	RecordDao recordDao;
 	UUID instanceId;
 	RecordType recordType;
+
+	@Autowired
+	NamedParameterJdbcTemplate namedTemplate;
 
 	@BeforeEach
 	void setUp() {
@@ -128,6 +133,7 @@ class RecordDaoTest {
 		recordDao.batchDelete(instanceId, referencer, referencingRecords);
 		for (Record rec : referencingRecords){
 			assertTrue(recordDao.getSingleRecord(instanceId, referencer, rec.getId()).isEmpty());
+			assertTrue(getRelationArrayValues(instanceId, "attr1", rec, referencedRt).isEmpty());
 		}
 	}
 
@@ -329,7 +335,8 @@ class RecordDaoTest {
 
 		//Record should have been deleted
 		assert(recordDao.getSingleRecord(instanceId, recordType, "recordWithRelationArr").isEmpty());
-		//TODO check that values are removed from join table? is it worth it to write a dao method just for this test?
+		//Check that values are removed from join table
+		assertTrue(getRelationArrayValues(instanceId, "relArrAttr", recordWithRelationArray, recordType).isEmpty());
 	}
 	@Test
 	@Transactional
@@ -451,10 +458,11 @@ class RecordDaoTest {
 		//Delete record type
 		recordDao.deleteRecordType(instanceId, relationArrayType);
 
-		//Record should have been deleted
+		//Record table should have been deleted
 		assertFalse(recordDao.recordTypeExists(instanceId, relationArrayType));
 
-		//TODO check that join table is gone as well?
+		//check that join table is gone as well
+		assertFalse(joinTableExists(instanceId, "relArrAttr", relationArrayType ));
 	}
 
 	@Test
@@ -463,12 +471,13 @@ class RecordDaoTest {
 		RecordType secondRecordType = RecordType.valueOf("secondRecordType");
 		recordDao.createRecordType(instanceId, Collections.emptyMap(), secondRecordType, new RelationCollection(Collections.emptySet(), Collections.emptySet()), RECORD_ID);
 
-		recordDao.createRelationJoinTable(instanceId, "refArray", recordType,
-				secondRecordType);
+		recordDao.createRelationJoinTable(instanceId, "refArray",
+				secondRecordType, recordType);
 
-		List<Relation> relationArrays = recordDao.getRelationArrayCols(instanceId, recordType);
+		List<Relation> relationArrays = recordDao.getRelationArrayCols(instanceId, secondRecordType);
 		assertEquals(1, relationArrays.size());
-		assertTrue(relationArrays.contains(new Relation("refArray", secondRecordType)));
+		assertTrue(relationArrays.contains(new Relation("refArray", recordType)));
+		assertTrue(joinTableExists(instanceId, "refArray", secondRecordType));
 	}
 
 	@Test
@@ -489,6 +498,7 @@ class RecordDaoTest {
 		assertEquals(List.of(singleRelation), relationCols);
 		List<Relation> relationArrayCols = recordDao.getRelationArrayCols(instanceId, relationarrayType);
 		assertEquals(List.of(arrayRelation), relationArrayCols);
+		assertTrue(joinTableExists(instanceId, "relArrAttr", relationarrayType));
 	}
 
 	@Test
@@ -523,9 +533,10 @@ class RecordDaoTest {
 		String[] actualAttrValue = assertInstanceOf(String[].class, record.getAttributeValue("relArrAttr"));
 		assertIterableEquals(relArr, Arrays.asList(actualAttrValue));
 
-		//The purpose of inserting in to the join is simply to make sure foreign keys are consistent
-		//So all we care about here is not throwing an error
+		//The purpose of inserting in to the join is to make sure foreign keys are consistent
+		//So we need to make sure no error is thrown
 		assertDoesNotThrow(() -> recordDao.insertIntoJoin(instanceId, arrayRelation, relationArrayType, List.of(new RelationValue(record, referencedRecord), new RelationValue(record, referencedRecord2))));
+		assertEquals(List.of(refRecordId, refRecordId2), getRelationArrayValues(instanceId, "relArrAttr", record, recordType));
 	}
 
 	@Test
@@ -544,4 +555,21 @@ class RecordDaoTest {
 		assertTrue(cols.contains(arrayRelation2));
 	}
 
+	//Helper Methods
+	private boolean joinTableExists(UUID instanceId, String tableName, RecordType referringRecordType) {
+		//This method gives us the name in quotes, need to be able to strip them off
+		String joinTableName = recordDao.getJoinTableName(tableName, referringRecordType);
+		return Boolean.TRUE.equals(namedTemplate.queryForObject(
+				"select exists(select from pg_tables where schemaname = :instanceId AND tablename  = :joinName)",
+				new MapSqlParameterSource(
+						Map.of("instanceId", instanceId.toString(), "joinName", joinTableName.substring(1, joinTableName.length()-1))),
+				Boolean.class));
+	}
+
+	private List<String> getRelationArrayValues(UUID instanceId, String columnName, Record record, RecordType toRecordType) {
+		return namedTemplate.queryForList(
+				"select \"" + recordDao.getToColumnName(toRecordType) + "\" from " + recordDao.getQualifiedJoinTableName(instanceId, columnName, record.getRecordType()) + " where "
+						+ "\"" + recordDao.getFromColumnName(record.getRecordType()) + "\" = :recordId",
+				new MapSqlParameterSource("recordId", record.getId()), String.class);
+	}
 }
