@@ -20,7 +20,7 @@ env:
   GOOGLE_PROJECT: broad-dsp-gcr-public
 
 jobs:
-  publish-job:
+  publish-docker-job:
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -32,6 +32,12 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+      - name: Ensure AJ Jira ID is present in the commit message
+        id: ensure-jira-id
+        run: |
+          JIRA_ID=$(echo '${{ github.event.head_commit.message }}' | grep -Eo '\[?AJ+-[0-9]+\]?')
+          [[ -z "$JIRA_ID" ]] && { echo "No Jira ID found in $1" ; exit 1; }
+          echo ::set-output name=JIRA_ID::${JIRA_ID}
 
       - name: Set commit short hash
         id: setHash
@@ -101,15 +107,17 @@ jobs:
       - name: Update WDS image tag for CBAS Helm Chart in cromwhelm
         env:
           BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
+          GH_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
         run: |
           set -e
           cd cromwhelm
-          git checkout main
+          git checkout ${{ steps.ensure-jira-id.outputs.JIRA_ID }}-auto-update
           HELM_CUR_TAG=$(grep "/terra-workspace-data-service:" terra-batch-libchart/values.yaml | sed "s,.*/terra-workspace-data-service:,,")
           HELM_NEW_TAG=${{ steps.setHash.outputs.git_short_sha }}
           [[ -n "$HELM_CUR_TAG" && -n "$HELM_NEW_TAG" ]]
           sed -i "s/$HELM_CUR_TAG/$HELM_NEW_TAG/" terra-batch-libchart/values.yaml
           git config --global user.name "broadbot"
           git config --global user.email "broadbot@broadinstitute.org"
-          git commit -am "Auto update WDS version to $HELM_NEW_TAG"
-          git push https://broadbot:$BROADBOT_TOKEN@github.com/broadinstitute/cromwhelm.git main
+          git commit -am "${{ steps.ensure-jira-id.outputs.JIRA_ID }} Auto update WDS version to $HELM_NEW_TAG"
+          git push -u origin ${{ steps.ensure-jira-id.outputs.JIRA_ID }}-auto-update
+          gh pr create --title "Auto update WDS version to $HELM_NEW_TAG" --body "Testing, don't merge" --label "automerge"
