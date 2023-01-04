@@ -111,7 +111,7 @@ jobs:
         run: |
           set -e
           cd cromwhelm
-          git checkout ${{ steps.ensure-jira-id.outputs.JIRA_ID }}-auto-update
+          git checkout -b ${{ steps.ensure-jira-id.outputs.JIRA_ID }}-auto-update
           HELM_CUR_TAG=$(grep "/terra-workspace-data-service:" terra-batch-libchart/values.yaml | sed "s,.*/terra-workspace-data-service:,,")
           HELM_NEW_TAG=${{ steps.setHash.outputs.git_short_sha }}
           [[ -n "$HELM_CUR_TAG" && -n "$HELM_NEW_TAG" ]]
