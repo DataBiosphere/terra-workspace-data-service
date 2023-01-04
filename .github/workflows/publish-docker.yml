@@ -120,4 +120,4 @@ jobs:
           git config --global user.email "broadbot@broadinstitute.org"
           git commit -am "${{ steps.ensure-jira-id.outputs.JIRA_ID }} Auto update WDS version to $HELM_NEW_TAG"
           git push -u origin ${{ steps.ensure-jira-id.outputs.JIRA_ID }}-auto-update-${{ steps.setHash.outputs.git_short_sha }}
-          gh pr create --title "Auto update WDS version to $HELM_NEW_TAG" --body "Testing, don't merge" --label "automerge"
+          gh pr create --title "${{ steps.ensure-jira-id.outputs.JIRA_ID }}: auto update WDS version to $HELM_NEW_TAG" --body "Testing, don't merge" --label "automerge"
