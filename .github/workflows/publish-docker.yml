@@ -35,7 +35,7 @@ jobs:
       - name: Ensure AJ (Analysis Journeys) Jira ID is present in the commit message
         id: ensure-jira-id
         run: |
-          JIRA_ID=$(echo '${{ github.event.head_commit.message }}' | grep -iEo 'AJ-[0-9]+')
+          JIRA_ID=$(echo '${{ github.event.head_commit.message }}' | grep -iEo 'AJ-[0-9]+' || '')
           if [[ -z "$JIRA_ID" ]]; then
             echo ::set-output name=JIRA_ID::missing
           else 
