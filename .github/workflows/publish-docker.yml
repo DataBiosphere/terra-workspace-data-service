@@ -42,7 +42,6 @@ jobs:
           else 
             echo ::set-output name=JIRA_ID::${JIRA_ID}
           fi
-          set -e
 
       - name: Set commit short hash
         id: setHash
