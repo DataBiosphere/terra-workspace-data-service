@@ -104,14 +104,14 @@ jobs:
           
       - name: Clone Cromwhelm and create PR for latest WDS version
         uses: actions/checkout@v3
-        if: ${{ steps.ensure-jira-id.outputs.JIRA_ID != "missing" }}
+        if: startsWith(${{ steps.ensure-jira-id.outputs.JIRA_ID }},  "AJ-")
         with:
           repository: broadinstitute/cromwhelm
           token: ${{ secrets.BROADBOT_TOKEN }} # Has to be set at checkout AND later when pushing to work
           path: cromwhelm
           
       - name: Update WDS image tag for CBAS Helm Chart in Cromwhelm
-        if: ${{ steps.ensure-jira-id.outputs.JIRA_ID != "missing" }}
+        if: startsWith(${{ steps.ensure-jira-id.outputs.JIRA_ID }},  "AJ-")
         env:
           BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
           GH_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
