@@ -2,7 +2,7 @@ name: Tag
 on:
   push:
     branches:
-    - dh-aj-719-2
+    - main
 
 jobs:
   tag-job:
