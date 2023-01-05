@@ -38,10 +38,11 @@ jobs:
           set +e
           JIRA_ID=$(echo '${{ github.event.head_commit.message }}' | grep -iEo 'AJ-[0-9]+' || '')
           if [[ -z "$JIRA_ID" ]]; then
-            echo ::set-output name=JIRA_ID::missing
+            echo ::set-output name=JIRA_ID::"missing"
           else 
             echo ::set-output name=JIRA_ID::${JIRA_ID}
           fi
+          set -e
 
       - name: Set commit short hash
         id: setHash
