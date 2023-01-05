@@ -741,10 +741,8 @@ public class RecordDao {
 	@CacheEvict(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
 	public void deleteRecordType(UUID instanceId, RecordType recordType) {
 		List<Relation> relationArrayCols = getRelationArrayCols(instanceId, recordType);
-		if (!relationArrayCols.isEmpty()){
-			for (Relation rel : relationArrayCols){
-				namedTemplate.getJdbcTemplate().update("drop table " + getQualifiedJoinTableName(instanceId, rel.relationColName(), recordType));
-			}
+		for (Relation rel : relationArrayCols){
+			namedTemplate.getJdbcTemplate().update("drop table " + getQualifiedJoinTableName(instanceId, rel.relationColName(), recordType));
 		}
 		try {
 			namedTemplate.getJdbcTemplate().update("drop table " + getQualifiedTableName(recordType, instanceId));
