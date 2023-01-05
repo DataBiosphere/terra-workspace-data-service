@@ -108,7 +108,7 @@ jobs:
           token: ${{ secrets.BROADBOT_TOKEN }} # Has to be set at checkout AND later when pushing to work
           path: cromwhelm
           
-      - name: Update WDS image tag for CBAS Helm Chart in cromwhelm
+      - name: Update WDS image tag for CBAS Helm Chart in Cromwhelm
         if: ${{ steps.ensure-jira-id.outputs.JIRA_ID }} != "missing"
         env:
           BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
