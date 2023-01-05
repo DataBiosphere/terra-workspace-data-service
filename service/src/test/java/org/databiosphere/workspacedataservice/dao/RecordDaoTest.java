@@ -396,6 +396,50 @@ class RecordDaoTest {
 
 	@Test
 	@Transactional
+	void testUpdateRecordWithRelationArray() {
+		// add some records to be relations
+		String refRecordId = "referencedRecord1";
+		Record referencedRecord = new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
+		String refRecordId2 = "referencedRecord2";
+		Record referencedRecord2 = new Record(refRecordId2, recordType, new RecordAttributes(Map.of("foo", "bar2")));
+		String refRecordId3 = "referencedRecord3";
+		Record referencedRecord3 = new Record(refRecordId3, recordType, new RecordAttributes(Map.of("foo", "bar3")));
+		recordDao.batchUpsert(instanceId, recordType, List.of(referencedRecord, referencedRecord2, referencedRecord3), new HashMap<>());
+
+		//Create record type
+		RecordType relationArrayType = RecordType.valueOf("relationArrayType");
+		Relation arrayRelation = new Relation("relArrAttr", recordType);
+		Map<String, DataTypeMapping> schema = Map.of("stringAttr", DataTypeMapping.STRING, "refAttr", DataTypeMapping.RELATION, "relArrAttr", DataTypeMapping.ARRAY_OF_RELATION);
+		recordDao.createRecordType(instanceId, schema, relationArrayType,
+				new RelationCollection(Collections.emptySet(), Set.of(arrayRelation)), RECORD_ID);
+
+		//Create record with relation array
+		String relArrId = "recordWithRelationArr";
+		List<String> relArr = List.of(RelationUtils.createRelationString(recordType, refRecordId), RelationUtils.createRelationString(recordType, refRecordId2));
+		Record recordWithRelationArray = new Record(relArrId, relationArrayType, new RecordAttributes(Map.of("relArrAttr", relArr)));
+		recordDao.batchUpsert(instanceId, relationArrayType, Collections.singletonList(recordWithRelationArray), schema);
+
+		//This is normally called at the service level, need to do manually here
+		recordDao.insertIntoJoin(instanceId, arrayRelation, relationArrayType, List.of(new RelationValue(recordWithRelationArray, referencedRecord), new RelationValue(recordWithRelationArray, referencedRecord2)));
+
+		//Update relation array
+		relArr = List.of(RelationUtils.createRelationString(recordType, refRecordId), RelationUtils.createRelationString(recordType, refRecordId3));
+		recordWithRelationArray = new Record(relArrId, relationArrayType, new RecordAttributes(Map.of("relArrAttr", relArr)));
+		recordDao.batchUpsert(instanceId, relationArrayType, Collections.singletonList(recordWithRelationArray), schema);
+
+		//Relation array values should have been updated
+		Record record = recordDao.getSingleRecord(instanceId, relationArrayType, relArrId).get();
+		assertNotNull(record);
+		String[] actualAttrValue = assertInstanceOf(String[].class, record.getAttributeValue("relArrAttr"));
+		assertIterableEquals(relArr, Arrays.asList(actualAttrValue));
+
+		//Join table should have been updated as well
+
+
+	}
+
+	@Test
+	@Transactional
 	void testGetRelationArrayColumns(){
 		//Add relation array columns to a type
 		RecordType relationarrayType = RecordType.valueOf("relationArrayType");
