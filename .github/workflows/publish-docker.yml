@@ -104,24 +104,25 @@ jobs:
           
       - name: Clone Cromwhelm and create PR for latest WDS version
         uses: actions/checkout@v3
-        if: startsWith(${{ steps.ensure-jira-id.outputs.JIRA_ID }},  "AJ-")
         with:
           repository: broadinstitute/cromwhelm
           token: ${{ secrets.BROADBOT_TOKEN }} # Has to be set at checkout AND later when pushing to work
           path: cromwhelm
           
       - name: Update WDS image tag for CBAS Helm Chart in Cromwhelm
-        if: startsWith(${{ steps.ensure-jira-id.outputs.JIRA_ID }},  "AJ-")
         env:
           BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
           GH_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
         run: |
           set -e
+          JIRA_ID=${{ steps.ensure-jira-id.outputs.JIRA_ID }}
+          if [[ $JIRA_ID == "missing" ]]; then
+            exit 0;
+          fi
           cd cromwhelm
           git checkout -b ${{ steps.ensure-jira-id.outputs.JIRA_ID }}-auto-update-${{ steps.setHash.outputs.git_short_sha }}
           HELM_CUR_TAG=$(grep "/terra-workspace-data-service:" terra-batch-libchart/values.yaml | sed "s,.*/terra-workspace-data-service:,,")
           HELM_NEW_TAG=${{ steps.setHash.outputs.git_short_sha }}
-          JIRA_ID=${{ steps.ensure-jira-id.outputs.JIRA_ID }}
           [[ -n "$HELM_CUR_TAG" && -n "$HELM_NEW_TAG" ]]
           sed -i "s/$HELM_CUR_TAG/$HELM_NEW_TAG/" terra-batch-libchart/values.yaml
           git config --global user.name "broadbot"
