@@ -32,8 +32,8 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Ensure AJ (Analysis Journeys) Jira ID is present in the commit message
-        id: ensure-jira-id
+      - name: Look for AJ (Analysis Journeys) Jira ID in the commit message
+        id: find-jira-id
         run: |
           set +e
           JIRA_ID=$(echo '${{ github.event.head_commit.message }}' | grep -iEo 'AJ-[0-9]+' || '')
@@ -115,12 +115,12 @@ jobs:
           GH_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
         run: |
           set -e
-          JIRA_ID=${{ steps.ensure-jira-id.outputs.JIRA_ID }}
+          JIRA_ID=${{ steps.find-jira-id.outputs.JIRA_ID }}
           if [[ $JIRA_ID == "missing" ]]; then
             exit 0;
           fi
           cd cromwhelm
-          git checkout -b ${{ steps.ensure-jira-id.outputs.JIRA_ID }}-auto-update-${{ steps.setHash.outputs.git_short_sha }}
+          git checkout -b ${JIRA_ID}-auto-update-${{ steps.setHash.outputs.git_short_sha }}
           HELM_CUR_TAG=$(grep "/terra-workspace-data-service:" terra-batch-libchart/values.yaml | sed "s,.*/terra-workspace-data-service:,,")
           HELM_NEW_TAG=${{ steps.setHash.outputs.git_short_sha }}
           [[ -n "$HELM_CUR_TAG" && -n "$HELM_NEW_TAG" ]]
