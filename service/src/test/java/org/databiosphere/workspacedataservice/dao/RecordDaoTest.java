@@ -15,10 +15,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.junit.jupiter.api.Assertions.*;
@@ -32,6 +36,9 @@ class RecordDaoTest {
 	RecordDao recordDao;
 	UUID instanceId;
 	RecordType recordType;
+
+	@Autowired
+	NamedParameterJdbcTemplate namedTemplate;
 
 	@BeforeEach
 	void setUp() {
@@ -97,6 +104,37 @@ class RecordDaoTest {
 		recordDao.batchDelete(instanceId, referencer, Collections.singletonList(referencerRecord));
 		recordDao.batchDelete(instanceId, referencedRt, Collections.singletonList(testRecord));
 		assertTrue(recordDao.getSingleRecord(instanceId, referencer, recordId).isEmpty());
+	}
+
+	@Test
+	void batchDeleteWithRelationArrays(){
+		//Create records to be referenced
+		RecordType referencedRt = RecordType.valueOf("referenced");
+		List<Record> referencedRecords = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> new Record("id" + i, referencedRt, RecordAttributes.empty())).collect(Collectors.toList());
+		recordDao.createRecordType(instanceId, Collections.emptyMap(), referencedRt, new RelationCollection(Collections.emptySet(),Collections.emptySet()), RECORD_ID);
+		recordDao.batchUpsert(instanceId, referencedRt, referencedRecords, Collections.emptyMap());
+
+		//Create records to do the referencing
+		Map<String, DataTypeMapping> schema = Map.of("attr1", DataTypeMapping.ARRAY_OF_RELATION);
+		RecordType referencer = RecordType.valueOf("referencer");
+		Relation arrayRel = new Relation("attr1", referencedRt);
+		recordDao.createRecordType(instanceId, schema, referencer,
+				new RelationCollection(Collections.emptySet(), Collections.singleton(arrayRel)), RECORD_ID);
+		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(referencedRt, "id" + i)).collect(Collectors.toList());
+		List<Record> referencingRecords = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> new Record("id" + i, referencer, RecordAttributes.empty().putAttribute("attr1", relArr))).collect(Collectors.toList());
+
+		recordDao.batchUpsert(instanceId, referencer, referencingRecords, schema, RECORD_ID);
+		//Normally insert into join is called from the service level, so when working directly with the dao must call it manually
+		for (Record rec : referencingRecords){
+			recordDao.insertIntoJoin(instanceId, arrayRel, referencer, referencedRecords.stream().map(rel -> new RelationValue(rec, rel)).toList());
+		}
+
+		//Delete
+		recordDao.batchDelete(instanceId, referencer, referencingRecords);
+		for (Record rec : referencingRecords){
+			assertTrue(recordDao.getSingleRecord(instanceId, referencer, rec.getId()).isEmpty());
+			assertTrue(getRelationArrayValues(instanceId, "attr1", rec, referencedRt).isEmpty());
+		}
 	}
 
 	@Test
@@ -230,6 +268,75 @@ class RecordDaoTest {
 		assertThrows(ResponseStatusException.class, () -> {
 			recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord");
 		}, "Exception should be thrown when attempting to delete related record");
+
+		//Record should not have been deleted
+		assert(recordDao.getSingleRecord(instanceId, recordType, "referencedRecord").isPresent());
+
+	}
+
+	@Test
+	void testDeleteRecordReferencedInArray() {
+		String refRecordId = "referencedRecord1";
+		Record referencedRecord = new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
+		String refRecordId2 = "referencedRecord2";
+		Record referencedRecord2 = new Record(refRecordId2, recordType, new RecordAttributes(Map.of("foo", "bar2")));
+		recordDao.batchUpsert(instanceId, recordType, List.of(referencedRecord, referencedRecord2), new HashMap<>());
+
+		//Create record type
+		RecordType relationArrayType = RecordType.valueOf("relationArrayType");
+		Relation arrayRelation = new Relation("relArrAttr", recordType);
+		Map<String, DataTypeMapping> schema = Map.of("relArrAttr", DataTypeMapping.ARRAY_OF_RELATION);
+		recordDao.createRecordType(instanceId, schema, relationArrayType,
+				new RelationCollection(Collections.emptySet(), Set.of(arrayRelation)), RECORD_ID);
+
+		//Create record with relation array
+		String relArrId = "recordWithRelationArr";
+		List<String> relArr = List.of(RelationUtils.createRelationString(recordType, refRecordId), RelationUtils.createRelationString(recordType, refRecordId2));
+		Record recordWithRelationArray = new Record(relArrId, relationArrayType, new RecordAttributes(Map.of("relArrAttr", relArr)));
+		recordDao.batchUpsert(instanceId, relationArrayType, Collections.singletonList(recordWithRelationArray), schema);
+
+		//Normally insert into join is called from the service level, so when working directly with the dao must call it manually
+		recordDao.insertIntoJoin(instanceId, arrayRelation, relationArrayType, List.of(new RelationValue(recordWithRelationArray, referencedRecord), new RelationValue(recordWithRelationArray, referencedRecord2)));
+
+		// Should throw an error
+		assertThrows(ResponseStatusException.class, () -> {
+			recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord1");
+		}, "Exception should be thrown when attempting to delete related record");
+
+		//Record should not have been deleted
+		assert(recordDao.getSingleRecord(instanceId, recordType, "referencedRecord1").isPresent());
+	}
+
+	@Test
+	void testDeleteRecordWithRelationArray() {
+		String refRecordId = "referencedRecord1";
+		Record referencedRecord = new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
+		String refRecordId2 = "referencedRecord2";
+		Record referencedRecord2 = new Record(refRecordId2, recordType, new RecordAttributes(Map.of("foo", "bar2")));
+		recordDao.batchUpsert(instanceId, recordType, List.of(referencedRecord, referencedRecord2), new HashMap<>());
+
+		//Create record type
+		RecordType relationArrayType = RecordType.valueOf("relationArrayType");
+		Relation arrayRelation = new Relation("relArrAttr", recordType);
+		Map<String, DataTypeMapping> schema = Map.of("relArrAttr", DataTypeMapping.ARRAY_OF_RELATION);
+		recordDao.createRecordType(instanceId, schema, relationArrayType,
+				new RelationCollection(Collections.emptySet(), Set.of(arrayRelation)), RECORD_ID);
+
+		//Create record with relation array
+		String relArrId = "recordWithRelationArr";
+		List<String> relArr = List.of(RelationUtils.createRelationString(recordType, refRecordId), RelationUtils.createRelationString(recordType, refRecordId2));
+		Record recordWithRelationArray = new Record(relArrId, relationArrayType, new RecordAttributes(Map.of("relArrAttr", relArr)));
+		recordDao.batchUpsert(instanceId, relationArrayType, Collections.singletonList(recordWithRelationArray), schema);
+
+		//Normally insert into join is called from the service level, so when working directly with the dao must call it manually
+		recordDao.insertIntoJoin(instanceId, arrayRelation, relationArrayType, List.of(new RelationValue(recordWithRelationArray, referencedRecord), new RelationValue(recordWithRelationArray, referencedRecord2)));
+
+		recordDao.deleteSingleRecord(instanceId, relationArrayType, "recordWithRelationArr");
+
+		//Record should have been deleted
+		assert(recordDao.getSingleRecord(instanceId, recordType, "recordWithRelationArr").isEmpty());
+		//Check that values are removed from join table
+		assertTrue(getRelationArrayValues(instanceId, "relArrAttr", recordWithRelationArray, recordType).isEmpty());
 	}
 	@Test
 	@Transactional
@@ -324,17 +431,53 @@ class RecordDaoTest {
 	}
 
 	@Test
+	void testDeleteRecordTypeWithRelationArray() {
+		//create records to be referenced
+		String refRecordId = "referencedRecord1";
+		Record referencedRecord = new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
+		String refRecordId2 = "referencedRecord2";
+		Record referencedRecord2 = new Record(refRecordId2, recordType, new RecordAttributes(Map.of("foo", "bar2")));
+		recordDao.batchUpsert(instanceId, recordType, List.of(referencedRecord, referencedRecord2), new HashMap<>());
+
+		//Create referencing record type
+		RecordType relationArrayType = RecordType.valueOf("relationArrayType");
+		Relation arrayRelation = new Relation("relArrAttr", recordType);
+		Map<String, DataTypeMapping> schema = Map.of("relArrAttr", DataTypeMapping.ARRAY_OF_RELATION);
+		recordDao.createRecordType(instanceId, schema, relationArrayType,
+				new RelationCollection(Collections.emptySet(), Set.of(arrayRelation)), RECORD_ID);
+
+		//Create record with relation array
+		String relArrId = "recordWithRelationArr";
+		List<String> relArr = List.of(RelationUtils.createRelationString(recordType, refRecordId), RelationUtils.createRelationString(recordType, refRecordId2));
+		Record recordWithRelationArray = new Record(relArrId, relationArrayType, new RecordAttributes(Map.of("relArrAttr", relArr)));
+		recordDao.batchUpsert(instanceId, relationArrayType, Collections.singletonList(recordWithRelationArray), schema);
+
+		//Normally insert into join is called from the service level, so when working directly with the dao must call it manually
+		recordDao.insertIntoJoin(instanceId, arrayRelation, relationArrayType, List.of(new RelationValue(recordWithRelationArray, referencedRecord), new RelationValue(recordWithRelationArray, referencedRecord2)));
+
+		//Delete record type
+		recordDao.deleteRecordType(instanceId, relationArrayType);
+
+		//Record table should have been deleted
+		assertFalse(recordDao.recordTypeExists(instanceId, relationArrayType));
+
+		//check that join table is gone as well
+		assertFalse(joinTableExists(instanceId, "relArrAttr", relationArrayType ));
+	}
+
+	@Test
 	@Transactional
 	void testCreateRelationJoinTable(){
 		RecordType secondRecordType = RecordType.valueOf("secondRecordType");
 		recordDao.createRecordType(instanceId, Collections.emptyMap(), secondRecordType, new RelationCollection(Collections.emptySet(), Collections.emptySet()), RECORD_ID);
 
-		recordDao.createRelationJoinTable(instanceId, "refArray", recordType,
-				secondRecordType);
+		recordDao.createRelationJoinTable(instanceId, "refArray",
+				secondRecordType, recordType);
 
-		List<Relation> relationArrays = recordDao.getRelationArrayCols(instanceId, recordType);
+		List<Relation> relationArrays = recordDao.getRelationArrayCols(instanceId, secondRecordType);
 		assertEquals(1, relationArrays.size());
-		assertTrue(relationArrays.contains(new Relation("refArray", secondRecordType)));
+		assertTrue(relationArrays.contains(new Relation("refArray", recordType)));
+		assertTrue(joinTableExists(instanceId, "refArray", secondRecordType));
 	}
 
 	@Test
@@ -355,6 +498,7 @@ class RecordDaoTest {
 		assertEquals(List.of(singleRelation), relationCols);
 		List<Relation> relationArrayCols = recordDao.getRelationArrayCols(instanceId, relationarrayType);
 		assertEquals(List.of(arrayRelation), relationArrayCols);
+		assertTrue(joinTableExists(instanceId, "relArrAttr", relationarrayType));
 	}
 
 	@Test
@@ -389,9 +533,10 @@ class RecordDaoTest {
 		String[] actualAttrValue = assertInstanceOf(String[].class, record.getAttributeValue("relArrAttr"));
 		assertIterableEquals(relArr, Arrays.asList(actualAttrValue));
 
-		//The purpose of inserting in to the join is simply to make sure foreign keys are consistent
-		//So all we care about here is not throwing an error
+		//The purpose of inserting in to the join is to make sure foreign keys are consistent
+		//So we need to make sure no error is thrown
 		assertDoesNotThrow(() -> recordDao.insertIntoJoin(instanceId, arrayRelation, relationArrayType, List.of(new RelationValue(record, referencedRecord), new RelationValue(record, referencedRecord2))));
+		assertEquals(List.of(refRecordId, refRecordId2), getRelationArrayValues(instanceId, "relArrAttr", record, recordType));
 	}
 
 	@Test
@@ -410,4 +555,21 @@ class RecordDaoTest {
 		assertTrue(cols.contains(arrayRelation2));
 	}
 
+	//Helper Methods
+	private boolean joinTableExists(UUID instanceId, String tableName, RecordType referringRecordType) {
+		//This method gives us the name in quotes, need to be able to strip them off
+		String joinTableName = recordDao.getJoinTableName(tableName, referringRecordType);
+		return Boolean.TRUE.equals(namedTemplate.queryForObject(
+				"select exists(select from pg_tables where schemaname = :instanceId AND tablename  = :joinName)",
+				new MapSqlParameterSource(
+						Map.of("instanceId", instanceId.toString(), "joinName", joinTableName.substring(1, joinTableName.length()-1))),
+				Boolean.class));
+	}
+
+	private List<String> getRelationArrayValues(UUID instanceId, String columnName, Record record, RecordType toRecordType) {
+		return namedTemplate.queryForList(
+				"select \"" + recordDao.getToColumnName(toRecordType) + "\" from " + recordDao.getQualifiedJoinTableName(instanceId, columnName, record.getRecordType()) + " where "
+						+ "\"" + recordDao.getFromColumnName(record.getRecordType()) + "\" = :recordId",
+				new MapSqlParameterSource("recordId", record.getId()), String.class);
+	}
 }
