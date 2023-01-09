@@ -139,21 +139,21 @@ public class RecordDao {
 		}
 	}
 
-	private String getJoinTableName(String relationColumnName, RecordType fromTable){
+	public String getJoinTableName(String relationColumnName, RecordType fromTable){
 		//Use RESERVED_NAME_PREFIX to ensure no collision with user-named tables.
 		//RecordType name has already been sql-validated
 		return quote(RESERVED_NAME_PREFIX + fromTable.getName() + "_" + SqlUtils.validateSqlString(relationColumnName, ATTRIBUTE));
 	}
 
-	private String getQualifiedJoinTableName(UUID instanceId, String relationColumnName, RecordType fromTable){
+	public String getQualifiedJoinTableName(UUID instanceId, String relationColumnName, RecordType fromTable){
 		return quote(instanceId.toString()) + "." + getJoinTableName(relationColumnName, fromTable);
 	}
 
-	private String getFromColumnName(RecordType referringRecordType){
+	public String getFromColumnName(RecordType referringRecordType){
 		return "from_" + referringRecordType.getName() + "_key";
 	}
 
-	private String getToColumnName(RecordType referencedRecordType){
+	public String getToColumnName(RecordType referencedRecordType){
 		return "to_" + referencedRecordType.getName() + "_key";
 
 	}
@@ -164,11 +164,9 @@ public class RecordDao {
 		String fromCol = getFromColumnName(referringRecordType);
 		String toCol = getToColumnName(referencedRecordType);
 		String columnDefs =  quote(fromCol) + " text, " + quote(toCol) + " text";
-		//Possibly temporary fake relations to make existing methods work for this situation
-		Set<Relation> relations = Set.of(new Relation(fromCol, referringRecordType), new Relation(toCol, referencedRecordType));
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedJoinTableName(instanceId, tableName, referringRecordType) +
-					"( " + columnDefs + ", " + getFkSql(relations, instanceId) + ")");
+					"( " + columnDefs + ", " + getFkSqlForJoin(new Relation(fromCol, referringRecordType), new Relation(toCol, referencedRecordType), instanceId) + ")");
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingTable(sqlEx);
@@ -386,13 +384,19 @@ public class RecordDao {
 	}
 
 	public String getFkSql(Set<Relation> relations, UUID instanceId) {
-
 		return relations.stream()
-				.map(r -> "constraint " + quote("fk_" + SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE))
+				.map(r -> getFkSql(r, instanceId, false))
+				.collect(Collectors.joining(", \n"));
+	}
+
+	public String getFkSql(Relation r, UUID instanceId, boolean cascade) {
+		return "constraint " + quote("fk_" + SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE))
 						+ " foreign key (" + quote(SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE))
 						+ ") references " + getQualifiedTableName(r.relationRecordType(), instanceId) + "(" + quote(cachedQueryDao.getPrimaryKeyColumn(r.relationRecordType(), instanceId))
-						+ ")")
-				.collect(Collectors.joining(", \n"));
+						+ ")" + (cascade ? " on delete cascade" : "");
+	}
+	public String getFkSqlForJoin(Relation fromRelation, Relation toRelation, UUID instanceId) {
+		return getFkSql(fromRelation, instanceId, true) + ", \n" + getFkSql(toRelation, instanceId, false);
 	}
 
 	public List<Relation> getRelationCols(UUID instanceId, RecordType recordType) {
@@ -736,6 +740,10 @@ public class RecordDao {
 	 */
 	@CacheEvict(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
 	public void deleteRecordType(UUID instanceId, RecordType recordType) {
+		List<Relation> relationArrayCols = getRelationArrayCols(instanceId, recordType);
+		for (Relation rel : relationArrayCols){
+			namedTemplate.getJdbcTemplate().update("drop table " + getQualifiedJoinTableName(instanceId, rel.relationColName(), recordType));
+		}
 		try {
 			namedTemplate.getJdbcTemplate().update("drop table " + getQualifiedTableName(recordType, instanceId));
 		} catch (DataAccessException e) {
