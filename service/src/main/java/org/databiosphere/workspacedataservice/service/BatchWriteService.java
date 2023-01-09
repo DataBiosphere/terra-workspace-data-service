@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import bio.terra.common.db.WriteTransaction;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
@@ -219,6 +220,7 @@ public class BatchWriteService {
 	 * @param primaryKey
 	 * @return number of records updated
 	 */
+	@WriteTransaction
 	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		int recordsAffected = 0;
 		try (StreamingWriteHandler streamingWriteHandler = new StreamingWriteHandler(is, objectMapper)) {

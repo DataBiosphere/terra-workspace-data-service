@@ -104,7 +104,7 @@ public class RecordController {
 	}
 
 	@PostMapping( "/{instanceId}/tsv/{version}/{recordType}")
-//	@WriteTransaction
+	// TODO: enable write transaction
 	public ResponseEntity<TsvUploadResponse> tsvUpload(@PathVariable("instanceId") UUID instanceId,
 			   @PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			   @RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey,
@@ -123,7 +123,7 @@ public class RecordController {
 	}
 
 	@GetMapping("/{instanceId}/tsv/{version}/{recordType}")
-//	@ReadTransaction
+	// TODO: enable read transaction
 	public ResponseEntity<StreamingResponseBody> streamAllEntities(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType) {
 		validateVersion(version);
@@ -320,7 +320,7 @@ public class RecordController {
 	}
 
 	@PostMapping("/{instanceid}/batch/{v}/{type}")
-//	@WriteTransaction
+	// TODO: enable write transaction
 	public ResponseEntity<BatchResponse> streamingWrite(@PathVariable("instanceid") UUID instanceId,
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType,
 			@RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey, InputStream is) {
