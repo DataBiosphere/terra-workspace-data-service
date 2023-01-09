@@ -32,8 +32,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import javax.sql.DataSource;
 
 @SpringBootApplication(scanBasePackages = {
+		// this codebase
 		"org.databiosphere.workspacedataservice",
-		// Transaction management and DB retry configuration
+		// terra-common-lib transaction management and DB retry configuration
 		"bio.terra.common.retry.transaction"
 })
 @EnableRetry
