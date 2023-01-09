@@ -140,6 +140,7 @@ public class BatchWriteService {
 		}
 	}
 
+	@WriteTransaction
 	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) throws IOException {
 		CSVFormat csvFormat = TsvSupport.getUploadFormat();
 		CSVParser rows = csvFormat.parse(is);

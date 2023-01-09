@@ -104,7 +104,7 @@ public class RecordController {
 	}
 
 	@PostMapping( "/{instanceId}/tsv/{version}/{recordType}")
-	// TODO: enable write transaction
+	// N.B. transaction annotated in batchWriteService.uploadTsvStream
 	public ResponseEntity<TsvUploadResponse> tsvUpload(@PathVariable("instanceId") UUID instanceId,
 			   @PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			   @RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey,
@@ -320,7 +320,7 @@ public class RecordController {
 	}
 
 	@PostMapping("/{instanceid}/batch/{v}/{type}")
-	// TODO: enable write transaction
+	// N.B. transaction annotated in batchWriteService.consumeWriteStream
 	public ResponseEntity<BatchResponse> streamingWrite(@PathVariable("instanceid") UUID instanceId,
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType,
 			@RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey, InputStream is) {
