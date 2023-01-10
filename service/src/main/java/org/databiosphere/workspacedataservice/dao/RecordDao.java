@@ -91,7 +91,7 @@ public class RecordDao {
 		this.objectMapper = objectMapper;
 		this.cachedQueryDao = cachedQueryDao;
 
-		if (StringUtils.isBlank(workspaceId)) {
+		if (!StringUtils.isBlank(workspaceId)) {
 			UUID instanceId = UUID.fromString(workspaceId);
 			if (!instanceSchemaExists(instanceId)) {
 				createSchema(instanceId);
