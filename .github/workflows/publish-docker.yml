@@ -117,6 +117,7 @@ jobs:
           set -e
           JIRA_ID=${{ steps.find-jira-id.outputs.JIRA_ID }}
           if [[ $JIRA_ID == "missing" ]]; then
+            echo "JIRA_ID missing, PR to cromwhelm will not be created"
             exit 0;
           fi
           cd cromwhelm
