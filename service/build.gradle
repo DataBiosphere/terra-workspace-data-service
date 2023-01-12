@@ -44,6 +44,7 @@ dependencies {
 	implementation ('bio.terra:terra-common-lib:0.0.77-SNAPSHOT') {
 		exclude group: 'org.broadinstitute.dsde.workbench', module: 'sam-client_2.12'
 	}
+	implementation 'io.sentry:sentry-logback:6.11.0'
 	runtimeOnly 'org.webjars.npm:swagger-ui-dist:4.12.0'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

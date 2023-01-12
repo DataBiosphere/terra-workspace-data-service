@@ -10,11 +10,13 @@ import com.fasterxml.jackson.databind.cfg.CoercionInputShape;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.type.LogicalType;
 import com.zaxxer.hikari.HikariDataSource;
+import io.sentry.Sentry;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.cache.annotation.EnableCaching;
@@ -131,7 +133,25 @@ public class WorkspaceDataServiceApplication {
 		};
 	}
 
+	private static void configureSentry() {
+		// TODO: read these from config / environment
+		Sentry.init(options -> {
+			options.setDsn("https://e59ecdd940784bd2922f25a0f3197ffd@o54426.ingest.sentry.io/4504299946835968");
+			options.setEnvironment("local-dev");
+			options.setServerName("davidan"); // read from Leo's app name (or short k8s name)
+			options.setRelease("54321"); // read from git.commit.id.abbrev in generated git.properties
+//			options.setAttachServerName();
+			options.setSampleRate(1.0); // read from config
+		});
+	}
+
 	public static void main(String[] args) {
-		SpringApplication.run(WorkspaceDataServiceApplication.class, args);
+		configureSentry();
+
+		new SpringApplicationBuilder(WorkspaceDataServiceApplication.class)
+				.initializers()
+				.run(args);
+
+//		SpringApplication.run(WorkspaceDataServiceApplication.class, args);
 	}
 }
