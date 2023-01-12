@@ -91,11 +91,15 @@ public class RecordDao {
 		this.objectMapper = objectMapper;
 		this.cachedQueryDao = cachedQueryDao;
 
+		LOGGER.info("Default workspace id loaded as {}", workspaceId);
 		if (!StringUtils.isBlank(workspaceId)) {
 			UUID instanceId = UUID.fromString(workspaceId);
 			if (!instanceSchemaExists(instanceId)) {
 				createSchema(instanceId);
+				LOGGER.info("Creating default schema id succeeded for workspaceId {}", workspaceId);
 			}
+		} else {
+			LOGGER.info("Workspace id not provided, a default schema won't be created");
 		}
 	}
 

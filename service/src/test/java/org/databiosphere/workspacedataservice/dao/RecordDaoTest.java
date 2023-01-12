@@ -13,7 +13,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -31,6 +34,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordDaoTest {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(RecordDaoTest.class);
+
 	private static final String PRIMARY_KEY = "row_id";
 	@Autowired
 	RecordDao recordDao;
@@ -40,10 +45,14 @@ class RecordDaoTest {
 	@Autowired
 	NamedParameterJdbcTemplate namedTemplate;
 
+	@Value("${twds.instance.workspace-id}")
+	String workspaceId;
+
 	@BeforeEach
 	void setUp() {
 		instanceId = UUID.randomUUID();
 		recordType = RecordType.valueOf("testRecordType");
+
 		recordDao.createSchema(instanceId);
 		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType, new RelationCollection(Collections.emptySet(), Collections.emptySet()), PRIMARY_KEY);
 	}
@@ -53,6 +62,12 @@ class RecordDaoTest {
 		recordDao.dropSchema(instanceId);
 	}
 
+	@Test
+	void defaultSchemaIsCreated() {
+		LOGGER.info("Default workspace id loaded as {}", workspaceId);
+		UUID defaultInstanceId = UUID.fromString(workspaceId);
+		recordDao.instanceSchemaExists(defaultInstanceId);
+	}
 
 	@Test
 	@Transactional
