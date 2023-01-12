@@ -12,7 +12,6 @@ import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -30,7 +29,6 @@ public class RecordService {
         this.inferer = inferer;
     }
 
-    @Transactional
     public void prepareAndUpsert(UUID instanceId, RecordType recordType, List<Record> records,
                              Map<String, DataTypeMapping> requestSchema, String primaryKey) {
         //Identify relation arrays

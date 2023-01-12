@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import bio.terra.common.db.WriteTransaction;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
@@ -24,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
@@ -140,7 +140,7 @@ public class BatchWriteService {
 		}
 	}
 
-	@Transactional
+	@WriteTransaction
 	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) throws IOException {
 		CSVFormat csvFormat = TsvSupport.getUploadFormat();
 		CSVParser rows = csvFormat.parse(is);
@@ -221,7 +221,7 @@ public class BatchWriteService {
 	 * @param primaryKey
 	 * @return number of records updated
 	 */
-	@Transactional
+	@WriteTransaction
 	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		int recordsAffected = 0;
 		try (StreamingWriteHandler streamingWriteHandler = new StreamingWriteHandler(is, objectMapper)) {
