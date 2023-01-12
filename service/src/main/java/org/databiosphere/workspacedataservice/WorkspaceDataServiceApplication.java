@@ -136,7 +136,7 @@ public class WorkspaceDataServiceApplication {
 	private static void configureSentry() {
 		// TODO: read these from config / environment
 		Sentry.init(options -> {
-			options.setDsn("https://e59ecdd940784bd2922f25a0f3197ffd@o54426.ingest.sentry.io/4504299946835968");
+			options.setDsn("add Sentry DSN here");
 			options.setEnvironment("local-dev");
 			options.setServerName("davidan"); // read from Leo's app name (or short k8s name)
 			options.setRelease("54321"); // read from git.commit.id.abbrev in generated git.properties
