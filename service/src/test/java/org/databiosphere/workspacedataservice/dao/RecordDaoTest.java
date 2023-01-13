@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
@@ -16,13 +18,16 @@ import org.junit.jupiter.api.TestInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import javax.sql.DataSource;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -45,6 +50,19 @@ class RecordDaoTest {
 	@Autowired
 	NamedParameterJdbcTemplate namedTemplate;
 
+	@Autowired
+	@Qualifier("streamingDs")
+	NamedParameterJdbcTemplate templateForStreaming;
+
+	@Autowired
+	DataTypeInferer dataTypeInferer;
+
+	@Autowired
+	ObjectMapper objectMapper;
+
+	@Autowired
+	CachedQueryDao cachedQueryDao;
+
 	@Value("${twds.instance.workspace-id}")
 	String workspaceId;
 
@@ -66,7 +84,12 @@ class RecordDaoTest {
 	void defaultSchemaIsCreated() {
 		LOGGER.info("Default workspace id loaded as {}", workspaceId);
 		UUID defaultInstanceId = UUID.fromString(workspaceId);
-		recordDao.instanceSchemaExists(defaultInstanceId);
+		assertTrue(recordDao.instanceSchemaExists(defaultInstanceId));
+	}
+
+	@Test
+	void workspaceIDNotProvidedNoExceptionThrown() {
+		RecordDao noWorkspaceRecordDao = new RecordDao(namedTemplate, templateForStreaming, dataTypeInferer, objectMapper, cachedQueryDao, "UNDEFINED");
 	}
 
 	@Test
