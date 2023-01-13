@@ -89,7 +89,7 @@ class RecordDaoTest {
 
 	@Test
 	void workspaceIDNotProvidedNoExceptionThrown() {
-		RecordDao noWorkspaceRecordDao = new RecordDao(namedTemplate, templateForStreaming, dataTypeInferer, objectMapper, cachedQueryDao, "UNDEFINED");
+		assertDoesNotThrow(() -> new RecordDao(namedTemplate, templateForStreaming, dataTypeInferer, objectMapper, cachedQueryDao, "UNDEFINED"));
 	}
 
 	@Test

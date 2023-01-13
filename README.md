@@ -91,11 +91,11 @@ From the command line, run
 ```
 To run one test suite, run
 ```bash
-./gradlew test --tests '*TestSuite'
+./gradlew test --tests '*RecordDaoTest'
 ```
 To run a single test, run
 ```bash
-./gradlew test --tests '*TestSuite.singleUnitTestName'
+./gradlew test --tests '*RecordDaoTest.testGetSingleRecord'
 ```
 
 ## Swagger UI

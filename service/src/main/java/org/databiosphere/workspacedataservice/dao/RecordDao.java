@@ -103,7 +103,7 @@ public class RecordDao {
 				LOGGER.info("Creating default schema id succeeded for workspaceId {}", workspaceId);
 			}
 		} catch (IllegalArgumentException e) {
-			LOGGER.warn("Workspace id could not be parsed provided, a default schema won't be created. Provided id: {}", workspaceId);
+			LOGGER.warn("Workspace id could not be parsed, a default schema won't be created. Provided id: {}", workspaceId);
 		} catch (DataAccessException e) {
 			LOGGER.error("Failed to create default schema id for workspaceId {}", workspaceId);
 		}
