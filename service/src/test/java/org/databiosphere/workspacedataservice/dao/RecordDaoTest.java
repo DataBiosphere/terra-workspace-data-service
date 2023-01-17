@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
@@ -13,13 +15,19 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import javax.sql.DataSource;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -31,6 +39,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordDaoTest {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(RecordDaoTest.class);
+
 	private static final String PRIMARY_KEY = "row_id";
 	@Autowired
 	RecordDao recordDao;
@@ -40,10 +50,27 @@ class RecordDaoTest {
 	@Autowired
 	NamedParameterJdbcTemplate namedTemplate;
 
+	@Autowired
+	@Qualifier("streamingDs")
+	NamedParameterJdbcTemplate templateForStreaming;
+
+	@Autowired
+	DataTypeInferer dataTypeInferer;
+
+	@Autowired
+	ObjectMapper objectMapper;
+
+	@Autowired
+	CachedQueryDao cachedQueryDao;
+
+	@Value("${twds.instance.workspace-id}")
+	String workspaceId;
+
 	@BeforeEach
 	void setUp() {
 		instanceId = UUID.randomUUID();
 		recordType = RecordType.valueOf("testRecordType");
+
 		recordDao.createSchema(instanceId);
 		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType, new RelationCollection(Collections.emptySet(), Collections.emptySet()), PRIMARY_KEY);
 	}
@@ -53,6 +80,17 @@ class RecordDaoTest {
 		recordDao.dropSchema(instanceId);
 	}
 
+	@Test
+	void defaultSchemaIsCreated() {
+		LOGGER.info("Default workspace id loaded as {}", workspaceId);
+		UUID defaultInstanceId = UUID.fromString(workspaceId);
+		assertTrue(recordDao.instanceSchemaExists(defaultInstanceId));
+	}
+
+	@Test
+	void workspaceIDNotProvidedNoExceptionThrown() {
+		assertDoesNotThrow(() -> new RecordDao(namedTemplate, templateForStreaming, dataTypeInferer, objectMapper, cachedQueryDao, "UNDEFINED"));
+	}
 
 	@Test
 	@Transactional

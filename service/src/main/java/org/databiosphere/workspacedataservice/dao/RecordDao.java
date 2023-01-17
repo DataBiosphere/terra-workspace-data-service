@@ -23,6 +23,7 @@ import org.postgresql.jdbc.PgArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -81,12 +82,31 @@ public class RecordDao {
 	private final CachedQueryDao cachedQueryDao;
 
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
-			@Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf, ObjectMapper objectMapper, CachedQueryDao cachedQueryDao) {
+					 @Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf, ObjectMapper objectMapper, CachedQueryDao cachedQueryDao,
+					 @Value("${twds.instance.workspace-id}") String workspaceId) {
 		this.namedTemplate = namedTemplate;
 		this.templateForStreaming = templateForStreaming;
 		this.inferer = inf;
 		this.objectMapper = objectMapper;
 		this.cachedQueryDao = cachedQueryDao;
+
+		createDefaultInstanceSchema(workspaceId);
+	}
+
+	private void createDefaultInstanceSchema(String workspaceId) {
+		LOGGER.info("Default workspace id loaded as {}", workspaceId);
+
+		try {
+			UUID instanceId = UUID.fromString(workspaceId);
+			if (!instanceSchemaExists(instanceId)) {
+				createSchema(instanceId);
+				LOGGER.info("Creating default schema id succeeded for workspaceId {}", workspaceId);
+			}
+		} catch (IllegalArgumentException e) {
+			LOGGER.warn("Workspace id could not be parsed, a default schema won't be created. Provided id: {}", workspaceId);
+		} catch (DataAccessException e) {
+			LOGGER.error("Failed to create default schema id for workspaceId {}", workspaceId);
+		}
 	}
 
 	public boolean instanceSchemaExists(UUID instanceId) {
