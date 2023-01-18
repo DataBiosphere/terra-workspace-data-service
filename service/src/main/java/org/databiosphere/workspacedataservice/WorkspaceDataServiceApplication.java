@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.type.LogicalType;
 import com.zaxxer.hikari.HikariDataSource;
 import io.sentry.Sentry;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -32,6 +33,10 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.sql.DataSource;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Optional;
+import java.util.Properties;
 
 @SpringBootApplication(scanBasePackages = {
 		// this codebase
@@ -134,24 +139,41 @@ public class WorkspaceDataServiceApplication {
 	}
 
 	private static void configureSentry() {
-		// TODO: read these from config / environment
-		Sentry.init(options -> {
-			options.setDsn("add Sentry DSN here");
-			options.setEnvironment("local-dev");
-			options.setServerName("davidan"); // read from Leo's app name (or short k8s name)
-			options.setRelease("54321"); // read from git.commit.id.abbrev in generated git.properties
-//			options.setAttachServerName();
-			options.setSampleRate(1.0); // read from config
-		});
+		ClassLoader classLoader = WorkspaceDataServiceApplication.class.getClassLoader();
+		try (final InputStream appPropsFile = classLoader.getResourceAsStream("application.properties");
+			 final InputStream gitPropsFile = classLoader.getResourceAsStream("git.properties")) {
+
+			// load the application properties file
+			Properties appProps = new Properties();
+			appProps.load(appPropsFile);
+
+			// load the git properties file
+			Properties gitProps = new Properties();
+			gitProps.load(gitPropsFile);
+
+			// get workspace id from env:
+			Optional<String> workspaceId = Optional.ofNullable(System.getenv("WORKSPACE_ID"));
+
+
+			// TODO: read these from config / environment
+			Sentry.init(options -> {
+				options.setDsn("https://e59ecdd940784bd2922f25a0f3197ffd@o54426.ingest.sentry.io/4504299946835968");
+				options.setEnvironment("local-dev"); // read from Leo's env
+				options.setServerName("davidan"); // read from Leo's app name (or short k8s name)
+
+				options.setRelease(gitProps.getProperty("git.commit.id.abbrev"));
+				// options.setTag("workspaceId", appProps.getProperty("twds.instance.workspace-id"));
+				options.setTag("workspaceId", workspaceId.orElse("n/a"));
+
+				options.setSampleRate(1.0); // read from config
+			});
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
 	}
 
 	public static void main(String[] args) {
 		configureSentry();
-
-		new SpringApplicationBuilder(WorkspaceDataServiceApplication.class)
-				.initializers()
-				.run(args);
-
-//		SpringApplication.run(WorkspaceDataServiceApplication.class, args);
+		SpringApplication.run(WorkspaceDataServiceApplication.class, args);
 	}
 }
