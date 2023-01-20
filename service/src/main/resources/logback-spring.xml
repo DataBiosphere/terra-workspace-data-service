@@ -11,10 +11,6 @@
     </appender>
 
     <appender name="Sentry" class="io.sentry.logback.SentryAppender">
-        <options>
-            <!-- can we read this from env? -->
-            <dsn>https://e59ecdd940784bd2922f25a0f3197ffd@o54426.ingest.sentry.io/4504299946835968</dsn>
-        </options>
         <!-- Optionally change minimum Event level. Default for Events is ERROR -->
         <minimumEventLevel>ERROR</minimumEventLevel>
         <!-- Optionally change minimum Breadcrumbs level. Default for Breadcrumbs is INFO -->
@@ -47,6 +43,7 @@
         <root level="info">
             <appender-ref ref="RollingFile" />
             <appender-ref ref="Console" />
+            <appender-ref ref="Sentry" />
         </root>
 
         <!-- log WDS at DEBUG level -->
@@ -65,17 +62,14 @@
     <springProfile name="local">
         <root level="info">
             <appender-ref ref="Console" />
-            <appender-ref ref="Sentry" />
         </root>
 
         <logger name="org.databiosphere.workspacedataservice" level="debug" additivity="false">
             <appender-ref ref="Console" />
-            <appender-ref ref="Sentry" />
         </logger>
 
         <logger name="org.springframework.web" level="debug" additivity="false">
             <appender-ref ref="Console" />
-            <appender-ref ref="Sentry" />
         </logger>
     </springProfile>
 
