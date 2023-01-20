@@ -126,7 +126,6 @@ public class RecordDao {
 	}
 
 	public boolean recordTypeExists(UUID instanceId, RecordType recordType) {
-//		throw new RuntimeException("testing Sentry, unique id: " + UUID.randomUUID().toString());
 		return Boolean.TRUE.equals(namedTemplate.queryForObject(
 				"select exists(select from pg_tables where schemaname = :instanceId AND tablename  = :recordType)",
 				new MapSqlParameterSource(
