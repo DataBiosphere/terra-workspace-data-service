@@ -21,10 +21,10 @@ public class SentryInitializer  {
 	@Value("${git.commit.id.abbrev}")
 	String release;
 
-	@Value("${sentry.env:local}")
-	String env;
+	@Value("${sentry.samurl}")
+	String samurl;
 
-	@Value("${sentry.servername:local-cluster}")
+	@Value("${sentry.servername}")
 	String serverName;
 
 	@Bean
@@ -32,10 +32,22 @@ public class SentryInitializer  {
 		return () ->
         Sentry.init(options -> {
 				options.setDsn(dsn);
-				options.setEnvironment(env);
+				options.setEnvironment(urlToEnv(samurl));
 				options.setServerName(serverName);
 				options.setRelease(release);
 				options.setTag("workspaceId", workspaceId);
 			});
+	}
+
+	String urlToEnv(String samUrl){
+		String env = "dev";
+		if (samUrl != null){
+			int dsde_loc = samUrl.indexOf("dsde-");
+			int broad_loc = samUrl.indexOf(".broad");
+			if (dsde_loc > -1 && broad_loc > -1 && dsde_loc != broad_loc){
+				env = samUrl.substring(dsde_loc+5,broad_loc);
+			}
+		}
+		return env;
 	}
 }
