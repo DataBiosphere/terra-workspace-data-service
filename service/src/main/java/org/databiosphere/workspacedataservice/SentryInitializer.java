@@ -7,6 +7,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 @Configuration
 @PropertySource("classpath:git.properties")
 @PropertySource("classpath:application.properties")
@@ -39,15 +42,30 @@ public class SentryInitializer  {
 			});
 	}
 
-	String urlToEnv(String samUrl){
-		String env = "dev";
-		if (samUrl != null){
-			int dsde_loc = samUrl.indexOf("dsde-");
-			int broad_loc = samUrl.indexOf(".broad");
-			if (dsde_loc > -1 && broad_loc > -1 && dsde_loc != broad_loc){
-				env = samUrl.substring(dsde_loc+5,broad_loc);
-			}
+	private final Pattern SAM_ENV_PATTERN = Pattern.compile("\\.dsde-(\\p{Alnum}+)\\.");
+	private final String DEFAULT_ENV = "unknown";
+
+	/**
+	 * Extracts an environment (e.g. "dev" or "prod") from a Sam url.
+	 * Looks for ".dsde-${env} and returns ${env} if found.
+	 * Also looks for BEEs and returns the bee name if found.
+	 * Else, returns "unknown".
+	 *
+	 * @param samUrl the url to Sam
+	 * @return the environment as parsed from the Sam url
+	 */
+	protected String urlToEnv(String samUrl) {
+		if (samUrl == null) {
+			return DEFAULT_ENV;
 		}
-		return env;
+		Matcher matcher = SAM_ENV_PATTERN.matcher(samUrl);
+		boolean found = matcher.find();
+		if (found) {
+			return matcher.group(1);
+		} else if (samUrl.endsWith("bee.envs-terra.bio")) {
+			return samUrl.split("\\.")[1];
+		} else {
+			return DEFAULT_ENV;
+		}
 	}
 }
