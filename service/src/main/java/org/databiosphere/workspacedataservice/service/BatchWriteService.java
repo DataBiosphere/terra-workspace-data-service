@@ -178,18 +178,8 @@ public class BatchWriteService {
 		return batchWriteTsvStream(recordStream, instanceId, recordType, Optional.of(resolvedPK));
 	}
 
-	/**
-	 * All or nothing, write all the operations successfully in the InputStream or
-	 * write none.
-	 *
-	 * @param is
-	 * @param instanceId
-	 * @param recordType
-	 * @param primaryKey
-	 * @return number of records updated
-	 */
 	@WriteTransaction
-	private int consumeWriteStream(StreamingWriteHandler streamingWriteHandler, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
+	public int consumeWriteStream(StreamingWriteHandler streamingWriteHandler, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		int recordsAffected = 0;
 		try {
 			Map<String, DataTypeMapping> schema = null;
@@ -222,7 +212,7 @@ public class BatchWriteService {
 	 * @param primaryKey
 	 * @return number of records updated
 	 */
-	@Transactional
+	@WriteTransaction
 	public int batchWriteJsonStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		try (StreamingWriteHandler streamingWriteHandler = new JsonStreamWriteHandler(is, objectMapper)) {
 			return consumeWriteStream(streamingWriteHandler, instanceId, recordType, primaryKey);
@@ -231,7 +221,7 @@ public class BatchWriteService {
 		}
 	}
 
-	@Transactional
+	@WriteTransaction
 	public int batchWriteTsvStream(Stream<Record> upsertRecords, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		try (StreamingWriteHandler streamingWriteHandler = new TsvStreamWriteHandler(upsertRecords)) {
 			return consumeWriteStream(streamingWriteHandler, instanceId, recordType, primaryKey);
