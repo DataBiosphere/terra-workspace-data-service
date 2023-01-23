@@ -27,8 +27,11 @@ public class SentryInitializer  {
 	@Value("${sentry.samurl}")
 	String samurl;
 
-	@Value("${sentry.servername}")
-	String serverName;
+	@Value("${sentry.releasename}")
+	String releaseName;
+
+	@Value("${sentry.mrg}")
+	String mrg;
 
 	@Bean
 	public SmartInitializingSingleton initialize() {
@@ -36,14 +39,15 @@ public class SentryInitializer  {
         Sentry.init(options -> {
 				options.setDsn(dsn);
 				options.setEnvironment(urlToEnv(samurl));
-				options.setServerName(serverName);
+				options.setServerName(releaseName);
 				options.setRelease(release);
 				options.setTag("workspaceId", workspaceId);
+				options.setTag("mrg", mrg);
 			});
 	}
 
-	private final Pattern SAM_ENV_PATTERN = Pattern.compile("\\.dsde-(\\p{Alnum}+)\\.");
-	private final String DEFAULT_ENV = "unknown";
+	private static final Pattern SAM_ENV_PATTERN = Pattern.compile("\\.dsde-(\\p{Alnum}+)\\.");
+	private static final String DEFAULT_ENV = "unknown";
 
 	/**
 	 * Extracts an environment (e.g. "dev" or "prod") from a Sam url.

@@ -10,7 +10,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringBootTest
-public class SentryInitializerTest {
+class SentryInitializerTest {
 
     private static Stream<Arguments> provideSamUrls() {
 		/* Arguments are pairs of input Sam URL and expected environment parsed from that URL
