@@ -20,7 +20,7 @@ env:
   GOOGLE_PROJECT: broad-dsp-gcr-public
 
 jobs:
-  publish-job:
+  publish-docker-job:
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -32,6 +32,17 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+      - name: Look for AJ (Analysis Journeys) Jira ID in the commit message
+        id: find-jira-id
+        run: |
+          set +e
+          JIRA_ID=$(echo '${{ github.event.head_commit.message }}' | grep -iEo -m 1 'AJ-[0-9]+' || '')
+          if [[ -z "$JIRA_ID" ]]; then
+            echo ::set-output name=JIRA_ID::"missing"
+          else 
+            echo ::set-output name=JIRA_ID::${JIRA_ID}
+          fi
+          set -e
 
       - name: Set commit short hash
         id: setHash
@@ -92,24 +103,31 @@ jobs:
           docker push --all-tags ${{ steps.acr-image-name.outputs.name }}
           
       - name: Clone Cromwhelm
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: broadinstitute/cromwhelm
           token: ${{ secrets.BROADBOT_TOKEN }} # Has to be set at checkout AND later when pushing to work
           path: cromwhelm
           
-      - name: Update WDS image tag for CBAS Helm Chart in cromwhelm
+      - name: Create Cromwhelm PR for latest WDS version
         env:
           BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
+          GH_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
         run: |
           set -e
+          JIRA_ID=${{ steps.find-jira-id.outputs.JIRA_ID }}
+          if [[ $JIRA_ID == "missing" ]]; then
+            echo "JIRA_ID missing, PR to cromwhelm will not be created"
+            exit 0;
+          fi
           cd cromwhelm
-          git checkout main
           HELM_CUR_TAG=$(grep "/terra-workspace-data-service:" terra-batch-libchart/values.yaml | sed "s,.*/terra-workspace-data-service:,,")
           HELM_NEW_TAG=${{ steps.setHash.outputs.git_short_sha }}
+          git checkout -b ${JIRA_ID}-auto-update-${HELM_NEW_TAG}
           [[ -n "$HELM_CUR_TAG" && -n "$HELM_NEW_TAG" ]]
           sed -i "s/$HELM_CUR_TAG/$HELM_NEW_TAG/" terra-batch-libchart/values.yaml
           git config --global user.name "broadbot"
           git config --global user.email "broadbot@broadinstitute.org"
-          git commit -am "Auto update WDS version to $HELM_NEW_TAG"
-          git push https://broadbot:$BROADBOT_TOKEN@github.com/broadinstitute/cromwhelm.git main
+          git commit -am "${JIRA_ID}: Auto update WDS version to $HELM_NEW_TAG"
+          git push -u origin ${JIRA_ID}-auto-update-${HELM_NEW_TAG}
+          gh pr create --title "${JIRA_ID}: auto update WDS version to $HELM_NEW_TAG" --body "${JIRA_ID} helm chart update" --label "automerge"

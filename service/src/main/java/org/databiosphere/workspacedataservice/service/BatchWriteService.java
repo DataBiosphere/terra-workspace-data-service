@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import bio.terra.common.db.WriteTransaction;
 import com.fasterxml.jackson.core.FormatSchema;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
@@ -139,8 +139,8 @@ public class BatchWriteService {
 		}
 	}
 
-	@Transactional
 	// TODO: could simplify to InputStream argument instead of InputStreamReader
+	@WriteTransaction
 	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) throws IOException {
 		MappingIterator<RecordAttributes> tsvIterator = tsvReader.readValues(is);
 
@@ -178,6 +178,17 @@ public class BatchWriteService {
 		return batchWriteTsvStream(recordStream, instanceId, recordType, Optional.of(resolvedPK));
 	}
 
+	/**
+	 * All or nothing, write all the operations successfully in the InputStream or
+	 * write none.
+	 *
+	 * @param is
+	 * @param instanceId
+	 * @param recordType
+	 * @param primaryKey
+	 * @return number of records updated
+	 */
+	@WriteTransaction
 	private int consumeWriteStream(StreamingWriteHandler streamingWriteHandler, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		int recordsAffected = 0;
 		try {

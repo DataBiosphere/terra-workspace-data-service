@@ -30,13 +30,22 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.lang.NonNull;
+import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.sql.DataSource;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {
+		// this codebase
+		"org.databiosphere.workspacedataservice",
+		// terra-common-lib transaction management and DB retry configuration
+		"bio.terra.common.retry.transaction"
+})
+@EnableRetry
+@EnableTransactionManagement
 @EnableCaching
 public class WorkspaceDataServiceApplication {
 

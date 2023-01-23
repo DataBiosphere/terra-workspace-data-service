@@ -900,6 +900,27 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void deleteRecordWithRelationArray() throws Exception {
+		RecordType referencedType = RecordType.valueOf("ref_participants");
+		RecordType referringType = RecordType.valueOf("ref_samples");
+		createSomeRecords(referencedType, 3);
+		RecordAttributes attributes = RecordAttributes.empty();
+		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(referencedType, "record_" + i)).collect(Collectors.toList());
+		attributes.putAttribute("rel-arr", relArr);
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
+				.andExpect(status().isCreated()).andExpect(jsonPath("$.attributes.rel-arr", is(relArr)));
+
+
+		mockMvc.perform(delete("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				referringType, "record_0")).andExpect(status().isNoContent());
+		mockMvc.perform(get("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
+				referringType, "missing-2")).andExpect(status().isNotFound());
+	}
+
+	@Test
+	@Transactional
 	void deleteRecordType() throws Exception {
 		String recordType = "recordType";
 		createSomeRecords(recordType, 3);
@@ -934,6 +955,26 @@ class RecordControllerMockMvcTest {
 
 		mockMvc.perform(delete("/{instanceId}/types/{version}/{recordType}", instanceId, versionId, referencedType))
 				.andExpect(status().isConflict());
+	}
+
+	@Test
+	@Transactional
+	void deleteRecordTypeWithRelationArray() throws Exception {
+		RecordType referencedType = RecordType.valueOf("ref_participants");
+		RecordType referringType = RecordType.valueOf("ref_samples");
+		createSomeRecords(referencedType, 3);
+		RecordAttributes attributes = RecordAttributes.empty();
+		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(referencedType, "record_" + i)).collect(Collectors.toList());
+		attributes.putAttribute("rel-arr", relArr);
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						referringType, "record_0").contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
+				.andExpect(status().isCreated()).andExpect(jsonPath("$.attributes.rel-arr", is(relArr)));
+
+		mockMvc.perform(delete("/{instanceId}/types/{v}/{type}", instanceId, versionId, referringType))
+				.andExpect(status().isNoContent());
+		mockMvc.perform(get("/{instanceId}/types/{version}/{type}", instanceId, versionId, referringType))
+				.andExpect(status().isNotFound());
 	}
 
 	@Test

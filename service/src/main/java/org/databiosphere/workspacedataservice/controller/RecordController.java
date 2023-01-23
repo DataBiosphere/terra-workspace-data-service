@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import bio.terra.common.db.ReadTransaction;
+import bio.terra.common.db.WriteTransaction;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.csv.CSVPrinter;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
@@ -65,6 +67,7 @@ public class RecordController {
 	}
 
 	@PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
+	@WriteTransaction
 	public ResponseEntity<RecordResponse> updateSingleRecord(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") String recordId, @RequestBody RecordRequest recordRequest) {
@@ -88,6 +91,7 @@ public class RecordController {
 	}
 
 	@GetMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
+	@ReadTransaction
 	public ResponseEntity<RecordResponse> getSingleRecord(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") String recordId) {
@@ -100,6 +104,7 @@ public class RecordController {
 	}
 
 	@PostMapping( "/{instanceId}/tsv/{version}/{recordType}")
+	// N.B. transaction annotated in batchWriteService.uploadTsvStream
 	public ResponseEntity<TsvUploadResponse> tsvUpload(@PathVariable("instanceId") UUID instanceId,
 			   @PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			   @RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey,
@@ -118,6 +123,7 @@ public class RecordController {
 	}
 
 	@GetMapping("/{instanceId}/tsv/{version}/{recordType}")
+	// TODO: enable read transaction
 	public ResponseEntity<StreamingResponseBody> streamAllEntities(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType) {
 		validateVersion(version);
@@ -141,6 +147,7 @@ public class RecordController {
 	}
 
 	@PostMapping("/{instanceid}/search/{version}/{recordType}")
+	@ReadTransaction
 	public RecordQueryResponse queryForRecords(@PathVariable("instanceid") UUID instanceId,
 			@PathVariable("recordType") RecordType recordType,
 			@PathVariable("version") String version,
@@ -174,6 +181,7 @@ public class RecordController {
 	}
 
 	@PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
+	@WriteTransaction
 	public ResponseEntity<RecordResponse> upsertSingleRecord(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") String recordId, @RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey,
@@ -215,6 +223,7 @@ public class RecordController {
 	}
 
 	@PostMapping("/instances/{version}/{instanceId}")
+	@WriteTransaction
 	public ResponseEntity<String> createInstance(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version) {
 		validateVersion(version);
@@ -226,6 +235,7 @@ public class RecordController {
 	}
 
 	@DeleteMapping("/instances/{version}/{instanceId}")
+	@WriteTransaction
 	public ResponseEntity<String> deleteInstance(@PathVariable("instanceId") UUID instanceId,
 												 @PathVariable("version") String version) {
 		validateVersion(version);
@@ -235,6 +245,7 @@ public class RecordController {
 	}
 
 	@DeleteMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
+	@WriteTransaction
 	public ResponseEntity<Void> deleteSingleRecord(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") String recordId) {
@@ -246,6 +257,7 @@ public class RecordController {
 	}
 
 	@DeleteMapping("/{instanceId}/types/{v}/{type}")
+	@WriteTransaction
 	public ResponseEntity<Void> deleteRecordType(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType) {
 		validateVersion(version);
@@ -256,6 +268,7 @@ public class RecordController {
 	}
 
 	@GetMapping("/{instanceId}/types/{v}/{type}")
+	@ReadTransaction
 	public ResponseEntity<RecordTypeSchema> describeRecordType(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType) {
 		validateVersion(version);
@@ -266,6 +279,7 @@ public class RecordController {
 	}
 
 	@GetMapping("/{instanceId}/types/{v}")
+	@ReadTransaction
 	public ResponseEntity<List<RecordTypeSchema>> describeAllRecordTypes(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("v") String version) {
 		validateVersion(version);
@@ -307,6 +321,7 @@ public class RecordController {
 	}
 
 	@PostMapping("/{instanceid}/batch/{v}/{type}")
+	// N.B. transaction annotated in batchWriteService.consumeWriteStream
 	public ResponseEntity<BatchResponse> streamingWrite(@PathVariable("instanceid") UUID instanceId,
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType,
 			@RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey, InputStream is) {

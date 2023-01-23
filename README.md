@@ -89,6 +89,14 @@ From the command line, run
 ```bash
 ./gradlew test
 ```
+To run one test suite, run
+```bash
+./gradlew test --tests '*RecordDaoTest'
+```
+To run a single test, run
+```bash
+./gradlew test --tests '*RecordDaoTest.testGetSingleRecord'
+```
 
 ## Swagger UI
 When running locally, a Swagger UI is available at http://localhost:8080/swagger/swagger-ui.html.
