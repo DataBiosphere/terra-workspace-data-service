@@ -89,10 +89,8 @@ paths:
         $ref: '#/components/requestBodies/RecordRequestBody'
       responses:
         200:
-          description: Record updated
           $ref: '#/components/responses/RecordResponseBody'
         201:
-          description: Record created
           $ref: '#/components/responses/RecordResponseBody'
         400:
           description: Bad request
