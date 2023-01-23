@@ -15,7 +15,7 @@ info:
   termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
   license:
     name: BSD
-    url: http://opensource.org/licenses/BSD-3-Clause
+    url: https://opensource.org/licenses/BSD-3-Clause
 servers:
   - url: ../
     description: Relative to the current swagger page
@@ -32,6 +32,7 @@ paths:
   /status:
     get:
       summary: Gets health status for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#health for details)
+      operationId: statusGet
       tags:
         - General WDS Information
       responses:
@@ -40,6 +41,7 @@ paths:
   /version:
     get:
       summary: Gets related git and build version info for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#info for details)
+      operationId: versionGet
       tags:
         - General WDS Information
       responses:
@@ -87,10 +89,8 @@ paths:
         $ref: '#/components/requestBodies/RecordRequestBody'
       responses:
         200:
-          description: Record updated
           $ref: '#/components/responses/RecordResponseBody'
         201:
-          description: Record created
           $ref: '#/components/responses/RecordResponseBody'
         400:
           description: Bad request
@@ -637,7 +637,6 @@ components:
       properties:
         attributes:
           $ref: '#/components/schemas/RecordAttributes'
-          description: KVPs of record attributes, valid characters for attribute names are limited to letters, numbers, spaces, dashes, and underscores.
     RecordResponse:
       required:
         - id
@@ -647,16 +646,14 @@ components:
       properties:
         id:
           $ref: '#/components/schemas/RecordId'
-          description: Record id
         type:
           $ref: '#/components/schemas/RecordType'
-          description: Record type
         attributes:
           $ref: '#/components/schemas/RecordAttributes'
-          description: KVPs of record attributes
     RecordAttributes:
       type: object
       additionalProperties: true
+      description: KVPs of record attributes, valid characters for attribute names are limited to letters, numbers, spaces, dashes, and underscores.
       example: |
         {
           "stringAttr": "string",
@@ -679,6 +676,7 @@ components:
           description: Attribute name
     RecordId:
       type: string
+      description: Record id
     RecordQueryResponse:
       required:
         - searchRequest
@@ -698,6 +696,7 @@ components:
           description: list of records found
     RecordType:
       type: string
+      description: Record type
     RecordTypeSchema:
       required:
         - name
