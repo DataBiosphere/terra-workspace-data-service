@@ -646,13 +646,10 @@ components:
       properties:
         id:
           $ref: '#/components/schemas/RecordId'
-          description: Record id
         type:
           $ref: '#/components/schemas/RecordType'
-          description: Record type
         attributes:
           $ref: '#/components/schemas/RecordAttributes'
-          description: KVPs of record attributes
     RecordAttributes:
       type: object
       additionalProperties: true
@@ -679,6 +676,7 @@ components:
           description: Attribute name
     RecordId:
       type: string
+      description: Record id
     RecordQueryResponse:
       required:
         - searchRequest
@@ -698,6 +696,7 @@ components:
           description: list of records found
     RecordType:
       type: string
+      description: Record type
     RecordTypeSchema:
       required:
         - name
