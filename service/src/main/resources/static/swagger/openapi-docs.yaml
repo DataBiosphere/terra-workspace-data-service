@@ -15,7 +15,7 @@ info:
   termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
   license:
     name: BSD
-    url: http://opensource.org/licenses/BSD-3-Clause
+    url: https://opensource.org/licenses/BSD-3-Clause
 servers:
   - url: ../
     description: Relative to the current swagger page
