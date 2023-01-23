@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,12 +34,18 @@ public class SentryInitializer  {
 	@Value("${sentry.mrg}")
 	String mrg;
 
+	private static final Pattern SAM_ENV_PATTERN = Pattern.compile("\\.dsde-(\\p{Alnum}+)\\.");
+	private static final String DEFAULT_ENV = "unknown";
+	//Environments we want to monitor on sentry - don't send errors from local or bees
+	private static final List<String> environments = List.of("prod","alpha","staging", "dev", DEFAULT_ENV);
+
 	@Bean
 	public SmartInitializingSingleton initialize() {
+		String env = urlToEnv(samurl);
 		return () ->
         Sentry.init(options -> {
-				options.setDsn(dsn);
-				options.setEnvironment(urlToEnv(samurl));
+				options.setEnvironment(env);
+				options.setDsn(environments.contains(env) ? dsn : "");
 				options.setServerName(releaseName);
 				options.setRelease(release);
 				options.setTag("workspaceId", workspaceId);
@@ -46,8 +53,6 @@ public class SentryInitializer  {
 			});
 	}
 
-	private static final Pattern SAM_ENV_PATTERN = Pattern.compile("\\.dsde-(\\p{Alnum}+)\\.");
-	private static final String DEFAULT_ENV = "unknown";
 
 	/**
 	 * Extracts an environment (e.g. "dev" or "prod") from a Sam url.
