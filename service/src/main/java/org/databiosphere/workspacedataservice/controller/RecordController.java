@@ -118,8 +118,12 @@ public class RecordController {
 		try (InputStreamReader inputStreamReader = new InputStreamReader(records.getInputStream())) {
 			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType, primaryKey);
 		}
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.add(HttpHeaders.CONNECTION, "close");
+
 		return new ResponseEntity<>(new TsvUploadResponse(recordsModified, "Updated " + recordType.toString()),
-				HttpStatus.OK);
+				headers, HttpStatus.OK);
 	}
 
 	@GetMapping("/{instanceId}/tsv/{version}/{recordType}")
