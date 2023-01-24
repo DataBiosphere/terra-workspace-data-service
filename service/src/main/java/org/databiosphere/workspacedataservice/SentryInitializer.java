@@ -71,8 +71,6 @@ public class SentryInitializer  {
 		boolean found = matcher.find();
 		if (found) {
 			return matcher.group(1);
-		} else if (samUrl.endsWith("bee.envs-terra.bio")) {
-			return samUrl.split("\\.")[1];
 		} else {
 			return DEFAULT_ENV;
 		}
