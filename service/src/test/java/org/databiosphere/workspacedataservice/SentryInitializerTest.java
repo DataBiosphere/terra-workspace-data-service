@@ -20,7 +20,7 @@ class SentryInitializerTest {
                 Arguments.of("https://sam.dsde-staging.broadinstitute.org", "staging"),
                 Arguments.of("https://sam.dsde-alpha.broadinstitute.org", "alpha"),
                 Arguments.of("https://sam.dsde-dev.broadinstitute.org", "dev"),
-                Arguments.of("https://sam.bee-fancy-generated-name.bee.envs-terra.bio", "bee-fancy-generated-name"),
+                Arguments.of("https://sam.bee-fancy-generated-name.bee.envs-terra.bio", "unknown"),
                 Arguments.of("UNDEFINED", "unknown"),
                 Arguments.of("", "unknown"),
                 Arguments.of("null", "unknown"),
