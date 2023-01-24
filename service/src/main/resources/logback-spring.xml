@@ -10,6 +10,12 @@
         </layout>
     </appender>
 
+    <appender name="Sentry" class="io.sentry.logback.SentryAppender">
+        <!-- Optionally change minimum Event level. Default for Events is ERROR -->
+        <minimumEventLevel>ERROR</minimumEventLevel>
+        <!-- Optionally change minimum Breadcrumbs level. Default for Breadcrumbs is INFO -->
+        <minimumBreadcrumbLevel>INFO</minimumBreadcrumbLevel>
+    </appender>
 
     <springProfile name="!local">
         <property name="LOGS" value="./logs" />
@@ -37,18 +43,21 @@
         <root level="info">
             <appender-ref ref="RollingFile" />
             <appender-ref ref="Console" />
+            <appender-ref ref="Sentry" />
         </root>
 
         <!-- log WDS at DEBUG level -->
         <logger name="org.databiosphere.workspacedataservice" level="debug" additivity="false">
             <appender-ref ref="RollingFile" />
             <appender-ref ref="Console" />
+            <appender-ref ref="Sentry" />
         </logger>
 
         <!-- log org.springframework.web at DEBUG level -->
         <logger name="org.springframework.web" level="debug" additivity="false">
             <appender-ref ref="RollingFile" />
             <appender-ref ref="Console" />
+            <appender-ref ref="Sentry" />
         </logger>
     </springProfile>
 
