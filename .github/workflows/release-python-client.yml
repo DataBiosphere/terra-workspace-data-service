@@ -23,9 +23,10 @@ jobs:
         with:
           python-version: 3.7
       - name: Use Node.js ${{matrix.node-version }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: 18
+          cache: 'npm'
       - name: Install openapi-generator-cli
         run: npm install @openapitools/openapi-generator-cli -g
       - name: set version to 4.3.1
