@@ -221,6 +221,15 @@ public class RecordController {
 		}
 	}
 
+	@GetMapping("/instances/{version}")
+	@ReadTransaction
+	public ResponseEntity<List<UUID>> listInstances(@PathVariable("version") String version) {
+		validateVersion(version);
+		List<UUID> schemaList = recordDao.listInstanceSchemas();
+		return new ResponseEntity<>(schemaList, HttpStatus.OK);
+	}
+
+
 	@PostMapping("/instances/{version}/{instanceId}")
 	@WriteTransaction
 	public ResponseEntity<String> createInstance(@PathVariable("instanceId") UUID instanceId,

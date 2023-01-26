@@ -81,6 +81,9 @@ public class RecordDao {
 	private final ObjectMapper objectMapper;
 	private final CachedQueryDao cachedQueryDao;
 
+	@Value("${spring.datasource.username}")
+	private String wdsDbUser;
+
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
 					 @Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf, ObjectMapper objectMapper, CachedQueryDao cachedQueryDao,
 					 @Value("${twds.instance.workspace-id}") String workspaceId) {
@@ -113,6 +116,14 @@ public class RecordDao {
 		return Boolean.TRUE.equals(namedTemplate.queryForObject(
 				"select exists(select from information_schema.schemata WHERE schema_name = :workspaceSchema)",
 				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), Boolean.class));
+	}
+
+	public List<UUID> listInstanceSchemas() {
+		List<String> schemas = namedTemplate.getJdbcTemplate()
+				.queryForList("select schema_name from information_schema.schemata " +
+						"where schema_owner = ? order by schema_name",
+						String.class, wdsDbUser);
+		return schemas.stream().map(UUID::fromString).toList();
 	}
 
 	public void createSchema(UUID instanceId) {
