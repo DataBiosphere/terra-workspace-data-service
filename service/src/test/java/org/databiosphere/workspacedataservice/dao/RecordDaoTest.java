@@ -148,6 +148,17 @@ class RecordDaoTest {
 	}
 
 	@Test
+	void listNonUuidInstances() {
+		List<UUID> initialInstances = recordDao.listInstanceSchemas();
+		namedTemplate.getJdbcTemplate().update("create schema if not exists notAUuid");
+		List<UUID> testableInstances = recordDao.listInstanceSchemas(); // should not throw
+		// second call should filter out the non-uuid
+		assertIterableEquals(initialInstances, testableInstances);
+		// cleanup
+		namedTemplate.getJdbcTemplate().update("drop schema if exists notAUuid");
+	}
+
+	@Test
 	void workspaceIDNotProvidedNoExceptionThrown() {
 		assertDoesNotThrow(() -> new RecordDao(namedTemplate, templateForStreaming, dataTypeInferer, objectMapper, cachedQueryDao, "UNDEFINED"));
 	}
