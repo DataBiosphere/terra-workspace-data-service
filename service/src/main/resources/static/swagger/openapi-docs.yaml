@@ -271,6 +271,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BatchResponse'
+  /instances/{v}:
+    get:
+      summary: List instances
+      description: List all instances in this server.
+      operationId: listWDSInstances
+      tags:
+        - Instances
+      parameters:
+        - $ref: '#/components/parameters/versionPathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+
   /instances/{v}/{instanceid}:
     post:
       summary: Create an instance

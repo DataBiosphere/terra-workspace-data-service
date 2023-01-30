@@ -81,6 +81,9 @@ public class RecordDao {
 	private final ObjectMapper objectMapper;
 	private final CachedQueryDao cachedQueryDao;
 
+	@Value("${spring.datasource.username}")
+	private String wdsDbUser;
+
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
 					 @Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf, ObjectMapper objectMapper, CachedQueryDao cachedQueryDao,
 					 @Value("${twds.instance.workspace-id}") String workspaceId) {
@@ -113,6 +116,25 @@ public class RecordDao {
 		return Boolean.TRUE.equals(namedTemplate.queryForObject(
 				"select exists(select from information_schema.schemata WHERE schema_name = :workspaceSchema)",
 				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), Boolean.class));
+	}
+
+	private UUID safeParseUUID(String input) {
+		try {
+			return UUID.fromString(input);
+		} catch (IllegalArgumentException iae) {
+			LOGGER.warn("Found unexpected schema name while listing schemas: [{}]", input);
+			return null;
+		}
+	}
+
+	public List<UUID> listInstanceSchemas() {
+		List<String> schemas = namedTemplate.getJdbcTemplate()
+				.queryForList("select schema_name from information_schema.schemata " +
+						"where schema_owner = ? order by schema_name",
+						String.class, wdsDbUser);
+		// WDS only allows creation of schemas that are UUIDs
+		return schemas.stream().map(s -> safeParseUUID(s))
+				.filter(Objects::nonNull).toList();
 	}
 
 	public void createSchema(UUID instanceId) {

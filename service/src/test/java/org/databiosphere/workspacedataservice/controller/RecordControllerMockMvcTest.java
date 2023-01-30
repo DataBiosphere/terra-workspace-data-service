@@ -47,6 +47,7 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -87,6 +88,30 @@ class RecordControllerMockMvcTest {
 		UUID uuid = UUID.randomUUID();
 		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isCreated());
 		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isConflict());
+	}
+
+	@Test
+	void listInstances() throws Exception {
+		// get initial instance list
+		MvcResult initialResult = mockMvc.perform(get("/instances/{version}", versionId)).andExpect(status().isOk())
+				.andReturn();
+		UUID[] initialInstances = mapper.readValue(initialResult.getResponse().getContentAsString(), UUID[].class);
+		// create new uuid; new uuid should not be in our initial instance list
+		UUID uuid = UUID.randomUUID();
+		assertFalse(Arrays.asList(initialInstances).contains(uuid),
+				"initial instance list should not contain brand new UUID");
+		// create a new instance from the new uuid
+		mockMvc.perform(post("/instances/{version}/{instanceId}", versionId, uuid)).andExpect(status().isCreated());
+		// get instance list again
+		MvcResult afterCreationResult = mockMvc.perform(get("/instances/{version}", versionId)).andExpect(status().isOk())
+				.andReturn();
+		UUID[] afterCreationInstances = mapper.readValue(afterCreationResult.getResponse().getContentAsString(), UUID[].class);
+		// new uuid should be in our initial instance list
+		assertTrue(Arrays.asList(afterCreationInstances).contains(uuid),
+				"after-creation instance list should contain brand new UUID");
+
+		assertEquals(initialInstances.length + 1, afterCreationInstances.length,
+				"size of after-creation list should be equal to the initial size plus one");
 	}
 
 	@Test
