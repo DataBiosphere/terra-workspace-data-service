@@ -20,15 +20,20 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import javax.sql.DataSource;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -85,6 +90,72 @@ class RecordDaoTest {
 		LOGGER.info("Default workspace id loaded as {}", workspaceId);
 		UUID defaultInstanceId = UUID.fromString(workspaceId);
 		assertTrue(recordDao.instanceSchemaExists(defaultInstanceId));
+	}
+
+	/**
+	 * This test is somewhat fuzzy. Because we use a persistent db for our unit tests,
+	 * and because other tests in this codebase don't properly clean up their instances
+	 * and/or human users don't clean up their instances, we can't effectively test
+	 * the exact value that should be returned from list-instances. But we can test
+	 * that the return value changes in the ways we expect when we create/delete instances.
+	 */
+	@Test
+	void listInstances() {
+		// get the list of instances in this DB
+		List<UUID> actualInitialSchemas = recordDao.listInstanceSchemas();
+
+		// check that the default schema exists - see also defaultSchemaIsCreated() above
+		UUID defaultInstanceId = UUID.fromString(workspaceId);
+		assertTrue(actualInitialSchemas.contains(defaultInstanceId),
+				"initial schema list should contain default instance");
+
+		// generate some new UUIDs
+		List<UUID> someInstancesToCreate = IntStream.range(0, 5)
+				.mapToObj(i -> UUID.randomUUID())
+				.toList();
+
+		// check that the new UUIDs do not exist in our instances list yet.
+		someInstancesToCreate.forEach( inst ->
+				assertFalse(actualInitialSchemas.contains(inst),
+						"initial schema list should not contain brand new UUIDs"));
+
+		// create the instances
+		someInstancesToCreate.forEach( inst ->
+				recordDao.createSchema(inst));
+
+		// get the list of instances again
+		List<UUID> actualSchemasAfterCreation = recordDao.listInstanceSchemas();
+
+		// check that the new UUIDs do exist in our instances list.
+		someInstancesToCreate.forEach( inst ->
+				assertTrue(actualSchemasAfterCreation.contains(inst),
+						"schema list after creation step should contain the new UUIDs"));
+
+		// delete the new instances
+		someInstancesToCreate.forEach( inst ->
+				recordDao.dropSchema(inst));
+
+		// get the list of instances again
+		List<UUID> actualSchemasAfterDeletion = recordDao.listInstanceSchemas();
+
+		// check that the new UUIDs do not exist in our instances list, now that we've deleted them
+		someInstancesToCreate.forEach( inst ->
+				assertFalse(actualSchemasAfterDeletion.contains(inst),
+						"schema list after deletion step should not contain the new UUIDs"));
+
+		// at this point, the "after deletion" list and the "initial" list should be the same
+		assertIterableEquals(actualInitialSchemas, actualSchemasAfterDeletion);
+	}
+
+	@Test
+	void listNonUuidInstances() {
+		List<UUID> initialInstances = recordDao.listInstanceSchemas();
+		namedTemplate.getJdbcTemplate().update("create schema if not exists notAUuid");
+		List<UUID> testableInstances = recordDao.listInstanceSchemas(); // should not throw
+		// second call should filter out the non-uuid
+		assertIterableEquals(initialInstances, testableInstances);
+		// cleanup
+		namedTemplate.getJdbcTemplate().update("drop schema if exists notAUuid");
 	}
 
 	@Test
