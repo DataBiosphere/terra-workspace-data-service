@@ -647,51 +647,6 @@ class RecordDaoTest {
 		assertDoesNotThrow(() -> recordDao.insertIntoJoin(instanceId, arrayRelation, relationArrayType, List.of(new RelationValue(record, referencedRecord), new RelationValue(record, referencedRecord2))));
 		assertEquals(List.of(refRecordId, refRecordId2), getRelationArrayValues(instanceId, "relArrAttr", record, recordType));
 	}
-
-	@Test
-	@Transactional
-	void testUpdateRecordWithRelationArray() {
-		// add some records to be relations
-		String refRecordId = "referencedRecord1";
-		Record referencedRecord = new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
-		String refRecordId2 = "referencedRecord2";
-		Record referencedRecord2 = new Record(refRecordId2, recordType, new RecordAttributes(Map.of("foo", "bar2")));
-		String refRecordId3 = "referencedRecord3";
-		Record referencedRecord3 = new Record(refRecordId3, recordType, new RecordAttributes(Map.of("foo", "bar3")));
-		recordDao.batchUpsert(instanceId, recordType, List.of(referencedRecord, referencedRecord2, referencedRecord3), new HashMap<>());
-
-		//Create record type
-		RecordType relationArrayType = RecordType.valueOf("relationArrayType");
-		Relation arrayRelation = new Relation("relArrAttr", recordType);
-		Map<String, DataTypeMapping> schema = Map.of("stringAttr", DataTypeMapping.STRING, "refAttr", DataTypeMapping.RELATION, "relArrAttr", DataTypeMapping.ARRAY_OF_RELATION);
-		recordDao.createRecordType(instanceId, schema, relationArrayType,
-				new RelationCollection(Collections.emptySet(), Set.of(arrayRelation)), RECORD_ID);
-
-		//Create record with relation array
-		String relArrId = "recordWithRelationArr";
-		List<String> relArr = List.of(RelationUtils.createRelationString(recordType, refRecordId), RelationUtils.createRelationString(recordType, refRecordId2));
-		Record recordWithRelationArray = new Record(relArrId, relationArrayType, new RecordAttributes(Map.of("relArrAttr", relArr)));
-		recordDao.batchUpsert(instanceId, relationArrayType, Collections.singletonList(recordWithRelationArray), schema);
-
-		//This is normally called at the service level, need to do manually here
-		recordDao.insertIntoJoin(instanceId, arrayRelation, relationArrayType, List.of(new RelationValue(recordWithRelationArray, referencedRecord), new RelationValue(recordWithRelationArray, referencedRecord2)));
-
-		//Update relation array
-		relArr = List.of(RelationUtils.createRelationString(recordType, refRecordId), RelationUtils.createRelationString(recordType, refRecordId3));
-		recordWithRelationArray = new Record(relArrId, relationArrayType, new RecordAttributes(Map.of("relArrAttr", relArr)));
-		recordDao.batchUpsert(instanceId, relationArrayType, Collections.singletonList(recordWithRelationArray), schema);
-
-		//Relation array values should have been updated
-		Record record = recordDao.getSingleRecord(instanceId, relationArrayType, relArrId).get();
-		assertNotNull(record);
-		String[] actualAttrValue = assertInstanceOf(String[].class, record.getAttributeValue("relArrAttr"));
-		assertIterableEquals(relArr, Arrays.asList(actualAttrValue));
-
-		//Join table should have been updated as well
-
-
-	}
-
 	@Test
 	@Transactional
 	void testGetRelationArrayColumns(){
@@ -706,6 +661,58 @@ class RecordDaoTest {
 		assertEquals(2, cols.size());
 		assertTrue(cols.contains(arrayRelation1));
 		assertTrue(cols.contains(arrayRelation2));
+	}
+
+	@Test
+	@Transactional
+	void testRemoveFromJoin() {
+		//create records to reference in join table
+		String fromRecordId = "fromRecord1";
+		Record fromRecord = new Record(fromRecordId, recordType, new RecordAttributes(new HashMap<>()));
+		String fromRecordId2 = "fromRecord2";
+		Record fromRecord2 = new Record(fromRecordId2, recordType, new RecordAttributes(new HashMap<>()));
+		String fromRecordId3 = "fromRecord3";
+		Record fromRecord3 = new Record(fromRecordId3, recordType, new RecordAttributes(new HashMap<>()));
+		recordDao.batchUpsert(instanceId, recordType, List.of(fromRecord, fromRecord2, fromRecord3), new HashMap<>());
+
+		RecordType toType = RecordType.valueOf("toType");
+		recordDao.createRecordType(instanceId, new HashMap<>(), toType,
+				new RelationCollection(Collections.emptySet(), Collections.emptySet()), RECORD_ID);
+		String toRecordId = "toRecord1";
+		Record toRecord = new Record(toRecordId, toType, new RecordAttributes(new HashMap<>()));
+		String toRecordId2 = "toRecord2";
+		Record toRecord2 = new Record(toRecordId2, toType, new RecordAttributes(new HashMap<>()));
+		recordDao.batchUpsert(instanceId, toType, List.of(toRecord, toRecord2), new HashMap<>());
+
+		//create join table
+		recordDao.createRelationJoinTable(instanceId, "referenceArray", recordType, toType);
+
+		//insert into join table
+		Relation rel = new Relation("referenceArray", toType);
+		recordDao.insertIntoJoin(instanceId, rel, recordType, List.of(
+				new RelationValue(fromRecord, toRecord),new RelationValue(fromRecord, toRecord2),
+				new RelationValue(fromRecord2, toRecord),new RelationValue(fromRecord2, toRecord2),
+				new RelationValue(fromRecord3, toRecord),new RelationValue(fromRecord3, toRecord2)));
+
+		//Check that values are in join table
+		List<String> joinVals1 = getRelationArrayValues(instanceId, "referenceArray", fromRecord, toType);
+		assertIterableEquals(List.of(toRecordId, toRecordId2), joinVals1);
+		List<String> joinVals2 = getRelationArrayValues(instanceId, "referenceArray", fromRecord2, toType);
+		assertIterableEquals(List.of(toRecordId, toRecordId2), joinVals2);
+		List<String> joinVals3 = getRelationArrayValues(instanceId, "referenceArray", fromRecord3, toType);
+		assertIterableEquals(List.of(toRecordId, toRecordId2), joinVals3);
+
+		//remove from join table
+		recordDao.removeFromJoin(instanceId, rel, recordType, List.of(fromRecordId, fromRecordId3));
+
+		//Make sure values have been removed
+		joinVals1 = getRelationArrayValues(instanceId, "referenceArray", fromRecord, toType);
+		assert(joinVals1.isEmpty());
+		joinVals3 = getRelationArrayValues(instanceId, "referenceArray", fromRecord3, toType);
+		assert(joinVals3.isEmpty());
+		//But not other values
+		joinVals2 = getRelationArrayValues(instanceId, "referenceArray", fromRecord2, toType);
+		assertIterableEquals(List.of(toRecordId, toRecordId2), joinVals2);
 	}
 
 	//Helper Methods
@@ -725,4 +732,5 @@ class RecordDaoTest {
 						+ "\"" + recordDao.getFromColumnName(record.getRecordType()) + "\" = :recordId",
 				new MapSqlParameterSource("recordId", record.getId()), String.class);
 	}
+
 }

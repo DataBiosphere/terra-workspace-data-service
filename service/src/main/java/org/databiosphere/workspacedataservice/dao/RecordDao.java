@@ -350,6 +350,11 @@ public class RecordDao {
 		}
 	}
 
+	public void removeFromJoin(UUID instanceId, Relation column, RecordType fromType, List<String> recordIds){
+			namedTemplate.update("delete from " + getQualifiedJoinTableName(instanceId, column.relationColName(), fromType) + " where "
+					+ quote(getFromColumnName(fromType)) + "in (:recordIds)", new MapSqlParameterSource("recordIds", recordIds));
+	}
+
 	public void batchUpsert(UUID instanceId, RecordType recordType, List<Record> records,
 							Map<String, DataTypeMapping> schema){
 		batchUpsert(instanceId, recordType, records, schema, cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId));

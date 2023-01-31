@@ -2,10 +2,9 @@ package org.databiosphere.workspacedataservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.TestUtils;
+import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
-import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -25,6 +24,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
@@ -34,22 +35,15 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -64,6 +58,14 @@ class RecordControllerMockMvcTest {
 	private static UUID instanceId;
 
 	private static String versionId = "v0.2";
+
+	//TODO: a better way to do this?
+	@Autowired
+	NamedParameterJdbcTemplate namedTemplate;
+
+	@Autowired
+	RecordDao recordDao;
+
 
 	@BeforeEach
 	void beforeEach() throws Exception {
@@ -1330,4 +1332,132 @@ class RecordControllerMockMvcTest {
 		assertEquals(datetimeString, actualMulti.records().get(0).recordAttributes().getAttributeValue("datetimeAttr"));
 	}
 
+	@Test
+	@Transactional
+	void testUpdateRecordWithRelationArray() throws Exception {
+		// add some records to be relations
+		RecordType recordType = RecordType.valueOf("referencedRecords");
+		createSomeRecords(recordType, 3);
+
+		//Create record with relation array
+		RecordType relationArrayType = RecordType.valueOf("relationArrayType");
+		String relArrId = "recordWithRelationArr";
+		List<String> relArr = List.of(RelationUtils.createRelationString(recordType, "record_0"), RelationUtils.createRelationString(recordType, "record_1"));
+		Record recordWithRelationArray = new Record(relArrId, relationArrayType, new RecordAttributes(Map.of("relArrAttr", relArr)));
+		RecordAttributes relAttr = new RecordAttributes(Map.of("relArrAttr", relArr));
+		mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+						relationArrayType, relArrId).contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(relAttr))))
+				.andExpect(status().isCreated()).andExpect(jsonPath("$.attributes.relArrAttr", is(relArr)));
+
+		//Update relation array
+		relArr = List.of(RelationUtils.createRelationString(recordType, "record_0"), RelationUtils.createRelationString(recordType, "record_2"));
+		relAttr = new RecordAttributes(Map.of("relArrAttr", relArr));
+		mockMvc.perform(patch("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
+						relationArrayType, relArrId).contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(relAttr))))
+				.andExpect(content().string(containsString(RelationUtils.createRelationString(recordType, "record_2"))))
+				.andExpect(content().string(not(containsString(RelationUtils.createRelationString(recordType, "record_1"))))).andExpect(status().isOk());
+
+
+		MockHttpServletResponse res = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				relationArrayType, relArrId)).andExpect(status().isOk()).andReturn().getResponse();
+		RecordResponse recordResponse = mapper.readValue(res.getContentAsString(), RecordResponse.class);
+		List<String> actualAttrValue = assertInstanceOf(List.class, recordResponse.recordAttributes().getAttributeValue("relArrAttr"));
+		assertIterableEquals(relArr, actualAttrValue);
+
+		//TODO: a better way to check join table?
+		//Join table should have been updated
+		List<String> joinVals = getRelationArrayValues(instanceId, "relArrAttr", recordWithRelationArray, recordType);
+		assertIterableEquals(List.of("record_0", "record_2"), joinVals);
+	}
+
+	//Note: this test is not transactional so that I can make further calls to the DB
+	// After the patch call has already thrown an exception
+	@Test
+	void testUpdateRelationArrayWithInvalidRecord() throws Exception {
+		// add some records to be relations
+		RecordType recordType = RecordType.valueOf("referencedRecords");
+		createSomeRecords(recordType, 2);
+
+		//Create record with relation array
+		RecordType relationArrayType = RecordType.valueOf("relationArrayType");
+		String relArrId = "recordWithRelationArr";
+		List<String> relArr = List.of(RelationUtils.createRelationString(recordType, "record_0"), RelationUtils.createRelationString(recordType, "record_1"));
+		Record recordWithRelationArray = new Record(relArrId, relationArrayType, new RecordAttributes(Map.of("relArrAttr", relArr)));
+		RecordAttributes relAttr = new RecordAttributes(Map.of("relArrAttr", relArr));
+			mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+								relationArrayType, relArrId).contentType(MediaType.APPLICATION_JSON)
+							.content(mapper.writeValueAsString(new RecordRequest(relAttr))))
+				.andExpect(status().isCreated()).andExpect(jsonPath("$.attributes.relArrAttr", is(relArr)));
+
+		//Update relation array with invalid record
+		List<String> incorrectArr = List.of(RelationUtils.createRelationString(recordType, "record_0"), RelationUtils.createRelationString(recordType, "invalidId"));
+		RecordAttributes incorrectRelAttr = new RecordAttributes(Map.of("relArrAttr", incorrectArr));
+		mockMvc.perform(patch("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
+							  relationArrayType, relArrId).contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(new RecordRequest(incorrectRelAttr))))
+						.andExpect(status().isForbidden());
+
+		//Record should not have been updated
+		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				relationArrayType, relArrId)).andExpect(status().isOk());
+		MockHttpServletResponse res = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				relationArrayType, relArrId)).andExpect(status().isOk()).andReturn().getResponse();
+		RecordResponse recordResponse = mapper.readValue(res.getContentAsString(), RecordResponse.class);
+		List<String> actualAttrValue = assertInstanceOf(List.class, recordResponse.recordAttributes().getAttributeValue("relArrAttr"));
+		assertIterableEquals(relArr, actualAttrValue);
+
+		//Join table should not have been updated
+		List<String> joinVals = getRelationArrayValues(instanceId, "relArrAttr", recordWithRelationArray, recordType);
+		assertIterableEquals(List.of("record_0", "record_1"), joinVals);
+	}
+
+	@Test
+	@Transactional
+	void testUpdateRelationArrayWithMismatchedType() throws Exception{
+		// add some records to be relations
+		RecordType recordType = RecordType.valueOf("referencedRecords");
+		createSomeRecords(recordType, 3);
+
+		RecordType secondType = RecordType.valueOf("secondReference");
+		createSomeRecords(secondType, 1);
+
+		//Create record with relation array
+		RecordType relationArrayType = RecordType.valueOf("relationArrayType");
+		String relArrId = "recordWithRelationArr";
+		List<String> relArr = List.of(RelationUtils.createRelationString(recordType, "record_1"), RelationUtils.createRelationString(recordType, "record_2"));
+		Record recordWithRelationArray = new Record(relArrId, relationArrayType, new RecordAttributes(Map.of("relArrAttr", relArr)));
+		RecordAttributes relAttr = new RecordAttributes(Map.of("relArrAttr", relArr));
+				mockMvc.perform(put("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+									relationArrayType, relArrId).contentType(MediaType.APPLICATION_JSON)
+								.content(mapper.writeValueAsString(new RecordRequest(relAttr))))
+				.andExpect(status().isCreated()).andExpect(jsonPath("$.attributes.relArrAttr", is(relArr)));
+
+		//Update relation array with mismatched record type
+		List<String> incorrectArr = List.of(RelationUtils.createRelationString(recordType, "record_0"), RelationUtils.createRelationString(secondType, "record_0"));
+		RecordAttributes incorrectRelAttr = new RecordAttributes(Map.of("relArrAttr", incorrectArr));
+			mockMvc.perform(patch("/{instanceId}/records/{versionId}/{recordType}/{recordId}", instanceId, versionId,
+								  relationArrayType, relArrId).contentType(MediaType.APPLICATION_JSON)
+							.content(mapper.writeValueAsString(new RecordRequest(incorrectRelAttr))))
+				.andExpect(status().isForbidden());
+
+		//Record should not have been updated
+		MockHttpServletResponse res = mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
+				relationArrayType, relArrId)).andExpect(status().isOk()).andReturn().getResponse();
+		RecordResponse recordResponse = mapper.readValue(res.getContentAsString(), RecordResponse.class);
+		List<String> actualAttrValue = assertInstanceOf(List.class, recordResponse.recordAttributes().getAttributeValue("relArrAttr"));
+		assertIterableEquals(relArr, actualAttrValue);
+
+		List<String> joinVals = getRelationArrayValues(instanceId, "relArrAttr", recordWithRelationArray, recordType);
+		assertIterableEquals(List.of("record_1", "record_2"), joinVals);
+	}
+
+	//TODO: A better way to do this?
+	private List<String> getRelationArrayValues(UUID instanceId, String columnName, Record record, RecordType toRecordType) {
+		return namedTemplate.queryForList(
+				"select \"" + recordDao.getToColumnName(toRecordType) + "\" from " + recordDao.getQualifiedJoinTableName(instanceId, columnName, record.getRecordType()) + " where "
+						+ "\"" + recordDao.getFromColumnName(record.getRecordType()) + "\" = :recordId",
+				new MapSqlParameterSource("recordId", record.getId()), String.class);
+	}
 }
