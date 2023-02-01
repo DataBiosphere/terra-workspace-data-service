@@ -300,7 +300,9 @@ public class RecordController {
 
 	private RecordTypeSchema getSchemaDescription(UUID instanceId, RecordType recordType) {
 		Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchema(instanceId, recordType);
-		Map<String, RecordType> relations = recordDao.getRelationCols(instanceId, recordType).stream()
+		List<Relation> relationCols = recordDao.getRelationArrayCols(instanceId, recordType);
+		relationCols.addAll(recordDao.getRelationCols(instanceId, recordType));
+		Map<String, RecordType> relations = relationCols.stream()
 				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
 		List<AttributeSchema> attrSchema = schema.entrySet().stream().sorted(Map.Entry.comparingByKey())
 				.map(entry -> createAttributeSchema(entry.getKey(), entry.getValue(), relations.get(entry.getKey())))
@@ -313,7 +315,7 @@ public class RecordController {
 		if (relation == null) {
 			return new AttributeSchema(name, datatype.toString(), null);
 		}
-		return new AttributeSchema(name, "RELATION", relation);
+		return new AttributeSchema(name, datatype.toString() == "STRING" ? "RELATION" : "ARRAY_OF_RELATION", relation);
 	}
 
 	private static void validateVersion(String version) {
