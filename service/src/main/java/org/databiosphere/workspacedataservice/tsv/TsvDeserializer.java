@@ -79,9 +79,6 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
     public Object nodeToObject(JsonNode node) {
         // TSVs deserialize to Strings
         if (node instanceof TextNode textNode) {
-            if (StringUtils.isEmpty(textNode.textValue())) {
-                return null;
-            }
             return cellToAttribute(textNode.textValue());
         }
         if (node instanceof NullNode) {
@@ -102,7 +99,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
      */
     public Object cellToAttribute(String val) {
         // nulls
-        if (Objects.isNull(val)) {
+        if (Objects.isNull(val) || StringUtils.isEmpty(val)) {
             return null;
         }
         // quoted values: always return as string. This only comes into play when processing array elements;
