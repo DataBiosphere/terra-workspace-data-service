@@ -1029,13 +1029,14 @@ class RecordControllerMockMvcTest {
 	@Transactional
 	void describeType() throws Exception {
 		RecordType type = RecordType.valueOf("recordType");
-		createSomeRecords(type, 1);
 
 		RecordType referencedType = RecordType.valueOf("referencedType");
-		createSomeRecords(referencedType, 1);
+		createSomeRecords(referencedType, 3);
 		createSomeRecords(type, 1);
 		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, "record_0");
+		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(referencedType, "record_" + i)).collect(Collectors.toList());
+		attributes.putAttribute("array-of-relation", relArr);
 		attributes.putAttribute("attr-ref", ref);
 
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, type,
@@ -1046,6 +1047,7 @@ class RecordControllerMockMvcTest {
 		List<AttributeSchema> expectedAttributes = Arrays.asList(
 				new AttributeSchema("array-of-date", "ARRAY_OF_DATE", null),
 				new AttributeSchema("array-of-datetime", "ARRAY_OF_DATE_TIME", null),
+				new AttributeSchema("array-of-relation", "ARRAY_OF_RELATION", referencedType),
 				new AttributeSchema("array-of-string", "ARRAY_OF_STRING", null),
 				new AttributeSchema("attr-boolean", "BOOLEAN", null),
 				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
@@ -1329,48 +1331,4 @@ class RecordControllerMockMvcTest {
 				RecordQueryResponse.class);
 		assertEquals(datetimeString, actualMulti.records().get(0).recordAttributes().getAttributeValue("datetimeAttr"));
 	}
-
-	@Test
-	@Transactional
-	void testDescribeSchema() throws Exception {
-		//Will need some records to be referenced for relations
-		RecordType typeForRelations = RecordType.valueOf("typeForRelations");
-		createSomeRecords(typeForRelations, 3);
-		//First create a record and type
-		RecordType testType = RecordType.valueOf("testType");
-		createSomeRecords(testType, 1);
-		//Add relations to record
-		RecordAttributes attributes = RecordAttributes.empty();
-		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(typeForRelations, "record_" + i)).collect(Collectors.toList());
-		attributes.putAttribute("array-of-relation", relArr);
-		attributes.putAttribute("attr-rel", RelationUtils.createRelationString(typeForRelations, "record_1"));
-		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
-						testType, "record_0").contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(new RecordRequest(attributes))))
-				.andExpect(status().isOk());
-
-		//Check schema
-		MvcResult schemaResult = mockMvc.perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, testType))
-				.andReturn();
-		RecordTypeSchema schema = mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
-		assertEquals(DataTypeMapping.ARRAY_OF_DATE.toString(), schema.attributes().get(0).datatype()); //array-of-date
-		assertEquals(DataTypeMapping.ARRAY_OF_DATE_TIME.toString(), schema.attributes().get(1).datatype()); //array-of-datetime
-		assertEquals(DataTypeMapping.ARRAY_OF_RELATION.toString(), schema.attributes().get(2).datatype()); //array-of-relation
-		assertEquals(typeForRelations, schema.attributes().get(2).relatesTo()); //array-of-relation
-		assertEquals(DataTypeMapping.ARRAY_OF_STRING.toString(), schema.attributes().get(3).datatype()); //array-of-string
-		assertEquals(DataTypeMapping.BOOLEAN.toString(), schema.attributes().get(4).datatype()); //attr-boolean
-		assertEquals(DataTypeMapping.DATE_TIME.toString(), schema.attributes().get(5).datatype()); //attr-dt
-		assertEquals(DataTypeMapping.JSON.toString(), schema.attributes().get(6).datatype()); //attr-json
-		assertEquals(DataTypeMapping.RELATION.toString(), schema.attributes().get(7).datatype()); //attr-rel
-		assertEquals(typeForRelations, schema.attributes().get(7).relatesTo()); //attr-rel
-		assertEquals(DataTypeMapping.STRING.toString(), schema.attributes().get(8).datatype()); //attr1
-		assertEquals(DataTypeMapping.NUMBER.toString(), schema.attributes().get(9).datatype()); //attr2
-		assertEquals(DataTypeMapping.DATE.toString(), schema.attributes().get(10).datatype()); //attr3
-		assertEquals(DataTypeMapping.STRING.toString(), schema.attributes().get(11).datatype()); //attr4
-		assertEquals(DataTypeMapping.NUMBER.toString(), schema.attributes().get(12).datatype()); //attr5 //skip sys_name
-		assertEquals(DataTypeMapping.ARRAY_OF_BOOLEAN.toString(), schema.attributes().get(14).datatype()); //z-array-of-boolean
-		assertEquals(DataTypeMapping.ARRAY_OF_NUMBER.toString(), schema.attributes().get(15).datatype()); //z-array-of-number-double
-		assertEquals(DataTypeMapping.ARRAY_OF_NUMBER.toString(), schema.attributes().get(16).datatype()); //z-array-of-number-long
-	}
-
 }
