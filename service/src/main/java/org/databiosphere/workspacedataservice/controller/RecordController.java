@@ -315,7 +315,7 @@ public class RecordController {
 		if (relation == null) {
 			return new AttributeSchema(name, datatype.toString(), null);
 		}
-		return new AttributeSchema(name, datatype.toString() == "STRING" ? "RELATION" : "ARRAY_OF_RELATION", relation);
+		return new AttributeSchema(name, "STRING".equals(datatype.toString()) ? "RELATION" : "ARRAY_OF_RELATION", relation);
 	}
 
 	private static void validateVersion(String version) {
