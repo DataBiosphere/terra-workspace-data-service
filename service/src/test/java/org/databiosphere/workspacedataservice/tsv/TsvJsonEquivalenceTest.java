@@ -72,7 +72,7 @@ public class TsvJsonEquivalenceTest {
         Object jsonActual = jsonAttributes.getAttributeValue("col1");
 
         if (tsvActual instanceof List tsvList && jsonActual instanceof List jsonList) {
-            assertIterableEquals(tsvList, jsonList);
+            assertIterableEquals(jsonList, tsvList);
         } else {
             assertInstanceOf(jsonActual.getClass(), tsvActual);
             assertEquals(expected, jsonActual);

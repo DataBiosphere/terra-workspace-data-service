@@ -109,12 +109,6 @@ class TsvInputFormatsTest {
 						new Boolean[]{Boolean.TRUE, Boolean.FALSE, Boolean.TRUE},
 						"[TRUE, fALSE, True]"
 				),
-				// TODO: re-enable this test case, if we want to handle it
-//				Arguments.of(
-//						"[\"True\", \"false\", \"true   \"]",
-//						new Boolean[]{Boolean.TRUE, Boolean.FALSE, Boolean.TRUE},
-//						"[\"TRUE\", \"fALSE\", \"True    \"]"
-//				),
 				Arguments.of("5", BigDecimal.valueOf(5), "5"),
 				Arguments.of("5.67", BigDecimal.valueOf(5.67d), "5.67"),
 				Arguments.of("005", BigDecimal.valueOf(5),"005"),

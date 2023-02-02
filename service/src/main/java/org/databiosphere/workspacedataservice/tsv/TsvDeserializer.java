@@ -28,8 +28,10 @@ import java.util.stream.StreamSupport;
  */
 public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
 
-    public TsvDeserializer() {
+    public TsvDeserializer(DataTypeInferer inferer, ObjectMapper objectMapper) {
         this(null);
+        this.inferer = inferer;
+        this.objectMapper = objectMapper;
     }
 
     public TsvDeserializer(Class<?> vc) {
@@ -40,15 +42,6 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
 
     DataTypeInferer inferer;
     ObjectMapper objectMapper;
-
-    // TODO: can these setters, which are required, move to a constructor or to injection?
-    public void setObjectMapper(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
-
-    public void setInferer(DataTypeInferer inferer) {
-        this.inferer = inferer;
-    }
 
     @Override
     public RecordAttributes deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {

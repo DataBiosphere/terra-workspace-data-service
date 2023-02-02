@@ -62,10 +62,7 @@ public class WorkspaceDataServiceApplication {
 
 	@Bean
 	public TsvDeserializer tsvDeserializer(DataTypeInferer inferer, ObjectMapper objectMapper) {
-		TsvDeserializer tsvDeserializer = new TsvDeserializer();
-		tsvDeserializer.setInferer(inferer);
-		tsvDeserializer.setObjectMapper(objectMapper);
-		return tsvDeserializer;
+		return new TsvDeserializer(inferer, objectMapper);
 	}
 
 	@Bean
