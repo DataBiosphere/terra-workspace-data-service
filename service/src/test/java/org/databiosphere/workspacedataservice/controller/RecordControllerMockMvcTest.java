@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.dao.TestDao;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
@@ -24,8 +25,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
@@ -59,9 +58,8 @@ class RecordControllerMockMvcTest {
 
 	private static String versionId = "v0.2";
 
-	//TODO: a better way to do this?
 	@Autowired
-	NamedParameterJdbcTemplate namedTemplate;
+	TestDao testDao;
 
 	@Autowired
 	RecordDao recordDao;
@@ -1368,7 +1366,7 @@ class RecordControllerMockMvcTest {
 
 		//TODO: a better way to check join table?
 		//Join table should have been updated
-		List<String> joinVals = getRelationArrayValues(instanceId, "relArrAttr", recordWithRelationArray, recordType);
+		List<String> joinVals = testDao.getRelationArrayValues(instanceId, "relArrAttr", recordWithRelationArray, recordType);
 		assertIterableEquals(List.of("record_0", "record_2"), joinVals);
 	}
 
@@ -1407,7 +1405,7 @@ class RecordControllerMockMvcTest {
 		assertIterableEquals(relArr, actualAttrValue);
 
 		//Join table should not have been updated
-		List<String> joinVals = getRelationArrayValues(instanceId, "relArrAttr", recordWithRelationArray, recordType);
+		List<String> joinVals = testDao.getRelationArrayValues(instanceId, "relArrAttr", recordWithRelationArray, recordType);
 		assertIterableEquals(List.of("record_0", "record_1"), joinVals);
 	}
 
@@ -1447,7 +1445,7 @@ class RecordControllerMockMvcTest {
 		List<String> actualAttrValue = assertInstanceOf(List.class, recordResponse.recordAttributes().getAttributeValue("relArrAttr"));
 		assertIterableEquals(relArr, actualAttrValue);
 
-		List<String> joinVals = getRelationArrayValues(instanceId, "relArrAttr", recordWithRelationArray, recordType);
+		List<String> joinVals = testDao.getRelationArrayValues(instanceId, "relArrAttr", recordWithRelationArray, recordType);
 		assertIterableEquals(List.of("record_1", "record_2"), joinVals);
 	}
 
@@ -1483,15 +1481,7 @@ class RecordControllerMockMvcTest {
 		assertIterableEquals(relArr, actualAttrValue);
 
 		//Join table should not have been updated
-		List<String> joinVals = getRelationArrayValues(instanceId, "relArrAttr", recordWithRelationArray, recordType);
+		List<String> joinVals = testDao.getRelationArrayValues(instanceId, "relArrAttr", recordWithRelationArray, recordType);
 		assertIterableEquals(List.of("record_0", "record_1"), joinVals);
-	}
-
-	//TODO: A better way to do this?
-	private List<String> getRelationArrayValues(UUID instanceId, String columnName, Record record, RecordType toRecordType) {
-		return namedTemplate.queryForList(
-				"select \"" + recordDao.getToColumnName(toRecordType) + "\" from " + recordDao.getQualifiedJoinTableName(instanceId, columnName, record.getRecordType()) + " where "
-						+ "\"" + recordDao.getFromColumnName(record.getRecordType()) + "\" = :recordId",
-				new MapSqlParameterSource("recordId", record.getId()), String.class);
 	}
 }
