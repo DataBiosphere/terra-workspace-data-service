@@ -85,6 +85,8 @@ public class DataTypeInferer {
 		return val.replaceAll("[“”]", "\"");
 	}
 
+	// TODO: this is the secondary detection. Can we replace this with a step that converts
+	// the strings to LocalDate/LocalDateTime/etc before it reaches this point?
 	private DataTypeMapping getTypeMappingFromString(String sVal) {
 		if (isValidDate(sVal)) {
 			return DATE;
@@ -98,9 +100,10 @@ public class DataTypeInferer {
 		if (isValidJson(sVal)) {
 			return JSON;
 		}
-		if(isArray(sVal)){
-			return findArrayTypeFromJson(sVal);
-		}
+		// TODO: now unnecessary
+//		if(isArray(sVal)){
+//			return findArrayTypeFromJson(sVal);
+//		}
 		return STRING;
 	}
 

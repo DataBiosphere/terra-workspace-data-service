@@ -11,6 +11,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+/**
+ * Test fixtures for use by TsvDeserializerTest and TsvJsonEquivalenceTest.
+ *
+ * The fixtures define both JSON and TSV input values and the objects we expect
+ * to see after deserializing those inputs.
+ *
+ * @see TsvDeserializerTest
+ * @see TsvJsonEquivalenceTest
+ */
 public class TsvArgumentsProvider implements ArgumentsProvider {
 
     // TODO: flesh out these test cases!!
@@ -48,7 +57,8 @@ public class TsvArgumentsProvider implements ArgumentsProvider {
     );
 
     Map<String,List<BigInteger>> arraysOfInts = Map.of(
-            "[1, 2, 3]", List.of(BigInteger.valueOf(1), BigInteger.valueOf(2), BigInteger.valueOf(3))
+            "[1, 2, 3]", List.of(BigInteger.valueOf(1), BigInteger.valueOf(2), BigInteger.valueOf(3)),
+            "[1,2,3,4,5,80000001]", List.of(BigInteger.valueOf(1), BigInteger.valueOf(2), BigInteger.valueOf(3), BigInteger.valueOf(4), BigInteger.valueOf(5), BigInteger.valueOf(80000001))
     );
 
     Map<String,List<String>> arraysOfStrings = Map.of(

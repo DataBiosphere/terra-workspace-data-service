@@ -21,6 +21,12 @@ import java.util.List;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Tests that, when supplied he same inputs, TSV uploads and JSON request payloads
+ * deserialize into the same Java objects inside RecordAttributes.
+ *
+ * @see TsvArgumentsProvider
+ */
 @SpringBootTest
 public class TsvJsonEquivalenceTest {
 

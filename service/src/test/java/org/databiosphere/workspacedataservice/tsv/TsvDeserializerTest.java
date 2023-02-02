@@ -15,6 +15,11 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Tests that TSV uploads deserialize into the expected  Java objects inside RecordAttributes.
+ *
+ * @see TsvArgumentsProvider
+ */
 @SpringBootTest
 public class TsvDeserializerTest {
 
