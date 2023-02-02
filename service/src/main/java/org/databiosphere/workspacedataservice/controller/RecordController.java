@@ -130,10 +130,10 @@ public class RecordController {
 		validateInstance(instanceId);
 		checkRecordTypeExists(instanceId, recordType);
 		List<String> headers = recordDao.getAllAttributeNames(instanceId, recordType);
-		Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType);
 
 		StreamingResponseBody responseBody = httpResponseOutputStream -> {
-			try (CSVPrinter writer = TsvSupport.getOutputFormat(headers)
+			try (Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType);
+				 CSVPrinter writer = TsvSupport.getOutputFormat(headers)
 					.print(new OutputStreamWriter(httpResponseOutputStream))) {
 				TsvSupport.RecordEmitter recordEmitter = new TsvSupport.RecordEmitter(writer,
 						headers.subList(1, headers.size()), objectMapper);
