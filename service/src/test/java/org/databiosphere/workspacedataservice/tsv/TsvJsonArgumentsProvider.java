@@ -20,7 +20,7 @@ import java.util.stream.Stream;
  * @see TsvDeserializerTest
  * @see TsvJsonEquivalenceTest
  */
-public class TsvArgumentsProvider implements ArgumentsProvider {
+public class TsvJsonArgumentsProvider implements ArgumentsProvider {
 
     // TODO: flesh out these test cases!!
 

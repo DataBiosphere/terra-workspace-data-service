@@ -7,7 +7,6 @@ import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -15,17 +14,16 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Collections;
 import java.util.List;
 
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests that, when supplied he same inputs, TSV uploads and JSON request payloads
+ * Tests that, when supplied the same inputs, TSV uploads and JSON request payloads
  * deserialize into the same Java objects inside RecordAttributes.
  *
- * @see TsvArgumentsProvider
+ * @see TsvJsonArgumentsProvider
  */
 @SpringBootTest
 public class TsvJsonEquivalenceTest {
@@ -49,10 +47,10 @@ public class TsvJsonEquivalenceTest {
 
 
     /**
-     * @see TsvArgumentsProvider for arguments
+     * @see TsvJsonArgumentsProvider for arguments
      */
     @ParameterizedTest(name = "TSV and JSON deserialization should be equal for input value <{0}>, returning <{1}>")
-    @ArgumentsSource(TsvArgumentsProvider.class)
+    @ArgumentsSource(TsvJsonArgumentsProvider.class)
     void tsvAndJsonShouldDeserializeSame(String input, Object expected, boolean quoteJson) throws IOException {
         String tsv = RECORD_ID + "\tcol1\n123\t" + input + "\n";
 

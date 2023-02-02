@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests that TSV uploads deserialize into the expected  Java objects inside RecordAttributes.
  *
- * @see TsvArgumentsProvider
+ * @see TsvJsonArgumentsProvider
  */
 @SpringBootTest
 public class TsvDeserializerTest {
@@ -26,11 +26,7 @@ public class TsvDeserializerTest {
     @Autowired
     TsvDeserializer tsvDeserializer;
 
-    // TODO:
-    // - test arrayElementToObject, maybe? Covered in cellToAttribute
-
     // ===== nodeToObject tests:
-
     @Test
     void nullNodeInput() {
         JsonNode input = NullNode.getInstance();
@@ -55,17 +51,28 @@ public class TsvDeserializerTest {
 
     // ===== cellToAttribute tests:
 
-    // TODO: add test cases for TSV inputs that are invalid JSON, such as:
-    // - weird capitalizations of true/false
-    // - smart quotes
 
 
     /**
-     * @see TsvArgumentsProvider for arguments
+     * @see TsvJsonArgumentsProvider for arguments
      */
     @ParameterizedTest(name = "cellToAttribute for input value <{0}> should return <{1}>")
-    @ArgumentsSource(TsvArgumentsProvider.class)
+    @ArgumentsSource(TsvJsonArgumentsProvider.class)
     void cellToAttributeTest(String input, Object expected) {
+        Object actual = tsvDeserializer.cellToAttribute(input);
+
+        //noinspection rawtypes
+        if (expected instanceof List expectedList) {
+            //noinspection rawtypes
+            assertIterableEquals(expectedList, (List)actual, "cellToAttribute for input value <%s> should return <%s>".formatted(input, expected));
+        } else {
+            assertEquals(expected, actual, "cellToAttribute for input value <%s> should return <%s>".formatted(input, expected));
+        }
+    }
+
+    @ParameterizedTest(name = "cellToAttribute for input value <{0}> should return <{1}>")
+    @ArgumentsSource(TsvOnlyArgumentsProvider.class)
+    void tsvOnlyCases(String input, Object expected) {
         Object actual = tsvDeserializer.cellToAttribute(input);
 
         //noinspection rawtypes

@@ -29,7 +29,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -139,9 +138,8 @@ public class BatchWriteService {
 		}
 	}
 
-	// TODO: could simplify to InputStream argument instead of InputStreamReader
 	@WriteTransaction
-	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) throws IOException {
+	public int uploadTsvStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) throws IOException {
 		MappingIterator<RecordAttributes> tsvIterator = tsvReader.readValues(is);
 
 		// check for no rows in TSV

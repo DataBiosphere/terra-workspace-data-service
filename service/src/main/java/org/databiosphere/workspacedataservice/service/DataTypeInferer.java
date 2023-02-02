@@ -100,10 +100,6 @@ public class DataTypeInferer {
 		if (isValidJson(sVal)) {
 			return JSON;
 		}
-		// TODO: now unnecessary
-//		if(isArray(sVal)){
-//			return findArrayTypeFromJson(sVal);
-//		}
 		return STRING;
 	}
 
