@@ -29,7 +29,6 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
     // - tsvUploadWithRelationsShouldSucceed: upload tsv containing scalar relation and array of relations/query records
     // - uploadTsvAndVerifySchema: upload tsv, check schema; upload another tsv, recheck schema
     // - describeType, describeAllTypes maybe
-    // TODO: review DataTypeInfererTest for additional test cases
 
     @Override
     public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
@@ -63,6 +62,7 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
                 Arguments.of(" ",           " ",            true),
                 Arguments.of("hello world", "hello world",  true),
                 Arguments.of("😍😎😺",     "😍😎😺",        true),
+                Arguments.of("12345A",     "12345A",        true),
 
                 // strings that look like other data types
                 Arguments.of("2021-10-03",          "2021-10-03",           true),
@@ -110,6 +110,7 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
 
                 // arrays of strings
                 Arguments.of("[\" \", \"  \"]",             List.of(" ", "  "),         false),
+                Arguments.of("[\"a\"]",                     List.of("a"),           false),
                 Arguments.of("[\"hello\", \"world\"]",      List.of("hello", "world"),  false),
                 Arguments.of("[\"Hello\", \"World\"]",      List.of("Hello", "World"),  false),
                 Arguments.of("[\"true\", \"false\"]",       List.of("true", "false"),   false),
@@ -121,6 +122,8 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
                 Arguments.of("[\"2021-10-03T19:01:23\", \"2021-11-04T20:02:24\"]",  List.of("2021-10-03T19:01:23", "2021-11-04T20:02:24"),  false),
                 Arguments.of("[\"terra-wds:/type/id\", \"terra-wds:/type/id2\"]",   List.of("terra-wds:/type/id", "terra-wds:/type/id2"),   false),
 
+                // mixed array (these deserialize as mixed lists, will be coerced to a single data type later in processing)
+                Arguments.of("[\"hello\", 123, true]",  List.of("hello", BigInteger.valueOf(123), true),    false),
 
                 Arguments.of("end of test cases", "end of test cases", true)
         );
