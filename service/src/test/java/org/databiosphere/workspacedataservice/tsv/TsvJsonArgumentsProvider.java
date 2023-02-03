@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 
 /**
  * Test fixtures for use by TsvDeserializerTest and TsvJsonEquivalenceTest.
+ * <p>
  * The fixtures define both JSON and TSV input values and the objects we expect
  * to see after deserializing those inputs.
  *
@@ -21,8 +22,14 @@ import java.util.stream.Stream;
  */
 public class TsvJsonArgumentsProvider implements ArgumentsProvider {
 
-    // TODO: are there inputs in other tests that should also be in here?
-
+    // TODO: review TsvDownloadTest for additional test cases
+    // TODO: review RecordControllerMockMvcTest for additional test cases
+    // - writeAndReadAllDataTypesJson: put record/get record
+    // - writeAndReadAllDataTypesTsv: upload tsv/get record
+    // - tsvUploadWithRelationsShouldSucceed: upload tsv containing scalar relation and array of relations/query records
+    // - uploadTsvAndVerifySchema: upload tsv, check schema; upload another tsv, recheck schema
+    // - describeType, describeAllTypes maybe
+    // TODO: review DataTypeInfererTest for additional test cases
 
     @Override
     public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
@@ -31,9 +38,6 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
 			- second value is the expected Java type that the TsvConverter or JSON deserializer would create for that cell
 			- third value, a boolean, indicates whether the value should be quoted inside a JSON packet
 		*/
-        // TODO: separate tests for nulls/empty string and json packets
-        // TODO: address commented-out tests
-
         return Stream.of(
                 // ========== scalars ==========
 
@@ -65,12 +69,13 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
                 Arguments.of("2021-10-03T19:01:23", "2021-10-03T19:01:23",  true),
                 Arguments.of("terra-wds:/type/id",  "terra-wds:/type/id",   true),
 
-                // strings that look like other data types - all are quoted inside the TSV so should be strings
-//                Arguments.of("\"12345\"",                            "12345",                                                        false),
-//                Arguments.of("\"true\"",                             "true",                                                         false),
-//                Arguments.of("\"false\"",                            "false",                                                        false),
-//                Arguments.of("\"{\"foo\":\"bar\"}\"",                "{\"foo\":\"bar\"}",                                            false),
-//                Arguments.of("\"[1,2,3]\"",                          "[1,2,3]",                                                      false),
+                // TODO: these are all passing TsvDeserializerTest but failing TsvJsonEquivalenceTest. Secondary processing somewhere?
+//                Arguments.of("\"\"",                    "",                     false),
+//                Arguments.of("\"12345\"",               "12345",                false),
+//                Arguments.of("\"true\"",                "true",                 false),
+//                Arguments.of("\"false\"",               "false",                false),
+//                Arguments.of("\"{\"foo\":\"bar\"}\"",   "{\"foo\":\"bar\"}",    false),
+//                Arguments.of("\"[1,2,3]\"",             "[1,2,3]",              false),
 
                 // json packet
                 Arguments.of("{\"foo\":\"bar\", \"baz\": \"qux\"}",
@@ -96,6 +101,11 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
                 Arguments.of("[" + Double.MIN_VALUE + ", " + Double.MIN_NORMAL + ", -5.67, 3.14, " + Double.MAX_VALUE + "]",
                         List.of(BigDecimal.valueOf(Double.MIN_VALUE), BigDecimal.valueOf(Double.MIN_NORMAL),
                                 BigDecimal.valueOf(-5.67), BigDecimal.valueOf(3.14), BigDecimal.valueOf(Double.MAX_VALUE)),
+                        false),
+
+                // arrays of mixed numbers
+                Arguments.of("[4, 5.67, 8]",
+                        List.of(BigInteger.valueOf(4), BigDecimal.valueOf(5.67), BigInteger.valueOf(8)),
                         false),
 
                 // arrays of strings
