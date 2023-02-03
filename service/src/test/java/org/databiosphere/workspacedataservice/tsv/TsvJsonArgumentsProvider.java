@@ -22,14 +22,6 @@ import java.util.stream.Stream;
  */
 public class TsvJsonArgumentsProvider implements ArgumentsProvider {
 
-    // TODO: review TsvDownloadTest for additional test cases
-    // TODO: review RecordControllerMockMvcTest for additional test cases
-    // - writeAndReadAllDataTypesJson: put record/get record
-    // - writeAndReadAllDataTypesTsv: upload tsv/get record
-    // - tsvUploadWithRelationsShouldSucceed: upload tsv containing scalar relation and array of relations/query records
-    // - uploadTsvAndVerifySchema: upload tsv, check schema; upload another tsv, recheck schema
-    // - describeType, describeAllTypes maybe
-
     @Override
     public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
         /* Arguments are sets:
@@ -63,6 +55,7 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
                 Arguments.of("hello world", "hello world",  true),
                 Arguments.of("😍😎😺",     "😍😎😺",        true),
                 Arguments.of("12345A",     "12345A",        true),
+                    Arguments.of("\uD83D\uDCA9\u0207", "\uD83D\uDCA9\u0207", true),
 
                 // strings that look like other data types
                 Arguments.of("2021-10-03",          "2021-10-03",           true),

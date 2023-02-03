@@ -12,6 +12,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -58,28 +60,23 @@ public class TsvDeserializerTest {
      */
     @ParameterizedTest(name = "cellToAttribute for input value <{0}> should return <{1}>")
     @ArgumentsSource(TsvJsonArgumentsProvider.class)
+    @ArgumentsSource(TsvOnlyArgumentsProvider.class)
     void cellToAttributeTest(String input, Object expected) {
         Object actual = tsvDeserializer.cellToAttribute(input);
 
         //noinspection rawtypes
         if (expected instanceof List expectedList) {
             //noinspection rawtypes
-            assertIterableEquals(expectedList, (List) actual, "cellToAttribute for input value <%s> should return <%s>".formatted(input, expected));
-        } else {
-            assertEquals(expected, actual, "cellToAttribute for input value <%s> should return <%s>".formatted(input, expected));
-        }
-    }
-
-    @ParameterizedTest(name = "cellToAttribute for input value <{0}> should return <{1}>")
-    @ArgumentsSource(TsvOnlyArgumentsProvider.class)
-    void tsvOnlyCases(String input, Object expected) {
-        Object actual = tsvDeserializer.cellToAttribute(input);
-
-        //noinspection rawtypes
-        if (expected instanceof List expectedList) {
-            //noinspection rawtypes
             assertIterableEquals(expectedList, (List)actual, "cellToAttribute for input value <%s> should return <%s>".formatted(input, expected));
+        } else if (expected instanceof Map) {
+            // map types can differ; don't check instanceof
+            assertEquals(expected, actual, "cellToAttribute for input value <%s> should return <%s>".formatted(input, expected));
         } else {
+            if (Objects.isNull(expected)) {
+                assertNull(actual);
+            } else {
+                assertInstanceOf(expected.getClass(), actual);
+            }
             assertEquals(expected, actual, "cellToAttribute for input value <%s> should return <%s>".formatted(input, expected));
         }
     }
