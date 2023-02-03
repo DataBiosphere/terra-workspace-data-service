@@ -71,73 +71,18 @@ public class TsvJsonEquivalenceTest {
         Object tsvActual = tsvAttributes.getAttributeValue("col1");
         Object jsonActual = jsonAttributes.getAttributeValue("col1");
 
+        //noinspection rawtypes
         if (tsvActual instanceof List tsvList && jsonActual instanceof List jsonList) {
-            assertIterableEquals(jsonList, tsvList);
+            assertIterableEquals(jsonList, tsvList, "JSON and TSV arrays should be equal");
+            //noinspection rawtypes
+            assertIterableEquals((List)expected, jsonList, "JSON array incorrect");
+            //noinspection rawtypes
+            assertIterableEquals((List)expected, tsvList, "TSV array incorrect");
         } else {
-            assertInstanceOf(jsonActual.getClass(), tsvActual);
-            assertEquals(expected, jsonActual);
-            assertEquals(expected, tsvActual);
+            assertInstanceOf(jsonActual.getClass(), tsvActual, "JSON and TSV classes should be equal");
+            assertEquals(expected, jsonActual, "JSON value incorrect");
+            assertEquals(expected, tsvActual, "TSV value incorrect");
         }
 
     }
-
-
-
-//
-//    @ParameterizedTest(name = "Scalar deserialization for input <{0}> should be equivalent for TSV and JSON")
-//    @ValueSource(strings = {"hello world", "terra-wds:/targetType/targetId",
-//            "2021-10-03", "2021-10-03T19:01:23"})
-//    void scalarDeserializationQuotedJson(String input) throws IOException {
-//        String tsv = RECORD_ID + "\tcol1\n123\t" + input + "\n";
-//        String json = """
-//                {"attributes":{"col1":"%s"}}
-//                """.formatted(input);
-//
-//        RecordAttributes jsonAttributes = mapper.readValue(json, RecordRequest.class).recordAttributes();
-//
-//        RecordAttributes tsvAttributes = readTsv(tsv);
-//
-//        assertInstanceOf(jsonAttributes.getAttributeValue("col1").getClass(), tsvAttributes.getAttributeValue("col1"));
-//
-//        assertEquals(jsonAttributes, tsvAttributes);
-//    }
-//
-//    @ParameterizedTest(name = "Scalar deserialization for input <{0}> should be equivalent for TSV and JSON")
-//    @ValueSource(strings = {"123.45", "789", "true", "{\"foo\":\"bar\",\"num\":123}"})
-//    void scalarDeserializationUnquotedJson(String input) throws IOException {
-//        String tsv = RECORD_ID + "\tcol1\n123\t" + input + "\n";
-//        String json = """
-//                {"attributes":{"col1":%s}}
-//                """.formatted(input);
-//
-//        RecordAttributes jsonAttributes = mapper.readValue(json, RecordRequest.class).recordAttributes();
-//
-//        RecordAttributes tsvAttributes = readTsv(tsv);
-//
-//        assertInstanceOf(jsonAttributes.getAttributeValue("col1").getClass(), tsvAttributes.getAttributeValue("col1"));
-//
-//        assertEquals(jsonAttributes, tsvAttributes);
-//    }
-//
-//    @ParameterizedTest(name = "Array deserialization for input <{0}> should be equivalent for TSV and JSON")
-//    @ValueSource(strings = {"[\"hello\",\"world\"]", "[12,34,56]", "[true, false, true]"})
-//    void arrayDeserialization(String input) throws IOException {
-//        String tsv = RECORD_ID + "\tcol1\n123\t" + input + "\n";
-//        String json = """
-//                {"attributes":{"col1":%s}}
-//                """.formatted(input);
-//
-//        RecordAttributes jsonAttributes = mapper.readValue(json, RecordRequest.class).recordAttributes();
-//
-//        RecordAttributes tsvAttributes = readTsv(tsv);
-//
-//        assertInstanceOf(List.class, jsonAttributes.getAttributeValue("col1"));
-//        assertInstanceOf(List.class, tsvAttributes.getAttributeValue("col1"));
-//
-//        List jsonList = (List)jsonAttributes.getAttributeValue("col1");
-//        List tsvList = (List)tsvAttributes.getAttributeValue("col1");
-//
-//        assertIterableEquals(jsonList, tsvList);
-//    }
-
 }

@@ -8,11 +8,11 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 /**
  * Test fixtures for use by TsvDeserializerTest and TsvJsonEquivalenceTest.
- *
  * The fixtures define both JSON and TSV input values and the objects we expect
  * to see after deserializing those inputs.
  *
@@ -25,7 +25,7 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
 
 
     @Override
-    public Stream<? extends Arguments> provideArguments(ExtensionContext context) throws Exception {
+    public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
         /* Arguments are sets:
 			- first value is the text that would be contained in a TSV cell or JSON value
 			- second value is the expected Java type that the TsvConverter or JSON deserializer would create for that cell
@@ -71,6 +71,11 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
 //                Arguments.of("\"false\"",                            "false",                                                        false),
 //                Arguments.of("\"{\"foo\":\"bar\"}\"",                "{\"foo\":\"bar\"}",                                            false),
 //                Arguments.of("\"[1,2,3]\"",                          "[1,2,3]",                                                      false),
+
+                // json packet
+                Arguments.of("{\"foo\":\"bar\", \"baz\": \"qux\"}",
+                        Map.of("foo", "bar", "baz", "qux"),
+                        false),
 
                 // ========== arrays ==========
 

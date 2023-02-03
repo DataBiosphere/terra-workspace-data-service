@@ -64,7 +64,7 @@ public class TsvDeserializerTest {
         //noinspection rawtypes
         if (expected instanceof List expectedList) {
             //noinspection rawtypes
-            assertIterableEquals(expectedList, (List)actual, "cellToAttribute for input value <%s> should return <%s>".formatted(input, expected));
+            assertIterableEquals(expectedList, (List) actual, "cellToAttribute for input value <%s> should return <%s>".formatted(input, expected));
         } else {
             assertEquals(expected, actual, "cellToAttribute for input value <%s> should return <%s>".formatted(input, expected));
         }

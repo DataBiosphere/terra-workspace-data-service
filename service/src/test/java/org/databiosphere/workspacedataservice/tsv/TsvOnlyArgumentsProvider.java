@@ -4,12 +4,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.AbstractMap;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 /**
@@ -22,7 +17,7 @@ import java.util.stream.Stream;
 public class TsvOnlyArgumentsProvider implements ArgumentsProvider {
 
     @Override
-    public Stream<? extends Arguments> provideArguments(ExtensionContext context) throws Exception {
+    public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
         /* Arguments are sets:
 			- first value is the text that would be contained in a TSV cell
 			- second value is the expected Java type that the TsvConverter would create for that cell
