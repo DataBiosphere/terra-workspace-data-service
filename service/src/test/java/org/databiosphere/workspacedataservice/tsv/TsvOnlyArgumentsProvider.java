@@ -39,7 +39,6 @@ public class TsvOnlyArgumentsProvider implements ArgumentsProvider {
                 Arguments.of("\"“Hello world”\"", "“Hello world”"), // smart quotes inside a quoted string: keep the smart quotes
                 Arguments.of("[“test1”, “test2”]", Arrays.asList("test1", "test2")), // smart quotes inside an array: strip quotes
                 Arguments.of("[tRuE, fAlSe, TRUE, FALSE]", Arrays.asList(true, false, true, false))
-                // Arguments.of("[\"True\", \"false\", \"true   \"]", Arrays.asList(true, false, true)) // quoted booleans inside an array
         );
     }
 }

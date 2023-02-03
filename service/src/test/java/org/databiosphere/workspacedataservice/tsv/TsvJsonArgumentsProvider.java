@@ -6,9 +6,8 @@ import org.junit.jupiter.params.provider.ArgumentsProvider;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.AbstractMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 /**
@@ -22,51 +21,7 @@ import java.util.stream.Stream;
  */
 public class TsvJsonArgumentsProvider implements ArgumentsProvider {
 
-    // TODO: flesh out these test cases!!
-
-    Map<String, Boolean> booleans = Map.of(
-            "true", true,
-            "false", false
-    );
-
-    Map<String, BigDecimal> bigDecimals = Map.ofEntries(
-            new AbstractMap.SimpleEntry<>("3.14", BigDecimal.valueOf(3.14d)),
-            new AbstractMap.SimpleEntry<>("-5.67", BigDecimal.valueOf(-5.67d)),
-            new AbstractMap.SimpleEntry<>(Double.toString(Double.MAX_VALUE), BigDecimal.valueOf(Double.MAX_VALUE)),
-            new AbstractMap.SimpleEntry<>(Double.toString(Double.MIN_VALUE), BigDecimal.valueOf(Double.MIN_VALUE)),
-            new AbstractMap.SimpleEntry<>(Double.toString(Double.MIN_NORMAL), BigDecimal.valueOf(Double.MIN_NORMAL))
-    );
-
-    Map<String, BigInteger> bigIntegers = Map.ofEntries(
-            new AbstractMap.SimpleEntry<>("1", BigInteger.valueOf(1)),
-            new AbstractMap.SimpleEntry<>("0", BigInteger.valueOf(0)),
-            new AbstractMap.SimpleEntry<>("-1", BigInteger.valueOf(-1)),
-            new AbstractMap.SimpleEntry<>(Integer.toString(Integer.MAX_VALUE), BigInteger.valueOf(Integer.valueOf(Integer.MAX_VALUE).longValue())),
-            new AbstractMap.SimpleEntry<>(Integer.toString(Integer.MIN_VALUE), BigInteger.valueOf(Integer.valueOf(Integer.MIN_VALUE).longValue()))
-    );
-
-    // note that we do not parse dates, datetimes, or relations in the first stage of TSV or JSON
-    // deserialization - that detection happens later. So we include those inputs here as simple strings.
-    List<String> strings = List.of(
-      "hello world",
-      "foo",
-      "bar",
-      "2021-10-03",
-      "2021-10-03T19:01:23",
-      "terra-wds:/target-record/record_0"
-    );
-
-    Map<String,List<BigInteger>> arraysOfInts = Map.of(
-            "[1, 2, 3]", List.of(BigInteger.valueOf(1), BigInteger.valueOf(2), BigInteger.valueOf(3)),
-            "[1,2,3,4,5,80000001]", List.of(BigInteger.valueOf(1), BigInteger.valueOf(2), BigInteger.valueOf(3), BigInteger.valueOf(4), BigInteger.valueOf(5), BigInteger.valueOf(80000001))
-    );
-
-    Map<String,List<String>> arraysOfStrings = Map.of(
-            "[\"hello\", \"world\"]", List.of("hello", "world"),
-            "[\"Hello\", \"World\"]", List.of("Hello", "World"),
-            "[\"true\", \"false\"]", List.of("true", "false"),
-            "[\"98\", \"99\"]", List.of("98", "99")
-    );
+    // TODO: are there inputs in other tests that should also be in here?
 
 
     @Override
@@ -76,39 +31,84 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
 			- second value is the expected Java type that the TsvConverter or JSON deserializer would create for that cell
 			- third value, a boolean, indicates whether the value should be quoted inside a JSON packet
 		*/
+        // TODO: separate tests for nulls/empty string and json packets
+        // TODO: address commented-out tests
+
+        return Stream.of(
+                // ========== scalars ==========
+
+                // booleans
+                Arguments.of("true",    true,   false),
+                Arguments.of("false",           false,  false),
+
+                // integers
+                Arguments.of("1",                                   BigInteger.valueOf(1),                  false),
+                Arguments.of("0",                                   BigInteger.valueOf(0),                  false),
+                Arguments.of("-1",                                  BigInteger.valueOf(-1),                 false),
+                Arguments.of(Integer.toString(Integer.MAX_VALUE),   BigInteger.valueOf(Integer.MAX_VALUE),  false),
+                Arguments.of(Integer.toString(Integer.MIN_VALUE),   BigInteger.valueOf(Integer.MIN_VALUE),  false),
+
+                // decimals
+                Arguments.of("3.14",                                BigDecimal.valueOf(3.14d),              false),
+                Arguments.of("-5.67",                               BigDecimal.valueOf(-5.67d),             false),
+                Arguments.of(Double.toString(Double.MAX_VALUE),     BigDecimal.valueOf(Double.MAX_VALUE),   false),
+                Arguments.of(Double.toString(Double.MIN_VALUE),     BigDecimal.valueOf(Double.MIN_VALUE),   false),
+                Arguments.of(Double.toString(Double.MIN_NORMAL),    BigDecimal.valueOf(Double.MIN_NORMAL),  false),
+
+                // strings
+                Arguments.of(" ",           " ",            true),
+                Arguments.of("hello world", "hello world",  true),
+                Arguments.of("😍😎😺",     "😍😎😺",        true),
+
+                // strings that look like other data types
+                Arguments.of("2021-10-03",          "2021-10-03",           true),
+                Arguments.of("2021-10-03T19:01:23", "2021-10-03T19:01:23",  true),
+                Arguments.of("terra-wds:/type/id",  "terra-wds:/type/id",   true),
+
+                // strings that look like other data types - all are quoted inside the TSV so should be strings
+//                Arguments.of("\"12345\"",                            "12345",                                                        false),
+//                Arguments.of("\"true\"",                             "true",                                                         false),
+//                Arguments.of("\"false\"",                            "false",                                                        false),
+//                Arguments.of("\"{\"foo\":\"bar\"}\"",                "{\"foo\":\"bar\"}",                                            false),
+//                Arguments.of("\"[1,2,3]\"",                          "[1,2,3]",                                                      false),
+
+                // ========== arrays ==========
+
+                // empty array
+                Arguments.of("[]", Collections.EMPTY_LIST, false),
+
+                // arrays of booleans
+                Arguments.of("[true,false,true]",       List.of(true, false, true),     false),
+                Arguments.of("[false, true, false]",    List.of(false, true, false),    false),
+
+                // arrays of integers
+                Arguments.of("[" + Integer.MIN_VALUE + ", -1, 0, 1, " + Integer.MAX_VALUE + "]",
+                        List.of(BigInteger.valueOf(Integer.MIN_VALUE), BigInteger.valueOf(-1), BigInteger.valueOf(0),
+                                BigInteger.valueOf(1), BigInteger.valueOf(Integer.MAX_VALUE)),
+                        false),
+
+                // arrays of decimals
+                Arguments.of("[" + Double.MIN_VALUE + ", " + Double.MIN_NORMAL + ", -5.67, 3.14, " + Double.MAX_VALUE + "]",
+                        List.of(BigDecimal.valueOf(Double.MIN_VALUE), BigDecimal.valueOf(Double.MIN_NORMAL),
+                                BigDecimal.valueOf(-5.67), BigDecimal.valueOf(3.14), BigDecimal.valueOf(Double.MAX_VALUE)),
+                        false),
+
+                // arrays of strings
+                Arguments.of("[\" \", \"  \"]",             List.of(" ", "  "),         false),
+                Arguments.of("[\"hello\", \"world\"]",      List.of("hello", "world"),  false),
+                Arguments.of("[\"Hello\", \"World\"]",      List.of("Hello", "World"),  false),
+                Arguments.of("[\"true\", \"false\"]",       List.of("true", "false"),   false),
+                Arguments.of("[\"98\", \"99\"]",            List.of("98", "99"),        false),
+                Arguments.of("[\"😍\", \"😎\", \"😺\"]",    List.of("😍", "😎", "😺"), false),
+
+                // arrays of strings that look like other data types
+                Arguments.of("[\"2021-10-03\", \"2022-11-04\"]",                    List.of("2021-10-03", "2022-11-04"),                    false),
+                Arguments.of("[\"2021-10-03T19:01:23\", \"2021-11-04T20:02:24\"]",  List.of("2021-10-03T19:01:23", "2021-11-04T20:02:24"),  false),
+                Arguments.of("[\"terra-wds:/type/id\", \"terra-wds:/type/id2\"]",   List.of("terra-wds:/type/id", "terra-wds:/type/id2"),   false),
 
 
-        Stream<Arguments> booleanArguments = booleans.entrySet().stream().map( entry ->
-                Arguments.of(entry.getKey(), entry.getValue(), false));
+                Arguments.of("end of test cases", "end of test cases", true)
+        );
 
-        Stream<Arguments> bigIntegerArguments = bigIntegers.entrySet().stream().map( entry ->
-                Arguments.of(entry.getKey(), entry.getValue(), false));
-
-        Stream<Arguments> bigDecimalArguments = bigDecimals.entrySet().stream().map( entry ->
-                Arguments.of(entry.getKey(), entry.getValue(), false));
-
-        Stream<Arguments> stringArguments = strings.stream().map( input ->
-                Arguments.of(input, input, true));
-
-        Stream<Arguments> arrayOfIntsArguments = arraysOfInts.entrySet().stream().map( entry ->
-                Arguments.of(entry.getKey(), entry.getValue(), false));
-
-        Stream<Arguments> arrayOfStringsArguments = arraysOfStrings.entrySet().stream().map( entry ->
-                Arguments.of(entry.getKey(), entry.getValue(), false));
-
-
-
-        return Stream.of(booleanArguments, bigIntegerArguments, bigDecimalArguments, stringArguments,
-                        arrayOfIntsArguments, arrayOfStringsArguments)
-                .reduce(Stream::concat)
-                .orElseGet(Stream::empty);
-
-//        return Stream.of(
-//                Arguments.of("[\"test1\", \"test2\"]", Arrays.asList("test1", "test2"), false),
-//                Arguments.of("[“test1”, “test2”]", Arrays.asList("test1", "test2"), false), // smart quotes - will fail for JSON
-//                Arguments.of("[\"98\", \"99\"]", Arrays.asList("98", "99"), false),
-//                Arguments.of("[true, false, true]", Arrays.asList(true, false, true), false),
-//                Arguments.of(" ", " ", true),
-//        );
     }
 }

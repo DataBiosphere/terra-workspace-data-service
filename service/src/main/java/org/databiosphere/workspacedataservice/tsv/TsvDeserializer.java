@@ -101,7 +101,6 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
             return val.substring(1, val.length()-1);
         }
         // booleans
-        // TODO: change the "is*" methods in inferer to return their value so we don't parse twice?
         if (inferer.isValidBoolean(val)) {
             return Boolean.parseBoolean(val);
         }
@@ -126,7 +125,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
         }
 
         // arrays
-        String smartQuotesRemoved = replaceLeftRightQuotes(val);
+        String smartQuotesRemoved = inferer.replaceLeftRightQuotes(val);
         if (inferer.isArray(smartQuotesRemoved.toLowerCase())) {
             try {
                 return jsonStringToList(smartQuotesRemoved);
@@ -186,11 +185,6 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
             return cellToAttribute(strElement.toString());
         }
         throw new RuntimeException("expected an interpretable element, got: " + element.getClass().getName());
-    }
-
-    // TODO: this is copied from DataTypeInferer; don't copy!
-    private String replaceLeftRightQuotes(String val){
-        return val.replaceAll("[“”]", "\"");
     }
 
 }

@@ -81,12 +81,14 @@ public class DataTypeInferer {
 	}
 
 	//libreoffice at least uses left and right quotes which cause problems when we try to parse as JSON
-	private String replaceLeftRightQuotes(String val){
+	public String replaceLeftRightQuotes(String val){
 		return val.replaceAll("[“”]", "\"");
 	}
 
-	// TODO: this is the secondary detection. Can we replace this with a step that converts
-	// the strings to LocalDate/LocalDateTime/etc before it reaches this point?
+	/* This is secondary detection. The JSON and TSV deserializers have created String objects, but those
+		Strings may represent dates, datetimes, etc. So, we inspect those Strings here.
+	 */
+	// TODO: create an explicit deserialization step that creates dates, datetimes, etc. and simplify here.
 	private DataTypeMapping getTypeMappingFromString(String sVal) {
 		if (isValidDate(sVal)) {
 			return DATE;
