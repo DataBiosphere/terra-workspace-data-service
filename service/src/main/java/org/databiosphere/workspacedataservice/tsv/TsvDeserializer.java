@@ -126,27 +126,39 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
         }
 
         // arrays
-        if (inferer.isArray(replaceLeftRightQuotes(val))) {
+        String smartQuotesRemoved = replaceLeftRightQuotes(val);
+        if (inferer.isArray(smartQuotesRemoved.toLowerCase())) {
             try {
-                // We call .toLowerCase() to ensure that WDS interprets all different inputted spellings of boolean values
-                // as booleans - e.g. `TRUE`, `tRUe`, or `true` ---> `true`
-                // TODO: don't automatically lower-case this!
-                JsonNode node = objectMapper.readTree(replaceLeftRightQuotes(val.toLowerCase()));
-                if (node instanceof ArrayNode arrayNode) {
-                    Stream<JsonNode> jsonElements = StreamSupport.stream(
-                            Spliterators.spliteratorUnknownSize(arrayNode.elements(), Spliterator.ORDERED), false);
-
-                    return jsonElements.map( el -> arrayElementToObject(el)).toList();
-                } else {
-                    throw new RuntimeException("DataTypeInferer.isArray returned true, but the parsed value did not resolve to ArrayNode");
-                }
+                return jsonStringToList(smartQuotesRemoved);
             } catch (JsonProcessingException e) {
+                // We encountered an error parsing the JSON. This could be due to improperly-cased boolean values.
+                // Perform an extra expensive check specifically to parse those booleans.
+                // expensive detection of any-cased booleans
+                try {
+                    List<?> lowerElements = jsonStringToList(smartQuotesRemoved.toLowerCase());
+                    if (lowerElements.stream().allMatch(element -> element instanceof Boolean)) {
+                        return lowerElements;
+                    }
+                } catch (JsonProcessingException innerException) {
+                    // noop; fall through to the logger/return null just below
+                }
                 LOGGER.error(e.getMessage(), e);
                 return null;
             }
         }
-
         return val;
+    }
+
+    public List<?> jsonStringToList(String input) throws JsonProcessingException {
+        JsonNode node = objectMapper.readTree(input);
+        if (node instanceof ArrayNode arrayNode) {
+            Stream<JsonNode> jsonElements = StreamSupport.stream(
+                    Spliterators.spliteratorUnknownSize(arrayNode.elements(), Spliterator.ORDERED), false);
+
+            return jsonElements.map( el -> arrayElementToObject(el)).toList();
+        } else {
+            throw new RuntimeException("DataTypeInferer.isArray returned true, but the parsed value did not resolve to ArrayNode");
+        }
     }
 
     /**

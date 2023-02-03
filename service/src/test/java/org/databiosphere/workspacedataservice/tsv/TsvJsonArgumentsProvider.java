@@ -64,6 +64,7 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
     Map<String,List<String>> arraysOfStrings = Map.of(
             "[\"hello\", \"world\"]", List.of("hello", "world"),
             "[\"Hello\", \"World\"]", List.of("Hello", "World"),
+            "[\"true\", \"false\"]", List.of("true", "false"),
             "[\"98\", \"99\"]", List.of("98", "99")
     );
 
