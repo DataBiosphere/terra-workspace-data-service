@@ -1029,13 +1029,14 @@ class RecordControllerMockMvcTest {
 	@Transactional
 	void describeType() throws Exception {
 		RecordType type = RecordType.valueOf("recordType");
-		createSomeRecords(type, 1);
 
 		RecordType referencedType = RecordType.valueOf("referencedType");
-		createSomeRecords(referencedType, 1);
+		createSomeRecords(referencedType, 3);
 		createSomeRecords(type, 1);
 		RecordAttributes attributes = RecordAttributes.empty();
 		String ref = RelationUtils.createRelationString(referencedType, "record_0");
+		List<String> relArr = IntStream.range(0,3).mapToObj(Integer::toString).map(i -> RelationUtils.createRelationString(referencedType, "record_" + i)).collect(Collectors.toList());
+		attributes.putAttribute("array-of-relation", relArr);
 		attributes.putAttribute("attr-ref", ref);
 
 		mockMvc.perform(patch("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId, type,
@@ -1046,6 +1047,7 @@ class RecordControllerMockMvcTest {
 		List<AttributeSchema> expectedAttributes = Arrays.asList(
 				new AttributeSchema("array-of-date", "ARRAY_OF_DATE", null),
 				new AttributeSchema("array-of-datetime", "ARRAY_OF_DATE_TIME", null),
+				new AttributeSchema("array-of-relation", "ARRAY_OF_RELATION", referencedType),
 				new AttributeSchema("array-of-string", "ARRAY_OF_STRING", null),
 				new AttributeSchema("attr-boolean", "BOOLEAN", null),
 				new AttributeSchema("attr-dt", "DATE_TIME", null), new AttributeSchema("attr-json", "JSON", null),
@@ -1329,5 +1331,4 @@ class RecordControllerMockMvcTest {
 				RecordQueryResponse.class);
 		assertEquals(datetimeString, actualMulti.records().get(0).recordAttributes().getAttributeValue("datetimeAttr"));
 	}
-
 }
