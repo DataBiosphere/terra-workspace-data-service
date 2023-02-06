@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dao.TestDao;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.*;
@@ -60,10 +59,6 @@ class RecordControllerMockMvcTest {
 
 	@Autowired
 	TestDao testDao;
-
-	@Autowired
-	RecordDao recordDao;
-
 
 	@BeforeEach
 	void beforeEach() throws Exception {
