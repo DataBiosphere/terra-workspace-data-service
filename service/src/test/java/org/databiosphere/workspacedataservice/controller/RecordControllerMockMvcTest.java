@@ -380,8 +380,7 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void tsvUploadWithRelationsShouldSucceed() throws Exception {
-		// TODO: use mixed-case for refType to ensure case handling within references
-		RecordType refType = RecordType.valueOf("reftype");
+		RecordType refType = RecordType.valueOf("refType");
 		createSomeRecords(refType, 3);
 
 		StringBuilder tsvContent = new StringBuilder("sys_name\trel\trelArr\n");
@@ -514,7 +513,6 @@ class RecordControllerMockMvcTest {
 				.perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType)).andReturn();
 		RecordTypeSchema schema = mapper.readValue(schemaResult.getResponse().getContentAsString(),
 				RecordTypeSchema.class);
-
 		assertEquals("date", schema.attributes().get(0).name());
 		assertEquals("DATE", schema.attributes().get(0).datatype());
 		assertEquals("NUMBER", schema.attributes().get(1).datatype());
