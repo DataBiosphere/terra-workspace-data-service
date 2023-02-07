@@ -1,0 +1,3 @@
+{
+  "connectionString": "InstrumentationKey=<some-uuid>;IngestionEndpoint=<azure-url>;LiveEndpoint=<azure-url>"
+}

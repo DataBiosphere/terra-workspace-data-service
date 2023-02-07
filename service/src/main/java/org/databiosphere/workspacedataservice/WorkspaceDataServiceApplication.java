@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.cfg.CoercionAction;
 import com.fasterxml.jackson.databind.cfg.CoercionInputShape;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.type.LogicalType;
+import com.microsoft.applicationinsights.attach.ApplicationInsights;
 import com.zaxxer.hikari.HikariDataSource;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -129,6 +130,7 @@ public class WorkspaceDataServiceApplication {
 	}
 
 	public static void main(String[] args) {
+		ApplicationInsights.attach();
 		SpringApplication.run(WorkspaceDataServiceApplication.class, args);
 	}
 }
