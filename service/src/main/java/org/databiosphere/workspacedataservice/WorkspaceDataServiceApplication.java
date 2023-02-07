@@ -70,6 +70,7 @@ public class WorkspaceDataServiceApplication {
 		// read schema (column names) from the input file's header
 		CsvSchema tsvHeaderSchema = CsvSchema.emptySchema()
 				.withHeader()
+				.withEscapeChar('\\')
 				.withColumnSeparator('\t');
 
 		final CsvMapper tsvMapper = CsvMapper.builder()
