@@ -80,7 +80,7 @@ public class TsvJsonEquivalenceTest {
             assertIterableEquals((List) expected, tsvList, "TSV array incorrect");
         } else if (expected == null) {
             assertNull(jsonActual, "JSON value should be null");
-            assertNull(tsvActual, "JSON value should be null");
+            assertNull(tsvActual, "TSV value should be null");
         } else {
             assertNotNull(jsonActual, "JSON value should not be null");
             assertNotNull(tsvActual, "TSV value should not be null");

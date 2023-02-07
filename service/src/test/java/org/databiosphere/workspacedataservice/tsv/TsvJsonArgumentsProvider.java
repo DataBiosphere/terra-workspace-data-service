@@ -62,13 +62,15 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
                 Arguments.of("2021-10-03T19:01:23", "2021-10-03T19:01:23",  true),
                 Arguments.of("terra-wds:/type/id",  "terra-wds:/type/id",   true),
 
-                // TODO: these are all passing TsvDeserializerTest but failing TsvJsonEquivalenceTest. Secondary processing somewhere?
-//                Arguments.of("\"\"",                    "",                     false),
-//                Arguments.of("\"12345\"",               "12345",                false),
-//                Arguments.of("\"true\"",                "true",                 false),
-//                Arguments.of("\"false\"",               "false",                false),
-//                Arguments.of("\"{\"foo\":\"bar\"}\"",   "{\"foo\":\"bar\"}",    false),
-//                Arguments.of("\"[1,2,3]\"",             "[1,2,3]",              false),
+                // TODO: these quoted-string tests are failing; fix this somehow.
+                // the TSV parser automatically removes surrounding quotes, and our calling Java code
+                // has no way to detect this happened. Thus, a quoted string of <"123"> gets processed as <123>
+                // and thus becomes a number. Instead, we want all quoted strings to become strings.
+                // Arguments.of("\"\"",                    "",                     false),
+                // Arguments.of("\"12345\"",               "12345",                false),
+                // Arguments.of("\"true\"",                "true",                 false),
+                // Arguments.of("\"false\"",               "false",                false),
+                // Arguments.of("\"[1,2,3]\"",             "[1,2,3]",              false),
 
                 // json packet
                 Arguments.of("{\"foo\":\"bar\", \"baz\": \"qux\"}",
