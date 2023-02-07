@@ -176,6 +176,16 @@ public class BatchWriteService {
 		return batchWriteTsvStream(recordStream, instanceId, recordType, Optional.of(resolvedPK));
 	}
 
+	/**
+	 * Responsible for accepting either a JsonStreamWriteHandler or a TsvStreamWriteHandler, looping over the
+	 * batches of Records found in the handler, and upserting those records.
+	 *
+	 * @param streamingWriteHandler the JsonStreamWriteHandler or a TsvStreamWriteHandler
+	 * @param instanceId instance to which records are upserted
+	 * @param recordType record type of records contained in the write handler
+	 * @param primaryKey PK for the record type
+	 * @return the number of records written
+	 */
 	@WriteTransaction
 	public int consumeWriteStream(StreamingWriteHandler streamingWriteHandler, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		int recordsAffected = 0;
@@ -200,16 +210,8 @@ public class BatchWriteService {
 	}
 
 
-	/**
-	 * All or nothing, write all the operations successfully in the InputStream or
-	 * write none.
-	 *
-	 * @param is
-	 * @param instanceId
-	 * @param recordType
-	 * @param primaryKey
-	 * @return number of records updated
-	 */
+
+	// try-with-resources wrapper for JsonStreamWriteHandler; calls consumeWriteStream.
 	@WriteTransaction
 	public int batchWriteJsonStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		try (StreamingWriteHandler streamingWriteHandler = new JsonStreamWriteHandler(is, objectMapper)) {
@@ -219,6 +221,7 @@ public class BatchWriteService {
 		}
 	}
 
+	// try-with-resources wrapper for TsvStreamWriteHandler; calls consumeWriteStream.
 	@WriteTransaction
 	public int batchWriteTsvStream(Stream<Record> upsertRecords, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		try (StreamingWriteHandler streamingWriteHandler = new TsvStreamWriteHandler(upsertRecords)) {

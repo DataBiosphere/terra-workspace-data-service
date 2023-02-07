@@ -13,6 +13,10 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Stream-reads inbound json using a JsonParser; returns a WriteStreamInfo containing a
+ * batch of Records.
+ */
 public class JsonStreamWriteHandler implements StreamingWriteHandler {
 
 	private final JsonParser parser;
