@@ -138,44 +138,6 @@ public class BatchWriteService {
 		}
 	}
 
-	@WriteTransaction
-	public int uploadTsvStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) throws IOException {
-		MappingIterator<RecordAttributes> tsvIterator = tsvReader.readValues(is);
-
-		// check for no rows in TSV
-		if (!tsvIterator.hasNext()) {
-			throw new InvalidTsvException("We could not parse any data rows in your tsv file.");
-		}
-
-		// extract column names from the schema
-		List<String> colNames;
-		FormatSchema formatSchema = tsvIterator.getParser().getSchema();
-		if (formatSchema instanceof CsvSchema actualSchema) {
-			colNames = actualSchema.getColumnNames();
-		} else {
-			throw new InvalidTsvException("Could not determine primary key column; unexpected schema type:" + formatSchema.getSchemaType());
-		}
-
-		// if a primary key is specified, check if it is present in the TSV
-		if (primaryKey.isPresent() && !colNames.contains(primaryKey.get())) {
-			throw new InvalidTsvException(
-					"Uploaded TSV is either missing the " + primaryKey
-							+ " column or has a null or empty string value in that column");
-		}
-
-		// if primary key is not specified, use the leftmost column
-		String resolvedPK = primaryKey.orElseGet( () -> colNames.get(0) );
-
-		// convert the tsvIterator, which is a MappingIterator<RecordAttributes>, to a Stream<Record>
-		TsvConverter tsvConverter = new TsvConverter();
-		Stream<RecordAttributes> tsvStream = StreamSupport.stream(
-				Spliterators.spliteratorUnknownSize(tsvIterator, Spliterator.ORDERED), false);
-		Stream<Record> recordStream = tsvConverter.rowsToRecords(tsvStream, recordType, resolvedPK);
-
-		// hand off the Stream<Record> to be batch-written
-		return batchWriteTsvStream(recordStream, instanceId, recordType, Optional.of(resolvedPK));
-	}
-
 	/**
 	 * Responsible for accepting either a JsonStreamWriteHandler or a TsvStreamWriteHandler, looping over the
 	 * batches of Records found in the handler, and upserting those records.
@@ -223,8 +185,8 @@ public class BatchWriteService {
 
 	// try-with-resources wrapper for TsvStreamWriteHandler; calls consumeWriteStream.
 	@WriteTransaction
-	public int batchWriteTsvStream(Stream<Record> upsertRecords, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
-		try (StreamingWriteHandler streamingWriteHandler = new TsvStreamWriteHandler(upsertRecords)) {
+	public int batchWriteTsvStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
+		try (StreamingWriteHandler streamingWriteHandler = new TsvStreamWriteHandler(is, tsvReader, recordType, primaryKey)) {
 			return consumeWriteStream(streamingWriteHandler, instanceId, recordType, primaryKey);
 		} catch (IOException e) {
 			throw new BadStreamingWriteRequestException(e);

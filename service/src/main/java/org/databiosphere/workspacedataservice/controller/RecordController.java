@@ -114,7 +114,7 @@ public class RecordController {
 		if(recordDao.recordTypeExists(instanceId, recordType)){
 			validatePrimaryKey(instanceId, recordType, primaryKey);
 		}
-		int recordsModified = batchWriteService.uploadTsvStream(records.getInputStream(), instanceId, recordType, primaryKey);
+		int recordsModified = batchWriteService.batchWriteTsvStream(records.getInputStream(), instanceId, recordType, primaryKey);
 		return new ResponseEntity<>(new TsvUploadResponse(recordsModified, "Updated " + recordType.toString()),
 				HttpStatus.OK);
 	}
