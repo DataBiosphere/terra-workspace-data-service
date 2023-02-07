@@ -57,13 +57,6 @@ public class TsvOnlyArgumentsProvider implements ArgumentsProvider {
                 // leading decimal point on numbers
                 // these could be enabled in JSON by turning on JsonReadFeature.ALLOW_LEADING_DECIMAL_POINT_FOR_NUMBERS in the mapper
                 Arguments.of(".123", BigDecimal.valueOf(0.123)) // leading decimal
-
-                // json, using double-doublequotes
-                // TODO: see small-test.tsv and RecordControllerMockMvcTest.uploadTsvAndVerifySchema
-//                Arguments.of("{\"\"foo\"\":\"\"bar\"\"}", Map.of("foo", "bar"))
-
-
-
         );
     }
 }
