@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -11,6 +12,8 @@ import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -19,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
@@ -102,6 +106,10 @@ public class DataTypeInferer {
 		// when we load from TSV, numbers are converted to strings, we need to go back
 		// to numbers
 		String sVal = val.toString();
+		if (isFileType(sVal)){
+			return FILE;
+		}
+
 
 		if (isNumericValue(sVal)) {
 			return NUMBER;
@@ -126,6 +134,9 @@ public class DataTypeInferer {
 		}
 		if (isValidJson(sVal)) {
 			return JSON;
+		}
+		if (isFileType(sVal)){
+			return FILE;
 		}
 		if(isArray(sVal)){
 			return findArrayTypeFromJson(sVal);
@@ -256,6 +267,9 @@ public class DataTypeInferer {
 			if (Arrays.stream(stringArr).allMatch(RelationUtils::isRelationValue)){
 				return ARRAY_OF_RELATION;
 			}
+			if (Arrays.stream(stringArr).allMatch(this::isFileType)){
+				return ARRAY_OF_FILE;
+			}
 			return ARRAY_OF_STRING;
 		}
 		if(stringArr != null){
@@ -334,5 +348,12 @@ public class DataTypeInferer {
 			relationArrays.addAll(relationArraysForThisRecord);
 		}
 		return new RelationCollection(relations, relationArrays);
+	}
+
+	private boolean isFileType(String possibleFile){
+		//https://[].blob.core.windows.net/sc-[] or drs://[]
+		Pattern AZURE_FILE_PATTERN = Pattern.compile("https://[a-z0-9]*.blob.core.windows.net/sc-[a-z0-9-]*", Pattern.CASE_INSENSITIVE);
+		Pattern DRS_FILE_PATTERN = Pattern.compile("drs://[a-z0-9.\\/\\-_]*", Pattern.CASE_INSENSITIVE);
+		return AZURE_FILE_PATTERN.matcher(possibleFile).matches() || DRS_FILE_PATTERN.matcher(possibleFile).matches();
 	}
 }
