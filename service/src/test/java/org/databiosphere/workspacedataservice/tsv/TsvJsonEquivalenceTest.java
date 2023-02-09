@@ -71,13 +71,10 @@ public class TsvJsonEquivalenceTest {
         Object tsvActual = tsvAttributes.getAttributeValue("col1");
         Object jsonActual = jsonAttributes.getAttributeValue("col1");
 
-        //noinspection rawtypes
-        if (tsvActual instanceof List tsvList && jsonActual instanceof List jsonList) {
+        if (tsvActual instanceof List<?> tsvList && jsonActual instanceof List<?> jsonList) {
             assertIterableEquals(jsonList, tsvList, "JSON and TSV arrays should be equal");
-            //noinspection rawtypes
-            assertIterableEquals((List) expected, jsonList, "JSON array incorrect");
-            //noinspection rawtypes
-            assertIterableEquals((List) expected, tsvList, "TSV array incorrect");
+            assertIterableEquals((List<?>) expected, jsonList, "JSON array incorrect");
+            assertIterableEquals((List<?>) expected, tsvList, "TSV array incorrect");
         } else if (expected == null) {
             assertNull(jsonActual, "JSON value should be null");
             assertNull(tsvActual, "TSV value should be null");

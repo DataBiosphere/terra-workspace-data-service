@@ -64,10 +64,8 @@ public class TsvDeserializerTest {
     void cellToAttributeTest(String input, Object expected) {
         Object actual = tsvDeserializer.cellToAttribute(input);
 
-        //noinspection rawtypes
-        if (expected instanceof List expectedList) {
-            //noinspection rawtypes
-            assertIterableEquals(expectedList, (List)actual, "cellToAttribute for input value <%s> should return <%s>".formatted(input, expected));
+        if (expected instanceof List<?> expectedList) {
+            assertIterableEquals(expectedList, (List<?>)actual, "cellToAttribute for input value <%s> should return <%s>".formatted(input, expected));
         } else if (expected instanceof Map) {
             // map types can differ; don't check instanceof
             assertEquals(expected, actual, "cellToAttribute for input value <%s> should return <%s>".formatted(input, expected));
