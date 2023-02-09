@@ -27,7 +27,7 @@ import java.util.stream.StreamSupport;
  */
 public class TsvStreamWriteHandler implements StreamingWriteHandler {
 
-	private Spliterator<Record> recordSpliterator;
+	private final Spliterator<Record> recordSpliterator;
 
 	private final InputStream inputStream;
 	private final MappingIterator<RecordAttributes> tsvIterator;
