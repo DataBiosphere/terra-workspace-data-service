@@ -12,5 +12,8 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.domains WHERE domain_name = ''file'') THEN
         create domain file as text;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.domains WHERE domain_name = ''array_of_file'') THEN
+        create domain array_of_file as text[];
+    END IF;
 END;
 ';

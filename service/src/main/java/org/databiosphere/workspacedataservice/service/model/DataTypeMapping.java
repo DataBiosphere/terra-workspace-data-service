@@ -21,7 +21,7 @@ public enum DataTypeMapping {
 	ARRAY_OF_DATE_TIME(String[].class, "timestamp with time zone[]", true, "?::timestamp with time zone[]"),
 	ARRAY_OF_STRING(String[].class, "text[]", true, "?"),
 	ARRAY_OF_RELATION(String[].class, "array_of_relation", true, "?"),
-	ARRAY_OF_FILE(String[].class, "text[]", true, "?"),
+	ARRAY_OF_FILE(String[].class, "array_of_file", true, "?"),
 	ARRAY_OF_BOOLEAN(Boolean[].class, "boolean[]", true, "?");
 
 	private Class javaArrayTypeForDbWrites;
