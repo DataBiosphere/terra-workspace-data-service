@@ -29,8 +29,13 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 
 	private Spliterator<Record> recordSpliterator;
 
+	private final InputStream inputStream;
+	private final MappingIterator<RecordAttributes> tsvIterator;
+
+
 	public TsvStreamWriteHandler(InputStream inputStream, ObjectReader tsvReader, RecordType recordType, Optional<String> primaryKey) throws IOException {
-		MappingIterator<RecordAttributes> tsvIterator = tsvReader.readValues(inputStream);
+		this.inputStream = inputStream;
+		this.tsvIterator = tsvReader.readValues(inputStream);
 
 		// check for no rows in TSV
 		if (!tsvIterator.hasNext()) {
@@ -81,7 +86,8 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 
 	@Override
 	public void close() throws IOException {
-		// noop, nothing to close
+		inputStream.close();
+		tsvIterator.close();
 	}
 
 
