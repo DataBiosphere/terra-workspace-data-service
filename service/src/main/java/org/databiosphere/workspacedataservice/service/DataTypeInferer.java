@@ -103,10 +103,6 @@ public class DataTypeInferer {
 		// when we load from TSV, numbers are converted to strings, we need to go back
 		// to numbers
 		String sVal = val.toString();
-		if (isFileType(sVal)){
-			return FILE;
-		}
-
 
 		if (isNumericValue(sVal)) {
 			return NUMBER;
@@ -348,8 +344,8 @@ public class DataTypeInferer {
 	}
 
 	private boolean isFileType(String possibleFile){
-		//https://[].blob.core.windows.net/sc-[] or drs://[]
-		Pattern AZURE_FILE_PATTERN = Pattern.compile("https://[a-z0-9]*.blob.core.windows.net/sc-[a-z0-9-]*", Pattern.CASE_INSENSITIVE);
+		//https://[].blob.core.windows.net/[] or drs://[]
+		Pattern AZURE_FILE_PATTERN = Pattern.compile("https://[a-z0-9]*.blob.core.windows.net/[a-z0-9.\\/\\-_]*", Pattern.CASE_INSENSITIVE);
 		Pattern DRS_FILE_PATTERN = Pattern.compile("drs://[a-z0-9.\\/\\-_]*", Pattern.CASE_INSENSITIVE);
 		return AZURE_FILE_PATTERN.matcher(possibleFile).matches() || DRS_FILE_PATTERN.matcher(possibleFile).matches();
 	}

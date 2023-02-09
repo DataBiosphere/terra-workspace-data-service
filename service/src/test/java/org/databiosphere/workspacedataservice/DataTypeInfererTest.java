@@ -133,7 +133,7 @@ class DataTypeInfererTest {
 		assertThat(inferer.inferType(List.of(RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId"), RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId2"), RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId3")), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_RELATION);
 		assertThat(inferer.inferType(List.of(RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId"), "not a relation string", RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId3")), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
 		assertThat(inferer.inferType(RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId3"), InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.RELATION);
-		assertThat(inferer.inferType("https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.FILE);
+		assertThat(inferer.inferType("https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.pdf", InBoundDataSource.JSON)).isEqualTo(DataTypeMapping.FILE);
 	}
 
 	@Test
@@ -165,8 +165,8 @@ class DataTypeInfererTest {
 						Map.entry("rel_arr", List.of(RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId"),
 								RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId2"),
 								RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId3"))),
-						Map.entry("file_val", "https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f"),
-						Map.entry("array_of_file", List.of("https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f","drs://jade.datarepo-dev.broadinstitute.org/v1_9545e956-aa6a-4b84-a037-d0ed164c1890"))
+						Map.entry("file_val", "https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file."),
+						Map.entry("array_of_file", List.of("https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/notebook.ipynb","drs://jade.datarepo-dev.broadinstitute.org/v1_9545e956-aa6a-4b84-a037-d0ed164c1890"))
 				));
 	}
 
@@ -174,9 +174,9 @@ class DataTypeInfererTest {
 		return new RecordAttributes(
 				Map.of("int_val", "4747", "string_val", "Abracadabra Open Sesame", "json_val", "{\"list\": [\"a\", \"b\"]}",
 						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00",
-						"file_val", "https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f",
+						"file_val", "https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.bam",
 						"array_of_file",
-						"[\"https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f\",\"drs://jade.datarepo-dev.broadinstitute.org/v1_9545e956-aa6a-4b84-a037-d0ed164c1890\"]",
+						"[\"https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.fasta\",\"drs://jade.datarepo-dev.broadinstitute.org/v1_9545e956-aa6a-4b84-a037-d0ed164c1890\"]",
 						"number_or_string", "47",
 						"relation", RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId"),
 						"rel_arr", "[\""+RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId")+"\", \""
