@@ -117,7 +117,7 @@ public class DataTypeInferer {
 	 * @param val
 	 * @return the data type we want to use for this value
 	 */
-	public DataTypeMapping inferTypeForJsonSource(Object val) {
+	public DataTypeMapping inferType(Object val) {
 		// null does not tell us much, this results in a text data type in the db if
 		// everything in batch is null
 		// if there are non-null values in the batch this return value will let those
@@ -152,10 +152,6 @@ public class DataTypeInferer {
 
 	public boolean isValidBoolean(String sVal) {
 		return sVal.equalsIgnoreCase("true") || sVal.equalsIgnoreCase("false");
-	}
-
-	public DataTypeMapping inferType(Object val) {
-		return inferTypeForJsonSource(val);
 	}
 
 	public boolean isNumericValue(String sVal) {
