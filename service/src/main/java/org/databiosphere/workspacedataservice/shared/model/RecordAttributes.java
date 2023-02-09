@@ -97,7 +97,7 @@ public class RecordAttributes {
 		return this;
 	}
 
-	public RecordAttributes remove(String key) {
+	public RecordAttributes removeAttribute(String key) {
 		this.attributes.remove(key);
 		return this;
 	}

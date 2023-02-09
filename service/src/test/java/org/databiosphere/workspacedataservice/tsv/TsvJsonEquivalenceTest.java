@@ -40,7 +40,7 @@ public class TsvJsonEquivalenceTest {
         MappingIterator<RecordAttributes> tsvIterator = tsvReader.readValues(inputStreamReader);
         // take the first row from the TSV, and remove its primary key
         RecordAttributes recordAttributes = tsvIterator.next();
-        recordAttributes.remove(RECORD_ID);
+        recordAttributes.removeAttribute(RECORD_ID);
 
         return recordAttributes;
     }

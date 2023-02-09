@@ -63,6 +63,7 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 
 		// convert the tsvIterator, which is a MappingIterator<RecordAttributes>, to a Stream<Record>
 		TsvConverter tsvConverter = new TsvConverter();
+		// TODO: can we avoid the extra conversion to Stream in MappingIterator<RecordAttributes>  -> Stream<RecordAttributes> -> Spliterator<Record>?
 		Stream<RecordAttributes> tsvStream = StreamSupport.stream(
 				Spliterators.spliteratorUnknownSize(tsvIterator, Spliterator.ORDERED), false);
 		recordSpliterator = tsvConverter.rowsToRecords(tsvStream, recordType, resolvedPK).spliterator();

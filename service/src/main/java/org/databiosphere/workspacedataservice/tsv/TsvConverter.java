@@ -25,7 +25,7 @@ public class TsvConverter {
                     "Uploaded TSV is either missing the " + primaryKey
                             + " column or has a null or empty string value in that column");
         }
-        row.remove(primaryKey);
+        row.removeAttribute(primaryKey);
         return new Record(recordId.toString(), recordType, row);
     }
 
