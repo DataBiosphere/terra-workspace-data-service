@@ -1177,6 +1177,25 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void batchWriteInsertShouldSucceedIfMultipleBatches(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
+		int totalRecords = Math.round(batchSize*1.5f);
+		RecordType newBatchRecordType = RecordType.valueOf("multi-batch");
+		List<BatchOperation> ops = new ArrayList();
+		for (int i = 0; i < batchSize * 1.5; i++) {
+			String recordId = "record_" + i;
+			Record record = new Record(recordId, newBatchRecordType,
+					new RecordAttributes(Map.of("key", "value_" + i)));
+			ops.add(new BatchOperation(record, OperationType.UPSERT));
+		}
+
+		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, newBatchRecordType)
+						.content(mapper.writeValueAsString(ops))
+						.contentType(MediaType.APPLICATION_JSON)).andExpect(jsonPath("$.recordsModified", is(totalRecords)))
+				.andExpect(jsonPath("$.message", is("Huzzah"))).andExpect(status().isOk());
+	}
+
+	@Test
+	@Transactional
 	void batchWriteWithRelationsShouldSucceed() throws Exception {
 		RecordType referenced = RecordType.valueOf("referenced");
 		createSomeRecords(referenced, 4);
