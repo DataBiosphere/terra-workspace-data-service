@@ -124,7 +124,11 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
             }
         }
 
-        // arrays
+        // arrays.
+        // pseudocode:
+        // if this string value looks like an array when lower-cased,
+        //    try to parse the array in its original case; use the result if parsing succeeds.
+        //    if parsing failed, try again to parse the array as lower-cased; only use this result if it is an array of booleans.
         String smartQuotesRemoved = inferer.replaceLeftRightQuotes(val);
         if (inferer.isArray(smartQuotesRemoved.toLowerCase())) {
             try {
