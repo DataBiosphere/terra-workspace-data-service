@@ -76,6 +76,11 @@ public class BatchWriteService {
 		for (Map.Entry<String, MapDifference.ValueDifference<DataTypeMapping>> entry : differenceMap.entrySet()) {
 			String column = entry.getKey();
 			MapDifference.ValueDifference<DataTypeMapping> valueDifference = entry.getValue();
+			//Don't allow updating relation columns
+			if (valueDifference.leftValue() == DataTypeMapping.ARRAY_OF_RELATION ||
+					valueDifference.leftValue() == DataTypeMapping.RELATION ){
+				throw new InvalidRelationException("Unable to update a relation or array of relation attribute type");
+			}
 			DataTypeMapping updatedColType = inferer.selectBestType(valueDifference.leftValue(),
 					valueDifference.rightValue());
 			recordDao.changeColumn(instanceId, recordType, column, updatedColType);

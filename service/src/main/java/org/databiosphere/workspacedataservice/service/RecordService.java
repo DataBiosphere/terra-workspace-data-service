@@ -38,6 +38,8 @@ public class RecordService {
         Map<Relation, List<RelationValue>> relationArrayValues = getAllRelationArrayValues(records, relationArrays);
         recordDao.batchUpsert(instanceId, recordType, records, requestSchema, primaryKey);
         for (Map.Entry<Relation, List<RelationValue>> rel : relationArrayValues.entrySet()) {
+            //remove existing values from join table and replace with new ones
+            recordDao.removeFromJoin(instanceId, rel.getKey(), recordType, rel.getValue().stream().map(relVal -> relVal.fromRecord().getId()).toList());
             recordDao.insertIntoJoin(instanceId, rel.getKey(), recordType, rel.getValue());
         }
     }
