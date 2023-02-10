@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import bio.terra.common.db.ReadTransaction;
 import bio.terra.common.db.WriteTransaction;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.csv.CSVPrinter;
@@ -11,7 +12,6 @@ import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.ReservedNames;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.NewPrimaryKeyException;
-import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
@@ -24,10 +24,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -46,7 +42,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
-public class RecordOrchestratorService {
+public class RecordOrchestratorService { // TODO give me a better name
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RecordOrchestratorService.class);
     private static final String VERSION = "v0.2";
@@ -70,6 +66,7 @@ public class RecordOrchestratorService {
         this.objectMapper = objectMapper;
     }
 
+    @WriteTransaction
     public RecordResponse updateSingleRecord(UUID instanceId, String version, RecordType recordType, String recordId,
                               RecordRequest recordRequest) {
         validateVersion(version);
@@ -90,6 +87,7 @@ public class RecordOrchestratorService {
         return new RecordResponse(recordId, recordType, singleRecord.getAttributes());
     }
 
+    @ReadTransaction
     public RecordResponse getSingleRecord(UUID instanceId, String version, RecordType recordType, String recordId) {
         validateVersion(version);
         validateInstance(instanceId);
@@ -112,6 +110,7 @@ public class RecordOrchestratorService {
         return recordsModified;
     }
 
+    // TODO: enable read transaction
     public StreamingResponseBody streamAllEntities(UUID instanceId, String version, RecordType recordType) {
         validateVersion(version);
         validateInstance(instanceId);
@@ -129,6 +128,7 @@ public class RecordOrchestratorService {
         };
     }
 
+    @ReadTransaction
     public RecordQueryResponse queryForRecords(UUID instanceId, RecordType recordType, String version,
                                                SearchRequest searchRequest) {
         validateVersion(version);
@@ -159,6 +159,7 @@ public class RecordOrchestratorService {
         return new RecordQueryResponse(searchRequest, recordList, totalRecords);
     }
 
+    @WriteTransaction
     public ResponseEntity<RecordResponse> upsertSingleRecord(UUID instanceId,String version, RecordType recordType,
                                                              String recordId, Optional<String> primaryKey,
                                                              RecordRequest recordRequest) {
@@ -192,6 +193,7 @@ public class RecordOrchestratorService {
         }
     }
 
+    @WriteTransaction
     public boolean deleteSingleRecord(UUID instanceId, String version, RecordType recordType, String recordId) {
         validateVersion(version);
         validateInstance(instanceId);
@@ -199,6 +201,7 @@ public class RecordOrchestratorService {
         return recordDao.deleteSingleRecord(instanceId, recordType, recordId);
     }
 
+    @WriteTransaction
     public void deleteRecordType(UUID instanceId, String version, RecordType recordType) {
         validateVersion(version);
         validateInstance(instanceId);
@@ -206,19 +209,21 @@ public class RecordOrchestratorService {
         recordDao.deleteRecordType(instanceId, recordType);
     }
 
+    @ReadTransaction
+    public RecordTypeSchema describeRecordType(UUID instanceId, String version, RecordType recordType) {
+        validateVersion(version);
+        validateInstance(instanceId);
+        checkRecordTypeExists(instanceId, recordType);
+        return getSchemaDescription(instanceId, recordType);
+    }
+
+    @ReadTransaction
     public List<RecordTypeSchema> describeAllRecordTypes(UUID instanceId, String version) {
         validateVersion(version);
         validateInstance(instanceId);
         List<RecordType> allRecordTypes = recordDao.getAllRecordTypes(instanceId);
         return allRecordTypes.stream()
             .map(recordType -> getSchemaDescription(instanceId, recordType)).toList();
-    }
-
-    public RecordTypeSchema describeRecordType(UUID instanceId, String version, RecordType recordType) {
-        validateVersion(version);
-        validateInstance(instanceId);
-        checkRecordTypeExists(instanceId, recordType);
-        return getSchemaDescription(instanceId, recordType);
     }
 
     public int streamingWrite(UUID instanceId, String version, RecordType recordType,

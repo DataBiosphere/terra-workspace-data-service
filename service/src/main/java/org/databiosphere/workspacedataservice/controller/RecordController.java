@@ -1,25 +1,16 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import bio.terra.common.db.ReadTransaction;
 import bio.terra.common.db.WriteTransaction;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.csv.CSVPrinter;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.service.*;
-import org.databiosphere.workspacedataservice.service.model.*;
-import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
-import org.databiosphere.workspacedataservice.service.model.exception.NewPrimaryKeyException;
+import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
+import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
-import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.databiosphere.workspacedataservice.shared.model.TsvUploadResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -39,11 +30,9 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 public class RecordController {
@@ -57,7 +46,6 @@ public class RecordController {
 	}
 
 	@PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
-	@WriteTransaction
 	public ResponseEntity<RecordResponse> updateSingleRecord(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") String recordId, @RequestBody RecordRequest recordRequest) {
@@ -67,7 +55,6 @@ public class RecordController {
 	}
 
 	@GetMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
-	@ReadTransaction
 	public ResponseEntity<RecordResponse> getSingleRecord(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") String recordId) {
@@ -87,7 +74,6 @@ public class RecordController {
 	}
 
 	@GetMapping("/{instanceId}/tsv/{version}/{recordType}")
-	// TODO: enable read transaction
 	public ResponseEntity<StreamingResponseBody> streamAllEntities(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType) {
 		StreamingResponseBody responseBody =
@@ -98,7 +84,6 @@ public class RecordController {
 	}
 
 	@PostMapping("/{instanceid}/search/{version}/{recordType}")
-	@ReadTransaction
 	public RecordQueryResponse queryForRecords(@PathVariable("instanceid") UUID instanceId,
 			@PathVariable("recordType") RecordType recordType,
 			@PathVariable("version") String version,
@@ -107,7 +92,6 @@ public class RecordController {
 	}
 
 	@PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
-	@WriteTransaction
 	public ResponseEntity<RecordResponse> upsertSingleRecord(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") String recordId, @RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey,
@@ -116,14 +100,7 @@ public class RecordController {
 				recordRequest);
 	}
 
-	private void validatePrimaryKey(UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
-		if (primaryKey.isPresent() && !primaryKey.get().equals(recordDao.getPrimaryKeyColumn(recordType, instanceId))) {
-			throw new NewPrimaryKeyException(primaryKey.get(), recordType);
-		}
-	}
-
 	@GetMapping("/instances/{version}")
-	@ReadTransaction
 	public ResponseEntity<List<UUID>> listInstances(@PathVariable("version") String version) {
 		RecordOrchestratorService.validateVersion(version);
 		List<UUID> schemaList = recordDao.listInstanceSchemas();
@@ -153,7 +130,6 @@ public class RecordController {
 	}
 
 	@DeleteMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
-	@WriteTransaction
 	public ResponseEntity<Void> deleteSingleRecord(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") String recordId) {
@@ -162,7 +138,6 @@ public class RecordController {
 	}
 
 	@DeleteMapping("/{instanceId}/types/{v}/{type}")
-	@WriteTransaction
 	public ResponseEntity<Void> deleteRecordType(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType) {
 		recordOrchestratorService.deleteRecordType(instanceId, version, recordType);
@@ -170,15 +145,13 @@ public class RecordController {
 	}
 
 	@GetMapping("/{instanceId}/types/{v}/{type}")
-	@ReadTransaction
 	public ResponseEntity<RecordTypeSchema> describeRecordType(@PathVariable("instanceId") UUID instanceId,
-			@PathVariable("v") String version, @PathVariable("type") RecordType recordType) {
+															   @PathVariable("v") String version, @PathVariable("type") RecordType recordType) {
 		RecordTypeSchema result = recordOrchestratorService.describeRecordType(instanceId, version, recordType);
 		return new ResponseEntity<>(result, HttpStatus.OK);
 	}
 
 	@GetMapping("/{instanceId}/types/{v}")
-	@ReadTransaction
 	public ResponseEntity<List<RecordTypeSchema>> describeAllRecordTypes(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("v") String version) {
 		List<RecordTypeSchema> result = recordOrchestratorService.describeAllRecordTypes(instanceId, version);
