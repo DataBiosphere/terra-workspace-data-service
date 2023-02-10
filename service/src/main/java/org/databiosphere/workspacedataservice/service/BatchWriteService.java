@@ -1,11 +1,8 @@
 package org.databiosphere.workspacedataservice.service;
 
 import bio.terra.common.db.WriteTransaction;
-import com.fasterxml.jackson.core.FormatSchema;
-import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
@@ -16,10 +13,9 @@ import org.databiosphere.workspacedataservice.service.model.exception.BadStreami
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
-import org.databiosphere.workspacedataservice.service.model.exception.InvalidTsvException;
-import org.databiosphere.workspacedataservice.shared.model.*;
+import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.databiosphere.workspacedataservice.tsv.TsvConverter;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,10 +25,12 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
