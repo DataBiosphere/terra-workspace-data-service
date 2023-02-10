@@ -188,7 +188,7 @@ public class DataTypeInferer {
 			return EMPTY_ARRAY;
 		}
 		List<DataTypeMapping> inferredTypes = list.stream()
-				.map(item -> inferType(item))
+				.map(this::inferType)
 				.distinct()
 				.toList();
 		DataTypeMapping bestMapping = inferredTypes.get(0);
