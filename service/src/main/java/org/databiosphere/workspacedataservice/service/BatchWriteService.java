@@ -147,7 +147,6 @@ public class BatchWriteService {
 	 * @param primaryKey PK for the record type
 	 * @return the number of records written
 	 */
-	@WriteTransaction
 	public int consumeWriteStream(StreamingWriteHandler streamingWriteHandler, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		int recordsAffected = 0;
 		try {
@@ -173,6 +172,7 @@ public class BatchWriteService {
 
 
 	// try-with-resources wrapper for JsonStreamWriteHandler; calls consumeWriteStream.
+	@WriteTransaction
 	public int batchWriteJsonStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		try (StreamingWriteHandler streamingWriteHandler = new JsonStreamWriteHandler(is, objectMapper)) {
 			return consumeWriteStream(streamingWriteHandler, instanceId, recordType, primaryKey);
@@ -182,6 +182,7 @@ public class BatchWriteService {
 	}
 
 	// try-with-resources wrapper for TsvStreamWriteHandler; calls consumeWriteStream.
+	@WriteTransaction
 	public int batchWriteTsvStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		try (StreamingWriteHandler streamingWriteHandler = new TsvStreamWriteHandler(is, tsvReader, recordType, primaryKey)) {
 			return consumeWriteStream(streamingWriteHandler, instanceId, recordType, primaryKey);
