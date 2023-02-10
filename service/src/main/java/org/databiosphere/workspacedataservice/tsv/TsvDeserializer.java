@@ -158,7 +158,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
             Stream<JsonNode> jsonElements = StreamSupport.stream(
                     Spliterators.spliteratorUnknownSize(arrayNode.elements(), Spliterator.ORDERED), false);
 
-            return jsonElements.map( el -> arrayElementToObject(el)).toList();
+            return jsonElements.map(this::arrayElementToObject).toList();
         } else {
             throw new RuntimeException("DataTypeInferer.isArray returned true, but the parsed value did not resolve to ArrayNode");
         }
