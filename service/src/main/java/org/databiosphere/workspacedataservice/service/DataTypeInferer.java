@@ -200,33 +200,6 @@ public class DataTypeInferer {
 		return DataTypeMapping.getArrayTypeForBase(bestMapping);
 	}
 
-	private DataTypeMapping findArrayTypeFromJson(String val)  {
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Boolean[].class))){
-			return ARRAY_OF_BOOLEAN;
-		}
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Double[].class))){
-			return ARRAY_OF_NUMBER;
-		}
-		//order matters an array of LocalDateTime will be parsed to LocalDate
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, LocalDateTime[].class))){
-			return ARRAY_OF_DATE_TIME;
-		}
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, LocalDate[].class))){
-			return ARRAY_OF_DATE;
-		}
-		String[] stringArr = getArrayOfType(val, String[].class);
-		if(ArrayUtils.isNotEmpty(stringArr)){
-			if (Arrays.stream(stringArr).allMatch(RelationUtils::isRelationValue)){
-				return ARRAY_OF_RELATION;
-			}
-			return ARRAY_OF_STRING;
-		}
-		if(stringArr != null){
-			return EMPTY_ARRAY;
-		}
-		throw new IllegalArgumentException("Unsupported array type " + val);
-	}
-
 	public <T> T[] getArrayOfType(String val, Class<T[]> clazz) {
 		try {
 			String escapedValue = replaceLeftRightQuotes(val);
