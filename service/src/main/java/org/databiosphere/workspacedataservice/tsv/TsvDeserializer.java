@@ -103,7 +103,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
      */
     public Object cellToAttribute(String val) {
         // nulls
-        if (Objects.isNull(val) || StringUtils.isEmpty(val)) {
+        if (StringUtils.isEmpty(val)) {
             return null;
         }
         /* quoted values: always return as string. This only comes into play when processing array elements;
@@ -143,26 +143,32 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
         //    if parsing failed, try again to parse the array as lower-cased; only use this result if it is an array of booleans.
         String smartQuotesRemoved = inferer.replaceLeftRightQuotes(val);
         if (inferer.isArray(smartQuotesRemoved.toLowerCase())) {
-            try {
-                return jsonStringToList(smartQuotesRemoved);
-            } catch (JsonProcessingException e) {
-                // We encountered an error parsing the JSON. This could be due to improperly-cased boolean values.
-                // Perform an extra expensive check specifically to parse those booleans.
-                // expensive detection of any-cased booleans
-                try {
-                    List<?> lowerElements = jsonStringToList(smartQuotesRemoved.toLowerCase());
-                    if (lowerElements.stream().allMatch(Boolean.class::isInstance)) {
-                        return lowerElements;
-                    }
-                } catch (JsonProcessingException innerException) {
-                    // noop; fall through to the logger/return null just below
-                }
-                LOGGER.error(e.getMessage(), e);
-                return null;
-            }
+            return cellToArray(smartQuotesRemoved);
         }
         return val;
     }
+
+    @SuppressWarnings("java:S1452") // until/unless we strongly type RecordAttributes values, this will be <?>
+    public List<?> cellToArray(String val) {
+        try {
+            return jsonStringToList(val);
+        } catch (JsonProcessingException e) {
+            // We encountered an error parsing the JSON. This could be due to improperly-cased boolean values.
+            // Perform an extra expensive check specifically to parse those booleans.
+            // expensive detection of any-cased booleans
+            try {
+                List<?> lowerElements = jsonStringToList(val.toLowerCase());
+                if (lowerElements.stream().allMatch(Boolean.class::isInstance)) {
+                    return lowerElements;
+                }
+            } catch (JsonProcessingException innerException) {
+                // noop; fall through to the logger/return null just below
+            }
+            LOGGER.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
 
     @SuppressWarnings("java:S1452") // until/unless we strongly type RecordAttributes values, this will be <?>
     public List<?> jsonStringToList(String input) throws JsonProcessingException {
