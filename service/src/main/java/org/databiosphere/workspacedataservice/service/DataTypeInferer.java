@@ -14,12 +14,13 @@ import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
@@ -344,9 +345,18 @@ public class DataTypeInferer {
 	}
 
 	private boolean isFileType(String possibleFile){
+		URI fileUri;
+		try {
+			fileUri = new URI(possibleFile);
+			//Many non-URI strings will parse without exception but have no scheme or host
+			if (fileUri.getScheme() == null || fileUri.getHost() == null){
+				return false;
+			}
+		} catch (URISyntaxException use) {
+			return false;
+		}
 		//https://[].blob.core.windows.net/[] or drs://[]
-		Pattern AZURE_FILE_PATTERN = Pattern.compile("https://[a-z0-9]*.blob.core.windows.net/[a-z0-9.\\/\\-_]*", Pattern.CASE_INSENSITIVE);
-		Pattern DRS_FILE_PATTERN = Pattern.compile("drs://[a-z0-9.\\/\\-_]*", Pattern.CASE_INSENSITIVE);
-		return AZURE_FILE_PATTERN.matcher(possibleFile).matches() || DRS_FILE_PATTERN.matcher(possibleFile).matches();
+		return fileUri.getScheme().equalsIgnoreCase("drs") ||
+				(fileUri.getScheme().equalsIgnoreCase("https") && fileUri.getHost().toLowerCase().endsWith(".blob.core.windows.net"));
 	}
 }
