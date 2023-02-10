@@ -7,9 +7,14 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.node.*;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.NumericNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
+import org.databiosphere.workspacedataservice.service.model.exception.UnexpectedTsvException;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +22,13 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -95,8 +106,9 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
         if (Objects.isNull(val) || StringUtils.isEmpty(val)) {
             return null;
         }
-        // quoted values: always return as string. This only comes into play when processing array elements;
-        // the CSV reader strips surrounding quotes from top-level values.
+        /* quoted values: always return as string. This only comes into play when processing array elements;
+         * the CSV reader strips surrounding quotes from top-level values.
+         */
         if (val.startsWith("\"") && val.endsWith("\"")) {
             return val.substring(1, val.length()-1);
         }
@@ -152,6 +164,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
         return val;
     }
 
+    @SuppressWarnings("java:S1452") // until/unless we strongly type RecordAttributes values, this will be <?>
     public List<?> jsonStringToList(String input) throws JsonProcessingException {
         JsonNode node = objectMapper.readTree(input);
         if (node instanceof ArrayNode arrayNode) {
@@ -160,7 +173,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
 
             return jsonElements.map(this::arrayElementToObject).toList();
         } else {
-            throw new RuntimeException("DataTypeInferer.isArray returned true, but the parsed value did not resolve to ArrayNode");
+            throw new UnexpectedTsvException("DataTypeInferer.isArray returned true, but the parsed value did not resolve to ArrayNode");
         }
     }
 
@@ -188,7 +201,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
         if (element instanceof TextNode strElement) {
             return cellToAttribute(strElement.toString());
         }
-        throw new RuntimeException("expected an interpretable element, got: " + element.getClass().getName());
+        throw new UnexpectedTsvException("expected an interpretable element, got: " + element.getClass().getName());
     }
 
 }
