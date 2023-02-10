@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.ArrayUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
@@ -14,10 +13,13 @@ import org.springframework.util.CollectionUtils;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
@@ -108,13 +110,13 @@ public class DataTypeInferer {
 	/**
 	 * JSON input format has more type information so we do a little less guessing
 	 * here than we do with a TSV input
-	 *
+	 * <p>
 	 * Order matters; we want to choose the most specific type. "1234" is valid
 	 * json, but the code chooses to infer it as a LONG (bigint in the db). "true"
 	 * is a string and valid json but the code is ordered to infer boolean. true is
 	 * also valid json but we want to infer boolean.
 	 *
-	 * @param val
+	 * @param val the value for which to infer a type
 	 * @return the data type we want to use for this value
 	 */
 	public DataTypeMapping inferType(Object val) {
