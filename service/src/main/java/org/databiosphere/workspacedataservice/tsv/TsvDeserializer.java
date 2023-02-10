@@ -40,8 +40,8 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TsvDeserializer.class);
 
-    DataTypeInferer inferer;
-    ObjectMapper objectMapper;
+    transient DataTypeInferer inferer;
+    transient ObjectMapper objectMapper;
 
     @Override
     public RecordAttributes deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {
@@ -139,7 +139,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
                 // expensive detection of any-cased booleans
                 try {
                     List<?> lowerElements = jsonStringToList(smartQuotesRemoved.toLowerCase());
-                    if (lowerElements.stream().allMatch(element -> element instanceof Boolean)) {
+                    if (lowerElements.stream().allMatch(Boolean.class::isInstance)) {
                         return lowerElements;
                     }
                 } catch (JsonProcessingException innerException) {
