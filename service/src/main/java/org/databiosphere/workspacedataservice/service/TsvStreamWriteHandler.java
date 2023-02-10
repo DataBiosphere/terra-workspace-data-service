@@ -4,16 +4,17 @@ import com.fasterxml.jackson.core.FormatSchema;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidTsvException;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.databiosphere.workspacedataservice.tsv.TsvConverter;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Spliterator;
@@ -22,7 +23,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * Stream-reads inbound TSV data using a Jackson CsvMapper and WDS's TsvConverter;
+ * Stream-reads inbound TSV data using a Jackson CsvMapper;
  *  returns a WriteStreamInfo containing a batch of Records.
  */
 public class TsvStreamWriteHandler implements StreamingWriteHandler {
@@ -62,21 +63,20 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 		String resolvedPK = primaryKey.orElseGet( () -> colNames.get(0) );
 
 		// convert the tsvIterator, which is a MappingIterator<RecordAttributes>, to a Stream<Record>
-		TsvConverter tsvConverter = new TsvConverter();
 		Stream<RecordAttributes> tsvStream = StreamSupport.stream(
 				Spliterators.spliteratorUnknownSize(tsvIterator, Spliterator.ORDERED), false);
-		recordSpliterator = tsvConverter.rowsToRecords(tsvStream, recordType, resolvedPK).spliterator();
+		recordSpliterator = rowsToRecords(tsvStream, recordType, resolvedPK).spliterator();
 	}
 
 	/**
 	 * Reads the next numRecords from the stream's spliterator and returns that batch.
 	 * All TSV uploads are UPSERT.
 	 * 
-	 * @param numRecords
-	 * @return
-	 * @throws IOException
+	 * @param numRecords size of the batch to read
+	 * @return batch of Records
 	 */
-	public WriteStreamInfo readRecords(int numRecords) throws IOException {
+	@SuppressWarnings("StatementWithEmptyBody")
+	public WriteStreamInfo readRecords(int numRecords) {
 		List<Record> result = new ArrayList<>(numRecords);
 		for (int i = 0; i < numRecords && recordSpliterator.tryAdvance(result::add); i++) {
 			// noop; the action happens in result:add
@@ -90,5 +90,26 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 		tsvIterator.close();
 	}
 
+	private Record tsvRowToRecord(RecordAttributes row, RecordType recordType, String primaryKey) {
+		Object recordId = row.getAttributeValue(primaryKey);
+		if (recordId == null || StringUtils.isBlank(recordId.toString())) {
+			throw new InvalidTsvException(
+					"Uploaded TSV is either missing the " + primaryKey
+							+ " column or has a null or empty string value in that column");
+		}
+		row.removeAttribute(primaryKey);
+		return new Record(recordId.toString(), recordType, row);
+	}
+
+	private Stream<Record> rowsToRecords(Stream<RecordAttributes> rows, RecordType recordType, String primaryKey) {
+		HashSet<String> recordIds = new HashSet<>(); // this set may be slow for very large TSVs
+		return rows.map( m -> {
+			Record r = tsvRowToRecord(m, recordType, primaryKey);
+			if (!recordIds.add(r.getId())) {
+				throw new InvalidTsvException("TSVs cannot contain duplicate primary key values");
+			}
+			return r;
+		});
+	}
 
 }
