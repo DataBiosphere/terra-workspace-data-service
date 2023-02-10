@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * @see TsvJsonArgumentsProvider
  */
 @SpringBootTest
-public class TsvDeserializerTest {
+class TsvDeserializerTest {
 
     @Autowired
     TsvDeserializer tsvDeserializer;

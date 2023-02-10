@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * @see TsvJsonArgumentsProvider
  */
 @SpringBootTest
-public class TsvJsonEquivalenceTest {
+class TsvJsonEquivalenceTest {
 
     @Autowired
     private ObjectReader tsvReader;
