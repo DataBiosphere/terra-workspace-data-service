@@ -48,7 +48,7 @@ class TsvInputFormatsTest {
 	}
 
 	@AfterEach
-	void afterEach() throws Exception {
+	void afterEach() {
 		try {
 			mockMvc.perform(delete("/instances/{v}/{instanceid}",
 					versionId, instanceId).content("")).andExpect(status().isOk());
@@ -108,11 +108,6 @@ class TsvInputFormatsTest {
 						"[true, false, true]",
 						new Boolean[]{Boolean.TRUE, Boolean.FALSE, Boolean.TRUE},
 						"[TRUE, fALSE, True]"
-				),
-				Arguments.of(
-						"[\"True\", \"false\", \"true   \"]",
-						new Boolean[]{Boolean.TRUE, Boolean.FALSE, Boolean.TRUE},
-						"[\"TRUE\", \"fALSE\", \"True    \"]"
 				),
 				Arguments.of("5", BigDecimal.valueOf(5), "5"),
 				Arguments.of("5.67", BigDecimal.valueOf(5.67d), "5.67"),

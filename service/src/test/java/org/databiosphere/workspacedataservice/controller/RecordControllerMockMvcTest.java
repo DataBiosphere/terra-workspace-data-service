@@ -496,6 +496,42 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void tsvUploadUsesFirstColumnAsPrimaryKey() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
+				RecordControllerMockMvcTest.class.getResourceAsStream("/small-test-no-sys.tsv"));
+		String recordType = "noPrimaryKeySpecified";
+		mockMvc.perform(
+						multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType).file(file))
+				.andExpect(status().isOk());
+		MvcResult schemaResult = mockMvc
+				.perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType)).andReturn();
+		RecordTypeSchema schema = mapper.readValue(schemaResult.getResponse().getContentAsString(),
+				RecordTypeSchema.class);
+		// "greeting" is hardcoded into small-test-no-sys.tsv
+		assertEquals("greeting", schema.primaryKey());
+	}
+
+	@Test
+	@Transactional
+	void tsvUploadUsesSpecifiedColumnAsPrimaryKey() throws Exception {
+		String pk = "embedded characters";
+		MockMultipartFile file = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
+				RecordControllerMockMvcTest.class.getResourceAsStream("/small-test-no-sys.tsv"));
+		String recordType = "explicitPrimaryKey";
+		mockMvc.perform(
+						multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
+								.file(file)
+								.queryParam("primaryKey", pk))
+				.andExpect(status().isOk());
+		MvcResult schemaResult = mockMvc
+				.perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType)).andReturn();
+		RecordTypeSchema schema = mapper.readValue(schemaResult.getResponse().getContentAsString(),
+				RecordTypeSchema.class);
+		assertEquals(pk, schema.primaryKey());
+	}
+
+	@Test
+	@Transactional
 	void uploadTsvAndVerifySchema() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
 				RecordControllerMockMvcTest.class.getResourceAsStream("/small-test.tsv"));
@@ -1173,6 +1209,25 @@ class RecordControllerMockMvcTest {
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk());
 		mockMvc.perform(get("/{instanceId}/records/{version}/{recordType}/{recordId}", instanceId, versionId,
 				newBatchRecordType, recordId).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
+	}
+
+	@Test
+	@Transactional
+	void batchWriteInsertShouldSucceedIfMultipleBatches(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
+		int totalRecords = Math.round(batchSize*1.5f);
+		RecordType newBatchRecordType = RecordType.valueOf("multi-batch");
+		List<BatchOperation> ops = new ArrayList();
+		for (int i = 0; i < batchSize * 1.5; i++) {
+			String recordId = "record_" + i;
+			Record record = new Record(recordId, newBatchRecordType,
+					new RecordAttributes(Map.of("key", "value_" + i)));
+			ops.add(new BatchOperation(record, OperationType.UPSERT));
+		}
+
+		mockMvc.perform(post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, newBatchRecordType)
+						.content(mapper.writeValueAsString(ops))
+						.contentType(MediaType.APPLICATION_JSON)).andExpect(jsonPath("$.recordsModified", is(totalRecords)))
+				.andExpect(jsonPath("$.message", is("Huzzah"))).andExpect(status().isOk());
 	}
 
 	@Test

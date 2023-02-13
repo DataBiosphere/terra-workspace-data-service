@@ -4,13 +4,20 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.cfg.CoercionAction;
 import com.fasterxml.jackson.databind.cfg.CoercionInputShape;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.type.LogicalType;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvParser;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.zaxxer.hikari.HikariDataSource;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.tsv.TsvDeserializer;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -51,6 +58,33 @@ public class WorkspaceDataServiceApplication {
 		mapper.coercionConfigFor(LogicalType.Float).setCoercion(CoercionInputShape.String, CoercionAction.Fail);
 		mapper.coercionConfigFor(LogicalType.Integer).setCoercion(CoercionInputShape.String, CoercionAction.Fail);
 		return mapper;
+	}
+
+	@Bean
+	public TsvDeserializer tsvDeserializer(DataTypeInferer inferer, ObjectMapper objectMapper) {
+		return new TsvDeserializer(inferer, objectMapper);
+	}
+
+	@Bean
+	public ObjectReader tsvReader(TsvDeserializer tsvDeserializer) {
+		// read schema (column names) from the input file's header
+		CsvSchema tsvHeaderSchema = CsvSchema.emptySchema()
+				.withHeader()
+				.withEscapeChar('\\')
+				.withColumnSeparator('\t');
+
+		final CsvMapper tsvMapper = CsvMapper.builder()
+				.enable(CsvParser.Feature.SKIP_EMPTY_LINES)
+				.enable(CsvParser.Feature.EMPTY_STRING_AS_NULL)
+				.build();
+
+		SimpleModule module = new SimpleModule();
+		module.addDeserializer(RecordAttributes.class, tsvDeserializer);
+		tsvMapper.registerModule(module);
+
+		return tsvMapper
+				.readerFor(RecordAttributes.class)
+				.with(tsvHeaderSchema);
 	}
 
 	@Bean
