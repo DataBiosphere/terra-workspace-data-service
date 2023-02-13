@@ -517,7 +517,7 @@ class RecordControllerMockMvcTest {
 		String pk = "embedded characters";
 		MockMultipartFile file = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
 				RecordControllerMockMvcTest.class.getResourceAsStream("/small-test-no-sys.tsv"));
-		String recordType = "noPrimaryKeySpecified";
+		String recordType = "explicitPrimaryKey";
 		mockMvc.perform(
 						multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
 								.file(file)
