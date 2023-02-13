@@ -513,6 +513,25 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void tsvUploadUsesSpecifiedColumnAsPrimaryKey() throws Exception {
+		String pk = "embedded characters";
+		MockMultipartFile file = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
+				RecordControllerMockMvcTest.class.getResourceAsStream("/small-test-no-sys.tsv"));
+		String recordType = "noPrimaryKeySpecified";
+		mockMvc.perform(
+						multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
+								.file(file)
+								.queryParam("primaryKey", pk))
+				.andExpect(status().isOk());
+		MvcResult schemaResult = mockMvc
+				.perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType)).andReturn();
+		RecordTypeSchema schema = mapper.readValue(schemaResult.getResponse().getContentAsString(),
+				RecordTypeSchema.class);
+		assertEquals(pk, schema.primaryKey());
+	}
+
+	@Test
+	@Transactional
 	void uploadTsvAndVerifySchema() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
 				RecordControllerMockMvcTest.class.getResourceAsStream("/small-test.tsv"));
