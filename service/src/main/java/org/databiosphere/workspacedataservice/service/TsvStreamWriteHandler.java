@@ -33,6 +33,7 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 	private final InputStream inputStream;
 	private final MappingIterator<RecordAttributes> tsvIterator;
 
+	private String resolvedPrimaryKey;
 
 	public TsvStreamWriteHandler(InputStream inputStream, ObjectReader tsvReader, RecordType recordType, Optional<String> primaryKey) throws IOException {
 		this.inputStream = inputStream;
@@ -61,6 +62,7 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 
 		// if primary key is not specified, use the leftmost column
 		String resolvedPK = primaryKey.orElseGet( () -> colNames.get(0) );
+		resolvedPrimaryKey = resolvedPK;
 
 		// convert the tsvIterator, which is a MappingIterator<RecordAttributes>, to a Stream<Record>
 		Stream<RecordAttributes> tsvStream = StreamSupport.stream(
@@ -112,4 +114,7 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 		});
 	}
 
+	public String getResolvedPrimaryKey() {
+		return resolvedPrimaryKey;
+	}
 }

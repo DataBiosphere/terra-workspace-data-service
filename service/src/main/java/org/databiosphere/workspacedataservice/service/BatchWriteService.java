@@ -184,8 +184,9 @@ public class BatchWriteService {
 	// try-with-resources wrapper for TsvStreamWriteHandler; calls consumeWriteStream.
 	@WriteTransaction
 	public int batchWriteTsvStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
-		try (StreamingWriteHandler streamingWriteHandler = new TsvStreamWriteHandler(is, tsvReader, recordType, primaryKey)) {
-			return consumeWriteStream(streamingWriteHandler, instanceId, recordType, primaryKey);
+		try (TsvStreamWriteHandler streamingWriteHandler = new TsvStreamWriteHandler(is, tsvReader, recordType, primaryKey)) {
+			return consumeWriteStream(streamingWriteHandler, instanceId, recordType,
+					Optional.of(streamingWriteHandler.getResolvedPrimaryKey()));
 		} catch (IOException e) {
 			throw new BadStreamingWriteRequestException(e);
 		}
