@@ -85,8 +85,8 @@ public class TestUtils {
 				.putAttribute("attr-dt", "2022-03-01T12:00:03").putAttribute("attr-json", "{\"foo\":\"bar\"}")
 				.putAttribute("attr-boolean", "TruE").putAttribute("z-array-of-number-double", List.of(99.9, 88, -77.1, 47, 47))
 				.putAttribute("z-array-of-boolean", List.of("True", "False", false))
-				.putAttribute("z-array-of-number-long", "[1,2,3,4,5,80000001]")
-				.putAttribute("z-array-of-string", "[\"Ross\", \"Chandler\", \"Joey\"]")
+				.putAttribute("z-array-of-number-long", List.of(1,2,3,4,5,80000001))
+				.putAttribute("z-array-of-string", List.of("Ross", "Chandler", "Joey"))
 				.putAttribute("array-of-date", List.of(LocalDate.of(1776, 7, 4), LocalDate.of(1999, 12, 31)))
 				.putAttribute("array-of-datetime", List.of(LocalDateTime.of(2021, 1, 6, 13, 30), LocalDateTime.of(1980, 10, 31, 23, 59)))
 				.putAttribute("array-of-string", List.of("Ross", "Chandler", "Joey"));
