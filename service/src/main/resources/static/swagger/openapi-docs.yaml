@@ -38,6 +38,10 @@ paths:
       responses:
         200:
           description: Health status retrieved
+          content:
+            application/json:
+              schema:
+                type: string
   /version:
     get:
       summary: Gets related git and build version info for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#info for details)
@@ -47,6 +51,10 @@ paths:
       responses:
         200:
           description: Info retrieved
+          content:
+            application/json:
+              schema:
+                type: string
   /{instanceid}/records/{v}/{type}/{id}:
     get:
       summary: Get record
