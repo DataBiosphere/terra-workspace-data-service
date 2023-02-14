@@ -3,8 +3,6 @@ package org.databiosphere.workspacedataservice.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
@@ -14,11 +12,16 @@ import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
@@ -31,21 +34,21 @@ public class DataTypeInferer {
 		this.objectMapper = mapper;
 	}
 
-	public Map<String, DataTypeMapping> inferTypes(RecordAttributes updatedAtts, InBoundDataSource dataSource) {
+	public Map<String, DataTypeMapping> inferTypes(RecordAttributes updatedAtts) {
 		Map<String, DataTypeMapping> result = new HashMap<>();
 		for (Map.Entry<String, Object> entry : updatedAtts.attributeSet()) {
-			result.put(entry.getKey(), inferType(entry.getValue(), dataSource));
+			result.put(entry.getKey(), inferType(entry.getValue()));
 		}
 		return result;
 	}
 
-	public Map<String, DataTypeMapping> inferTypes(List<Record> records, InBoundDataSource dataSource) {
+	public Map<String, DataTypeMapping> inferTypes(List<Record> records) {
 		Map<String, DataTypeMapping> result = new HashMap<>();
 		for (Record rcd : records) {
 			if (rcd.getAttributes() == null) {
 				continue;
 			}
-			Map<String, DataTypeMapping> inferred = inferTypes(rcd.getAttributes(), dataSource);
+			Map<String, DataTypeMapping> inferred = inferTypes(rcd.getAttributes());
 			for (Map.Entry<String, DataTypeMapping> entry : inferred.entrySet()) {
 				DataTypeMapping inferredType = entry.getValue();
 				if (result.containsKey(entry.getKey()) && result.get(entry.getKey()) != inferredType) {
@@ -81,39 +84,15 @@ public class DataTypeInferer {
 		return STRING;
 	}
 
-	/**
-	 * Our TSV parser gives everything to us as Strings so we try to guess at the
-	 * types from the String representation and choose the stronger typing when we
-	 * can. "" is converted to null which also differs from our JSON handling.
-	 * 
-	 * @se inferTypeForJsonSource
-	 * @param val
-	 * @return
-	 */
-	public DataTypeMapping inferTypeForTsvSource(Object val) {
-		// For TSV we treat null and "" as the null value
-		if (StringUtils.isEmpty((String) val)) {
-			return NULL;
-		}
-
-		if (RelationUtils.isRelationValue(val)) {
-			return RELATION;
-		}
-		// when we load from TSV, numbers are converted to strings, we need to go back
-		// to numbers
-		String sVal = val.toString();
-
-		if (isNumericValue(sVal)) {
-			return NUMBER;
-		}
-		return getTypeMappingFromString(replaceLeftRightQuotes(sVal));
-	}
-
 	//libreoffice at least uses left and right quotes which cause problems when we try to parse as JSON
-	private String replaceLeftRightQuotes(String val){
+	public String replaceLeftRightQuotes(String val){
 		return val.replaceAll("[“”]", "\"");
 	}
 
+	/* This is secondary detection. The JSON and TSV deserializers have created String objects, but those
+		Strings may represent dates, datetimes, etc. So, we inspect those Strings here.
+	 */
+	// TODO: create an explicit deserialization step that creates dates, datetimes, etc. and simplify here.
 	private DataTypeMapping getTypeMappingFromString(String sVal) {
 		if (isValidDate(sVal)) {
 			return DATE;
@@ -127,8 +106,8 @@ public class DataTypeInferer {
 		if (isValidJson(sVal)) {
 			return JSON;
 		}
-		if(isArray(sVal)){
-			return findArrayTypeFromJson(sVal);
+		if (isFileType(sVal)){
+			return FILE;
 		}
 		return STRING;
 	}
@@ -136,16 +115,16 @@ public class DataTypeInferer {
 	/**
 	 * JSON input format has more type information so we do a little less guessing
 	 * here than we do with a TSV input
-	 *
+	 * <p>
 	 * Order matters; we want to choose the most specific type. "1234" is valid
 	 * json, but the code chooses to infer it as a LONG (bigint in the db). "true"
 	 * is a string and valid json but the code is ordered to infer boolean. true is
 	 * also valid json but we want to infer boolean.
 	 *
-	 * @param val
+	 * @param val the value for which to infer a type
 	 * @return the data type we want to use for this value
 	 */
-	public DataTypeMapping inferTypeForJsonSource(Object val) {
+	public DataTypeMapping inferType(Object val) {
 		// null does not tell us much, this results in a text data type in the db if
 		// everything in batch is null
 		// if there are non-null values in the batch this return value will let those
@@ -182,15 +161,6 @@ public class DataTypeInferer {
 		return sVal.equalsIgnoreCase("true") || sVal.equalsIgnoreCase("false");
 	}
 
-	public DataTypeMapping inferType(Object val, InBoundDataSource dataSource) {
-		if (dataSource == InBoundDataSource.TSV) {
-			return inferTypeForTsvSource(val);
-		} else if (dataSource == InBoundDataSource.JSON) {
-			return inferTypeForJsonSource(val);
-		}
-		throw new IllegalArgumentException("Unhandled inbound data source " + dataSource);
-	}
-
 	public boolean isNumericValue(String sVal) {
 		try {
 			new BigDecimal(sVal);
@@ -225,7 +195,7 @@ public class DataTypeInferer {
 			return EMPTY_ARRAY;
 		}
 		List<DataTypeMapping> inferredTypes = list.stream()
-				.map(item -> inferType(item, InBoundDataSource.JSON))
+				.map(this::inferType)
 				.distinct()
 				.toList();
 		DataTypeMapping bestMapping = inferredTypes.get(0);
@@ -235,33 +205,6 @@ public class DataTypeInferer {
 			}
 		}
 		return DataTypeMapping.getArrayTypeForBase(bestMapping);
-	}
-
-	private DataTypeMapping findArrayTypeFromJson(String val)  {
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Boolean[].class))){
-			return ARRAY_OF_BOOLEAN;
-		}
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, Double[].class))){
-			return ARRAY_OF_NUMBER;
-		}
-		//order matters an array of LocalDateTime will be parsed to LocalDate
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, LocalDateTime[].class))){
-			return ARRAY_OF_DATE_TIME;
-		}
-		if(ArrayUtils.isNotEmpty(getArrayOfType(val, LocalDate[].class))){
-			return ARRAY_OF_DATE;
-		}
-		String[] stringArr = getArrayOfType(val, String[].class);
-		if(ArrayUtils.isNotEmpty(stringArr)){
-			if (Arrays.stream(stringArr).allMatch(RelationUtils::isRelationValue)){
-				return ARRAY_OF_RELATION;
-			}
-			return ARRAY_OF_STRING;
-		}
-		if(stringArr != null){
-			return EMPTY_ARRAY;
-		}
-		throw new IllegalArgumentException("Unsupported array type " + val);
 	}
 
 	public <T> T[] getArrayOfType(String val, Class<T[]> clazz) {
@@ -334,5 +277,21 @@ public class DataTypeInferer {
 			relationArrays.addAll(relationArraysForThisRecord);
 		}
 		return new RelationCollection(relations, relationArrays);
+	}
+
+	private boolean isFileType(String possibleFile){
+		URI fileUri;
+		try {
+			fileUri = new URI(possibleFile);
+			//Many non-URI strings will parse without exception but have no scheme or host
+			if (fileUri.getScheme() == null || fileUri.getHost() == null){
+				return false;
+			}
+		} catch (URISyntaxException use) {
+			return false;
+		}
+		//https://[].blob.core.windows.net/[] or drs://[]
+		return fileUri.getScheme().equalsIgnoreCase("drs") ||
+				(fileUri.getScheme().equalsIgnoreCase("https") && fileUri.getHost().toLowerCase().endsWith(".blob.core.windows.net"));
 	}
 }

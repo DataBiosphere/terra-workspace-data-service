@@ -2,11 +2,9 @@ package org.databiosphere.workspacedataservice.service;
 
 import bio.terra.common.db.WriteTransaction;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
@@ -15,13 +13,9 @@ import org.databiosphere.workspacedataservice.service.model.exception.BadStreami
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
-import org.databiosphere.workspacedataservice.service.model.exception.InvalidTsvException;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -29,9 +23,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,15 +44,16 @@ public class BatchWriteService {
 
 	private final ObjectMapper objectMapper;
 
+	private final ObjectReader tsvReader;
+
 	private final RecordService recordService;
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(BatchWriteService.class);
-
-	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize, DataTypeInferer inf, ObjectMapper objectMapper, RecordService recordService) {
+	public BatchWriteService(RecordDao recordDao, @Value("${twds.write.batch.size:5000}") int batchSize, DataTypeInferer inf, ObjectMapper objectMapper, ObjectReader tsvReader, RecordService recordService) {
 		this.recordDao = recordDao;
 		this.batchSize = batchSize;
 		this.inferer = inf;
 		this.objectMapper = objectMapper;
+		this.tsvReader = tsvReader;
 		this.recordService = recordService;
 	}
 
@@ -145,98 +137,26 @@ public class BatchWriteService {
 		}
 	}
 
-	@WriteTransaction
-	public int uploadTsvStream(InputStreamReader is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) throws IOException {
-		CSVFormat csvFormat = TsvSupport.getUploadFormat();
-		CSVParser rows = csvFormat.parse(is);
-		String leftMostColumn = rows.getHeaderNames().get(0);
-		List<Record> batch = new ArrayList<>();
-		HashSet<String> recordIds = new HashSet<>(); // this set may be slow for very large TSVs
-		boolean firstUpsertBatch = true;
-		Map<String, DataTypeMapping> schema = null;
-		String uniqueIdentifierAsString = primaryKey.orElse(leftMostColumn);
-		int recordsProcessed = 0;
-		for (CSVRecord row : rows) {
-			Map<String, Object> m = (Map) row.toMap();
-			m.remove(uniqueIdentifierAsString);
-			changeEmptyStringsToNulls(m);
-			String recordId;
-			try {
-				recordId = row.get(uniqueIdentifierAsString);
-				batch.add(new Record(recordId, recordType, new RecordAttributes(m)));
-			} catch (IllegalArgumentException ex) {
-				LOGGER.error("IllegalArgument exception while reading tsv", ex);
-				throw new InvalidTsvException(
-						"Uploaded TSV is either missing the " + primaryKey
-								+ " column or has a null or empty string value in that column");
-			}
-			// validate that all record ids in this TSV are unique
-			// N.B. this happens after the try/catch block above, because
-			// that block enforces the recordId is not null/empty as part of the "new Record()" constructor
-			if (!recordIds.add(recordId)) {
-				throw new InvalidTsvException("TSVs cannot contain duplicate primary key values");
-			}
-			recordsProcessed++;
-			if (batch.size() >= batchSize) {
-				if (firstUpsertBatch) {
-					schema = createOrUpdateSchema(instanceId, recordType, batch, uniqueIdentifierAsString);
-					firstUpsertBatch = false;
-				}
-				recordService.prepareAndUpsert(instanceId, recordType, batch, schema, uniqueIdentifierAsString);
-				batch.clear();
-			}
-		}
-		if (firstUpsertBatch) {
-			if (batch.isEmpty()) {
-				throw new InvalidTsvException("We could not parse any data rows in your tsv file.");
-			}
-			schema = createOrUpdateSchema(instanceId, recordType, batch, uniqueIdentifierAsString);
-		}
-		recordService.prepareAndUpsert(instanceId, recordType, batch, schema, uniqueIdentifierAsString);
-		return recordsProcessed;
-	}
-
 	/**
-	 * Should only be called from the TSV upload path, convert empty strings in the
-	 * TSV to nulls for storage in the database
-	 * 
-	 * @param m
-	 */
-	private void changeEmptyStringsToNulls(Map<String, Object> m) {
-		for (Map.Entry<String, Object> entry : m.entrySet()) {
-			if (entry.getValue().toString().isEmpty()) {
-				m.put(entry.getKey(), null);
-			}
-		}
-	}
-
-	private Map<String, DataTypeMapping> createOrUpdateSchema(UUID instanceId, RecordType recordType,
-			List<Record> batch, String recordTypePrimaryKey) {
-		Map<String, DataTypeMapping> schema = inferer.inferTypes(batch, InBoundDataSource.TSV);
-		return createOrModifyRecordType(instanceId, recordType, schema, batch, recordTypePrimaryKey);
-	}
-
-	/**
-	 * All or nothing, write all the operations successfully in the InputStream or
-	 * write none.
+	 * Responsible for accepting either a JsonStreamWriteHandler or a TsvStreamWriteHandler, looping over the
+	 * batches of Records found in the handler, and upserting those records.
 	 *
-	 * @param is
-	 * @param instanceId
-	 * @param recordType
-	 * @param primaryKey
-	 * @return number of records updated
+	 * @param streamingWriteHandler the JsonStreamWriteHandler or a TsvStreamWriteHandler
+	 * @param instanceId instance to which records are upserted
+	 * @param recordType record type of records contained in the write handler
+	 * @param primaryKey PK for the record type
+	 * @return the number of records written
 	 */
-	@WriteTransaction
-	public int consumeWriteStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
+	public int consumeWriteStream(StreamingWriteHandler streamingWriteHandler, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
 		int recordsAffected = 0;
-		try (StreamingWriteHandler streamingWriteHandler = new StreamingWriteHandler(is, objectMapper)) {
+		try {
 			Map<String, DataTypeMapping> schema = null;
 			boolean firstUpsertBatch = true;
 			for (StreamingWriteHandler.WriteStreamInfo info = streamingWriteHandler.readRecords(batchSize); !info
 					.getRecords().isEmpty(); info = streamingWriteHandler.readRecords(batchSize)) {
 				List<Record> records = info.getRecords();
 				if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
-					schema = inferer.inferTypes(records, InBoundDataSource.JSON);
+					schema = inferer.inferTypes(records);
 					createOrModifyRecordType(instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
 					firstUpsertBatch = false;
 				}
@@ -247,6 +167,29 @@ public class BatchWriteService {
 			throw new BadStreamingWriteRequestException(e);
 		}
 		return recordsAffected;
+	}
+
+
+
+	// try-with-resources wrapper for JsonStreamWriteHandler; calls consumeWriteStream.
+	@WriteTransaction
+	public int batchWriteJsonStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
+		try (StreamingWriteHandler streamingWriteHandler = new JsonStreamWriteHandler(is, objectMapper)) {
+			return consumeWriteStream(streamingWriteHandler, instanceId, recordType, primaryKey);
+		} catch (IOException e) {
+			throw new BadStreamingWriteRequestException(e);
+		}
+	}
+
+	// try-with-resources wrapper for TsvStreamWriteHandler; calls consumeWriteStream.
+	@WriteTransaction
+	public int batchWriteTsvStream(InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
+		try (TsvStreamWriteHandler streamingWriteHandler = new TsvStreamWriteHandler(is, tsvReader, recordType, primaryKey)) {
+			return consumeWriteStream(streamingWriteHandler, instanceId, recordType,
+					Optional.of(streamingWriteHandler.getResolvedPrimaryKey()));
+		} catch (IOException e) {
+			throw new BadStreamingWriteRequestException(e);
+		}
 	}
 
 	private Map<String, DataTypeMapping> createOrModifyRecordType(UUID instanceId, RecordType recordType,

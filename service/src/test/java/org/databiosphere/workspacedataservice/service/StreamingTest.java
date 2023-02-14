@@ -21,7 +21,7 @@ class StreamingTest {
 
 	@Test
 	void testReadLessThanWholeStream() throws IOException {
-		StreamingWriteHandler handler = new StreamingWriteHandler(
+		StreamingWriteHandler handler = new JsonStreamWriteHandler(
 				StreamingTest.class.getResourceAsStream("/batch_write_upsert.json"), objectMapper);
 		List<Record> records = handler.readRecords(1).getRecords();
 		assertThat(records).as("Should only read 1 out of 2 records in the file").hasSize(1);
@@ -29,7 +29,7 @@ class StreamingTest {
 
 	@Test
 	void testReadWholeStream() throws IOException {
-		StreamingWriteHandler handler = new StreamingWriteHandler(
+		StreamingWriteHandler handler = new JsonStreamWriteHandler(
 				StreamingTest.class.getResourceAsStream("/batch_write_upsert.json"), objectMapper);
 		List<Record> records = handler.readRecords(500).getRecords();
 		assertThat(records).as("Should read all 2 records in the file").hasSize(2);
@@ -37,7 +37,7 @@ class StreamingTest {
 
 	@Test
 	void testReadMixedOperations() throws IOException {
-		StreamingWriteHandler handler = new StreamingWriteHandler(
+		StreamingWriteHandler handler = new JsonStreamWriteHandler(
 				StreamingTest.class.getResourceAsStream("/batch_write_mix.json"), objectMapper);
 		StreamingWriteHandler.WriteStreamInfo res = handler.readRecords(500);
 		assertThat(res.getRecords()).as("Should read 1 record").hasSize(1);

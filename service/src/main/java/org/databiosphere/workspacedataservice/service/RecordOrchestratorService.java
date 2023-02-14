@@ -30,7 +30,6 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.Collections;
 import java.util.HashMap;
@@ -77,7 +76,7 @@ public class RecordOrchestratorService { // TODO give me a better name
             .orElseThrow(() -> new MissingObjectException("Record"));
         RecordAttributes incomingAtts = recordRequest.recordAttributes();
         RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAtts).getAttributes();
-        Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts, InBoundDataSource.JSON);
+        Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts);
         Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
         singleRecord.setAttributes(allAttrs);
         List<Record> records = Collections.singletonList(singleRecord);
@@ -103,11 +102,7 @@ public class RecordOrchestratorService { // TODO give me a better name
         if(recordDao.recordTypeExists(instanceId, recordType)){
             validatePrimaryKey(instanceId, recordType, primaryKey);
         }
-        int recordsModified;
-        try (InputStreamReader inputStreamReader = new InputStreamReader(records.getInputStream())) {
-            recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType, primaryKey);
-        }
-        return recordsModified;
+        return batchWriteService.batchWriteTsvStream(records.getInputStream(), instanceId, recordType, primaryKey);
     }
 
     // TODO: enable read transaction
@@ -117,6 +112,7 @@ public class RecordOrchestratorService { // TODO give me a better name
         checkRecordTypeExists(instanceId, recordType);
         List<String> headers = recordDao.getAllAttributeNames(instanceId, recordType);
 
+        // TODO: consider rewriting this using jackson-dataformat-csv and removing org.apache.commons:commons-csv altogether
         return httpResponseOutputStream -> {
             try (Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType);
                  CSVPrinter writer = TsvSupport.getOutputFormat(headers)
@@ -166,7 +162,7 @@ public class RecordOrchestratorService { // TODO give me a better name
         validateVersion(version);
         validateInstance(instanceId);
         RecordAttributes attributesInRequest = recordRequest.recordAttributes();
-        Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest, InBoundDataSource.JSON);
+        Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
         HttpStatus status = HttpStatus.CREATED;
         if (!recordDao.recordTypeExists(instanceId, recordType)) {
             RecordResponse response = new RecordResponse(recordId, recordType, recordRequest.recordAttributes());
@@ -233,7 +229,7 @@ public class RecordOrchestratorService { // TODO give me a better name
         if(recordDao.recordTypeExists(instanceId, recordType)){
             validatePrimaryKey(instanceId, recordType, primaryKey);
         }
-        return batchWriteService.consumeWriteStream(is, instanceId, recordType, primaryKey);
+        return batchWriteService.batchWriteJsonStream(is, instanceId, recordType, primaryKey);
     }
 
     public static void validateVersion(String version) {
