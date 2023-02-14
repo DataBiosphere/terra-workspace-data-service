@@ -23,9 +23,12 @@ public class TestUtils {
 		return "{\"id\":\"newRecordId\",\"type\":\"all-types\",\"attributes\":{\"sys_name\":\"newRecordId\"," +
 				"\"array_of_boolean\":[true,false,true,true],\"array_of_date\":[\"2021-11-03\",\"2021-11-04\"]," +
 				"\"array_of_date_time\":[\"2021-11-03T07:30:00\",\"2021-11-03T07:30:00\"]," +
+				"\"array_of_file\":[\"https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.bam\",\"drs://jade.datarepo-dev.broadinstitute.org/v1_9545e956-aa6a-4b84-a037-d0ed164c1890\"]," +
 				"\"array_of_relation\":[\"terra-wds:/target-record/record_0\",\"terra-wds:/target-record/record_1\"]," +
 				"\"array_of_string\":[\"a\",\"b\",\"c\",\"12\"],\"array-of-number\":[1,2,3],\"boolean\":false,\"date\":\"2021-11-03\"," +
-				"\"date-time\":\"2021-11-03T07:30:00\",\"empty-array\":[],\"json\":{\"age\":22}," +
+				"\"date-time\":\"2021-11-03T07:30:00\",\"empty-array\":[]," +
+				"\"file\":\"https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.fasta\"," +
+				"\"json\":{\"age\":22}," +
 				"\"null\":null,\"number\":47,\"relation\":\"terra-wds:/target-record/record_0\",\"string\":\"Broad Institute\"}}";
 	}
 
@@ -42,11 +45,13 @@ public class TestUtils {
 				.putAttribute("string", "Broad Institute")
 				.putAttribute("json", Map.of("age", 22))
 				.putAttribute("number", 47)
+				.putAttribute("file", "https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.fasta")
 				.putAttribute("relation", RelationUtils.createRelationString(typeForRelation, "record_0"))
 				.putAttribute("array-of-number", List.of(1, 2, 3))
 				.putAttribute("array_of_date", List.of(LocalDate.of(2021, 11, 3), LocalDate.of(2021, 11, 4)))
 				.putAttribute("array_of_date_time", List.of(dateTime, dateTime))
 				.putAttribute("array_of_string", List.of("a", "b", "c", 12))
+				.putAttribute("array_of_file", List.of("https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.bam", "drs://jade.datarepo-dev.broadinstitute.org/v1_9545e956-aa6a-4b84-a037-d0ed164c1890"))
 				.putAttribute("array_of_boolean", List.of(true, false, true, "TRUE"))
 				.putAttribute("array_of_relation", List.of(RelationUtils.createRelationString(typeForRelation, "record_0"), RelationUtils.createRelationString(typeForRelation, "record_1")));
 	}
@@ -63,10 +68,12 @@ public class TestUtils {
 				.putAttribute("json", "{\"age\": 22}")
 				.putAttribute("number", "47")
 				.putAttribute("relation", RelationUtils.createRelationString(typeForRelation, "record_0"))
+				.putAttribute("file", "https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.fasta")
 				.putAttribute("array-of-number", "[1, 2, 3]")
 				.putAttribute("array_of_date", "[\"2021-11-03\", \"2021-11-04\"]")
 				.putAttribute("array_of_date_time", "[\"2021-11-03T07:30:00\", \"2021-11-03T07:30:00\"]")
 				.putAttribute("array_of_string", "[\"a\", \"b\", \"c\", 12]")
+				.putAttribute("array_of_file", "[\"https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.bam\", \"drs://jade.datarepo-dev.broadinstitute.org/v1_9545e956-aa6a-4b84-a037-d0ed164c1890\"]")
 				.putAttribute("array_of_boolean", "[true, false, true, \"TRUE\"]")
 				.putAttribute("array_of_relation", "[\""+RelationUtils.createRelationString(typeForRelation, "record_0")+"\",\""+RelationUtils.createRelationString(typeForRelation, "record_1")+"\"]");
 	}

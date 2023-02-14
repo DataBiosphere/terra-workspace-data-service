@@ -12,6 +12,8 @@ import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -103,6 +105,9 @@ public class DataTypeInferer {
 		}
 		if (isValidJson(sVal)) {
 			return JSON;
+		}
+		if (isFileType(sVal)){
+			return FILE;
 		}
 		return STRING;
 	}
@@ -272,5 +277,21 @@ public class DataTypeInferer {
 			relationArrays.addAll(relationArraysForThisRecord);
 		}
 		return new RelationCollection(relations, relationArrays);
+	}
+
+	private boolean isFileType(String possibleFile){
+		URI fileUri;
+		try {
+			fileUri = new URI(possibleFile);
+			//Many non-URI strings will parse without exception but have no scheme or host
+			if (fileUri.getScheme() == null || fileUri.getHost() == null){
+				return false;
+			}
+		} catch (URISyntaxException use) {
+			return false;
+		}
+		//https://[].blob.core.windows.net/[] or drs://[]
+		return fileUri.getScheme().equalsIgnoreCase("drs") ||
+				(fileUri.getScheme().equalsIgnoreCase("https") && fileUri.getHost().toLowerCase().endsWith(".blob.core.windows.net"));
 	}
 }

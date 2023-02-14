@@ -33,10 +33,11 @@ class DataTypeInfererTest {
 		expected.put("json_val", DataTypeMapping.JSON);
 		expected.put("date_val", DataTypeMapping.DATE);
 		expected.put("date_time_val", DataTypeMapping.DATE_TIME);
+		expected.put("file_val", DataTypeMapping.FILE);
 		expected.put("number_or_string", DataTypeMapping.STRING);
 		expected.put("relation", DataTypeMapping.RELATION);
 		expected.put("rel_arr", DataTypeMapping.ARRAY_OF_RELATION);
-
+		expected.put("array_of_file", DataTypeMapping.ARRAY_OF_FILE);
 		assertEquals(expected, result);
 	}
 
@@ -55,7 +56,11 @@ class DataTypeInfererTest {
 		assertThat(inferer.selectBestType(DataTypeMapping.ARRAY_OF_STRING, DataTypeMapping.ARRAY_OF_RELATION))
 				.as("should convert array of relation to array of string").isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
 		assertThat(inferer.selectBestType(DataTypeMapping.STRING, DataTypeMapping.RELATION))
-				.as("should convert array of date to array of datetime").isEqualTo(DataTypeMapping.STRING);
+				.as("should convert relation to string").isEqualTo(DataTypeMapping.STRING);
+		assertThat(inferer.selectBestType(DataTypeMapping.FILE, DataTypeMapping.STRING))
+				.as("should convert file to string").isEqualTo(DataTypeMapping.STRING);
+		assertThat(inferer.selectBestType(DataTypeMapping.ARRAY_OF_FILE, DataTypeMapping.ARRAY_OF_STRING))
+				.as("should convert array of file to array of string").isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
 	}
 
 	@Test
@@ -89,6 +94,7 @@ class DataTypeInfererTest {
 				.isEqualTo(DataTypeMapping.DATE_TIME);
 		assertThat(inferer.inferType("2020-01-01T00:10:00"))
 				.isEqualTo(DataTypeMapping.DATE_TIME);
+		assertThat(inferer.inferType("https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/my%20file.pdf")).isEqualTo(DataTypeMapping.FILE);
 		assertThat(inferer.inferType("12345")).isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.inferType("12345A")).isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.inferType(List.of("Hello!"))).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
@@ -116,12 +122,21 @@ class DataTypeInfererTest {
 
 	private static RecordAttributes getSomeAttrs() {
 		return new RecordAttributes(
-				Map.of("int_val", new BigDecimal("4747"), "string_val", "Abracadabra Open Sesame", "json_val", "{\"list\": [\"a\", \"b\"]}",
-						"date_val", "2001-11-03", "date_time_val", "2001-11-03T10:00:00", "number_or_string", "47", "array_of_string", List.of("red", "yellow"),
-						"relation", RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId"),
-				"rel_arr", List.of(RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId"),
+				Map.ofEntries(
+						Map.entry("int_val", new BigDecimal("4747")),
+						Map.entry("string_val", "Abracadabra Open Sesame"),
+						Map.entry("json_val", "{\"list\": [\"a\", \"b\"]}"),
+						Map.entry("date_val", "2001-11-03"),
+						Map.entry("date_time_val", "2001-11-03T10:00:00"),
+						Map.entry("number_or_string", "47"),
+						Map.entry("array_of_string", List.of("red", "yellow")),
+						Map.entry("relation", RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId")),
+						Map.entry("rel_arr", List.of(RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId"),
 								RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId2"),
-								RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId3"))));
+								RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId3"))),
+						Map.entry("file_val", "https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.cram?param=foo"),
+						Map.entry("array_of_file", List.of("https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/notebook.ipynb","drs://jade.datarepo-dev.broadinstitute.org/v1_9545e956-aa6a-4b84-a037-d0ed164c1890"))
+				));
 	}
 
 }

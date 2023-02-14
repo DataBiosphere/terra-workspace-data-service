@@ -314,17 +314,10 @@ public class RecordController {
 		Map<String, RecordType> relations = relationCols.stream()
 				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
 		List<AttributeSchema> attrSchema = schema.entrySet().stream().sorted(Map.Entry.comparingByKey())
-				.map(entry -> createAttributeSchema(entry.getKey(), entry.getValue(), relations.get(entry.getKey())))
+				.map(entry -> new AttributeSchema(entry.getKey(), entry.getValue().toString(), relations.get(entry.getKey())))
 				.toList();
 		int recordCount = recordDao.countRecords(instanceId, recordType);
 		return new RecordTypeSchema(recordType, attrSchema, recordCount, recordDao.getPrimaryKeyColumn(recordType, instanceId));
-	}
-
-	private AttributeSchema createAttributeSchema(String name, DataTypeMapping datatype, RecordType relation) {
-		if (relation == null) {
-			return new AttributeSchema(name, datatype.toString(), null);
-		}
-		return new AttributeSchema(name, "STRING".equals(datatype.toString()) ? "RELATION" : "ARRAY_OF_RELATION", relation);
 	}
 
 	private static void validateVersion(String version) {
