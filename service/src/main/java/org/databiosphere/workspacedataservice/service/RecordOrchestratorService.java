@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 public class RecordOrchestratorService { // TODO give me a better name
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RecordOrchestratorService.class);
-    private static final String VERSION = "v0.2";
+    public static final String VERSION = "v0.2";
     private static final int MAX_RECORDS = 1_000;
 
     private final RecordDao recordDao;
