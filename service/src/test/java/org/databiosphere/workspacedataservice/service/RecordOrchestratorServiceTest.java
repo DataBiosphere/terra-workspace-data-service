@@ -1,15 +1,25 @@
 package org.databiosphere.workspacedataservice.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -17,79 +27,227 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 class RecordOrchestratorServiceTest {
 
-    @Autowired
-    private RecordDao recordDao;
+    @Autowired private RecordDao recordDao;
+    @Autowired private RecordOrchestratorService recordOrchestratorService;
 
-    @Autowired
-    private DataTypeInferer inferer;
+    private static final UUID INSTANCE = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+    private static final RecordType TEST_TYPE = RecordType.valueOf("test");
 
-    @Autowired
-    private BatchWriteService batchWriteService;
+    private static final String RECORD_ID = "aNewRecord";
+    private static final String TEST_KEY = "test_key";
+    private static final String TEST_VAL = "val";
 
-    @Autowired
-    private RecordService recordService;
+    @BeforeEach
+    void setUp() {
+        if (!recordDao.instanceSchemaExists(INSTANCE)) {
+            recordDao.createSchema(INSTANCE);
+        }
+    }
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired RecordOrchestratorService recordOrchestratorService;
-
+    @AfterEach
+    void cleanUp() {
+        recordDao.dropSchema(INSTANCE);
+    }
 
     @Test
     void updateSingleRecord() {
-        RecordType type = RecordType.valueOf("test");
-        RecordRequest req = new RecordRequest(RecordAttributes.empty("primaryKey").putAttribute("test", "val"));
+        String newVal = "val2";
+
+        testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+
+        // Overwrite the value for the only attribute on the record
+        RecordRequest updateRequest = new RecordRequest(RecordAttributes.empty().putAttribute(TEST_KEY, newVal));
 
         RecordResponse resp =
-            recordOrchestratorService.updateSingleRecord(UUID.randomUUID(), RecordOrchestratorService.VERSION, type,
-                "abc", req);
-    }
+            recordOrchestratorService.updateSingleRecord(
+                INSTANCE,
+                RecordOrchestratorService.VERSION,
+                TEST_TYPE,
+                RECORD_ID,
+                updateRequest
+            );
 
-    @Test
-    void getSingleRecord() {
-    }
+        assertEquals(RECORD_ID, resp.recordId());
 
-    @Test
-    void tsvUpload() {
-    }
-
-    @Test
-    void streamAllEntities() {
+        // Check that we now get the new val for the attribute
+        testGetRecord(RECORD_ID, TEST_KEY, newVal);
     }
 
     @Test
     void queryForRecords() {
+        String secondRecord = "r2";
+        String secondVal = "v2";
+        String thirdRecord = "r3";
+        String thirdVal = "v3";
+
+        testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+        testCreateRecord(secondRecord, TEST_KEY, secondVal);
+        testCreateRecord(thirdRecord, TEST_KEY, thirdVal);
+
+        RecordQueryResponse resp = recordOrchestratorService.queryForRecords(
+            INSTANCE,
+            TEST_TYPE,
+            RecordOrchestratorService.VERSION,
+            new SearchRequest()
+        );
+
+        testContainsRecord(RECORD_ID, TEST_KEY, TEST_VAL, resp.records());
+        testContainsRecord(secondRecord, TEST_KEY, secondVal, resp.records());
+        testContainsRecord(thirdRecord, TEST_KEY, thirdVal, resp.records());
+        assertEquals(3, resp.totalRecords());
     }
 
     @Test
     void upsertSingleRecord() {
+        testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+
+        testGetRecord(RECORD_ID, TEST_KEY, TEST_VAL);
     }
 
     @Test
     void deleteSingleRecord() {
+        testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+
+        recordOrchestratorService.deleteSingleRecord(
+            INSTANCE,
+            RecordOrchestratorService.VERSION,
+            TEST_TYPE,
+            RECORD_ID
+        );
+
+        try {
+            testGetRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+
+            // Expecting an exception since record was deleted
+            assert(false);
+        } catch (MissingObjectException e) {
+            // expected
+        }
     }
 
     @Test
     void deleteRecordType() {
+        testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+
+        recordOrchestratorService.deleteRecordType(
+            INSTANCE,
+            RecordOrchestratorService.VERSION,
+            TEST_TYPE
+        );
+
+        try {
+            recordOrchestratorService.describeRecordType(
+                INSTANCE,
+                RecordOrchestratorService.VERSION,
+                TEST_TYPE
+            );
+
+            assert(false);
+        } catch (MissingObjectException e) {
+            // expected exception
+        }
     }
 
     @Test
     void describeRecordType() {
+        testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+        testCreateRecord("second", TEST_KEY, "another");
+        testCreateRecord("third", TEST_KEY, "a third");
+
+        RecordTypeSchema schema = recordOrchestratorService.describeRecordType(
+            INSTANCE,
+            RecordOrchestratorService.VERSION,
+            TEST_TYPE
+        );
+
+        assertEquals(TEST_TYPE, schema.name());
+        assertEquals(3, schema.count());
     }
 
     @Test
     void describeAllRecordTypes() {
-    }
+        testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+        testCreateRecord("second", TEST_KEY, "another");
+        testCreateRecord("third", TEST_KEY, "a third");
 
-    @Test
-    void streamingWrite() {
+        RecordType typeTwo = RecordType.valueOf("typeTwo");
+        testCreateRecord("fourth", TEST_KEY, "a fourth", typeTwo);
+
+        List<RecordTypeSchema> schemas = recordOrchestratorService.describeAllRecordTypes(
+            INSTANCE,
+            RecordOrchestratorService.VERSION
+        );
+
+        assert(
+            schemas.stream().anyMatch(schema -> schema.name().equals(TEST_TYPE) && schema.count() == 3)
+        );
+        assert(
+            schemas.stream().anyMatch(schema -> schema.name().equals(typeTwo) && schema.count() == 1)
+        );
+        assertEquals(2, schemas.size());
     }
 
     @Test
     void validateVersion() {
+        RecordOrchestratorService.validateVersion(RecordOrchestratorService.VERSION);
+
+        try {
+            RecordOrchestratorService.validateVersion("invalidVersion");
+
+            // Test should not reach this line
+            assert(false);
+        } catch (ResponseStatusException e) {
+            assert(e.getStatus().equals(HttpStatus.BAD_REQUEST));
+            // This is expected
+        }
     }
 
     @Test
     void validateInstance() {
+        recordOrchestratorService.validateInstance(INSTANCE);
+
+        try {
+            recordOrchestratorService.validateInstance(UUID.fromString("000e4444-e22b-22d1-a333-426614174000"));
+
+            // Test should not reach this line
+            assert(false);
+        } catch (MissingObjectException e) {
+            // This is expected
+        }
+    }
+
+    private void testCreateRecord(String newRecordId, String testKey, String testVal) {
+        testCreateRecord(newRecordId, testKey, testVal, TEST_TYPE);
+    }
+
+    private void testCreateRecord(String newRecordId, String testKey, String testVal, RecordType newRecordType) {
+        RecordRequest recordRequest =  new RecordRequest(RecordAttributes.empty().putAttribute(testKey, testVal));
+
+        ResponseEntity<RecordResponse> response = recordOrchestratorService.upsertSingleRecord(
+            INSTANCE,
+            RecordOrchestratorService.VERSION,
+            newRecordType,
+            newRecordId,
+            Optional.empty(),
+            recordRequest
+        );
+
+        assertEquals(newRecordId, response.getBody().recordId());
+    }
+
+    private void testGetRecord(String newRecordId, String testKey, String testVal) {
+        RecordResponse recordResponse = recordOrchestratorService.getSingleRecord(
+            INSTANCE, RecordOrchestratorService.VERSION, TEST_TYPE, newRecordId
+        );
+        assertEquals(testVal, recordResponse.recordAttributes().getAttributeValue(testKey));
+    }
+
+    private void testContainsRecord(String recordId, String testKey, String testVal, List<RecordResponse> respList) {
+        boolean found = respList.stream()
+            .anyMatch(recordResponse ->
+                          recordResponse.recordId().equals(recordId) &&
+                              recordResponse.recordAttributes().getAttributeValue(testKey).equals(testVal)
+            );
+        assert(found);
     }
 }
