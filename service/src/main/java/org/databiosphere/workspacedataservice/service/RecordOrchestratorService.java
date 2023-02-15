@@ -276,11 +276,4 @@ public class RecordOrchestratorService { // TODO give me a better name
         int recordCount = recordDao.countRecords(instanceId, recordType);
         return new RecordTypeSchema(recordType, attrSchema, recordCount, recordDao.getPrimaryKeyColumn(recordType, instanceId));
     }
-
-    private AttributeSchema createAttributeSchema(String name, DataTypeMapping datatype, RecordType relation) {
-        if (relation == null) {
-            return new AttributeSchema(name, datatype.toString(), null);
-        }
-        return new AttributeSchema(name, "STRING".equals(datatype.toString()) ? "RELATION" : "ARRAY_OF_RELATION", relation);
-    }
 }
