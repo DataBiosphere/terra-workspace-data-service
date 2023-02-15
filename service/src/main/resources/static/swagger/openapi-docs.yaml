@@ -38,10 +38,7 @@ paths:
       responses:
         200:
           description: Health status retrieved
-          content:
-            application/json:
-              schema:
-                type: string
+          $ref: '#/components/responses/StatusResponseBody'
   /version:
     get:
       summary: Gets related git and build version info for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#info for details)
@@ -50,11 +47,7 @@ paths:
         - General WDS Information
       responses:
         200:
-          description: Info retrieved
-          content:
-            application/json:
-              schema:
-                type: string
+          $ref: '#/components/responses/VersionResponseBody'
   /{instanceid}/records/{v}/{type}/{id}:
     get:
       summary: Get record
@@ -82,7 +75,7 @@ paths:
         Creates or replaces the record using the specified type and id.
         If the record already exists, its entire set of attributes will be overwritten by
         the attributes in the request body.
-        
+
         TODO: add a query parameter to allow/disallow overwriting existing records?
       operationId: createOrReplaceRecord
       tags:
@@ -559,6 +552,18 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/RecordResponse'
+    VersionResponseBody:
+      description: Version Info
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/VersionResponse'
+    StatusResponseBody:
+      description: Status Info
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StatusResponse'
   requestBodies:
     SearchRequestBody:
       description: A paginated search request
@@ -827,3 +832,70 @@ components:
           type: integer
           description: line number
       description: ""
+    VersionResponse:
+      type: object
+      properties:
+        git:
+          $ref: '#/components/schemas/git'
+        build:
+          $ref: '#/components/schemas/build'
+    StatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        components:
+          $ref: '#/components/schemas/components'
+        groups:
+          type: string
+    build:
+      type: object
+      properties:
+        artifact:
+          type: string
+        name:
+          type: string
+        time:
+          type: string
+        version:
+          type: string
+        group:
+          type: string
+    git:
+      type: object
+      properties:
+          branch:
+            type: string
+          commit:
+            $ref: '#/components/schemas/commit'
+    commit:
+      type: object
+      properties:
+        id:
+          type: string
+        time:
+          type: string
+          format: date-time
+    components:
+      type: object
+      properties:
+         db:
+           $ref: '#/components/schemas/dbComponent'
+         diskSpace:
+           $ref: '#/components/schemas/component'
+         ping:
+           $ref: '#/components/schemas/component'
+    component:
+      type: object
+      properties:
+        status:
+          type: string
+        details:
+          type: string
+    dbComponent:
+      type: object
+      properties:
+        status:
+          type: string
+        components:
+          type: string
