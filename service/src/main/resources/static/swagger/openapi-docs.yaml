@@ -854,7 +854,8 @@ components:
         name:
           type: string
         time:
-          type: date-time
+          type: string
+          format: date-time
         version:
           type: string
         group:
