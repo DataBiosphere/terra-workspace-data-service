@@ -37,7 +37,6 @@ paths:
         - General WDS Information
       responses:
         200:
-          description: Health status retrieved
           $ref: '#/components/responses/StatusResponseBody'
   /version:
     get:
@@ -855,7 +854,7 @@ components:
         name:
           type: string
         time:
-          type: string
+          type: date-time
         version:
           type: string
         group:
