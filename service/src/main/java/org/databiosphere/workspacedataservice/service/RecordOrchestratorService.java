@@ -99,6 +99,7 @@ public class RecordOrchestratorService { // TODO give me a better name
         return new RecordResponse(recordId, recordType, result.getAttributes());
     }
 
+    // N.B. transaction annotated in batchWriteService.batchWriteTsvStream
     public int tsvUpload(UUID instanceId, String version, RecordType recordType, Optional<String> primaryKey,
                           MultipartFile records) throws IOException {
         validateVersion(version);
