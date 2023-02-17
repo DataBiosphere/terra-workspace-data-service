@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import bio.terra.common.db.WriteTransaction;
-import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
@@ -25,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.IOException;
@@ -37,11 +35,11 @@ import java.util.UUID;
 @RestController
 public class RecordController {
 
-	private final RecordDao recordDao;
+	private final InstanceService instanceService;
 	private final RecordOrchestratorService recordOrchestratorService;
 
-	public RecordController(RecordDao recordDao, RecordOrchestratorService recordOrchestratorService) {
-		this.recordDao = recordDao;
+	public RecordController(InstanceService instanceService, RecordOrchestratorService recordOrchestratorService) {
+		this.instanceService = instanceService;
 		this.recordOrchestratorService = recordOrchestratorService;
 	}
 
@@ -102,30 +100,21 @@ public class RecordController {
 
 	@GetMapping("/instances/{version}")
 	public ResponseEntity<List<UUID>> listInstances(@PathVariable("version") String version) {
-		RecordOrchestratorService.validateVersion(version);
-		List<UUID> schemaList = recordDao.listInstanceSchemas();
+		List<UUID> schemaList = instanceService.listInstances(version);
 		return new ResponseEntity<>(schemaList, HttpStatus.OK);
 	}
 
 	@PostMapping("/instances/{version}/{instanceId}")
-	@WriteTransaction
 	public ResponseEntity<String> createInstance(@PathVariable("instanceId") UUID instanceId,
 			@PathVariable("version") String version) {
-		RecordOrchestratorService.validateVersion(version);
-		if (recordDao.instanceSchemaExists(instanceId)) {
-			throw new ResponseStatusException(HttpStatus.CONFLICT, "This instance already exists");
-		}
-		recordDao.createSchema(instanceId);
+		instanceService.createInstance(instanceId, version);
 		return new ResponseEntity<>(HttpStatus.CREATED);
 	}
 
 	@DeleteMapping("/instances/{version}/{instanceId}")
-	@WriteTransaction
 	public ResponseEntity<String> deleteInstance(@PathVariable("instanceId") UUID instanceId,
 												 @PathVariable("version") String version) {
-		RecordOrchestratorService.validateVersion(version);
-		recordOrchestratorService.validateInstance(instanceId);
-		recordDao.dropSchema(instanceId);
+		instanceService.deleteInstance(instanceId, version);
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 

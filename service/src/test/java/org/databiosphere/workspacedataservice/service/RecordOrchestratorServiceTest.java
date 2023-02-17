@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
+import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
@@ -59,13 +61,7 @@ class RecordOrchestratorServiceTest {
         RecordRequest updateRequest = new RecordRequest(RecordAttributes.empty().putAttribute(TEST_KEY, newVal));
 
         RecordResponse resp =
-            recordOrchestratorService.updateSingleRecord(
-                INSTANCE,
-                RecordOrchestratorService.VERSION,
-                TEST_TYPE,
-                RECORD_ID,
-                updateRequest
-            );
+            recordOrchestratorService.updateSingleRecord(INSTANCE, VERSION, TEST_TYPE, RECORD_ID, updateRequest);
 
         assertEquals(RECORD_ID, resp.recordId());
 
@@ -87,7 +83,7 @@ class RecordOrchestratorServiceTest {
         RecordQueryResponse resp = recordOrchestratorService.queryForRecords(
             INSTANCE,
             TEST_TYPE,
-            RecordOrchestratorService.VERSION,
+            VERSION,
             new SearchRequest()
         );
 
@@ -108,12 +104,7 @@ class RecordOrchestratorServiceTest {
     void deleteSingleRecord() {
         testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
 
-        recordOrchestratorService.deleteSingleRecord(
-            INSTANCE,
-            RecordOrchestratorService.VERSION,
-            TEST_TYPE,
-            RECORD_ID
-        );
+        recordOrchestratorService.deleteSingleRecord(INSTANCE, VERSION, TEST_TYPE, RECORD_ID);
 
         try {
             testGetRecord(RECORD_ID, TEST_KEY, TEST_VAL);
@@ -129,18 +120,10 @@ class RecordOrchestratorServiceTest {
     void deleteRecordType() {
         testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
 
-        recordOrchestratorService.deleteRecordType(
-            INSTANCE,
-            RecordOrchestratorService.VERSION,
-            TEST_TYPE
-        );
+        recordOrchestratorService.deleteRecordType(INSTANCE, VERSION, TEST_TYPE);
 
         try {
-            recordOrchestratorService.describeRecordType(
-                INSTANCE,
-                RecordOrchestratorService.VERSION,
-                TEST_TYPE
-            );
+            recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE);
 
             assert(false);
         } catch (MissingObjectException e) {
@@ -154,11 +137,7 @@ class RecordOrchestratorServiceTest {
         testCreateRecord("second", TEST_KEY, "another");
         testCreateRecord("third", TEST_KEY, "a third");
 
-        RecordTypeSchema schema = recordOrchestratorService.describeRecordType(
-            INSTANCE,
-            RecordOrchestratorService.VERSION,
-            TEST_TYPE
-        );
+        RecordTypeSchema schema = recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE);
 
         assertEquals(TEST_TYPE, schema.name());
         assertEquals(3, schema.count());
@@ -173,10 +152,7 @@ class RecordOrchestratorServiceTest {
         RecordType typeTwo = RecordType.valueOf("typeTwo");
         testCreateRecord("fourth", TEST_KEY, "a fourth", typeTwo);
 
-        List<RecordTypeSchema> schemas = recordOrchestratorService.describeAllRecordTypes(
-            INSTANCE,
-            RecordOrchestratorService.VERSION
-        );
+        List<RecordTypeSchema> schemas = recordOrchestratorService.describeAllRecordTypes(INSTANCE, VERSION);
 
         assert(
             schemas.stream().anyMatch(schema -> schema.name().equals(TEST_TYPE) && schema.count() == 3)
@@ -188,30 +164,16 @@ class RecordOrchestratorServiceTest {
     }
 
     @Test
-    void validateVersion() {
-        RecordOrchestratorService.validateVersion(RecordOrchestratorService.VERSION);
+    void testValidateVersion() {
+        validateVersion(VERSION);
 
         try {
-            RecordOrchestratorService.validateVersion("invalidVersion");
+            validateVersion("invalidVersion");
 
             // Test should not reach this line
             assert(false);
         } catch (ResponseStatusException e) {
             assert(e.getStatus().equals(HttpStatus.BAD_REQUEST));
-            // This is expected
-        }
-    }
-
-    @Test
-    void validateInstance() {
-        recordOrchestratorService.validateInstance(INSTANCE);
-
-        try {
-            recordOrchestratorService.validateInstance(UUID.fromString("000e4444-e22b-22d1-a333-426614174000"));
-
-            // Test should not reach this line
-            assert(false);
-        } catch (MissingObjectException e) {
             // This is expected
         }
     }
@@ -225,7 +187,7 @@ class RecordOrchestratorServiceTest {
 
         ResponseEntity<RecordResponse> response = recordOrchestratorService.upsertSingleRecord(
             INSTANCE,
-            RecordOrchestratorService.VERSION,
+            VERSION,
             newRecordType,
             newRecordId,
             Optional.empty(),
@@ -237,7 +199,7 @@ class RecordOrchestratorServiceTest {
 
     private void testGetRecord(String newRecordId, String testKey, String testVal) {
         RecordResponse recordResponse = recordOrchestratorService.getSingleRecord(
-            INSTANCE, RecordOrchestratorService.VERSION, TEST_TYPE, newRecordId
+            INSTANCE, VERSION, TEST_TYPE, newRecordId
         );
         assertEquals(testVal, recordResponse.recordAttributes().getAttributeValue(testKey));
     }

@@ -40,28 +40,32 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
+
 @Service
 public class RecordOrchestratorService { // TODO give me a better name
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RecordOrchestratorService.class);
-    public static final String VERSION = "v0.2";
     private static final int MAX_RECORDS = 1_000;
 
     private final RecordDao recordDao;
     private final DataTypeInferer inferer;
     private final BatchWriteService batchWriteService;
     private final RecordService recordService;
+    private final InstanceService instanceService;
     private final ObjectMapper objectMapper;
 
     public RecordOrchestratorService(RecordDao recordDao,
                                      DataTypeInferer inferer,
                                      BatchWriteService batchWriteService,
                                      RecordService recordService,
+                                     InstanceService instanceService,
                                      ObjectMapper objectMapper) {
         this.recordDao = recordDao;
         this.inferer = inferer;
         this.batchWriteService = batchWriteService;
         this.recordService = recordService;
+        this.instanceService = instanceService;
         this.objectMapper = objectMapper;
     }
 
@@ -69,7 +73,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     public RecordResponse updateSingleRecord(UUID instanceId, String version, RecordType recordType, String recordId,
                               RecordRequest recordRequest) {
         validateVersion(version);
-        validateInstance(instanceId);
+        instanceService.validateInstance(instanceId);
         checkRecordTypeExists(instanceId, recordType);
         Record singleRecord = recordDao
             .getSingleRecord(instanceId, recordType, recordId)
@@ -89,7 +93,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     @ReadTransaction
     public RecordResponse getSingleRecord(UUID instanceId, String version, RecordType recordType, String recordId) {
         validateVersion(version);
-        validateInstance(instanceId);
+        instanceService.validateInstance(instanceId);
         checkRecordTypeExists(instanceId, recordType);
         Record result = recordDao.getSingleRecord(instanceId, recordType, recordId).orElseThrow(() -> new MissingObjectException("Record"));
         return new RecordResponse(recordId, recordType, result.getAttributes());
@@ -98,7 +102,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     public int tsvUpload(UUID instanceId, String version, RecordType recordType, Optional<String> primaryKey,
                           MultipartFile records) throws IOException {
         validateVersion(version);
-        validateInstance(instanceId);
+        instanceService.validateInstance(instanceId);
         if(recordDao.recordTypeExists(instanceId, recordType)){
             validatePrimaryKey(instanceId, recordType, primaryKey);
         }
@@ -108,7 +112,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     // TODO: enable read transaction
     public StreamingResponseBody streamAllEntities(UUID instanceId, String version, RecordType recordType) {
         validateVersion(version);
-        validateInstance(instanceId);
+        instanceService.validateInstance(instanceId);
         checkRecordTypeExists(instanceId, recordType);
         List<String> headers = recordDao.getAllAttributeNames(instanceId, recordType);
 
@@ -128,7 +132,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     public RecordQueryResponse queryForRecords(UUID instanceId, RecordType recordType, String version,
                                                SearchRequest searchRequest) {
         validateVersion(version);
-        validateInstance(instanceId);
+        instanceService.validateInstance(instanceId);
         checkRecordTypeExists(instanceId, recordType);
         if (null == searchRequest) {
             searchRequest = new SearchRequest();
@@ -160,7 +164,7 @@ public class RecordOrchestratorService { // TODO give me a better name
                                                              String recordId, Optional<String> primaryKey,
                                                              RecordRequest recordRequest) {
         validateVersion(version);
-        validateInstance(instanceId);
+        instanceService.validateInstance(instanceId);
         RecordAttributes attributesInRequest = recordRequest.recordAttributes();
         Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
         HttpStatus status = HttpStatus.CREATED;
@@ -192,7 +196,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     @WriteTransaction
     public boolean deleteSingleRecord(UUID instanceId, String version, RecordType recordType, String recordId) {
         validateVersion(version);
-        validateInstance(instanceId);
+        instanceService.validateInstance(instanceId);
         checkRecordTypeExists(instanceId, recordType);
         return recordDao.deleteSingleRecord(instanceId, recordType, recordId);
     }
@@ -200,7 +204,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     @WriteTransaction
     public void deleteRecordType(UUID instanceId, String version, RecordType recordType) {
         validateVersion(version);
-        validateInstance(instanceId);
+        instanceService.validateInstance(instanceId);
         checkRecordTypeExists(instanceId, recordType);
         recordDao.deleteRecordType(instanceId, recordType);
     }
@@ -208,7 +212,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     @ReadTransaction
     public RecordTypeSchema describeRecordType(UUID instanceId, String version, RecordType recordType) {
         validateVersion(version);
-        validateInstance(instanceId);
+        instanceService.validateInstance(instanceId);
         checkRecordTypeExists(instanceId, recordType);
         return getSchemaDescription(instanceId, recordType);
     }
@@ -216,7 +220,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     @ReadTransaction
     public List<RecordTypeSchema> describeAllRecordTypes(UUID instanceId, String version) {
         validateVersion(version);
-        validateInstance(instanceId);
+        instanceService.validateInstance(instanceId);
         List<RecordType> allRecordTypes = recordDao.getAllRecordTypes(instanceId);
         return allRecordTypes.stream()
             .map(recordType -> getSchemaDescription(instanceId, recordType)).toList();
@@ -225,23 +229,11 @@ public class RecordOrchestratorService { // TODO give me a better name
     public int streamingWrite(UUID instanceId, String version, RecordType recordType,
                                                         Optional<String> primaryKey, InputStream is) {
         validateVersion(version);
-        validateInstance(instanceId);
+        instanceService.validateInstance(instanceId);
         if(recordDao.recordTypeExists(instanceId, recordType)){
             validatePrimaryKey(instanceId, recordType, primaryKey);
         }
         return batchWriteService.batchWriteJsonStream(is, instanceId, recordType, primaryKey);
-    }
-
-    public static void validateVersion(String version) {
-        if (null == version || !version.equals(VERSION)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid API version specified");
-        }
-    }
-
-    public void validateInstance(UUID instanceId) {
-        if (!recordDao.instanceSchemaExists(instanceId)) {
-            throw new MissingObjectException("Instance");
-        }
     }
 
     private void validatePrimaryKey(UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
