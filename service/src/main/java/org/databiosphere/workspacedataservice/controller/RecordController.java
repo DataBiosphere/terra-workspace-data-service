@@ -5,8 +5,15 @@ import bio.terra.common.db.WriteTransaction;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.csv.CSVPrinter;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.service.*;
-import org.databiosphere.workspacedataservice.service.model.*;
+import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.service.DataTypeInferer;
+import org.databiosphere.workspacedataservice.service.RecordService;
+import org.databiosphere.workspacedataservice.service.TsvSupport;
+import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.model.ReservedNames;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.NewPrimaryKeyException;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
@@ -39,9 +46,13 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -79,7 +90,7 @@ public class RecordController {
 				.orElseThrow(() -> new MissingObjectException("Record"));
 		RecordAttributes incomingAtts = recordRequest.recordAttributes();
 		RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAtts).getAttributes();
-		Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts, InBoundDataSource.JSON);
+		Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts);
 		Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
 		singleRecord.setAttributes(allAttrs);
 		List<Record> records = Collections.singletonList(singleRecord);
@@ -104,7 +115,7 @@ public class RecordController {
 	}
 
 	@PostMapping( "/{instanceId}/tsv/{version}/{recordType}")
-	// N.B. transaction annotated in batchWriteService.uploadTsvStream
+	// N.B. transaction annotated in batchWriteService.batchWriteTsvStream
 	public ResponseEntity<TsvUploadResponse> tsvUpload(@PathVariable("instanceId") UUID instanceId,
 			   @PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			   @RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey,
@@ -114,10 +125,7 @@ public class RecordController {
 		if(recordDao.recordTypeExists(instanceId, recordType)){
 			validatePrimaryKey(instanceId, recordType, primaryKey);
 		}
-		int recordsModified;
-		try (InputStreamReader inputStreamReader = new InputStreamReader(records.getInputStream())) {
-			recordsModified = batchWriteService.uploadTsvStream(inputStreamReader, instanceId, recordType, primaryKey);
-		}
+		int recordsModified = batchWriteService.batchWriteTsvStream(records.getInputStream(), instanceId, recordType, primaryKey);
 		return new ResponseEntity<>(new TsvUploadResponse(recordsModified, "Updated " + recordType.toString()),
 				HttpStatus.OK);
 	}
@@ -131,6 +139,7 @@ public class RecordController {
 		checkRecordTypeExists(instanceId, recordType);
 		List<String> headers = recordDao.getAllAttributeNames(instanceId, recordType);
 
+		// TODO: consider rewriting this using jackson-dataformat-csv and removing org.apache.commons:commons-csv altogether
 		StreamingResponseBody responseBody = httpResponseOutputStream -> {
 			try (Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType);
 				 CSVPrinter writer = TsvSupport.getOutputFormat(headers)
@@ -188,7 +197,7 @@ public class RecordController {
 		validateVersion(version);
 		validateInstance(instanceId);
 		RecordAttributes attributesInRequest = recordRequest.recordAttributes();
-		Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest, InBoundDataSource.JSON);
+		Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
 		HttpStatus status = HttpStatus.CREATED;
 		if (!recordDao.recordTypeExists(instanceId, recordType)) {
 			RecordResponse response = new RecordResponse(recordId, recordType, recordRequest.recordAttributes());
@@ -305,17 +314,10 @@ public class RecordController {
 		Map<String, RecordType> relations = relationCols.stream()
 				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
 		List<AttributeSchema> attrSchema = schema.entrySet().stream().sorted(Map.Entry.comparingByKey())
-				.map(entry -> createAttributeSchema(entry.getKey(), entry.getValue(), relations.get(entry.getKey())))
+				.map(entry -> new AttributeSchema(entry.getKey(), entry.getValue().toString(), relations.get(entry.getKey())))
 				.toList();
 		int recordCount = recordDao.countRecords(instanceId, recordType);
 		return new RecordTypeSchema(recordType, attrSchema, recordCount, recordDao.getPrimaryKeyColumn(recordType, instanceId));
-	}
-
-	private AttributeSchema createAttributeSchema(String name, DataTypeMapping datatype, RecordType relation) {
-		if (relation == null) {
-			return new AttributeSchema(name, datatype.toString(), null);
-		}
-		return new AttributeSchema(name, "STRING".equals(datatype.toString()) ? "RELATION" : "ARRAY_OF_RELATION", relation);
 	}
 
 	private static void validateVersion(String version) {
@@ -331,7 +333,7 @@ public class RecordController {
 	}
 
 	@PostMapping("/{instanceid}/batch/{v}/{type}")
-	// N.B. transaction annotated in batchWriteService.consumeWriteStream
+	// N.B. transaction annotated in batchWriteService.batchWriteJsonStream
 	public ResponseEntity<BatchResponse> streamingWrite(@PathVariable("instanceid") UUID instanceId,
 			@PathVariable("v") String version, @PathVariable("type") RecordType recordType,
 			@RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey, InputStream is) {
@@ -340,7 +342,7 @@ public class RecordController {
 		if(recordDao.recordTypeExists(instanceId, recordType)){
 			validatePrimaryKey(instanceId, recordType, primaryKey);
 		}
-		int recordsModified = batchWriteService.consumeWriteStream(is, instanceId, recordType, primaryKey);
+		int recordsModified = batchWriteService.batchWriteJsonStream(is, instanceId, recordType, primaryKey);
 		return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
 	}
 

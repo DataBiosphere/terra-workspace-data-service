@@ -15,11 +15,13 @@ public enum DataTypeMapping {
 	RELATION(null, "relation", false, "?"),
 	JSON(null, "jsonb", false, "?::jsonb"),
 	NUMBER(null, "numeric", false, "?"),
+	FILE(null, "file", false, "?"),
 	ARRAY_OF_NUMBER(Double[].class, "numeric[]", true, "?::numeric[]"),
 	ARRAY_OF_DATE(String[].class, "date[]", true, "?::date[]"),
 	ARRAY_OF_DATE_TIME(String[].class, "timestamp with time zone[]", true, "?::timestamp with time zone[]"),
 	ARRAY_OF_STRING(String[].class, "text[]", true, "?"),
 	ARRAY_OF_RELATION(String[].class, "array_of_relation", true, "?"),
+	ARRAY_OF_FILE(String[].class, "array_of_file", true, "?"),
 	ARRAY_OF_BOOLEAN(Boolean[].class, "boolean[]", true, "?");
 
 	private Class javaArrayTypeForDbWrites;
@@ -69,6 +71,8 @@ public enum DataTypeMapping {
 		switch (baseType){
 			case STRING :
 				return ARRAY_OF_STRING;
+			case FILE :
+				return ARRAY_OF_FILE;
 			case RELATION :
 				return ARRAY_OF_RELATION;
 			case BOOLEAN:

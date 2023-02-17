@@ -598,7 +598,7 @@ components:
           description: name of this attribute.
         datatype:
           type: string
-          enum: [BOOLEAN, NUMBER, DATE, DATE_TIME, STRING, JSON, RELATION, ARRAY_OF_BOOLEAN, ARRAY_OF_STRING, ARRAY_OF_NUMBER, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME]
+          enum: [BOOLEAN, NUMBER, DATE, DATE_TIME, STRING, JSON, RELATION, FILE, ARRAY_OF_BOOLEAN, ARRAY_OF_STRING, ARRAY_OF_NUMBER, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_RELATION, ARRAY_OF_FILE]
           description: |
             Datatype of this attribute. The enum of datatypes is in flux and will change. Please
             comment at https://docs.google.com/document/d/1d352ZoN5kEYWPjy0NqqWGxdf7HEu5VEdrLmiAv7dMmQ/edit#heading=h.naxag0augkgf.
@@ -691,11 +691,14 @@ components:
           "numericAttr": 123,
           "booleanAttr": true,
           "relationAttr": "terra-wds:/target-type/target-id",
+          "fileAttr": "https://account_name.blob.core.windows.net/container-1/blob1",
           "arrayString": ["green", "red"],
           "arrayBoolean": [true, false],
           "arrayNumber": [12821.112, 0.12121211, 11],
           "arrayDate": ["2022-11-03"],
-          "arrayDateTime": ["2022-11-03T04:36:20"]
+          "arrayDateTime": ["2022-11-03T04:36:20"],
+          "arrayRelation": ["terra-wds:/target-type/target-id-1", "terra-wds:/target-type/target-id-2"],
+          "arrayFile": ["drs://drs.example.org/file_id_1", "https://account_name.blob.core.windows.net/container-2/blob2"]
         }
     RecordAttributeDefinition:
       required:

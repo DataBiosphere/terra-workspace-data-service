@@ -248,7 +248,7 @@ public class RecordDao {
 	public Map<String, DataTypeMapping> getExistingTableSchema(UUID instanceId, RecordType recordType) {
 		MapSqlParameterSource params = new MapSqlParameterSource(INSTANCE_ID, instanceId.toString());
 		params.addValue("tableName", recordType.getName());
-		String sql = "select column_name, udt_name::regtype as data_type from INFORMATION_SCHEMA.COLUMNS " +
+		String sql = "select column_name,coalesce(domain_name, udt_name::regtype::varchar) as data_type from INFORMATION_SCHEMA.COLUMNS " +
 				"where table_schema = :instanceId and table_name = :tableName";
 		return getTableSchema(sql, params);
 	}
@@ -348,6 +348,11 @@ public class RecordDao {
 			}
 			throw e;
 		}
+	}
+
+	public void removeFromJoin(UUID instanceId, Relation column, RecordType fromType, List<String> recordIds){
+			namedTemplate.update("delete from " + getQualifiedJoinTableName(instanceId, column.relationColName(), fromType) + " where "
+					+ quote(getFromColumnName(fromType)) + "in (:recordIds)", new MapSqlParameterSource("recordIds", recordIds));
 	}
 
 	public void batchUpsert(UUID instanceId, RecordType recordType, List<Record> records,
@@ -544,7 +549,7 @@ public class RecordDao {
 
 	private Object[] getListAsArray(List<?> attVal, DataTypeMapping typeMapping) {
 		switch (typeMapping){
-			case ARRAY_OF_STRING, ARRAY_OF_RELATION, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_NUMBER, EMPTY_ARRAY:
+			case ARRAY_OF_STRING, ARRAY_OF_FILE, ARRAY_OF_RELATION, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_NUMBER, EMPTY_ARRAY:
 				return attVal.stream().map(Object::toString).toList().toArray(new String[0]);
 			case ARRAY_OF_BOOLEAN:
 				//accept all casings of True and False if they're strings
