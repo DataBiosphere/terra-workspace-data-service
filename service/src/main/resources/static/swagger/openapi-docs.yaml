@@ -598,7 +598,7 @@ components:
           description: name of this attribute.
         datatype:
           type: string
-          enum: [boolean, date, datetime, string, json, long, double, relation, array_of_boolean, array_of_string, array_of_number, array_of_date, array_of_datetime]
+          enum: [BOOLEAN, NUMBER, DATE, DATE_TIME, STRING, JSON, RELATION, ARRAY_OF_BOOLEAN, ARRAY_OF_STRING, ARRAY_OF_NUMBER, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME]
           description: |
             Datatype of this attribute. The enum of datatypes is in flux and will change. Please
             comment at https://docs.google.com/document/d/1d352ZoN5kEYWPjy0NqqWGxdf7HEu5VEdrLmiAv7dMmQ/edit#heading=h.naxag0augkgf.
