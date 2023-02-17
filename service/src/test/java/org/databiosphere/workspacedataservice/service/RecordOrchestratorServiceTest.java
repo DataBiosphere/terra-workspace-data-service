@@ -110,7 +110,7 @@ class RecordOrchestratorServiceTest {
             testGetRecord(RECORD_ID, TEST_KEY, TEST_VAL);
 
             // Expecting an exception since record was deleted
-            assert(false);
+            fail("getRecord should have thrown an error");
         } catch (MissingObjectException e) {
             // expected
         }
@@ -125,7 +125,7 @@ class RecordOrchestratorServiceTest {
         try {
             recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE);
 
-            assert(false);
+            fail("describeRecordType should have thrown an error");
         } catch (MissingObjectException e) {
             // expected exception
         }
@@ -171,7 +171,7 @@ class RecordOrchestratorServiceTest {
             validateVersion("invalidVersion");
 
             // Test should not reach this line
-            assert(false);
+            fail("validateVersion should have thrown an error");
         } catch (ResponseStatusException e) {
             assert(e.getStatus().equals(HttpStatus.BAD_REQUEST));
             // This is expected

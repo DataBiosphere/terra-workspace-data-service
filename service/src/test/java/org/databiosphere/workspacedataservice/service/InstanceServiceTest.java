@@ -74,7 +74,7 @@ class InstanceServiceTest {
             instanceService.validateInstance(INSTANCE);
 
             // Test should not reach this line
-            assert(false);
+            fail("validateInstance should have thrown an error");
         } catch (MissingObjectException e) {
             // This is expected
         }
