@@ -106,14 +106,8 @@ class RecordOrchestratorServiceTest {
 
         recordOrchestratorService.deleteSingleRecord(INSTANCE, VERSION, TEST_TYPE, RECORD_ID);
 
-        try {
-            testGetRecord(RECORD_ID, TEST_KEY, TEST_VAL);
-
-            // Expecting an exception since record was deleted
-            fail("getRecord should have thrown an error");
-        } catch (MissingObjectException e) {
-            // expected
-        }
+        assertThrows(MissingObjectException.class, () -> testGetRecord(RECORD_ID, TEST_KEY, TEST_VAL),
+            "getRecord should have thrown an error");
     }
 
     @Test
@@ -122,13 +116,9 @@ class RecordOrchestratorServiceTest {
 
         recordOrchestratorService.deleteRecordType(INSTANCE, VERSION, TEST_TYPE);
 
-        try {
-            recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE);
-
-            fail("describeRecordType should have thrown an error");
-        } catch (MissingObjectException e) {
-            // expected exception
-        }
+        assertThrows(MissingObjectException.class,
+            () -> recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE),
+            "describeRecordType should have thrown an error");
     }
 
     @Test
@@ -167,15 +157,10 @@ class RecordOrchestratorServiceTest {
     void testValidateVersion() {
         validateVersion(VERSION);
 
-        try {
-            validateVersion("invalidVersion");
-
-            // Test should not reach this line
-            fail("validateVersion should have thrown an error");
-        } catch (ResponseStatusException e) {
-            assert(e.getStatus().equals(HttpStatus.BAD_REQUEST));
-            // This is expected
-        }
+        ResponseStatusException e =
+            assertThrows(ResponseStatusException.class, () -> validateVersion("invalidVersion"),
+                "validateVersion should have thrown an error");
+        assert(e.getStatus().equals(HttpStatus.BAD_REQUEST));
     }
 
     private void testCreateRecord(String newRecordId, String testKey, String testVal) {

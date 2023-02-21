@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.aspectj.lang.annotation.Before;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,13 +35,10 @@ class InstanceServiceTest {
         instanceService.createInstance(INSTANCE, VERSION);
         instanceService.validateInstance(INSTANCE);
 
-        try {
-            instanceService.validateInstance(UUID.fromString("000e4444-e22b-22d1-a333-426614174000"));
-            // Test should not reach this line
-            assert(false);
-        } catch (MissingObjectException e) {
-            // This is expected
-        }
+        UUID invalidInstance = UUID.fromString("000e4444-e22b-22d1-a333-426614174000");
+        assertThrows(MissingObjectException.class, () -> instanceService.validateInstance(invalidInstance),
+            "validateInstance should have thrown an error");
+
         // clean up
         instanceService.deleteInstance(INSTANCE, VERSION);
     }
@@ -70,13 +66,7 @@ class InstanceServiceTest {
         instanceService.validateInstance(INSTANCE);
 
         instanceService.deleteInstance(INSTANCE, VERSION);
-        try {
-            instanceService.validateInstance(INSTANCE);
-
-            // Test should not reach this line
-            fail("validateInstance should have thrown an error");
-        } catch (MissingObjectException e) {
-            // This is expected
-        }
+        assertThrows(MissingObjectException.class, () -> instanceService.validateInstance(INSTANCE),
+            "validateInstance should have thrown an error");
     }
 }
