@@ -36,7 +36,7 @@ jobs:
         id: find-jira-id
         run: |
           set +e
-          JIRA_ID=$(echo '${{ github.event.head_commit.message }}' | grep -iEo -m 1 'AJ-[0-9]+' | head -1 || '')
+          JIRA_ID=$(echo "${{ github.event.head_commit.message }}" | grep -iEo -m 1 'AJ-[0-9]+' | head -1 || '')
           if [[ -z "$JIRA_ID" ]]; then
             echo ::set-output name=JIRA_ID::"missing"
           else 
