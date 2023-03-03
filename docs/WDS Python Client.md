@@ -83,6 +83,8 @@ workspaceId = os.environ['WORKSPACE_ID'];
 
 ## WDS Available Client APIs
 
+You can check out the swagger generated documentation for all available APIs **here**(swagger-gen-docs/README.md). Below find a few specific examples for the most common use cases. 
+
 ## General WDS Info
 General WDS Info client allows to check the version of WDS that is running in a given workspace. It can also check the status of WDS, as well as its subcomponents. 
 
