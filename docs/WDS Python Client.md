@@ -42,7 +42,7 @@ WDS endpoint URL can be aquired from Leo APIs and should soon be available in a 
 
 However, if for some reason it is not, or you are looking to write data into a different workspace data table that you also have access to (remember this will only work if the token you generated has access to that workspace), it can be aquired by calling the following code
 
-Replae env with "dev" or "prod", based on where your workspace is running. Workspace Id can be located either on the Data tab by clinking "data table status" or from the following env variable in the notebook: os.environ['WORKSPACE_ID'] 
+Replace env with "dev" or "prod", based on where your workspace is running. Workspace Id can be located either on the Data tab by clinking "data table status" or from the following env variable in the notebook: os.environ['WORKSPACE_ID'] 
 ```
 def get_wds_url(workspaceId):
     """"Get url for wds."""
@@ -69,7 +69,7 @@ wds_url = response[0]['proxyUrls']['wds']
 print(wds_url)
 ```
 
-Once you have bearer token, you are all set to create the WDS Api Client. Do note that token will expire and will be renewed every 60 minutes. 
+Once you have bearer token and the WDS enpoint url, you are all set to create the WDS Api Client. Do note that token will expire and will be renewed every 60 minutes. 
 To call WDS, you will always need to provide a version and workspace Id. 
 
 ```
@@ -101,9 +101,9 @@ print(response.status)
 ```
 
 ### Records
-RecordsApi is the main client that does all the interaction with the actual data in the Data Tables in WDS. To view full list of functions, navigate to: 
+RecordsApi is the main client that does all the interaction with the actual data in the Data Tables in WDS. 
 
-A few examples are provided below: 
+A few examples for the following functions are provided below. For full list navigate [**here**](swagger-gen-docs/README.md): 
 - create_or_replace_record
 - get_records_as_tsv
 - upload_tsv
@@ -111,9 +111,11 @@ A few examples are provided below:
 
 Example of adding a new record (create_or_replace_record):
 ```
+from datetime import datetime
 records_client = wds_client.RecordsApi(api_client)
-dict_values = {"Colors":["green","red", "blue"], "numberYay": 1}
+dict_values = {"Colors":["green","red", "blue"], "Number": 2023, "DateTimeCreatedAt": datetime.now()}
 record_request = wds_client.RecordRequest(attributes=dict_values);
+# this will create a record with table name "testType" and record row name "testRecord"
 recordCreated = records_client.create_or_replace_record(current_workspaceId, version, 'testType', 'testRecord', record_request)
 ```
 
@@ -133,19 +135,15 @@ Example of upload_tsv:
 
 ```
 tsv_file_name = "TestType_uploaded".tsv";
+# this will create a tsv on the notebook VM or locally where this code is run
 testType = testType.to_csv(tsv_file_name, sep="\t", index = False)
 
-# Upload entity to workspace data table
-response = records_client.upload_tsv(current_workspaceId, version, upload_data_table_name, tsv_file_name)
+# Upload entity to workspace data table with name "testType_uploaded"
+response = records_client.upload_tsv(current_workspaceId, version, "testType_uploaded", tsv_file_name)
 print(response)
 ```
 
 ### Schema
-
-Available schema api are: 
-- delete_record_type
-- describe_all_record_types
-- describe_record_type
 
 The code below assumes that the workspace has a Data Table with the name "testType" that contains data in it. The code to create the record type and add data to it was covered in Records section.
 
@@ -172,7 +170,7 @@ for t in workspace_ent_type:
 
 ### Instances
 
-Currently WDS only supports a singel WDS instance by workspace, however in the future there will be support for multiple insances per workspace and these functions will be helpful on checking the state of running WDS instances. 
+Currently WDS only supports a single WDS instance by workspace, however in the future there will be support for multiple insances per workspace and these functions will be helpful on checking the state of running WDS instances. 
 
 Here is how to set up the instance client and get back Ids of all WDS instances running in the current workspace.
 ```
