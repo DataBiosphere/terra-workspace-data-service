@@ -73,12 +73,13 @@ Once you have bearer token and the WDS enpoint url, you are all set to create th
 To call WDS, you will always need to provide a version and workspace Id. 
 
 ```
+import wds_client
 api_client = wds_client.ApiClient(header_name='Authorization', header_value="Bearer " + azure_token)
 api_client.configuration.host = wds_url
 
 version = "v0.2"
 # if running outside of Terra notebook VM, will need to set this to the desired workspace Id 
-workspaceId = os.environ['WORKSPACE_ID'];
+current_workspaceId = os.environ['WORKSPACE_ID'];
 ```
 
 ## WDS Available Client APIs
@@ -122,6 +123,7 @@ recordCreated = records_client.create_or_replace_record(current_workspaceId, ver
 Example of get_records_as_tsv and then placing those into a pandas dataframe:
 
 ```
+import pandas as pd
 records_client = wds_client.RecordsApi(api_client)
 # query records that were just added
 records = records_client.get_records_as_tsv(current_workspaceId, version, 'testType')
