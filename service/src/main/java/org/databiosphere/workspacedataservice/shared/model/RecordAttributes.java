@@ -97,6 +97,11 @@ public class RecordAttributes {
 		return this;
 	}
 
+	public RecordAttributes removeAttribute(String key) {
+		this.attributes.remove(key);
+		return this;
+	}
+
 	// ========== utils
 
 	@Override

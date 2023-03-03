@@ -38,6 +38,8 @@ public class RecordService {
         Map<Relation, List<RelationValue>> relationArrayValues = getAllRelationArrayValues(records, relationArrays);
         recordDao.batchUpsert(instanceId, recordType, records, requestSchema, primaryKey);
         for (Map.Entry<Relation, List<RelationValue>> rel : relationArrayValues.entrySet()) {
+            //remove existing values from join table and replace with new ones
+            recordDao.removeFromJoin(instanceId, rel.getKey(), recordType, rel.getValue().stream().map(relVal -> relVal.fromRecord().getId()).toList());
             recordDao.insertIntoJoin(instanceId, rel.getKey(), recordType, rel.getValue());
         }
     }
@@ -91,8 +93,7 @@ public class RecordService {
     private List<String> checkEachRow(List<Record> records, Map<String, DataTypeMapping> recordTypeSchema) {
         List<String> result = new ArrayList<>();
         for (Record rcd : records) {
-            Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(rcd.getAttributes(),
-                    InBoundDataSource.JSON);
+            Map<String, DataTypeMapping> schemaForRecord = inferer.inferTypes(rcd.getAttributes());
             if (!schemaForRecord.equals(recordTypeSchema)) {
                 MapDifference<String, DataTypeMapping> difference = Maps.difference(schemaForRecord, recordTypeSchema);
                 Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap = difference
