@@ -28,6 +28,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -53,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * https://github.com/spring-projects/spring-framework/issues/17290 As a result,
  * this test suite is currently focused on validating expected error handling
  */
+@ActiveProfiles(profiles = "unit-test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
 		"spring.main.allow-bean-definition-overriding=true"})
 @Import(SmallBatchWriteTestConfig.class)

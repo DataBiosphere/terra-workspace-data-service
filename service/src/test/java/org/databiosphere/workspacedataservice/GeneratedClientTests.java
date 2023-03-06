@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.File;
 import java.net.URISyntaxException;
@@ -24,7 +25,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-
+@ActiveProfiles(profiles = "unit-test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class GeneratedClientTests {
 
@@ -128,6 +129,6 @@ class GeneratedClientTests {
 
     private void createNewInstance(UUID instanceId) throws ApiException {
         InstancesApi instancesApi = new InstancesApi(apiClient);
-        instancesApi.createWDSInstance(instanceId.toString(), version);
+        instancesApi.createWDSInstance(instanceId.toString(), version, instanceId);
     }
 }

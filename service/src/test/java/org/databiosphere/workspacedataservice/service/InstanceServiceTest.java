@@ -6,13 +6,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.junit.jupiter.api.Assertions.*;
 
+@ActiveProfiles(profiles = "unit-test")
 @SpringBootTest
 class InstanceServiceTest {
 
@@ -32,7 +35,7 @@ class InstanceServiceTest {
 
     @Test
     void testCreateAndValidateInstance() {
-        instanceService.createInstance(INSTANCE, VERSION);
+        instanceService.createInstance(INSTANCE, VERSION, Optional.empty());
         instanceService.validateInstance(INSTANCE);
 
         UUID invalidInstance = UUID.fromString("000e4444-e22b-22d1-a333-426614174000");
@@ -45,10 +48,10 @@ class InstanceServiceTest {
 
     @Test
     void listInstances() {
-        instanceService.createInstance(INSTANCE, VERSION);
+        instanceService.createInstance(INSTANCE, VERSION, Optional.empty());
 
         UUID secondInstanceId = UUID.fromString("999e1111-e89b-12d3-a456-426614174000");
-        instanceService.createInstance(secondInstanceId, VERSION);
+        instanceService.createInstance(secondInstanceId, VERSION, Optional.empty());
 
         List<UUID> instances = instanceService.listInstances(VERSION);
 
@@ -62,7 +65,7 @@ class InstanceServiceTest {
 
     @Test
     void deleteInstance() {
-        instanceService.createInstance(INSTANCE, VERSION);
+        instanceService.createInstance(INSTANCE, VERSION, Optional.empty());
         instanceService.validateInstance(INSTANCE);
 
         instanceService.deleteInstance(INSTANCE, VERSION);
