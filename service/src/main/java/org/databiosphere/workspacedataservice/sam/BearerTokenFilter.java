@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.sam;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -31,15 +32,17 @@ public class BearerTokenFilter implements Filter {
 
     public static final String ATTRIBUTE_NAME_TOKEN = "bearer-token-attribute";
 
+    private static final String BEARER_PREFIX = "Bearer ";
+
     // TODO: unit tests
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         if (request instanceof HttpServletRequest httpRequest) {
             // TODO: more robust token extraction?
-            String authString = httpRequest.getHeader("Authorization");
-            if (!Objects.isNull(authString)) {
-                String token = authString.replaceFirst("Bearer ", "");
+            String authString = httpRequest.getHeader(HttpHeaders.AUTHORIZATION);
+            if (!Objects.isNull(authString) && authString.startsWith(BEARER_PREFIX)) {
+                String token = authString.replaceFirst(BEARER_PREFIX, "");
 
                 LOGGER.info("found bearer token in incoming request: {}", loggableToken(token));
 
@@ -61,12 +64,7 @@ public class BearerTokenFilter implements Filter {
      * @return loggable substring of the original token
      */
     public static String loggableToken(String token) {
-        int end = token.length();
-        int start = end - 6;
-        if (start < 0) {
-            start = 0;
-        }
-        return  "..." + token.substring(start, end);
+        return  "[" + token.hashCode() + "]";
     }
 
 
