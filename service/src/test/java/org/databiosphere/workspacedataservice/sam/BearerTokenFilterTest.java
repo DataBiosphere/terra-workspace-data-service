@@ -24,8 +24,6 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
 @SpringBootTest
 public class BearerTokenFilterTest {
 
-    static final String longToken = RandomStringUtils.randomAscii(8192);
-
     private static Stream<Arguments> provideAuthorizationHeaders() {
 		/* Arguments are sets:
 			- first value is the Authorization header in the incoming request
@@ -36,11 +34,13 @@ public class BearerTokenFilterTest {
                 Arguments.of("not a bearer token", null),
                 Arguments.of("Bearer", null),
                 Arguments.of("Bearer-no-space-delimiter", null),
+                Arguments.of("something something Bearer something", null),
+                Arguments.of("bearer lower-case", null),
                 // starts properly, but no value after the prefix
                 Arguments.of("Bearer ", ""),
                 // valid tokens
                 Arguments.of("Bearer mytoken", "mytoken"),
-                Arguments.of("Bearer " + longToken, longToken)
+                Arguments.of("Bearer !#$%..^", "!#$%..^")
         );
     }
 
@@ -71,10 +71,29 @@ public class BearerTokenFilterTest {
         assertEquals(expected, actual);
     }
 
+    // long token could be included in the extractTokenTest() parameters, but generates an unwieldy test name
+    @Test
+    void extractLongTokenTest() throws Exception {
+        String longToken = RandomStringUtils.randomAscii(8192);
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + longToken);
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain filterChain = new MockFilterChain();
+
+        new BearerTokenFilter().doFilter(request, response, filterChain);
+
+        Object actual = RequestContextHolder.currentRequestAttributes()
+                .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
+
+        assertEquals(longToken, actual);
+    }
+
     /**
      * Tests that a request with no Authorization: header still works but results in no
      * token saved to RequestContextHolder
-     * 
+     *
      * @throws Exception
      */
     @Test

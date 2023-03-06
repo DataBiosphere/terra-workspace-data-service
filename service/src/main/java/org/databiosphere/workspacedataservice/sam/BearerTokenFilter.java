@@ -34,12 +34,9 @@ public class BearerTokenFilter implements Filter {
 
     private static final String BEARER_PREFIX = "Bearer ";
 
-    // TODO: unit tests
-
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         if (request instanceof HttpServletRequest httpRequest) {
-            // TODO: more robust token extraction?
             String authString = httpRequest.getHeader(HttpHeaders.AUTHORIZATION);
             if (!Objects.isNull(authString) && authString.startsWith(BEARER_PREFIX)) {
                 String token = authString.replaceFirst(BEARER_PREFIX, "");
