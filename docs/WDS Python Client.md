@@ -42,7 +42,7 @@ WDS endpoint URL can be aquired from Leo APIs and should soon be available in a 
 
 However, if for some reason it is not, or you are looking to write data into a different workspace data table that you also have access to (remember this will only work if the token you generated has access to that workspace), it can be aquired by calling the following code
 
-Replace env with "dev" or "prod", based on where your workspace is running. Workspace Id can be located either on the Data tab by clinking "data table status" or from the following env variable in the notebook: os.environ['WORKSPACE_ID'] 
+Replace env with "dev" or "prod", based on where your workspace is running. Workspace Id can be located either on the Data tab by clicking "Data Table Status" or from the following env variable in the notebook: os.environ['WORKSPACE_ID'] 
 ```
 def get_wds_url(workspaceId):
     """"Get url for wds."""
