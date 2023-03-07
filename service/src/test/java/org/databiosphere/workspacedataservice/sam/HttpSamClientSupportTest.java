@@ -6,8 +6,6 @@ import org.databiosphere.workspacedataservice.service.model.exception.SamExcepti
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,11 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @SpringBootTest
 public class HttpSamClientSupportTest extends HttpSamClientSupport {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(HttpSamClientSupport.class);
-
-        /* TODO: unit tests
-           - VoidSamFunction
-     */
     @ParameterizedTest(name = "When Sam returns an ApiException with standard http status code {0}, HttpSamClientSupport should throw AuthorizationException")
     @ValueSource(ints = {401, 403})
     void authorizationExceptions(int samCode) {

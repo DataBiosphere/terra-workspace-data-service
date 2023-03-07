@@ -6,33 +6,11 @@ import org.springframework.context.annotation.Profile;
 
 
 @Configuration
+@Profile("unit-test")
 public class MockSamClientFactoryConfig {
 
-//    private boolean errorOnResourceCreateDelete;
-//    private boolean errorOnPermissionCheck;
-
-    @Profile("unit-test & !errorOnPermissionCheck & !errorOnResourceCreateDelete")
     @Bean
     public SamClientFactory getMockSamClientFactory() {
-        return new MockSamClientFactory(false, false);
+        return new MockSamClientFactory();
     }
-
-    @Profile("unit-test & !errorOnPermissionCheck & errorOnResourceCreateDelete")
-    @Bean
-    public SamClientFactory getErrorOnResourceCreateDeleteMockSamClientFactory() {
-        return new MockSamClientFactory(false, true);
-    }
-
-    @Profile("unit-test & errorOnPermissionCheck & !errorOnResourceCreateDelete")
-    @Bean
-    public SamClientFactory getErrorOnPermissionCheckMockSamClientFactory() {
-        return new MockSamClientFactory(true, false);
-    }
-
-    @Profile("unit-test & errorOnPermissionCheck & errorOnResourceCreateDelete")
-    @Bean
-    public SamClientFactory getErrorOnAllCallsMockSamClientFactory() {
-        return new MockSamClientFactory(true, true);
-    }
-
 }

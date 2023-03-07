@@ -1,26 +1,39 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.sam.MockSamResourcesApi;
+import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
 
-@ActiveProfiles({"unit-test", "errorOnPermissionCheck"})
 @SpringBootTest
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InstanceServiceNoPermissionSamTest {
 
     @Autowired
     private InstanceService instanceService;
+
+    @MockBean
+    SamClientFactory samClientFactory;
+
+    @BeforeEach
+    void beforeEach() {
+        given(samClientFactory.getResourcesApi())
+                .willReturn(new MockSamResourcesApi(true, false));
+    }
 
     @Test
     void testCreateInstanceNoPermission() {
