@@ -26,7 +26,7 @@ To authenticate in terminal, using azure cli with a user account
 az login --use-device-code
 ```
 
-This will provide a link and a code that one can visit in a browser to log in. Use the same account to authenticate with that you would lob into azure to view the subscription of where your Terra billing is deployed to. If you are unsure if you have an account that has that permission, autenticate in the context of a notebook running inside of Terra. 
+This will provide a link and a code that one can visit in a browser to log in. Use the same account to authenticate with that you would lob into azure to view the subscription of where your Terra billing is deployed to. If you are unsure if you have an account that has that permission, authenticate in the context of a notebook running inside of Terra. 
 
 To authenticate inside a notebook in Terra, leveraging the managed identity the notebook is running under. 
 
@@ -38,9 +38,9 @@ azure_token = cli_token[0].replace('"', '')
 
 ### WDS Endpoint
 
-WDS endpoint URL can be aquired from Leo APIs and should soon be available in a enviromental variable in the notebook VM. 
+WDS endpoint URL can be acquired from Leo APIs and should soon be available in a environmental variable in the notebook VM. 
 
-However, if for some reason it is not, or you are looking to write data into a different workspace data table that you also have access to (remember this will only work if the token you generated has access to that workspace), it can be aquired by calling the following code
+However, if for some reason it is not, or you are looking to write data into a different workspace data table that you also have access to (remember this will only work if the token you generated has access to that workspace), it can be acquired by calling the following code
 
 Replace env with "dev" or "prod", based on where your workspace is running. Workspace Id can be located either on the Data tab by clicking "Data Table Status" or from the following env variable in the notebook: os.environ['WORKSPACE_ID'] 
 ```
@@ -69,7 +69,7 @@ wds_url = response[0]['proxyUrls']['wds']
 print(wds_url)
 ```
 
-Once you have bearer token and the WDS enpoint url, you are all set to create the WDS Api Client. Do note that token will expire and will be renewed every 60 minutes. 
+Once you have bearer token and the WDS endpoint url, you are all set to create the WDS Api Client. Do note that token will expire and will be renewed every 60 minutes. 
 To call WDS, you will always need to provide a version and workspace Id. 
 
 ```
@@ -84,10 +84,10 @@ current_workspaceId = os.environ['WORKSPACE_ID'];
 
 ## WDS Available Client APIs
 
-You can check out the swagger generated documentation for all available APIs [**here**](swagger-gen-docs/README.md). Below find a few specific examples for the most common use cases. 
+You can check out the swagger generated documentation for all available APIs by following instruction to generate it [**here**](#Generate-Full-Client-Documentation). Below find a few specific examples for the most common use cases. 
 
 ## General WDS Info
-General WDS Info client allows to check the version of WDS that is running in a given workspace. It can also check the status of WDS, as well as its subcomponents. 
+General WDS Info client allows to check the version of WDS that is running in a given workspace. It can also check the status of WDS, as well as its sub components. 
 
 ```
 generalInfo_instance = wds_client.GeneralWDSInformationApi(api_client)
@@ -104,23 +104,24 @@ print(response.status)
 ### Records
 RecordsApi is the main client that does all the interaction with the actual data in the Data Tables in WDS. 
 
-A few examples for the following functions are provided below. For full list navigate [**here**](swagger-gen-docs/README.md): 
+A few examples for the following functions are provided below. 
 - create_or_replace_record
 - get_records_as_tsv
 - upload_tsv
 
 
-Example of adding a new record (create_or_replace_record):
+Example of adding a new record (create_or_replace_record): 
 ```
 from datetime import datetime
 records_client = wds_client.RecordsApi(api_client)
 dict_values = {"Colors":["green","red", "blue"], "Number": 2023, "DateTimeCreatedAt": datetime.now()}
 record_request = wds_client.RecordRequest(attributes=dict_values);
 # this will create a record with table name "testType" and record row name "testRecord"
-recordCreated = records_client.create_or_replace_record(current_workspaceId, version, 'testType', 'testRecord', record_request)
+# if you dont provide the primary_key, the operation will complete and the primary key column will be called "sys_name" by default
+recordCreated = records_client.create_or_replace_record(current_workspaceId, version, 'testType', 'testRecord', record_request,  primary_key="column_key")
 ```
 
-Example of get_records_as_tsv and then placing those into a pandas dataframe:
+Example of get_records_as_tsv and then placing those into a pandas data frame:
 
 ```
 import pandas as pd
@@ -172,7 +173,7 @@ for t in workspace_ent_type:
 
 ### Instances
 
-Currently WDS only supports a single WDS instance by workspace, however in the future there will be support for multiple insances per workspace and these functions will be helpful on checking the state of running WDS instances. 
+Currently WDS only supports a single WDS instance by workspace, however in the future there will be support for multiple instances per workspace and these functions will be helpful on checking the state of running WDS instances. 
 
 Here is how to set up the instance client and get back Ids of all WDS instances running in the current workspace.
 ```
@@ -180,3 +181,7 @@ client_instance = wds_client.InstancesApi(api_client)
 response = client_instance.list_wds_instances(version)
 print(response)
 ```
+
+## Generate Full Client Documentation
+
+Navigate to Swagger [**Editor**] (https://editor.swagger.io/?_ga=2.235527304.809800039.1678223236-2085963831.1674688894) and then replace the contents in the editor with the WDS config that can be found [**here**] (https://github.com/DataBiosphere/terra-workspace-data-service/blob/main/service/src/main/resources/static/swagger/openapi-docs.yaml). Next on the top left, click "Generate Client" and select "python". The website will have the browser download a zip file, unzip the file and open the README.md found in the root folder. This will provide the documentation of all functions/objects included in the client. 
