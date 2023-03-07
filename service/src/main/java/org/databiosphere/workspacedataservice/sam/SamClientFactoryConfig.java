@@ -10,11 +10,10 @@ import org.springframework.context.annotation.Profile;
 /**
  * Bean-creator for SamClientFactory, injecting the base url to Sam into that factory.
  */
-@Profile("!unit-test")
+@Profile("!unit-test") // the "unit-test" profile creates mocks
 @Configuration
 public class SamClientFactoryConfig {
 
-    // TODO: handle possibly-null SAM_URL
     @Value("${SAM_URL:}")
     private String samUrl;
 

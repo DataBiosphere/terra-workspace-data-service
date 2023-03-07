@@ -41,13 +41,13 @@ public class BearerTokenFilter implements Filter {
             if (!Objects.isNull(authString) && authString.startsWith(BEARER_PREFIX)) {
                 String token = authString.replaceFirst(BEARER_PREFIX, "");
 
-                LOGGER.info("found bearer token in incoming request: {}", loggableToken(token));
+                LOGGER.debug("found bearer token in incoming request: {}", loggableToken(token));
 
                 RequestAttributes currentAttributes = RequestContextHolder.currentRequestAttributes();
                 currentAttributes.setAttribute(ATTRIBUTE_NAME_TOKEN, token, SCOPE_REQUEST);
                 RequestContextHolder.setRequestAttributes(currentAttributes);
             } else {
-                LOGGER.info("No bearer token in incoming request");
+                LOGGER.debug("No bearer token in incoming request");
             }
         }
 

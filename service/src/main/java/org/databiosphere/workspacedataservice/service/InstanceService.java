@@ -5,6 +5,7 @@ import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.service.model.exception.SamException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -54,6 +55,8 @@ public class InstanceService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This instance already exists");
         }
 
+        // TODO: how to handle saga transaction/partial failures?
+
         // create `wds-instance` resource in Sam, specifying workspace as parent
         samDao.createInstanceResource(samResourceId, samParentResourceId);
         // create instance schema in Postgres
@@ -72,6 +75,8 @@ public class InstanceService {
         if (!hasDeleteInstancePermission) {
             throw new AuthorizationException("Caller does not have permission to delete instance.");
         }
+
+        // TODO: how to handle saga transaction/partial failures?
 
         // delete instance schema in Postgres
         recordDao.dropSchema(instanceId);

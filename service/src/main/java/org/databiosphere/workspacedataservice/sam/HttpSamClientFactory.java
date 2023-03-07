@@ -14,6 +14,8 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
 
 public class HttpSamClientFactory implements SamClientFactory {
 
+    // TODO: diagram of WDS/Sam permission model
+
     private String samUrl;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SamClientFactoryConfig.class);
@@ -33,7 +35,7 @@ public class HttpSamClientFactory implements SamClientFactory {
                 .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
 
         if (!Objects.isNull(token)) {
-            LOGGER.info("setting access token for Sam request: {}", BearerTokenFilter.loggableToken(token.toString()));
+            LOGGER.debug("setting access token for Sam request: {}", BearerTokenFilter.loggableToken(token.toString()));
             apiClient.setAccessToken(token.toString());
         } else {
             LOGGER.warn("No access token found for Sam request.");

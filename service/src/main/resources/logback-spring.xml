@@ -53,6 +53,13 @@
             <appender-ref ref="Sentry" />
         </logger>
 
+        <!-- log WDS Sam integration at DEBUG level -->
+        <logger name="org.databiosphere.workspacedataservice.sam" level="debug" additivity="false">
+            <appender-ref ref="RollingFile" />
+            <appender-ref ref="Console" />
+            <appender-ref ref="Sentry" />
+        </logger>
+
         <!-- log org.springframework.web at DEBUG level -->
         <logger name="org.springframework.web" level="debug" additivity="false">
             <appender-ref ref="RollingFile" />

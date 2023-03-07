@@ -14,9 +14,17 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
 
 public class MockSamClientFactory implements SamClientFactory {
 
+    private boolean errorOnPermissionCheck;
+    private boolean errorOnResourceCreateDelete;
+
+
+    public MockSamClientFactory(boolean errorOnPermissionCheck, boolean errorOnResourceCreateDelete) {
+        this.errorOnPermissionCheck = errorOnPermissionCheck;
+        this.errorOnResourceCreateDelete = errorOnResourceCreateDelete;
+    }
 
     public ResourcesApi getResourcesApi() {
-        return new MockSamResourcesApi();
+        return new MockSamResourcesApi(errorOnPermissionCheck, errorOnResourceCreateDelete);
     }
 
 
