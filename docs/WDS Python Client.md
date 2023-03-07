@@ -18,15 +18,15 @@ pip install wds-client --upgrade
 
 ### Auth set up
 
-You will need a user entity that has access to the WDS client you need to reach, you will have this access if you have access to the workspace where data that analysis is being run on is present. 
+To authenticate your user entity to access a WDS data table, you must have permission to access the workspace where the data table is stored.
 
-To authenticate in terminal, using azure cli with a user account 
+To authenticate in terminal, use azure cli with a user account:
 
 ```
 az login --use-device-code
 ```
 
-This will provide a link and a code that one can visit in a browser to log in. Use the same account to authenticate with that you would lob into azure to view the subscription of where your Terra billing is deployed to. If you are unsure if you have an account that has that permission, authenticate in the context of a notebook running inside of Terra. 
+This will provide a link and a code that one can visit in a browser to log in. Use the same account to authenticate with that you would to log into Azure to view the subscription of where your Terra billing is deployed to. If you are unsure if you have an account that has that permission, authenticate in the context of a notebook running inside of Terra.
 
 To authenticate inside a notebook in Terra, leveraging the managed identity the notebook is running under. 
 
@@ -87,7 +87,7 @@ current_workspaceId = os.environ['WORKSPACE_ID'];
 You can check out the swagger generated documentation for all available APIs by following instruction to generate it [**here**](#Generate-Full-Client-Documentation). Below find a few specific examples for the most common use cases. 
 
 ## General WDS Info
-General WDS Info client allows to check the version of WDS that is running in a given workspace. It can also check the status of WDS, as well as its sub components. 
+General WDS Info client checks the version of WDS that is running.
 
 ```
 generalInfo_instance = wds_client.GeneralWDSInformationApi(api_client)
@@ -102,13 +102,12 @@ print(response.status)
 ```
 
 ### Records
-RecordsApi is the main client that does all the interaction with the actual data in the Data Tables in WDS. 
+RecordsApi is the main client that does all the interaction with the actual data in the Data Tables in WDS. A record is single row inside a WDS Data Table.
 
 A few examples for the following functions are provided below. 
 - create_or_replace_record
 - get_records_as_tsv
 - upload_tsv
-
 
 Example of adding a new record (create_or_replace_record): 
 ```
@@ -118,6 +117,10 @@ dict_values = {"Colors":["green","red", "blue"], "Number": 2023, "DateTimeCreate
 record_request = wds_client.RecordRequest(attributes=dict_values);
 # this will create a record with table name "testType" and record row name "testRecord"
 # if you dont provide the primary_key, the operation will complete and the primary key column will be called "sys_name" by default
+# in this context:
+# "TestType" is the name of the Data Table
+# "testRecord" is the value that will be populated for the primary key for the row to be added (left most column in the Data Table)
+# Primary key is the name of the column that defines the primary key for the given Data Table
 recordCreated = records_client.create_or_replace_record(current_workspaceId, version, 'testType', 'testRecord', record_request,  primary_key="column_key")
 ```
 
@@ -148,7 +151,7 @@ print(response)
 
 ### Schema
 
-The code below assumes that the workspace has a Data Table with the name "testType" that contains data in it. The code to create the record type and add data to it was covered in Records section.
+Schema defines the column name and types inside a Data Table. The code below assumes that the workspace has a Data Table with the name "testType" that contains data in it. The code to create the record type and add data to it was covered in Records section.
 
 Example of describe_record_type:
 
