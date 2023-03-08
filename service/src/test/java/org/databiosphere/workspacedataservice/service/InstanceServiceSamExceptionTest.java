@@ -249,7 +249,7 @@ class InstanceServiceSamExceptionTest {
 
         Constructor<Throwable> ctor = clazz.getConstructor(String.class);
         Throwable toThrow = ctor.newInstance("intentional exception for unit test: " + clazz.getName());
-        
+
         // Setup: the call to check permissions in Sam returns true,
         // but the call to create resource in Sam throws the specified Exception
         given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
