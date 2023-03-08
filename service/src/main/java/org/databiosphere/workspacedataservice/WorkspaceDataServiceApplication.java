@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.cfg.CoercionInputShape;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.type.LogicalType;
+import com.microsoft.applicationinsights.attach.ApplicationInsights;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvParser;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
@@ -163,6 +164,7 @@ public class WorkspaceDataServiceApplication {
 	}
 
 	public static void main(String[] args) {
+		ApplicationInsights.attach();
 		SpringApplication.run(WorkspaceDataServiceApplication.class, args);
 	}
 }
