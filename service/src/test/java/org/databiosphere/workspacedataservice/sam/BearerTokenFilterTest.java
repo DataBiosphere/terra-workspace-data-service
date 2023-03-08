@@ -23,7 +23,7 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
  * Tests for @see BearerTokenFilter
  */
 @SpringBootTest
-public class BearerTokenFilterTest {
+class BearerTokenFilterTest {
 
     private static Stream<Arguments> provideAuthorizationHeaders() {
 		/* Arguments are sets:

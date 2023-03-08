@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * Tests for @see HttpSamClientSupport
  */
 @SpringBootTest
-public class HttpSamClientSupportTest extends HttpSamClientSupport {
+class HttpSamClientSupportTest extends HttpSamClientSupport {
 
     @ParameterizedTest(name = "When Sam throws an ApiException with standard http status code {0}, HttpSamClientSupport should throw AuthorizationException")
     @ValueSource(ints = {401, 403})

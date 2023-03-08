@@ -37,7 +37,7 @@ public abstract class HttpSamClientSupport {
      * @throws SamException on most exceptions thrown by the Sam client request
      * @throws AuthorizationException on a 401 or 403 from the Sam client request
      */
-    <T> T executeSamRequest(HttpSamDao.SamFunction<T> samFunction, String loggerHint) throws SamException, AuthorizationException {
+    <T> T executeSamRequest(SamFunction<T> samFunction, String loggerHint) throws SamException, AuthorizationException {
         try {
             LOGGER.debug("Sending {} request to Sam ...", loggerHint);
             T functionResult = samFunction.run();
@@ -48,15 +48,14 @@ public abstract class HttpSamClientSupport {
                     loggerHint,
                     apiException.getCode(), apiException.getResponseBody());
             int code = apiException.getCode();
-            switch (code) {
-                case 401, 403 -> throw new AuthorizationException(apiException.getMessage());
-                default -> {
-                    HttpStatus resolvedStatus = HttpStatus.resolve(code);
-                    if (Objects.isNull(resolvedStatus)) {
-                        resolvedStatus = HttpStatus.INTERNAL_SERVER_ERROR;
-                    }
-                    throw new SamException(resolvedStatus, "Error from Sam: " + apiException.getMessage(), apiException);
+            if (code == 401 || code == 403) {
+                throw new AuthorizationException(apiException.getMessage());
+            } else {
+                HttpStatus resolvedStatus = HttpStatus.resolve(code);
+                if (Objects.isNull(resolvedStatus)) {
+                    resolvedStatus = HttpStatus.INTERNAL_SERVER_ERROR;
                 }
+                throw new SamException(resolvedStatus, "Error from Sam: " + apiException.getMessage(), apiException);
             }
         } catch (Exception e) {
             LOGGER.error("{} Sam request resulted in {}: {}", loggerHint, e.getClass().getName(), e.getMessage());
@@ -72,10 +71,10 @@ public abstract class HttpSamClientSupport {
      * @throws SamException on most exceptions thrown by the Sam client request
      * @throws AuthorizationException on a 401 or 403 from the Sam client request
      */
-    void executeSamRequest(HttpSamDao.VoidSamFunction voidSamFunction, String loggerHint) throws SamException, AuthorizationException {
+    void executeSamRequest(VoidSamFunction voidSamFunction, String loggerHint) throws SamException, AuthorizationException {
 
         // wrap void function in something that returns an object
-        HttpSamDao.SamFunction<String> wrappedFunction = () -> {
+        SamFunction<String> wrappedFunction = () -> {
             voidSamFunction.run();
             return "void";
         };
