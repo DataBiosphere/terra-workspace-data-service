@@ -1,11 +1,13 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.databiosphere.workspacedataservice.sam.MockSamResourcesApi;
+import org.broadinstitute.dsde.workbench.client.sam.ApiException;
+import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
+import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -15,8 +17,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
 @SpringBootTest
@@ -26,25 +28,59 @@ class InstanceServiceNoPermissionSamTest {
     @Autowired
     private InstanceService instanceService;
 
-    @MockBean
-    SamClientFactory samClientFactory;
+    @Autowired
+    private RecordDao recordDao;
 
-    @BeforeEach
-    void beforeEach() {
-        given(samClientFactory.getResourcesApi())
-                .willReturn(new MockSamResourcesApi(true, false));
-    }
+    // mock for the SamClientFactory; since this is a Spring bean we can use @MockBean
+    @MockBean
+    SamClientFactory mockSamClientFactory;
+
+    // mock for the ResourcesApi class inside the Sam client; since this is not a Spring bean we have to mock it manually
+    ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
     @Test
-    void testCreateInstanceNoPermission() {
-        // see MockSamResourcesApi for an explanation of how the instanceId will trigger various errors/permission failures.
-        // since this UUID starts with 9, our mock will return a success from Sam containing a boolean false
-        UUID instanceId = UUID.fromString("90000000-0000-0000-0000-000000000000");
+    void testCreateInstanceNoPermission() throws ApiException {
+
+        // return the mock ResourcesApi from the mock SamClientFactory
+        given(mockSamClientFactory.getResourcesApi())
+                .willReturn(mockResourcesApi);
+
+        // Call to check permissions in Sam does not throw an exception, but returns false -
+        // i.e. the current user does not have permission
+        given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
+                .willReturn(false);
+
+        UUID instanceId = UUID.randomUUID();
         assertThrows(AuthorizationException.class,
                 () -> instanceService.createInstance(instanceId, VERSION, Optional.empty()),
                 "createInstance should throw if caller does not have permission to create wds-instance resource in Sam"
         );
         List<UUID> allInstances = instanceService.listInstances(VERSION);
-        assertFalse(allInstances.contains(instanceId), "should not have created the instances.");
+        assertFalse(allInstances.contains(instanceId), "should not have created the instance.");
+    }
+
+    @Test
+    void testDeleteInstanceNoPermission() throws ApiException {
+
+        // return the mock ResourcesApi from the mock SamClientFactory
+        given(mockSamClientFactory.getResourcesApi())
+                .willReturn(mockResourcesApi);
+
+        // Call to check permissions in Sam does not throw an exception, but returns false -
+        // i.e. the current user does not have permission
+        given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
+                .willReturn(false);
+
+
+        UUID instanceId = UUID.randomUUID();
+        // create the instance (directly in the db, bypassing Sam)
+        recordDao.createSchema(instanceId);
+
+        assertThrows(AuthorizationException.class,
+                () -> instanceService.deleteInstance(instanceId, VERSION),
+                "deleteInstance should throw if caller does not have permission to delete wds-instance resource in Sam"
+        );
+        List<UUID> allInstances = instanceService.listInstances(VERSION);
+        assertTrue(allInstances.contains(instanceId), "should not have deleted the instance.");
     }
 }
