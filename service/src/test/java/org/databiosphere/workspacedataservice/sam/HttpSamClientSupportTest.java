@@ -17,8 +17,12 @@ public class HttpSamClientSupportTest extends HttpSamClientSupport {
     @ParameterizedTest(name = "When Sam returns an ApiException with standard http status code {0}, HttpSamClientSupport should throw AuthorizationException")
     @ValueSource(ints = {401, 403})
     void authorizationExceptions(int samCode) {
-        SamFunction<Boolean> samFunction = () -> { throw new ApiException(samCode, ""); };
-        VoidSamFunction voidSamFunction = () -> { throw new ApiException(samCode, ""); };
+        SamFunction<Boolean> samFunction = () -> {
+            throw new ApiException(samCode, "");
+        };
+        VoidSamFunction voidSamFunction = () -> {
+            throw new ApiException(samCode, "");
+        };
         assertThrows(AuthorizationException.class,
                 () -> executeSamRequest(samFunction, "AuthorizationException"),
                 "samFunction should throw AuthorizationException");
@@ -29,41 +33,56 @@ public class HttpSamClientSupportTest extends HttpSamClientSupport {
 
     @Test
     void nullPointerException() {
-        SamFunction<Boolean> samFunction = () -> { throw new NullPointerException(); };
-        VoidSamFunction voidSamFunction = () -> { throw new NullPointerException(); };
+        SamFunction<Boolean> samFunction = () -> {
+            throw new NullPointerException();
+        };
+        VoidSamFunction voidSamFunction = () -> {
+            throw new NullPointerException();
+        };
         expectSamExceptionWithStatusCode(500, samFunction);
         expectSamExceptionWithStatusCode(500, voidSamFunction);
     }
 
     @Test
     void runtimeException() {
-        SamFunction<Boolean> samFunction = () -> { throw new RuntimeException(); };
-        VoidSamFunction voidSamFunction = () -> { throw new RuntimeException(); };
+        SamFunction<Boolean> samFunction = () -> {
+            throw new RuntimeException();
+        };
+        VoidSamFunction voidSamFunction = () -> {
+            throw new RuntimeException();
+        };
         expectSamExceptionWithStatusCode(500, samFunction);
         expectSamExceptionWithStatusCode(500, voidSamFunction);
     }
 
 
-
     @ParameterizedTest(name = "When Sam returns an ApiException with nonstandard http status code {0}, HttpSamClientSupport should throw SamException with code 500")
     @ValueSource(ints = {0, -1, 8080})
-    void apiExceptionsNonstandardcodes(int samCode) {
-        SamFunction<Boolean> samFunction = () -> { throw new ApiException(samCode, ""); };
-        VoidSamFunction voidSamFunction = () -> { throw new ApiException(samCode, ""); };
+    void apiExceptionsNonstandardCodes(int samCode) {
+        SamFunction<Boolean> samFunction = () -> {
+            throw new ApiException(samCode, "");
+        };
+        VoidSamFunction voidSamFunction = () -> {
+            throw new ApiException(samCode, "");
+        };
         expectSamExceptionWithStatusCode(500, samFunction);
         expectSamExceptionWithStatusCode(500, voidSamFunction);
     }
 
     @ParameterizedTest(name = "When Sam returns an ApiException with standard http status code {0}, HttpSamClientSupport should throw SamException with the same code")
     @ValueSource(ints = {400, 404, 500, 503})
-    void apiExceptionsStandardcodes(int samCode) {
-        SamFunction<Boolean> samFunction = () -> { throw new ApiException(samCode, ""); };
-        VoidSamFunction voidSamFunction = () -> { throw new ApiException(samCode, ""); };
+    void apiExceptionsStandardCodes(int samCode) {
+        SamFunction<Boolean> samFunction = () -> {
+            throw new ApiException(samCode, "");
+        };
+        VoidSamFunction voidSamFunction = () -> {
+            throw new ApiException(samCode, "");
+        };
         expectSamExceptionWithStatusCode(samCode, samFunction);
         expectSamExceptionWithStatusCode(samCode, voidSamFunction);
     }
 
-    private void expectSamExceptionWithStatusCode(int expectedStatusCode, SamFunction samFunction) {
+    private void expectSamExceptionWithStatusCode(int expectedStatusCode, SamFunction<?> samFunction) {
         SamException actual = assertThrows(SamException.class,
                 () -> executeSamRequest(samFunction, "samFunction-unittest"),
                 "samFunction should throw SamException");

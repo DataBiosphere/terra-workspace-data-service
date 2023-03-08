@@ -57,11 +57,12 @@ public class BearerTokenFilter implements Filter {
     /**
      * Utility method which grabs the last 6 chars of the auth token to allow it to
      * be logged without causing a security problem.
+     *
      * @param token full token string from the incoming request
      * @return loggable substring of the original token
      */
     public static String loggableToken(String token) {
-        return  "[" + token.hashCode() + "]";
+        return "[" + token.hashCode() + "]";
     }
 
 

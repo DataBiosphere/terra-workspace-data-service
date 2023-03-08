@@ -1,7 +1,5 @@
 package org.databiosphere.workspacedataservice.sam;
 
-import org.broadinstitute.dsde.workbench.client.sam.ApiException;
-
 import java.util.UUID;
 
 /**

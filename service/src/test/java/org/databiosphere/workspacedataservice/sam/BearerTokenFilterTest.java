@@ -44,13 +44,13 @@ public class BearerTokenFilterTest {
 
     /**
      * Verifies that BearerTokenFilter will:
-     *  - find an Authorization header in the incoming request
-     *  - extract a syntactically-correct Bearer token from the header
-     *  - save the token value into the RequestContextHolder
+     * - find an Authorization header in the incoming request
+     * - extract a syntactically-correct Bearer token from the header
+     * - save the token value into the RequestContextHolder
      *
-     * @param input value in Authorization header for test
+     * @param input    value in Authorization header for test
      * @param expected expected token extracted and saved by BearerTokenFilter
-     * @throws Exception
+     * @throws Exception exception
      */
     @ParameterizedTest(name = "Request Authorization header of <{0}> should result in a token of <{1}>")
     @MethodSource("provideAuthorizationHeaders")
@@ -92,7 +92,7 @@ public class BearerTokenFilterTest {
      * Tests that a request with no Authorization: header still works but results in no
      * token saved to RequestContextHolder
      *
-     * @throws Exception
+     * @throws Exception exception
      */
     @Test
     void noAuthorizationHeaderTest() throws Exception {

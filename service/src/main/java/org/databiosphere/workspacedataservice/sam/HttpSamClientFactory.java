@@ -14,11 +14,9 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
 
 public class HttpSamClientFactory implements SamClientFactory {
 
-    // TODO: diagram of WDS/Sam permission model
+    private final String samUrl;
 
-    private String samUrl;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SamClientFactoryConfig.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpSamClientFactory.class);
 
 
     public HttpSamClientFactory(String samUrl) {
@@ -51,7 +49,6 @@ public class HttpSamClientFactory implements SamClientFactory {
         resourcesApi.setApiClient(apiClient);
         return resourcesApi;
     }
-
 
 
 }
