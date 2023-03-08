@@ -20,11 +20,6 @@ public abstract class HttpSamClientSupport {
             T functionResult = samFunction.run();
             LOGGER.debug("{} Sam request successful, result: {}", loggerHint, functionResult);
             return functionResult;
-        } catch (InterruptedException interruptedException) {
-            LOGGER.error("{} Sam request interrupted: {}",
-                    loggerHint,
-                    interruptedException.getMessage());
-            throw new SamException(HttpStatus.INTERNAL_SERVER_ERROR, "Connection to Sam was interrupted", interruptedException);
         } catch (ApiException apiException) {
             LOGGER.error("{} Sam request resulted in ApiException: {} {}",
                     loggerHint,

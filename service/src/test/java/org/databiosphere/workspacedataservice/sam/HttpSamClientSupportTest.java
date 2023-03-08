@@ -28,14 +28,6 @@ public class HttpSamClientSupportTest extends HttpSamClientSupport {
     }
 
     @Test
-    void interruptedException() {
-        SamFunction<Boolean> samFunction = () -> { throw new InterruptedException(); };
-        VoidSamFunction voidSamFunction = () -> { throw new InterruptedException(); };
-        expectSamExceptionWithStatusCode(500, samFunction);
-        expectSamExceptionWithStatusCode(500, voidSamFunction);
-    }
-
-    @Test
     void nullPointerException() {
         SamFunction<Boolean> samFunction = () -> { throw new NullPointerException(); };
         VoidSamFunction voidSamFunction = () -> { throw new NullPointerException(); };

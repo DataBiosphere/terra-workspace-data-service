@@ -54,7 +54,6 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
 
     @Override
     public void createInstanceResource(UUID instanceId, UUID parentWorkspaceId) {
-        // TODO: should this gracefully handle 409s?
         FullyQualifiedResourceId parent = new FullyQualifiedResourceId();
         parent.setResourceTypeName(RESOURCE_NAME_WORKSPACE);
         parent.setResourceId(parentWorkspaceId.toString());
