@@ -45,7 +45,7 @@ public class InstanceService {
 
         // check that the current user has permission on the parent workspace
         boolean hasCreateInstancePermission = samDao.hasCreateInstancePermission(samParentResourceId);
-        LOGGER.info("hasCreateInstancePermission? " + hasCreateInstancePermission);
+        LOGGER.debug("hasCreateInstancePermission? {}", hasCreateInstancePermission);
 
         if (!hasCreateInstancePermission) {
             throw new AuthorizationException("Caller does not have permission to create instance.");
@@ -54,8 +54,6 @@ public class InstanceService {
         if (recordDao.instanceSchemaExists(instanceId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This instance already exists");
         }
-
-        // TODO: how to handle saga transaction/partial failures?
 
         // create `wds-instance` resource in Sam, specifying workspace as parent
         samDao.createInstanceResource(samResourceId, samParentResourceId);
@@ -70,13 +68,11 @@ public class InstanceService {
 
         // check that the current user has permission to delete the Sam resource
         boolean hasDeleteInstancePermission = samDao.hasDeleteInstancePermission(instanceId);
-        LOGGER.info("hasDeleteInstancePermission? " + hasDeleteInstancePermission);
+        LOGGER.debug("hasDeleteInstancePermission? {}", hasDeleteInstancePermission);
 
         if (!hasDeleteInstancePermission) {
             throw new AuthorizationException("Caller does not have permission to delete instance.");
         }
-
-        // TODO: how to handle saga transaction/partial failures?
 
         // delete instance schema in Postgres
         recordDao.dropSchema(instanceId);

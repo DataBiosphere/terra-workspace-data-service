@@ -555,6 +555,7 @@ components:
       name: workspaceid
       in: query
       description: Id of workspace containing a WDS instance. If omitted, assumed to be equal to the instance id.
+      required: false
       schema:
         type: string
         format: uuid
