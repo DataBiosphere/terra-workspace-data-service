@@ -1,5 +1,7 @@
 # Workspace Data Service Python Client
 
+Workspace Data Service currently is only supported for workflows that are created in an Azure billing project. 
+
 ## Set up
 
 In terminal, simply run:
@@ -38,7 +40,7 @@ azure_token = cli_token[0].replace('"', '')
 
 ### WDS Endpoint
 
-WDS endpoint URL can be acquired from Leo APIs and should soon be available in a environmental variable in the notebook VM. 
+WDS endpoint URL can be acquired from Leo APIs and should soon be available in a environment variable in the notebook VM. 
 
 However, if for some reason it is not, or you are looking to write data into a different workspace data table that you also have access to (remember this will only work if the token you generated has access to that workspace), it can be acquired by calling the following code
 
@@ -87,7 +89,7 @@ current_workspaceId = os.environ['WORKSPACE_ID'];
 You can check out the swagger generated documentation for all available APIs by following instruction to generate it [**here**](#Generate-Full-Client-Documentation). Below find a few specific examples for the most common use cases. 
 
 ## General WDS Info
-General WDS Info client checks the version of WDS that is running.
+General WDS Info client checks the version and current status of WDS.
 
 ```
 generalInfo_instance = wds_client.GeneralWDSInformationApi(api_client)
@@ -97,6 +99,8 @@ generalInfo_instance = wds_client.GeneralWDSInformationApi(api_client)
 response = generalInfo_instance.version_get()
 print(response.build.version)
 
+# this returns the current status of WDS; if WDS is down it indicates where
+# the underlying failure may be
 response = generalInfo_instance.status_get()
 print(response.status)
 ```
@@ -140,7 +144,7 @@ Example of upload_tsv:
 
 
 ```
-tsv_file_name = "TestType_uploaded".tsv";
+tsv_file_name = "TestType_uploaded.tsv";
 # this will create a tsv on the notebook VM or locally where this code is run
 testType = testType.to_csv(tsv_file_name, sep="\t", index = False)
 
@@ -158,7 +162,7 @@ Example of describe_record_type:
 ```
 schema_instance = wds_client.SchemaApi(api_client)
 
-# get data specifics for a specific data set vs all
+# get data specifics for a specific data table
 ent_types = schema_instance.describe_record_type(current_workspaceId, version, 'testType')
 print ("name:", ent_types.name ,"count:", ent_types.count)
 ```
@@ -168,7 +172,7 @@ Example of describe_all_record_types:
 ```
 schema_instance = wds_client.SchemaApi(api_client)
 
-# get workspace data specifics, such as what records exist
+# get workspace data specifics, such as what tables exist
 workspace_ent_type = schema_instance.describe_all_record_types(current_workspaceId, version)
 for t in workspace_ent_type:
     print ("name:", t.name ,"count:", t.count)
@@ -176,7 +180,7 @@ for t in workspace_ent_type:
 
 ### Instances
 
-Currently WDS only supports a single WDS instance by workspace, however in the future there will be support for multiple instances per workspace and these functions will be helpful on checking the state of running WDS instances. 
+Currently the Terra UI only supports a single WDS instance per workspace, however in the future there will be support for multiple instances per workspace and these functions will be helpful on checking the state of running WDS instances. 
 
 Here is how to set up the instance client and get back Ids of all WDS instances running in the current workspace.
 ```
