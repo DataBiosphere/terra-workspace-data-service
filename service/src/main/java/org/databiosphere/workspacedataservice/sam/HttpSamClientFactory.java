@@ -40,7 +40,7 @@ public class HttpSamClientFactory implements SamClientFactory {
                 .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
         // add the user's bearer token to the client
         if (!Objects.isNull(token)) {
-            LOGGER.debug("setting access token for Sam request: {}", BearerTokenFilter.loggableToken(token.toString()));
+            LOGGER.debug("setting access token for Sam request");
             apiClient.setAccessToken(token.toString());
         } else {
             LOGGER.warn("No access token found for Sam request.");

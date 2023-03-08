@@ -41,7 +41,7 @@ public class BearerTokenFilter implements Filter {
             if (!Objects.isNull(authString) && authString.startsWith(BEARER_PREFIX)) {
                 String token = authString.replaceFirst(BEARER_PREFIX, "");
 
-                LOGGER.debug("found bearer token in incoming request: {}", loggableToken(token));
+                LOGGER.debug("found bearer token in incoming request");
 
                 RequestAttributes currentAttributes = RequestContextHolder.currentRequestAttributes();
                 currentAttributes.setAttribute(ATTRIBUTE_NAME_TOKEN, token, SCOPE_REQUEST);
@@ -53,17 +53,5 @@ public class BearerTokenFilter implements Filter {
 
         chain.doFilter(request, response);
     }
-
-    /**
-     * Utility method which masks the token, allowing it to
-     * be logged without causing a security problem.
-     *
-     * @param token full token string from the incoming request
-     * @return loggable version of the original token
-     */
-    public static String loggableToken(String token) {
-        return "[" + token.hashCode() + "]";
-    }
-
 
 }
