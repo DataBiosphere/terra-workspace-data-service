@@ -21,7 +21,15 @@ public class SamConfig {
 
     @Bean
     public SamClientFactory getSamClientFactory() {
-        // TODO: fail if SAM_URL not present/valid
+        // TODO: what validation of the sam url should we do here?
+        // - none
+        // - check if the value is null/empty/whitespace
+        // - check if the value is a valid Url
+        // - contact the url and see if it looks like Sam on the other end
+        // TODO: and what should we do if the validation fails?
+        // - nothing, which would almost certainly result in Sam calls failing
+        // - disable Sam integration, which could result in unauthorized access
+        // - stop WDS, which would obviously prevent WDS from working at all
         LOGGER.info("Using Sam base url: '{}'", samUrl);
         return new HttpSamClientFactory(samUrl);
     }

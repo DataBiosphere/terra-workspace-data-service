@@ -19,6 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
+/**
+ * Tests for @see BearerTokenFilter
+ */
 @SpringBootTest
 public class BearerTokenFilterTest {
 
@@ -48,7 +51,7 @@ public class BearerTokenFilterTest {
      * - extract a syntactically-correct Bearer token from the header
      * - save the token value into the RequestContextHolder
      *
-     * @param input    value in Authorization header for test
+     * @param input    value in Authorization request header
      * @param expected expected token extracted and saved by BearerTokenFilter
      * @throws Exception exception
      */

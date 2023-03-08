@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * https://github.com/spring-projects/spring-framework/issues/17290 As a result,
  * this test suite is currently focused on validating expected error handling
  */
-@ActiveProfiles(profiles = "unit-test")
+@ActiveProfiles(profiles = "mock-sam")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
 		"spring.main.allow-bean-definition-overriding=true"})
 @Import(SmallBatchWriteTestConfig.class)

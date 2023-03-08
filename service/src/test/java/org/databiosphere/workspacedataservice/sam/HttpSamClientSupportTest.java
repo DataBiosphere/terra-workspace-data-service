@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.sam;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.SamException;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -11,10 +12,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+/**
+ * Tests for @see HttpSamClientSupport
+ */
 @SpringBootTest
 public class HttpSamClientSupportTest extends HttpSamClientSupport {
 
-    @ParameterizedTest(name = "When Sam returns an ApiException with standard http status code {0}, HttpSamClientSupport should throw AuthorizationException")
+    @ParameterizedTest(name = "When Sam throws an ApiException with standard http status code {0}, HttpSamClientSupport should throw AuthorizationException")
     @ValueSource(ints = {401, 403})
     void authorizationExceptions(int samCode) {
         SamFunction<Boolean> samFunction = () -> {
@@ -31,6 +35,7 @@ public class HttpSamClientSupportTest extends HttpSamClientSupport {
                 "voidSamFunction should throw AuthorizationException");
     }
 
+    @DisplayName("When Sam throws a NullPointerException, HttpSamClientSupport should throw SamException(500)")
     @Test
     void nullPointerException() {
         SamFunction<Boolean> samFunction = () -> {
@@ -43,6 +48,7 @@ public class HttpSamClientSupportTest extends HttpSamClientSupport {
         expectSamExceptionWithStatusCode(500, voidSamFunction);
     }
 
+    @DisplayName("When Sam throws a RuntimeException, HttpSamClientSupport should throw SamException(500)")
     @Test
     void runtimeException() {
         SamFunction<Boolean> samFunction = () -> {
@@ -56,7 +62,7 @@ public class HttpSamClientSupportTest extends HttpSamClientSupport {
     }
 
 
-    @ParameterizedTest(name = "When Sam returns an ApiException with nonstandard http status code {0}, HttpSamClientSupport should throw SamException with code 500")
+    @ParameterizedTest(name = "When Sam throws an ApiException with nonstandard http status code {0}, HttpSamClientSupport should throw SamException with code 500")
     @ValueSource(ints = {0, -1, 8080})
     void apiExceptionsNonstandardCodes(int samCode) {
         SamFunction<Boolean> samFunction = () -> {
@@ -69,7 +75,7 @@ public class HttpSamClientSupportTest extends HttpSamClientSupport {
         expectSamExceptionWithStatusCode(500, voidSamFunction);
     }
 
-    @ParameterizedTest(name = "When Sam returns an ApiException with standard http status code {0}, HttpSamClientSupport should throw SamException with the same code")
+    @ParameterizedTest(name = "When Sam throws an ApiException with standard http status code {0}, HttpSamClientSupport should throw SamException with the same code")
     @ValueSource(ints = {400, 404, 500, 503})
     void apiExceptionsStandardCodes(int samCode) {
         SamFunction<Boolean> samFunction = () -> {

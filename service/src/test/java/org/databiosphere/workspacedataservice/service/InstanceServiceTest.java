@@ -15,7 +15,7 @@ import java.util.UUID;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.junit.jupiter.api.Assertions.*;
 
-@ActiveProfiles(profiles = "unit-test")
+@ActiveProfiles(profiles = "mock-sam")
 @SpringBootTest
 class InstanceServiceTest {
 

@@ -25,7 +25,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ActiveProfiles(profiles = "unit-test")
+@ActiveProfiles(profiles = "mock-sam")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class GeneratedClientTests {
 

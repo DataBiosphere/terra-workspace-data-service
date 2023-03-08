@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.in;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@ActiveProfiles(profiles = "unit-test")
+@ActiveProfiles(profiles = "mock-sam")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class TsvDownloadTest {
 

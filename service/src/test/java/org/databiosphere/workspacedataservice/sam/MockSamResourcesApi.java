@@ -4,7 +4,9 @@ import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
 
 /**
- * Mock for the Sam Client ResourcesApi.
+ * Mock for the Sam Client ResourcesApi for use in unit tests.
+ * Always returns true for all permission checks.
+ * Never throws any Exceptions.
  */
 public class MockSamResourcesApi extends ResourcesApi {
 

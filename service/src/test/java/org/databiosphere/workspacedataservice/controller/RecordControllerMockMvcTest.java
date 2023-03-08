@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ActiveProfiles(profiles = "unit-test")
+@ActiveProfiles(profiles = "mock-sam")
 @SpringBootTest
 @AutoConfigureMockMvc
 class RecordControllerMockMvcTest {
