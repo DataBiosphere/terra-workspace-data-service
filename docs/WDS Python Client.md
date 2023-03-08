@@ -20,17 +20,7 @@ pip install wds-client --upgrade
 
 ### Auth set up
 
-To authenticate your user entity to access a WDS data table, you must have permission to access the workspace where the data table is stored.
-
-To authenticate in terminal, use azure cli with a user account:
-
-```
-az login --use-device-code
-```
-
-This will provide a link and a code that one can visit in a browser to log in. Use the same account to authenticate with that you would to log into Azure to view the subscription of where your Terra billing is deployed to. If you are unsure if you have an account that has that permission, authenticate in the context of a notebook running inside of Terra.
-
-To authenticate inside a notebook in Terra, leveraging the managed identity the notebook is running under. 
+To authenticate inside a notebook in Terra, leveraging the managed identity the notebook is running under the following commands need to be executed. These commands will acquire a token that will be used by the client to connect to WDS.
 
 ```
 !az login --identity --allow-no-subscriptions
@@ -40,13 +30,12 @@ azure_token = cli_token[0].replace('"', '')
 
 ### WDS Endpoint
 
-WDS endpoint URL can be acquired from Leo APIs and should soon be available in a environment variable in the notebook VM. 
+WDS endpoint URL can be acquired from [**Leonardo APIs**](https://github.com/DataBiosphere/leonardo) by calling the following code.
 
-However, if for some reason it is not, or you are looking to write data into a different workspace data table that you also have access to (remember this will only work if the token you generated has access to that workspace), it can be acquired by calling the following code
+Replace env with "dev" or "prod", based on where the workspace is running. Workspace Id can be located either on the Data tab by clicking "Data Table Status" or from the following env variable in the notebook: os.environ['WORKSPACE_ID'] 
 
-Replace env with "dev" or "prod", based on where your workspace is running. Workspace Id can be located either on the Data tab by clicking "Data Table Status" or from the following env variable in the notebook: os.environ['WORKSPACE_ID'] 
 ```
-def get_wds_url(workspaceId):
+def get_wds_url(workspaceId, env):
     """"Get url for wds."""
     
     uri = f"https://leonardo.dsde-{env}.broadinstitute.org/api/apps/v2/{workspaceId}?includeDeleted=false"
@@ -65,7 +54,8 @@ def get_wds_url(workspaceId):
     return json.loads(response.text)
 
 # the response will return all proxy urls for the workspace
-response = get_wds_url(current_workspaceId)
+response = get_wds_url(current_workspaceId, "dev")
+
 # specifically grab the wds one
 wds_url = response[0]['proxyUrls']['wds']
 print(wds_url)
