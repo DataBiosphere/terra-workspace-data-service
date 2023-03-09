@@ -8,8 +8,4 @@ public class SamException extends ResponseStatusException {
 	public SamException(HttpStatus status, String message) {
 		super(status, message);
 	}
-
-	public SamException(HttpStatus status, String message, Throwable cause) {
-		super(status, message, cause);
-	}
 }
