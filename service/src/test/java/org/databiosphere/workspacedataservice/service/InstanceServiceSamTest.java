@@ -6,7 +6,6 @@ import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.sam.SamDao;
-import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -17,7 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-import java.util.List;
+
 import java.util.Optional;
 import java.util.UUID;
 
@@ -75,6 +74,7 @@ class InstanceServiceSamTest {
         doDeleteInstanceTest(instanceId);
     }
 
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     void doCreateInstanceTest(UUID instanceId, Optional<UUID> workspaceIdInput, UUID expectedWorkspaceId) throws ApiException {
         // setup: capture order of calls to Sam
         InOrder callOrder = inOrder(mockResourcesApi);
