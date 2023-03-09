@@ -53,4 +53,9 @@ public interface SamDao {
      */
     void deleteInstanceResource(UUID instanceId);
 
+    /**
+     * Gets the System Status of SAM.
+     */
+    void getSystemStatus();
+
 }

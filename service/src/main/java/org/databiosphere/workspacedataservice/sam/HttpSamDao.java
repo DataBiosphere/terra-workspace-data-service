@@ -87,6 +87,14 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
         executeSamRequest(samFunction, "deleteInstanceResource");
     }
 
+    /**
+     * Gets the System Status of Sam.
+     */
+    public void getSystemStatus() {
+        VoidSamFunction samFunction = () -> samClientFactory.getStatusApi().getSystemStatus();
+        executeSamRequest(samFunction, "getSystemStatus");
+    }
+
 
 }
 

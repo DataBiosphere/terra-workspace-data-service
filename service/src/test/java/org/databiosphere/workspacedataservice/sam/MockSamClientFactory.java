@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.sam;
 
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
+import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
 
 /**
  * Mock for SamClientFactory, which returns a MockSamResourcesApi.
@@ -9,5 +10,9 @@ import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 public class MockSamClientFactory implements SamClientFactory {
     public ResourcesApi getResourcesApi() {
         return new MockSamResourcesApi();
+    }
+
+    public StatusApi getStatusApi() {
+        return new MockSamStatusApi();
     }
 }
