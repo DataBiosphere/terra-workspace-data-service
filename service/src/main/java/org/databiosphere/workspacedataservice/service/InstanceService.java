@@ -35,7 +35,17 @@ public class InstanceService {
         return recordDao.listInstanceSchemas();
     }
 
-    @WriteTransaction
+    /**
+     * Creates a WDS instance, comprised of a Postgres schema and a Sam resource of type "wds-instance".
+     * The Postgres schema and Sam resource will both have an id of `instanceId`.
+     * The Sam resource will have a parent of type `workspace`. The parent's id will be `workspaceId` if specified,
+     * else will be `instanceId`. In the latter case where a `workspaceId` is not specified, this will result in
+     * two Sam resources having the same id - one of type `workspace` and another of type `wds-instance.
+     *
+     * @param instanceId id of the instance to create
+     * @param version WDS API version
+     * @param workspaceId optional - id of the parent workspace, if different than the instance id
+     */
     public void createInstance(UUID instanceId, String version, Optional<UUID> workspaceId) {
         validateVersion(version);
 
@@ -57,10 +67,14 @@ public class InstanceService {
         // create `wds-instance` resource in Sam, specifying workspace as parent
         samDao.createInstanceResource(samResourceId, samParentResourceId);
         // create instance schema in Postgres
-        recordDao.createSchema(instanceId);
+        createInstanceInDatabase(instanceId);
     }
 
     @WriteTransaction
+    void createInstanceInDatabase(UUID instanceId) {
+        recordDao.createSchema(instanceId);
+    }
+
     public void deleteInstance(UUID instanceId, String version) {
         validateVersion(version);
         validateInstance(instanceId);
@@ -73,10 +87,15 @@ public class InstanceService {
             throw new AuthorizationException("Caller does not have permission to delete instance.");
         }
 
-        // delete instance schema in Postgres
-        recordDao.dropSchema(instanceId);
         // delete `wds-instance` resource in Sam
         samDao.deleteInstanceResource(instanceId);
+        // delete instance schema in Postgres
+        deleteInstanceFromDatabase(instanceId);
+    }
+
+    @WriteTransaction
+    void deleteInstanceFromDatabase(UUID instanceId) {
+        recordDao.dropSchema(instanceId);
     }
 
     public void validateInstance(UUID instanceId) {
