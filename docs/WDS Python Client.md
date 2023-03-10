@@ -30,7 +30,7 @@ azure_token = cli_token[0].replace('"', '')
 
 ### WDS Endpoint
 
-WDS endpoint URL can be acquired from [**Leonardo APIs**](https://github.com/DataBiosphere/leonardo) by calling the following code.
+WDS endpoint URL can be acquired from [**Leonardo APIs**](https://github.com/DataBiosphere/leonardo) by calling the following code. The api will return a list of apps runing in s given workspace, WDS url will be present in its proxyUrls.wds value. Below is a code snippet to help get the proxyUrls.wds value from a Leonarado api response. 
 
 Replace env with "dev" or "prod", based on where the workspace is running. Workspace Id can be located either on the Data tab by clicking "Data Table Status" or from the following env variable in the notebook: os.environ['WORKSPACE_ID'] 
 
