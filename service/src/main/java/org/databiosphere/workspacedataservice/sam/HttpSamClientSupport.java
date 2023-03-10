@@ -41,7 +41,7 @@ public abstract class HttpSamClientSupport {
      * @throws AuthenticationException on a 401 from the Sam client request
      * @throws AuthorizationException on a 403 from the Sam client request
      */
-    <T> T executeSamRequest(SamFunction<T> samFunction, String loggerHint) throws SamException, AuthenticationException, AuthorizationException {
+    <T> T withSamErrorHandling(SamFunction<T> samFunction, String loggerHint) throws SamException, AuthenticationException, AuthorizationException {
         try {
             LOGGER.debug("Sending {} request to Sam ...", loggerHint);
             T functionResult = samFunction.run();
@@ -77,14 +77,14 @@ public abstract class HttpSamClientSupport {
      * @throws AuthenticationException on a 401 from the Sam client request
      * @throws AuthorizationException on a 403 from the Sam client request
      */
-    void executeSamRequest(VoidSamFunction voidSamFunction, String loggerHint) throws SamException, AuthenticationException, AuthorizationException {
+    void withSamErrorHandling(VoidSamFunction voidSamFunction, String loggerHint) throws SamException, AuthenticationException, AuthorizationException {
 
         // wrap void function in something that returns an object
         SamFunction<String> wrappedFunction = () -> {
             voidSamFunction.run();
             return "void";
         };
-        executeSamRequest(wrappedFunction, loggerHint);
+        withSamErrorHandling(wrappedFunction, loggerHint);
     }
 
     /**

@@ -50,7 +50,7 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
     private boolean hasPermission(String resourceType, String resourceId, String action, String loggerHint) {
         SamFunction<Boolean> samFunction = () -> samClientFactory.getResourcesApi()
                 .resourcePermissionV2(resourceType, resourceId, action);
-        return executeSamRequest(samFunction, loggerHint);
+        return withSamErrorHandling(samFunction, loggerHint);
     }
 
     /**
@@ -73,7 +73,7 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
         createResourceRequest.setAuthDomain(Collections.emptyList());
 
         VoidSamFunction samFunction = () -> samClientFactory.getResourcesApi().createResourceV2(RESOURCE_NAME_INSTANCE, createResourceRequest);
-        executeSamRequest(samFunction, "createInstanceResource");
+        withSamErrorHandling(samFunction, "createInstanceResource");
     }
 
     /**
@@ -84,7 +84,7 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
     @Override
     public void deleteInstanceResource(UUID instanceId) {
         VoidSamFunction samFunction = () -> samClientFactory.getResourcesApi().deleteResourceV2(RESOURCE_NAME_INSTANCE, instanceId.toString());
-        executeSamRequest(samFunction, "deleteInstanceResource");
+        withSamErrorHandling(samFunction, "deleteInstanceResource");
     }
 
 

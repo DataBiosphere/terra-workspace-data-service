@@ -30,10 +30,10 @@ class HttpSamClientSupportTest extends HttpSamClientSupport {
             throw new ApiException(samCode, "");
         };
         assertThrows(AuthenticationException.class,
-                () -> executeSamRequest(samFunction, "AuthenticationException"),
+                () -> withSamErrorHandling(samFunction, "AuthenticationException"),
                 "samFunction should throw AuthenticationException");
         assertThrows(AuthenticationException.class,
-                () -> executeSamRequest(voidSamFunction, "AuthenticationException"),
+                () -> withSamErrorHandling(voidSamFunction, "AuthenticationException"),
                 "voidSamFunction should throw AuthenticationException");
     }
 
@@ -48,10 +48,10 @@ class HttpSamClientSupportTest extends HttpSamClientSupport {
             throw new ApiException(samCode, "");
         };
         assertThrows(AuthorizationException.class,
-                () -> executeSamRequest(samFunction, "AuthorizationException"),
+                () -> withSamErrorHandling(samFunction, "AuthorizationException"),
                 "samFunction should throw AuthorizationException");
         assertThrows(AuthorizationException.class,
-                () -> executeSamRequest(voidSamFunction, "AuthorizationException"),
+                () -> withSamErrorHandling(voidSamFunction, "AuthorizationException"),
                 "voidSamFunction should throw AuthorizationException");
     }
 
@@ -110,7 +110,7 @@ class HttpSamClientSupportTest extends HttpSamClientSupport {
 
     private void expectSamExceptionWithStatusCode(int expectedStatusCode, SamFunction<?> samFunction) {
         SamException actual = assertThrows(SamException.class,
-                () -> executeSamRequest(samFunction, "samFunction-unittest"),
+                () -> withSamErrorHandling(samFunction, "samFunction-unittest"),
                 "samFunction should throw SamException");
 
         assertEquals(expectedStatusCode, actual.getRawStatusCode(), "samFunction: Incorrect status code in SamException");
@@ -118,7 +118,7 @@ class HttpSamClientSupportTest extends HttpSamClientSupport {
 
     private void expectSamExceptionWithStatusCode(int expectedStatusCode, VoidSamFunction voidSamFunction) {
         SamException actual = assertThrows(SamException.class,
-                () -> executeSamRequest(voidSamFunction, "samFunction-unittest"),
+                () -> withSamErrorHandling(voidSamFunction, "samFunction-unittest"),
                 "voidSamFunction should throw SamException");
 
         assertEquals(expectedStatusCode, actual.getRawStatusCode(), "voidSamFunction: Incorrect status code in SamException");
