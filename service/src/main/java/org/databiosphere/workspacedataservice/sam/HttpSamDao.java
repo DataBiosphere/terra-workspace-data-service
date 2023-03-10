@@ -90,9 +90,10 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
     /**
      * Gets the System Status of Sam.
      */
-    public void getSystemStatus() {
+    public boolean getSystemStatus() {
         VoidSamFunction samFunction = () -> samClientFactory.getStatusApi().getSystemStatus();
-        executeSamRequest(samFunction, "getSystemStatus");
+        withSamErrorHandling(samFunction, "getSystemStatus");
+        return true;
     }
 
 

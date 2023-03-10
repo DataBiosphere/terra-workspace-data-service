@@ -13,6 +13,6 @@ public class MockSamClientFactory implements SamClientFactory {
     }
 
     public StatusApi getStatusApi() {
-        return new MockSamStatusApi();
+        return new StatusApi();
     }
 }

@@ -56,6 +56,6 @@ public interface SamDao {
     /**
      * Gets the System Status of SAM.
      */
-    void getSystemStatus();
+    boolean getSystemStatus();
 
 }
