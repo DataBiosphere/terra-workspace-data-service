@@ -20,7 +20,7 @@ pip install wds-client --upgrade
 
 ### Auth set up
 
-To authenticate inside a notebook in Terra, leveraging the managed identity the notebook is running under the following commands need to be executed. These commands will acquire a token that will be used by the client to connect to WDS.
+The proper way to authenticate inside a notebook in Terra is to leverage the managed identity the notebook is running under. These commands will acquire a token from the managed identity that will be used by the python client to connect to WDS.
 
 ```
 !az login --identity --allow-no-subscriptions
