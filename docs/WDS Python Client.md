@@ -56,9 +56,15 @@ def get_wds_url(workspaceId, env):
 # the response will return all proxy urls for the workspace
 response = get_wds_url(current_workspaceId, "dev")
 
-# specifically grab the wds one
-wds_url = response[0]['proxyUrls']['wds']
-print(wds_url)
+for entries in response: 
+    if entries['proxyUrls']['wds'] is not None:
+        wds_url = entries['proxyUrls']['wds']
+        break
+
+if wds_url is None: 
+    print("WDS is missing in current workspace")
+else:
+    print(wds_url)
 ```
 
 Once you have bearer token and the WDS endpoint url, you are all set to create the WDS Api Client. Do note that token will expire and will be renewed every 60 minutes. 
