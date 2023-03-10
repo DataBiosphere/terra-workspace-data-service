@@ -17,7 +17,7 @@ repositories { mavenCentral() }
 
 subprojects {
     group = 'org.databiosphere'
-    version = '0.2.38-SNAPSHOT'
+    version = '0.2.39-SNAPSHOT'
 
     apply plugin: 'idea'
     apply plugin: 'java'
