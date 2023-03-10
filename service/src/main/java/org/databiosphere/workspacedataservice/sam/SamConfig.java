@@ -21,12 +21,12 @@ public class SamConfig {
 
     @Bean
     public SamClientFactory getSamClientFactory() {
-        // TODO: what validation of the sam url should we do here?
+        // TODO: AJ-898 what validation of the sam url should we do here?
         // - none
         // - check if the value is null/empty/whitespace
         // - check if the value is a valid Url
         // - contact the url and see if it looks like Sam on the other end
-        // TODO: and what should we do if the validation fails?
+        // TODO: AJ-898 and what should we do if the validation fails?
         // - nothing, which would almost certainly result in Sam calls failing
         // - disable Sam integration, which could result in unauthorized access
         // - stop WDS, which would obviously prevent WDS from working at all

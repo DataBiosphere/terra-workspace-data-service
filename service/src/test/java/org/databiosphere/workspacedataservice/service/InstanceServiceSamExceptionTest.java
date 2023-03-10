@@ -6,10 +6,13 @@ import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.sam.SamDao;
+import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.SamException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -35,7 +38,8 @@ import static org.mockito.BDDMockito.willThrow;
  * <p>
  * Both createInstance and deleteInstance call Sam. If Sam returns an exception, we want createInstance and deleteInstance
  * to respond appropriately:
- *      - if Sam returns an ApiException with status code 401 or 403, they should throw AuthorizationException.
+ *      - if Sam returns an ApiException with status code 401, they should throw AuthenticationException.
+ *      - if Sam returns an ApiException with status code 403, they should throw AuthorizationException.
  *      - if Sam returns an ApiException with a well-known status code like 404 or 503, they should throw a SamException
  *          with the same status code.
  *      - if Sam returns an ApiException with a non-standard status code such as 0, which happens in the case of a
@@ -75,16 +79,30 @@ class InstanceServiceSamExceptionTest {
                 recordDao.dropSchema(instanceId));
     }
 
-    @ParameterizedTest(name = "if Sam throws ApiException({0}) on resourcePermissionV2, createInstance and deleteInstance should throw AuthorizationException")
-    @ValueSource(ints = {401, 403})
-    void testAuthorizationExceptionOnPermissionCheck(int thrownStatusCode) throws ApiException {
+    @DisplayName("if Sam throws ApiException(401) on resourcePermissionV2, createInstance and deleteInstance should throw AuthenticationException")
+    @Test
+    void testAuthenticationExceptionOnPermissionCheck() throws ApiException {
+        int thrownStatusCode = 401;
         UUID instanceId = UUID.randomUUID();
 
         // Setup: the call to check permissions in Sam throws an ApiException
         given(mockResourcesApi.resourcePermissionV2(anyString(), eq(instanceId.toString()), anyString()))
                 .willThrow(new ApiException(thrownStatusCode, "intentional exception for unit test: " + thrownStatusCode));
 
-        doAuthorizationCreateAndDeleteTest(instanceId);
+        doAuthnCreateAndDeleteTest(instanceId, AuthenticationException.class);
+    }
+
+    @DisplayName("if Sam throws ApiException(403) on resourcePermissionV2, createInstance and deleteInstance should throw AuthorizationException")
+    @Test
+    void testAuthorizationExceptionOnPermissionCheck() throws ApiException {
+        int thrownStatusCode = 403;
+        UUID instanceId = UUID.randomUUID();
+
+        // Setup: the call to check permissions in Sam throws an ApiException
+        given(mockResourcesApi.resourcePermissionV2(anyString(), eq(instanceId.toString()), anyString()))
+                .willThrow(new ApiException(thrownStatusCode, "intentional exception for unit test: " + thrownStatusCode));
+
+        doAuthnCreateAndDeleteTest(instanceId, AuthorizationException.class);
     }
 
     @ParameterizedTest(name = "if Sam throws ApiException({0}) on resourcePermissionV2, createInstance and deleteInstance should throw SamException({0})")
@@ -126,9 +144,10 @@ class InstanceServiceSamExceptionTest {
         doSamCreateAndDeleteTest(instanceId, 500);
     }
 
-    @ParameterizedTest(name = "if Sam throws ApiException({0}) on createResourceV2, createInstance should throw AuthorizationException")
-    @ValueSource(ints = {401, 403})
-    void testAuthorizationExceptionOnCreateResource(int thrownStatusCode) throws ApiException {
+    @DisplayName("if Sam throws ApiException(401) on createResourceV2, createInstance should throw AuthenticationException")
+    @Test
+    void testAuthenticationExceptionOnCreateResource() throws ApiException {
+        int thrownStatusCode = 401;
         UUID instanceId = UUID.randomUUID();
 
         // Setup: the call to check permissions in Sam returns true,
@@ -139,7 +158,24 @@ class InstanceServiceSamExceptionTest {
                 .given(mockResourcesApi)
                 .createResourceV2(eq(SamDao.RESOURCE_NAME_INSTANCE), any(CreateResourceRequestV2.class));
 
-        doAuthorizationCreateTest(instanceId);
+        doAuthnCreateTest(instanceId, AuthenticationException.class);
+    }
+
+    @DisplayName("if Sam throws ApiException(403) on createResourceV2, createInstance should throw AuthorizationException")
+    @Test
+    void testAuthorizationExceptionOnCreateResource() throws ApiException {
+        int thrownStatusCode = 403;
+        UUID instanceId = UUID.randomUUID();
+
+        // Setup: the call to check permissions in Sam returns true,
+        // but the call to create resource in Sam throws an ApiException
+        given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
+                .willReturn(true);
+        willThrow(new ApiException(thrownStatusCode, "intentional exception for unit test: " + thrownStatusCode))
+                .given(mockResourcesApi)
+                .createResourceV2(eq(SamDao.RESOURCE_NAME_INSTANCE), any(CreateResourceRequestV2.class));
+
+        doAuthnCreateTest(instanceId, AuthorizationException.class);
     }
 
     @ParameterizedTest(name = "if Sam throws ApiException({0}) on createResourceV2, createInstance should throw SamException({0})")
@@ -194,9 +230,10 @@ class InstanceServiceSamExceptionTest {
         doSamCreateTest(instanceId, 500);
     }
 
-    @ParameterizedTest(name = "if Sam throws ApiException({0}) on deleteResourceV2, deleteInstance should throw AuthorizationException")
-    @ValueSource(ints = {401, 403})
-    void testAuthorizationExceptionOnDeleteResource(int thrownStatusCode) throws ApiException {
+    @DisplayName("if Sam throws ApiException(401) on deleteResourceV2, deleteInstance should throw AuthenticationException")
+    @Test
+    void testAuthenticationExceptionOnDeleteResource() throws ApiException {
+        int thrownStatusCode = 401;
         UUID instanceId = UUID.randomUUID();
 
         // Setup: the call to check permissions in Sam returns true,
@@ -206,7 +243,23 @@ class InstanceServiceSamExceptionTest {
         willThrow(new ApiException(thrownStatusCode, "intentional exception for unit test: " + thrownStatusCode))
                 .given(mockResourcesApi)
                 .deleteResourceV2(eq(SamDao.RESOURCE_NAME_INSTANCE), eq(instanceId.toString()));
-        doAuthorizationDeleteTest(instanceId);
+        doAuthnDeleteTest(instanceId, AuthenticationException.class);
+    }
+
+    @DisplayName("if Sam throws ApiException(403) on deleteResourceV2, deleteInstance should throw AuthorizationException")
+    @Test
+    void testAuthorizationExceptionOnDeleteResource() throws ApiException {
+        int thrownStatusCode = 403;
+        UUID instanceId = UUID.randomUUID();
+
+        // Setup: the call to check permissions in Sam returns true,
+        // but the call to delete resource in Sam throws an ApiException
+        given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
+                .willReturn(true);
+        willThrow(new ApiException(thrownStatusCode, "intentional exception for unit test: " + thrownStatusCode))
+                .given(mockResourcesApi)
+                .deleteResourceV2(eq(SamDao.RESOURCE_NAME_INSTANCE), eq(instanceId.toString()));
+        doAuthnDeleteTest(instanceId, AuthorizationException.class);
     }
 
     @ParameterizedTest(name = "if Sam throws ApiException({0}) on deleteResourceV2, deleteInstance should throw SamException({0})")
@@ -263,16 +316,16 @@ class InstanceServiceSamExceptionTest {
     }
 
 
-    // implementation of tests that expect AuthorizationException
-    private void doAuthorizationCreateAndDeleteTest(UUID instanceId) {
-        doAuthorizationCreateTest(instanceId);
-        doAuthorizationDeleteTest(instanceId);
+    // implementation of tests that expect AuthenticationException or AuthorizationException
+    private void doAuthnCreateAndDeleteTest(UUID instanceId, Class<? extends Exception> expectedExceptionClass) {
+        doAuthnCreateTest(instanceId, expectedExceptionClass);
+        doAuthnDeleteTest(instanceId, expectedExceptionClass);
     }
 
-    private void doAuthorizationCreateTest(UUID instanceId) {
+    private void doAuthnCreateTest(UUID instanceId, Class<? extends Exception> expectedExceptionClass) {
 
         // attempt to create the instance, which should fail
-        assertThrows(AuthorizationException.class,
+        assertThrows(expectedExceptionClass,
                 () -> instanceService.createInstance(instanceId, VERSION, Optional.empty()),
                 "createInstance should throw if caller does not have permission to create wds-instance resource in Sam"
         );
@@ -280,14 +333,14 @@ class InstanceServiceSamExceptionTest {
         assertFalse(allInstances.contains(instanceId), "instanceService.createInstance should not have created the instances.");
     }
 
-    private void doAuthorizationDeleteTest(UUID instanceId) {
+    private void doAuthnDeleteTest(UUID instanceId, Class<? extends Exception> expectedExceptionClass) {
         // create the instance (directly in the db, bypassing Sam)
         recordDao.createSchema(instanceId);
         List<UUID> allInstances = instanceService.listInstances(VERSION);
         assertTrue(allInstances.contains(instanceId), "unit test should have created the instances.");
 
         // attempt to delete the instance, which should fail
-        assertThrows(AuthorizationException.class,
+        assertThrows(expectedExceptionClass,
                 () -> instanceService.deleteInstance(instanceId, VERSION),
                 "deleteInstance should throw if caller does not have permission to create wds-instance resource in Sam"
         );

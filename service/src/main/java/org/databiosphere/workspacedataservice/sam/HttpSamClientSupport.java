@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.sam;
 
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
+import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.SamException;
 import org.slf4j.Logger;
@@ -13,7 +14,9 @@ import java.util.Objects;
  * Utility/support functions for HttpSamClient:
  * - logging of all requests to Sam
  * - exception handling for Sam errors:
- *      - if we catch an ApiException with 401 or 403 http status from the Sam client,
+ *      - if we catch an ApiException with 401 http status from the Sam client,
+ *          throw AuthenticationException
+ *      - if we catch an ApiException with 403 http status from the Sam client,
  *          throw AuthorizationException
  *      - if we catch an ApiException with other well-known http status from the Sam client,
  *          throw SamException with the same status
@@ -21,7 +24,7 @@ import java.util.Objects;
  *          throw SamException with status 500
  *      - if we catch a non-ApiException from the Sam client,
  *          throw SamException with status 500
- * - TODO: retry calls to Sam on retryable exceptions
+ * - TODO: AJ-899 retry calls to Sam on retryable exceptions
  */
 public abstract class HttpSamClientSupport {
 
@@ -35,9 +38,10 @@ public abstract class HttpSamClientSupport {
      * @return the result of the Sam client request
      * @param <T> the return type of the Sam client request
      * @throws SamException on most exceptions thrown by the Sam client request
-     * @throws AuthorizationException on a 401 or 403 from the Sam client request
+     * @throws AuthenticationException on a 401 from the Sam client request
+     * @throws AuthorizationException on a 403 from the Sam client request
      */
-    <T> T executeSamRequest(SamFunction<T> samFunction, String loggerHint) throws SamException, AuthorizationException {
+    <T> T withSamErrorHandling(SamFunction<T> samFunction, String loggerHint) throws SamException, AuthenticationException, AuthorizationException {
         try {
             LOGGER.debug("Sending {} request to Sam ...", loggerHint);
             T functionResult = samFunction.run();
@@ -47,7 +51,9 @@ public abstract class HttpSamClientSupport {
             LOGGER.error(loggerHint + " Sam request resulted in ApiException(" + apiException.getCode() + ")",
                     apiException);
             int code = apiException.getCode();
-            if (code == 401 || code == 403) {
+            if (code == 401) {
+                throw new AuthenticationException(apiException.getMessage());
+            } else if (code == 403) {
                 throw new AuthorizationException(apiException.getMessage());
             } else {
                 HttpStatus resolvedStatus = HttpStatus.resolve(code);
@@ -68,16 +74,17 @@ public abstract class HttpSamClientSupport {
      * @param voidSamFunction the Sam client request to perform
      * @param loggerHint short string to include for all log entries for this request
      * @throws SamException on most exceptions thrown by the Sam client request
-     * @throws AuthorizationException on a 401 or 403 from the Sam client request
+     * @throws AuthenticationException on a 401 from the Sam client request
+     * @throws AuthorizationException on a 403 from the Sam client request
      */
-    void executeSamRequest(VoidSamFunction voidSamFunction, String loggerHint) throws SamException, AuthorizationException {
+    void withSamErrorHandling(VoidSamFunction voidSamFunction, String loggerHint) throws SamException, AuthenticationException, AuthorizationException {
 
         // wrap void function in something that returns an object
         SamFunction<String> wrappedFunction = () -> {
             voidSamFunction.run();
             return "void";
         };
-        executeSamRequest(wrappedFunction, loggerHint);
+        withSamErrorHandling(wrappedFunction, loggerHint);
     }
 
     /**
