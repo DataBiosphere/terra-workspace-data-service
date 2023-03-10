@@ -35,7 +35,6 @@ public class InstanceService {
         return recordDao.listInstanceSchemas();
     }
 
-    @WriteTransaction
     public void createInstance(UUID instanceId, String version, Optional<UUID> workspaceId) {
         validateVersion(version);
 
@@ -57,10 +56,14 @@ public class InstanceService {
         // create `wds-instance` resource in Sam, specifying workspace as parent
         samDao.createInstanceResource(samResourceId, samParentResourceId);
         // create instance schema in Postgres
-        recordDao.createSchema(instanceId);
+        createInstanceInDatabase(instanceId);
     }
 
     @WriteTransaction
+    void createInstanceInDatabase(UUID instanceId) {
+        recordDao.createSchema(instanceId);
+    }
+
     public void deleteInstance(UUID instanceId, String version) {
         validateVersion(version);
         validateInstance(instanceId);
@@ -73,10 +76,15 @@ public class InstanceService {
             throw new AuthorizationException("Caller does not have permission to delete instance.");
         }
 
-        // delete instance schema in Postgres
-        recordDao.dropSchema(instanceId);
         // delete `wds-instance` resource in Sam
         samDao.deleteInstanceResource(instanceId);
+        // delete instance schema in Postgres
+        deleteInstanceFromDatabase(instanceId);
+    }
+
+    @WriteTransaction
+    void deleteInstanceFromDatabase(UUID instanceId) {
+        recordDao.dropSchema(instanceId);
     }
 
     public void validateInstance(UUID instanceId) {
