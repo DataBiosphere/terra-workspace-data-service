@@ -293,13 +293,16 @@ paths:
   /instances/{v}/{instanceid}:
     post:
       summary: Create an instance
-      description: Create an instance with the given UUID. This API is liable to change.
+      description: Create an instance with the given UUID.
       operationId: createWDSInstance
+      security:
+        - bearerAuth: [ ]
       tags:
         - Instances
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/workspaceIdQueryParam'
       responses:
         201:
           description: Success
@@ -316,6 +319,8 @@ paths:
 
         THIS WILL DELETE ALL DATA WITHIN THE INSTANCE. Be certain this is what you want to do.
       operationId: deleteWDSInstance
+      security:
+        - bearerAuth: [ ]
       tags:
         - Instances
       parameters:
@@ -499,6 +504,11 @@ paths:
           description: Success
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
   parameters:
     attributePathParam:
       name: attribute
@@ -543,6 +553,15 @@ components:
       schema:
         type: string
         default: v0.2
+    workspaceIdQueryParam:
+      name: workspaceid
+      in: query
+      description: Id of workspace containing a WDS instance. If omitted, assumed to be equal to the instance id.
+      required: false
+      schema:
+        type: string
+        format: uuid
+
   responses:
     RecordResponseBody:
       description: A record

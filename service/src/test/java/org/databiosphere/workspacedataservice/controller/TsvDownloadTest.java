@@ -17,6 +17,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.servlet.function.ServerRequest;
 
 import java.io.IOException;
@@ -33,6 +34,7 @@ import static org.assertj.core.api.Assertions.in;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ActiveProfiles(profiles = "mock-sam")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class TsvDownloadTest {
 
@@ -49,7 +51,7 @@ class TsvDownloadTest {
 	void init(){
 		version = "v0.2";
 		instanceId = UUID.randomUUID();
-		recordController.createInstance(instanceId, version);
+		recordController.createInstance(instanceId, version, Optional.empty());
 	}
 
 	@ParameterizedTest(name = "PK name {0} should be honored")

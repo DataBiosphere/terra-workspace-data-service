@@ -99,6 +99,9 @@ public class RecordDao {
 	private void createDefaultInstanceSchema(String workspaceId) {
 		LOGGER.info("Default workspace id loaded as {}", workspaceId);
 
+		// TODO: AJ-897 execute this as the WDS managed identity so it can call Sam
+		// TODO: AJ-897 move to a dedicated StartupBean
+
 		try {
 			UUID instanceId = UUID.fromString(workspaceId);
 			if (!instanceSchemaExists(instanceId)) {
