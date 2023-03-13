@@ -24,7 +24,7 @@ import java.util.Objects;
  *          throw SamException with status 500
  *      - if we catch a non-ApiException from the Sam client,
  *          throw SamException with status 500
- * - TODO: retry calls to Sam on retryable exceptions
+ * - TODO: AJ-899 retry calls to Sam on retryable exceptions
  */
 public abstract class HttpSamClientSupport {
 
