@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.sam;
 
+import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
+
 import java.util.UUID;
 
 /**
@@ -56,6 +58,6 @@ public interface SamDao {
     /**
      * Gets the System Status of SAM.
      */
-    boolean getSystemStatus();
+    SystemStatus getSystemStatus();
 
 }

@@ -20,9 +20,10 @@ public class StatusService extends AbstractHealthIndicator {
 
     @Override
     protected void doHealthCheck(Health.Builder builder) throws Exception {
-        if(samDao.getSystemStatus()) {
+        if(samDao.getSystemStatus().getOk()) {
             builder.up();
         } else {
+
             builder.down();
         }
     }

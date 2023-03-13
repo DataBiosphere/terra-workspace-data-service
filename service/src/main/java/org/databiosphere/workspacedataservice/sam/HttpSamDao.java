@@ -1,7 +1,9 @@
 package org.databiosphere.workspacedataservice.sam;
 
+import org.broadinstitute.dsde.workbench.client.sam.ApiResponse;
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
 import org.broadinstitute.dsde.workbench.client.sam.model.FullyQualifiedResourceId;
+import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 
 import java.util.Collections;
 import java.util.UUID;
@@ -90,10 +92,9 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
     /**
      * Gets the System Status of Sam.
      */
-    public boolean getSystemStatus() {
-        VoidSamFunction samFunction = () -> samClientFactory.getStatusApi().getSystemStatus();
-        withSamErrorHandling(samFunction, "getSystemStatus");
-        return true;
+    public SystemStatus getSystemStatus() {
+        SamFunction<SystemStatus> samFunction = () -> samClientFactory.getStatusApi().getSystemStatus();
+        return withSamErrorHandling(samFunction, "getSystemStatus");
     }
 
 }
