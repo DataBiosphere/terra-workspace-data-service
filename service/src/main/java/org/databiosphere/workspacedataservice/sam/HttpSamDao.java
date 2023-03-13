@@ -96,7 +96,6 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
         return true;
     }
 
-
 }
 
 
