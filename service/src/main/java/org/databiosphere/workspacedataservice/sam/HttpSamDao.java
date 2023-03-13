@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.sam;
 
-import org.broadinstitute.dsde.workbench.client.sam.ApiResponse;
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
 import org.broadinstitute.dsde.workbench.client.sam.model.FullyQualifiedResourceId;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
