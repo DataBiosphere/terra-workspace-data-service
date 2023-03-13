@@ -168,9 +168,10 @@ public class RecordOrchestratorSamTest {
 
     @Test
     void testDeleteRecordNoPermission() throws ApiException {
-        //create record type
+        //create record type and record
         RecordType deleteTest = RecordType.valueOf("delete_test");
         recordDao.createRecordType(INSTANCE, Collections.emptyMap(), deleteTest, new RelationCollection(Collections.emptySet(), Collections.emptySet()), PRIMARY_KEY);
+        recordDao.batchUpsert(INSTANCE, deleteTest, Collections.singletonList(new Record(RECORD_ID, deleteTest, RecordAttributes.empty())), Collections.emptyMap());
 
         // Call to check permissions in Sam returns false - i.e. the current user does not have permission
         given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
@@ -189,9 +190,10 @@ public class RecordOrchestratorSamTest {
 
     @Test
     void testDeleteRecordWithPermission() throws ApiException {
-        //create record type
+        //create record type and record
         RecordType deleteTest = RecordType.valueOf("delete_test");
         recordDao.createRecordType(INSTANCE, Collections.emptyMap(), deleteTest, new RelationCollection(Collections.emptySet(), Collections.emptySet()), PRIMARY_KEY);
+        recordDao.batchUpsert(INSTANCE, deleteTest, Collections.singletonList(new Record(RECORD_ID, deleteTest, RecordAttributes.empty())), Collections.emptyMap());
 
         // Call to check permissions in Sam returns true - i.e. the current user does have permission
         given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))

@@ -87,6 +87,19 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
         withSamErrorHandling(samFunction, "deleteInstanceResource");
     }
 
+    /**
+     * Check if the current user has permission to write to a "wds-instance" resource from Sam.
+     * Implemented as a check for write permission on the resource.
+     *
+     * @param instanceId the id of the "wds-instance" resource to be written to
+     * @return true if the user has permission
+     */
+    @Override
+    public boolean hasWriteInstancePermission(UUID instanceId) {
+        return hasPermission(RESOURCE_NAME_INSTANCE, instanceId.toString(), ACTION_WRITE,
+                "hasWriteInstancePermission");
+    }
+
 
 }
 

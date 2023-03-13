@@ -53,4 +53,11 @@ public interface SamDao {
      */
     void deleteInstanceResource(UUID instanceId);
 
+    /**
+     * Check if the current user has permission to write to a "wds-instance" resource from Sam
+     * @param instanceId the id of the "wds-instance" resource to be written to
+     * @return true if the user has permission
+     */
+    boolean hasWriteInstancePermission(UUID instanceId);
+
 }

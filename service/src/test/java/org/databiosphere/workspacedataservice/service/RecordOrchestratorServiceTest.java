@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -25,7 +26,7 @@ import java.util.UUID;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 import static org.junit.jupiter.api.Assertions.*;
-
+@ActiveProfiles(profiles = "mock-sam")
 @SpringBootTest
 class RecordOrchestratorServiceTest {
 

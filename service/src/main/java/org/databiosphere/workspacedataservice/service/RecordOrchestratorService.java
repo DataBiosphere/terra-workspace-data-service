@@ -5,11 +5,13 @@ import bio.terra.common.db.WriteTransaction;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.csv.CSVPrinter;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.ReservedNames;
+import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.NewPrimaryKeyException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -54,30 +56,50 @@ public class RecordOrchestratorService { // TODO give me a better name
     private final RecordService recordService;
     private final InstanceService instanceService;
     private final ObjectMapper objectMapper;
+    private final SamDao samDao;
 
     public RecordOrchestratorService(RecordDao recordDao,
                                      DataTypeInferer inferer,
                                      BatchWriteService batchWriteService,
                                      RecordService recordService,
                                      InstanceService instanceService,
-                                     ObjectMapper objectMapper) {
+                                     ObjectMapper objectMapper,
+                                     SamDao samDao) {
         this.recordDao = recordDao;
         this.inferer = inferer;
         this.batchWriteService = batchWriteService;
         this.recordService = recordService;
         this.instanceService = instanceService;
         this.objectMapper = objectMapper;
+        this.samDao = samDao;
+    }
+
+    public RecordResponse updateSingleRecord(UUID instanceId, String version, RecordType recordType, String recordId,
+                              RecordRequest recordRequest) {
+        validateAndPermissions(instanceId, version);
+        checkRecordTypeExists(instanceId, recordType);
+        return updateSingleRecordInDatabase(instanceId, recordType, recordId, recordRequest);
+
+    }
+
+    private void validateAndPermissions(UUID instanceId, String version) {
+        validateVersion(version);
+        instanceService.validateInstance(instanceId);
+
+        boolean hasWriteInstancePermission = samDao.hasWriteInstancePermission(instanceId);
+        LOGGER.debug("hasWriteInstancePermission? {}", hasWriteInstancePermission);
+
+        if (!hasWriteInstancePermission) {
+            throw new AuthorizationException("Caller does not have permission to write to instance.");
+        }
     }
 
     @WriteTransaction
-    public RecordResponse updateSingleRecord(UUID instanceId, String version, RecordType recordType, String recordId,
-                              RecordRequest recordRequest) {
-        validateVersion(version);
-        instanceService.validateInstance(instanceId);
-        checkRecordTypeExists(instanceId, recordType);
+    public RecordResponse updateSingleRecordInDatabase(UUID instanceId, RecordType recordType, String recordId,
+                                             RecordRequest recordRequest) {
         Record singleRecord = recordDao
-            .getSingleRecord(instanceId, recordType, recordId)
-            .orElseThrow(() -> new MissingObjectException("Record"));
+                .getSingleRecord(instanceId, recordType, recordId)
+                .orElseThrow(() -> new MissingObjectException("Record"));
         RecordAttributes incomingAtts = recordRequest.recordAttributes();
         RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAtts).getAttributes();
         Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts);
@@ -85,7 +107,7 @@ public class RecordOrchestratorService { // TODO give me a better name
         singleRecord.setAttributes(allAttrs);
         List<Record> records = Collections.singletonList(singleRecord);
         Map<String, DataTypeMapping> updatedSchema = batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType,
-            typeMapping, existingTableSchema, records);
+                typeMapping, existingTableSchema, records);
         recordService.prepareAndUpsert(instanceId, recordType, records, updatedSchema, recordDao.getPrimaryKeyColumn(recordType, instanceId));
         return new RecordResponse(recordId, recordType, singleRecord.getAttributes());
     }
@@ -102,8 +124,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     // N.B. transaction annotated in batchWriteService.batchWriteTsvStream
     public int tsvUpload(UUID instanceId, String version, RecordType recordType, Optional<String> primaryKey,
                           MultipartFile records) throws IOException {
-        validateVersion(version);
-        instanceService.validateInstance(instanceId);
+        validateAndPermissions(instanceId, version);
         if(recordDao.recordTypeExists(instanceId, recordType)){
             validatePrimaryKey(instanceId, recordType, primaryKey);
         }
@@ -160,12 +181,18 @@ public class RecordOrchestratorService { // TODO give me a better name
         return new RecordQueryResponse(searchRequest, recordList, totalRecords);
     }
 
-    @WriteTransaction
     public ResponseEntity<RecordResponse> upsertSingleRecord(UUID instanceId,String version, RecordType recordType,
                                                              String recordId, Optional<String> primaryKey,
                                                              RecordRequest recordRequest) {
-        validateVersion(version);
-        instanceService.validateInstance(instanceId);
+        validateAndPermissions(instanceId, version);
+        return upsertSingleRecordInDatabase(instanceId, recordType, recordId, primaryKey, recordRequest);
+
+    }
+
+    @WriteTransaction
+    public ResponseEntity<RecordResponse> upsertSingleRecordInDatabase(UUID instanceId, RecordType recordType,
+                                                             String recordId, Optional<String> primaryKey,
+                                                             RecordRequest recordRequest) {
         RecordAttributes attributesInRequest = recordRequest.recordAttributes();
         Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
         HttpStatus status = HttpStatus.CREATED;
@@ -185,7 +212,7 @@ public class RecordOrchestratorService { // TODO give me a better name
             Record newRecord = new Record(recordId, recordType, recordRequest.recordAttributes());
             List<Record> records = Collections.singletonList(newRecord);
             batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType, requestSchema, existingTableSchema,
-                records);
+                    records);
             Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
             combinedSchema.putAll(requestSchema);
             recordService.prepareAndUpsert(instanceId, recordType, records, combinedSchema, primaryKey.orElseGet(() -> recordDao.getPrimaryKeyColumn(recordType, instanceId)));
@@ -194,19 +221,27 @@ public class RecordOrchestratorService { // TODO give me a better name
         }
     }
 
-    @WriteTransaction
     public boolean deleteSingleRecord(UUID instanceId, String version, RecordType recordType, String recordId) {
-        validateVersion(version);
-        instanceService.validateInstance(instanceId);
+        validateAndPermissions(instanceId, version);
         checkRecordTypeExists(instanceId, recordType);
-        return recordDao.deleteSingleRecord(instanceId, recordType, recordId);
+        return deleteSingleRecordInDatabase(instanceId, recordType, recordId);
+
     }
 
     @WriteTransaction
+    public boolean deleteSingleRecordInDatabase(UUID instanceId, RecordType recordType, String recordId) {
+        return recordDao.deleteSingleRecord(instanceId, recordType, recordId);
+    }
+
     public void deleteRecordType(UUID instanceId, String version, RecordType recordType) {
-        validateVersion(version);
-        instanceService.validateInstance(instanceId);
+        validateAndPermissions(instanceId, version);
         checkRecordTypeExists(instanceId, recordType);
+        deleteRecordTypeInDatabase(instanceId, recordType);
+
+    }
+
+    @WriteTransaction
+    public void deleteRecordTypeInDatabase(UUID instanceId, RecordType recordType) {
         recordDao.deleteRecordType(instanceId, recordType);
     }
 
@@ -229,8 +264,7 @@ public class RecordOrchestratorService { // TODO give me a better name
 
     public int streamingWrite(UUID instanceId, String version, RecordType recordType,
                                                         Optional<String> primaryKey, InputStream is) {
-        validateVersion(version);
-        instanceService.validateInstance(instanceId);
+        validateAndPermissions(instanceId, version);
         if(recordDao.recordTypeExists(instanceId, recordType)){
             validatePrimaryKey(instanceId, recordType, primaryKey);
         }
