@@ -1,9 +1,12 @@
 name: Test Python client to PyPI
 
 on:
+  push:
+    branches:
+      - aj-816-pc-tests
   pull_request:
     paths:
-      - 'openapi-docs.yaml'
+      - '**/openapi-docs.yaml'
 
 jobs:
   build-n-test:
