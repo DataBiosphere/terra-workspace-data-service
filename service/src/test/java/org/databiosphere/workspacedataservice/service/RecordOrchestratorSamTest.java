@@ -6,6 +6,7 @@ import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
+import org.databiosphere.workspacedataservice.service.model.exception.SamException;
 import org.databiosphere.workspacedataservice.shared.model.*;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.junit.jupiter.api.AfterEach;
@@ -60,7 +61,7 @@ class RecordOrchestratorSamTest {
                 .willReturn(mockResourcesApi);
 
         // clear call history for the mock
-        Mockito.clearInvocations(mockResourcesApi);
+        Mockito.reset(mockResourcesApi);
     }
 
     @AfterEach
@@ -91,5 +92,14 @@ class RecordOrchestratorSamTest {
         assertDoesNotThrow(() -> recordOrchestratorService.validateAndPermissions(INSTANCE, VERSION),
                 "validateAndPermissions should not throw if caller has write permission in Sam"
         );
+    }
+
+    @Test
+    void testValidateAndPermissionWhenException() throws ApiException {
+        given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
+                .willThrow(new ApiException(0, "intentional failure for unit test")); // 0 indicates a failed connection
+        assertThrows(SamException.class,
+                () -> recordOrchestratorService.validateAndPermissions(INSTANCE, VERSION),
+                "validateAndPermissions should throw if caller does not have write permission in Sam");
     }
 }
