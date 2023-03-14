@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 /**
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Service;
  *
  * See here for more details how we handle health checks in WDS: https://www.baeldung.com/spring-boot-health-indicators
  */
-@Service
+@Service(value = "Sam")
 public class SamStatusService extends AbstractHealthIndicator {
 
     private final SamDao samDao;
@@ -24,7 +25,8 @@ public class SamStatusService extends AbstractHealthIndicator {
     }
 
     @Override
-    protected void doHealthCheck(Health.Builder builder) throws Exception {
+    @Cacheable("samStatus")
+    public void doHealthCheck(Health.Builder builder) throws Exception {
 
         SystemStatus samStatus = samDao.getSystemStatus();
 
