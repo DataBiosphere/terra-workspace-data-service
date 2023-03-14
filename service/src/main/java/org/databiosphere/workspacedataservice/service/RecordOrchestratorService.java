@@ -78,8 +78,7 @@ public class RecordOrchestratorService { // TODO give me a better name
                               RecordRequest recordRequest) {
         validateAndPermissions(instanceId, version);
         checkRecordTypeExists(instanceId, recordType);
-        return updateSingleRecordInDatabase(instanceId, recordType, recordId, recordRequest);
-
+        return recordService.updateSingleRecord(instanceId, recordType, recordId, recordRequest);
     }
 
     private void validateAndPermissions(UUID instanceId, String version) {
@@ -92,24 +91,6 @@ public class RecordOrchestratorService { // TODO give me a better name
         if (!hasWriteInstancePermission) {
             throw new AuthorizationException("Caller does not have permission to write to instance.");
         }
-    }
-
-    @WriteTransaction
-    public RecordResponse updateSingleRecordInDatabase(UUID instanceId, RecordType recordType, String recordId,
-                                             RecordRequest recordRequest) {
-        Record singleRecord = recordDao
-                .getSingleRecord(instanceId, recordType, recordId)
-                .orElseThrow(() -> new MissingObjectException("Record"));
-        RecordAttributes incomingAtts = recordRequest.recordAttributes();
-        RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAtts).getAttributes();
-        Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts);
-        Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
-        singleRecord.setAttributes(allAttrs);
-        List<Record> records = Collections.singletonList(singleRecord);
-        Map<String, DataTypeMapping> updatedSchema = batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType,
-                typeMapping, existingTableSchema, records);
-        recordService.prepareAndUpsert(instanceId, recordType, records, updatedSchema, recordDao.getPrimaryKeyColumn(recordType, instanceId));
-        return new RecordResponse(recordId, recordType, singleRecord.getAttributes());
     }
 
     @ReadTransaction
@@ -126,7 +107,7 @@ public class RecordOrchestratorService { // TODO give me a better name
                           MultipartFile records) throws IOException {
         validateAndPermissions(instanceId, version);
         if(recordDao.recordTypeExists(instanceId, recordType)){
-            validatePrimaryKey(instanceId, recordType, primaryKey);
+            recordService.validatePrimaryKey(instanceId, recordType, primaryKey);
         }
         return batchWriteService.batchWriteTsvStream(records.getInputStream(), instanceId, recordType, primaryKey);
     }
@@ -185,64 +166,22 @@ public class RecordOrchestratorService { // TODO give me a better name
                                                              String recordId, Optional<String> primaryKey,
                                                              RecordRequest recordRequest) {
         validateAndPermissions(instanceId, version);
-        return upsertSingleRecordInDatabase(instanceId, recordType, recordId, primaryKey, recordRequest);
+        return recordService.upsertSingleRecord(instanceId, recordType, recordId, primaryKey, recordRequest);
 
-    }
-
-    @WriteTransaction
-    public ResponseEntity<RecordResponse> upsertSingleRecordInDatabase(UUID instanceId, RecordType recordType,
-                                                             String recordId, Optional<String> primaryKey,
-                                                             RecordRequest recordRequest) {
-        RecordAttributes attributesInRequest = recordRequest.recordAttributes();
-        Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
-        HttpStatus status = HttpStatus.CREATED;
-        if (!recordDao.recordTypeExists(instanceId, recordType)) {
-            RecordResponse response = new RecordResponse(recordId, recordType, recordRequest.recordAttributes());
-            Record newRecord = new Record(recordId, recordType, recordRequest);
-            createRecordTypeAndInsertRecords(instanceId, newRecord, recordType, requestSchema, primaryKey);
-            return new ResponseEntity<>(response, status);
-        } else {
-            validatePrimaryKey(instanceId, recordType, primaryKey);
-            Map<String, DataTypeMapping> existingTableSchema = recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
-            // null out any attributes that already exist but aren't in the request
-            existingTableSchema.keySet().forEach(attr -> attributesInRequest.putAttributeIfAbsent(attr, null));
-            if (recordDao.recordExists(instanceId, recordType, recordId)) {
-                status = HttpStatus.OK;
-            }
-            Record newRecord = new Record(recordId, recordType, recordRequest.recordAttributes());
-            List<Record> records = Collections.singletonList(newRecord);
-            batchWriteService.addOrUpdateColumnIfNeeded(instanceId, recordType, requestSchema, existingTableSchema,
-                    records);
-            Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
-            combinedSchema.putAll(requestSchema);
-            recordService.prepareAndUpsert(instanceId, recordType, records, combinedSchema, primaryKey.orElseGet(() -> recordDao.getPrimaryKeyColumn(recordType, instanceId)));
-            RecordResponse response = new RecordResponse(recordId, recordType, attributesInRequest);
-            return new ResponseEntity<>(response, status);
-        }
     }
 
     public boolean deleteSingleRecord(UUID instanceId, String version, RecordType recordType, String recordId) {
         validateAndPermissions(instanceId, version);
         checkRecordTypeExists(instanceId, recordType);
-        return deleteSingleRecordInDatabase(instanceId, recordType, recordId);
+        return recordService.deleteSingleRecord(instanceId, recordType, recordId);
 
-    }
-
-    @WriteTransaction
-    public boolean deleteSingleRecordInDatabase(UUID instanceId, RecordType recordType, String recordId) {
-        return recordDao.deleteSingleRecord(instanceId, recordType, recordId);
     }
 
     public void deleteRecordType(UUID instanceId, String version, RecordType recordType) {
         validateAndPermissions(instanceId, version);
         checkRecordTypeExists(instanceId, recordType);
-        deleteRecordTypeInDatabase(instanceId, recordType);
+        recordService.deleteRecordType(instanceId, recordType);
 
-    }
-
-    @WriteTransaction
-    public void deleteRecordTypeInDatabase(UUID instanceId, RecordType recordType) {
-        recordDao.deleteRecordType(instanceId, recordType);
     }
 
     @ReadTransaction
@@ -266,29 +205,15 @@ public class RecordOrchestratorService { // TODO give me a better name
                                                         Optional<String> primaryKey, InputStream is) {
         validateAndPermissions(instanceId, version);
         if(recordDao.recordTypeExists(instanceId, recordType)){
-            validatePrimaryKey(instanceId, recordType, primaryKey);
+            recordService.validatePrimaryKey(instanceId, recordType, primaryKey);
         }
         return batchWriteService.batchWriteJsonStream(is, instanceId, recordType, primaryKey);
-    }
-
-    private void validatePrimaryKey(UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
-        if (primaryKey.isPresent() && !primaryKey.get().equals(recordDao.getPrimaryKeyColumn(recordType, instanceId))) {
-            throw new NewPrimaryKeyException(primaryKey.get(), recordType);
-        }
     }
 
     private void checkRecordTypeExists(UUID instanceId, RecordType recordType) {
         if (!recordDao.recordTypeExists(instanceId, recordType)) {
             throw new MissingObjectException("Record type");
         }
-    }
-
-    private void createRecordTypeAndInsertRecords(UUID instanceId, Record newRecord, RecordType recordType,
-                                                  Map<String, DataTypeMapping> requestSchema,
-                                                  Optional<String> primaryKey) {
-        List<Record> records = Collections.singletonList(newRecord);
-        recordDao.createRecordType(instanceId, requestSchema, recordType, inferer.findRelations(records, requestSchema), primaryKey.orElse(ReservedNames.RECORD_ID));
-        recordService.prepareAndUpsert(instanceId, recordType, records, requestSchema, primaryKey.orElse(ReservedNames.RECORD_ID));
     }
 
     private RecordTypeSchema getSchemaDescription(UUID instanceId, RecordType recordType) {
