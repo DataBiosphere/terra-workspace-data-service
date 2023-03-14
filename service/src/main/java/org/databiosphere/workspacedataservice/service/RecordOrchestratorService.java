@@ -73,7 +73,7 @@ public class RecordOrchestratorService { // TODO give me a better name
         return recordService.updateSingleRecord(instanceId, recordType, recordId, recordRequest);
     }
 
-    private void validateAndPermissions(UUID instanceId, String version) {
+    public void validateAndPermissions(UUID instanceId, String version) {
         validateVersion(version);
         instanceService.validateInstance(instanceId);
 
