@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.service;
 
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
+import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,16 +42,11 @@ class StatusServiceTest {
 
     @Test
     void checkStatusSamCalls() throws Exception {
-
-        // Simple test -- just want to create a scenario where we ensure things are called
-        // and that if getOk fails, we get builder.down()
-
-//        SamDao mockSamDao = Mockito.mock(SamDao.class, RETURNS_DEEP_STUBS);
-//        when(mockSamDao.getSystemStatus().getOk()).thenReturn(true);
-//        statusService.doHealthCheck(new Health.Builder());
-//        verify(mockStatusApi, times(1)).getSystemStatus();
+        SystemStatus status = new SystemStatus();
+        status.ok(true);
+        when(mockStatusApi.getSystemStatus()).thenReturn(status);
+        Health.Builder builder = new Health.Builder();
+        statusService.doHealthCheck(builder);
+        verify(mockStatusApi, times(1)).getSystemStatus();
     }
-
-
-
 }
