@@ -30,6 +30,7 @@ import org.springframework.context.annotation.*;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.lang.NonNull;
 import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -45,6 +46,7 @@ import javax.sql.DataSource;
 @EnableRetry
 @EnableTransactionManagement
 @EnableCaching
+@EnableScheduling
 public class WorkspaceDataServiceApplication {
 
 	@Bean

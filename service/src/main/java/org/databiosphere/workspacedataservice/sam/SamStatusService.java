@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 /**
@@ -25,16 +24,16 @@ public class SamStatusService extends AbstractHealthIndicator {
     }
 
     @Override
-    @Cacheable("samStatus")
-    public void doHealthCheck(Health.Builder builder) throws Exception {
+    public void doHealthCheck(Health.Builder builder) {
+        // we don't want a problem with the Sam connection to take WDS down entirely. So,
+        // we always call builder.up() here, but we include the actual Sam status in the builder detail.
+        builder.up();
 
-        SystemStatus samStatus = samDao.getSystemStatus();
-
-        if(samStatus.getOk()) {
-            builder.up();
-        } else {
-            builder.down();
-            LOGGER.warn("The SAM instance that WDS is requesting is currently down. Details: {}", samStatus);
+        try {
+            SystemStatus samStatus = samDao.getSystemStatus();
+            builder.withDetail("ok", samStatus.getOk());
+        } catch (Exception e) {
+            builder.withDetail("connectionError", e.getMessage());
         }
     }
 
