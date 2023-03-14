@@ -9,7 +9,9 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.stereotype.Service;
 
 /**
-* EDIT THIS
+* Service that performs health checks on microservices that WDS relies on (such as SAM)
+ *
+ * See here for more details how we handle health checks in WDS: https://www.baeldung.com/spring-boot-health-indicators
  */
 @Service
 public class StatusService extends AbstractHealthIndicator {
@@ -31,7 +33,7 @@ public class StatusService extends AbstractHealthIndicator {
             builder.up();
         } else {
             builder.down();
-            LOGGER.warn("SAM instance is currently down. Details: {}", samStatus);
+            LOGGER.warn("The SAM instance that WDS is requesting is currently down. Details: {}", samStatus);
         }
     }
 
