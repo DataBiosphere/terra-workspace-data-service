@@ -1,9 +1,8 @@
-package org.databiosphere.workspacedataservice.service;
+package org.databiosphere.workspacedataservice.sam;
 
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
-import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -14,17 +13,16 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-import java.math.BigDecimal;
 import java.util.stream.Stream;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
-class StatusServiceTest {
+class SamStatusServiceTest {
 
     @Autowired
-    private StatusService statusService;
+    private SamStatusService samStatusService;
 
     @MockBean
     SamClientFactory mockSamClientFactory;
@@ -42,7 +40,7 @@ class StatusServiceTest {
         Mockito.clearInvocations(mockHealthBuilder);
     }
 
-    private static Stream<Arguments> provideStatusTestValues() {
+    private static Stream<Arguments> provideSamStatusTestValues() {
         /* Arguments are a boolean, and 2 integers:
 			- first value is a mock for whether SAM returns a healthy status
 			- second value is the expected number of calls that the Health.Builder class should call the function 'up()'.
@@ -55,12 +53,12 @@ class StatusServiceTest {
         );
     }
     @ParameterizedTest(name = "SAM health status is healthy: {0}")
-    @MethodSource("provideStatusTestValues")
+    @MethodSource("provideSamStatusTestValues")
     void checkStatusSamHealthCalls(boolean isOk, int upCalls, int downCalls) throws Exception {
         SystemStatus status = new SystemStatus();
         status.ok(isOk);
         when(mockStatusApi.getSystemStatus()).thenReturn(status);
-        statusService.doHealthCheck(mockHealthBuilder);
+        samStatusService.doHealthCheck(mockHealthBuilder);
         verify(mockHealthBuilder, times(upCalls)).up();
         verify(mockHealthBuilder, times(downCalls)).down();
         verify(mockStatusApi, times(1)).getSystemStatus();

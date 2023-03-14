@@ -868,6 +868,8 @@ components:
           $ref: '#/components/schemas/components'
         groups:
           type: string
+        samStatusService:
+          type: string
     build:
       type: object
       properties:
@@ -905,6 +907,8 @@ components:
          diskSpace:
            $ref: '#/components/schemas/component'
          ping:
+           $ref: '#/components/schemas/component'
+         samStatusService:
            $ref: '#/components/schemas/component'
     component:
       type: object

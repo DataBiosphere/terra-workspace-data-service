@@ -1,7 +1,6 @@
-package org.databiosphere.workspacedataservice.service;
+package org.databiosphere.workspacedataservice.sam;
 
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
-import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
@@ -14,13 +13,13 @@ import org.springframework.stereotype.Service;
  * See here for more details how we handle health checks in WDS: https://www.baeldung.com/spring-boot-health-indicators
  */
 @Service
-public class StatusService extends AbstractHealthIndicator {
+public class SamStatusService extends AbstractHealthIndicator {
 
     private final SamDao samDao;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(StatusService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SamStatusService.class);
 
-    public StatusService(SamDao samDao) {
+    public SamStatusService(SamDao samDao) {
         this.samDao = samDao;
     }
 
