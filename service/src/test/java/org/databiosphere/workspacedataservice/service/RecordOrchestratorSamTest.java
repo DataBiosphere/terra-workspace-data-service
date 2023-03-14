@@ -35,7 +35,7 @@ import static org.mockito.BDDMockito.given;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class RecordOrchestratorSamTest {
+class RecordOrchestratorSamTest {
 
     @Autowired
     private RecordDao recordDao;
@@ -135,8 +135,9 @@ public class RecordOrchestratorSamTest {
 
         //attempt to upsert a record
         RecordRequest req = new RecordRequest(RecordAttributes.empty().putAttribute(TEST_KEY, TEST_VAL));
+        Optional<String> primary = Optional.empty();
         assertThrows(AuthorizationException.class,
-                () -> recordOrchestratorService.upsertSingleRecord(INSTANCE, VERSION, upsertTest, RECORD_ID, Optional.empty(), req),
+                () -> recordOrchestratorService.upsertSingleRecord(INSTANCE, VERSION, upsertTest, RECORD_ID, primary, req),
                 "upsertSingleRecord should throw if caller does not have write permission in Sam"
         );
 
@@ -273,8 +274,9 @@ public class RecordOrchestratorSamTest {
         MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
                 ("col_1\tcol_2\t" + PRIMARY_KEY + "\n" + "Fido\tJerry\t" + RECORD_ID + "\n").getBytes());
         RecordType tsvTest = RecordType.valueOf("tsv_test");
+        Optional<String> primary = Optional.of(PRIMARY_KEY);
         assertThrows(AuthorizationException.class,
-                () -> recordOrchestratorService.tsvUpload(INSTANCE, VERSION, tsvTest, Optional.of(PRIMARY_KEY), file),
+                () -> recordOrchestratorService.tsvUpload(INSTANCE, VERSION, tsvTest, primary, file),
                 "tsvUpload should throw if caller does not have write permission in Sam"
         );
 
@@ -308,8 +310,9 @@ public class RecordOrchestratorSamTest {
         //attempt to batch upload
         InputStream is = RecordOrchestratorSamTest.class.getResourceAsStream("/batch_write_tsv_data.json");
         RecordType streamTest = RecordType.valueOf("stream_test");
+        Optional<String> primary = Optional.empty();
         assertThrows(AuthorizationException.class,
-                () -> recordOrchestratorService.streamingWrite(INSTANCE, VERSION, streamTest, Optional.empty(), is),
+                () -> recordOrchestratorService.streamingWrite(INSTANCE, VERSION, streamTest, primary, is),
                 "streamingWrite should throw if caller does not have write permission in Sam"
         );
 

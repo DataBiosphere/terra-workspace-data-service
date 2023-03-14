@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
 import bio.terra.common.db.ReadTransaction;
-import bio.terra.common.db.WriteTransaction;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.csv.CSVPrinter;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
@@ -10,12 +9,9 @@ import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.Relation;
-import org.databiosphere.workspacedataservice.service.model.ReservedNames;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
-import org.databiosphere.workspacedataservice.service.model.exception.NewPrimaryKeyException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
@@ -34,7 +30,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,7 +46,6 @@ public class RecordOrchestratorService { // TODO give me a better name
     private static final int MAX_RECORDS = 1_000;
 
     private final RecordDao recordDao;
-    private final DataTypeInferer inferer;
     private final BatchWriteService batchWriteService;
     private final RecordService recordService;
     private final InstanceService instanceService;
@@ -59,14 +53,12 @@ public class RecordOrchestratorService { // TODO give me a better name
     private final SamDao samDao;
 
     public RecordOrchestratorService(RecordDao recordDao,
-                                     DataTypeInferer inferer,
                                      BatchWriteService batchWriteService,
                                      RecordService recordService,
                                      InstanceService instanceService,
                                      ObjectMapper objectMapper,
                                      SamDao samDao) {
         this.recordDao = recordDao;
-        this.inferer = inferer;
         this.batchWriteService = batchWriteService;
         this.recordService = recordService;
         this.instanceService = instanceService;
