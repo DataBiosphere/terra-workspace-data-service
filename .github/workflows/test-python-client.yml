@@ -1,0 +1,43 @@
+name: Test Python client to PyPI
+
+on:
+  pull_request:
+    paths:
+      - 'openapi-docs.yaml'
+
+jobs:
+  build-n-test:
+    name: Build and test WDS Python client
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+      - name: Use Node.js ${{matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18
+      - name: Install openapi-generator-cli
+        run: npm install @openapitools/openapi-generator-cli -g
+      - name: set version to 4.3.1
+        run: openapi-generator-cli version-manager set 4.3.1
+      - name: Generate Python client
+        run: |
+          openapi-generator-cli generate \
+          -i service/src/main/resources/static/swagger/openapi-docs.yaml \
+          -g python \
+          -o wds-client \
+          --additional-properties=projectName=wds-client,packageName=wds_client,packageVersion=1.0.0 \
+          --skip-validate-spec
+      - name: Install pypa/build
+        working-directory: ./wds-client
+        run: >-
+          python -m pip install build --user
+      - name: Run tests
+        run: |
+          pytest terra-workspace-data-service/service/src/test/python/test.py
