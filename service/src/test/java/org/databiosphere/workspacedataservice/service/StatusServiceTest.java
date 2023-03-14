@@ -4,25 +4,24 @@ import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
-import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
+import java.math.BigDecimal;
+import java.util.stream.Stream;
+
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StatusServiceTest {
-
-    @Autowired
-    private SamDao samDao;
 
     @Autowired
     private StatusService statusService;
@@ -32,21 +31,38 @@ class StatusServiceTest {
 
     // mock for the StatusApi class inside the Sam client; since this is not a Spring bean we have to mock it manually
     StatusApi mockStatusApi = Mockito.mock(StatusApi.class);
+    // mock for Health.Builder class that Spring Boot Actuator relies on to determine overall health of an application.
+    Health.Builder mockHealthBuilder = Mockito.mock(Health.Builder.class);
 
     @BeforeEach
     void beforeEach() throws ApiException {
         // return the mock StatusApi from the mock SamClientFactory
         given(mockSamClientFactory.getStatusApi()).willReturn(mockStatusApi);
         Mockito.clearInvocations(mockStatusApi);
+        Mockito.clearInvocations(mockHealthBuilder);
     }
 
-    @Test
-    void checkStatusSamCalls() throws Exception {
+    private static Stream<Arguments> provideStatusTestValues() {
+        /* Arguments are a boolean, and 2 integers:
+			- first value is a mock for whether SAM returns a healthy status
+			- second value is the expected number of calls that the Health.Builder class should call the function 'up()'.
+            - third value is the expected number of calls that the Health.Builder class should call the function 'down()'.
+		 */
+
+        return Stream.of(
+                Arguments.of(true, 1, 0),
+                Arguments.of(false, 0, 1)
+        );
+    }
+    @ParameterizedTest(name = "SAM health status is healthy: {0}")
+    @MethodSource("provideStatusTestValues")
+    void checkStatusSamHealthCalls(boolean isOk, int upCalls, int downCalls) throws Exception {
         SystemStatus status = new SystemStatus();
-        status.ok(true);
+        status.ok(isOk);
         when(mockStatusApi.getSystemStatus()).thenReturn(status);
-        Health.Builder builder = new Health.Builder();
-        statusService.doHealthCheck(builder);
+        statusService.doHealthCheck(mockHealthBuilder);
+        verify(mockHealthBuilder, times(upCalls)).up();
+        verify(mockHealthBuilder, times(downCalls)).down();
         verify(mockStatusApi, times(1)).getSystemStatus();
     }
 }
