@@ -44,4 +44,4 @@ jobs:
       - name: Run tests
         run: |
             pip install pytest
-            pytest terra-workspace-data-service/service/src/test/python/test.py
+            pytest service/src/test/python/test.py
