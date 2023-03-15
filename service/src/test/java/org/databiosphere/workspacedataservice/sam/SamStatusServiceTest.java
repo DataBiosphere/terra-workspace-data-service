@@ -64,6 +64,7 @@ class SamStatusServiceTest {
     public void testSamUnhealthyCall() throws Exception {
         when(mockStatusApi.getSystemStatus()).thenThrow(new MockitoException("Hey SAM is down!"));
         samStatusService.doHealthCheck(mockHealthBuilder);
+        verify(mockHealthBuilder, times(1)).withDetail("status", "DOWN");
         verify(mockHealthBuilder, times(1)).withDetail("connectionError", "500 INTERNAL_SERVER_ERROR \"Error from Sam: Hey SAM is down!\"");
     }
 }
