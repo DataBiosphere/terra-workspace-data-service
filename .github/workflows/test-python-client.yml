@@ -1,4 +1,4 @@
-name: Test Python client to PyPI
+name: Test Python client
 
 on:
   push:
@@ -37,10 +37,10 @@ jobs:
           -o wds-client \
           --additional-properties=projectName=wds-client,packageName=wds_client,packageVersion=1.0.0 \
           --skip-validate-spec
-      - name: Install pypa/build
+      - name: Install python package locally
         working-directory: ./wds-client
-        run: >-
-          python -m pip install build --user
+        run: |
+          pip install .
       - name: Run tests
         run: |
             pip install pytest
