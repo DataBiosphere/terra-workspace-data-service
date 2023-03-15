@@ -33,6 +33,7 @@ public class SamStatusService extends AbstractHealthIndicator {
             SystemStatus samStatus = samDao.getSystemStatus();
             builder.withDetail("ok", samStatus.getOk());
         } catch (Exception e) {
+            builder.down();
             builder.withDetail("connectionError", e.getMessage());
         }
     }
