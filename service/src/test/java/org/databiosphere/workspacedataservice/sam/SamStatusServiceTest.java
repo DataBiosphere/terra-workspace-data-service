@@ -6,12 +6,13 @@ import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.mockito.exceptions.base.MockitoException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-
-import java.util.stream.Stream;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -20,7 +21,13 @@ import static org.mockito.Mockito.*;
 class SamStatusServiceTest {
 
     @Autowired
+    private CacheManager cacheManager;
+
+    @Autowired
     private SamStatusService samStatusService;
+
+    @MockBean
+    HttpSamDao httpSamDao;
 
     @MockBean
     SamClientFactory mockSamClientFactory;
@@ -32,6 +39,10 @@ class SamStatusServiceTest {
 
     @BeforeEach
     void beforeEach() throws ApiException {
+        Cache samCache = cacheManager.getCache("samStatus");
+        Cache.ValueWrapper valueWrapper = samCache.get("getSystemStatus");
+        samCache.clear();
+
         // return the mock StatusApi from the mock SamClientFactory
         given(mockSamClientFactory.getStatusApi()).willReturn(mockStatusApi);
         Mockito.clearInvocations(mockStatusApi);
@@ -47,5 +58,12 @@ class SamStatusServiceTest {
         samStatusService.doHealthCheck(mockHealthBuilder);
         verify(mockHealthBuilder, times(1)).withDetail("ok", true);
         verify(mockStatusApi, times(1)).getSystemStatus();
+    }
+
+    @Test
+    public void testSamUnhealthyCall() throws Exception {
+        when(mockStatusApi.getSystemStatus()).thenThrow(new MockitoException("Hey SAM is down!"));
+        samStatusService.doHealthCheck(mockHealthBuilder);
+        verify(mockHealthBuilder, times(1)).withDetail("connectionError", "500 INTERNAL_SERVER_ERROR \"Error from Sam: Hey SAM is down!\"");
     }
 }

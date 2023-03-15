@@ -100,7 +100,7 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
      * Gets the System Status of Sam. Using @Cacheable, will reach out to Sam no more than once every 5 minutes.
      * See also emptySamStatusCache()
      */
-    @Cacheable(value = "samStatus")
+    @Cacheable(value = "samStatus", key="'getSystemStatus'")
     public SystemStatus getSystemStatus() {
         SamFunction<SystemStatus> samFunction = () -> samClientFactory.getStatusApi().getSystemStatus();
         return withSamErrorHandling(samFunction, "getSystemStatus");
