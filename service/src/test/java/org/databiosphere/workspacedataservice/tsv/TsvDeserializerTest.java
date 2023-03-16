@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.BigIntegerNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import org.databiosphere.workspacedataservice.service.DataTypeInfererConfig;
+import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -22,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @see TsvJsonArgumentsProvider
  */
-@SpringBootTest
+@SpringBootTest(classes = {DataTypeInfererConfig.class, JsonConfig.class, TsvConfig.class})
 class TsvDeserializerTest {
 
     @Autowired
