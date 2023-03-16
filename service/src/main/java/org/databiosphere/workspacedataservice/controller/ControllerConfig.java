@@ -20,6 +20,7 @@ public class ControllerConfig {
      * To do so, activate the "local" Spring profile by setting spring.profiles.active=local in
      * application.properties (or other Spring techniques for activating a profile)
      */
+    @SuppressWarnings("squid:S2077") // we explicitly want to allow * for origins
     @Bean
     @Profile("local")
     public WebMvcConfigurer corsConfigurer() {
