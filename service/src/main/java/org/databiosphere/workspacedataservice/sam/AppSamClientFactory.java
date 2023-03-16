@@ -4,6 +4,8 @@ import com.azure.core.credential.AccessToken;
 import com.azure.core.credential.TokenRequestContext;
 import com.azure.identity.DefaultAzureCredential;
 import com.azure.identity.DefaultAzureCredentialBuilder;
+import com.azure.identity.ManagedIdentityCredential;
+import com.azure.identity.ManagedIdentityCredentialBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.broadinstitute.dsde.workbench.client.sam.ApiClient;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
@@ -17,7 +19,7 @@ public class AppSamClientFactory implements SamClientFactory {
 
     private final String samUrl;
     //TODO where is this coming from
-    private final String clientId = "managed_identity_id";
+    private final String clientId = "<clientId>";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpSamClientFactory.class);
 
@@ -34,12 +36,12 @@ public class AppSamClientFactory implements SamClientFactory {
             apiClient.setBasePath(samUrl);
         }
         // get an azure managed identy token
-        Mono<AccessToken> token = getAzureCredential(clientId);
-        LOGGER.debug("token: " + token.toString());
+        String token = getAzureCredential(clientId);
+
         // add the user's bearer token to the client
         if (!Objects.isNull(token)) {
             LOGGER.debug("setting access token for Sam request");
-            apiClient.setAccessToken(token.toString());
+            apiClient.setAccessToken(token);
         } else {
             LOGGER.warn("No access token found for Sam request.");
         }
@@ -62,19 +64,13 @@ public class AppSamClientFactory implements SamClientFactory {
     /**
      * The default credential will use the user assigned managed identity with the specified client ID.
      */
-    public Mono<AccessToken> getAzureCredential(String clientId) {
-        DefaultAzureCredential defaultCredential = new DefaultAzureCredentialBuilder()
-                .managedIdentityClientId(clientId)
+    public String getAzureCredential(String clientId) {
+        ManagedIdentityCredential defaultCredential = new ManagedIdentityCredentialBuilder()
+                .clientId(clientId)
                 .build();
 
-        TokenRequestContext requestContext = new TokenRequestContext();
+        TokenRequestContext requestContext = new TokenRequestContext().addScopes("https://management.azure.com/.default");
         Mono<AccessToken> token = defaultCredential.getToken(requestContext);
-        return token;
-
-        // Azure SDK client builders accept the credential as a parameter
-//        SecretClient client = new SecretClientBuilder()
-//                .vaultUrl("https://{YOUR_VAULT_NAME}.vault.azure.net")
-//                .credential(defaultCredential)
-//                .buildClient();
+        return token.block().getToken();
     }
 }
