@@ -4,7 +4,11 @@ import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
+import org.databiosphere.workspacedataservice.sam.HttpSamDao;
+import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
+import org.databiosphere.workspacedataservice.sam.SamConfig;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +19,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -25,15 +30,15 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
+@ActiveProfiles(profiles = "mock-instance-dao")
+@SpringBootTest(classes = { MockInstanceDaoConfig.class, SamConfig.class })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InstanceServiceSamTest {
 
-    @Autowired
     private InstanceService instanceService;
 
-    @Autowired
-    private InstanceDao instanceDao;
+    @Autowired private InstanceDao instanceDao;
+    @Autowired private SamDao samDao;
 
     // mock for the SamClientFactory; since this is a Spring bean we can use @MockBean
     @MockBean
@@ -44,6 +49,8 @@ class InstanceServiceSamTest {
 
     @BeforeEach
     void beforeEach() throws ApiException {
+        instanceService = new InstanceService(instanceDao, samDao);
+
         // return the mock ResourcesApi from the mock SamClientFactory
         given(mockSamClientFactory.getResourcesApi())
                 .willReturn(mockResourcesApi);

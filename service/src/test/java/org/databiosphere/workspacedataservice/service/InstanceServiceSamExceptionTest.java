@@ -4,7 +4,10 @@ import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
+import org.databiosphere.workspacedataservice.sam.HttpSamDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
+import org.databiosphere.workspacedataservice.sam.SamConfig;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
@@ -20,6 +23,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -47,15 +51,15 @@ import static org.mockito.BDDMockito.willThrow;
  *      - if Sam returns some other exception such as NullPointerException, they should throw a SamException
  *          with a 500 error code.
  */
-@SpringBootTest
+@ActiveProfiles(profiles = "mock-instance-dao")
+@SpringBootTest(classes = { MockInstanceDaoConfig.class, SamConfig.class })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InstanceServiceSamExceptionTest {
 
-    @Autowired
     private InstanceService instanceService;
 
-    @Autowired
-    private InstanceDao instanceDao;
+    @Autowired private InstanceDao instanceDao;
+    @Autowired private SamDao samDao;
 
     // mock for the SamClientFactory; since this is a Spring bean we can use @MockBean
     @MockBean
@@ -66,6 +70,8 @@ class InstanceServiceSamExceptionTest {
 
     @BeforeEach
     void beforeEach() {
+        instanceService = new InstanceService(instanceDao, samDao);
+
         // return the mock ResourcesApi from the mock SamClientFactory
         given(mockSamClientFactory.getResourcesApi())
                 .willReturn(mockResourcesApi);

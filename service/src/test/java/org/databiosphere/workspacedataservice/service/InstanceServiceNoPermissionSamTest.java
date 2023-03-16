@@ -3,14 +3,19 @@ package org.databiosphere.workspacedataservice.service;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
+import org.databiosphere.workspacedataservice.sam.SamConfig;
+import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,15 +26,15 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
-@SpringBootTest
+@ActiveProfiles(profiles = "mock-instance-dao")
+@SpringBootTest(classes = { MockInstanceDaoConfig.class, SamConfig.class })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InstanceServiceNoPermissionSamTest {
 
-    @Autowired
     private InstanceService instanceService;
 
-    @Autowired
-    private InstanceDao instanceDao;
+    @Autowired private InstanceDao instanceDao;
+    @Autowired private SamDao samDao;
 
     // mock for the SamClientFactory; since this is a Spring bean we can use @MockBean
     @MockBean
@@ -37,6 +42,11 @@ class InstanceServiceNoPermissionSamTest {
 
     // mock for the ResourcesApi class inside the Sam client; since this is not a Spring bean we have to mock it manually
     ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
+
+    @BeforeEach
+    void beforeEach() {
+        instanceService = new InstanceService(instanceDao, samDao);
+    }
 
     @Test
     void testCreateInstanceNoPermission() throws ApiException {

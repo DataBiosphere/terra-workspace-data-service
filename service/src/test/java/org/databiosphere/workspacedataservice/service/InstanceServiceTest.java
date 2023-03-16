@@ -1,6 +1,10 @@
 package org.databiosphere.workspacedataservice.service;
 
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
+import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
+import org.databiosphere.workspacedataservice.sam.SamConfig;
+import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,18 +20,20 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@ActiveProfiles(profiles = "mock-sam")
-@SpringBootTest
+@ActiveProfiles(profiles = { "mock-sam", "mock-instance-dao" })
+@SpringBootTest(classes = { MockInstanceDaoConfig.class, SamConfig.class, MockSamClientFactoryConfig.class })
 class InstanceServiceTest {
 
-    @Autowired private InstanceService instanceService;
+    private InstanceService instanceService;
     @Autowired private InstanceDao instanceDao;
+    @Autowired private SamDao samDao;
 
 
     private static final UUID INSTANCE = UUID.fromString("111e9999-e89b-12d3-a456-426614174000");
 
     @BeforeEach
     void setUp() {
+        instanceService = new InstanceService(instanceDao, samDao);
         // Delete all instances
         instanceDao.listInstanceSchemas().forEach(instance -> {
             instanceDao.dropSchema(instance);
