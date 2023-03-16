@@ -27,7 +27,7 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(classes = DataSourceConfig.class)
+@SpringBootTest
 class RecordOrchestratorServiceTest {
 
     @Autowired private RecordDao recordDao;
