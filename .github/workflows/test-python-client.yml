@@ -77,5 +77,6 @@ jobs:
         run: |
             ./gradlew --build-cache build -x test
             ./gradlew bootRun &
+            sleep 5
             pip install pytest
             pytest service/src/test/python/test.py
