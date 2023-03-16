@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.shared.model.OperationType.DELETE;
 import static org.databiosphere.workspacedataservice.shared.model.OperationType.UPSERT;
 
-@SpringBootTest
+@SpringBootTest(classes = JsonConfig.class)
 class StreamingTest {
 
 	@Autowired

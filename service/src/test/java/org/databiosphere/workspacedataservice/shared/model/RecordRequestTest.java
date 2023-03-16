@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.shared.model;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@SpringBootTest
+@SpringBootTest(classes = JsonConfig.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class RecordRequestTest {
 

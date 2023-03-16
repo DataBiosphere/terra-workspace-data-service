@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import org.databiosphere.workspacedataservice.dao.DataSourceConfig;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -26,7 +27,7 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+@SpringBootTest(classes = DataSourceConfig.class)
 class RecordOrchestratorServiceTest {
 
     @Autowired private RecordDao recordDao;
