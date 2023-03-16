@@ -53,4 +53,11 @@ public interface SamDao {
      */
     void deleteInstanceResource(UUID instanceId);
 
+    /**
+     * Checks whether a "wds-instance" Sam resource already exists
+     * @param instanceId wds-instance resource id
+     * @return true if wds-resource with this id already exists in Sam
+     */
+    boolean instanceResourceExists(UUID instanceId);
+
 }

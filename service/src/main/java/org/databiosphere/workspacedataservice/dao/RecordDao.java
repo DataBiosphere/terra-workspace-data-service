@@ -93,10 +93,10 @@ public class RecordDao {
 		this.objectMapper = objectMapper;
 		this.cachedQueryDao = cachedQueryDao;
 
-		createDefaultInstanceSchema(workspaceId);
+//		createDefaultInstanceSchema(workspaceId);
 	}
 
-	private void createDefaultInstanceSchema(String workspaceId) {
+	public void createDefaultInstanceSchema(String workspaceId) {
 		LOGGER.info("Default workspace id loaded as {}", workspaceId);
 
 		// TODO: AJ-897 execute this as the WDS managed identity so it can call Sam

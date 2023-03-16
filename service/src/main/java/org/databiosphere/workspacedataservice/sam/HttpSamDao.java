@@ -2,8 +2,10 @@ package org.databiosphere.workspacedataservice.sam;
 
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
 import org.broadinstitute.dsde.workbench.client.sam.model.FullyQualifiedResourceId;
+import org.broadinstitute.dsde.workbench.client.sam.model.UserResourcesResponse;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -13,11 +15,10 @@ import java.util.UUID;
  */
 public class HttpSamDao extends HttpSamClientSupport implements SamDao {
 
-    private final SamClientFactory samClientFactory;
+    protected final SamClientFactory samClientFactory;
 
     public HttpSamDao(SamClientFactory samClientFactory) {
         this.samClientFactory = samClientFactory;
-
     }
 
     /**
@@ -86,6 +87,15 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
         VoidSamFunction samFunction = () -> samClientFactory.getResourcesApi().deleteResourceV2(RESOURCE_NAME_INSTANCE, instanceId.toString());
         withSamErrorHandling(samFunction, "deleteInstanceResource");
     }
+    @Override
+    public boolean instanceResourceExists(UUID instanceId){
+        SamFunction<List<UserResourcesResponse>> samFunction = () -> samClientFactory.getResourcesApi()
+                .listResourcesAndPoliciesV2(RESOURCE_NAME_INSTANCE);
+        List<UserResourcesResponse> resources = withSamErrorHandling(samFunction, "instanceResourceExists");
+        return resources.stream().filter(resource -> resource.getResourceId().equals(instanceId.toString())).count() > 0;
+    }
+
+
 
 
 }
