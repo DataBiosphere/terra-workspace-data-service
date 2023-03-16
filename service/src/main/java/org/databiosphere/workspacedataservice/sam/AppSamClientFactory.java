@@ -11,6 +11,7 @@ import org.broadinstitute.dsde.workbench.client.sam.ApiClient;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Mono;
 
 import java.util.Objects;
@@ -18,8 +19,9 @@ import java.util.Objects;
 public class AppSamClientFactory implements SamClientFactory {
 
     private final String samUrl;
-    //TODO where is this coming from
-    private final String clientId = "<clientId>";
+    //TODO what to do for local development
+    @Value("${CLIENT_ID:}")
+    private String clientId;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpSamClientFactory.class);
 

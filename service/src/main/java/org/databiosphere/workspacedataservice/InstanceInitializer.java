@@ -38,9 +38,7 @@ public class InstanceInitializer implements
             LOGGER.info("wds-resource does not exist yet");
             samDao.createInstanceResource(instanceId, instanceId);
         }
-
         recordDao.createDefaultInstanceSchema(instanceId.toString());
-
     }
 
 }
