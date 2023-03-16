@@ -73,12 +73,9 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: Run WDS service
+      - name: Run WDS service and tests
         run: |
             ./gradlew --build-cache build -x test
             ./gradlew bootRun &
-      
-      - name: Run tests
-        run: |
             pip install pytest
             pytest service/src/test/python/test.py
