@@ -3,7 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
-import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,12 +16,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -34,7 +33,7 @@ class InstanceServiceSamTest {
     private InstanceService instanceService;
 
     @Autowired
-    private RecordDao recordDao;
+    private InstanceDao instanceDao;
 
     // mock for the SamClientFactory; since this is a Spring bean we can use @MockBean
     @MockBean
@@ -113,7 +112,7 @@ class InstanceServiceSamTest {
         InOrder callOrder = inOrder(mockResourcesApi);
 
         // bypass Sam and create the instance directly in the db
-        recordDao.createSchema(instanceId);
+        instanceDao.createSchema(instanceId);
 
         // call deleteInstance
         instanceService.deleteInstance(instanceId, VERSION);

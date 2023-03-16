@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,14 +13,15 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ActiveProfiles(profiles = "mock-sam")
 @SpringBootTest
 class InstanceServiceTest {
 
     @Autowired private InstanceService instanceService;
-    @Autowired private RecordDao recordDao;
+    @Autowired private InstanceDao instanceDao;
 
 
     private static final UUID INSTANCE = UUID.fromString("111e9999-e89b-12d3-a456-426614174000");
@@ -28,8 +29,8 @@ class InstanceServiceTest {
     @BeforeEach
     void setUp() {
         // Delete all instances
-        recordDao.listInstanceSchemas().forEach(instance -> {
-            recordDao.dropSchema(instance);
+        instanceDao.listInstanceSchemas().forEach(instance -> {
+            instanceDao.dropSchema(instance);
         });
     }
 
