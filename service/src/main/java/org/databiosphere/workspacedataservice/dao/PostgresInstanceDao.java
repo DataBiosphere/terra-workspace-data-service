@@ -48,6 +48,7 @@ public class PostgresInstanceDao implements InstanceDao {
     }
 
     @Override
+    @SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
     public void createSchema(UUID instanceId) {
         namedTemplate.getJdbcTemplate().update("create schema " + quote(instanceId.toString()));
     }
