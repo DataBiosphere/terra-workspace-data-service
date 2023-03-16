@@ -8,6 +8,8 @@ import java.math.BigInteger;
 import java.util.*;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
+import org.databiosphere.workspacedataservice.service.DataTypeInfererConfig;
+import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -17,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+ @SpringBootTest(classes = {JsonConfig.class, DataTypeInfererConfig.class})
 class DataTypeInfererTest {
 
 	@Autowired

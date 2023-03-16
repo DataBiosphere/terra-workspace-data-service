@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.shared.model;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -16,7 +17,7 @@ import java.util.Map;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+@SpringBootTest(classes = JsonConfig.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordTest {
 

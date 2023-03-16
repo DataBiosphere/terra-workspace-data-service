@@ -3,6 +3,8 @@ package org.databiosphere.workspacedataservice.tsv;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.databiosphere.workspacedataservice.service.DataTypeInfererConfig;
+import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @see TsvJsonArgumentsProvider
  */
-@SpringBootTest
+@SpringBootTest(classes = {DataTypeInfererConfig.class, JsonConfig.class, TsvConfig.class})
 class TsvJsonEquivalenceTest {
 
     @Autowired
