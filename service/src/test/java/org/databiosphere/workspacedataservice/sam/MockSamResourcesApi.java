@@ -2,6 +2,10 @@ package org.databiosphere.workspacedataservice.sam;
 
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
+import org.broadinstitute.dsde.workbench.client.sam.model.UserResourcesResponse;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Mock for the Sam Client ResourcesApi for use in unit tests.
@@ -23,5 +27,10 @@ public class MockSamResourcesApi extends ResourcesApi {
     @Override
     public void deleteResourceV2(String resourceTypeName, String resourceId) {
         // noop; returns void
+    }
+
+    @Override
+    public List<UserResourcesResponse> listResourcesAndPoliciesV2(String resourceTypeName) {
+        return new ArrayList<>();
     }
 }

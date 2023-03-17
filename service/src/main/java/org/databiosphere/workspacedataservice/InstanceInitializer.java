@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 import java.util.UUID;
 
 @Component
-@Profile("!local")
+@Profile("!local, !mock-sam")
 public class InstanceInitializer implements
         ApplicationListener<ContextRefreshedEvent> {
 
@@ -43,11 +43,11 @@ public class InstanceInitializer implements
             UUID instanceId = UUID.fromString(workspaceId);
             // create `wds-instance` resource in Sam if it doesn't exist
             //TODO how to have this not fail locally and during tests
-//            if (!samDao.instanceResourceExists(instanceId)){
-//                LOGGER.info("Creating wds-resource for workspaceId {}", workspaceId);
-//                //TODO what should the parent id be?
-//                samDao.createInstanceResource(instanceId, instanceId);
-//            }
+            if (!samDao.instanceResourceExists(instanceId)){
+                LOGGER.info("Creating wds-resource for workspaceId {}", workspaceId);
+                //TODO what should the parent id be?
+                samDao.createInstanceResource(instanceId, instanceId);
+            }
             if (!instanceDao.instanceSchemaExists(instanceId)) {
                 instanceDao.createSchema(instanceId);
                 LOGGER.info("Creating default schema id succeeded for workspaceId {}", workspaceId);

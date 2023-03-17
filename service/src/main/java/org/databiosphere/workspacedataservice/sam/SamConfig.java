@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 
 /**
  * Bean creator for:
@@ -21,7 +22,6 @@ public class SamConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(SamConfig.class);
 
     @Bean
-//    @Primary
     public SamClientFactory getSamClientFactory() {
         // TODO: AJ-898 what validation of the sam url should we do here?
         // - none
@@ -43,7 +43,8 @@ public class SamConfig {
     }
 
     @Bean("AppSamDao")
-    public SamDao appSamDao(SamClientFactory samClientFactory) {
+    @Profile("!mock-sam")
+    public SamDao appSamDao() {
         return new HttpSamDao(new AppSamClientFactory(samUrl));
     }
 

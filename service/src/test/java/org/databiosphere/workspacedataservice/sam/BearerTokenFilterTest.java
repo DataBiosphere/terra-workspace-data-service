@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.context.request.RequestContextHolder;
 
 import java.util.stream.Stream;
@@ -23,6 +24,7 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
  * Tests for @see BearerTokenFilter
  */
 @SpringBootTest
+@ActiveProfiles("mock-sam") //this is to prevent test failures from InstanceInitializer.  Should we have a separate test profile instead?
 class BearerTokenFilterTest {
 
     private static Stream<Arguments> provideAuthorizationHeaders() {

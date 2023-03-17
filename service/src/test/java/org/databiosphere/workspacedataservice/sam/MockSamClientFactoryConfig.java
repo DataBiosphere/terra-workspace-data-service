@@ -28,4 +28,10 @@ public class MockSamClientFactoryConfig {
     public SamClientFactory getMockSamClientFactory() {
         return new MockSamClientFactory();
     }
+
+    @Bean("AppSamDao")
+    @Profile("mock-sam")
+    public SamDao getMockSamDao(SamClientFactory samClientFactory) {
+            return new HttpSamDao(samClientFactory);
+    }
 }
