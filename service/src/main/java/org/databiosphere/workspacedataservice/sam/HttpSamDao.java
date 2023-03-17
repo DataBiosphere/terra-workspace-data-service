@@ -12,7 +12,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 
 import java.util.Collections;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Implementation of SamDao that accepts a SamClientFactory,
