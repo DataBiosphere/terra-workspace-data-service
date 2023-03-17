@@ -33,8 +33,7 @@ public class SamStatusService extends AbstractHealthIndicator {
             SystemStatus samStatus = samDao.getSystemStatus();
             builder.withDetail("ok", samStatus.getOk());
         } catch (Exception e) {
-            // SAM "status" will still return "UP"; however, details.status should be evaluated instead to determine the health of Sam
-            builder.withDetail("status", "DOWN");
+            builder.down();
             builder.withDetail("connectionError", e.getMessage());
         }
     }
