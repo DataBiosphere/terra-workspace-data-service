@@ -15,7 +15,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.util.AopTestUtils;
 
-import java.util.Collections;
 import java.util.UUID;
 
 import static org.mockito.Mockito.*;

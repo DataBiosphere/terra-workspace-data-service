@@ -25,20 +25,12 @@ public class SamStatusService extends AbstractHealthIndicator {
 
     @Override
     public void doHealthCheck(Health.Builder builder) {
-        // we don't want a problem with the Sam connection to take WDS down entirely. So,
-        // we always call builder.up() here, but we include the actual Sam status in the builder detail.
-        builder.up();
-
-        try {
-            SystemStatus samStatus = samDao.getSystemStatus();
-            if (samStatus.getOk()) {
-                builder.up();
-            } else {
-                builder.down();
-            }
-        } catch (Exception e) {
-            builder.down();
+        SystemStatus samStatus = samDao.getSystemStatus();
+        if (samStatus.getOk()) {
+            builder.up();
+        } else {
             builder.withDetail("connectionError", e.getMessage());
+            builder.down();
         }
     }
 
