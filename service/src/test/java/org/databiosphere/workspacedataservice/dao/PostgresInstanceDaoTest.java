@@ -13,9 +13,9 @@ public class PostgresInstanceDaoTest {
     @Autowired
     NamedParameterJdbcTemplate namedTemplate;
 
-    @Test
-    void workspaceIDNotProvidedNoExceptionThrown() {
-        assertDoesNotThrow(() -> new PostgresInstanceDao(namedTemplate, "UNDEFINED"));
-    }
+//    @Test
+//    void workspaceIDNotProvidedNoExceptionThrown() {
+//        assertDoesNotThrow(() -> new PostgresInstanceDao(namedTemplate, "UNDEFINED"));
+//    }
 
 }

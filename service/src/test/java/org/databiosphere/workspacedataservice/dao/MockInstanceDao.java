@@ -53,8 +53,4 @@ public class MockInstanceDao implements InstanceDao {
         instances.remove(instanceId);
     }
 
-    @Override
-    public void createDefaultInstanceSchema(String workspaceId){
-        createSchema(UUID.fromString(workspaceId));
-    }
 }
