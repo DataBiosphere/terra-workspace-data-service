@@ -12,16 +12,12 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.cache.type=NONE")
 class SamStatusServiceTest {
-
-    @Autowired
-    private CacheManager cacheManager;
 
     @Autowired
     private SamStatusService samStatusService;
@@ -39,10 +35,6 @@ class SamStatusServiceTest {
 
     @BeforeEach
     void beforeEach() throws ApiException {
-        Cache samCache = cacheManager.getCache("samStatus");
-        Cache.ValueWrapper valueWrapper = samCache.get("getSystemStatus");
-        samCache.clear();
-
         // return the mock StatusApi from the mock SamClientFactory
         given(mockSamClientFactory.getStatusApi()).willReturn(mockStatusApi);
         Mockito.clearInvocations(mockStatusApi);
