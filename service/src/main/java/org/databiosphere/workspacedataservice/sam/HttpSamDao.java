@@ -110,7 +110,7 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
      * Clears the samStatus cache every 5 minutes, to ensure we get fresh results from Sam
      * every so often. See also getSystemStatus()
      */
-    @CacheEvict(value = "samStatus", allEntries = true)
+    @CacheEvict(value = "samStatus", key="'getSystemStatus'")
     @Scheduled(fixedRate = 5, timeUnit = TimeUnit.MINUTES)
     public void emptySamStatusCache() {
         LOGGER.debug("emptying samStatus cache");

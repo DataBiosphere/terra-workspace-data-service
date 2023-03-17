@@ -48,7 +48,6 @@ class SamStatusServiceTest {
         status.ok(true);
         when(mockStatusApi.getSystemStatus()).thenReturn(status);
         samStatusService.doHealthCheck(mockHealthBuilder);
-        verify(mockHealthBuilder, times(1)).withDetail("ok", true);
         verify(mockStatusApi, times(1)).getSystemStatus();
     }
 
