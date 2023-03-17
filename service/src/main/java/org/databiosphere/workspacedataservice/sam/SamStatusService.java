@@ -29,7 +29,6 @@ public class SamStatusService extends AbstractHealthIndicator {
         if (samStatus.getOk()) {
             builder.up();
         } else {
-            builder.withDetail("connectionError", e.getMessage());
             builder.down();
         }
     }

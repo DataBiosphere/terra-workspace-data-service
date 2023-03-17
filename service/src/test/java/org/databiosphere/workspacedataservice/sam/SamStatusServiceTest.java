@@ -4,9 +4,10 @@ import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
-import org.mockito.exceptions.base.MockitoException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,20 +41,13 @@ class SamStatusServiceTest {
         Mockito.clearInvocations(mockHealthBuilder);
     }
 
-    @Test
-    void testSamHealthyCall() throws Exception {
+    @ParameterizedTest(name = "SAM Status to successfully invoke builder when {0}")
+    @ValueSource(booleans = {false, true})
+    void testSamHealthCall(boolean isHealthy) throws Exception {
         SystemStatus status = new SystemStatus();
-
-        status.ok(true);
+        status.ok(isHealthy);
         when(mockStatusApi.getSystemStatus()).thenReturn(status);
         samStatusService.doHealthCheck(mockHealthBuilder);
         verify(mockStatusApi, times(1)).getSystemStatus();
-    }
-
-    @Test
-    public void testSamUnhealthyCall() throws Exception {
-        when(mockStatusApi.getSystemStatus()).thenThrow(new MockitoException("Hey SAM is down!"));
-        samStatusService.doHealthCheck(mockHealthBuilder);
-        verify(mockHealthBuilder, times(1)).withDetail("connectionError", "500 INTERNAL_SERVER_ERROR \"Error from Sam: Hey SAM is down!\"");
     }
 }
