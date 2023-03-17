@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice;
 
+import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.slf4j.Logger;
@@ -17,18 +18,18 @@ public class InstanceInitializer implements
         ApplicationListener<ContextRefreshedEvent> {
 
     private final SamDao samDao;
-    private final RecordDao recordDao;
+    private final InstanceDao instanceDao;
 
     @Value("${twds.instance.workspace-id}")
-    private UUID instanceId;
+    private String instanceId;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceInitializer.class);
 
 
 
-    public InstanceInitializer(@Qualifier("AppSamDao") SamDao samDao, RecordDao recordDao){
+    public InstanceInitializer(@Qualifier("AppSamDao") SamDao samDao, InstanceDao instanceDao){
         this.samDao = samDao;
-        this.recordDao = recordDao;
+        this.instanceDao = instanceDao;
     }
 
     @Override
@@ -38,7 +39,7 @@ public class InstanceInitializer implements
             LOGGER.info("wds-resource does not exist yet");
             samDao.createInstanceResource(instanceId, instanceId);
         }
-        recordDao.createDefaultInstanceSchema(instanceId.toString());
+        instanceDao.createDefaultInstanceSchema(instanceId);
     }
 
 }
