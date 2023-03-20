@@ -24,13 +24,19 @@ public class SamStatusService extends AbstractHealthIndicator {
     }
 
     @Override
-    public void doHealthCheck(Health.Builder builder) {
-        SystemStatus samStatus = samDao.getSystemStatus();
-        if (samStatus.getOk()) {
-            builder.up();
-        } else {
+    public void doHealthCheck(Health.Builder builder) throws Exception {
+        try {
+            SystemStatus samStatus = samDao.getSystemStatus();
+            if (samStatus.getOk()) {
+                builder.up();
+            } else {
+                builder.down();
+            }
+        } catch (Exception e) {
             builder.down();
+            builder.withDetail("connectionError", e.getMessage());
         }
+
     }
 
 }
