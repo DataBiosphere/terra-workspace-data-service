@@ -32,14 +32,15 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h 127.0.0.1 -U postgres -f ./local-dev/local-postgres-init.sql
 
-      - name: Install nginx mock sam
-        run: |
-          sudo apt update
-          sudo apt install -y --no-upgrade nginx
+#      - name: Install nginx mock sam
+#        run: |
+#          sudo apt update
+#          sudo apt install -y --no-upgrade nginx
 
       - name: Run nginx mock sam
         run: |
-          nginx -p ${{ github.workspace }}/mock-sam/ -e ${{ github.workspace }}/mock-sam/error-nginx.log -c ${{ github.workspace }}/mock-sam/nginx.conf
+          nginx -help
+#          nginx -p ${{ github.workspace }}/mock-sam/ -e ${{ github.workspace }}/mock-sam/error-nginx.log -c ${{ github.workspace }}/mock-sam/nginx.conf
 
 #      - name: Mock Sam
 #        uses: addnab/docker-run-action@v3
