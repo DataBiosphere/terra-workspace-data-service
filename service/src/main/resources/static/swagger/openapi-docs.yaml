@@ -4,12 +4,7 @@ info:
   title: Workspace Data Service
   version: v0.2
   description: |
-    This page lists both current and proposed APIs. The proposed APIs which have not yet been implemented
-    are marked as deprecated. This is incongruous, but by using the deprecated flag, we can force
-    swagger-ui to display those endpoints differently.
-
-    Error codes and responses for proposed APIs are likely to change as we gain more clarity on their
-    implementation.
+    This page lists current APIs.
 
     As of v0.2, all APIs are subject to change without notice.
   termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
@@ -360,38 +355,6 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-    patch:
-      deprecated: true
-      summary: Update record type (pending)
-      description: |
-        Update record type. All records of the old type will be updated to the new type.
-        This API can be used to rename a record type and/or to perform batch updates to
-        this type's attributes; see also the updateAttribute API.
-        This API cannot be used to delete attributes; use deleteAttribute instead.
-        Returns the updated type definition.
-      operationId: updateRecordType
-      tags:
-        - Schema
-      parameters:
-        - $ref: '#/components/parameters/instanceIdPathParam'
-        - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/recordTypePathParam'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RecordTypeSchema'
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RecordTypeSchema'
-        400:
-          description: Malformed payload; or invalid type name; or invalid attribute name, datatype, or relation target
-        409:
-          description: Target type or attribute name already exists, for a rename operation
     delete:
       summary: Delete record type
       description: Delete record type. All records of this type will be deleted.
@@ -433,75 +396,6 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /{instanceid}/types/{type}/attributes/{v}/{attribute}:
-    get:
-      deprecated: true
-      summary: Describe attribute (pending)
-      description: |
-        Returns the schema definition for this attribute.
-      operationId: describeAttribute
-      tags:
-        - Schema
-      parameters:
-        - $ref: '#/components/parameters/instanceIdPathParam'
-        - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/recordTypePathParam'
-        - $ref: '#/components/parameters/attributePathParam'
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AttributeSchema'
-    patch:
-      deprecated: true
-      summary: Update attribute (pending)
-      description: |
-        Update attribute. All records of the specified type that contain the old attribute will now have the new attribute instead.
-        When changing datatypes, WDS will make a best effort to cast the existing values into the new datatype.
-        Any values that cannot be successfully cast will be changed to null.
-        Returns the updated attribute definition.
-      operationId: updateAttribute
-      tags:
-        - Schema
-      parameters:
-        - $ref: '#/components/parameters/instanceIdPathParam'
-        - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/recordTypePathParam'
-        - $ref: '#/components/parameters/attributePathParam'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AttributeSchema'
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AttributeSchema'
-        400:
-          description: Malformed payload; or invalid name, datatype, or relation target
-        409:
-          description: Target attribute name already exists, for a rename operation
-    delete:
-      deprecated: true
-      summary: Delete attribute (pending)
-      description: |
-        Delete attribute. This deletes all values for this attribute within the specified type.
-      operationId: deleteAttribute
-      tags:
-        - Schema
-      parameters:
-        - $ref: '#/components/parameters/instanceIdPathParam'
-        - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/recordTypePathParam'
-        - $ref: '#/components/parameters/attributePathParam'
-      responses:
-        204:
-          description: Success
 
 components:
   securitySchemes:
