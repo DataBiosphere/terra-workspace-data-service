@@ -49,6 +49,6 @@ jobs:
         run: |
           export SAM_URL=http://localhost:9889
           ./gradlew bootRun &
-          sleep 5
+          sleep 45
           curl -v -X POST http://localhost:8080/instances/v0.2/123e4567-e89b-12d3-a456-426614174000
           curl -v -X DELETE http://localhost:8080/instances/v0.2/123e4567-e89b-12d3-a456-426614174000
