@@ -37,7 +37,7 @@ def generate_record_with_relation(type, id):
     return dict_values
 
 def generate_csv(numRecords, fileName):
-    # columns have to be in alphabetical order since WDS orderes them as such when returned back from get_records_as_tsv call
+    # columns have to be in alphabetical order since WDS orders them as such when returned back from get_records_as_tsv call
     fieldnames=['id','age','city', 'name']
 
     with open(fileName, 'w', newline='') as csvfile:
