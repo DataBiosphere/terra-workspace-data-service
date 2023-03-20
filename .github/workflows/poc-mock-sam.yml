@@ -37,6 +37,7 @@ jobs:
         with:
           image: nginx:latest
           options: -p 9889:9889 -v ${{ github.workspace }}/mock-sam/nginx.conf:/etc/nginx/nginx.conf:ro
+          run: nginx
 
       - name: Set up JDK
         uses: actions/setup-java@v2
