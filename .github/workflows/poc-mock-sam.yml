@@ -1,0 +1,52 @@
+name: Test Python client
+
+on:
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+  poc-mock-sam:
+    name: Proof of concept of a mock Sam
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13.1
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: [ "5432:5432" ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Initialize Postgres DB
+        env:
+          PGPASSWORD: postgres
+        run: psql -h 127.0.0.1 -U postgres -f ./local-dev/local-postgres-init.sql
+
+      - name: Mock Sam
+        uses: addnab/docker-run-action@v3
+        with:
+          image: nginx:latest
+          options: -p 9889:9889 -v ./mock-sam/nginx.conf:/etc/nginx/nginx.conf:ro
+
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Run WDS service and tests
+        run: |
+          export SAM_URL=http://localhost:9889
+          ./gradlew bootRun &
+          sleep 5
