@@ -32,12 +32,21 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h 127.0.0.1 -U postgres -f ./local-dev/local-postgres-init.sql
 
-      - name: Mock Sam
-        uses: addnab/docker-run-action@v3
-        with:
-          image: nginx:latest
-          options: -p 9889:9889 -v ${{ github.workspace }}/mock-sam/nginx.conf:/etc/nginx/nginx.conf:ro
-          run: nginx
+      - name: Install nginx mock sam
+        run: |
+          sudo apt update
+          sudo apt install -y --no-upgrade nginx
+
+      - name: Run nginx mock sam
+        run: |
+          nginx -c ${{ github.workspace }}/mock-sam/nginx.conf
+
+#      - name: Mock Sam
+#        uses: addnab/docker-run-action@v3
+#        with:
+#          image: nginx:latest
+#          options: -p 9889:9889 -v ${{ github.workspace }}/mock-sam/nginx.conf:/etc/nginx/nginx.conf:ro
+#          run: nginx
 
       - name: Set up JDK
         uses: actions/setup-java@v2
@@ -50,6 +59,6 @@ jobs:
         run: |
           export SAM_URL=http://localhost:9889
           ./gradlew bootRun &
-          sleep 45
+          sleep 30
           curl -v -X POST http://localhost:8080/instances/v0.2/123e4567-e89b-12d3-a456-426614174000
           curl -v -X DELETE http://localhost:8080/instances/v0.2/123e4567-e89b-12d3-a456-426614174000
