@@ -30,6 +30,11 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
      */
     @Override
     public boolean hasCreateInstancePermission(UUID parentWorkspaceId) {
+        return hasCreateInstancePermission(parentWorkspaceId, null);
+    }
+
+    @Override
+    public boolean hasCreateInstancePermission(UUID parentWorkspaceId, String token) {
         return hasPermission(RESOURCE_NAME_WORKSPACE, parentWorkspaceId.toString(), ACTION_WRITE,
                 "hasCreateInstancePermission");
     }
@@ -43,6 +48,10 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
      */
     @Override
     public boolean hasDeleteInstancePermission(UUID instanceId) {
+        return hasDeleteInstancePermission(instanceId, null);
+    }
+    @Override
+    public boolean hasDeleteInstancePermission(UUID instanceId, String token) {
         return hasPermission(RESOURCE_NAME_INSTANCE, instanceId.toString(), ACTION_DELETE,
                 "hasDeleteInstancePermission");
     }
@@ -64,6 +73,11 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
      */
     @Override
     public void createInstanceResource(UUID instanceId, UUID parentWorkspaceId) {
+        createInstanceResource(instanceId, parentWorkspaceId, null);
+    }
+
+    @Override
+    public void createInstanceResource(UUID instanceId, UUID parentWorkspaceId, String token) {
         FullyQualifiedResourceId parent = new FullyQualifiedResourceId();
         parent.setResourceTypeName(RESOURCE_NAME_WORKSPACE);
         parent.setResourceId(parentWorkspaceId.toString());
@@ -84,19 +98,27 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
      */
     @Override
     public void deleteInstanceResource(UUID instanceId) {
+        deleteInstanceResource(instanceId, null);
+    }
+
+    @Override
+    public void deleteInstanceResource(UUID instanceId, String token) {
         VoidSamFunction samFunction = () -> samClientFactory.getResourcesApi().deleteResourceV2(RESOURCE_NAME_INSTANCE, instanceId.toString());
         withSamErrorHandling(samFunction, "deleteInstanceResource");
     }
+
     @Override
     public boolean instanceResourceExists(UUID instanceId){
+        return instanceResourceExists(instanceId, null);
+    }
+
+    @Override
+    public boolean instanceResourceExists(UUID instanceId, String token){
         SamFunction<List<UserResourcesResponse>> samFunction = () -> samClientFactory.getResourcesApi()
                 .listResourcesAndPoliciesV2(RESOURCE_NAME_INSTANCE);
         List<UserResourcesResponse> resources = withSamErrorHandling(samFunction, "instanceResourceExists");
         return resources.stream().filter(resource -> resource.getResourceId().equals(instanceId.toString())).count() > 0;
     }
-
-
-
 
 }
 

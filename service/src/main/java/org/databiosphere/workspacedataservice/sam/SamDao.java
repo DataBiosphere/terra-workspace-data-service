@@ -33,12 +33,16 @@ public interface SamDao {
      */
     boolean hasCreateInstancePermission(UUID parentWorkspaceId);
 
+    boolean hasCreateInstancePermission(UUID parentWorkspaceId, String token);
+
     /**
      * Check if the current user has permission to delete a "wds-instance" resource from Sam
      * @param instanceId the id of the "wds-instance" resource to be deleted
      * @return true if the user has permission
      */
     boolean hasDeleteInstancePermission(UUID instanceId);
+
+    boolean hasDeleteInstancePermission(UUID instanceId, String token);
 
     /**
      * Creates a "wds-instance" Sam resource
@@ -47,11 +51,15 @@ public interface SamDao {
      */
     void createInstanceResource(UUID instanceId, UUID parentWorkspaceId);
 
+    void createInstanceResource(UUID instanceId, UUID parentWorkspaceId, String token);
+
     /**
      * Deletes a "wds-instance" Sam resource
      * @param instanceId the id of the "wds-instance" resource to be deleted
      */
     void deleteInstanceResource(UUID instanceId);
+
+    void deleteInstanceResource(UUID instanceId, String token);
 
     /**
      * Checks whether a "wds-instance" Sam resource already exists
@@ -59,5 +67,7 @@ public interface SamDao {
      * @return true if wds-resource with this id already exists in Sam
      */
     boolean instanceResourceExists(UUID instanceId);
+
+    boolean instanceResourceExists(UUID instanceId, String token);
 
 }

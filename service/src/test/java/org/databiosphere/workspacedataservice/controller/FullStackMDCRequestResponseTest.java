@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
 		"spring.main.allow-bean-definition-overriding=true"})
-@ActiveProfiles("mock-sam") //this is to prevent test failures from InstanceInitializer.  Should we have a separate test profile instead?
 class FullStackMDCRequestResponseTest {
 
 	// hmmmmm https://github.com/gradle/gradle/issues/5975

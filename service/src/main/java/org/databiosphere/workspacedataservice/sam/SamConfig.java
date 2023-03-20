@@ -37,15 +37,8 @@ public class SamConfig {
     }
 
     @Bean
-    @Primary
     public SamDao samDao(SamClientFactory samClientFactory) {
         return new HttpSamDao(samClientFactory);
-    }
-
-    @Bean("AppSamDao")
-    @Profile("!mock-sam")
-    public SamDao appSamDao() {
-        return new HttpSamDao(new AppSamClientFactory(samUrl));
     }
 
 }
