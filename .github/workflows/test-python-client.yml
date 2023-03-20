@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - aj-816-pc-tests
+    paths:
+      - '**/openapi-docs.yaml'
   pull_request:
     paths:
       - '**/openapi-docs.yaml'
