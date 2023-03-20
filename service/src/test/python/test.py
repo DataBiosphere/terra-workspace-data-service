@@ -6,6 +6,7 @@ from datetime import date, datetime
 import random
 import uuid
 import json
+import csv
 
 def generate_record():
     data = {}
@@ -32,6 +33,23 @@ def generate_record_with_relation(type, id):
                "NumberTest3": -3.14, 
                "DataRelationTest": f"terra-wds:/{type}/{id}"}
     return dict_values
+
+def generate_csv(numRecords):
+    fieldnames=['id','name','age','city']
+
+    with open('test.csv', 'w', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, delimiter='\t', fieldnames=fieldnames)
+
+        names=['foo', 'bar', 'foo_bar', 'foo-bar', 'Bar-Foo', 'BARFOO']
+        cities=['Seattle', 'Redmond', 'Boston', 'New York']
+
+        writer.writerow(dict(zip(fieldnames, fieldnames)))
+        for i in range(0, numRecords):
+          writer.writerow(dict([
+            ('id', i),
+            ('name', random.choice(names)),
+            ('age', str(random.randint(24,26))),
+            ('city', random.choice(cities))]))
 
 class TryTesting(TestCase):
     api_client = wds_client.ApiClient()
@@ -72,12 +90,10 @@ class TryTesting(TestCase):
     # tests start here
     def test_check_version(self):
         response = self.generalInfo_client.version_get()
-        print(response.build.version)
         self.assertIsNotNone(response.build.version)
 
     def test_check_status(self):
         response = self.generalInfo_client.status_get()
-        print(response.status)
         self.assertEqual(response.status, "UP")
 
     def test_simple_record_creation_query_and_delete(self):
@@ -100,9 +116,7 @@ class TryTesting(TestCase):
     def test_relation_record_creation_query_and_delete(self):
         self.generate_two_records(self.testType2_complex, self.testId1_complex, self.testType2_relation, self.testId1_relation, "testKey_complex")
         recordRetrieved = self.records_client.get_record(self.current_workspaceId, self.version, self.testType2_relation, self.testId1_relation)   
-        print(recordRetrieved)
         recordRetrieved = self.records_client.get_record(self.current_workspaceId, self.version, self.testType2_complex, self.testId1_complex)   
-        print(recordRetrieved)   
         workspace_ent_type = self.schema_client.describe_all_record_types(self.current_workspaceId, self.version)
         for t in workspace_ent_type:
             print ("name:", t.name ,"count:", t.count)
@@ -125,9 +139,10 @@ class TryTesting(TestCase):
             print ("name:", t.name ,"count:", t.count)
 
     def test_upload_download_tsv(self):
-        # insert tsv into data table
-        #record = records_client.upload_tsv(current_workspaceId, version, "TestUpload", "random.tsv")
-
+        generate_csv(5000)
+        record = self.records_client.upload_tsv(self.current_workspaceId, self.version, "TestUpload", "test.csv")
+        print(record)
+        
         # read tsv back into a variable from data table
-        #records = records_client.get_records_as_tsv(current_workspaceId, version, "TestUpload")
-        print("YAY")
+        records = self.records_client.get_records_as_tsv(self.current_workspaceId, self.version, "TestUpload")
+        print(records)
