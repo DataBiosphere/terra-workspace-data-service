@@ -39,7 +39,7 @@ jobs:
 
       - name: Run nginx mock sam
         run: |
-          nginx -c ${{ github.workspace }}/mock-sam/nginx.conf
+          nginx -p ${{ github.workspace }}/mock-sam/ -c ${{ github.workspace }}/mock-sam/nginx.conf
 
 #      - name: Mock Sam
 #        uses: addnab/docker-run-action@v3
