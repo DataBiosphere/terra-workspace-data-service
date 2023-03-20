@@ -75,6 +75,7 @@ jobs:
 
       - name: Run WDS service and tests
         run: |
+            export WORKSPACE_ID=c9ed46a9-fc9b-4130-a608-cf3760ed70a0
             ./gradlew --build-cache build -x test
             ./gradlew bootRun &
             sleep 5
