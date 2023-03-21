@@ -49,7 +49,7 @@ jobs:
         # see mock-sam/nginx.conf for nginx config: the mock always returns 200 with a response body of "true"
         # for any requests to /api/resources/*
         run: |
-          export SAM_URL=http://localhost:9882
+          export SAM_URL=http://localhost:9889
           ./gradlew bootRun &
           sleep 30
           curl -v -X POST http://localhost:8080/instances/v0.2/123e4567-e89b-12d3-a456-426614174000
