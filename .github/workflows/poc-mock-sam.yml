@@ -20,12 +20,12 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports: [ "5432:5432" ]
-      nginx:
-        image: nginx:1.23.3
-        ports:
-          - 9889:80
-        volumes:
-          - ${{ github.workspace }}/mock-sam/nginx.conf:/etc/nginx/nginx.conf
+#      nginx:
+#        image: nginx:1.23.3
+#        ports:
+#          - 9889:80
+#        volumes:
+#          - ${{ github.workspace }}/mock-sam/nginx.conf:/etc/nginx/nginx.conf
 
     steps:
       - name: Checkout
@@ -38,10 +38,16 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h 127.0.0.1 -U postgres -f ./local-dev/local-postgres-init.sql
 
-      - name: Install nginx mock sam
-        run: |
-          sudo apt update
-          sudo apt install -y nginx
+      - name: Mock Sam via nginx docker
+        uses: nginx:1.23.3
+        with:
+          # entrypoint: ???
+          args: -p 9889:80 -v ${{ github.workspace }}/mock-sam/nginx.conf:/etc/nginx/nginx.conf:ro
+
+#      - name: Install nginx mock sam
+#        run: |
+#          sudo apt update
+#          sudo apt install -y nginx
 
 #      - name: Run nginx moc#k sam
         # nginx/1.18.0 is preinstalled
