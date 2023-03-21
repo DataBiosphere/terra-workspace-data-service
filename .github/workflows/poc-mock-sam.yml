@@ -39,7 +39,7 @@ jobs:
         run: psql -h 127.0.0.1 -U postgres -f ./local-dev/local-postgres-init.sql
 
       - name: Mock Sam via nginx docker
-        uses: nginx:1.23.3
+        uses: docker://nginx:1.23.3
         with:
           # entrypoint: ???
           args: -p 9889:80 -v ${{ github.workspace }}/mock-sam/nginx.conf:/etc/nginx/nginx.conf:ro
