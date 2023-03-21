@@ -7,17 +7,19 @@ import org.springframework.stereotype.Component;
 
 
 @Component
-@Profile("!local, !mock-sam")
+@Profile({"!local"})
 public class InstanceInitializer implements
         ApplicationListener<ContextRefreshedEvent> {
 
+    private final InstanceInitializerBean instanceInitializerBean;
 
-    public InstanceInitializer(){
-
+    public InstanceInitializer(InstanceInitializerBean instanceInitializerBean){
+        this.instanceInitializerBean = instanceInitializerBean;
     }
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
+        instanceInitializerBean.initializeInstance();
     }
 
 }
