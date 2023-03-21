@@ -22,7 +22,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -92,13 +91,6 @@ class RecordDaoTest {
 		instanceDao.dropSchema(instanceId);
 	}
 
-//	@Test
-//	void defaultSchemaIsCreated() {
-//		LOGGER.info("Default workspace id loaded as {}", workspaceId);
-//		UUID defaultInstanceId = UUID.fromString(workspaceId);
-//		assertTrue(instanceDao.instanceSchemaExists(defaultInstanceId));
-//	}
-
 	/**
 	 * This test is somewhat fuzzy. Because we use a persistent db for our unit tests,
 	 * and because other tests in this codebase don't properly clean up their instances
@@ -110,11 +102,6 @@ class RecordDaoTest {
 	void listInstances() {
 		// get the list of instances in this DB
 		List<UUID> actualInitialSchemas = instanceDao.listInstanceSchemas();
-
-		// check that the default schema exists - see also defaultSchemaIsCreated() above
-//		UUID defaultInstanceId = UUID.fromString(workspaceId);
-//		assertTrue(actualInitialSchemas.contains(defaultInstanceId),
-//				"initial schema list should contain default instance");
 
 		// generate some new UUIDs
 		List<UUID> someInstancesToCreate = IntStream.range(0, 5)

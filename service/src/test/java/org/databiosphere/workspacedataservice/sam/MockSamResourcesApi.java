@@ -29,8 +29,4 @@ public class MockSamResourcesApi extends ResourcesApi {
         // noop; returns void
     }
 
-    @Override
-    public List<UserResourcesResponse> listResourcesAndPoliciesV2(String resourceTypeName) {
-        return new ArrayList<>();
-    }
 }

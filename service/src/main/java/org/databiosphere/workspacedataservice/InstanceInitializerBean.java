@@ -28,24 +28,31 @@ public class InstanceInitializerBean {
         this.instanceDao = instanceDao;
         this.managedIdentityDao = managedIdentityDao;
     }
-
-
+    
     public void initializeInstance() {
         LOGGER.info("Default workspace id loaded as {}", workspaceId);
 
         try {
             UUID instanceId = UUID.fromString(workspaceId);
             String token = managedIdentityDao.getAzureCredential();
-            // create `wds-instance` resource in Sam if it doesn't exist
-            if (!samDao.instanceResourceExists(instanceId, token)){
-                LOGGER.info("Creating wds-resource for workspaceId {}", workspaceId);
-                //TODO what should the parent id be?
-                samDao.createInstanceResource(instanceId, instanceId, token);
+            if (token != null){
+                // create `wds-instance` resource in Sam if it doesn't exist
+                if (!samDao.instanceResourceExists(instanceId, token)){
+                    LOGGER.info("Creating wds-resource for workspaceId {}", workspaceId);
+                    samDao.createInstanceResource(instanceId, instanceId, token);
+                } else {
+                    LOGGER.debug("wds-resource for workspaceId {} already exists; skipping creation.", workspaceId);
+                }
+                if (!instanceDao.instanceSchemaExists(instanceId)) {
+                    instanceDao.createSchema(instanceId);
+                    LOGGER.info("Creating default schema id succeeded for workspaceId {}", workspaceId);
+                } else {
+                    LOGGER.debug("Default schema for workspaceId {} already exists; skipping creation.", workspaceId);
+                }
+            } else {
+                LOGGER.warn("No token acquired from azure managed identity; wds-instance resource and default schema not created");
             }
-            if (!instanceDao.instanceSchemaExists(instanceId)) {
-                instanceDao.createSchema(instanceId);
-                LOGGER.info("Creating default schema id succeeded for workspaceId {}", workspaceId);
-            }
+
         } catch (IllegalArgumentException e) {
             LOGGER.warn("Workspace id could not be parsed, a default schema won't be created. Provided id: {}", workspaceId);
         } catch (

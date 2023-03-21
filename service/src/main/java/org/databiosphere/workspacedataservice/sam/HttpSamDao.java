@@ -114,10 +114,7 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
 
     @Override
     public boolean instanceResourceExists(UUID instanceId, String token){
-        SamFunction<List<UserResourcesResponse>> samFunction = () -> samClientFactory.getResourcesApi()
-                .listResourcesAndPoliciesV2(RESOURCE_NAME_INSTANCE);
-        List<UserResourcesResponse> resources = withSamErrorHandling(samFunction, "instanceResourceExists");
-        return resources.stream().filter(resource -> resource.getResourceId().equals(instanceId.toString())).count() > 0;
+        return hasPermission(RESOURCE_NAME_INSTANCE, instanceId.toString(), ACTION_READ, "instanceResourceExists");
     }
 
 }
