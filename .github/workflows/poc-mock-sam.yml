@@ -20,6 +20,12 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports: [ "5432:5432" ]
+      nginx:
+        image: nginx:1.23.3
+        ports:
+          - 9889:80
+        volumes:
+          - ${{ github.workspace }}/mock-sam/nginx.conf:/etc/nginx/nginx.conf
 
     steps:
       - name: Checkout
@@ -37,10 +43,11 @@ jobs:
           sudo apt update
           sudo apt install -y nginx
 
-      - name: Run nginx mock sam
+#      - name: Run nginx moc#k sam
         # nginx/1.18.0 is preinstalled
-        run: |
-          nginx -h
+        # "apt install" doesn't help: "nginx is already the newest version (1.18.0-6ubuntu14.3)."
+#        run: |
+#          nginx -h
 #          nginx -p ${{ github.workspace }}/mock-sam/ -e ${{ github.workspace }}/mock-sam/error-nginx.log -c ${{ github.workspace }}/mock-sam/nginx.conf
 
 #      - name: Mock Sam
