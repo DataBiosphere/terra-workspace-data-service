@@ -800,7 +800,7 @@ components:
            $ref: '#/components/schemas/component'
          ping:
            $ref: '#/components/schemas/component'
-         Sam:
+         Permissions:
            $ref: '#/components/schemas/component'
     component:
       type: object
