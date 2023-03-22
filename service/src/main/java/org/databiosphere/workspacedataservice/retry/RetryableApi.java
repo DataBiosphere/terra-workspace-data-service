@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.controller;
+package org.databiosphere.workspacedataservice.retry;
 
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -26,5 +26,6 @@ import java.sql.SQLException;
 @Retryable(maxAttemptsExpression = "${api.retry.maxAttempts}",
         backoff = @Backoff(delayExpression = "${api.retry.backoff.delay}",
                 multiplierExpression = "${api.retry.backoff.multiplier}"),
+        listeners = { "retryableApiLoggingListener" },
         include = { SQLException.class })
 public @interface RetryableApi {}

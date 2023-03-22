@@ -73,7 +73,7 @@ class ConcurrentDataTypeChangesTest {
 
 		/* for each iteration in numIterations,
 			create two API requests. The first API request is a GET to read the record,
-			the second API request is a PUT to add a new attribute to the record.
+			the second API request is a PATCH to add a new attribute to the record.
 			Under concurrent load, this is likely to generate an
 			"ERROR: cached plan must not change result type" exception.
 			Wrap these requests in CompletableFutures, so we can execute them in parallel.
@@ -92,7 +92,6 @@ class ConcurrentDataTypeChangesTest {
         // we don't care about the responses, we only care if this throws errors.
         CompletableFuture<Void> combinedFuture
                 = CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new));
-
         assertDoesNotThrow(() -> combinedFuture.get());
 
         // finally, verify that the record has all the columns and values
