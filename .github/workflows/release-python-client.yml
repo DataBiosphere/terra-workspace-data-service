@@ -111,6 +111,6 @@ jobs:
         if: ${{ github.ref_name == 'main' }}
         uses: broadinstitute/gh-action-pypi-publish@master
         with:
-          password: ${{ secrets.PYPI_API_TOKEN2 }}
+          password: ${{ secrets.PYPI_API_TOKEN }}
           packages_dir: ./wds-client/dist
           skip_existing: true
