@@ -1,4 +1,4 @@
-name: Publish Python client to PyPI
+name: Build, test and publish Python client to PyPI
 
 on:
   pull_request:
@@ -60,10 +60,10 @@ jobs:
           --additional-properties=projectName=wds-client,packageName=wds_client,packageVersion=${{ inputs.new-tag }} \
           --skip-validate-spec
 
-      - name: Install pypa/build
+      - name: Install python package locally
         working-directory: ./wds-client
-        run: >-
-          python -m pip install build --user
+        run: |
+          pip install .
           
       - name: Initialize Postgres DB
         env:
@@ -94,6 +94,12 @@ jobs:
             done
             pip install pytest
             pytest service/src/test/python/test.py
+      
+      - name: Install pypa/build
+        if: ${{ github.ref_name == 'main' }}
+        working-directory: ./wds-client
+        run: >-
+          python -m pip install build --user
       
       - name: Build a binary wheel and a source tarball
         if: ${{ github.ref_name == 'main' }}
