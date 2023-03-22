@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.controller;
 
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
+import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -58,15 +60,16 @@ class ConcurrentDataTypeChangesTest {
     }
 
     @Test
-    void concurrentWrites() {
+    void concurrentColumnCreation() {
+        // concurrency factor for reads + writes
+        int numIterations = 40;
+
         // create the initial record, with no attributes
         RecordRequest recordRequest = new RecordRequest(RecordAttributes.empty());
         ResponseEntity<String> response = restTemplate.exchange("/{instanceid}/records/{v}/{type}/{id}", HttpMethod.PUT,
                 new HttpEntity<>(recordRequest, headers), String.class,
                 instanceId, versionId, recordType.getName(), recordId);
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
-
-        int numIterations = 50;
 
 		/* for each iteration in numIterations,
 			create two API requests. The first API request is a GET to read the record,
@@ -92,6 +95,28 @@ class ConcurrentDataTypeChangesTest {
 
         assertDoesNotThrow(() -> combinedFuture.get());
 
+        // finally, verify that the record has all the columns and values
+        ResponseEntity<RecordResponse> finalResponse = restTemplate.exchange("/{instanceid}/records/{v}/{type}/{id}", HttpMethod.GET,
+                new HttpEntity<>(headers), RecordResponse.class,
+                instanceId, versionId, recordType.getName(), recordId);
+
+        // create our expected attributes
+        Map<String, Object> attrs = new HashMap<>();
+        IntStream.rangeClosed(1, numIterations).boxed().forEach( i -> {
+            attrs.put("attr-" + i, "value-" + i);
+                });
+        // the final record will include the extra attribute "sys_name=concurrent-changes" because of the primary key
+        attrs.put("sys_name", recordId);
+        RecordAttributes expected = new RecordAttributes(attrs);
+
+        RecordAttributes actual = finalResponse.getBody().recordAttributes();
+
+        assertEquals(expected.attributeSet().size(), actual.attributeSet().size(),
+                "final record should have " + expected.attributeSet().size() + " attributes");
+
+        assertEquals(expected, actual);
+
+
     }
 
     private ResponseEntity<String> writeOrThrow(int iteration) {
@@ -99,7 +124,7 @@ class ConcurrentDataTypeChangesTest {
         RecordAttributes attrs = new RecordAttributes(Map.of("attr-" + iteration, "value-" + iteration));
         RecordRequest req = new RecordRequest(attrs);
 
-        ResponseEntity<String> response = restTemplate.exchange("/{instanceid}/records/{v}/{type}/{id}", HttpMethod.PUT,
+        ResponseEntity<String> response = restTemplate.exchange("/{instanceid}/records/{v}/{type}/{id}", HttpMethod.PATCH,
                 new HttpEntity<>(req, headers), String.class,
                 instanceId, versionId, recordType.getName(), recordId);
         if (!response.getStatusCode().is2xxSuccessful()) {
