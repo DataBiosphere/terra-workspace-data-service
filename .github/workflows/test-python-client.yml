@@ -77,6 +77,7 @@ jobs:
         run: |
             export WORKSPACE_ID=c9ed46a9-fc9b-4130-a608-cf3760ed70a0
             ./gradlew --build-cache build -x test
+            ./gradlew bootRun &
             count=20
             until $(curl --output /dev/null --silent --head --fail http://localhost:8080/status); do
               printf '.'
