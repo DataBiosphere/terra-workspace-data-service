@@ -12,29 +12,26 @@ import org.springframework.stereotype.Service;
  *
  * See here for more details how we handle health checks in WDS: https://www.baeldung.com/spring-boot-health-indicators
  */
-@Service(value = "Sam")
-public class SamStatusService extends AbstractHealthIndicator {
+@Service(value = "Permissions")
+public class PermissionsStatusService extends AbstractHealthIndicator {
 
     private final SamDao samDao;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SamStatusService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PermissionsStatusService.class);
 
-    public SamStatusService(SamDao samDao) {
+    public PermissionsStatusService(SamDao samDao) {
         this.samDao = samDao;
     }
 
     @Override
     public void doHealthCheck(Health.Builder builder) throws Exception {
+        builder.up();
         try {
             SystemStatus samStatus = samDao.getSystemStatus();
-            if (samStatus.getOk()) {
-                builder.up();
-            } else {
-                builder.down();
-            }
+            builder.withDetail("samOK", samStatus.getOk());
         } catch (Exception e) {
-            builder.down();
-            builder.withDetail("connectionError", e.getMessage());
+            LOGGER.warn("SAM is currently signaled as DOWN.");
+            builder.withDetail("samConnectionError", e.getMessage());
         }
 
     }
