@@ -96,7 +96,7 @@ jobs:
             pytest service/src/test/python/test.py
       
       - name: Install pypa/build
-        if: ${{ github.ref_name == 'main' }}
+        if: ${{ github.ref_name == 'aj-816-pc-tests' }}
         working-directory: ./wds-client
         run: >-
           python -m pip install build --user
