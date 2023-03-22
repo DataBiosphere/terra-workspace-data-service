@@ -94,7 +94,11 @@ jobs:
             done
             pip install pytest
             pytest service/src/test/python/test.py
-      
+     
+      - name: Extract branch name
+        shell: bash
+        run: echo ${{ github.ref_name }}
+     
       - name: Install pypa/build
         if: github.ref_name == 'aj-816-pc-tests'
         working-directory: ./wds-client
