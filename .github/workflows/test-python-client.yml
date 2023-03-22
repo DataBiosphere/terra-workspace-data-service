@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - aj-816-pc-tests
-    paths:
-      - '**/openapi-docs.yaml'
   pull_request:
     paths:
       - '**/openapi-docs.yaml'
@@ -79,7 +77,15 @@ jobs:
         run: |
             export WORKSPACE_ID=c9ed46a9-fc9b-4130-a608-cf3760ed70a0
             ./gradlew --build-cache build -x test
-            ./gradlew bootRun &
-            sleep 5
+            count=20
+            until $(curl --output /dev/null --silent --head --fail http://localhost:8080/status); do
+              printf '.'
+              sleep 1
+              count=$(expr $count - 1) 
+              if [ "$count" -eq "0" ]; then
+                echo "WDS is not responding, exit action."
+                exit
+              fi
+            done
             pip install pytest
             pytest service/src/test/python/test.py
