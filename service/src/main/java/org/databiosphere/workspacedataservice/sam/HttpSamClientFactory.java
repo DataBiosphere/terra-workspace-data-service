@@ -66,8 +66,4 @@ public class HttpSamClientFactory implements SamClientFactory {
         return resourcesApi;
     }
 
-    public ResourcesApi getResourcesApi() {
-        return getResourcesApi(null);
-    }
-
 }

@@ -26,7 +26,7 @@ public interface SamDao {
      */
     String ACTION_DELETE = "delete";
     /**
-     * Sam action name for delete permission
+     * Sam action name for read permission
      */
     String ACTION_READ = "read";
 

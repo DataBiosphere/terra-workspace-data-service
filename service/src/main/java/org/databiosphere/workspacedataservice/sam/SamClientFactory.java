@@ -10,6 +10,5 @@ import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 public interface SamClientFactory {
 
     ResourcesApi getResourcesApi(String token);
-
-    ResourcesApi getResourcesApi();
+    
 }

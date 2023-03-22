@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.ManagedIdentityDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
+import org.databiosphere.workspacedataservice.service.model.exception.SamException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,7 +29,7 @@ public class InstanceInitializerBean {
         this.instanceDao = instanceDao;
         this.managedIdentityDao = managedIdentityDao;
     }
-    
+
     public void initializeInstance() {
         LOGGER.info("Default workspace id loaded as {}", workspaceId);
 
@@ -58,7 +59,8 @@ public class InstanceInitializerBean {
         } catch (
         DataAccessException e) {
             LOGGER.error("Failed to create default schema id for workspaceId {}", workspaceId);
+        } catch (SamException e) {
+            LOGGER.error("Exception thrown from sam, wds-instance resource and default schema not created", e.getMessage());
         }
-        //TODO what errors do i need to catch from sam
     }
 }
