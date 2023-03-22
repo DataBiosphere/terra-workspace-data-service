@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.sam;
 
+import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
+
 import java.util.UUID;
 
 /**
@@ -52,5 +54,10 @@ public interface SamDao {
      * @param instanceId the id of the "wds-instance" resource to be deleted
      */
     void deleteInstanceResource(UUID instanceId);
+
+    /**
+     * Gets the System Status of SAM.
+     */
+    SystemStatus getSystemStatus();
 
 }

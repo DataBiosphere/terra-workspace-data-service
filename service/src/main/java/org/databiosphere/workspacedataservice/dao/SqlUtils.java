@@ -26,4 +26,8 @@ public class SqlUtils {
 		return name;
 	}
 
+	public static String quote(String toQuote) {
+		return "\"" + toQuote + "\"";
+	}
+
 }

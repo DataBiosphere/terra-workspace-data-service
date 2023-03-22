@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import bio.terra.common.db.WriteTransaction;
+import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
@@ -20,19 +21,19 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 @Service
 public class InstanceService {
 
-    private final RecordDao recordDao;
+    private final InstanceDao instanceDao;
     private final SamDao samDao;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceService.class);
 
-    public InstanceService(RecordDao recordDao, SamDao samDao) {
-        this.recordDao = recordDao;
+    public InstanceService(InstanceDao instanceDao, SamDao samDao) {
+        this.instanceDao = instanceDao;
         this.samDao = samDao;
     }
 
     public List<UUID> listInstances(String version) {
         validateVersion(version);
-        return recordDao.listInstanceSchemas();
+        return instanceDao.listInstanceSchemas();
     }
 
     /**
@@ -60,7 +61,7 @@ public class InstanceService {
             throw new AuthorizationException("Caller does not have permission to create instance.");
         }
 
-        if (recordDao.instanceSchemaExists(instanceId)) {
+        if (instanceDao.instanceSchemaExists(instanceId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This instance already exists");
         }
 
@@ -72,7 +73,7 @@ public class InstanceService {
 
     @WriteTransaction
     void createInstanceInDatabase(UUID instanceId) {
-        recordDao.createSchema(instanceId);
+        instanceDao.createSchema(instanceId);
     }
 
     public void deleteInstance(UUID instanceId, String version) {
@@ -95,11 +96,11 @@ public class InstanceService {
 
     @WriteTransaction
     void deleteInstanceFromDatabase(UUID instanceId) {
-        recordDao.dropSchema(instanceId);
+        instanceDao.dropSchema(instanceId);
     }
 
     public void validateInstance(UUID instanceId) {
-        if (!recordDao.instanceSchemaExists(instanceId)) {
+        if (!instanceDao.instanceSchemaExists(instanceId)) {
             throw new MissingObjectException("Instance");
         }
     }

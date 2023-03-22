@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /**
  * Tests for @see HttpSamClientSupport
  */
-@SpringBootTest
+@SpringBootTest(classes = SamConfig.class)
 class HttpSamClientSupportTest extends HttpSamClientSupport {
 
     @DisplayName("When Sam throws an ApiException with standard http status code 401, HttpSamClientSupport should throw AuthenticationException")
