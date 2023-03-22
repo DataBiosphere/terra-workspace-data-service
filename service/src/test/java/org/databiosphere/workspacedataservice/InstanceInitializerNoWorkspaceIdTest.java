@@ -19,7 +19,7 @@ import static org.mockito.Mockito.verify;
 @ActiveProfiles({"mock-sam","mock-instance-dao", "local"})
 @TestPropertySource(properties = {"twds.instance.workspace-id="})
 @SpringBootTest(classes = {SamConfig.class, InstanceInitializerConfig.class, MockInstanceDaoConfig.class})
-public class InstanceInitializerNoWorkspaceIdTest {
+class InstanceInitializerNoWorkspaceIdTest {
 
     @Autowired
     InstanceInitializerBean instanceInitializerBean;

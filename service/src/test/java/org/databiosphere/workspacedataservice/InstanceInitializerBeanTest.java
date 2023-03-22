@@ -2,11 +2,11 @@ package org.databiosphere.workspacedataservice;
 
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
-import org.broadinstitute.dsde.workbench.client.sam.model.UserResourcesResponse;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.ManagedIdentityDao;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
 import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
+import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.sam.SamConfig;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.junit.jupiter.api.AfterEach;
@@ -20,7 +20,6 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,6 +45,8 @@ class InstanceInitializerBeanTest {
 
     @MockBean
     ManagedIdentityDao mockManagedIdentityDao;
+    @MockBean
+    SamClientFactory mockSamClientFactory;
 
     ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
@@ -53,6 +54,9 @@ class InstanceInitializerBeanTest {
     void beforeEach() {
         given(mockManagedIdentityDao.getAzureCredential()
         ).willReturn("aRandomTokenString");
+        given(mockSamClientFactory.getResourcesApi(any()))
+                .willReturn(mockResourcesApi);
+
     }
 
     @AfterEach
@@ -66,19 +70,44 @@ class InstanceInitializerBeanTest {
     }
 
     @Test
-    void testHappyPath(){
+    void testHappyPath() throws ApiException{
+        given(mockResourcesApi.resourcePermissionV2(eq("wds-instance"), eq(instanceID.toString()), eq(SamDao.ACTION_READ)))
+                .willReturn(false);
         assertDoesNotThrow(() -> instanceInitializerBean.initializeInstance());
+        verify(samDao, times(1)).createInstanceResource(any(), any(), any());
         assert(instanceDao.instanceSchemaExists(instanceID));
     }
 
     @Test
     void testResourceExistsButNotSchema() throws ApiException {
-        given(mockResourcesApi.listResourcesAndPoliciesV2(anyString()))
-                .willReturn(Collections.singletonList(new UserResourcesResponse().resourceId(instanceID.toString())));
+        given(mockResourcesApi.resourcePermissionV2(eq("wds-instance"), eq(instanceID.toString()), eq(SamDao.ACTION_READ)))
+                .willReturn(true);
         instanceInitializerBean.initializeInstance();
         //verify that method to create sam resource was NOT called
         verify(samDao, times(0)).createInstanceResource(any(), any(), any());
         assert(instanceDao.instanceSchemaExists(instanceID));
+    }
+
+    @Test
+    void testNullToken() {
+        given(mockManagedIdentityDao.getAzureCredential()
+        ).willReturn(null);
+        assertDoesNotThrow(() -> instanceInitializerBean.initializeInstance());
+        //verify that method to create resources was NOT called
+        verify(samDao, times(0)).createInstanceResource(any(), any(), any());
+        assertFalse(instanceDao.instanceSchemaExists(instanceID));
+
+    }
+
+    @Test
+    void testSamException() throws ApiException {
+        given(mockResourcesApi.resourcePermissionV2(anyString(), eq(instanceID.toString()), anyString()))
+                .willThrow(new ApiException(401, "intentional exception for unit test"));
+        assertDoesNotThrow(() -> instanceInitializerBean.initializeInstance());
+        //verify that method to create resources was NOT called
+        verify(samDao, times(0)).createInstanceResource(any(), any(), any());
+        assertFalse(instanceDao.instanceSchemaExists(instanceID));
+
     }
 
 }

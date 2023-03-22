@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
-import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
@@ -59,7 +58,7 @@ public class InstanceInitializerBean {
         DataAccessException e) {
             LOGGER.error("Failed to create default schema id for workspaceId {}", workspaceId);
         } catch (SamException e) {
-            LOGGER.error("Exception thrown from sam, wds-instance resource and default schema not created", e.getMessage());
+            LOGGER.error("Exception thrown from sam, wds-instance resource and default schema not created :" + e.getMessage());
         }
     }
 }
