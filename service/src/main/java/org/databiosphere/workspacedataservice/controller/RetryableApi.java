@@ -20,5 +20,7 @@ import java.lang.annotation.Target;
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-@Retryable(maxAttempts = 8, backoff = @Backoff(delay = 500, multiplier = 1.5))
+@Retryable(maxAttemptsExpression = "${api.retry.maxAttempts}",
+        backoff = @Backoff(delayExpression = "${api.retry.backoff.delay}",
+                multiplierExpression = "${api.retry.backoff.multiplier}"))
 public @interface RetryableApi {}
