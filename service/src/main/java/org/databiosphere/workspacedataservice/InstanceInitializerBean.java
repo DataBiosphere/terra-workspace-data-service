@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
-@Component
 public class InstanceInitializerBean {
 
     private final SamDao samDao;
