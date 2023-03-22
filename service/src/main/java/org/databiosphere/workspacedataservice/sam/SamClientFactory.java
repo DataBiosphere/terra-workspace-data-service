@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.sam;
 
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
+import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
 
 /**
  * interface for SamClientFactory, allowing various implementations:
@@ -10,5 +11,6 @@ import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 public interface SamClientFactory {
 
     ResourcesApi getResourcesApi(String token);
-    
+    StatusApi getStatusApi();
+
 }

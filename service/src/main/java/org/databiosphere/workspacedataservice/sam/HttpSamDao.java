@@ -2,6 +2,13 @@ package org.databiosphere.workspacedataservice.sam;
 
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
 import org.broadinstitute.dsde.workbench.client.sam.model.FullyQualifiedResourceId;
+import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.util.Collections;
 import java.util.UUID;
@@ -14,6 +21,8 @@ import java.util.UUID;
 public class HttpSamDao extends HttpSamClientSupport implements SamDao {
 
     protected final SamClientFactory samClientFactory;
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpSamDao.class);
+
 
     public HttpSamDao(SamClientFactory samClientFactory) {
         this.samClientFactory = samClientFactory;
@@ -113,6 +122,27 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
     @Override
     public boolean instanceResourceExists(UUID instanceId, String token){
         return hasPermission(RESOURCE_NAME_INSTANCE, instanceId.toString(), ACTION_READ, "instanceResourceExists", token);
+    }
+
+    /**
+     * Gets the System Status of Sam. Using @Cacheable, will reach out to Sam no more than once every 5 minutes.
+     * See also emptySamStatusCache()
+     */
+    @Cacheable(value = "samStatus", key="'getSystemStatus'")
+    public SystemStatus getSystemStatus() {
+        SamFunction<SystemStatus> samFunction = () -> samClientFactory.getStatusApi().getSystemStatus();
+        return withSamErrorHandling(samFunction, "getSystemStatus");
+    }
+
+    /**
+     * Clears the samStatus cache every 5 minutes, to ensure we get fresh results from Sam
+     * every so often. See also getSystemStatus()
+     */
+
+    @CacheEvict(value = "samStatus", key="'getSystemStatus'")
+    @Scheduled(fixedRateString = "${sam.healthcheck.pingTTL}")
+    public void emptySamStatusCache() {
+        LOGGER.debug("emptying samStatus cache");
     }
 
 }

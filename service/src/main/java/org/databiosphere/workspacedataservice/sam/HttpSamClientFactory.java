@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.sam;
 import org.apache.commons.lang3.StringUtils;
 import org.broadinstitute.dsde.workbench.client.sam.ApiClient;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
+import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -64,6 +65,18 @@ public class HttpSamClientFactory implements SamClientFactory {
         ResourcesApi resourcesApi = new ResourcesApi();
         resourcesApi.setApiClient(apiClient);
         return resourcesApi;
+    }
+
+    /**
+     * Get a StatusApi Sam client, initialized with the url to Sam and the current user's
+     * access token, if any
+     * @return the usable Sam client
+     */
+    public StatusApi getStatusApi() {
+        ApiClient apiClient = getApiClient(null);
+        StatusApi statusApi = new StatusApi();
+        statusApi.setApiClient(apiClient);
+        return statusApi;
     }
 
 }

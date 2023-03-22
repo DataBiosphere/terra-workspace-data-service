@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.sam;
 
+import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
+
 import java.util.UUID;
 
 /**
@@ -73,5 +75,10 @@ public interface SamDao {
     boolean instanceResourceExists(UUID instanceId);
 
     boolean instanceResourceExists(UUID instanceId, String token);
+
+    /**
+     * Gets the System Status of SAM.
+     */
+    SystemStatus getSystemStatus();
 
 }
