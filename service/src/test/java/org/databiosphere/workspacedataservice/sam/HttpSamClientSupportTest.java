@@ -24,7 +24,9 @@ import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.Vo
 /**
  * Tests for @see HttpSamClientSupport
  */
-@SpringBootTest(classes = SamConfig.class)
+@SpringBootTest(classes = SamConfig.class,
+        properties = {"sam.retry.maxAttempts=2",
+                "sam.retry.backoff.delay=10"}) // aggressive retry setings so unit test doesn't run too long
 @EnableRetry
 class HttpSamClientSupportTest {
 
