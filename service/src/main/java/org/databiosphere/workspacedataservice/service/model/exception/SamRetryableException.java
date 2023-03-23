@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
  * Base class for Sam exceptions that are valid to be retried.
  */
 public abstract class SamRetryableException extends SamException {
-    public SamRetryableException(HttpStatus status, String message) {
+    protected SamRetryableException(HttpStatus status, String message) {
         super(status, message);
     }
 }
