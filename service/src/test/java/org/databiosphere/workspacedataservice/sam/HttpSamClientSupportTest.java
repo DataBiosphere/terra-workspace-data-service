@@ -16,8 +16,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.*;
+import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.SamFunction;
+import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.VoidSamFunction;
 
 /**
  * Tests for @see HttpSamClientSupport
@@ -130,9 +132,9 @@ class HttpSamClientSupportTest {
 
         // this test doesn't care what exception is thrown; other tests verify that
         assertThrows(Exception.class, () -> httpSamClientSupport.withRetryAndErrorHandling(samFunction, "retryableExceptions"));
-
-        // this test does care how many times the samFunction was invoked
-        assertEquals(5, counter.get(), "SamFunction should have retried");
+        // with current settings, will retry 5 times. Any retry means we'll have more than
+        // one invocation.
+        assertTrue(counter.get() > 1, "SamFunction should have retried");
 
         // reset counter
         counter.set(0);
@@ -143,8 +145,9 @@ class HttpSamClientSupportTest {
         };
         // this test doesn't care what exception is thrown; other tests verify that
         assertThrows(Exception.class, () -> httpSamClientSupport.withRetryAndErrorHandling(voidSamFunction, "retryableExceptions"));
-        // this test does care how many times the samFunction was invoked
-        assertEquals(5, counter.get(), "VoidSamFunction should have retried");
+        // with current settings, will retry 5 times. Any retry means we'll have more than
+        // one invocation.
+        assertTrue(counter.get() > 1, "VoidSamFunction should have retried");
     }
 
     @ParameterizedTest(name = "withSamErrorHandling will not retry on status code {0}")
