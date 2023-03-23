@@ -47,8 +47,9 @@ public class HttpSamClientSupport {
      * @throws AuthorizationException on a 403 from the Sam client request
      */
     @Retryable(include = {SamRetryableException.class},
-            maxAttempts = 5,
-            backoff = @Backoff(delay = 500, multiplier = 1.5))
+            maxAttemptsExpression = "${sam.retry.maxAttempts}",
+            backoff = @Backoff(delayExpression = "${sam.retry.backoff.delay}",
+                    multiplierExpression = "${sam.retry.backoff.multiplier}"))
     public <T> T withRetryAndErrorHandling(SamFunction<T> samFunction, String loggerHint) throws SamException, AuthenticationException, AuthorizationException {
         try {
             LOGGER.debug("Sending {} request to Sam ...", loggerHint);
@@ -91,8 +92,9 @@ public class HttpSamClientSupport {
      * @throws AuthorizationException on a 403 from the Sam client request
      */
     @Retryable(include = {SamRetryableException.class},
-            maxAttempts = 5,
-            backoff = @Backoff(delay = 500, multiplier = 1.5))
+            maxAttemptsExpression = "${sam.retry.maxAttempts}",
+            backoff = @Backoff(delayExpression = "${sam.retry.backoff.delay}",
+                    multiplierExpression = "${sam.retry.backoff.multiplier}"))
     public void withRetryAndErrorHandling(VoidSamFunction voidSamFunction, String loggerHint) throws SamException, AuthenticationException, AuthorizationException {
 
         // wrap void function in something that returns an object
