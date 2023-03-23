@@ -26,6 +26,6 @@ import java.sql.SQLException;
 @Retryable(maxAttemptsExpression = "${api.retry.maxAttempts}",
         backoff = @Backoff(delayExpression = "${api.retry.backoff.delay}",
                 multiplierExpression = "${api.retry.backoff.multiplier}"),
-        listeners = { "retryableApiLoggingListener" },
+        listeners = { "retryLoggingListener" },
         include = { SQLException.class })
 public @interface RetryableApi {}
