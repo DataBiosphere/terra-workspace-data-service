@@ -7,8 +7,21 @@ on:
     branches: [ '**' ]
 
 jobs:
-  build:
+  benchmark:
+    name: Relative performance benchmarking
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13.1
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: [ "5432:5432" ]
 
     steps:
       - uses: actions/checkout@v3
@@ -19,6 +32,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: 'gradle'
+
+      - name: Initialize Postgres DB
+        env:
+          PGPASSWORD: postgres
+        run: psql -h 127.0.0.1 -U postgres -f ./local-dev/local-postgres-init.sql
 
       # Run benchmark via JMH gradle plugin https://github.com/melix/jmh-gradle-plugin
       - name: Run benchmark
