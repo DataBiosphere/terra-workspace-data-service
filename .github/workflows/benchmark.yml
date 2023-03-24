@@ -52,7 +52,7 @@ jobs:
 
       # Run `github-action-benchmark` action
       - name: Add benchmark PR job summary
-        uses: benchmark-action/github-action-benchmark@v1
+        uses: benchmark-action/github-action-benchmark@v1.16.2
         with:
           # What benchmark tool the output.txt came from
           tool: 'jmh'
@@ -72,5 +72,8 @@ jobs:
           comment-on-alert: true
           # Mention @davidangb in the commit comment
           # alert-comment-cc-users: '@davidangb'
+
+          # Disable github pages
+          auto-push: false
 
           save-data-file: false
