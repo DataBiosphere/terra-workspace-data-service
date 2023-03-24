@@ -45,7 +45,7 @@ jobs:
 
       # Download previous benchmark result from cache (if exists)
       - name: Download previous benchmark data
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ./cache
           key: ${{ runner.os }}-benchmark
@@ -60,13 +60,16 @@ jobs:
           output-file-path: service/build/reports/jmh/results.json
           # Where the previous data file is stored
           external-data-json-path: ./cache/benchmark-data.json
+          # GitHub API token to make a commit comment or job summary
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           # Enable Job Summary for PRs
           summary-always: true
 
+          alert-threshold: "200%"
           # Workflow will fail when an alert happens
           fail-on-alert: false
           # Enable alert commit comment
-          comment-on-alert: false
+          comment-on-alert: true
           # Mention @davidangb in the commit comment
           # alert-comment-cc-users: '@davidangb'
 
