@@ -1,0 +1,55 @@
+name: Perf Benchmarks
+
+on:
+#  push:
+#    paths-ignore: [ '*.md' ]
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      # Run benchmark via JMH gradle plugin https://github.com/melix/jmh-gradle-plugin
+      - name: Run benchmark
+        run: |
+          ./gradlew jmh
+
+      # Download previous benchmark result from cache (if exists)
+      - name: Download previous benchmark data
+        uses: actions/cache@v1
+        with:
+          path: ./cache
+          key: ${{ runner.os }}-benchmark
+
+      # Run `github-action-benchmark` action
+      - name: Add benchmark PR job summary
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          # What benchmark tool the output.txt came from
+          tool: 'jmh'
+          # Where the output from the benchmark tool is stored
+          output-file-path: service/build/reports/jmh/results.json
+          # Where the previous data file is stored
+          external-data-json-path: ./cache/benchmark-data.json
+          # Enable Job Summary for PRs
+          summary-always: true
+
+          # Workflow will fail when an alert happens
+          fail-on-alert: false
+          # Enable alert commit comment
+          comment-on-alert: false
+          # Mention @davidangb in the commit comment
+          # alert-comment-cc-users: '@davidangb'
+
+          save-data-file: false
