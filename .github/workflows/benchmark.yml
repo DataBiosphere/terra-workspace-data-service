@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ '**' ]
 
+env:
+  ACTIONS_STEP_DEBUG: true
+
 jobs:
   benchmark:
     name: Relative performance benchmarking
