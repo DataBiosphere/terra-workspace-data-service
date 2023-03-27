@@ -2,6 +2,7 @@ package bio.terra.common.retry.transaction;
 
 import bio.terra.common.retry.CompositeBackOffPolicy;
 import org.aopalliance.intercept.MethodInterceptor;
+import org.databiosphere.workspacedataservice.retry.RetryLoggingListener;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.classify.BinaryExceptionClassifier;
 import org.springframework.context.annotation.Bean;
@@ -11,8 +12,10 @@ import org.springframework.retry.backoff.BackOffPolicy;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.backoff.UniformRandomBackOffPolicy;
 import org.springframework.retry.interceptor.RetryInterceptorBuilder;
+import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 import org.springframework.retry.policy.CompositeRetryPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 
 import java.util.LinkedHashMap;
 
@@ -27,10 +30,18 @@ public class TransactionRetryInterceptorConfiguration {
    */
   @Bean("transactionRetryInterceptor")
   public MethodInterceptor getTransactionRetryInterceptor(TransactionRetryProperties config) {
-    return RetryInterceptorBuilder.stateless()
-        .retryPolicy(createTransactionRetryPolicy(config))
-        .backOffPolicy(createTransactionBackOffPolicy(config))
-        .build();
+    RetryPolicy retryPolicy = createTransactionRetryPolicy(config);
+    BackOffPolicy backOffPolicy = createTransactionBackOffPolicy(config);
+
+    RetryTemplate retryTemplate = RetryTemplate.builder()
+            .customBackoff(backOffPolicy)
+            .customPolicy(retryPolicy)
+            .withListener(new RetryLoggingListener())
+            .build();
+
+    RetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateless().build();
+    interceptor.setRetryOperations(retryTemplate);
+    return interceptor;
   }
 
   /**
