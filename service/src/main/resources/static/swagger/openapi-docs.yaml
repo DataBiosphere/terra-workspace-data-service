@@ -6,7 +6,7 @@ info:
   description: |
     This page lists current APIs.
 
-    As of v0.2, all APIs are subject to change without notice.
+    As of v0.2, all APIs are subject to change without notice..
   termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
   license:
     name: BSD
