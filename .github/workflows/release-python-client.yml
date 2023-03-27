@@ -74,15 +74,15 @@ jobs:
         run: |
           docker run -v ${{ github.workspace }}/service/src/test/resources/nginx.conf:/etc/nginx/nginx.conf:ro -p 9889:80 -d nginx:1.23.3
           count=40
-            until $(curl --output /dev/null --silent --head --fail http://localhost:9889); do
-              printf '.'
-              sleep 1
-              count=$(expr $count - 1) 
-              if [ "$count" -eq "0" ]; then
-                echo "Mock Sam not up, exit action."
-                exit
-              fi
-            done        
+          until $(curl --output /dev/null --silent --head --fail http://localhost:9889); do
+            printf '.'
+            sleep 1
+            count=$(expr $count - 1) 
+            if [ "$count" -eq "0" ]; then
+              echo "Mock Sam not up, exit action."
+              exit
+            fi
+          done        
 
       - name: Set up JDK
         uses: actions/setup-java@v2
