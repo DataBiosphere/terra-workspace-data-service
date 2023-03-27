@@ -52,7 +52,7 @@ class InstanceServiceNoPermissionSamTest {
     void testCreateInstanceNoPermission() throws ApiException {
 
         // return the mock ResourcesApi from the mock SamClientFactory
-        given(mockSamClientFactory.getResourcesApi())
+        given(mockSamClientFactory.getResourcesApi(null))
                 .willReturn(mockResourcesApi);
 
         // Call to check permissions in Sam does not throw an exception, but returns false -
@@ -73,7 +73,7 @@ class InstanceServiceNoPermissionSamTest {
     void testDeleteInstanceNoPermission() throws ApiException {
 
         // return the mock ResourcesApi from the mock SamClientFactory
-        given(mockSamClientFactory.getResourcesApi())
+        given(mockSamClientFactory.getResourcesApi(null))
                 .willReturn(mockResourcesApi);
 
         // Call to check permissions in Sam does not throw an exception, but returns false -

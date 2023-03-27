@@ -22,13 +22,12 @@ import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.Vo
  */
 public class HttpSamDao implements SamDao {
 
+    protected final SamClientFactory samClientFactory;
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpSamDao.class);
-    private final SamClientFactory samClientFactory;
     private final HttpSamClientSupport httpSamClientSupport;
 
     public HttpSamDao(SamClientFactory samClientFactory, HttpSamClientSupport httpSamClientSupport) {
         this.samClientFactory = samClientFactory;
-
         this.httpSamClientSupport = httpSamClientSupport;
     }
 
@@ -41,8 +40,13 @@ public class HttpSamDao implements SamDao {
      */
     @Override
     public boolean hasCreateInstancePermission(UUID parentWorkspaceId) {
+        return hasCreateInstancePermission(parentWorkspaceId, null);
+    }
+
+    @Override
+    public boolean hasCreateInstancePermission(UUID parentWorkspaceId, String token) {
         return hasPermission(RESOURCE_NAME_WORKSPACE, parentWorkspaceId.toString(), ACTION_WRITE,
-                "hasCreateInstancePermission");
+                "hasCreateInstancePermission", token);
     }
 
     /**
@@ -54,13 +58,17 @@ public class HttpSamDao implements SamDao {
      */
     @Override
     public boolean hasDeleteInstancePermission(UUID instanceId) {
+        return hasDeleteInstancePermission(instanceId, null);
+    }
+    @Override
+    public boolean hasDeleteInstancePermission(UUID instanceId, String token) {
         return hasPermission(RESOURCE_NAME_INSTANCE, instanceId.toString(), ACTION_DELETE,
-                "hasDeleteInstancePermission");
+                "hasDeleteInstancePermission", token);
     }
 
     // helper implementation for permission checks
-    private boolean hasPermission(String resourceType, String resourceId, String action, String loggerHint) {
-        SamFunction<Boolean> samFunction = () -> samClientFactory.getResourcesApi()
+    private boolean hasPermission(String resourceType, String resourceId, String action, String loggerHint, String token) {
+        SamFunction<Boolean> samFunction = () -> samClientFactory.getResourcesApi(token)
                 .resourcePermissionV2(resourceType, resourceId, action);
         return httpSamClientSupport.withRetryAndErrorHandling(samFunction, loggerHint);
     }
@@ -75,6 +83,11 @@ public class HttpSamDao implements SamDao {
      */
     @Override
     public void createInstanceResource(UUID instanceId, UUID parentWorkspaceId) {
+        createInstanceResource(instanceId, parentWorkspaceId, null);
+    }
+
+    @Override
+    public void createInstanceResource(UUID instanceId, UUID parentWorkspaceId, String token) {
         FullyQualifiedResourceId parent = new FullyQualifiedResourceId();
         parent.setResourceTypeName(RESOURCE_NAME_WORKSPACE);
         parent.setResourceId(parentWorkspaceId.toString());
@@ -84,7 +97,7 @@ public class HttpSamDao implements SamDao {
         createResourceRequest.setParent(parent);
         createResourceRequest.setAuthDomain(Collections.emptyList());
 
-        VoidSamFunction samFunction = () -> samClientFactory.getResourcesApi().createResourceV2(RESOURCE_NAME_INSTANCE, createResourceRequest);
+        VoidSamFunction samFunction = () -> samClientFactory.getResourcesApi(token).createResourceV2(RESOURCE_NAME_INSTANCE, createResourceRequest);
         httpSamClientSupport.withRetryAndErrorHandling(samFunction, "createInstanceResource");
     }
 
@@ -95,8 +108,23 @@ public class HttpSamDao implements SamDao {
      */
     @Override
     public void deleteInstanceResource(UUID instanceId) {
-        VoidSamFunction samFunction = () -> samClientFactory.getResourcesApi().deleteResourceV2(RESOURCE_NAME_INSTANCE, instanceId.toString());
+        deleteInstanceResource(instanceId, null);
+    }
+
+    @Override
+    public void deleteInstanceResource(UUID instanceId, String token) {
+        VoidSamFunction samFunction = () -> samClientFactory.getResourcesApi(token).deleteResourceV2(RESOURCE_NAME_INSTANCE, instanceId.toString());
         httpSamClientSupport.withRetryAndErrorHandling(samFunction, "deleteInstanceResource");
+    }
+
+    @Override
+    public boolean instanceResourceExists(UUID instanceId){
+        return instanceResourceExists(instanceId, null);
+    }
+
+    @Override
+    public boolean instanceResourceExists(UUID instanceId, String token){
+        return hasPermission(RESOURCE_NAME_INSTANCE, instanceId.toString(), ACTION_READ, "instanceResourceExists", token);
     }
 
     /**
@@ -119,7 +147,6 @@ public class HttpSamDao implements SamDao {
     public void emptySamStatusCache() {
         LOGGER.debug("emptying samStatus cache");
     }
-
 
 }
 
