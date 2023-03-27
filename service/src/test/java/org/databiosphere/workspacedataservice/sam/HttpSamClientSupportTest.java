@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.sam;
 
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
+import org.databiosphere.workspacedataservice.retry.RetryLoggingListener;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.SamException;
@@ -24,7 +25,7 @@ import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.Vo
 /**
  * Tests for @see HttpSamClientSupport
  */
-@SpringBootTest(classes = SamConfig.class,
+@SpringBootTest(classes = {SamConfig.class, RetryLoggingListener.class},
         properties = {"sam.retry.maxAttempts=2",
                 "sam.retry.backoff.delay=10"}) // aggressive retry settings so unit test doesn't run too long
 @EnableRetry
