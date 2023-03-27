@@ -800,6 +800,8 @@ components:
            $ref: '#/components/schemas/component'
          ping:
            $ref: '#/components/schemas/component'
+         Permissions:
+           $ref: '#/components/schemas/component'
     component:
       type: object
       properties:

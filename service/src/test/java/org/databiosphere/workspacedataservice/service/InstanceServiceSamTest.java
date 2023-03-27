@@ -52,7 +52,7 @@ class InstanceServiceSamTest {
         instanceService = new InstanceService(instanceDao, samDao);
 
         // return the mock ResourcesApi from the mock SamClientFactory
-        given(mockSamClientFactory.getResourcesApi())
+        given(mockSamClientFactory.getResourcesApi(null))
                 .willReturn(mockResourcesApi);
         // Sam permission check will always return true
         given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
