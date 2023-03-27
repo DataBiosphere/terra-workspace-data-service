@@ -2,10 +2,6 @@ package org.databiosphere.workspacedataservice.sam;
 
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
-import org.broadinstitute.dsde.workbench.client.sam.model.UserResourcesResponse;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Mock for the Sam Client ResourcesApi for use in unit tests.

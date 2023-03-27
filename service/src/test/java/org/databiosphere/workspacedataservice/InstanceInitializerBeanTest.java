@@ -52,8 +52,8 @@ class InstanceInitializerBeanTest {
 
     @BeforeEach
     void beforeEach() {
-        given(mockManagedIdentityDao.getAzureCredential()
-        ).willReturn("aRandomTokenString");
+        given(mockManagedIdentityDao.getAzureCredential())
+                .willReturn("aRandomTokenString");
         given(mockSamClientFactory.getResourcesApi(any()))
                 .willReturn(mockResourcesApi);
 
