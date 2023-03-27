@@ -58,7 +58,7 @@ public class InstanceInitializerBean {
         DataAccessException e) {
             LOGGER.error("Failed to create default schema id for workspaceId {}", workspaceId);
         } catch (SamException e) {
-            LOGGER.error("Exception thrown from sam, wds-instance resource and default schema not created :" + e.getMessage());
+            LOGGER.error("Exception thrown from sam, wds-instance resource and default schema not created : {}" + e.getMessage());
         }
     }
 }

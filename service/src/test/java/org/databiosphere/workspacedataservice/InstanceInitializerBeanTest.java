@@ -71,7 +71,7 @@ class InstanceInitializerBeanTest {
 
     @Test
     void testHappyPath() throws ApiException{
-        given(mockResourcesApi.resourcePermissionV2(eq("wds-instance"), eq(instanceID.toString()), eq(SamDao.ACTION_READ)))
+        given(mockResourcesApi.resourcePermissionV2("wds-instance", instanceID.toString(), SamDao.ACTION_READ))
                 .willReturn(false);
         assertDoesNotThrow(() -> instanceInitializerBean.initializeInstance());
         verify(samDao, times(1)).createInstanceResource(any(), any(), any());
@@ -80,7 +80,7 @@ class InstanceInitializerBeanTest {
 
     @Test
     void testResourceExistsButNotSchema() throws ApiException {
-        given(mockResourcesApi.resourcePermissionV2(eq("wds-instance"), eq(instanceID.toString()), eq(SamDao.ACTION_READ)))
+        given(mockResourcesApi.resourcePermissionV2("wds-instance", instanceID.toString(), SamDao.ACTION_READ))
                 .willReturn(true);
         instanceInitializerBean.initializeInstance();
         //verify that method to create sam resource was NOT called
