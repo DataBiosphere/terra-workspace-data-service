@@ -50,7 +50,6 @@ jobs:
         # for any requests to /api/resources/*
         run: |
           export SAM_URL=http://localhost:9889
-          export WORKSPACE_ID=c9ed46a9-fc9b-4130-a608-cf3760ed70a0
           ./gradlew bootRun &
           sleep 30
           curl -v -X POST http://localhost:8080/instances/v0.2/123e4567-e89b-12d3-a456-426614174000
