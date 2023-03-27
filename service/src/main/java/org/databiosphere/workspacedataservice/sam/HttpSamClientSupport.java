@@ -49,7 +49,8 @@ public class HttpSamClientSupport {
     @Retryable(include = {SamRetryableException.class},
             maxAttemptsExpression = "${sam.retry.maxAttempts}",
             backoff = @Backoff(delayExpression = "${sam.retry.backoff.delay}",
-                    multiplierExpression = "${sam.retry.backoff.multiplier}"))
+                    multiplierExpression = "${sam.retry.backoff.multiplier}"),
+            listeners = {"retryLoggingListener"})
     public <T> T withRetryAndErrorHandling(SamFunction<T> samFunction, String loggerHint) throws SamException, AuthenticationException, AuthorizationException {
         try {
             LOGGER.debug("Sending {} request to Sam ...", loggerHint);
