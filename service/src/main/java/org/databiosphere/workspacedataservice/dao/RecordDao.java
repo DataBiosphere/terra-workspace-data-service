@@ -59,9 +59,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.databiosphere.workspacedataservice.service.model.ReservedNames.PRIMARY_KEY_COLUMN_CACHE;
-import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
-import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
+import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.*;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.RECORD_TYPE;
 
@@ -81,73 +80,13 @@ public class RecordDao {
 	private final ObjectMapper objectMapper;
 	private final CachedQueryDao cachedQueryDao;
 
-	@Value("${spring.datasource.username}")
-	private String wdsDbUser;
-
 	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
-					 @Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf, ObjectMapper objectMapper, CachedQueryDao cachedQueryDao,
-					 @Value("${twds.instance.workspace-id}") String workspaceId) {
+					 @Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf, ObjectMapper objectMapper, CachedQueryDao cachedQueryDao) {
 		this.namedTemplate = namedTemplate;
 		this.templateForStreaming = templateForStreaming;
 		this.inferer = inf;
 		this.objectMapper = objectMapper;
 		this.cachedQueryDao = cachedQueryDao;
-
-		createDefaultInstanceSchema(workspaceId);
-	}
-
-	private void createDefaultInstanceSchema(String workspaceId) {
-		LOGGER.info("Default workspace id loaded as {}", workspaceId);
-
-		// TODO: AJ-897 execute this as the WDS managed identity so it can call Sam
-		// TODO: AJ-897 move to a dedicated StartupBean
-
-		try {
-			UUID instanceId = UUID.fromString(workspaceId);
-			if (!instanceSchemaExists(instanceId)) {
-				createSchema(instanceId);
-				LOGGER.info("Creating default schema id succeeded for workspaceId {}", workspaceId);
-			}
-		} catch (IllegalArgumentException e) {
-			LOGGER.warn("Workspace id could not be parsed, a default schema won't be created. Provided id: {}", workspaceId);
-		} catch (DataAccessException e) {
-			LOGGER.error("Failed to create default schema id for workspaceId {}", workspaceId);
-		}
-	}
-
-	public boolean instanceSchemaExists(UUID instanceId) {
-		return Boolean.TRUE.equals(namedTemplate.queryForObject(
-				"select exists(select from information_schema.schemata WHERE schema_name = :workspaceSchema)",
-				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), Boolean.class));
-	}
-
-	private UUID safeParseUUID(String input) {
-		try {
-			return UUID.fromString(input);
-		} catch (IllegalArgumentException iae) {
-			LOGGER.warn("Found unexpected schema name while listing schemas: [{}]", input);
-			return null;
-		}
-	}
-
-	public List<UUID> listInstanceSchemas() {
-		List<String> schemas = namedTemplate.getJdbcTemplate()
-				.queryForList("select schema_name from information_schema.schemata " +
-						"where schema_owner = ? order by schema_name",
-						String.class, wdsDbUser);
-		// WDS only allows creation of schemas that are UUIDs
-		return schemas.stream().map(s -> safeParseUUID(s))
-				.filter(Objects::nonNull).toList();
-	}
-
-	public void createSchema(UUID instanceId) {
-		namedTemplate.getJdbcTemplate().update("create schema " + quote(instanceId.toString()));
-	}
-
-
-	@SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
-	public void dropSchema(UUID instanceId) {
-		namedTemplate.getJdbcTemplate().update("drop schema " + quote(instanceId.toString()) + " cascade");
 	}
 
 	public boolean recordTypeExists(UUID instanceId, RecordType recordType) {
@@ -320,9 +259,6 @@ public class RecordDao {
 		return (primaryKeyCol.equals(RECORD_ID) ? quote(primaryKeyCol) : quote(SqlUtils.validateSqlString(primaryKeyCol, ATTRIBUTE))) + " text primary key";
 	}
 
-	private String quote(String toQuote) {
-		return "\"" + toQuote + "\"";
-	}
 
 	// The expectation is that the record type already matches the schema and
 	// attributes given, as
@@ -610,7 +546,7 @@ public class RecordDao {
 	}
 
 	private String getInsertColList(List<String> existingTableSchema) {
-		return existingTableSchema.stream().map(this::quote).collect(Collectors.joining(", "));
+		return existingTableSchema.stream().map(SqlUtils::quote).collect(Collectors.joining(", "));
 	}
 
 	@SuppressWarnings("squid:S2077")

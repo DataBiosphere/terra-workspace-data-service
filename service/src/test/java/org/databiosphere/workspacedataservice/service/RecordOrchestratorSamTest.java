@@ -2,13 +2,10 @@ package org.databiosphere.workspacedataservice.service;
 
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
-import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
-import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.SamException;
-import org.databiosphere.workspacedataservice.shared.model.*;
-import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,16 +14,8 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.ActiveProfiles;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
@@ -35,11 +24,12 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
 @SpringBootTest
+@ActiveProfiles(profiles = { "mock-sam", "mock-instance-dao" })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordOrchestratorSamTest {
 
     @Autowired
-    private RecordDao recordDao;
+    private InstanceDao instanceDao;
     @Autowired
     private RecordOrchestratorService recordOrchestratorService;
     // mock for the SamClientFactory; since this is a Spring bean we can use @MockBean
@@ -54,10 +44,10 @@ class RecordOrchestratorSamTest {
 
     @BeforeEach
     void setUp() {
-        if (!recordDao.instanceSchemaExists(INSTANCE)) {
-            recordDao.createSchema(INSTANCE);
+        if (!instanceDao.instanceSchemaExists(INSTANCE)) {
+            instanceDao.createSchema(INSTANCE);
         }
-        given(mockSamClientFactory.getResourcesApi())
+        given(mockSamClientFactory.getResourcesApi(null))
                 .willReturn(mockResourcesApi);
 
         // clear call history for the mock
@@ -66,7 +56,7 @@ class RecordOrchestratorSamTest {
 
     @AfterEach
     void cleanUp() {
-        recordDao.dropSchema(INSTANCE);
+        instanceDao.dropSchema(INSTANCE);
     }
 
     @Test

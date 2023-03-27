@@ -49,6 +49,9 @@ class RecordDaoTest {
 	@Autowired
 	RecordDao recordDao;
 
+	@Autowired
+	InstanceDao instanceDao;
+
 	UUID instanceId;
 	RecordType recordType;
 
@@ -79,20 +82,13 @@ class RecordDaoTest {
 		instanceId = UUID.randomUUID();
 		recordType = RecordType.valueOf("testRecordType");
 
-		recordDao.createSchema(instanceId);
+		instanceDao.createSchema(instanceId);
 		recordDao.createRecordType(instanceId, Collections.emptyMap(), recordType, new RelationCollection(Collections.emptySet(), Collections.emptySet()), PRIMARY_KEY);
 	}
 
 	@AfterEach
 	void cleanUp(){
-		recordDao.dropSchema(instanceId);
-	}
-
-	@Test
-	void defaultSchemaIsCreated() {
-		LOGGER.info("Default workspace id loaded as {}", workspaceId);
-		UUID defaultInstanceId = UUID.fromString(workspaceId);
-		assertTrue(recordDao.instanceSchemaExists(defaultInstanceId));
+		instanceDao.dropSchema(instanceId);
 	}
 
 	/**
@@ -105,12 +101,7 @@ class RecordDaoTest {
 	@Test
 	void listInstances() {
 		// get the list of instances in this DB
-		List<UUID> actualInitialSchemas = recordDao.listInstanceSchemas();
-
-		// check that the default schema exists - see also defaultSchemaIsCreated() above
-		UUID defaultInstanceId = UUID.fromString(workspaceId);
-		assertTrue(actualInitialSchemas.contains(defaultInstanceId),
-				"initial schema list should contain default instance");
+		List<UUID> actualInitialSchemas = instanceDao.listInstanceSchemas();
 
 		// generate some new UUIDs
 		List<UUID> someInstancesToCreate = IntStream.range(0, 5)
@@ -124,10 +115,10 @@ class RecordDaoTest {
 
 		// create the instances
 		someInstancesToCreate.forEach( inst ->
-				recordDao.createSchema(inst));
+				instanceDao.createSchema(inst));
 
 		// get the list of instances again
-		List<UUID> actualSchemasAfterCreation = recordDao.listInstanceSchemas();
+		List<UUID> actualSchemasAfterCreation = instanceDao.listInstanceSchemas();
 
 		// check that the new UUIDs do exist in our instances list.
 		someInstancesToCreate.forEach( inst ->
@@ -136,10 +127,10 @@ class RecordDaoTest {
 
 		// delete the new instances
 		someInstancesToCreate.forEach( inst ->
-				recordDao.dropSchema(inst));
+				instanceDao.dropSchema(inst));
 
 		// get the list of instances again
-		List<UUID> actualSchemasAfterDeletion = recordDao.listInstanceSchemas();
+		List<UUID> actualSchemasAfterDeletion = instanceDao.listInstanceSchemas();
 
 		// check that the new UUIDs do not exist in our instances list, now that we've deleted them
 		someInstancesToCreate.forEach( inst ->
@@ -152,18 +143,13 @@ class RecordDaoTest {
 
 	@Test
 	void listNonUuidInstances() {
-		List<UUID> initialInstances = recordDao.listInstanceSchemas();
+		List<UUID> initialInstances = instanceDao.listInstanceSchemas();
 		namedTemplate.getJdbcTemplate().update("create schema if not exists notAUuid");
-		List<UUID> testableInstances = recordDao.listInstanceSchemas(); // should not throw
+		List<UUID> testableInstances = instanceDao.listInstanceSchemas(); // should not throw
 		// second call should filter out the non-uuid
 		assertIterableEquals(initialInstances, testableInstances);
 		// cleanup
 		namedTemplate.getJdbcTemplate().update("drop schema if exists notAUuid");
-	}
-
-	@Test
-	void workspaceIDNotProvidedNoExceptionThrown() {
-		assertDoesNotThrow(() -> new RecordDao(namedTemplate, templateForStreaming, dataTypeInferer, objectMapper, cachedQueryDao, "UNDEFINED"));
 	}
 
 	@Test

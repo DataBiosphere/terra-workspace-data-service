@@ -1,6 +1,10 @@
 package org.databiosphere.workspacedataservice.service;
 
+import org.databiosphere.workspacedataservice.dao.DataSourceConfig;
+import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.sam.SamConfig;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -25,12 +29,15 @@ import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
-import static org.junit.jupiter.api.Assertions.*;
-@ActiveProfiles(profiles = "mock-sam")
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+@ActiveProfiles(profiles = { "mock-sam" })
 @SpringBootTest
+//@SpringBootTest(classes = { MockInstanceDaoConfig.class, SamConfig.class, RecordOrchestratorService.class, RecordDao.class, DataSourceConfig.class })
 class RecordOrchestratorServiceTest {
 
-    @Autowired private RecordDao recordDao;
+    @Autowired private InstanceDao instanceDao;
     @Autowired private RecordOrchestratorService recordOrchestratorService;
 
     private static final UUID INSTANCE = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
@@ -42,14 +49,14 @@ class RecordOrchestratorServiceTest {
 
     @BeforeEach
     void setUp() {
-        if (!recordDao.instanceSchemaExists(INSTANCE)) {
-            recordDao.createSchema(INSTANCE);
+        if (!instanceDao.instanceSchemaExists(INSTANCE)) {
+            instanceDao.createSchema(INSTANCE);
         }
     }
 
     @AfterEach
     void cleanUp() {
-        recordDao.dropSchema(INSTANCE);
+        instanceDao.dropSchema(INSTANCE);
     }
 
     @Test
