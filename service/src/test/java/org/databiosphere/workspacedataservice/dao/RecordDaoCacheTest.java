@@ -23,7 +23,6 @@ import static org.mockito.Mockito.*;
 @ContextConfiguration
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class RecordDaoCacheTest {
 
     @Autowired
