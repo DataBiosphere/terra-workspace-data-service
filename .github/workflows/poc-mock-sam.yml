@@ -34,7 +34,7 @@ jobs:
 
       - name: Mock Sam via command-line docker run
         run: |
-          docker run -v ${{ github.workspace }}/mock-sam/nginx.conf:/etc/nginx/nginx.conf:ro -p 9889:80 -d nginx:1.23.3
+          docker run -v ${{ github.workspace }}/service/src/test/resources/nginx.conf:/etc/nginx/nginx.conf:ro -p 9889:80 -d nginx:1.23.3
 
       - name: Set up JDK
         uses: actions/setup-java@v2
