@@ -80,22 +80,22 @@ public class TsvDeserializerBenchmark {
         dataTypeInferer.inferType(booleanString);
     }
 
-    @Benchmark
+//    @Benchmark
     public void cellToAttributeDate() {
         tsvDeserializer.cellToAttribute(dateString);
     }
 
-    @Benchmark
+//    @Benchmark
     public void inferTypeDate() {
         dataTypeInferer.inferType(dateString);
     }
 
-    @Benchmark
+//    @Benchmark
     public void cellToAttributeDatetime() {
         tsvDeserializer.cellToAttribute(datetimeString);
     }
 
-    @Benchmark
+//    @Benchmark
     public void inferTypeDatetime() {
         dataTypeInferer.inferType(datetimeString);
     }
