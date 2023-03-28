@@ -5,7 +5,6 @@ import org.broadinstitute.dsde.workbench.client.sam.model.FullyQualifiedResource
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,19 +12,23 @@ import org.springframework.scheduling.annotation.Scheduled;
 import java.util.Collections;
 import java.util.UUID;
 
+import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.SamFunction;
+import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.VoidSamFunction;
+
 /**
  * Implementation of SamDao that accepts a SamClientFactory,
  * then asks that factory for a new ResourcesApi to use within each
  * method invocation.
  */
-public class HttpSamDao extends HttpSamClientSupport implements SamDao {
+public class HttpSamDao implements SamDao {
 
+    protected final SamClientFactory samClientFactory;
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpSamDao.class);
-    private final SamClientFactory samClientFactory;
+    private final HttpSamClientSupport httpSamClientSupport;
 
-    public HttpSamDao(SamClientFactory samClientFactory) {
+    public HttpSamDao(SamClientFactory samClientFactory, HttpSamClientSupport httpSamClientSupport) {
         this.samClientFactory = samClientFactory;
-
+        this.httpSamClientSupport = httpSamClientSupport;
     }
 
     /**
@@ -37,8 +40,13 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
      */
     @Override
     public boolean hasCreateInstancePermission(UUID parentWorkspaceId) {
+        return hasCreateInstancePermission(parentWorkspaceId, null);
+    }
+
+    @Override
+    public boolean hasCreateInstancePermission(UUID parentWorkspaceId, String token) {
         return hasPermission(RESOURCE_NAME_WORKSPACE, parentWorkspaceId.toString(), ACTION_WRITE,
-                "hasCreateInstancePermission");
+                "hasCreateInstancePermission", token);
     }
 
     /**
@@ -50,15 +58,19 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
      */
     @Override
     public boolean hasDeleteInstancePermission(UUID instanceId) {
+        return hasDeleteInstancePermission(instanceId, null);
+    }
+    @Override
+    public boolean hasDeleteInstancePermission(UUID instanceId, String token) {
         return hasPermission(RESOURCE_NAME_INSTANCE, instanceId.toString(), ACTION_DELETE,
-                "hasDeleteInstancePermission");
+                "hasDeleteInstancePermission", token);
     }
 
     // helper implementation for permission checks
-    private boolean hasPermission(String resourceType, String resourceId, String action, String loggerHint) {
-        SamFunction<Boolean> samFunction = () -> samClientFactory.getResourcesApi()
+    private boolean hasPermission(String resourceType, String resourceId, String action, String loggerHint, String token) {
+        SamFunction<Boolean> samFunction = () -> samClientFactory.getResourcesApi(token)
                 .resourcePermissionV2(resourceType, resourceId, action);
-        return withSamErrorHandling(samFunction, loggerHint);
+        return httpSamClientSupport.withRetryAndErrorHandling(samFunction, loggerHint);
     }
 
     /**
@@ -71,6 +83,11 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
      */
     @Override
     public void createInstanceResource(UUID instanceId, UUID parentWorkspaceId) {
+        createInstanceResource(instanceId, parentWorkspaceId, null);
+    }
+
+    @Override
+    public void createInstanceResource(UUID instanceId, UUID parentWorkspaceId, String token) {
         FullyQualifiedResourceId parent = new FullyQualifiedResourceId();
         parent.setResourceTypeName(RESOURCE_NAME_WORKSPACE);
         parent.setResourceId(parentWorkspaceId.toString());
@@ -80,8 +97,8 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
         createResourceRequest.setParent(parent);
         createResourceRequest.setAuthDomain(Collections.emptyList());
 
-        VoidSamFunction samFunction = () -> samClientFactory.getResourcesApi().createResourceV2(RESOURCE_NAME_INSTANCE, createResourceRequest);
-        withSamErrorHandling(samFunction, "createInstanceResource");
+        VoidSamFunction samFunction = () -> samClientFactory.getResourcesApi(token).createResourceV2(RESOURCE_NAME_INSTANCE, createResourceRequest);
+        httpSamClientSupport.withRetryAndErrorHandling(samFunction, "createInstanceResource");
     }
 
     /**
@@ -91,8 +108,23 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
      */
     @Override
     public void deleteInstanceResource(UUID instanceId) {
-        VoidSamFunction samFunction = () -> samClientFactory.getResourcesApi().deleteResourceV2(RESOURCE_NAME_INSTANCE, instanceId.toString());
-        withSamErrorHandling(samFunction, "deleteInstanceResource");
+        deleteInstanceResource(instanceId, null);
+    }
+
+    @Override
+    public void deleteInstanceResource(UUID instanceId, String token) {
+        VoidSamFunction samFunction = () -> samClientFactory.getResourcesApi(token).deleteResourceV2(RESOURCE_NAME_INSTANCE, instanceId.toString());
+        httpSamClientSupport.withRetryAndErrorHandling(samFunction, "deleteInstanceResource");
+    }
+
+    @Override
+    public boolean instanceResourceExists(UUID instanceId){
+        return instanceResourceExists(instanceId, null);
+    }
+
+    @Override
+    public boolean instanceResourceExists(UUID instanceId, String token){
+        return hasPermission(RESOURCE_NAME_INSTANCE, instanceId.toString(), ACTION_READ, "instanceResourceExists", token);
     }
 
     /**
@@ -102,7 +134,7 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
     @Cacheable(value = "samStatus", key="'getSystemStatus'")
     public SystemStatus getSystemStatus() {
         SamFunction<SystemStatus> samFunction = () -> samClientFactory.getStatusApi().getSystemStatus();
-        return withSamErrorHandling(samFunction, "getSystemStatus");
+        return httpSamClientSupport.withRetryAndErrorHandling(samFunction, "getSystemStatus");
     }
 
     /**
@@ -115,7 +147,6 @@ public class HttpSamDao extends HttpSamClientSupport implements SamDao {
     public void emptySamStatusCache() {
         LOGGER.debug("emptying samStatus cache");
     }
-
 
 }
 

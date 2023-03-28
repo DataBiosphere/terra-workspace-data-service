@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.dao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -24,9 +23,8 @@ public class PostgresInstanceDao implements InstanceDao {
 
     private final NamedParameterJdbcTemplate namedTemplate;
 
-    public PostgresInstanceDao(NamedParameterJdbcTemplate namedTemplate, @Value("${twds.instance.workspace-id}") String workspaceId) {
+    public PostgresInstanceDao(NamedParameterJdbcTemplate namedTemplate) {
         this.namedTemplate = namedTemplate;
-        createDefaultInstanceSchema(workspaceId);
     }
 
     @Override
@@ -60,26 +58,6 @@ public class PostgresInstanceDao implements InstanceDao {
         namedTemplate.getJdbcTemplate().update("drop schema " + quote(instanceId.toString()) + " cascade");
     }
 
-
-    private void createDefaultInstanceSchema(String workspaceId) {
-        LOGGER.info("Default workspace id loaded as {}", workspaceId);
-
-        // TODO: AJ-897 execute this as the WDS managed identity so it can call Sam
-        // TODO: AJ-897 move to a dedicated StartupBean
-
-        try {
-            UUID instanceId = UUID.fromString(workspaceId);
-            if (!instanceSchemaExists(instanceId)) {
-                createSchema(instanceId);
-                LOGGER.info("Creating default schema id succeeded for workspaceId {}", workspaceId);
-            }
-        } catch (IllegalArgumentException e) {
-            LOGGER.warn("Workspace id could not be parsed, a default schema won't be created. Provided id: {}", workspaceId);
-        } catch (DataAccessException e) {
-            LOGGER.error("Failed to create default schema id for workspaceId {}", workspaceId);
-        }
-    }
-
     private UUID safeParseUUID(String input) {
         try {
             return UUID.fromString(input);
@@ -88,6 +66,5 @@ public class PostgresInstanceDao implements InstanceDao {
             return null;
         }
     }
-
 
 }

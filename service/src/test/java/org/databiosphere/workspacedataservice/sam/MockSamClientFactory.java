@@ -8,7 +8,8 @@ import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
  * For use in unit tests.
  */
 public class MockSamClientFactory implements SamClientFactory {
-    public ResourcesApi getResourcesApi() {
+    
+    public ResourcesApi getResourcesApi(String token) {
         return new MockSamResourcesApi();
     }
 

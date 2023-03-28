@@ -10,7 +10,7 @@ import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
  */
 public interface SamClientFactory {
 
-    ResourcesApi getResourcesApi();
+    ResourcesApi getResourcesApi(String token);
     StatusApi getStatusApi();
 
 }

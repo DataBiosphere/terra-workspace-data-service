@@ -24,4 +24,5 @@ public class MockSamResourcesApi extends ResourcesApi {
     public void deleteResourceV2(String resourceTypeName, String resourceId) {
         // noop; returns void
     }
+
 }
