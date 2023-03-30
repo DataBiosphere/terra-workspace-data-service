@@ -1,7 +1,11 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.WorkspaceDataServiceApplication;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.tsv.TsvDeserializer;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -19,6 +23,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -50,9 +55,10 @@ public class ApiBenchmark {
         } catch(Exception e) {
             logger.error("failed to boot Spring context: " + e.getMessage(), e);
         }
-        // load the TSV file
-        tsvFile = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
-                ApiBenchmark.class.getResourceAsStream("/upload.tsv"));
+        // load a few records
+
+//        tsvFile = new MockMultipartFile("records", "test.tsv", MediaType.TEXT_PLAIN_VALUE,
+//                ApiBenchmark.class.getResourceAsStream("/upload.tsv"));
         // create instance
         recordController.createInstance(instanceId, VERSION, Optional.empty());
     }
@@ -63,11 +69,19 @@ public class ApiBenchmark {
     }
 
     @Benchmark
-    public void uploadTsv() throws IOException {
-        recordController.tsvUpload(instanceId, VERSION,
+    public void upsertRecord() throws IOException {
+        RecordAttributes recordAttributes = new RecordAttributes(Map.of("hello",
+                RandomStringUtils.randomAlphabetic(16)));
+        RecordRequest recordRequest = new RecordRequest(recordAttributes);
+
+        recordController.upsertSingleRecord(instanceId, VERSION,
                 RecordType.valueOf("my-record-type"),
-                Optional.of("my-primary-key"),
-                tsvFile);
+                "1", Optional.empty(), recordRequest);
+//
+//        recordController.tsvUpload(instanceId, VERSION,
+//                RecordType.valueOf("my-record-type"),
+//                Optional.of("my-primary-key"),
+//                tsvFile);
     }
 
 }
