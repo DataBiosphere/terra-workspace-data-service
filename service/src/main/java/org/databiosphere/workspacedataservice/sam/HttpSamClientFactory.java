@@ -38,14 +38,18 @@ public class HttpSamClientFactory implements SamClientFactory {
         }
         if (accessToken == null){
             // grab the current user's bearer token (see BearerTokenFilter)
-            Object token = RequestContextHolder.currentRequestAttributes()
-                    .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
-            // add the user's bearer token to the client
-            if (!Objects.isNull(token)) {
-                LOGGER.debug("setting access token for Sam request");
-                apiClient.setAccessToken(token.toString());
+            if (RequestContextHolder.getRequestAttributes() != null) {
+                Object token = RequestContextHolder.currentRequestAttributes()
+                        .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
+                // add the user's bearer token to the client
+                if (!Objects.isNull(token)) {
+                    LOGGER.debug("setting access token for Sam request");
+                    apiClient.setAccessToken(token.toString());
+                } else {
+                    LOGGER.warn("No access token found for Sam request.");
+                }
             } else {
-                LOGGER.warn("No access token found for Sam request.");
+                LOGGER.warn("No explicit access token and no thread-bound token attribute found for Sam request.");
             }
         } else {
             apiClient.setAccessToken(accessToken);
