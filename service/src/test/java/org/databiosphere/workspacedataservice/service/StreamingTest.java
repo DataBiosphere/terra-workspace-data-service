@@ -5,6 +5,7 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
 import java.util.List;
@@ -13,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.shared.model.OperationType.DELETE;
 import static org.databiosphere.workspacedataservice.shared.model.OperationType.UPSERT;
 
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(classes = JsonConfig.class)
 class StreamingTest {
 
