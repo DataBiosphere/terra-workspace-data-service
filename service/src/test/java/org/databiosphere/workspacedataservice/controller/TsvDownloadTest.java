@@ -17,6 +17,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.servlet.function.ServerRequest;
 
@@ -35,6 +36,7 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ActiveProfiles(profiles = "mock-sam")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class TsvDownloadTest {
 

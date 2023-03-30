@@ -111,6 +111,24 @@ public class HttpSamDao implements SamDao {
         deleteInstanceResource(instanceId, null);
     }
 
+    /**
+     * Check if the current user has permission to write to a "wds-instance" resource from Sam.
+     * Implemented as a check for write permission on the resource.
+     *
+     * @param instanceId the id of the "wds-instance" resource to be written to
+     * @return true if the user has permission
+     */
+    @Override
+    public boolean hasWriteInstancePermission(UUID instanceId) {
+        return hasWriteInstancePermission(instanceId, null);
+    }
+
+    @Override
+    public boolean hasWriteInstancePermission(UUID instanceId, String token) {
+        return hasPermission(RESOURCE_NAME_INSTANCE, instanceId.toString(), ACTION_WRITE,
+                "hasWriteInstancePermission", token);
+    }
+
     @Override
     public void deleteInstanceResource(UUID instanceId, String token) {
         VoidSamFunction samFunction = () -> samClientFactory.getResourcesApi(token).deleteResourceV2(RESOURCE_NAME_INSTANCE, instanceId.toString());
@@ -147,7 +165,6 @@ public class HttpSamDao implements SamDao {
     public void emptySamStatusCache() {
         LOGGER.debug("emptying samStatus cache");
     }
-
 }
 
 

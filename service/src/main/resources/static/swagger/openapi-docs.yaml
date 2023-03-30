@@ -71,6 +71,8 @@ paths:
         the attributes in the request body.
         TODO: add a query parameter to allow/disallow overwriting existing records?
       operationId: createOrReplaceRecord
+      security:
+        - bearerAuth: [ ]
       tags:
         - Records
       parameters:
@@ -95,6 +97,8 @@ paths:
     patch:
       summary: Update record
       operationId: updateRecord
+      security:
+        - bearerAuth: [ ]
       description: |
         Updates the record of the specified type and id.
         Any attributes included in the request body will be created or overwritten.
@@ -128,6 +132,8 @@ paths:
       summary: Delete record
       description: Deletes the record at the specified type and id.
       operationId: deleteRecord
+      security:
+        - bearerAuth: [ ]
       tags:
         - Records
       parameters:
@@ -207,6 +213,8 @@ paths:
       tags:
         - Records
       operationId: uploadTSV
+      security:
+        - bearerAuth: [ ]
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -249,6 +257,8 @@ paths:
       summary: Batch write records
       description: Perform a batch of upsert / delete operations on multiple records
       operationId: batchWriteRecords
+      security:
+        - bearerAuth: [ ]
       tags:
         - Records
       parameters:
@@ -359,6 +369,8 @@ paths:
       summary: Delete record type
       description: Delete record type. All records of this type will be deleted.
       operationId: deleteRecordType
+      security:
+        - bearerAuth: [ ]
       tags:
         - Schema
       parameters:

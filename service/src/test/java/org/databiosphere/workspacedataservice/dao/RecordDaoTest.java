@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -39,6 +40,7 @@ import java.util.stream.IntStream;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.junit.jupiter.api.Assertions.*;
 
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordDaoTest {
