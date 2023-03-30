@@ -42,15 +42,19 @@ public class SentryInitializer  {
 	@Bean
 	public SmartInitializingSingleton initialize() {
 		String env = urlToEnv(samurl);
-		return () ->
-        Sentry.init(options -> {
-				options.setEnvironment(env);
-				options.setDsn(environments.contains(env) ? dsn : "");
-				options.setServerName(releaseName);
-				options.setRelease(release);
-				options.setTag("workspaceId", workspaceId);
-				options.setTag("mrg", mrg);
-			});
+		if (DEFAULT_ENV.equals(env)) {
+			return Sentry::close;
+		} else {
+			return () ->
+					Sentry.init(options -> {
+						options.setEnvironment(env);
+						options.setDsn(environments.contains(env) ? dsn : "");
+						options.setServerName(releaseName);
+						options.setRelease(release);
+						options.setTag("workspaceId", workspaceId);
+						options.setTag("mrg", mrg);
+					});
+		}
 	}
 
 
