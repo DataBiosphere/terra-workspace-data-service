@@ -85,6 +85,8 @@ jobs:
           # Disable github pages
           auto-push: true
           gh-pages-branch: gh-pages # this is the default
+
+          # benchmark graphs available at https://databiosphere.github.io/terra-workspace-data-service/dev/bench/
           benchmark-data-dir-path: docs/dev/bench
-          #
+
           save-data-file: true
