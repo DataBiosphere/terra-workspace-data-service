@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1680281878090,
+  "lastUpdate": 1680281879944,
   "repoUrl": "https://github.com/DataBiosphere/terra-workspace-data-service",
   "entries": {
     "Benchmark": [
@@ -282,6 +282,44 @@ window.BENCHMARK_DATA = {
           {
             "name": "org.databiosphere.workspacedataservice.service.TsvDeserializerBenchmark.inferTypeJson",
             "value": 534779.4209417927,
+            "unit": "ops/s",
+            "extra": "iterations: 2\nforks: 2\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "DataBiosphere",
+            "username": "DataBiosphere"
+          },
+          "committer": {
+            "name": "DataBiosphere",
+            "username": "DataBiosphere"
+          },
+          "id": "d5a4f8b379e9e7a5bb8122847d3b70372218e07d",
+          "message": "POC of JMH",
+          "timestamp": "2023-03-21T17:47:19Z",
+          "url": "https://github.com/DataBiosphere/terra-workspace-data-service/pull/196/commits/d5a4f8b379e9e7a5bb8122847d3b70372218e07d"
+        },
+        "date": 1680281877527,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "org.databiosphere.workspacedataservice.controller.ApiBenchmark.upsertRecord",
+            "value": 302.7306782401038,
+            "unit": "ops/s",
+            "extra": "iterations: 2\nforks: 2\nthreads: 1"
+          },
+          {
+            "name": "org.databiosphere.workspacedataservice.service.TsvDeserializerBenchmark.cellToAttributeJson",
+            "value": 821184.911533385,
+            "unit": "ops/s",
+            "extra": "iterations: 2\nforks: 2\nthreads: 1"
+          },
+          {
+            "name": "org.databiosphere.workspacedataservice.service.TsvDeserializerBenchmark.inferTypeJson",
+            "value": 505134.1743183633,
             "unit": "ops/s",
             "extra": "iterations: 2\nforks: 2\nthreads: 1"
           }
