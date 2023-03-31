@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1680274657376,
+  "lastUpdate": 1680278012408,
   "repoUrl": "https://github.com/DataBiosphere/terra-workspace-data-service",
   "entries": {
     "Benchmark": [
@@ -154,6 +154,32 @@ window.BENCHMARK_DATA = {
           {
             "name": "org.databiosphere.workspacedataservice.controller.ApiBenchmark.upsertRecord",
             "value": 679.5137644377257,
+            "unit": "ops/s",
+            "extra": "iterations: 2\nforks: 2\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "DataBiosphere",
+            "username": "DataBiosphere"
+          },
+          "committer": {
+            "name": "DataBiosphere",
+            "username": "DataBiosphere"
+          },
+          "id": "4f5d0989020a3bcf827ef96d0cc53aef470e62f9",
+          "message": "POC of JMH",
+          "timestamp": "2023-03-21T17:47:19Z",
+          "url": "https://github.com/DataBiosphere/terra-workspace-data-service/pull/196/commits/4f5d0989020a3bcf827ef96d0cc53aef470e62f9"
+        },
+        "date": 1680278011675,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "org.databiosphere.workspacedataservice.controller.ApiBenchmark.upsertRecord",
+            "value": 671.5336810462418,
             "unit": "ops/s",
             "extra": "iterations: 2\nforks: 2\nthreads: 1"
           }
