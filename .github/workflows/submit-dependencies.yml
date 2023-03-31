@@ -1,0 +1,22 @@
+name: Publish Docker Images to GCR and ACR
+on:
+  workflow_call:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Dependency Submission
+    runs-on: ubuntu-latest
+    permissions: # The Dependency Submission API requires write permission
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Submit Dependencies
+        uses: mikepenz/gradle-dependency-submission@v0.8.6
+        with:
+    gradle-build-module: |-
+      :client
+      :service
