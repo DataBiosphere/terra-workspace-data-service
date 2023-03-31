@@ -51,11 +51,11 @@ jobs:
           SAM_URL=http://localhost:9889 ./gradlew jmh
 
       # Download previous benchmark result from cache (if exists)
-      - name: Download previous benchmark data
-        uses: actions/cache@v3
-        with:
-          path: ./cache
-          key: ${{ runner.os }}-benchmark
+#      - name: Download previous benchmark data
+#        uses: actions/cache@v3
+#        with:
+#          path: ./cache
+#          key: ${{ runner.os }}-benchmark
 
       # Run `github-action-benchmark` action
       - name: Add benchmark PR job summary
