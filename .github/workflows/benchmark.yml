@@ -81,6 +81,8 @@ jobs:
           # Mention @davidangb in the commit comment
           # alert-comment-cc-users: '@davidangb'
           # Disable github pages
-          auto-push: false
+          auto-push: true
+          gh-pages-branch: gh-pages # this is the default
+          benchmark-data-dir-path: docs/dev/bench
           #
           save-data-file: true
