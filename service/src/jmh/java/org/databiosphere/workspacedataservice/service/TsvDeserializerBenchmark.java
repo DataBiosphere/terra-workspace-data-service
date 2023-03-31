@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
-//@State(value = Scope.Benchmark)
+@State(value = Scope.Benchmark)
 public class TsvDeserializerBenchmark {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -26,7 +26,7 @@ public class TsvDeserializerBenchmark {
      * Setup: boot up the Spring context for WorkspaceDataServiceApplication.
      * From that context, grab the beans we want to test.
      */
-//    @Setup(Level.Trial)
+    @Setup(Level.Trial)
     public synchronized void initialize() {
         try {
             String args = "--spring.main.allow-bean-definition-overriding=true";
@@ -40,7 +40,7 @@ public class TsvDeserializerBenchmark {
         }
     }
 
-//    @TearDown
+    @TearDown
     public void tearDown() {
         SpringApplication.exit(context, () -> 0); // exit with code 0
     }
@@ -60,12 +60,12 @@ public class TsvDeserializerBenchmark {
     private final String stringString = "Hello world";
 
 
-//    @Benchmark
+    @Benchmark
     public void cellToAttributeJson() {
         tsvDeserializer.cellToAttribute(jsonString);
     }
 
-//    @Benchmark
+    @Benchmark
     public void inferTypeJson() {
         dataTypeInferer.inferType(jsonString);
     }
