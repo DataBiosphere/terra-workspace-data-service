@@ -65,8 +65,10 @@ jobs:
           tool: 'jmh'
           # Where the output from the benchmark tool is stored
           output-file-path: service/build/reports/jmh/results.json
+
           # Where the previous data file is stored
-          external-data-json-path: ./cache/benchmark-data.json
+          # external-data-json-path: ./cache/benchmark-data.json
+
           # GitHub API token to make a commit comment or job summary
           github-token: ${{ secrets.GITHUB_TOKEN }}
           # Enable Job Summary for PRs
