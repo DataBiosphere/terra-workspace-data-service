@@ -75,7 +75,7 @@ jobs:
           summary-always: true
           comment-always: true
           #
-          alert-threshold: "200%"
+          alert-threshold: "150%"
           # Workflow will fail when an alert happens
           fail-on-alert: false
           # Enable alert commit comment
