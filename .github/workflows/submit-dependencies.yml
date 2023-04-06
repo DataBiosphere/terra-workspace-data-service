@@ -1,4 +1,4 @@
-name: Publish Docker Images to GCR and ACR
+name: Gradle Dependency Submission
 on:
   workflow_dispatch:
   push:
@@ -17,6 +17,6 @@ jobs:
       - name: Submit Dependencies
         uses: mikepenz/gradle-dependency-submission@v0.8.6
         with:
-    gradle-build-module: |-
-      :client
-      :service
+          gradle-build-module: |-
+            :client
+            :service
