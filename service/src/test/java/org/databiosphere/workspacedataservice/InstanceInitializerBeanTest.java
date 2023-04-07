@@ -107,7 +107,12 @@ class InstanceInitializerBeanTest {
         //verify that method to create resources was NOT called
         verify(samDao, times(0)).createInstanceResource(any(), any(), any());
         assertFalse(instanceDao.instanceSchemaExists(instanceID));
+    }
 
+    @Test
+    void sourceWorkspaceIDNotProvided() {
+        boolean cloneMode = instanceInitializerBean.isInClodeMode();
+        assertFalse(cloneMode);
     }
 
 }
