@@ -13,28 +13,23 @@ import org.springframework.test.context.TestPropertySource;
 
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
 
 @ActiveProfiles({"mock-sam","mock-instance-dao", "local"})
 @SpringBootTest(classes = {SamConfig.class, InstanceInitializerConfig.class, MockInstanceDaoConfig.class})
-@TestPropertySource(properties = "twds.instance.source-workspace-id=b6d37280-b983-46be-886d-9beb266f52a1")
+@TestPropertySource(properties = {"twds.instance.workspace-id=90e1b179-9f83-4a6f-a8c2-db083df4cd03","twds.instance.source-workspace-id=b6d37280-b983-46be-886d-9beb266f52a1"})
 class InstanceInitializerWithSourceWorkspaceTest {
     @Autowired
     InstanceInitializerBean instanceInitializerBean;
     @SpyBean
     InstanceDao instanceDao;
-    @SpyBean
-    SamDao samDao;
 
-    //should match the tws.instance.source-workspace-id property on the class
-    UUID sourceInstanceID = UUID.fromString("b6d37280-b983-46be-886d-9beb266f52a1");
+    //should match the tws.instance.workspace-id property on the class
+    UUID defaultInstanceID = UUID.fromString("90e1b179-9f83-4a6f-a8c2-db083df4cd03");
 
     @Test
     void sourceWorkspaceSchemaExists() {
-        instanceDao.createSchema(sourceInstanceID);
+        instanceDao.createSchema(defaultInstanceID);
         boolean cloneMode = instanceInitializerBean.isInClodeMode();
         assertFalse(cloneMode);
     }

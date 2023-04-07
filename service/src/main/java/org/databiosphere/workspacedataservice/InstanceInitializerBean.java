@@ -32,16 +32,17 @@ public class InstanceInitializerBean {
     }
 
     public boolean isInClodeMode() {
-        LOGGER.info("Source workspace id loaded as {}", sourceWorkspaceId);
         if (sourceWorkspaceId != null && !"".equals(sourceWorkspaceId)){
             LOGGER.info("Source workspace id found, checking database");
             try {
                 //TODO: this is a placeholder for checking that the db has already been cloned;
-                //it won't (necessarily) match the source workspace id
-                return !instanceDao.instanceSchemaExists(UUID.fromString(sourceWorkspaceId));
+                //In the future it could check the clone status,
+                //But for now assuming if we've created a workspace schema, work is done
+                return !instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
             } catch (IllegalArgumentException e) {
-                LOGGER.warn("Source workspace id could not be parsed, unable to clone DB. Provided id: {}", sourceWorkspaceId);
+                LOGGER.warn("Workspace id could not be parsed, unable to clone DB. Provided id: {}", workspaceId);
                 //by default this will continue and return false, thereby creating a default schema - do we want to do that?
+                //If we return true instead, we'll encounter errors down the line...
             }
         }
         return false;
@@ -53,6 +54,8 @@ public class InstanceInitializerBean {
     }
 
     public void initializeInstance() {
+        LOGGER.info("Default workspace id loaded as {}", workspaceId);
+        LOGGER.info("Source workspace id loaded as {}", sourceWorkspaceId);
         if (isInClodeMode())
             initCloneMode();
         else {
@@ -61,8 +64,6 @@ public class InstanceInitializerBean {
     }
 
     public void initializeDefaultInstance() {
-
-        LOGGER.info("Default workspace id loaded as {}", workspaceId);
 
         try {
             UUID instanceId = UUID.fromString(workspaceId);
