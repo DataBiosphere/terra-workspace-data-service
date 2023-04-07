@@ -19,6 +19,7 @@ jobs:
       - name: Submit Dependencies
         uses: mikepenz/gradle-dependency-submission@v0.8.6
         with:
+          gradle-project-path: "terra-workspace-data-service"
           gradle-build-module: |-
             :service
             :client
