@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches: [ '**' ]
 
 jobs:
   build:
@@ -18,5 +20,6 @@ jobs:
         uses: mikepenz/gradle-dependency-submission@v0.8.6
         with:
           gradle-build-module: |-
-            :client
             :service
+            :client
+            
