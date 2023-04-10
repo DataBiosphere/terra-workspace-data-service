@@ -61,10 +61,19 @@ public class HttpSamClientFactory implements SamClientFactory {
      * @return the usable Sam client
      */
     public ResourcesApi getResourcesApi(String token) {
+        // TODO: davidan - temporarily disable all Sam resource operations until AJ-964 and WM-1862 land.
+        // instead of using the real ResourcesApi from the Sam client,
+        // return a DisabledSamResourcesApi, which returns true for all permission checks
+        // and does not create or delete any Sam resources.
+        // note that the Sam StatusApi below is still functional.
+        /*
         ApiClient apiClient = getApiClient(token);
         ResourcesApi resourcesApi = new ResourcesApi();
         resourcesApi.setApiClient(apiClient);
         return resourcesApi;
+        */
+        return new DisabledSamResourcesApi();
+
     }
 
     /**
