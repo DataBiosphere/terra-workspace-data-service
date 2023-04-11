@@ -17,6 +17,9 @@ public class SamConfig {
     @Value("${SAM_URL:}")
     private String samUrl;
 
+    @Value("${sam.enabled:true}")
+    private boolean isSamEnabled;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(SamConfig.class);
 
     @Bean HttpSamClientSupport getHttpSamClientSupport() {
@@ -35,7 +38,13 @@ public class SamConfig {
         // - disable Sam integration, which could result in unauthorized access
         // - stop WDS, which would obviously prevent WDS from working at all
         LOGGER.info("Using Sam base url: '{}'", samUrl);
-        return new HttpSamClientFactory(samUrl);
+        if (isSamEnabled) {
+            LOGGER.info("Sam integration enabled.");
+        } else {
+            LOGGER.warn("Sam integration disabled via sam.enabled property. " +
+                    "All Sam calls will return true/successful but will not connect to Sam.");
+        }
+        return new HttpSamClientFactory(samUrl, isSamEnabled);
     }
 
     @Bean
