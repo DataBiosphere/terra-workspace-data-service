@@ -49,11 +49,12 @@ public class InstanceService {
     public void createInstance(UUID instanceId, String version, Optional<UUID> workspaceId) {
         validateVersion(version);
 
-        UUID samResourceId = instanceId; // id of "wds-instance" Sam resource we will create
-        UUID samParentResourceId = workspaceId.orElse(instanceId); // id of "workspace" Sam resource to use as the parent of "wds-instance"
+        // id of workspace in which this instance exists
+        // if not specified, assume the workspace id is equal to the instance id
+        UUID containingWorkspaceId = workspaceId.orElse(instanceId);
 
         // check that the current user has permission on the parent workspace
-        boolean hasCreateInstancePermission = samDao.hasCreateInstancePermission(samParentResourceId);
+        boolean hasCreateInstancePermission = samDao.hasCreateInstancePermission(containingWorkspaceId);
         LOGGER.debug("hasCreateInstancePermission? {}", hasCreateInstancePermission);
 
         if (!hasCreateInstancePermission) {

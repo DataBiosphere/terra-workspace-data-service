@@ -21,11 +21,6 @@ public interface SamDao {
     String ACTION_WRITE = "write";
 
     /**
-     * Sam action name for read permission
-     */
-    String ACTION_READ = "read";
-
-    /**
      * Check if the current user has permission to create a "wds-instance" resource in Sam
      * @param parentWorkspaceId the workspaceId which will be the parent of the "wds-instance" resource
      * @return true if the user has permission
