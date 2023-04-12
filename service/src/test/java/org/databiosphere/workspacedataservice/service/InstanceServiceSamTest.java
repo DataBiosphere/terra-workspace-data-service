@@ -5,15 +5,12 @@ import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
-import org.databiosphere.workspacedataservice.sam.HttpSamDao;
-import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.sam.SamConfig;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +22,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -92,8 +88,8 @@ class InstanceServiceSamTest {
         verify(mockResourcesApi, times(1))
                 .resourcePermissionV2(anyString(), anyString(), anyString());
 
-        // createInstance should also call Sam's create-resource API exactly once:
-        verify(mockResourcesApi, times(1))
+        // createInstance should never call Sam's create-resource API:
+        verify(mockResourcesApi, times(0))
                 .createResourceV2(anyString(), any(CreateResourceRequestV2.class));
 
         // the permission call should be first,
@@ -101,15 +97,7 @@ class InstanceServiceSamTest {
         callOrder.verify(mockResourcesApi)
                 .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, expectedWorkspaceId.toString(), SamDao.ACTION_WRITE);
 
-        // the create-resource call should be second,
-        // and that call should be for a "wds-instance" resource type with id=instanceid
-        ArgumentCaptor<CreateResourceRequestV2> argumentCaptor = ArgumentCaptor.forClass(CreateResourceRequestV2.class);
-        callOrder.verify(mockResourcesApi)
-                .createResourceV2(eq(SamDao.RESOURCE_NAME_INSTANCE), argumentCaptor.capture());
-        CreateResourceRequestV2 capturedArgument = argumentCaptor.getValue();
-        assertEquals(instanceId.toString(), capturedArgument.getResourceId());
-
-        // and those should be the only calls we made to Sam
+        // and that should be the only call we made to Sam
         verifyNoMoreInteractions(mockResourcesApi);
     }
 
@@ -128,21 +116,16 @@ class InstanceServiceSamTest {
         verify(mockResourcesApi, times(1))
                 .resourcePermissionV2(anyString(), anyString(), anyString());
 
-        // deleteInstance should also call Sam's delete-resource API exactly once:
-        verify(mockResourcesApi, times(1))
+        // deleteInstance should never call Sam's delete-resource API:
+        verify(mockResourcesApi, times(0))
                 .deleteResourceV2(anyString(), anyString());
 
         // the permission call should be first,
-        // and that check should be for "delete" permission on a "wds-instance" with id=instanceId
+        // and that check should be for "write" permission on a workspace with workspaceId=expectedWorkspaceId
         callOrder.verify(mockResourcesApi)
-                .resourcePermissionV2(SamDao.RESOURCE_NAME_INSTANCE, instanceId.toString(), SamDao.ACTION_DELETE);
+                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, instanceId.toString(), SamDao.ACTION_WRITE);
 
-        // the delete-resource call should be second,
-        // and that call should be for a "wds-instance" resource type with id=instanceid
-        callOrder.verify(mockResourcesApi)
-                .deleteResourceV2(SamDao.RESOURCE_NAME_INSTANCE, instanceId.toString());
-
-        // and those should be the only calls we made to Sam
+        // and that should be the only call we made to Sam
         verifyNoMoreInteractions(mockResourcesApi);
     }
 

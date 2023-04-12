@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.service;
 
 import bio.terra.common.db.WriteTransaction;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
-import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -65,8 +64,6 @@ public class InstanceService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This instance already exists");
         }
 
-        // create `wds-instance` resource in Sam, specifying workspace as parent
-        samDao.createInstanceResource(samResourceId, samParentResourceId);
         // create instance schema in Postgres
         createInstanceInDatabase(instanceId);
     }
@@ -88,8 +85,6 @@ public class InstanceService {
             throw new AuthorizationException("Caller does not have permission to delete instance.");
         }
 
-        // delete `wds-instance` resource in Sam
-        samDao.deleteInstanceResource(instanceId);
         // delete instance schema in Postgres
         deleteInstanceFromDatabase(instanceId);
     }

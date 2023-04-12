@@ -1,7 +1,5 @@
 package org.databiosphere.workspacedataservice.sam;
 
-import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
-import org.broadinstitute.dsde.workbench.client.sam.model.FullyQualifiedResourceId;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,11 +7,9 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Scheduled;
 
-import java.util.Collections;
 import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.SamFunction;
-import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.VoidSamFunction;
 
 /**
  * Implementation of SamDao that accepts a SamClientFactory,
@@ -62,7 +58,7 @@ public class HttpSamDao implements SamDao {
     }
     @Override
     public boolean hasDeleteInstancePermission(UUID instanceId, String token) {
-        return hasPermission(RESOURCE_NAME_INSTANCE, instanceId.toString(), ACTION_DELETE,
+        return hasPermission(RESOURCE_NAME_WORKSPACE, instanceId.toString(), ACTION_WRITE,
                 "hasDeleteInstancePermission", token);
     }
 
@@ -71,44 +67,6 @@ public class HttpSamDao implements SamDao {
         SamFunction<Boolean> samFunction = () -> samClientFactory.getResourcesApi(token)
                 .resourcePermissionV2(resourceType, resourceId, action);
         return httpSamClientSupport.withRetryAndErrorHandling(samFunction, loggerHint);
-    }
-
-    /**
-     * Creates a "wds-instance" Sam resource.
-     * Assigns the "wds-instance" resource to be a child of a workspace; within Sam's config
-     * the "wds-instance" resource will inherit permissions from its parent workspace.
-     *
-     * @param instanceId the id to use for the "wds-instance" resource
-     * @param parentWorkspaceId the id to use for the "wds-instance" resource's parent
-     */
-    @Override
-    public void createInstanceResource(UUID instanceId, UUID parentWorkspaceId) {
-        createInstanceResource(instanceId, parentWorkspaceId, null);
-    }
-
-    @Override
-    public void createInstanceResource(UUID instanceId, UUID parentWorkspaceId, String token) {
-        FullyQualifiedResourceId parent = new FullyQualifiedResourceId();
-        parent.setResourceTypeName(RESOURCE_NAME_WORKSPACE);
-        parent.setResourceId(parentWorkspaceId.toString());
-
-        CreateResourceRequestV2 createResourceRequest = new CreateResourceRequestV2();
-        createResourceRequest.setResourceId(instanceId.toString());
-        createResourceRequest.setParent(parent);
-        createResourceRequest.setAuthDomain(Collections.emptyList());
-
-        VoidSamFunction samFunction = () -> samClientFactory.getResourcesApi(token).createResourceV2(RESOURCE_NAME_INSTANCE, createResourceRequest);
-        httpSamClientSupport.withRetryAndErrorHandling(samFunction, "createInstanceResource");
-    }
-
-    /**
-     * Deletes a "wds-instance" Sam resource.
-     *
-     * @param instanceId the id of the "wds-instance" resource to be deleted
-     */
-    @Override
-    public void deleteInstanceResource(UUID instanceId) {
-        deleteInstanceResource(instanceId, null);
     }
 
     /**
@@ -127,22 +85,6 @@ public class HttpSamDao implements SamDao {
     public boolean hasWriteInstancePermission(UUID instanceId, String token) {
         return hasPermission(RESOURCE_NAME_WORKSPACE, instanceId.toString(), ACTION_WRITE,
                 "hasWriteInstancePermission", token);
-    }
-
-    @Override
-    public void deleteInstanceResource(UUID instanceId, String token) {
-        VoidSamFunction samFunction = () -> samClientFactory.getResourcesApi(token).deleteResourceV2(RESOURCE_NAME_INSTANCE, instanceId.toString());
-        httpSamClientSupport.withRetryAndErrorHandling(samFunction, "deleteInstanceResource");
-    }
-
-    @Override
-    public boolean instanceResourceExists(UUID instanceId){
-        return instanceResourceExists(instanceId, null);
-    }
-
-    @Override
-    public boolean instanceResourceExists(UUID instanceId, String token){
-        return hasPermission(RESOURCE_NAME_INSTANCE, instanceId.toString(), ACTION_READ, "instanceResourceExists", token);
     }
 
     /**
