@@ -125,7 +125,7 @@ public class HttpSamDao implements SamDao {
 
     @Override
     public boolean hasWriteInstancePermission(UUID instanceId, String token) {
-        return hasPermission(RESOURCE_NAME_INSTANCE, instanceId.toString(), ACTION_WRITE,
+        return hasPermission(RESOURCE_NAME_WORKSPACE, instanceId.toString(), ACTION_WRITE,
                 "hasWriteInstancePermission", token);
     }
 
