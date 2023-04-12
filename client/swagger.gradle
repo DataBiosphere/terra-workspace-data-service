@@ -46,3 +46,4 @@ idea.module.generatedSourceDirs = [file("${generateSwaggerCode.outputDir}/src/ma
 sourceSets.main.java.srcDir "${generateSwaggerCode.outputDir}/src/main/java"
 compileJava.dependsOn generateSwaggerCode
 sourcesJar.dependsOn generateSwaggerCode
+generateSwaggerCode.dependsOn generatePomFileForWorkspacedataserviceResttemplateClientLibraryPublication
