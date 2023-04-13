@@ -21,10 +21,12 @@ public class HttpSamDao implements SamDao {
     protected final SamClientFactory samClientFactory;
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpSamDao.class);
     private final HttpSamClientSupport httpSamClientSupport;
+    private final String workspaceId;
 
-    public HttpSamDao(SamClientFactory samClientFactory, HttpSamClientSupport httpSamClientSupport) {
+    public HttpSamDao(SamClientFactory samClientFactory, HttpSamClientSupport httpSamClientSupport, String workspaceId) {
         this.samClientFactory = samClientFactory;
         this.httpSamClientSupport = httpSamClientSupport;
+        this.workspaceId = workspaceId;
     }
 
     /**
@@ -64,8 +66,9 @@ public class HttpSamDao implements SamDao {
 
     // helper implementation for permission checks
     private boolean hasPermission(String resourceType, String resourceId, String action, String loggerHint, String token) {
+        LOGGER.debug("Checking Sam permission for {}/{}/{} on behalf of instance {} ...", resourceType, workspaceId, action, resourceId);
         SamFunction<Boolean> samFunction = () -> samClientFactory.getResourcesApi(token)
-                .resourcePermissionV2(resourceType, resourceId, action);
+                .resourcePermissionV2(resourceType, workspaceId, action);
         return httpSamClientSupport.withRetryAndErrorHandling(samFunction, loggerHint);
     }
 

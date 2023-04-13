@@ -14,9 +14,11 @@ import org.junit.jupiter.api.TestInstance;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -28,6 +30,7 @@ import static org.mockito.Mockito.*;
 @ActiveProfiles(profiles = "mock-instance-dao")
 @SpringBootTest(classes = { MockInstanceDaoConfig.class, SamConfig.class })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestPropertySource(properties = {"twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000"}) // example uuid from https://en.wikipedia.org/wiki/Universally_unique_identifier
 class InstanceServiceSamTest {
 
     private InstanceService instanceService;
@@ -41,6 +44,9 @@ class InstanceServiceSamTest {
 
     // mock for the ResourcesApi class inside the Sam client; since this is not a Spring bean we have to mock it manually
     ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
+
+    @Value("${twds.instance.workspace-id}")
+    String containingWorkspaceId;
 
     @BeforeEach
     void beforeEach() throws ApiException {
@@ -92,9 +98,9 @@ class InstanceServiceSamTest {
                 .createResourceV2(anyString(), any(CreateResourceRequestV2.class));
 
         // the permission call should be first,
-        // and that check should be for "write" permission on a workspace with workspaceId=expectedWorkspaceId
+        // and that check should be for "write" permission on a workspace with workspaceId=containingWorkspaceId
         callOrder.verify(mockResourcesApi)
-                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, expectedWorkspaceId.toString(), SamDao.ACTION_WRITE);
+                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, containingWorkspaceId, SamDao.ACTION_WRITE);
 
         // and that should be the only call we made to Sam
         verifyNoMoreInteractions(mockResourcesApi);
@@ -120,9 +126,9 @@ class InstanceServiceSamTest {
                 .deleteResourceV2(anyString(), anyString());
 
         // the permission call should be first,
-        // and that check should be for "write" permission on a workspace with workspaceId=expectedWorkspaceId
+        // and that check should be for "write" permission on a workspace with workspaceId=containingWorkspaceId
         callOrder.verify(mockResourcesApi)
-                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, instanceId.toString(), SamDao.ACTION_WRITE);
+                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, containingWorkspaceId, SamDao.ACTION_WRITE);
 
         // and that should be the only call we made to Sam
         verifyNoMoreInteractions(mockResourcesApi);

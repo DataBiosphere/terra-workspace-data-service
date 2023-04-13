@@ -19,9 +19,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -52,6 +54,7 @@ import static org.mockito.BDDMockito.given;
 @ActiveProfiles(profiles = "mock-instance-dao")
 @SpringBootTest(classes = { MockInstanceDaoConfig.class, SamConfig.class })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestPropertySource(properties = {"twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000"}) // example uuid from https://en.wikipedia.org/wiki/Universally_unique_identifier
 class InstanceServiceSamExceptionTest {
 
     private InstanceService instanceService;
@@ -65,6 +68,9 @@ class InstanceServiceSamExceptionTest {
 
     // mock for the ResourcesApi class inside the Sam client; since this is not a Spring bean we have to mock it manually
     ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
+
+    @Value("${twds.instance.workspace-id}")
+    String containingWorkspaceId;
 
     @BeforeEach
     void beforeEach() {
@@ -90,7 +96,7 @@ class InstanceServiceSamExceptionTest {
         UUID instanceId = UUID.randomUUID();
 
         // Setup: the call to check permissions in Sam throws an ApiException
-        given(mockResourcesApi.resourcePermissionV2(anyString(), eq(instanceId.toString()), anyString()))
+        given(mockResourcesApi.resourcePermissionV2(anyString(), eq(containingWorkspaceId), anyString()))
                 .willThrow(new ApiException(thrownStatusCode, "intentional exception for unit test: " + thrownStatusCode));
 
         doAuthnCreateAndDeleteTest(instanceId, AuthenticationException.class);
@@ -103,7 +109,7 @@ class InstanceServiceSamExceptionTest {
         UUID instanceId = UUID.randomUUID();
 
         // Setup: the call to check permissions in Sam throws an ApiException
-        given(mockResourcesApi.resourcePermissionV2(anyString(), eq(instanceId.toString()), anyString()))
+        given(mockResourcesApi.resourcePermissionV2(anyString(), eq(containingWorkspaceId), anyString()))
                 .willThrow(new ApiException(thrownStatusCode, "intentional exception for unit test: " + thrownStatusCode));
 
         doAuthnCreateAndDeleteTest(instanceId, AuthorizationException.class);
@@ -115,7 +121,7 @@ class InstanceServiceSamExceptionTest {
         UUID instanceId = UUID.randomUUID();
 
         // Setup: the call to check permissions in Sam throws an ApiException
-        given(mockResourcesApi.resourcePermissionV2(anyString(), eq(instanceId.toString()), anyString()))
+        given(mockResourcesApi.resourcePermissionV2(anyString(), eq(containingWorkspaceId), anyString()))
                 .willThrow(new ApiException(thrownStatusCode, "intentional exception for unit test: " + thrownStatusCode));
 
         doSamCreateAndDeleteTest(instanceId, thrownStatusCode);
@@ -127,7 +133,7 @@ class InstanceServiceSamExceptionTest {
         UUID instanceId = UUID.randomUUID();
 
         // Setup: the call to check permissions in Sam throws an ApiException
-        given(mockResourcesApi.resourcePermissionV2(anyString(), eq(instanceId.toString()), anyString()))
+        given(mockResourcesApi.resourcePermissionV2(anyString(), eq(containingWorkspaceId), anyString()))
                 .willThrow(new ApiException(thrownStatusCode, "intentional exception for unit test: " + thrownStatusCode));
 
         doSamCreateAndDeleteTest(instanceId, 500);
@@ -142,7 +148,7 @@ class InstanceServiceSamExceptionTest {
         Throwable toThrow = ctor.newInstance("intentional exception for unit test: " + clazz.getName());
 
         // Setup: the call to check permissions in Sam throws the specified Exception
-        given(mockResourcesApi.resourcePermissionV2(anyString(), eq(instanceId.toString()), anyString()))
+        given(mockResourcesApi.resourcePermissionV2(anyString(), eq(containingWorkspaceId), anyString()))
                 .willThrow(toThrow);
 
         doSamCreateAndDeleteTest(instanceId, 500);

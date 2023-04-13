@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.UUID;
+
 /**
  * Bean creator for:
  * - SamClientFactory, injecting the base url to Sam into that factory.
@@ -19,6 +21,9 @@ public class SamConfig {
 
     @Value("${sam.enabled:true}")
     private boolean isSamEnabled;
+
+    @Value("${twds.instance.workspace-id:}")
+    private String workspaceIdArgument;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SamConfig.class);
 
@@ -49,7 +54,17 @@ public class SamConfig {
 
     @Bean
     public SamDao samDao(SamClientFactory samClientFactory, HttpSamClientSupport httpSamClientSupport) {
-        return new HttpSamDao(samClientFactory, httpSamClientSupport);
+        String workspaceId;
+        try {
+            workspaceId = UUID.fromString(workspaceIdArgument).toString(); // verify UUID-ness
+        } catch (IllegalArgumentException e) {
+            // TODO: in this corner case, instead of returning HttpSamDao that will always fail,
+            // should we prevent startup? Should we return a different subclass of SamDao that
+            // returns false but doesn't try to hit a Sam instance?
+            workspaceId = "n/a"; // workspaceIds are uuids, so "n/a" will never match any workspace
+            LOGGER.warn("Workspace id could not be parsed, all Sam permission checks will fail. Provided id: {}", workspaceIdArgument);
+        }
+        return new HttpSamDao(samClientFactory, httpSamClientSupport, workspaceId);
     }
 
 }
