@@ -5,7 +5,7 @@ import org.databiosphere.workspacedata.api.RecordsApi;
 import org.databiosphere.workspacedata.api.SchemaApi;
 import org.databiosphere.workspacedata.client.ApiClient;
 import org.databiosphere.workspacedata.client.ApiException;
-import org.databiosphere.workspacedata.model.RecordAttributes;
+//import org.databiosphere.workspacedata.model.RecordAttributes;
 import org.databiosphere.workspacedata.model.RecordQueryResponse;
 import org.databiosphere.workspacedata.model.RecordRequest;
 import org.databiosphere.workspacedata.model.RecordResponse;
@@ -21,7 +21,9 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.io.File;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,8 +50,8 @@ class GeneratedClientTests {
     void uploadTsv() throws ApiException, URISyntaxException {
         RecordsApi recordsApi = new RecordsApi(apiClient);
         TsvUploadResponse tsvUploadResponse = recordsApi.uploadTSV(
-                new File(this.getClass().getResource("/small-test.tsv").toURI()),
-                instanceId.toString(), version, "foo", null);
+                instanceId.toString(), version, "foo",
+                new File(this.getClass().getResource("/small-test.tsv").toURI()), null);
         assertThat(tsvUploadResponse.getRecordsModified()).isEqualTo(2);
     }
 
@@ -57,8 +59,8 @@ class GeneratedClientTests {
     void uploadTsvWithDifferentColId() throws ApiException, URISyntaxException {
         RecordsApi recordsApi = new RecordsApi(apiClient);
         TsvUploadResponse tsvUploadResponse = recordsApi.uploadTSV(
-                new File(this.getClass().getResource("/small-test-no-sys.tsv").toURI()),
-                instanceId.toString(), version, "foo", "greeting");
+                instanceId.toString(), version, "foo",
+                new File(this.getClass().getResource("/small-test-no-sys.tsv").toURI()),"greeting");
         assertThat(tsvUploadResponse.getRecordsModified()).isEqualTo(2);
     }
 
@@ -68,9 +70,10 @@ class GeneratedClientTests {
         String recordId = "id1";
         String entityType = "FOO";
         String attributeName = "attr1";
-        RecordAttributes recordAttributes = new RecordAttributes();
+        Map<String, Object> recordAttributes = new HashMap<>();
         recordAttributes.put(attributeName, "Hello");
-        recordsApi.createOrReplaceRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId, "row_id");
+        recordsApi.createOrReplaceRecord(instanceId.toString(), version, entityType, recordId,
+                new RecordRequest().attributes(recordAttributes), "row_id");
         RecordResponse record = recordsApi.getRecord(instanceId.toString(), version, entityType, recordId);
         assertThat(record.getAttributes()).containsEntry(attributeName, "Hello");
     }
@@ -91,14 +94,14 @@ class GeneratedClientTests {
         String recordType = "type1";
         String recordId = "id1";
         createRecord(recordsApi, recordId, recordType);
-        RecordQueryResponse response = recordsApi.queryRecords(new SearchRequest(), instanceId.toString(), version, recordType);
+        RecordQueryResponse response = recordsApi.queryRecords(instanceId.toString(), version, recordType, new SearchRequest());
         assertThat(response.getTotalRecords()).isEqualTo(1);
         assertThat(response.getRecords().get(0).getId()).isEqualTo(recordId);
     }
 
     private void createRecord(RecordsApi recordsApi, String recordId, String recordType) throws ApiException {
-        recordsApi.createOrReplaceRecord(new RecordRequest().attributes(new RecordAttributes()),
-                instanceId.toString(), version, recordType, recordId, null);
+        recordsApi.createOrReplaceRecord(instanceId.toString(), version, recordType, recordId,
+                new RecordRequest().attributes(Map.of()), null);
     }
 
     @Test
@@ -120,11 +123,13 @@ class GeneratedClientTests {
         String recordId = "id1";
         String entityType = "FOO";
         String attributeName = "attr1";
-        RecordAttributes recordAttributes = new RecordAttributes();
+        Map<String, Object> recordAttributes = new HashMap<>();
         recordAttributes.put(attributeName, "Hello");
-        recordsApi.createOrReplaceRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId, null);
+        recordsApi.createOrReplaceRecord(instanceId.toString(), version, entityType, recordId,
+                new RecordRequest().attributes(recordAttributes), null);
         recordAttributes.put(attributeName, "Goodbye");
-        recordsApi.updateRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId);
+        recordsApi.updateRecord(instanceId.toString(), version, entityType,
+                recordId, new RecordRequest().attributes(recordAttributes));
         RecordResponse record = recordsApi.getRecord(instanceId.toString(), version, entityType, recordId);
         assertThat(record.getAttributes()).containsEntry(attributeName, "Goodbye");
     }
