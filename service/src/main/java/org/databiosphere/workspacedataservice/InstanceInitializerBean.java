@@ -32,7 +32,7 @@ public class InstanceInitializerBean {
     }
 
     public boolean isInClodeMode() {
-        if (sourceWorkspaceId != null && !"".equals(sourceWorkspaceId)){
+        if (sourceWorkspaceId != null && !"".equals(sourceWorkspaceId.trim())){
             LOGGER.info("Source workspace id found, checking database");
             try {
                 //TODO: this is a placeholder for checking that the db has already been cloned;
@@ -50,7 +50,7 @@ public class InstanceInitializerBean {
     }
 
     public void initCloneMode(){
-        LOGGER.info("Beginning clone...");
+        LOGGER.info("Starting in clone mode...");
     }
 
     public void initializeInstance() {
@@ -58,9 +58,7 @@ public class InstanceInitializerBean {
         LOGGER.info("Source workspace id loaded as {}", sourceWorkspaceId);
         if (isInClodeMode())
             initCloneMode();
-        else {
-            initializeDefaultInstance();
-        }
+        initializeDefaultInstance(); //TODO Wrap this in an else once cloning is implemented
     }
 
     public void initializeDefaultInstance() {
