@@ -32,7 +32,7 @@ public class InstanceInitializerBean {
         this.managedIdentityDao = managedIdentityDao;
     }
 
-    public boolean isInClodeMode(String sourceWorkspaceId) {
+    public boolean isInCloneMode(String sourceWorkspaceId) {
         if (StringUtils.isNotBlank(sourceWorkspaceId)){
             LOGGER.info("Source workspace id found, checking database");
             try {
@@ -51,6 +51,7 @@ public class InstanceInitializerBean {
                 return false;
             }
         }
+        LOGGER.info("No source workspace id found, initializing default schema");
         return false;
 
     }
@@ -62,7 +63,7 @@ public class InstanceInitializerBean {
     public void initializeInstance() {
         LOGGER.info("Default workspace id loaded as {}", workspaceId);
         LOGGER.info("Source workspace id loaded as {}", sourceWorkspaceId);
-        if (isInClodeMode(sourceWorkspaceId))
+        if (isInCloneMode(sourceWorkspaceId))
             initCloneMode();
         initializeDefaultInstance(); //TODO Wrap this in an else once cloning is implemented
     }

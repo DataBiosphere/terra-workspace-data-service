@@ -111,35 +111,35 @@ class InstanceInitializerBeanTest {
 
     @Test
     void sourceWorkspaceIDNotProvided() {
-        boolean cloneMode = instanceInitializerBean.isInClodeMode(null);
+        boolean cloneMode = instanceInitializerBean.isInCloneMode(null);
         assertFalse(cloneMode);
     }
 
     @Test
     void blankSourceWorkspaceID() {
-        boolean cloneMode = instanceInitializerBean.isInClodeMode("");
+        boolean cloneMode = instanceInitializerBean.isInCloneMode("");
         assertFalse(cloneMode);
 
-        cloneMode = instanceInitializerBean.isInClodeMode(" ");
+        cloneMode = instanceInitializerBean.isInCloneMode(" ");
         assertFalse(cloneMode);
     }
 
     @Test
     void sourceWorkspaceSchemaExists() {
         instanceDao.createSchema(instanceID);
-        boolean cloneMode = instanceInitializerBean.isInClodeMode(UUID.randomUUID().toString());
+        boolean cloneMode = instanceInitializerBean.isInCloneMode(UUID.randomUUID().toString());
         assertFalse(cloneMode);
     }
 
     @Test
     void sourceWorkspaceIDCorrect() {
-        boolean cloneMode = instanceInitializerBean.isInClodeMode(UUID.randomUUID().toString());
+        boolean cloneMode = instanceInitializerBean.isInCloneMode(UUID.randomUUID().toString());
         assert(cloneMode);
     }
 
         @Test
         void sourceWorkspaceIDInvalid() {
-            boolean cloneMode = instanceInitializerBean.isInClodeMode("invalidUUID");
+            boolean cloneMode = instanceInitializerBean.isInCloneMode("invalidUUID");
             assertFalse(cloneMode);
         }
 
