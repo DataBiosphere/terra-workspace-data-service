@@ -54,6 +54,14 @@ public class SamConfig {
 
     @Bean
     public SamDao samDao(SamClientFactory samClientFactory, HttpSamClientSupport httpSamClientSupport) {
+        // if Sam integration is disabled, always return HttpSamDao and rely on the
+        // HttpSamClientFactory enabled/disabled setting from getSamClientFactory() above
+        if (!isSamEnabled) {
+            return new HttpSamDao(samClientFactory, httpSamClientSupport, workspaceIdArgument);
+        }
+
+        // if Sam integration is enabled, try to parse the WORKSPACE_ID env var;
+        // return a FailingSamDao if it can't be parsed.
         try {
             String workspaceId = UUID.fromString(workspaceIdArgument).toString(); // verify UUID-ness
             LOGGER.info("Sam integration will query type={}, resourceId={}, action={}",
