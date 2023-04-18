@@ -37,14 +37,18 @@ public class InstanceInitializerBean {
             LOGGER.info("Source workspace id found, checking database");
             try {
                 UUID.fromString(sourceWorkspaceId);
+            } catch (IllegalArgumentException e){
+                    LOGGER.warn("Source workspace id could not be parsed, unable to clone DB. Provided source workspace id: {}", sourceWorkspaceId);
+                    return false;
+            }
+            try {
                 //TODO: this is a placeholder for checking that the db has already been cloned;
                 //In the future it could check the clone status,
                 //But for now assuming if we've created a workspace schema, work is done
                 return !instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
             } catch (IllegalArgumentException e) {
-                LOGGER.warn("Workspace id could not be parsed, unable to clone DB. Provided source workspace id: {}, default workspace id: {}", sourceWorkspaceId, workspaceId);
-                //by default this will continue and return false, thereby creating a default schema - do we want to do that?
-                //If we return true instead, we'll encounter errors down the line...
+                LOGGER.warn("Workspace id could not be parsed, unable to clone DB. Provided default workspace id: {}", workspaceId);
+                return false;
             }
         }
         return false;
