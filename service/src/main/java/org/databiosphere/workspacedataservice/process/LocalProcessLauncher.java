@@ -1,5 +1,8 @@
 package org.databiosphere.workspacedataservice.process;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,6 +15,7 @@ import java.util.Map;
 /** This class provides utility methods for launching local child processes. */
 public class LocalProcessLauncher {
     private Process process;
+    private static final Logger LOGGER = LoggerFactory.getLogger(LocalProcessLauncher.class);
 
     public enum Output {
         OUT,
@@ -54,7 +58,8 @@ public class LocalProcessLauncher {
         try {
             process = procBuilder.start();
         } catch (IOException ioEx) {
-            throw new RuntimeException("Error launching local process", ioEx);
+            LOGGER.error("Error launching local process", ioEx);
+            throw new LaunchProcessException("Error launching local process", ioEx);
         }
     }
 
@@ -70,12 +75,13 @@ public class LocalProcessLauncher {
             String line;
             StringBuilder processOutput = new StringBuilder();
             while ((line = bufferedReader.readLine()) != null) {
-                processOutput.append(line + System.lineSeparator());
+                processOutput.append(line).append(System.lineSeparator());
             }
 
             return processOutput.toString().trim();
         } catch (IOException ioEx) {
-            throw new RuntimeException("Error streaming output of child process", ioEx);
+            LOGGER.error("Error streaming output of child process", ioEx);
+            throw new LaunchProcessException("Error streaming output of child process", ioEx);
         }
     }
 
@@ -96,7 +102,9 @@ public class LocalProcessLauncher {
         try {
             return process.waitFor();
         } catch (InterruptedException intEx) {
-            throw new RuntimeException("Error waiting for child process to terminate", intEx);
+            LOGGER.error("Error waiting for child process to terminate", intEx);
+            Thread.currentThread().interrupt();
+            throw new LaunchProcessException("Error waiting for child process to terminate", intEx);
         }
     }
 }
