@@ -1,8 +1,5 @@
 package org.databiosphere.workspacedataservice.process;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +18,9 @@ class LocalProcessLauncher {
         ERROR
     }
 
+    /**
+     * LocalProcessLauncher will be used to run processes.
+     */
     public LocalProcessLauncher() {}
 
     /**
