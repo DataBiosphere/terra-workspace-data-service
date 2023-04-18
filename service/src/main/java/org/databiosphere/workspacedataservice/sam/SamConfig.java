@@ -57,6 +57,8 @@ public class SamConfig {
         String workspaceId;
         try {
             workspaceId = UUID.fromString(workspaceIdArgument).toString(); // verify UUID-ness
+            LOGGER.info("Sam integration will query type={}, resourceId={}, action={}",
+                    SamDao.RESOURCE_NAME_WORKSPACE, workspaceId, SamDao.ACTION_WRITE);
         } catch (IllegalArgumentException e) {
             // TODO: in this corner case, instead of returning HttpSamDao that will always fail,
             // should we prevent startup? Should we return a different subclass of SamDao that
