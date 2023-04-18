@@ -30,7 +30,10 @@ jib {
 }
 
 dependencies {
+	// Azure libraries
 	implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.9'
+	implementation 'com.azure:azure-storage-blob:12.18.0'
+
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
