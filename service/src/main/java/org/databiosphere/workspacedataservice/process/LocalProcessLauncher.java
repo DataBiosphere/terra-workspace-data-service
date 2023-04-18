@@ -13,9 +13,8 @@ import java.util.List;
 import java.util.Map;
 
 /** This class provides utility methods for launching local child processes. */
-public class LocalProcessLauncher {
+class LocalProcessLauncher {
     private Process process;
-    private static final Logger LOGGER = LoggerFactory.getLogger(LocalProcessLauncher.class);
 
     public enum Output {
         OUT,
@@ -58,7 +57,6 @@ public class LocalProcessLauncher {
         try {
             process = procBuilder.start();
         } catch (IOException ioEx) {
-            LOGGER.error("Error launching local process", ioEx);
             throw new LaunchProcessException("Error launching local process", ioEx);
         }
     }
@@ -80,7 +78,6 @@ public class LocalProcessLauncher {
 
             return processOutput.toString().trim();
         } catch (IOException ioEx) {
-            LOGGER.error("Error streaming output of child process", ioEx);
             throw new LaunchProcessException("Error streaming output of child process", ioEx);
         }
     }
@@ -102,7 +99,6 @@ public class LocalProcessLauncher {
         try {
             return process.waitFor();
         } catch (InterruptedException intEx) {
-            LOGGER.error("Error waiting for child process to terminate", intEx);
             Thread.currentThread().interrupt();
             throw new LaunchProcessException("Error waiting for child process to terminate", intEx);
         }
