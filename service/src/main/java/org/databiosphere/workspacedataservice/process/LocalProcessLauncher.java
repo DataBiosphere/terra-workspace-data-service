@@ -60,6 +60,8 @@ public class LocalProcessLauncher {
 
     /**
      * Method to stream the child process' output to a string.
+     *
+     * @param fromStream specifies which stream will be read from
      */
     public String getOutputForProcessFromStream(InputStream fromStream) {
         try (BufferedReader bufferedReader =
@@ -77,7 +79,10 @@ public class LocalProcessLauncher {
         }
     }
 
-    /** Stream standard out/err from the child process to the CLI console. */
+    /** Stream standard out/err from the child process to the CLI console.
+     *
+     *  @param type specifies which process stream to get data from
+     * */
     public String getOutputForProcess(Output type) {
         if (type == Output.ERROR) {
             return getOutputForProcessFromStream(process.getErrorStream());
