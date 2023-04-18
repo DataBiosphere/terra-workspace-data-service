@@ -54,19 +54,18 @@ public class SamConfig {
 
     @Bean
     public SamDao samDao(SamClientFactory samClientFactory, HttpSamClientSupport httpSamClientSupport) {
-        String workspaceId;
         try {
-            workspaceId = UUID.fromString(workspaceIdArgument).toString(); // verify UUID-ness
+            String workspaceId = UUID.fromString(workspaceIdArgument).toString(); // verify UUID-ness
             LOGGER.info("Sam integration will query type={}, resourceId={}, action={}",
                     SamDao.RESOURCE_NAME_WORKSPACE, workspaceId, SamDao.ACTION_WRITE);
+            return new HttpSamDao(samClientFactory, httpSamClientSupport, workspaceId);
         } catch (IllegalArgumentException e) {
-            // TODO: in this corner case, instead of returning HttpSamDao that will always fail,
-            // should we prevent startup? Should we return a different subclass of SamDao that
-            // returns false but doesn't try to hit a Sam instance?
-            workspaceId = "n/a"; // workspaceIds are uuids, so "n/a" will never match any workspace
             LOGGER.warn("Workspace id could not be parsed, all Sam permission checks will fail. Provided id: {}", workspaceIdArgument);
+            return new FailingSamDao("WDS was started with invalid WORKSPACE_ID of: " + workspaceIdArgument);
+        } catch (Exception e) {
+            LOGGER.warn("Error during initial Sam configuration: " + e.getMessage());
+            return new FailingSamDao(e.getMessage());
         }
-        return new HttpSamDao(samClientFactory, httpSamClientSupport, workspaceId);
     }
 
 }
