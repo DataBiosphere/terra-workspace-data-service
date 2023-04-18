@@ -65,14 +65,14 @@ class InstanceServiceSamTest {
     @Test
     void createInstanceSamCalls() throws ApiException {
         UUID instanceId = UUID.randomUUID();
-        doCreateInstanceTest(instanceId, Optional.empty(), instanceId);
+        doCreateInstanceTest(instanceId, Optional.empty());
     }
 
     @Test
     void createInstanceWithWorkspaceIdSamCalls() throws ApiException {
         UUID instanceId = UUID.randomUUID();
         UUID workspaceId = UUID.randomUUID();
-        doCreateInstanceTest(instanceId, Optional.of(workspaceId), workspaceId);
+        doCreateInstanceTest(instanceId, Optional.of(workspaceId));
     }
 
     @Test
@@ -82,7 +82,7 @@ class InstanceServiceSamTest {
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    void doCreateInstanceTest(UUID instanceId, Optional<UUID> workspaceIdInput, UUID expectedWorkspaceId) throws ApiException {
+    void doCreateInstanceTest(UUID instanceId, Optional<UUID> workspaceIdInput) throws ApiException {
         // setup: capture order of calls to Sam
         InOrder callOrder = inOrder(mockResourcesApi);
 

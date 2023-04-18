@@ -33,9 +33,7 @@ class InstanceInitializerBeanTest {
     void beforeEach() {
         // clean up any instances left in the db
         List<UUID> allInstances = instanceDao.listInstanceSchemas();
-        allInstances.forEach(instanceId -> {
-            instanceDao.dropSchema(instanceId);
-        });
+        allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
     }
 
 
@@ -51,7 +49,7 @@ class InstanceInitializerBeanTest {
     void testSchemaAlreadyExists() {
         // instance does not exist
         assertFalse(instanceDao.instanceSchemaExists(instanceID));
-        // create the instance outside of the initializer
+        // create the instance outside the initializer
         instanceDao.createSchema(instanceID);
         assertTrue(instanceDao.instanceSchemaExists(instanceID));
         // now run the initializer
