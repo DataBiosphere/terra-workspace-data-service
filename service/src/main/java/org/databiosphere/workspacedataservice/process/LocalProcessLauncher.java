@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.process;
 
+import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;

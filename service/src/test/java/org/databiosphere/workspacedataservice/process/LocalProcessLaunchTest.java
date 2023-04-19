@@ -9,6 +9,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class LocalProcessLaunchTest {
 
@@ -49,5 +50,40 @@ class LocalProcessLaunchTest {
         assertEquals(0, exitCode);
         assertThat(output).isEqualTo("Hello World");
         assertThat(error).isEmpty();
+    }
+
+    @Test
+    void runSimpleCommandCauseError() {
+        List<String> processCommand = new ArrayList<>();
+        // run a command that is either not installed on machine or ran incorrectly
+        processCommand.add("pg_dump");
+
+        // launch the child process
+        LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
+        localProcessLauncher.launchProcess(processCommand, null);
+
+        // block until the child process exits
+        int exitCode = localProcessLauncher.waitForTerminate();
+        assertEquals(1, exitCode);
+    }
+
+    @Test
+    void runSimpleCommandCauseException() {
+        List<String> processCommand = new ArrayList<>();
+        // run a command that is not recognized and will cause an exception
+        processCommand.add("echo $TEST");
+
+        try {
+            // launch the child process
+            LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
+            localProcessLauncher.launchProcess(processCommand, null);
+
+            // block until the child process exits
+            int exitCode = localProcessLauncher.waitForTerminate();
+            assertEquals(1, exitCode);
+        }
+        catch(Exception error) {
+            assertNotNull(error);
+        }
     }
 }

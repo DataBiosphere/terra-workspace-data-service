@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.process;
+package org.databiosphere.workspacedataservice.service.model.exception;
 
 /**
  * Custom exception class for system or internal exceptions. These represent errors that the user
