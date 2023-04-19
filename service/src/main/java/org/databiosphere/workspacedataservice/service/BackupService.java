@@ -26,21 +26,23 @@ public class BackupService {
     @Autowired
     private LocalProcessLauncher localProcessLauncher;
 
-    public void backupAzureWDS(String workspaceId, String backupName) throws IOException, InterruptedException {
+    public void backupAzureWDS(String workspaceId, String backupName) {
         // TODO: Replace with application.properties value perhaps? Or a value from k8s?
         String containerName = "workspace-backups";
         Path backupDirectory = Paths.get("some_path");
         String blobName = workspaceId + "/" + backupName + ".sql";
-        Map<String, String> pgDumpEnvVariables = new HashMap<>();
-
-        pgDumpEnvVariables.put("PGHOST", "localhost");
-        pgDumpEnvVariables.put("PGPORT", "5432");
-        pgDumpEnvVariables.put("PGUSER", "myuser");
-        pgDumpEnvVariables.put("PGPASSWORD", "mypassword");
-        pgDumpEnvVariables.put("PGDATABASE", "mydatabase");
 
         // Build the pg_dump command
-        List<String> command = List.of("pg_dump", "-U", "username", "-W", "password", "dbname");
+        List<String> command = List.of(
+                "pg_dump",
+                "-h", System.getenv("WDS_DB_HOST"),
+                "-p", System.getenv("WDS_DB_PORT"),
+                "-U", System.getenv("WDS_DB_USER"),
+                "-d", System.getenv("WDS_DB_NAME"),
+                "-W", System.getenv("WDS_DB_PASSWORD"),
+                "-F", "c", // "c" represents "compressed" format
+        );
+
 
         // Launch the process using LocalProcessLauncher
         localProcessLauncher.launchProcess(command, pgDumpEnvVariables, backupDirectory);
