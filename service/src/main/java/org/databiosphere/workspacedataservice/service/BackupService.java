@@ -1,84 +1,59 @@
 package org.databiosphere.workspacedataservice.service;
 
-import com.azure.storage.blob.BlobClient;
+import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
+import com.azure.storage.blob.specialized.BlockBlobClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.file.Files;
+import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.UUID;
+import java.nio.file.Paths;
 
-@Service
+@Component
 public class BackupService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(BackupService.class);
+    // TODO: Replace with application.properties value perhaps? Or a value from k8s?
+    @Value("${AZURE_STORAGE_CONNECTION_STRING}")
+    private String azureStorageConnectionString;
 
-    public void backupPostgresToAzure(String connectionString, String containerName,
-                                      String postgresUser, String postgresPassword, String dbName, UUID workspaceId) {
-        try {
-            // Temp. file to store the pg_dump output
-            Path tempFile = Files.createTempFile("pg_backup_", ".sql");
-            File backupFile = tempFile.toFile();
+    @Autowired
+    private LocalProcessLauncher localProcessLauncher;
 
-            // pg_dump command
-            ProcessBuilder processBuilder = new ProcessBuilder(
-                    "pg_dump",
-                    "--username=" + postgresUser,
-                    "--password=" + postgresPassword,
-                    "--file=" + backupFile.getAbsolutePath(),
-                    dbName
-            );
-            Process process = processBuilder.start();
+    public void backupAzureWDS(String workspaceId, String backupName) throws IOException, InterruptedException {
+        // TODO: Replace with application.properties value perhaps? Or a value from k8s?
+        String containerName = "workspace-backups";
+        Path backupDirectory = Paths.get("some_path");
+        String blobName = workspaceId + "/" + backupName + ".sql";
+        Map<String, String> pgDumpEnvVariables = new HashMap<>();
 
-            int exitCode = process.waitFor();
-            if (exitCode == 0) {
+        pgDumpEnvVariables.put("PGHOST", "localhost");
+        pgDumpEnvVariables.put("PGPORT", "5432");
+        pgDumpEnvVariables.put("PGUSER", "myuser");
+        pgDumpEnvVariables.put("PGPASSWORD", "mypassword");
+        pgDumpEnvVariables.put("PGDATABASE", "mydatabase");
 
-                // Upload the backup file to Azure Blob Storage
-                BlobClient blobClient = getAzureBlobClient(connectionString, containerName, workspaceId);
-                try (FileInputStream backupInputStream = new FileInputStream(backupFile)) {
-                    blobClient.upload(backupInputStream, backupFile.length());
-                }
+        // Build the pg_dump command
+        List<String> command = List.of("pg_dump", "-U", "username", "-W", "password", "dbname");
 
-                // Delete temp. file
-                Files.delete(tempFile);
-            } else {
-                LOGGER.warn("pg_dump failed with exit code: {} for workspace Id: {}", exitCode, workspaceId);
-                System.err.println("pg_dump failed with exit code: " + exitCode);
-                BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-                String line;
-                while ((line = errorReader.readLine()) != null) {
-                    LOGGER.warn("Error output for workspace Id: {} -- output: {}", workspaceId, line);
-                }
-            }
-        } catch (IOException | InterruptedException e) {
-            LOGGER.warn("Exception occurred for pg_dump for workspace Id: {} -- error: {}", workspaceId, e);
-        }
+        // Launch the process using LocalProcessLauncher
+        localProcessLauncher.launchProcess(command, pgDumpEnvVariables, backupDirectory);
+
+        // Create BlobServiceClient and BlobContainerClient
+        BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
+                .connectionString(azureStorageConnectionString)
+                .buildClient();
+        BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
+
+        // Create the BlockBlobClient
+        BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(blobName).getBlockBlobClient();
+
+        // TODO: Upload the the streamed data to Azure Blob Storage
     }
-
-    private BlobClient getAzureBlobClient(String connectionString, String containerName, UUID workspaceId) {
-        // Create a BlobServiceClient and container client
-        BlobServiceClient blobServiceClient = new BlobServiceClientBuilder().connectionString(connectionString).buildClient();
-        BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
-        return containerClient.getBlobClient(constructBackupBlobName(workspaceId));
-    }
-
-    private String constructBackupBlobName(UUID workspaceId) {
-        LocalDateTime now = LocalDateTime.now();
-
-        // Make sure backup name is unique
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-        return "pg_backup_" + workspaceId.toString() + "_" + now.format(formatter) + ".sql";
-    }
-
 }

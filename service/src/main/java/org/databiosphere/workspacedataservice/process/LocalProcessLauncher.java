@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.process;
 
+import org.springframework.stereotype.Component;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,7 +12,8 @@ import java.util.List;
 import java.util.Map;
 
 /** This class provides utility methods for launching local child processes. */
-class LocalProcessLauncher {
+@Component
+public class LocalProcessLauncher {
     private Process process;
 
     public enum Output {
