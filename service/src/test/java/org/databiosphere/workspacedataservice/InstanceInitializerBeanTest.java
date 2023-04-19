@@ -107,7 +107,40 @@ class InstanceInitializerBeanTest {
         //verify that method to create resources was NOT called
         verify(samDao, times(0)).createInstanceResource(any(), any(), any());
         assertFalse(instanceDao.instanceSchemaExists(instanceID));
-
     }
+
+    @Test
+    void sourceWorkspaceIDNotProvided() {
+        boolean cloneMode = instanceInitializerBean.isInCloneMode(null);
+        assertFalse(cloneMode);
+    }
+
+    @Test
+    void blankSourceWorkspaceID() {
+        boolean cloneMode = instanceInitializerBean.isInCloneMode("");
+        assertFalse(cloneMode);
+
+        cloneMode = instanceInitializerBean.isInCloneMode(" ");
+        assertFalse(cloneMode);
+    }
+
+    @Test
+    void sourceWorkspaceSchemaExists() {
+        instanceDao.createSchema(instanceID);
+        boolean cloneMode = instanceInitializerBean.isInCloneMode(UUID.randomUUID().toString());
+        assertFalse(cloneMode);
+    }
+
+    @Test
+    void sourceWorkspaceIDCorrect() {
+        boolean cloneMode = instanceInitializerBean.isInCloneMode(UUID.randomUUID().toString());
+        assert(cloneMode);
+    }
+
+        @Test
+        void sourceWorkspaceIDInvalid() {
+            boolean cloneMode = instanceInitializerBean.isInCloneMode("invalidUUID");
+            assertFalse(cloneMode);
+        }
 
 }
