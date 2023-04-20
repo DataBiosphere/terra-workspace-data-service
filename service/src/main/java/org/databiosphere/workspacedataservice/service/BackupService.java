@@ -56,6 +56,9 @@ public class BackupService {
         String containerName = "workspace-backups";
         String azureStorageConnectionString = "something-else";
 
+        // Example Azure Postgres Connection String
+        // jdbc:postgresql://$WDS_DB_HOST.postgres.database.azure.com:WDS_DB_PORT/$WDS_DB_NAME?user=$WDS_DB_USER@$WDS_DB_HOST&password=$WDS_DB_PASSWORD&sslmode=require
+
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                 .connectionString(azureStorageConnectionString)
                 .buildClient();
