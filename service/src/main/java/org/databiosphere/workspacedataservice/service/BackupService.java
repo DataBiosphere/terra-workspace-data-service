@@ -1,11 +1,14 @@
 package org.databiosphere.workspacedataservice.service;
 
 import bio.terra.common.db.WriteTransaction;
+import org.databiosphere.workspacedataservice.InstanceInitializerBean;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.specialized.BlockBlobClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,13 +22,15 @@ import java.util.UUID;
 @Service
 public class BackupService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(BackupService.class);
+
     @Autowired
     private LocalProcessLauncher localProcessLauncher;
 
     @WriteTransaction
     public void backupAzureWDS(UUID instanceId, UUID workspaceId) {
-        String backupName = "goodbye";
-        String blobName = instanceId.toString() + "/" + workspaceId.toString() + "/" + backupName + ".sql";
+        String backupName = "some-backup";
+        String blobName = instanceId.toString() + "-" + workspaceId.toString() + "-" + backupName + ".sql";
         Path backupDirectory = Paths.get("some_path");
 
         List<String> command = List.of(
@@ -37,7 +42,7 @@ public class BackupService {
                 "-W", System.getenv("WDS_DB_PASSWORD")
         );
 
-        InputStream pgDumpOutput = localProcessLauncher.launchProcess(command, null, backupDirectory);
+        InputStream pgDumpOutput = localProcessLauncher.launchProcess(command, null, null);
 
         BlockBlobClient blockBlobClient = constructBlockBlobClient(blobName);
         // -1 represents using the default parallelTransferOptions during upload to Azure
