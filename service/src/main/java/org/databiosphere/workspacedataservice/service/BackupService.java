@@ -9,10 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
-import java.util.HashMap;
-import java.util.Map;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -27,35 +26,35 @@ public class BackupService {
     private LocalProcessLauncher localProcessLauncher;
 
     public void backupAzureWDS(String workspaceId, String backupName) {
-        // TODO: Replace with application.properties value perhaps? Or a value from k8s?
-        String containerName = "workspace-backups";
-        Path backupDirectory = Paths.get("some_path");
         String blobName = workspaceId + "/" + backupName + ".sql";
+        Path backupDirectory = Paths.get("some_path");
 
-        // Build the pg_dump command
         List<String> command = List.of(
                 "pg_dump",
                 "-h", System.getenv("WDS_DB_HOST"),
                 "-p", System.getenv("WDS_DB_PORT"),
                 "-U", System.getenv("WDS_DB_USER"),
                 "-d", System.getenv("WDS_DB_NAME"),
-                "-W", System.getenv("WDS_DB_PASSWORD"),
-                "-F", "c", // "c" represents "compressed" format
+                "-W", System.getenv("WDS_DB_PASSWORD")
         );
 
+        InputStream pgDumpOutput = localProcessLauncher.launchProcess(command, null, backupDirectory);
 
-        // Launch the process using LocalProcessLauncher
-        localProcessLauncher.launchProcess(command, pgDumpEnvVariables, backupDirectory);
+        BlockBlobClient blockBlobClient = constructBlockBlobClient(blobName);
+        // -1 represents using the default parallelTransferOptions during upload to Azure
+        // From docs, this means each block size: 4 MB (4 * 1024 * 1024 bytes), maximum number of parallel transfers: 2
+        blockBlobClient.upload(pgDumpOutput, -1);
+    }
 
-        // Create BlobServiceClient and BlobContainerClient
+    public BlockBlobClient constructBlockBlobClient(String blobName) {
+        // TODO: Replace with application.properties value perhaps? Or a value from k8s?
+        String containerName = "workspace-backups";
+
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                 .connectionString(azureStorageConnectionString)
                 .buildClient();
         BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
 
-        // Create the BlockBlobClient
-        BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(blobName).getBlockBlobClient();
-
-        // TODO: Upload the the streamed data to Azure Blob Storage
+        return blobContainerClient.getBlobClient(blobName).getBlockBlobClient();
     }
 }

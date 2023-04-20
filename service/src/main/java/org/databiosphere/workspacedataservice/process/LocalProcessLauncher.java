@@ -45,7 +45,7 @@ public class LocalProcessLauncher {
      * @param envVars the environment variables to set or overwrite if already defined
      * @param workingDirectory the working directory to launch the process from
      */
-    public void launchProcess(
+    public InputStream launchProcess(
             List<String> command, Map<String, String> envVars, Path workingDirectory) {
         // build and run process from the specified working directory
         ProcessBuilder procBuilder = new ProcessBuilder(command);
@@ -59,6 +59,7 @@ public class LocalProcessLauncher {
 
         try {
             process = procBuilder.start();
+            return process.getInputStream();
         } catch (IOException ioEx) {
             throw new LaunchProcessException("Error launching local process", ioEx);
         }
