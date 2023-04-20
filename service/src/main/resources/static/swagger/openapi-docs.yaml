@@ -26,20 +26,14 @@ tags:
   - name: General WDS Information
     description: Information regarding versioning, health, info, etc. for WDS
 paths:
-  /backup/azure/{instanceId}:
+  /backup/azure:
     post:
       tags:
         - Backup
       summary: Create a backup of a PostgreSQL instance and upload it to Azure Blob Storage
       operationId: createBackup
       parameters:
-        - name: instanceId
-          in: query
-          description: The UUID of the instance
-          required: true
-          schema:
-            type: string
-            format: uuid
+        - $ref: '#/components/parameters/instanceIdPathParam'
         - name: workspaceId
           in: query
           description: The UUID of the workspace
