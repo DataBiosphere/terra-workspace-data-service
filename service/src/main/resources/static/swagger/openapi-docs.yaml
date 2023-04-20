@@ -15,6 +15,8 @@ servers:
   - url: ../
     description: Relative to the current swagger page
 tags:
+  - name: Backup
+    description: Backup APIs
   - name: Records
     description: Record APIs
   - name: Instances
@@ -24,6 +26,32 @@ tags:
   - name: General WDS Information
     description: Information regarding versioning, health, info, etc. for WDS
 paths:
+  /backup/azure/{instanceId}:
+    post:
+      tags:
+        - Backup
+      summary: Create a backup of a PostgreSQL instance and upload it to Azure Blob Storage
+      operationId: createBackup
+      parameters:
+        - name: instanceId
+          in: query
+          description: The UUID of the instance
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: workspaceId
+          in: query
+          description: The UUID of the workspace
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully initiated the backup process
+        '400':
+          description: Invalid input, UUIDs are required
   /status:
     get:
       summary: Gets health status for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#health for details)

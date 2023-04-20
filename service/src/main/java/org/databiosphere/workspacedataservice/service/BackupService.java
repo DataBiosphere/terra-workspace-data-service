@@ -26,13 +26,17 @@ public class BackupService {
         String blobName = instanceId.toString() + "/" + workspaceId.toString() + "/" + backupName + ".sql";
         Path backupDirectory = Paths.get("some_path");
 
+//        List<String> command = List.of(
+//                "pg_dump",
+//                "-h", System.getenv("WDS_DB_HOST"),
+//                "-p", System.getenv("WDS_DB_PORT"),
+//                "-U", System.getenv("WDS_DB_USER"),
+//                "-d", System.getenv("WDS_DB_NAME"),
+//                "-W", System.getenv("WDS_DB_PASSWORD")
+//        );
+
         List<String> command = List.of(
-                "pg_dump",
-                "-h", System.getenv("WDS_DB_HOST"),
-                "-p", System.getenv("WDS_DB_PORT"),
-                "-U", System.getenv("WDS_DB_USER"),
-                "-d", System.getenv("WDS_DB_NAME"),
-                "-W", System.getenv("WDS_DB_PASSWORD")
+                "pg_dump"
         );
 
         InputStream pgDumpOutput = localProcessLauncher.launchProcess(command, null, backupDirectory);
