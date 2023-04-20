@@ -6,27 +6,24 @@ import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.specialized.BlockBlobClient;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
 import java.util.List;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.UUID;
 
-@Component
+@Service
 public class BackupService {
-
-    // TODO: Replace with application.properties value perhaps? Or a value from k8s?
-    @Value("${AZURE_STORAGE_CONNECTION_STRING}")
-    private String azureStorageConnectionString;
 
     @Autowired
     private LocalProcessLauncher localProcessLauncher;
 
-    public void backupAzureWDS(String workspaceId, String backupName) {
-        String blobName = workspaceId + "/" + backupName + ".sql";
+    public void backupAzureWDS(UUID instanceId, UUID workspaceId) {
+        String backupName = "goodbye";
+        String blobName = instanceId.toString() + "/" + workspaceId.toString() + "/" + backupName + ".sql";
         Path backupDirectory = Paths.get("some_path");
 
         List<String> command = List.of(
@@ -49,6 +46,7 @@ public class BackupService {
     public BlockBlobClient constructBlockBlobClient(String blobName) {
         // TODO: Replace with application.properties value perhaps? Or a value from k8s?
         String containerName = "workspace-backups";
+        String azureStorageConnectionString = "something-else";
 
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                 .connectionString(azureStorageConnectionString)
