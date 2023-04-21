@@ -12,6 +12,7 @@ import org.databiosphere.workspacedata.model.RecordResponse;
 import org.databiosphere.workspacedata.model.RecordTypeSchema;
 import org.databiosphere.workspacedata.model.SearchRequest;
 import org.databiosphere.workspacedata.model.TsvUploadResponse;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -44,6 +45,12 @@ class GeneratedClientTests {
         apiClient.setBasePath("http://localhost:" + port);
         createNewInstance(instanceId);
     }
+
+    @AfterEach
+    void afterEach() throws ApiException {
+        deleteInstance(instanceId);
+    }
+
     @Test
     void uploadTsv() throws ApiException, URISyntaxException {
         RecordsApi recordsApi = new RecordsApi(apiClient);
@@ -132,5 +139,10 @@ class GeneratedClientTests {
     private void createNewInstance(UUID instanceId) throws ApiException {
         InstancesApi instancesApi = new InstancesApi(apiClient);
         instancesApi.createWDSInstance(instanceId.toString(), version);
+    }
+
+    private void deleteInstance(UUID instanceId) throws ApiException {
+        InstancesApi instancesApi = new InstancesApi(apiClient);
+        instancesApi.deleteWDSInstance(instanceId.toString(), version);
     }
 }
