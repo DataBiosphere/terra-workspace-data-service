@@ -19,6 +19,10 @@ public interface SamDao {
      * Sam action name for write permission
      */
     String ACTION_WRITE = "write";
+    /**
+     * Sam action name for delete permission
+     */
+    String ACTION_DELETE = "delete";
 
     /**
      * Check if the current user has permission to create a "wds-instance" resource in Sam

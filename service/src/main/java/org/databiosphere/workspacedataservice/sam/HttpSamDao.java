@@ -60,7 +60,7 @@ public class HttpSamDao implements SamDao {
     }
     @Override
     public boolean hasDeleteInstancePermission(UUID instanceId, String token) {
-        return hasPermission(RESOURCE_NAME_WORKSPACE, instanceId.toString(), ACTION_WRITE,
+        return hasPermission(RESOURCE_NAME_WORKSPACE, instanceId.toString(), ACTION_DELETE,
                 "hasDeleteInstancePermission", token);
     }
 
