@@ -1,7 +1,5 @@
 package org.databiosphere.workspacedataservice.sam;
 
-import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
-import org.broadinstitute.dsde.workbench.client.sam.model.FullyQualifiedResourceId;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,11 +7,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Scheduled;
 
-import java.util.Collections;
-import java.util.UUID;
-
 import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.SamFunction;
-import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.VoidSamFunction;
 
 /**
  * Implementation of SamDao that accepts a SamClientFactory,
@@ -25,27 +19,28 @@ public class HttpSamDao implements SamDao {
     protected final SamClientFactory samClientFactory;
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpSamDao.class);
     private final HttpSamClientSupport httpSamClientSupport;
+    private final String workspaceId;
 
-    public HttpSamDao(SamClientFactory samClientFactory, HttpSamClientSupport httpSamClientSupport) {
+    public HttpSamDao(SamClientFactory samClientFactory, HttpSamClientSupport httpSamClientSupport, String workspaceId) {
         this.samClientFactory = samClientFactory;
         this.httpSamClientSupport = httpSamClientSupport;
+        this.workspaceId = workspaceId;
     }
 
     /**
      * Check if the current user has permission to create a "wds-instance" resource in Sam.
      * Implemented as a check for write permission on the workspace which will contain this instance.
      *
-     * @param parentWorkspaceId the workspaceId which will be the parent of the "wds-instance" resource
      * @return true if the user has permission
      */
     @Override
-    public boolean hasCreateInstancePermission(UUID parentWorkspaceId) {
-        return hasCreateInstancePermission(parentWorkspaceId, null);
+    public boolean hasCreateInstancePermission() {
+        return hasCreateInstancePermission(null);
     }
 
     @Override
-    public boolean hasCreateInstancePermission(UUID parentWorkspaceId, String token) {
-        return hasPermission(RESOURCE_NAME_WORKSPACE, parentWorkspaceId.toString(), ACTION_WRITE,
+    public boolean hasCreateInstancePermission(String token) {
+        return hasPermission(ACTION_WRITE,
                 "hasCreateInstancePermission", token);
     }
 
@@ -53,96 +48,41 @@ public class HttpSamDao implements SamDao {
      * Check if the current user has permission to delete a "wds-instance" resource from Sam.
      * Implemented as a check for delete permission on the resource.
      *
-     * @param instanceId the id of the "wds-instance" resource to be deleted
      * @return true if the user has permission
      */
     @Override
-    public boolean hasDeleteInstancePermission(UUID instanceId) {
-        return hasDeleteInstancePermission(instanceId, null);
+    public boolean hasDeleteInstancePermission() {
+        return hasDeleteInstancePermission(null);
     }
     @Override
-    public boolean hasDeleteInstancePermission(UUID instanceId, String token) {
-        return hasPermission(RESOURCE_NAME_INSTANCE, instanceId.toString(), ACTION_DELETE,
+    public boolean hasDeleteInstancePermission(String token) {
+        return hasPermission(ACTION_DELETE,
                 "hasDeleteInstancePermission", token);
     }
 
     // helper implementation for permission checks
-    private boolean hasPermission(String resourceType, String resourceId, String action, String loggerHint, String token) {
+    private boolean hasPermission(String action, String loggerHint, String token) {
+        LOGGER.debug("Checking Sam permission for {}/{}/{} ...", SamDao.RESOURCE_NAME_WORKSPACE, workspaceId, action);
         SamFunction<Boolean> samFunction = () -> samClientFactory.getResourcesApi(token)
-                .resourcePermissionV2(resourceType, resourceId, action);
+                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, workspaceId, action);
         return httpSamClientSupport.withRetryAndErrorHandling(samFunction, loggerHint);
-    }
-
-    /**
-     * Creates a "wds-instance" Sam resource.
-     * Assigns the "wds-instance" resource to be a child of a workspace; within Sam's config
-     * the "wds-instance" resource will inherit permissions from its parent workspace.
-     *
-     * @param instanceId the id to use for the "wds-instance" resource
-     * @param parentWorkspaceId the id to use for the "wds-instance" resource's parent
-     */
-    @Override
-    public void createInstanceResource(UUID instanceId, UUID parentWorkspaceId) {
-        createInstanceResource(instanceId, parentWorkspaceId, null);
-    }
-
-    @Override
-    public void createInstanceResource(UUID instanceId, UUID parentWorkspaceId, String token) {
-        FullyQualifiedResourceId parent = new FullyQualifiedResourceId();
-        parent.setResourceTypeName(RESOURCE_NAME_WORKSPACE);
-        parent.setResourceId(parentWorkspaceId.toString());
-
-        CreateResourceRequestV2 createResourceRequest = new CreateResourceRequestV2();
-        createResourceRequest.setResourceId(instanceId.toString());
-        createResourceRequest.setParent(parent);
-        createResourceRequest.setAuthDomain(Collections.emptyList());
-
-        VoidSamFunction samFunction = () -> samClientFactory.getResourcesApi(token).createResourceV2(RESOURCE_NAME_INSTANCE, createResourceRequest);
-        httpSamClientSupport.withRetryAndErrorHandling(samFunction, "createInstanceResource");
-    }
-
-    /**
-     * Deletes a "wds-instance" Sam resource.
-     *
-     * @param instanceId the id of the "wds-instance" resource to be deleted
-     */
-    @Override
-    public void deleteInstanceResource(UUID instanceId) {
-        deleteInstanceResource(instanceId, null);
     }
 
     /**
      * Check if the current user has permission to write to a "wds-instance" resource from Sam.
      * Implemented as a check for write permission on the resource.
      *
-     * @param instanceId the id of the "wds-instance" resource to be written to
      * @return true if the user has permission
      */
     @Override
-    public boolean hasWriteInstancePermission(UUID instanceId) {
-        return hasWriteInstancePermission(instanceId, null);
+    public boolean hasWriteInstancePermission() {
+        return hasWriteInstancePermission(null);
     }
 
     @Override
-    public boolean hasWriteInstancePermission(UUID instanceId, String token) {
-        return hasPermission(RESOURCE_NAME_INSTANCE, instanceId.toString(), ACTION_WRITE,
+    public boolean hasWriteInstancePermission(String token) {
+        return hasPermission(ACTION_WRITE,
                 "hasWriteInstancePermission", token);
-    }
-
-    @Override
-    public void deleteInstanceResource(UUID instanceId, String token) {
-        VoidSamFunction samFunction = () -> samClientFactory.getResourcesApi(token).deleteResourceV2(RESOURCE_NAME_INSTANCE, instanceId.toString());
-        httpSamClientSupport.withRetryAndErrorHandling(samFunction, "deleteInstanceResource");
-    }
-
-    @Override
-    public boolean instanceResourceExists(UUID instanceId){
-        return instanceResourceExists(instanceId, null);
-    }
-
-    @Override
-    public boolean instanceResourceExists(UUID instanceId, String token){
-        return hasPermission(RESOURCE_NAME_INSTANCE, instanceId.toString(), ACTION_READ, "instanceResourceExists", token);
     }
 
     /**

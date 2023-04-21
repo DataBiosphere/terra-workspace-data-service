@@ -18,7 +18,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
@@ -62,7 +61,7 @@ class InstanceServiceNoPermissionSamTest {
 
         UUID instanceId = UUID.randomUUID();
         assertThrows(AuthorizationException.class,
-                () -> instanceService.createInstance(instanceId, VERSION, Optional.empty()),
+                () -> instanceService.createInstance(instanceId, VERSION),
                 "createInstance should throw if caller does not have permission to create wds-instance resource in Sam"
         );
         List<UUID> allInstances = instanceService.listInstances(VERSION);
