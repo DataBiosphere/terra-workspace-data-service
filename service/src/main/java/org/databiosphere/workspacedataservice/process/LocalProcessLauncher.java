@@ -68,7 +68,7 @@ class LocalProcessLauncher {
      *
      * @param fromStream specifies which stream will be read from
      */
-    public String getOutputForProcessFromStream(InputStream fromStream) {
+    private String getOutputForProcessFromStream(InputStream fromStream) {
         try (BufferedReader bufferedReader =
                      new BufferedReader(new InputStreamReader(fromStream, StandardCharsets.UTF_8))) {
 

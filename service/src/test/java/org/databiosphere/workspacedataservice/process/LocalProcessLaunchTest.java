@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.process;
 
+import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class LocalProcessLaunchTest {
 
@@ -55,8 +57,9 @@ class LocalProcessLaunchTest {
     @Test
     void runSimpleCommandCauseError() {
         List<String> processCommand = new ArrayList<>();
-        // run a command that is either not installed on machine or ran incorrectly
-        processCommand.add("pg_dump");
+        // run a command that not ran incorrectly (return exit code 2)
+        processCommand.add("javac");
+        processCommand.add("-h");
 
         // launch the child process
         LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
@@ -64,7 +67,7 @@ class LocalProcessLaunchTest {
 
         // block until the child process exits
         int exitCode = localProcessLauncher.waitForTerminate();
-        assertEquals(1, exitCode);
+        assertEquals(2, exitCode);
     }
 
     @Test
@@ -73,17 +76,12 @@ class LocalProcessLaunchTest {
         // run a command that is not recognized and will cause an exception
         processCommand.add("echo $TEST");
 
-        try {
-            // launch the child process
-            LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
-            localProcessLauncher.launchProcess(processCommand, null);
+        // launch the child process
+        LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
 
-            // block until the child process exits
-            int exitCode = localProcessLauncher.waitForTerminate();
-            assertEquals(1, exitCode);
-        }
-        catch(Exception error) {
-            assertNotNull(error);
-        }
+        assertThrows(LaunchProcessException.class,
+                () -> localProcessLauncher.launchProcess(processCommand, null),
+                "Error launching local process"
+        );
     }
 }
