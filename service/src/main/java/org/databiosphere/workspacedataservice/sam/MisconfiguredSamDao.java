@@ -12,13 +12,13 @@ import org.slf4j.LoggerFactory;
  * objective is to disallow any write operations that require permissions, while still
  * allowing WDS to start up and for users to read any data already in WDS.
  */
-public class FailingSamDao implements SamDao {
+public class MisconfiguredSamDao implements SamDao {
 
     private final String errorMessage;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public FailingSamDao(String errorMessage) {
+    public MisconfiguredSamDao(String errorMessage) {
         this.errorMessage = errorMessage;
     }
 

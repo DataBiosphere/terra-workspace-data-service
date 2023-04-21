@@ -61,7 +61,7 @@ public class SamConfig {
         }
 
         // if Sam integration is enabled, try to parse the WORKSPACE_ID env var;
-        // return a FailingSamDao if it can't be parsed.
+        // return a MisconfiguredSamDao if it can't be parsed.
         try {
             String workspaceId = UUID.fromString(workspaceIdArgument).toString(); // verify UUID-ness
             LOGGER.info("Sam integration will query type={}, resourceId={}, action={}",
@@ -69,10 +69,10 @@ public class SamConfig {
             return new HttpSamDao(samClientFactory, httpSamClientSupport, workspaceId);
         } catch (IllegalArgumentException e) {
             LOGGER.warn("Workspace id could not be parsed, all Sam permission checks will fail. Provided id: {}", workspaceIdArgument);
-            return new FailingSamDao("WDS was started with invalid WORKSPACE_ID of: " + workspaceIdArgument);
+            return new MisconfiguredSamDao("WDS was started with invalid WORKSPACE_ID of: " + workspaceIdArgument);
         } catch (Exception e) {
             LOGGER.warn("Error during initial Sam configuration: " + e.getMessage());
-            return new FailingSamDao(e.getMessage());
+            return new MisconfiguredSamDao(e.getMessage());
         }
     }
 

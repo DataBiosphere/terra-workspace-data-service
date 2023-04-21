@@ -21,7 +21,7 @@ public class SamDaoInvalidWorkspaceTest {
 
     @Test
     public void createsFailingDao() {
-        assertInstanceOf(FailingSamDao.class, samDao);
+        assertInstanceOf(MisconfiguredSamDao.class, samDao);
     }
 
     @Test
