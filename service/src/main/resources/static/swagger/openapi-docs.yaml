@@ -33,13 +33,6 @@ paths:
       summary: Create a backup of a PostgreSQL instance and upload it to Azure Blob Storage
       operationId: createBackup
       parameters:
-        - name: instanceId
-          in: query
-          description: The instance ID of the workspace
-          required: true
-          schema:
-            type: string
-            format: uuid
         - name: workspaceId
           in: query
           description: The UUID of the workspace

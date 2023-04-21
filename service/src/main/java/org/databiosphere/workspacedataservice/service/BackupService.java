@@ -28,9 +28,9 @@ public class BackupService {
     private LocalProcessLauncher localProcessLauncher;
 
     @WriteTransaction
-    public void backupAzureWDS(UUID instanceId, UUID workspaceId) {
+    public void backupAzureWDS(UUID workspaceId) {
         String backupName = "some-backup";
-        String blobName = instanceId.toString() + "-" + workspaceId.toString() + "-" + backupName + ".sql";
+        String blobName = workspaceId.toString() + "-" + backupName + ".sql";
         Path backupDirectory = Paths.get("some_path");
 
         List<String> command = List.of(
@@ -54,10 +54,12 @@ public class BackupService {
     public BlockBlobClient constructBlockBlobClient(String blobName) {
         // TODO: Replace with application.properties value perhaps? Or a value from k8s?
         String containerName = "workspace-backups";
-        String azureStorageConnectionString = "something-else";
 
         // Example Azure Postgres Connection String
-        // jdbc:postgresql://$WDS_DB_HOST.postgres.database.azure.com:WDS_DB_PORT/$WDS_DB_NAME?user=$WDS_DB_USER@$WDS_DB_HOST&password=$WDS_DB_PASSWORD&sslmode=require
+        String azureStorageConnectionString = "jdbc:postgresql://" + System.getenv("WDS_DB_HOST")
+                + "postgres.database.azure.com:" + System.getenv("WDS_DB_PORT") + "/" + System.getenv("WDS_DB_NAME")
+                + "?user=" + System.getenv("WDS_DB_USER") + "@" + System.getenv("WDS_DB_HOST") + "&password="
+                + System.getenv("WDS_DB_PASSWORD") + "&sslmode=require";
 
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                 .connectionString(azureStorageConnectionString)
