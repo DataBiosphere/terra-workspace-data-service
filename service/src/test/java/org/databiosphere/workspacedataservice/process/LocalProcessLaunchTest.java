@@ -55,6 +55,21 @@ class LocalProcessLaunchTest {
     }
 
     @Test
+    void runSimpleCommandAlwaysError() {
+        List<String> processCommand = new ArrayList<>();
+        // run a command that not ran incorrectly (return exit code 2)
+        processCommand.add("false");
+
+        // launch the child process
+        LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
+        localProcessLauncher.launchProcess(processCommand, null);
+
+        // block until the child process exits
+        int exitCode = localProcessLauncher.waitForTerminate();
+        assertEquals(1, exitCode);
+    }
+
+    @Test
     void runSimpleCommandCauseError() {
         List<String> processCommand = new ArrayList<>();
         // run a command that not ran incorrectly (return exit code 2)

@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 /** This class provides utility methods for launching local child processes. */
-class LocalProcessLauncher {
+public class LocalProcessLauncher {
     private Process process;
 
     public enum Output {
