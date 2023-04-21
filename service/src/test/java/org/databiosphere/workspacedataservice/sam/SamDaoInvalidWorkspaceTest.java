@@ -4,8 +4,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -21,8 +19,6 @@ public class SamDaoInvalidWorkspaceTest {
     @Autowired
     SamDao samDao;
 
-    private final UUID someUuid = UUID.randomUUID();
-
     @Test
     public void createsFailingDao() {
         assertInstanceOf(FailingSamDao.class, samDao);
@@ -30,12 +26,12 @@ public class SamDaoInvalidWorkspaceTest {
 
     @Test
     public void permissionsReturnFalse() {
-        assertFalse(samDao.hasCreateInstancePermission(someUuid));
-        assertFalse(samDao.hasCreateInstancePermission(someUuid, "token"));
-        assertFalse(samDao.hasDeleteInstancePermission(someUuid));
-        assertFalse(samDao.hasDeleteInstancePermission(someUuid, "token"));
-        assertFalse(samDao.hasWriteInstancePermission(someUuid));
-        assertFalse(samDao.hasWriteInstancePermission(someUuid, "token"));
+        assertFalse(samDao.hasCreateInstancePermission());
+        assertFalse(samDao.hasCreateInstancePermission("token"));
+        assertFalse(samDao.hasDeleteInstancePermission());
+        assertFalse(samDao.hasDeleteInstancePermission("token"));
+        assertFalse(samDao.hasWriteInstancePermission());
+        assertFalse(samDao.hasWriteInstancePermission("token"));
     }
 
     @Test

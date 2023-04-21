@@ -4,8 +4,6 @@ import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.UUID;
-
 /**
  * This class will be used instead of HttpSamDao if the WORKSPACE_ID env var
  * contains a non-UUID value, including being blank.
@@ -25,37 +23,37 @@ public class FailingSamDao implements SamDao {
     }
 
     @Override
-    public boolean hasCreateInstancePermission(UUID parentWorkspaceId) {
+    public boolean hasCreateInstancePermission() {
         logWarning();
         return false;
     }
 
     @Override
-    public boolean hasCreateInstancePermission(UUID parentWorkspaceId, String token) {
+    public boolean hasCreateInstancePermission(String token) {
         logWarning();
         return false;
     }
 
     @Override
-    public boolean hasDeleteInstancePermission(UUID instanceId) {
+    public boolean hasDeleteInstancePermission() {
         logWarning();
         return false;
     }
 
     @Override
-    public boolean hasDeleteInstancePermission(UUID instanceId, String token) {
+    public boolean hasDeleteInstancePermission(String token) {
         logWarning();
         return false;
     }
 
     @Override
-    public boolean hasWriteInstancePermission(UUID instanceId) {
+    public boolean hasWriteInstancePermission() {
         logWarning();
         return false;
     }
 
     @Override
-    public boolean hasWriteInstancePermission(UUID instanceId, String token) {
+    public boolean hasWriteInstancePermission(String token) {
         logWarning();
         return false;
     }

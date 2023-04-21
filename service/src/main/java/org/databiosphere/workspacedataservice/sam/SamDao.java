@@ -2,8 +2,6 @@ package org.databiosphere.workspacedataservice.sam;
 
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 
-import java.util.UUID;
-
 /**
  * Interface for SamDao, allowing various dao implementations.
  * Currently, the only implementation is HttpSamDao.
@@ -26,30 +24,30 @@ public interface SamDao {
 
     /**
      * Check if the current user has permission to create a "wds-instance" resource in Sam
-     * @param parentWorkspaceId the workspaceId which will be the parent of the "wds-instance" resource
+     *
      * @return true if the user has permission
      */
-    boolean hasCreateInstancePermission(UUID parentWorkspaceId);
+    boolean hasCreateInstancePermission();
 
-    boolean hasCreateInstancePermission(UUID parentWorkspaceId, String token);
+    boolean hasCreateInstancePermission(String token);
 
     /**
      * Check if the current user has permission to delete a "wds-instance" resource from Sam
-     * @param instanceId the id of the "wds-instance" resource to be deleted
+     *
      * @return true if the user has permission
      */
-    boolean hasDeleteInstancePermission(UUID instanceId);
+    boolean hasDeleteInstancePermission();
 
-    boolean hasDeleteInstancePermission(UUID instanceId, String token);
+    boolean hasDeleteInstancePermission(String token);
 
     /**
      * Check if the current user has permission to write to a "wds-instance" resource from Sam
-     * @param instanceId the id of the "wds-instance" resource to be written to
+     *
      * @return true if the user has permission
      */
-    boolean hasWriteInstancePermission(UUID instanceId);
+    boolean hasWriteInstancePermission();
 
-    boolean hasWriteInstancePermission(UUID instanceId, String token);
+    boolean hasWriteInstancePermission(String token);
 
     /**
      * Gets the System Status of SAM.

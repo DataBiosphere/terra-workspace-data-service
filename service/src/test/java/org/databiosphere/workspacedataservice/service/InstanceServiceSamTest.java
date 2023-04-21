@@ -87,7 +87,7 @@ class InstanceServiceSamTest {
         InOrder callOrder = inOrder(mockResourcesApi);
 
         // call createInstance
-        instanceService.createInstance(instanceId, VERSION, workspaceIdInput);
+        instanceService.createInstance(instanceId, VERSION);
 
         // createInstance should check permission with Sam exactly once:
         verify(mockResourcesApi, times(1))

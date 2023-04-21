@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
@@ -43,18 +42,13 @@ public class InstanceService {
      * two Sam resources having the same id - one of type `workspace` and another of type `wds-instance.
      *
      * @param instanceId id of the instance to create
-     * @param version WDS API version
-     * @param workspaceId optional - id of the parent workspace, if different than the instance id
+     * @param version    WDS API version
      */
-    public void createInstance(UUID instanceId, String version, Optional<UUID> workspaceId) {
+    public void createInstance(UUID instanceId, String version) {
         validateVersion(version);
 
-        // id of workspace in which this instance exists
-        // if not specified, assume the workspace id is equal to the instance id
-        UUID containingWorkspaceId = workspaceId.orElse(instanceId);
-
         // check that the current user has permission on the parent workspace
-        boolean hasCreateInstancePermission = samDao.hasCreateInstancePermission(containingWorkspaceId);
+        boolean hasCreateInstancePermission = samDao.hasCreateInstancePermission();
         LOGGER.debug("hasCreateInstancePermission? {}", hasCreateInstancePermission);
 
         if (!hasCreateInstancePermission) {
@@ -79,7 +73,7 @@ public class InstanceService {
         validateInstance(instanceId);
 
         // check that the current user has permission to delete the Sam resource
-        boolean hasDeleteInstancePermission = samDao.hasDeleteInstancePermission(instanceId);
+        boolean hasDeleteInstancePermission = samDao.hasDeleteInstancePermission();
         LOGGER.debug("hasDeleteInstancePermission? {}", hasDeleteInstancePermission);
 
         if (!hasDeleteInstancePermission) {

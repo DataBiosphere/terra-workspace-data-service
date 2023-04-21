@@ -53,7 +53,7 @@ class TsvDownloadTest {
 	void init(){
 		version = "v0.2";
 		instanceId = UUID.randomUUID();
-		recordController.createInstance(instanceId, version, Optional.empty());
+		recordController.createInstance(instanceId, version);
 	}
 
 	@ParameterizedTest(name = "PK name {0} should be honored")

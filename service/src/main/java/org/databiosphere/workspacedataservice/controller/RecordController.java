@@ -111,9 +111,8 @@ public class RecordController {
 
 	@PostMapping("/instances/{version}/{instanceId}")
 	public ResponseEntity<String> createInstance(@PathVariable("instanceId") UUID instanceId,
-			@PathVariable("version") String version,
-			@RequestParam(name= "workspaceid", required = false) Optional<UUID> workspaceId) {
-		instanceService.createInstance(instanceId, version, workspaceId);
+			@PathVariable("version") String version) {
+		instanceService.createInstance(instanceId, version);
 		return new ResponseEntity<>(HttpStatus.CREATED);
 	}
 

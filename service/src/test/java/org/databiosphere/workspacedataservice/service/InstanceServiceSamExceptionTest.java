@@ -28,7 +28,6 @@ import org.springframework.test.context.TestPropertySource;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
@@ -164,7 +163,7 @@ class InstanceServiceSamExceptionTest {
 
         // attempt to create the instance, which should fail
         assertThrows(expectedExceptionClass,
-                () -> instanceService.createInstance(instanceId, VERSION, Optional.empty()),
+                () -> instanceService.createInstance(instanceId, VERSION),
                 "createInstance should throw if caller does not have permission to create wds-instance resource in Sam"
         );
         List<UUID> allInstances = instanceService.listInstances(VERSION);
@@ -195,7 +194,7 @@ class InstanceServiceSamExceptionTest {
     private void doSamCreateTest(UUID instanceId, int expectedSamExceptionCode) {
         // attempt to create the instance, which should fail
         SamException samException = assertThrows(SamException.class,
-                () -> instanceService.createInstance(instanceId, VERSION, Optional.empty()),
+                () -> instanceService.createInstance(instanceId, VERSION),
                 "createInstance should throw if caller does not have permission to create wds-instance resource in Sam"
         );
         assertEquals(expectedSamExceptionCode, samException.getRawStatusCode(),

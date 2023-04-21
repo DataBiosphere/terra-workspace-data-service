@@ -131,6 +131,6 @@ class GeneratedClientTests {
 
     private void createNewInstance(UUID instanceId) throws ApiException {
         InstancesApi instancesApi = new InstancesApi(apiClient);
-        instancesApi.createWDSInstance(instanceId.toString(), version, instanceId);
+        instancesApi.createWDSInstance(instanceId.toString(), version);
     }
 }
