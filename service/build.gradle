@@ -84,3 +84,10 @@ jacocoTestReport {
 		xml.required = true
 	}
 }
+
+bootRun {
+	doFirst {
+		def localPostgresPath = "/opt/homebrew/bin/pg_dump"
+		environment "PATH", "${localPostgresPath}:${System.getenv('PATH')}"
+	}
+}
