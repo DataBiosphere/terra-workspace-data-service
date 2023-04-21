@@ -21,11 +21,6 @@ class LocalProcessLauncher {
     }
 
     /**
-     * LocalProcessLauncher will be used to run processes.
-     */
-    public LocalProcessLauncher() {}
-
-    /**
      * Executes a command in a separate process from the current working directory (i.e. the same
      * place as this Java process is running).
      *
