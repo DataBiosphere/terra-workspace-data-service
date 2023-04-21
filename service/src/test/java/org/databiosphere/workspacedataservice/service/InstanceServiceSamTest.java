@@ -46,7 +46,7 @@ class InstanceServiceSamTest {
     ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
     @Value("${twds.instance.workspace-id}")
-    String containingWorkspaceId;
+    String parentWorkspaceId;
 
     @BeforeEach
     void beforeEach() throws ApiException {
@@ -100,7 +100,7 @@ class InstanceServiceSamTest {
         // the permission call should be first,
         // and that check should be for "write" permission on a workspace with workspaceId=containingWorkspaceId
         callOrder.verify(mockResourcesApi)
-                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, containingWorkspaceId, SamDao.ACTION_WRITE);
+                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, parentWorkspaceId, SamDao.ACTION_WRITE);
 
         // and that should be the only call we made to Sam
         verifyNoMoreInteractions(mockResourcesApi);
@@ -128,7 +128,7 @@ class InstanceServiceSamTest {
         // the permission call should be first,
         // and that check should be for "write" permission on a workspace with workspaceId=containingWorkspaceId
         callOrder.verify(mockResourcesApi)
-                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, containingWorkspaceId, SamDao.ACTION_DELETE);
+                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, parentWorkspaceId, SamDao.ACTION_DELETE);
 
         // and that should be the only call we made to Sam
         verifyNoMoreInteractions(mockResourcesApi);
