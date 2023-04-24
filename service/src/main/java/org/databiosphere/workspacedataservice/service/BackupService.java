@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import java.nio.file.Path;
@@ -29,9 +31,11 @@ public class BackupService {
 
     @WriteTransaction
     public void backupAzureWDS(UUID workspaceId) {
-        String backupName = "some-backup";
-        String blobName = workspaceId.toString() + "-" + backupName + ".sql";
-        Path backupDirectory = Paths.get("some_path");
+
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
+        String timestamp = now.format(formatter);
+        String blobName = workspaceId.toString() + "-" + timestamp + ".sql";
 
         List<String> command = List.of(
                 "pg_dump",
@@ -44,17 +48,14 @@ public class BackupService {
 
         InputStream pgDumpOutput = localProcessLauncher.launchProcess(command, null, null);
 
-        BlockBlobClient blockBlobClient = constructBlockBlobClient(blobName);
+        BlockBlobClient blockBlobClient = constructBlockBlobClient(workspaceId.toString() + "-backups", blobName);
         // -1 represents using the default parallelTransferOptions during upload to Azure
         // From docs, this means each block size: 4 MB (4 * 1024 * 1024 bytes), maximum number of parallel transfers: 2
         blockBlobClient.upload(pgDumpOutput, -1);
 
     }
 
-    public BlockBlobClient constructBlockBlobClient(String blobName) {
-        // TODO: Replace with application.properties value perhaps? Or a value from k8s?
-        String containerName = "workspace-backups";
-
+    public BlockBlobClient constructBlockBlobClient(String containerName, String blobName) {
         // Example Azure Postgres Connection String
         String azureStorageConnectionString = "jdbc:postgresql://" + System.getenv("WDS_DB_HOST")
                 + "postgres.database.azure.com:" + System.getenv("WDS_DB_PORT") + "/" + System.getenv("WDS_DB_NAME")

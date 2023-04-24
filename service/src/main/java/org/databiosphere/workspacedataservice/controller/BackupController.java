@@ -23,6 +23,7 @@ public class BackupController {
     @RetryableApi
     public ResponseEntity<String> createBackup(@RequestParam(name= "workspaceId") UUID workspaceId) throws IOException {
         backupService.backupAzureWDS(workspaceId);
+        // TODO: Handle response dependent on backup status
         return new ResponseEntity<>(HttpStatus.OK);
     }
 }
