@@ -77,7 +77,7 @@ public class RecordOrchestratorService { // TODO give me a better name
         validateVersion(version);
         instanceService.validateInstance(instanceId);
 
-        boolean hasWriteInstancePermission = samDao.hasWriteInstancePermission(instanceId);
+        boolean hasWriteInstancePermission = samDao.hasWriteInstancePermission();
         LOGGER.debug("hasWriteInstancePermission? {}", hasWriteInstancePermission);
 
         if (!hasWriteInstancePermission) {
