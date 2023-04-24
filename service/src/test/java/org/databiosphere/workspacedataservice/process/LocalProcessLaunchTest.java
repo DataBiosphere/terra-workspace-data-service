@@ -52,8 +52,6 @@ class LocalProcessLaunchTest {
         assertThat(output).isEqualTo("Hello World");
         assertThat(error).isEmpty();
     }
-<<<<<<< HEAD
-=======
 
     @Test
     void runSimpleCommandAlwaysError() {
@@ -100,5 +98,4 @@ class LocalProcessLaunchTest {
                 "Error launching local process"
         );
     }
->>>>>>> main
 }

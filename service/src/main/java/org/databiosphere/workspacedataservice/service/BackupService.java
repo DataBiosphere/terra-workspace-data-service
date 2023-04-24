@@ -12,7 +12,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -30,28 +33,40 @@ public class BackupService {
     private LocalProcessLauncher localProcessLauncher;
 
     @WriteTransaction
-    public void backupAzureWDS(UUID workspaceId) {
+    public void backupAzureWDS(UUID workspaceId) throws IOException {
 
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
         String timestamp = now.format(formatter);
         String blobName = workspaceId.toString() + "-" + timestamp + ".sql";
 
+//        String dbHost = System.getenv("WDS_DB_HOST");
+//        String dbPort = System.getenv("WDS_DB_PORT");
+//        String dbUser = System.getenv("WDS_DB_USER");
+//        String dbName = System.getenv("WDS_DB_NAME");
+//        String dbPassword = System.getenv("WDS_DB_PASSWORD")
+        String dbHost = "localhost";
+        String dbPort = "5432";
+        String dbUser = "testuser";
+        String dbName = "testdb";
+        String dbPassword = "testpassword";
+
         List<String> command = List.of(
-                "pg_dump",
-                "-h", System.getenv("WDS_DB_HOST"),
-                "-p", System.getenv("WDS_DB_PORT"),
-                "-U", System.getenv("WDS_DB_USER"),
-                "-d", System.getenv("WDS_DB_NAME"),
-                "-W", System.getenv("WDS_DB_PASSWORD")
+                "pg_dump", "--help"
         );
 
         InputStream pgDumpOutput = localProcessLauncher.launchProcess(command, null, null);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(pgDumpOutput));
 
-        BlockBlobClient blockBlobClient = constructBlockBlobClient(workspaceId.toString() + "-backups", blobName);
-        // -1 represents using the default parallelTransferOptions during upload to Azure
-        // From docs, this means each block size: 4 MB (4 * 1024 * 1024 bytes), maximum number of parallel transfers: 2
-        blockBlobClient.upload(pgDumpOutput, -1);
+        String line;
+        while ((line = reader.readLine()) != null) {
+            System.out.println(line);
+        }
+//
+//        BlockBlobClient blockBlobClient = constructBlockBlobClient(workspaceId.toString() + "-backups", blobName);
+//        // -1 represents using the default parallelTransferOptions during upload to Azure
+//        // From docs, this means each block size: 4 MB (4 * 1024 * 1024 bytes), maximum number of parallel transfers: 2
+//        blockBlobClient.upload(pgDumpOutput, -1);
 
     }
 

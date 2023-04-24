@@ -42,9 +42,9 @@ public class BackupServiceTest {
     @MockBean
     private BlobServiceClient blobServiceClient;
 
-    @Test
-    public void testBackupAzureWDS() {
-        // this is failing -- see BlobServiceClientBuilder
+//    @Test
+//    public void testBackupAzureWDS() {
+//        // this is failing -- see BlobServiceClientBuilder
 //        InputStream inputStream = new ByteArrayInputStream("test-data".getBytes());
 //        when(localProcessLauncher.launchProcess(any(), any(), any())).thenReturn(inputStream);
 //
@@ -56,11 +56,11 @@ public class BackupServiceTest {
 //        backupService.backupAzureWDS(workspaceId);
 //
 //        verify(localProcessLauncher).launchProcess(any(), any(), any());
-    }
-
-    @Test
-    public void testConstructBlockBlobClient() {
-        // this is failing as well -- see BlobServiceClientBuilder
+//    }
+//
+//    @Test
+//    public void testConstructBlockBlobClient() {
+//        // this is failing as well -- see BlobServiceClientBuilder
 //        String blobName = "test-blob";
 //        BlobServiceClientBuilder builder = mock(BlobServiceClientBuilder.class);
 //        when(builder.connectionString(any())).thenReturn(builder);
@@ -70,5 +70,5 @@ public class BackupServiceTest {
 //        BlockBlobClient blockBlobClient = backupService.constructBlockBlobClient(blobName);
 //
 //        assertNotNull(blockBlobClient);
-    }
+//    }
 }
