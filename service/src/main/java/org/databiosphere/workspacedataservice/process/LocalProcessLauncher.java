@@ -23,14 +23,10 @@ public class LocalProcessLauncher {
     }
 
     /**
-<<<<<<< HEAD
      * LocalProcessLauncher will be used to run processes.
      */
     public LocalProcessLauncher() {}
-
     /**
-=======
->>>>>>> main
      * Executes a command in a separate process from the current working directory (i.e. the same
      * place as this Java process is running).
      *

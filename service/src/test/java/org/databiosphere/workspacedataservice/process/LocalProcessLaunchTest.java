@@ -1,9 +1,6 @@
 package org.databiosphere.workspacedataservice.process;
 
-<<<<<<< HEAD
-=======
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
->>>>>>> main
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -13,11 +10,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-<<<<<<< HEAD
-=======
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
->>>>>>> main
 
 class LocalProcessLaunchTest {
 
