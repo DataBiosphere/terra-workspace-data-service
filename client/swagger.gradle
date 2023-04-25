@@ -17,10 +17,14 @@ openApiGenerate {
 	inputSpec = "$rootDir//service/src/main/resources/static/swagger/openapi-docs.yaml".toString()
 	outputDir = "$buildDir/generated".toString()
 	generatorName = 'java'
-	library = 'okhttp-gson'
+	library = 'okhttp-gson' // the default
 	configOptions = [
-			useJakartaEe: "true",
-			dateLibrary: "java8" // this is the default; delete?
+			// useRuntimeException: "true", // TODO: a change, but a good one?
+			disallowAdditionalPropertiesIfNotPresent: "false",
+
+			useJakartaEe: "true", // for compatibility with Spring Boot 3
+
+			dateLibrary: "java8" // TODO: this is the default; delete?
 	]
 	invokerPackage = "${artifactGroup}.client".toString()
 	modelPackage = "${artifactGroup}.model".toString()
