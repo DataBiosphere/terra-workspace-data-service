@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.service;
 
 import bio.terra.common.db.WriteTransaction;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
-import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -13,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
@@ -44,17 +42,13 @@ public class InstanceService {
      * two Sam resources having the same id - one of type `workspace` and another of type `wds-instance.
      *
      * @param instanceId id of the instance to create
-     * @param version WDS API version
-     * @param workspaceId optional - id of the parent workspace, if different than the instance id
+     * @param version    WDS API version
      */
-    public void createInstance(UUID instanceId, String version, Optional<UUID> workspaceId) {
+    public void createInstance(UUID instanceId, String version) {
         validateVersion(version);
 
-        UUID samResourceId = instanceId; // id of "wds-instance" Sam resource we will create
-        UUID samParentResourceId = workspaceId.orElse(instanceId); // id of "workspace" Sam resource to use as the parent of "wds-instance"
-
         // check that the current user has permission on the parent workspace
-        boolean hasCreateInstancePermission = samDao.hasCreateInstancePermission(samParentResourceId);
+        boolean hasCreateInstancePermission = samDao.hasCreateInstancePermission();
         LOGGER.debug("hasCreateInstancePermission? {}", hasCreateInstancePermission);
 
         if (!hasCreateInstancePermission) {
@@ -65,8 +59,6 @@ public class InstanceService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This instance already exists");
         }
 
-        // create `wds-instance` resource in Sam, specifying workspace as parent
-        samDao.createInstanceResource(samResourceId, samParentResourceId);
         // create instance schema in Postgres
         createInstanceInDatabase(instanceId);
     }
@@ -81,15 +73,13 @@ public class InstanceService {
         validateInstance(instanceId);
 
         // check that the current user has permission to delete the Sam resource
-        boolean hasDeleteInstancePermission = samDao.hasDeleteInstancePermission(instanceId);
+        boolean hasDeleteInstancePermission = samDao.hasDeleteInstancePermission();
         LOGGER.debug("hasDeleteInstancePermission? {}", hasDeleteInstancePermission);
 
         if (!hasDeleteInstancePermission) {
             throw new AuthorizationException("Caller does not have permission to delete instance.");
         }
 
-        // delete `wds-instance` resource in Sam
-        samDao.deleteInstanceResource(instanceId);
         // delete instance schema in Postgres
         deleteInstanceFromDatabase(instanceId);
     }

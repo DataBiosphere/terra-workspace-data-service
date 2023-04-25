@@ -38,9 +38,9 @@ jobs:
           set +e
           JIRA_ID=$(echo "${{ github.event.head_commit.message }}" | grep -iEo -m 1 'AJ-[0-9]+' | head -1 || '')
           if [[ -z "$JIRA_ID" ]]; then
-            echo ::set-output name=JIRA_ID::"missing"
+            echo "JIRA_ID=missing" >> $GITHUB_OUTPUT
           else 
-            echo ::set-output name=JIRA_ID::${JIRA_ID}
+            echo "JIRA_ID=${JIRA_ID}" >> $GITHUB_OUTPUT
           fi
           set -e
 
@@ -49,7 +49,7 @@ jobs:
         run: |
           git_short_sha=$(git rev-parse --short HEAD)
           echo $git_short_sha
-          echo "::set-output name=git_short_sha::${git_short_sha}"
+          echo "git_short_sha=${git_short_sha}" >> $GITHUB_OUTPUT
       - name: Construct GCR docker image name
         id: gcr-image-name
         run: echo "name=${GCR_REGISTRY}/${GOOGLE_PROJECT}/${SERVICE_NAME}" >> $GITHUB_OUTPUT

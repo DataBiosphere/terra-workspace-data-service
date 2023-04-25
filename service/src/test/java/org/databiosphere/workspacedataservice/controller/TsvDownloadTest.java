@@ -6,6 +6,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.csv.QuoteMode;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,12 @@ class TsvDownloadTest {
 	void init(){
 		version = "v0.2";
 		instanceId = UUID.randomUUID();
-		recordController.createInstance(instanceId, version, Optional.empty());
+		recordController.createInstance(instanceId, version);
+	}
+
+	@AfterEach
+	void afterEach() {
+		recordController.deleteInstance(instanceId, version);
 	}
 
 	@ParameterizedTest(name = "PK name {0} should be honored")

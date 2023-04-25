@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.UUID;
+
 /**
  * Bean creator for:
  * - SamClientFactory, injecting the base url to Sam into that factory.
@@ -19,6 +21,9 @@ public class SamConfig {
 
     @Value("${sam.enabled:true}")
     private boolean isSamEnabled;
+
+    @Value("${twds.instance.workspace-id:}")
+    private String workspaceIdArgument;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SamConfig.class);
 
@@ -49,7 +54,26 @@ public class SamConfig {
 
     @Bean
     public SamDao samDao(SamClientFactory samClientFactory, HttpSamClientSupport httpSamClientSupport) {
-        return new HttpSamDao(samClientFactory, httpSamClientSupport);
+        // if Sam integration is disabled, always return HttpSamDao and rely on the
+        // HttpSamClientFactory enabled/disabled setting from getSamClientFactory() above
+        if (!isSamEnabled) {
+            return new HttpSamDao(samClientFactory, httpSamClientSupport, workspaceIdArgument);
+        }
+
+        // if Sam integration is enabled, try to parse the WORKSPACE_ID env var;
+        // return a MisconfiguredSamDao if it can't be parsed.
+        try {
+            String workspaceId = UUID.fromString(workspaceIdArgument).toString(); // verify UUID-ness
+            LOGGER.info("Sam integration will query type={}, resourceId={}, action={}",
+                    SamDao.RESOURCE_NAME_WORKSPACE, workspaceId, SamDao.ACTION_WRITE);
+            return new HttpSamDao(samClientFactory, httpSamClientSupport, workspaceId);
+        } catch (IllegalArgumentException e) {
+            LOGGER.warn("Workspace id could not be parsed, all Sam permission checks will fail. Provided id: {}", workspaceIdArgument);
+            return new MisconfiguredSamDao("WDS was started with invalid WORKSPACE_ID of: " + workspaceIdArgument);
+        } catch (Exception e) {
+            LOGGER.warn("Error during initial Sam configuration: " + e.getMessage());
+            return new MisconfiguredSamDao(e.getMessage());
+        }
     }
 
 }

@@ -16,9 +16,11 @@ import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -50,6 +52,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles(profiles = "mock-sam")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @AutoConfigureMockMvc
 class RecordControllerMockMvcTest {
 	@Autowired
@@ -78,6 +81,18 @@ class RecordControllerMockMvcTest {
 					versionId, instanceId).content("")).andExpect(status().isOk());
 		} catch (Throwable t)  {
 			 // noop - if we fail to delete the instance, don't fail the test
+		}
+	}
+
+	@AfterAll
+	void afterAll() throws Exception {
+		MvcResult response = mockMvc
+				.perform(get("/instances/{v}", versionId))
+				.andReturn();
+		UUID[] allInstances = mapper.readValue(response.getResponse().getContentAsString(), UUID[].class);
+		for (UUID id : allInstances) {
+			mockMvc.perform(delete("/instances/{v}/{instanceid}",
+					versionId, id).content(""));
 		}
 	}
 
