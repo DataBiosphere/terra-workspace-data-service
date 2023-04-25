@@ -3,9 +3,9 @@ package org.databiosphere.workspacedataservice.service;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import javax.servlet.ServletRequestEvent;
-import javax.servlet.ServletRequestListener;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.ServletRequestEvent;
+import jakarta.servlet.ServletRequestListener;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 

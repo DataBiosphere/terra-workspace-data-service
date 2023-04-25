@@ -165,7 +165,7 @@ class RecordOrchestratorServiceTest {
         ResponseStatusException e =
             assertThrows(ResponseStatusException.class, () -> validateVersion("invalidVersion"),
                 "validateVersion should have thrown an error");
-        assert(e.getStatus().equals(HttpStatus.BAD_REQUEST));
+        assert(e.getStatusCode().equals(HttpStatus.BAD_REQUEST));
     }
 
     private void testCreateRecord(String newRecordId, String testKey, String testVal) {
