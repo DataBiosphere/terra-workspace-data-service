@@ -52,10 +52,11 @@ public class BackupService {
         String dbPassword = "testpassword";
 
         List<String> command = List.of(
-                "pg_dump", "--help"
+                "pg_dump", "-U", "postgres", "-d", "wds"
         );
 
         InputStream pgDumpOutput = localProcessLauncher.launchProcess(command, null, null);
+
         BufferedReader reader = new BufferedReader(new InputStreamReader(pgDumpOutput));
 
         String line;
