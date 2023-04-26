@@ -30,24 +30,22 @@ public class PostgresInstanceDao implements InstanceDao {
     @Override
     public boolean instanceSchemaExists(UUID instanceId) {
         return Boolean.TRUE.equals(namedTemplate.queryForObject(
-                "select exists(select from information_schema.schemata WHERE schema_name = :workspaceSchema)",
-                new MapSqlParameterSource("workspaceSchema", instanceId.toString()), Boolean.class));
+                "select exists(select from sys_wds.instance WHERE id = :instanceId)",
+                new MapSqlParameterSource("instanceId", instanceId), Boolean.class));
     }
 
     @Override
     public List<UUID> listInstanceSchemas() {
-        List<String> schemas = namedTemplate.getJdbcTemplate()
-                .queryForList("select schema_name from information_schema.schemata " +
-                                "where schema_owner = ? order by schema_name",
-                        String.class, wdsDbUser);
-        // WDS only allows creation of schemas that are UUIDs
-        return schemas.stream().map(s -> safeParseUUID(s))
-                .filter(Objects::nonNull).toList();
+        return namedTemplate.getJdbcTemplate().queryForList(
+                "select id from sys_wds.instance order by id",
+                UUID.class
+        );
     }
 
     @Override
     @SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
     public void createSchema(UUID instanceId) {
+        namedTemplate.getJdbcTemplate().update("insert into sys_wds.instance(id) values (?)", instanceId);
         namedTemplate.getJdbcTemplate().update("create schema " + quote(instanceId.toString()));
     }
 
@@ -56,6 +54,7 @@ public class PostgresInstanceDao implements InstanceDao {
     @SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
     public void dropSchema(UUID instanceId) {
         namedTemplate.getJdbcTemplate().update("drop schema " + quote(instanceId.toString()) + " cascade");
+        namedTemplate.getJdbcTemplate().update("delete from sys_wds.instance where id = ?", instanceId);
     }
 
     private UUID safeParseUUID(String input) {
