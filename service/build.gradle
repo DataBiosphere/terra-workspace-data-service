@@ -46,6 +46,8 @@ dependencies {
 	implementation 'io.sentry:sentry-logback:6.12.1'
 	implementation 'com.azure:azure-identity:1.8.2'
 
+	implementation 'org.liquibase:liquibase-core:4.21.1'
+
 	// Terra libraries
 	implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-b7e47d2'
 	implementation 'com.squareup.okhttp3:okhttp:4.10.0' // required by Sam client
