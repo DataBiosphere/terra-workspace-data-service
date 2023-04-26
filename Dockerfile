@@ -24,6 +24,7 @@ ENV PATH="${JAVA_HOME}/bin:${PATH}"
 COPY --from=jre-build /javaruntime $JAVA_HOME
 ########## end of code directly from https://github.com/broadinstitute/dsp-appsec-blessed-images/blob/main/jre/Dockerfile.17-alpine
 
+# Add postgres client for pg_dump command
 RUN apk add --no-cache postgresql-client
 
 # Temp storage location for pg_dump outputs on Azure backups
