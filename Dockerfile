@@ -6,7 +6,7 @@
 FROM us.gcr.io/broad-dsp-gcr-public/base/jre:17-alpine
 
 # Add postgres client for pg_dump command
-RUN apk add --no-cache postgresql-client
+RUN apk add --no-cache postgresql-client~=15.2
 
 # Temp storage location for pg_dump outputs on Azure backups
 VOLUME /backup
