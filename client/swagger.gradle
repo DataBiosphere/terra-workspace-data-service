@@ -19,19 +19,15 @@ openApiGenerate {
 	generatorName = 'java'
 	library = 'okhttp-gson' // the default
 	configOptions = [
-			// useRuntimeException: "true", // TODO: a change, but a good one?
+			// useRuntimeException: "true", // TODO: should we add this? It's a change, but a good one?
 			disallowAdditionalPropertiesIfNotPresent: "false",
-
 			useJakartaEe: "true", // for compatibility with Spring Boot 3
-
 			prependFormOrBodyParameters: "true", // orders arguments in the Java client same as previous swagger-codegen
-
-			dateLibrary: "java8" // TODO: this is the default; delete?
 	]
 	invokerPackage = "${artifactGroup}.client".toString()
 	modelPackage = "${artifactGroup}.model".toString()
 	apiPackage = "${artifactGroup}.api".toString()
-//	ignoreFileOverride = '${projectDir}/.swagger-codegen-ignore'
+//	ignoreFileOverride = '${projectDir}/.swagger-codegen-ignore' // TODO: delete the ignore file if we're not using it
 	// we may want to generate tests or doc later ...
 	generateModelTests = false
 	generateModelDocumentation = false

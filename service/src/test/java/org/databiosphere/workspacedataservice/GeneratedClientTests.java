@@ -5,7 +5,6 @@ import org.databiosphere.workspacedata.api.RecordsApi;
 import org.databiosphere.workspacedata.api.SchemaApi;
 import org.databiosphere.workspacedata.client.ApiClient;
 import org.databiosphere.workspacedata.client.ApiException;
-//import org.databiosphere.workspacedata.model.RecordAttributes;
 import org.databiosphere.workspacedata.model.RecordQueryResponse;
 import org.databiosphere.workspacedata.model.RecordRequest;
 import org.databiosphere.workspacedata.model.RecordResponse;
@@ -77,8 +76,7 @@ class GeneratedClientTests {
         String recordId = "id1";
         String entityType = "FOO";
         String attributeName = "attr1";
-        Map<String, Object> recordAttributes = new HashMap<>();
-        recordAttributes.put(attributeName, "Hello");
+        Map<String, Object> recordAttributes = Map.of(attributeName, "Hello");
         recordsApi.createOrReplaceRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId, "row_id");
         RecordResponse record = recordsApi.getRecord(instanceId.toString(), version, entityType, recordId);
         assertThat(record.getAttributes()).containsEntry(attributeName, "Hello");
