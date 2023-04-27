@@ -57,8 +57,8 @@ class GeneratedClientTests {
     void uploadTsv() throws ApiException, URISyntaxException {
         RecordsApi recordsApi = new RecordsApi(apiClient);
         TsvUploadResponse tsvUploadResponse = recordsApi.uploadTSV(
-                instanceId.toString(), version, "foo",
-                new File(this.getClass().getResource("/small-test.tsv").toURI()), null);
+                new File(this.getClass().getResource("/small-test.tsv").toURI()),
+                instanceId.toString(), version, "foo", null);
         assertThat(tsvUploadResponse.getRecordsModified()).isEqualTo(2);
     }
 
@@ -66,8 +66,8 @@ class GeneratedClientTests {
     void uploadTsvWithDifferentColId() throws ApiException, URISyntaxException {
         RecordsApi recordsApi = new RecordsApi(apiClient);
         TsvUploadResponse tsvUploadResponse = recordsApi.uploadTSV(
-                instanceId.toString(), version, "foo",
-                new File(this.getClass().getResource("/small-test-no-sys.tsv").toURI()),"greeting");
+                new File(this.getClass().getResource("/small-test-no-sys.tsv").toURI()),
+                instanceId.toString(), version, "foo", "greeting");
         assertThat(tsvUploadResponse.getRecordsModified()).isEqualTo(2);
     }
 
@@ -79,8 +79,7 @@ class GeneratedClientTests {
         String attributeName = "attr1";
         Map<String, Object> recordAttributes = new HashMap<>();
         recordAttributes.put(attributeName, "Hello");
-        recordsApi.createOrReplaceRecord(instanceId.toString(), version, entityType, recordId,
-                new RecordRequest().attributes(recordAttributes), "row_id");
+        recordsApi.createOrReplaceRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId, "row_id");
         RecordResponse record = recordsApi.getRecord(instanceId.toString(), version, entityType, recordId);
         assertThat(record.getAttributes()).containsEntry(attributeName, "Hello");
     }
@@ -101,14 +100,14 @@ class GeneratedClientTests {
         String recordType = "type1";
         String recordId = "id1";
         createRecord(recordsApi, recordId, recordType);
-        RecordQueryResponse response = recordsApi.queryRecords(instanceId.toString(), version, recordType, new SearchRequest());
+        RecordQueryResponse response = recordsApi.queryRecords(new SearchRequest(), instanceId.toString(), version, recordType);
         assertThat(response.getTotalRecords()).isEqualTo(1);
         assertThat(response.getRecords().get(0).getId()).isEqualTo(recordId);
     }
 
     private void createRecord(RecordsApi recordsApi, String recordId, String recordType) throws ApiException {
-        recordsApi.createOrReplaceRecord(instanceId.toString(), version, recordType, recordId,
-                new RecordRequest().attributes(Map.of()), null);
+        recordsApi.createOrReplaceRecord(new RecordRequest().attributes(Map.of()),
+                instanceId.toString(), version, recordType, recordId, null);
     }
 
     @Test
@@ -132,11 +131,11 @@ class GeneratedClientTests {
         String attributeName = "attr1";
         Map<String, Object> recordAttributes = new HashMap<>();
         recordAttributes.put(attributeName, "Hello");
-        recordsApi.createOrReplaceRecord(instanceId.toString(), version, entityType, recordId,
-                new RecordRequest().attributes(recordAttributes), null);
+        recordsApi.createOrReplaceRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId,
+                null);
         recordAttributes.put(attributeName, "Goodbye");
-        recordsApi.updateRecord(instanceId.toString(), version, entityType,
-                recordId, new RecordRequest().attributes(recordAttributes));
+        recordsApi.updateRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType,
+                recordId);
         RecordResponse record = recordsApi.getRecord(instanceId.toString(), version, entityType, recordId);
         assertThat(record.getAttributes()).containsEntry(attributeName, "Goodbye");
     }

@@ -24,6 +24,8 @@ openApiGenerate {
 
 			useJakartaEe: "true", // for compatibility with Spring Boot 3
 
+			prependFormOrBodyParameters: "true", // orders arguments in the Java client same as previous swagger-codegen
+
 			dateLibrary: "java8" // TODO: this is the default; delete?
 	]
 	invokerPackage = "${artifactGroup}.client".toString()
