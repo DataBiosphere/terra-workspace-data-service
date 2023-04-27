@@ -131,11 +131,9 @@ class GeneratedClientTests {
         String attributeName = "attr1";
         Map<String, Object> recordAttributes = new HashMap<>();
         recordAttributes.put(attributeName, "Hello");
-        recordsApi.createOrReplaceRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId,
-                null);
+        recordsApi.createOrReplaceRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId, null);
         recordAttributes.put(attributeName, "Goodbye");
-        recordsApi.updateRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType,
-                recordId);
+        recordsApi.updateRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId);
         RecordResponse record = recordsApi.getRecord(instanceId.toString(), version, entityType, recordId);
         assertThat(record.getAttributes()).containsEntry(attributeName, "Goodbye");
     }
