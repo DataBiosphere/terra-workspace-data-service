@@ -45,7 +45,6 @@ dependencies {
 	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.14.2'
 	implementation 'io.sentry:sentry-logback:6.12.1'
 	implementation 'com.azure:azure-identity:1.8.2'
-
 	implementation 'org.liquibase:liquibase-core:4.21.1'
 
 	// Terra libraries

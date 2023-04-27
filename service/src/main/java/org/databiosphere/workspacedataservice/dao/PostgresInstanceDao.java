@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import bio.terra.common.db.WriteTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,6 +44,7 @@ public class PostgresInstanceDao implements InstanceDao {
     }
 
     @Override
+    @WriteTransaction
     @SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
     public void createSchema(UUID instanceId) {
         namedTemplate.getJdbcTemplate().update("insert into sys_wds.instance(id) values (?)", instanceId);
@@ -51,6 +53,7 @@ public class PostgresInstanceDao implements InstanceDao {
 
 
     @Override
+    @WriteTransaction
     @SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
     public void dropSchema(UUID instanceId) {
         namedTemplate.getJdbcTemplate().update("drop schema " + quote(instanceId.toString()) + " cascade");
