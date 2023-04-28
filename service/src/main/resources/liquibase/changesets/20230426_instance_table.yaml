@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20230426_syswds_schema
+      author: davidan
+      changes:
+        - createTable:
+            schemaName: sys_wds
+            tableName: instance
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
