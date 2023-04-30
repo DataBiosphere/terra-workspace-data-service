@@ -12,6 +12,7 @@ springBoot {
 }
 
 repositories {
+	maven { url 'https://broadinstitute.jfrog.io/artifactory/maven-central' }
 	mavenCentral()
 	maven { url 'https://broadinstitute.jfrog.io/artifactory/libs-snapshot' }
 	maven { url 'https://broadinstitute.jfrog.io/artifactory/libs-release' }
