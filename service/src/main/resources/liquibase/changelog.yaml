@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - include:
+      file: changesets/20230426_syswds_schema.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/20230426_domains.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/20230426_instance_table.yaml
+      relativeToChangelogFile: true
