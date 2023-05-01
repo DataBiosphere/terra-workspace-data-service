@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.service;
 
-import bio.terra.common.db.WriteTransaction;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
@@ -60,11 +59,6 @@ public class InstanceService {
         }
 
         // create instance schema in Postgres
-        createInstanceInDatabase(instanceId);
-    }
-
-    @WriteTransaction
-    void createInstanceInDatabase(UUID instanceId) {
         instanceDao.createSchema(instanceId);
     }
 
@@ -81,11 +75,6 @@ public class InstanceService {
         }
 
         // delete instance schema in Postgres
-        deleteInstanceFromDatabase(instanceId);
-    }
-
-    @WriteTransaction
-    void deleteInstanceFromDatabase(UUID instanceId) {
         instanceDao.dropSchema(instanceId);
     }
 
