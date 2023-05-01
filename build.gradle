@@ -13,7 +13,10 @@ plugins {
     id 'jacoco'
 }
 
-repositories { mavenCentral() }
+repositories {
+    maven { url 'https://broadinstitute.jfrog.io/artifactory/maven-central' }
+    mavenCentral()
+}
 
 subprojects {
     group = 'org.databiosphere'
