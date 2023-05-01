@@ -805,6 +805,10 @@ components:
            $ref: '#/components/schemas/component'
          Permissions:
            $ref: '#/components/schemas/component'
+         mainDb:
+           $ref: '#/components/schemas/component'
+         streamingDs:
+           $ref: '#/components/schemas/component'
     component:
       type: object
       properties:
@@ -818,4 +822,4 @@ components:
         status:
           type: string
         components:
-          type: string
+          $ref: '#/components/schemas/components'
