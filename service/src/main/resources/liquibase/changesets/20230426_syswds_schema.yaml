@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id:  20230426_syswds_schema
+      author:  davidan
+      changes:
+        -  sql:
+            dbms:  postgresql
+            sql:  create schema if not exists sys_wds
