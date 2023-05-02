@@ -18,7 +18,7 @@ import static org.mockito.BDDMockito.given;
 
 @SpringBootTest(
         classes = {DataRepoConfig.class})
-public class DataRepoDaoTest {
+class DataRepoDaoTest {
 
     @Autowired
     DataRepoDao dataRepoDao;
@@ -35,14 +35,14 @@ public class DataRepoDaoTest {
     }
 
     @Test
-    public void testSnapshotReturned() throws ApiException {
+    void testSnapshotReturned() throws ApiException {
         given(mockRepositoryApi.retrieveSnapshot(any(), any()))
                 .willReturn(new SnapshotModel());
         assert(dataRepoDao.hasSnapshotPermission(UUID.randomUUID()));
     }
 
     @Test
-    public void testErrorThrown() throws ApiException {
+    void testErrorThrown() throws ApiException {
         given(mockRepositoryApi.retrieveSnapshot(any(), any()))
                 .willThrow(new ApiException());
         assertFalse(dataRepoDao.hasSnapshotPermission(UUID.randomUUID()));

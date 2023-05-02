@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.datarepo;
 
-import bio.terra.datarepo.model.SnapshotModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,8 +19,9 @@ public class DataRepoDao {
     public boolean hasSnapshotPermission(UUID snapshotId) {
         LOGGER.debug("Checking for permission for snapshot {} ...", snapshotId);
         try {
-            SnapshotModel response = dataRepoClientFactory.getRepositoryApi().retrieveSnapshot(snapshotId, Collections.emptyList());
-            return response != null;
+            dataRepoClientFactory.getRepositoryApi().retrieveSnapshot(snapshotId, Collections.emptyList());
+            //If we get no error, then the user has permission
+            return true;
         } catch (Exception e){
             LOGGER.error(e.getMessage());
             return false;
