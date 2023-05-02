@@ -41,7 +41,7 @@ dependencies {
 	implementation 'org.apache.commons:commons-csv:1.9.0'
 	implementation 'com.google.guava:guava:31.1-jre'
 	implementation 'org.postgresql:postgresql'
-	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator:2.7.11'
 	implementation 'org.webjars:webjars-locator-core:0.52'
 	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.14.2'
 	implementation 'io.sentry:sentry-logback:6.12.1'
