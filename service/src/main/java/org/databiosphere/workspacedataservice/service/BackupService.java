@@ -40,19 +40,15 @@ public class BackupService {
         String timestamp = now.format(formatter);
         String blobName = workspaceId.toString() + "-" + timestamp + ".sql";
 
-//        String dbHost = System.getenv("WDS_DB_HOST");
-//        String dbPort = System.getenv("WDS_DB_PORT");
-//        String dbUser = System.getenv("WDS_DB_USER");
-//        String dbName = System.getenv("WDS_DB_NAME");
-//        String dbPassword = System.getenv("WDS_DB_PASSWORD")
-        String dbHost = "localhost";
-        String dbPort = "5432";
-        String dbUser = "testuser";
-        String dbName = "testdb";
-        String dbPassword = "testpassword";
+        String dbHost = System.getenv("WDS_DB_HOST");
+        String dbPort = System.getenv("WDS_DB_PORT");
+        String dbUser = System.getenv("WDS_DB_USER");
+        String dbName = System.getenv("WDS_DB_NAME");
+        String dbPassword = System.getenv("WDS_DB_PASSWORD");
 
         List<String> command = List.of(
-                "pg_dump", "-U", "postgres", "-d", "wds"
+                "export", "PGPASSWORD=" + dbPassword + "&&" + "pg_dump", "-U",
+                dbUser, "-d", dbName, "--no-password", "-h", dbHost, "-p", dbPort
         );
 
         InputStream pgDumpOutput = localProcessLauncher.launchProcess(command, null, null);
