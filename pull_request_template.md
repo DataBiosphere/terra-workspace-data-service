@@ -1,4 +1,8 @@
 Reminder:
-All PRs merged into main will generate a PR in https://github.com/broadinstitute/cromwhelm to update the WDS image deployed to kubernetes. 
-After your merge, you must go to this repo and approve this generated PR and make sure it merges.
-That merge will then generate a PR in https://github.com/DataBiosphere/leonardo.  This may or may not automerge; be sure to watch it to ensure it merges.
+
+To get this PR into newly-created WDS apps, you must:
+
+1. update the WDS version in the [`terra-helmfile`](https://github.com/broadinstitute/terra-helmfile) repo.
+Here is an example PR which illustrates a WDS version update: https://github.com/broadinstitute/terra-helmfile/pull/4126.
+2. After `terra-helmfile` publishes an updated WDS chart, you must also update the chart version in the [`leonardo`](https://github.com/DataBiosphere/leonardo) repo.
+Here is an example PR which illustrates a chart update: https://github.com/DataBiosphere/leonardo/pull/3324
