@@ -19,9 +19,6 @@ public class SamConfig {
     @Value("${SAM_URL:}")
     private String samUrl;
 
-    @Value("${sam.enabled:true}")
-    private boolean isSamEnabled;
-
     @Value("${twds.instance.workspace-id:}")
     private String workspaceIdArgument;
 
@@ -43,24 +40,12 @@ public class SamConfig {
         // - disable Sam integration, which could result in unauthorized access
         // - stop WDS, which would obviously prevent WDS from working at all
         LOGGER.info("Using Sam base url: '{}'", samUrl);
-        if (isSamEnabled) {
-            LOGGER.info("Sam integration enabled.");
-        } else {
-            LOGGER.warn("Sam integration disabled via sam.enabled property. " +
-                    "All Sam calls will return true/successful but will not connect to Sam.");
-        }
-        return new HttpSamClientFactory(samUrl, isSamEnabled);
+        return new HttpSamClientFactory(samUrl);
     }
 
     @Bean
     public SamDao samDao(SamClientFactory samClientFactory, HttpSamClientSupport httpSamClientSupport) {
-        // if Sam integration is disabled, always return HttpSamDao and rely on the
-        // HttpSamClientFactory enabled/disabled setting from getSamClientFactory() above
-        if (!isSamEnabled) {
-            return new HttpSamDao(samClientFactory, httpSamClientSupport, workspaceIdArgument);
-        }
-
-        // if Sam integration is enabled, try to parse the WORKSPACE_ID env var;
+        // Try to parse the WORKSPACE_ID env var;
         // return a MisconfiguredSamDao if it can't be parsed.
         try {
             String workspaceId = UUID.fromString(workspaceIdArgument).toString(); // verify UUID-ness

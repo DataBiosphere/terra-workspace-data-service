@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest(
         classes = {SamConfig.class},
-        properties = {"twds.instance.workspace-id=not-a-real-id", "sam.enabled=true"})
+        properties = {"twds.instance.workspace-id=not-a-real-id"})
 public class SamDaoInvalidWorkspaceTest {
 
     @Autowired

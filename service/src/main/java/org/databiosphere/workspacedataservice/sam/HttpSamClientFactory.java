@@ -24,11 +24,8 @@ public class HttpSamClientFactory implements SamClientFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpSamClientFactory.class);
 
-    private boolean isSamEnabled;
-
-    public HttpSamClientFactory(String samUrl, boolean isSamEnabled) {
+    public HttpSamClientFactory(String samUrl) {
         this.samUrl = samUrl;
-        this.isSamEnabled = isSamEnabled;
     }
 
     private ApiClient getApiClient(String accessToken) {
@@ -63,19 +60,10 @@ public class HttpSamClientFactory implements SamClientFactory {
      * @return the usable Sam client
      */
     public ResourcesApi getResourcesApi(String token) {
-        // TODO: davidan - allow disabling all Sam resource operations until AJ-964 and WM-1862 land.
-        // when disabled, instead of using the real ResourcesApi from the Sam client,
-        // return a DisabledSamResourcesApi, which returns true for all permission checks
-        // and does not create or delete any Sam resources.
-        // note that the Sam StatusApi below is still functional.
-        if (isSamEnabled) {
-            ApiClient apiClient = getApiClient(token);
-            ResourcesApi resourcesApi = new ResourcesApi();
-            resourcesApi.setApiClient(apiClient);
-            return resourcesApi;
-        } else {
-            return new DisabledSamResourcesApi();
-        }
+        ApiClient apiClient = getApiClient(token);
+        ResourcesApi resourcesApi = new ResourcesApi();
+        resourcesApi.setApiClient(apiClient);
+        return resourcesApi;
     }
 
     /**
