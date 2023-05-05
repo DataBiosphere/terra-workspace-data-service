@@ -43,6 +43,17 @@ subprojects {
         }
     }
 
+    // declare versions of transitive dependencies we want to upgrade here
+    // this will apply to both the :client and the :service project
+    // see https://docs.gradle.org/current/userguide/dependency_constraints.html#sec:adding-constraints-transitive-deps
+    dependencies {
+        constraints {
+            implementation('org.yaml:snakeyaml:2.0') {
+                because 'CVE-2022-1471, CVE-2022-38750, CVE-2022-1471, CVE-2022-25857, CVE-2022-41854'
+            }
+        }
+    }
+
     tasks.withType(GenerateSwaggerCode).all {
         jvmArgs = ['--add-opens=java.base/java.util=ALL-UNNAMED'] // for jvm 16+
     }
