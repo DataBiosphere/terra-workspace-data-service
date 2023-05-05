@@ -2,7 +2,7 @@ name: Tag
 on:
   push:
     branches:
-    - aj-945-terra-helm
+    - main
 
 jobs:
   tag-job:
