@@ -18,7 +18,7 @@ java {
 
 publishing {
 	publications {
-		workspacedataserviceResttemplateClientLibrary(MavenPublication) {
+		wdsClient(MavenPublication) {
 			artifactId = 'workspacedataservice-client'
 			from components.java
 			versionMapping {
@@ -41,7 +41,7 @@ artifactory {
 		defaults {
 			// This is how we tell the Artifactory Plugin which artifacts should be published to Artifactory.
 			// Reference to Gradle publications defined in the build script.
-			publications('workspacedataserviceResttemplateClientLibrary')
+			publications('wdsClient')
 			publishArtifacts = true
 			publishPom = true
 		}
