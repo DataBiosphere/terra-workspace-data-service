@@ -102,14 +102,14 @@ jobs:
           --password-stdin
           docker push --all-tags ${{ steps.acr-image-name.outputs.name }}
           
-      - name: Clone Cromwhelm
+      - name: Clone terra-helm
         uses: actions/checkout@v3
         with:
-          repository: broadinstitute/cromwhelm
+          repository: broadinstitute/terra-helmfile
           token: ${{ secrets.BROADBOT_TOKEN }} # Has to be set at checkout AND later when pushing to work
-          path: cromwhelm
+          path: terra-helmfile
           
-      - name: Create Cromwhelm PR for latest WDS version
+      - name: Create terra-helm PR for latest WDS version
         env:
           BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
           GH_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
@@ -117,12 +117,12 @@ jobs:
           set -e
           JIRA_ID=${{ steps.find-jira-id.outputs.JIRA_ID }}
           if [[ $JIRA_ID == "missing" ]]; then
-            echo "JIRA_ID missing, PR to cromwhelm will not be created"
+            echo "JIRA_ID missing, PR to terra-helm will not be created"
             exit 0;
           fi
-          cd cromwhelm
+          cd terra-helmfile
           HELM_CUR_TAG=$(grep "/terra-workspace-data-service:" terra-batch-libchart/values.yaml | sed "s,.*/terra-workspace-data-service:,,")
-          HELM_NEW_TAG=${{ steps.setHash.outputs.git_short_sha }}
+          HELM_NEW_TAG=${{ inputs.new-tag }}
           git checkout -b ${JIRA_ID}-auto-update-${HELM_NEW_TAG}
           [[ -n "$HELM_CUR_TAG" && -n "$HELM_NEW_TAG" ]]
           sed -i "s/$HELM_CUR_TAG/$HELM_NEW_TAG/" terra-batch-libchart/values.yaml
