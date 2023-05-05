@@ -27,7 +27,6 @@ jobs:
           VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
           VERSION_SUFFIX: SNAPSHOT
   python-client-job:
-      if: ${{ false }} # disable while debugging
       needs: tag-job
       uses: ./.github/workflows/release-python-client.yml
       with:
@@ -35,7 +34,6 @@ jobs:
       secrets:
         PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
   java-client-job:
-      if: ${{ false }} # disable while debugging
       uses: ./.github/workflows/publish-java-client.yml
       secrets:
         ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
