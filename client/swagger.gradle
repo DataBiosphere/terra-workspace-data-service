@@ -1,3 +1,5 @@
+import java.util.regex.Matcher
+
 ext {
 	swagger_annotations_version = "2.0.0"
 	jackson_version = "2.14.2"
@@ -46,5 +48,23 @@ idea.module.generatedSourceDirs = [file("${generateSwaggerCode.outputDir}/src/ma
 sourceSets.main.java.srcDir "${generateSwaggerCode.outputDir}/src/main/java"
 compileJava.dependsOn generateSwaggerCode
 sourcesJar.dependsOn generateSwaggerCode
+
 // next line required by swagger client generation
 generateSwaggerCode.dependsOn generatePomFileForWorkspacedataserviceResttemplateClientLibraryPublication
+
+// Ugly hack from https://github.com/jfrog/build-info/issues/198#issuecomment-1073659209
+task fixPom {
+	doLast {
+		File file = new File("$buildDir/publications/workspacedataserviceResttemplateClientLibrary/pom-default.xml")
+		def text = file.text
+		def pattern = "(?s)(<dependencyManagement>.+?<dependencies>)(.+?)(</dependencies>.+?</dependencyManagement>)"
+		Matcher matcher = text =~ pattern
+		if (matcher.find()) {
+			text = text.replaceFirst(pattern, "")
+			def firstDeps = matcher.group(2)
+			text = text.replaceFirst(pattern, '$1$2' + firstDeps + '$3')
+		}
+		file.write(text)
+	}
+}
+generatePomFileForWorkspacedataserviceResttemplateClientLibraryPublication.finalizedBy fixPom
