@@ -125,7 +125,7 @@ jobs:
             exit 0;
           fi
           cd terra-helmfile
-          HELM_CUR_TAG=$(grep "/terra-workspace-data-service:" terra-helmfile/charts/wds/values.yaml | sed "s,.*/terra-workspace-data-service:,,")
+          HELM_CUR_TAG=$(grep "/terra-workspace-data-service:" charts/wds/values.yaml | sed "s,.*/terra-workspace-data-service:,,")
           HELM_NEW_TAG=${{ inputs.new-tag }}
           git checkout -b ${JIRA_ID}-auto-update-${HELM_NEW_TAG}
           [[ -n "$HELM_CUR_TAG" && -n "$HELM_NEW_TAG" ]]
