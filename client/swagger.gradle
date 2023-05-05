@@ -50,12 +50,12 @@ compileJava.dependsOn generateSwaggerCode
 sourcesJar.dependsOn generateSwaggerCode
 
 // next line required by swagger client generation
-generateSwaggerCode.dependsOn generatePomFileForWorkspacedataserviceResttemplateClientLibraryPublication
+generateSwaggerCode.dependsOn generatePomFileForWdsClientPublication
 
 // Ugly hack from https://github.com/jfrog/build-info/issues/198#issuecomment-1073659209
 task fixPom {
 	doLast {
-		File file = new File("$buildDir/publications/workspacedataserviceResttemplateClientLibrary/pom-default.xml")
+		File file = new File("$buildDir/publications/wdsClient/pom-default.xml")
 		def text = file.text
 		def pattern = "(?s)(<dependencyManagement>.+?<dependencies>)(.+?)(</dependencies>.+?</dependencyManagement>)"
 		Matcher matcher = text =~ pattern
@@ -67,4 +67,4 @@ task fixPom {
 		file.write(text)
 	}
 }
-generatePomFileForWorkspacedataserviceResttemplateClientLibraryPublication.finalizedBy fixPom
+generatePomFileForWdsClientPublication.finalizedBy fixPom
