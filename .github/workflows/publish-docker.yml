@@ -87,7 +87,7 @@ jobs:
         run: gcloud auth configure-docker --quiet
 
       - name: Push GCR image
-        if: ${{ false }} # disable while debugging
+        if: ${{ false }} # disable while debugging 
         run: docker push --all-tags ${{ steps.gcr-image-name.outputs.name }}
 
       - name: Re-tag image for ACR
