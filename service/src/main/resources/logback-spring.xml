@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
+
+    <appender name="Sentry" class="io.sentry.logback.SentryAppender">
+        <!-- Optionally change minimum Event level. Default for Events is ERROR -->
+        <minimumEventLevel>ERROR</minimumEventLevel>
+        <!-- Optionally change minimum Breadcrumbs level. Default for Breadcrumbs is INFO -->
+        <minimumBreadcrumbLevel>INFO</minimumBreadcrumbLevel>
+    </appender>
+
+    <!-- WDS config -->
+    <springProfile name="!local">
+        <!-- log everything at INFO level -->
+        <root level="info">
+            <appender-ref ref="CONSOLE" />
+            <appender-ref ref="Sentry" />
+        </root>
+
+        <!-- log WDS at DEBUG level -->
+        <logger name="org.databiosphere.workspacedataservice" level="debug" additivity="false">
+            <appender-ref ref="CONSOLE" />
+            <appender-ref ref="Sentry" />
+        </logger>
+
+        <!-- log WDS Sam integration at DEBUG level -->
+        <logger name="org.databiosphere.workspacedataservice.sam" level="debug" additivity="false">
+            <appender-ref ref="CONSOLE" />
+            <appender-ref ref="Sentry" />
+        </logger>
+
+        <!-- log org.springframework.web at DEBUG level -->
+        <logger name="org.springframework.web" level="debug" additivity="false">
+            <appender-ref ref="CONSOLE" />
+            <appender-ref ref="Sentry" />
+        </logger>
+    </springProfile>
+
+    <springProfile name="local">
+        <root level="info">
+            <appender-ref ref="CONSOLE" />
+        </root>
+
+        <logger name="org.databiosphere.workspacedataservice" level="debug" additivity="false">
+            <appender-ref ref="CONSOLE" />
+        </logger>
+
+        <logger name="org.springframework.web" level="debug" additivity="false">
+            <appender-ref ref="CONSOLE" />
+        </logger>
+    </springProfile>
+</configuration>

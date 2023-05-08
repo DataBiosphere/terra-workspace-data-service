@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
+
+    <!-- log everything at INFO level -->
+    <root level="info">
+        <appender-ref ref="CONSOLE" />
+    </root>
+
+    <!-- log WDS at DEBUG level -->
+    <logger name="org.databiosphere.workspacedataservice" level="debug" additivity="false">
+        <appender-ref ref="CONSOLE" />
+    </logger>
+
+    <!-- log org.springframework.web at DEBUG level -->
+    <logger name="org.springframework.web" level="debug" additivity="false">
+        <appender-ref ref="CONSOLE" />
+    </logger>
+
+</configuration>
