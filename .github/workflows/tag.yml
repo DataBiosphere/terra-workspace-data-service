@@ -1,5 +1,8 @@
 name: Tag
 on:
+  schedule:
+    # Every Monday at 1PM UTC (9AM EST)
+    - cron: '0 13 * * 1' 
   workflow_dispatch:
     # Inputs the workflow accepts.
     inputs:
@@ -12,9 +15,6 @@ on:
         required: true
         # The data type of the input
         type: string
-  schedule:
-    // Every Monday at 1PM UTC (9AM EST)
-    - cron: "0 13 * * 1"
 
 jobs:
   tag-job:
