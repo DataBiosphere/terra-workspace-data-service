@@ -75,6 +75,8 @@ tasks.named('test') {
 	testLogging {
 		events = ["passed", "failed", "skipped", "started"]
 		exceptionFormat = "full"
+		// should command-line test output show stdout/stderr?
+		showStandardStreams = false
 	}
 }
 
