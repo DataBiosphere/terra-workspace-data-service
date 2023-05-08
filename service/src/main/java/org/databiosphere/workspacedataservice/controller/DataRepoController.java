@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import bio.terra.datarepo.client.ApiException;
 import org.databiosphere.workspacedataservice.datarepo.DataRepoDao;
 import org.databiosphere.workspacedataservice.retry.RetryableApi;
 import org.springframework.http.HttpStatus;
@@ -21,7 +22,7 @@ public class DataRepoController {
     @RetryableApi
     public ResponseEntity<Void> importSnapshot(@PathVariable("instanceId") UUID instanceId,
                                                              @PathVariable("version") String version,
-                                                             @PathVariable("snapshotId") UUID snapshotId) {
+                                                             @PathVariable("snapshotId") UUID snapshotId) throws ApiException {
         boolean allowed = dataRepoDao.hasSnapshotPermission(snapshotId);
         if (allowed){
             return new ResponseEntity<>(HttpStatus.ACCEPTED);

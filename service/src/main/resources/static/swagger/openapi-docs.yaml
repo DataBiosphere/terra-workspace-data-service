@@ -483,6 +483,7 @@ components:
       required: true
       schema:
         type: string
+        format: uuid
 
   responses:
     RecordResponseBody:

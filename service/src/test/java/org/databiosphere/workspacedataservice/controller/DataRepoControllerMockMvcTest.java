@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-public class DataRepoControllerMockMvcTest {
+class DataRepoControllerMockMvcTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -41,7 +41,6 @@ public class DataRepoControllerMockMvcTest {
     @BeforeEach
     void beforeEach() {
         given(mockDataRepoClientFactory.getRepositoryApi()).willReturn(mockRepositoryApi);
-        Mockito.clearInvocations(mockRepositoryApi);
     }
 
 
@@ -59,7 +58,7 @@ public class DataRepoControllerMockMvcTest {
     @Test
     void importSnapshotWithoutPermission() throws Exception {
         given(mockRepositoryApi.retrieveSnapshot(any(), any()))
-                .willThrow(new ApiException());
+                .willThrow(new ApiException(403, "Intentional error thrown for unit test"));
         UUID uuid = UUID.randomUUID();
         mockMvc.perform(post("/{instanceId}/snapshots/{version}/{snapshotId}", uuid, versionId, uuid)).andExpect(status().isForbidden());
     }
