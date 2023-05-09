@@ -100,7 +100,6 @@ jobs:
           echo ${{ secrets.ACR_SP_PASSWORD }} | docker login ${ACR_REGISTRY} \
           --username ${{ secrets.ACR_SP_USER }} \
           --password-stdin
-          docker push --all-tags ${{ steps.acr-image-name.outputs.name }}
           
       - name: Clone terra-helm
         uses: actions/checkout@v3

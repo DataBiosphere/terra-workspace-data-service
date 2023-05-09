@@ -21,8 +21,6 @@ Your PR is ready to merge when all of the following things are true:
 1. Two reviewers have thumbed (or otherwise approved) your PR
 2. All tests pass
 
-Until further notice, all PRs merged into main will generate a PR in https://github.com/broadinstitute/cromwhelm to update the WDS image deployed to kubernetes.  After your merge, you must go to this repo and approve this generated PR and make sure it merges.
-
 ## PR deployment process
 
 To get a PR into newly-created WDS apps, you must:
