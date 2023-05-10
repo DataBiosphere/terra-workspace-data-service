@@ -21,7 +21,7 @@ public class BackupController {
     // TODO: We may not need the workspaceId
     @PostMapping("/backup/azure")
     @RetryableApi
-    public ResponseEntity<String> createBackup(@RequestParam(name= "workspaceId") UUID workspaceId) throws IOException {
+    public ResponseEntity<String> createBackup(@RequestParam(name= "workspaceId") UUID workspaceId) throws Exception {
         backupService.backupAzureWDS(workspaceId);
         // TODO: Handle response dependent on backup status
         return new ResponseEntity<>(HttpStatus.OK);

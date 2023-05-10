@@ -12,17 +12,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class BackupService {
@@ -33,33 +32,54 @@ public class BackupService {
     private LocalProcessLauncher localProcessLauncher;
 
     @WriteTransaction
-    public void backupAzureWDS(UUID workspaceId) throws IOException {
+    public void backupAzureWDS(UUID workspaceId) throws Exception {
 
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
         String timestamp = now.format(formatter);
         String blobName = workspaceId.toString() + "-" + timestamp + ".sql";
 
-        String dbHost = System.getenv("WDS_DB_HOST");
-        String dbPort = System.getenv("WDS_DB_PORT");
-        String dbUser = System.getenv("WDS_DB_USER");
-        String dbName = System.getenv("WDS_DB_NAME");
-        String dbPassword = System.getenv("WDS_DB_PASSWORD");
+//        String dbHost = System.getenv("WDS_DB_HOST");
+//        String dbPort = System.getenv("WDS_DB_PORT");
+//        String dbUser = System.getenv("WDS_DB_USER");
+//        String dbName = System.getenv("WDS_DB_NAME");
+//        String dbPassword = System.getenv("WDS_DB_PASSWORD");
+        String dbHost = "localhost";
+        String dbPort = "5432";
+        String dbUser = "postgres";
+        String dbName = "wds";
+        String dbPassword = "postgres";
 
-        List<String> command = List.of(
-                "export", "PGPASSWORD=" + dbPassword + "&&" + "pg_dump", "-U",
-                dbUser, "-d", dbName, "--no-password", "-h", dbHost, "-p", dbPort
+
+        ProcessBuilder processBuilder = new ProcessBuilder(
+                "pg_dump",
+                "-h", dbHost,
+                "-p", dbPort,
+                "-U", dbUser,
+                "-d", dbName,
+                "-W",
+                "-v",
+                "-F", "c",
+                "-f", "backup.dump",
+                "--no-owner",
+                "--no-acl"
         );
+        processBuilder.environment().put("PGPASSWORD", dbPassword); // set the password as an environment variable
 
-        InputStream pgDumpOutput = localProcessLauncher.launchProcess(command, null, null);
+        Process process = processBuilder.start();
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(pgDumpOutput));
-
-        String line;
-        while ((line = reader.readLine()) != null) {
-            System.out.println(line);
+        try (InputStream inputStream = process.getInputStream()) {
+            String output = new BufferedReader(new InputStreamReader(inputStream))
+                    .lines()
+                    .collect(Collectors.joining("\n"));
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                System.err.println("pg_dump failed: " + output);
+            } else {
+                System.out.println("pg_dump succeeded: " + output);
+            }
         }
-//
+
 //        BlockBlobClient blockBlobClient = constructBlockBlobClient(workspaceId.toString() + "-backups", blobName);
 //        // -1 represents using the default parallelTransferOptions during upload to Azure
 //        // From docs, this means each block size: 4 MB (4 * 1024 * 1024 bytes), maximum number of parallel transfers: 2

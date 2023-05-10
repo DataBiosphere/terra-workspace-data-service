@@ -3,10 +3,7 @@ package org.databiosphere.workspacedataservice.process;
 import org.springframework.stereotype.Component;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
@@ -33,8 +30,8 @@ public class LocalProcessLauncher {
      * @param command the command and arguments to execute
      * @param envVars the environment variables to set or overwrite if already defined
      */
-    public void launchProcess(List<String> command, Map<String, String> envVars) {
-        launchProcess(command, envVars, null);
+    public void launchProcess(List<String> command, Map<String, String> envVars, File outputFile) throws Exception {
+        launchProcess(command, envVars, null, outputFile);
     }
 
     /**
@@ -46,7 +43,7 @@ public class LocalProcessLauncher {
      * @param workingDirectory the working directory to launch the process from
      */
     public InputStream launchProcess(
-            List<String> command, Map<String, String> envVars, Path workingDirectory) {
+            List<String> command, Map<String, String> envVars, Path workingDirectory, File outputFile) throws Exception {
         // build and run process from the specified working directory
         ProcessBuilder procBuilder = new ProcessBuilder(command);
         if (workingDirectory != null) {
@@ -56,12 +53,21 @@ public class LocalProcessLauncher {
             Map<String, String> procEnvVars = procBuilder.environment();
             procEnvVars.putAll(envVars);
         }
-
+        if (outputFile != null) {
+            procBuilder.redirectOutput(outputFile);
+        }
         try {
+            Object lock = new Object();
             process = procBuilder.start();
+            synchronized (lock) {
+                // Wait for the process to complete
+                process.waitFor();
+            }
             return process.getInputStream();
         } catch (IOException ioEx) {
             throw new LaunchProcessException("Error launching local process", ioEx);
+        } catch (InterruptedException e) {
+            throw new Exception(e);
         }
     }
 
