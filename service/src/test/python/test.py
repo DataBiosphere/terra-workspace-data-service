@@ -98,6 +98,7 @@ class WdsTests(TestCase):
     generalInfo_client = wds_client.GeneralWDSInformationApi(api_client)
     schema_client = wds_client.SchemaApi(api_client)
     instance_client = wds_client.InstancesApi(api_client)
+    snapshot_client = wds_client.SnapshotsApi(api_client)
     current_workspaceId = instance_client.list_wds_instances(version)[0]
 
     testType1_simple ="s_record_1"
@@ -236,3 +237,9 @@ class WdsTests(TestCase):
         response = self.schema_client.delete_record_type(self.current_workspaceId, self.version, self.cvsUpload_test);
         workspace_ent_type = self.schema_client.describe_all_record_types(self.current_workspaceId, self.version)
         self.assertTrue(len(workspace_ent_type) == 0)
+
+    # SCENARIO 6
+    # import snapshot from TDR with appropriate permissions
+    def test_import_snapshot(self):
+        self.snapshot_client.import_snapshot(self.current_workspaceId, self.version, "123e4567-e89b-12d3-a456-426614174000")
+        #At this point, just testing that an error is not thrown.  Further work will do further testing.
