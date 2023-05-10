@@ -15,12 +15,10 @@ import org.springframework.stereotype.Service;
 import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
+import java.util.*;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,41 +42,34 @@ public class BackupService {
 //        String dbUser = System.getenv("WDS_DB_USER");
 //        String dbName = System.getenv("WDS_DB_NAME");
 //        String dbPassword = System.getenv("WDS_DB_PASSWORD");
-        String dbHost = "localhost";
+        String dbHost = "0.0.0.0";
         String dbPort = "5432";
         String dbUser = "postgres";
         String dbName = "wds";
         String dbPassword = "postgres";
 
+        Map<String, String> command = new LinkedHashMap<>();
+        command.put("pg_dump", null);
+        command.put("-h", dbHost);
+        command.put("-p", dbPort);
+        command.put("-U", dbUser);
+        command.put("-d", dbName);
+//        command.put("--no-owner", null);
+//        command.put("--no-acl", null);
 
-        ProcessBuilder processBuilder = new ProcessBuilder(
-                "pg_dump",
-                "-h", dbHost,
-                "-p", dbPort,
-                "-U", dbUser,
-                "-d", dbName,
-                "-W",
-                "-v",
-                "-F", "c",
-                "-f", "backup.dump",
-                "--no-owner",
-                "--no-acl"
-        );
-        processBuilder.environment().put("PGPASSWORD", dbPassword); // set the password as an environment variable
-
-        Process process = processBuilder.start();
-
-        try (InputStream inputStream = process.getInputStream()) {
-            String output = new BufferedReader(new InputStreamReader(inputStream))
-                    .lines()
-                    .collect(Collectors.joining("\n"));
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                System.err.println("pg_dump failed: " + output);
-            } else {
-                System.out.println("pg_dump succeeded: " + output);
+        List<String> commandList = new ArrayList<>();
+        for (Map.Entry<String, String> entry : command.entrySet()) {
+            commandList.add(entry.getKey());
+            if (entry.getValue() != null) {
+                commandList.add(entry.getValue());
             }
         }
+        commandList.add("-v");
+        commandList.add("-w");
+        System.out.println(commandList);
+
+        InputStream inputStream = localProcessLauncher.launchProcess(commandList, dbPassword);
+        System.out.println(localProcessLauncher.getOutputForProcessFromStream(inputStream));
 
 //        BlockBlobClient blockBlobClient = constructBlockBlobClient(workspaceId.toString() + "-backups", blobName);
 //        // -1 represents using the default parallelTransferOptions during upload to Azure

@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /** This class provides utility methods for launching local child processes. */
 @Component
@@ -30,8 +31,8 @@ public class LocalProcessLauncher {
      * @param command the command and arguments to execute
      * @param envVars the environment variables to set or overwrite if already defined
      */
-    public void launchProcess(List<String> command, Map<String, String> envVars, File outputFile) throws Exception {
-        launchProcess(command, envVars, null, outputFile);
+    public void launchProcess(List<String> command) throws Exception {
+        launchProcess(command, "hello");
     }
 
     /**
@@ -42,23 +43,16 @@ public class LocalProcessLauncher {
      * @param envVars the environment variables to set or overwrite if already defined
      * @param workingDirectory the working directory to launch the process from
      */
-    public InputStream launchProcess(
-            List<String> command, Map<String, String> envVars, Path workingDirectory, File outputFile) throws Exception {
-        // build and run process from the specified working directory
-        ProcessBuilder procBuilder = new ProcessBuilder(command);
-        if (workingDirectory != null) {
-            procBuilder.directory(workingDirectory.toFile());
-        }
-        if (envVars != null) {
-            Map<String, String> procEnvVars = procBuilder.environment();
-            procEnvVars.putAll(envVars);
-        }
-        if (outputFile != null) {
-            procBuilder.redirectOutput(outputFile);
-        }
+    public InputStream launchProcess(List<String> command, String dbPassword) throws Exception {
+        File file = new File("backup.sql");
+        String concatenatedString = command.stream().collect(Collectors.joining(" "));
+        System.out.println(concatenatedString);
+        ProcessBuilder procBuilder = new ProcessBuilder(concatenatedString);
+        procBuilder.environment().put("PGPASSWORD", dbPassword);
         try {
             Object lock = new Object();
             process = procBuilder.start();
+            procBuilder.directory();
             synchronized (lock) {
                 // Wait for the process to complete
                 process.waitFor();
