@@ -100,11 +100,11 @@ class FullStackRecordControllerTest {
 				mapper.writeValueAsString(new RecordRequest(RecordAttributes.empty())), headers);
 		List<String> badNames = List.of("); drop table users;", "$$foo.bar", "...", "&Q$(*^@$(*");
 		for (String badName : badNames) {
-			ResponseEntity<ProblemDetail> response = restTemplate.exchange(
+			ResponseEntity<ErrorResponse> response = restTemplate.exchange(
 					"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT, requestEntity,
-					ProblemDetail.class, instanceId, versionId, badName, "sample_1");
-			ProblemDetail problemDetail = response.getBody();
-			assertThat(problemDetail.getDetail()).containsPattern("Record Type .* or contain characters besides letters");
+					ErrorResponse.class, instanceId, versionId, badName, "sample_1");
+			ErrorResponse err = response.getBody();
+			assertThat(err.getMessage()).containsPattern("Record Type .* or contain characters besides letters");
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		}
 	}
@@ -189,11 +189,11 @@ class FullStackRecordControllerTest {
 				new SearchRequest(limit, offset, SortDirection.ASC, "no-attr"));
 		assertThat(response.getStatusCode()).as("attribute doesn't exist").isEqualTo(HttpStatus.NOT_FOUND);
 		limit = 1001;
-		ResponseEntity<ProblemDetail> problemResponse = executeQuery(recordType, ProblemDetail.class, new SearchRequest(limit, offset, SortDirection.ASC));
-		assertThat(problemResponse.getStatusCode()).as("unsupported limit size").isEqualTo(HttpStatus.BAD_REQUEST);
+		response = executeQuery(recordType, ErrorResponse.class, new SearchRequest(limit, offset, SortDirection.ASC));
+		assertThat(response.getStatusCode()).as("unsupported limit size").isEqualTo(HttpStatus.BAD_REQUEST);
 		limit = 0;
-		problemResponse = executeQuery(recordType, ProblemDetail.class, new SearchRequest(limit, offset, SortDirection.ASC));
-		assertThat(problemResponse.getStatusCode()).as("unsupported limit size").isEqualTo(HttpStatus.BAD_REQUEST);
+		response = executeQuery(recordType, ErrorResponse.class, new SearchRequest(limit, offset, SortDirection.ASC));
+		assertThat(response.getStatusCode()).as("unsupported limit size").isEqualTo(HttpStatus.BAD_REQUEST);
 	}
 
 	private <T> ResponseEntity<T> executeQuery(RecordType recordType, Class<T> responseType, SearchRequest... request)
@@ -277,7 +277,7 @@ class FullStackRecordControllerTest {
 				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.GET, new HttpEntity<>(headers),
 				LinkedHashMap.class, instanceId, "garbage", "type", "id");
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-		assertThat(response.getBody()).containsEntry("detail", "Invalid API version specified");
+		assertThat(response.getBody()).containsEntry("message", "Invalid API version specified");
 	}
 
 	private List<Record> createSomeRecords(RecordType recordType, int numRecords, Supplier<String>... recordIdSupplier)
@@ -352,10 +352,10 @@ class FullStackRecordControllerTest {
 				referencerRT);
 		List<BatchOperation> deleteOps = List.of(new BatchOperation(someRecords.get(1), OperationType.DELETE),
 				new BatchOperation(someRecords.get(0), OperationType.DELETE));
-		ResponseEntity<ProblemDetail> error = restTemplate.exchange("/{instanceid}/batch/{v}/{type}", HttpMethod.POST,
-				new HttpEntity<>(mapper.writeValueAsString(deleteOps), headers), ProblemDetail.class, instanceId,
+		ResponseEntity<ErrorResponse> error = restTemplate.exchange("/{instanceid}/batch/{v}/{type}", HttpMethod.POST,
+				new HttpEntity<>(mapper.writeValueAsString(deleteOps), headers), ErrorResponse.class, instanceId,
 				versionId, referencedRT);
-		assertThat(error.getBody().getDetail()).contains("because another record has a relation to it");
+		assertThat(error.getBody().getMessage()).contains("because another record has a relation to it");
 		ResponseEntity<RecordResponse> stillPresentNonReferencedRecord = restTemplate.exchange(
 				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.GET, new HttpEntity<>(headers),
 				RecordResponse.class, instanceId, versionId, referencedRT, "record_1");
