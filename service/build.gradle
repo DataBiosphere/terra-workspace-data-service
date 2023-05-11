@@ -52,6 +52,7 @@ dependencies {
 	implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-b7e47d2'
 	implementation 'com.squareup.okhttp3:okhttp:4.10.0' // required by Sam client
 	implementation "bio.terra:datarepo-client:1.476.0-SNAPSHOT"
+	implementation "bio.terra:workspace-manager-client:0.254.717-SNAPSHOT"
 
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 	runtimeOnly 'org.webjars.npm:swagger-ui-dist:4.12.0'
