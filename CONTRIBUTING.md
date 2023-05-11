@@ -25,7 +25,5 @@ Your PR is ready to merge when all of the following things are true:
 
 To get a PR into newly-created WDS apps, you must:
 
-1. update the WDS version in the [`terra-helmfile`](https://github.com/broadinstitute/terra-helmfile) repo.
-   Here is an example PR which illustrates a WDS version update: https://github.com/broadinstitute/terra-helmfile/pull/4126.
-2. After `terra-helmfile` publishes an updated WDS chart, you must also update the chart version in the [`leonardo`](https://github.com/DataBiosphere/leonardo) repo.
-   Here is an example PR which illustrates a chart update: https://github.com/DataBiosphere/leonardo/pull/3324
+1. Verify that the auto github action updated the WDS version in the [`terra-helmfile`](https://github.com/broadinstitute/terra-helmfile) repo. This action happens once a week on Monday morning EST. You can also manually trigger the github action to run if update needs to be published sooner. 
+2. After `terra-helmfile` publishes an updated WDS chart, another PR will auto create that will update the chart version in the [`leonardo`](https://github.com/DataBiosphere/leonardo) repo. That PR should auto merge but it would be a good idea to verify that it merged succesfully.
