@@ -60,9 +60,9 @@ paths:
         404:
           description: Record not found
           content:
-            'application/problem+json':
+            'application/json':
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: '#/components/schemas/ErrorResponse'
     put:
       summary: Create or replace record
       description: |
@@ -91,9 +91,9 @@ paths:
         400:
           description: Bad request
           content:
-            'application/problem+json':
+            'application/json':
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: '#/components/schemas/ErrorResponse'
     patch:
       summary: Update record
       operationId: updateRecord
@@ -119,15 +119,15 @@ paths:
         404:
           description: Record not found
           content:
-            'application/problem+json':
+            'application/json':
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: '#/components/schemas/ErrorResponse'
         400:
           description: Bad request
           content:
-            'application/problem+json':
+            'application/json':
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       summary: Delete record
       description: Deletes the record at the specified type and id.
@@ -147,15 +147,15 @@ paths:
         404:
           description: Record not found
           content:
-            'application/problem+json':
+            'application/json':
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: '#/components/schemas/ErrorResponse'
         400:
           description: Bad request
           content:
-            'application/problem+json':
+            'application/json':
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: '#/components/schemas/ErrorResponse'
   /{instanceid}/search/{v}/{type}:
     post:
       summary: Query records
@@ -179,9 +179,9 @@ paths:
         404:
           description: Record type not found
           content:
-            'application/problem+json':
+            'application/json':
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: '#/components/schemas/ErrorResponse'
   /{instanceid}/tsv/{v}/{type}:
     get:
       summary: Retrieve all records in record type as tsv.
@@ -204,9 +204,9 @@ paths:
         404:
           description: Instance or Record type not found
           content:
-            'application/problem+json':
+            'application/json':
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       summary: Import records to a record type from a tsv file
       description: Upload a tsv to modify or create records in a record type.  This operation will insert or update records.
@@ -243,15 +243,15 @@ paths:
         400:
           description: Bad Request
           content:
-            'application/problem+json':
+            'application/json':
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: '#/components/schemas/ErrorResponse'
         404:
           description: Instance not found
           content:
-            'application/problem+json':
+            'application/json':
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: '#/components/schemas/ErrorResponse'
   /{instanceid}/batch/{v}/{type}:
     post:
       summary: Batch write records
@@ -313,9 +313,9 @@ paths:
         409:
           description: Conflict - schema already exists.
           content:
-            'application/problem+json':
+            'application/json':
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       summary: Delete an instance
       description: |
@@ -336,9 +336,9 @@ paths:
         404:
           description: Not Found - instance does not exist.
           content:
-            'application/problem+json':
+            'application/json':
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: '#/components/schemas/ErrorResponse'
   /{instanceid}/types/{v}/{type}:
     get:
       summary: Describe record type
@@ -361,9 +361,9 @@ paths:
         404:
           description: Record type not found
           content:
-            'application/problem+json':
+            'application/json':
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       summary: Delete record type
       description: Delete record type. All records of this type will be deleted.
@@ -404,9 +404,9 @@ paths:
         404:
           description: Instance not found
           content:
-            'application/problem+json':
+            'application/json':
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   securitySchemes:
@@ -660,31 +660,31 @@ components:
         primaryKey:
           type: string
           description: Attribute name that contains the value to uniquely identify each record, defined as a primary key column in the underlying table.
-    ProblemDetail:
-      type: object
-      description: Details about an error, following the RFC 7807 standard
+    ErrorResponse:
       required:
-        - type
+        - status
+        - path
+        - message
+        - error
+        - timestamp
+      type: object
       properties:
-        type:
-          type: string
-          description: A URI reference [RFC3986] that identifies the problem type.
-        title:
-          type: string
-          description: A short, human-readable summary of the problem type.
         status:
-          type: number
-          description: |
-            The HTTP status code ([RFC7231], Section 6) generated by the origin server for this
-            occurrence of the problem.
-        detail:
+          type: integer
+          description: HTTP status code
+        error:
           type: string
-          description: A human-readable explanation specific to this occurrence of the problem.
-        instance:
+          description: error
+        message:
           type: string
-          description: |
-            A URI reference that identifies the specific occurrence of the problem. 
-            It may or may not yield further information if dereferenced.
+          description: error message
+        path:
+          type: string
+          description: requested record path
+        timestamp:
+          type: string
+          description: time of error
+      description: ""
     RequestBodySearch:
       required:
         - terms
