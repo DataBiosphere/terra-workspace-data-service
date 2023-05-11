@@ -27,16 +27,29 @@ jenv add /Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
 We are using Postgres 13.1.  You do not need to have postgres installed on your system.
 Instead use the `run_postgres.sh` script to set up a docker container running postgres (see below).
 
-#### SAM_URL
+#### Environment Variables
+
+For WDS to work properly, several environment variables are expected.  
+These should be configured before running WDS.
+You may want to add them to your `~/.zshrc` or similar shell profile.
+
+##### SAM_URL
 
 WDS contacts Sam for permission checks. You will need to configure Sam's URL by setting an
 environment variable, such as:
 ```
 export SAM_URL=https://sam.dsde-dev.broadinstitute.org/
 ```
-You may want to add this to your `~/.zshrc` or similar shell profile.
 
-#### WORKSPACE_ID
+##### DATA_REPO_URL
+
+For importing snapshots from the Terra Data Repo, WDS will need the TDR URL configured as an
+environment variable, such as:
+```
+export DATA_REPO_URL=https://jade.datarepo-dev.broadinstitute.org/
+```
+
+##### WORKSPACE_ID
 
 When WDS queries Sam for permission, it queries IAM for the workspace in which WDS is running.
 This is controlled by a `WORKSPACE_ID` environment variable. You should set this to the UUID
@@ -44,7 +57,6 @@ of a workspace you own, e.g.
 ```
 export WORKSPACE_ID=123e4567-e89b-12d3-a456-426614174000
 ```
-You may want to add this to your `~/.zshrc` or similar shell profile.
 
 ## Running
 To just build the code, from the root directory run
