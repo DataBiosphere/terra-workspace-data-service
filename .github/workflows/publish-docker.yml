@@ -108,7 +108,7 @@ jobs:
           token: ${{ secrets.BROADBOT_TOKEN }} # Has to be set at checkout AND later when pushing to work
           path: terra-helmfile
           
-      - name: Create terra-helm PR for latest WDS version
+      - name: Create terra-helmfile PR for latest WDS version
         env:
           BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
           GH_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
@@ -116,7 +116,7 @@ jobs:
           set -e
           JIRA_ID=${{ steps.find-jira-id.outputs.JIRA_ID }}
           if [[ $JIRA_ID == "missing" ]]; then
-            echo "JIRA_ID missing, PR to terra-helm will not be created"
+            echo "JIRA_ID missing, PR to terra-helmfile will not be created"
             exit 0;
           fi
           cd terra-helmfile
