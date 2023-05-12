@@ -59,6 +59,11 @@ public class MisconfiguredSamDao implements SamDao {
     }
 
     @Override
+    public Boolean getSystemStatusOk() {
+        throw new RuntimeException("Sam integration failure: " + errorMessage);
+    }
+
+    @Override
     public SystemStatus getSystemStatus() {
         throw new RuntimeException("Sam integration failure: " + errorMessage);
     }

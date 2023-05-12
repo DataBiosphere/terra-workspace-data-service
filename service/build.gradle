@@ -35,6 +35,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
 	implementation 'org.springframework.retry:spring-retry:1.3.4'
 	implementation 'org.aspectj:aspectjweaver:1.8.9' // required by spring-retry, not used directly by WDS
 	implementation 'org.apache.commons:commons-lang3'
@@ -47,6 +48,8 @@ dependencies {
 	implementation 'io.sentry:sentry-logback:6.12.1'
 	implementation 'com.azure:azure-identity:1.8.2'
 	implementation 'org.liquibase:liquibase-core:4.21.1'
+	implementation 'javax.cache:cache-api'
+	implementation 'org.ehcache:ehcache:3.10.8'
 
 	// Terra libraries
 	implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-b7e47d2'

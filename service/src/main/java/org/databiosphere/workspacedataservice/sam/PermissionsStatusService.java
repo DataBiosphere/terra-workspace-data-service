@@ -27,8 +27,8 @@ public class PermissionsStatusService extends AbstractHealthIndicator {
     public void doHealthCheck(Health.Builder builder) throws Exception {
         builder.up();
         try {
-            SystemStatus samStatus = samDao.getSystemStatus();
-            builder.withDetail("samOK", samStatus.getOk());
+            Boolean samStatus = samDao.getSystemStatusOk();
+            builder.withDetail("samOK", samStatus);
         } catch (Exception e) {
             LOGGER.warn("SAM is currently signaled as DOWN.");
             builder.withDetail("samConnectionError", e.getMessage());
