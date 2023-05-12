@@ -41,7 +41,7 @@
     </cache>
 
     <cache alias="primaryKeys" uses-template="default">
-        <key-type>java.util.List</key-type>
+        <key-type>java.util.ArrayList</key-type>
         <value-type>java.lang.String</value-type>
         <expiry>
             <ttl unit="hours">24</ttl>
