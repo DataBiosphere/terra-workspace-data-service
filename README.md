@@ -48,10 +48,16 @@ environment variable, such as:
 ```
 export DATA_REPO_URL=https://jade.datarepo-dev.broadinstitute.org/
 ```
+##### WORKSPACE_MANAGER_URL
+
+Importing snapshots from the Terra Data Repo also requires the Workspace Manager configured as an environment variable, such as:
+```
+export WORKSPACE_MANAGER_URL=https://workspace.dsde-dev.broadinstitute.org/
+```
 
 ##### WORKSPACE_ID
 
-When WDS queries Sam for permission, it queries IAM for the workspace in which WDS is running.
+WDS requires a valid workspace id to check permissions in Sam and to import snapshots from the Terra Daa Repo.
 This is controlled by a `WORKSPACE_ID` environment variable. You should set this to the UUID
 of a workspace you own, e.g.
 ```
