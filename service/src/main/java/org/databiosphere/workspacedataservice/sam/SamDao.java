@@ -50,7 +50,12 @@ public interface SamDao {
     boolean hasWriteInstancePermission(String token);
 
     /**
-     * Gets the System Status of SAM.
+     * Gets the up/down system status of Sam.
+     */
+    Boolean getSystemStatusOk();
+
+    /**
+     * Gets the System Status of Sam.
      */
     SystemStatus getSystemStatus();
 
