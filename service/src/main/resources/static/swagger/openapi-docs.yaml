@@ -822,4 +822,4 @@ components:
         status:
           type: string
         components:
-          $ref: '#/components/schemas/components'
+          $ref: '#/components/schemas/component'

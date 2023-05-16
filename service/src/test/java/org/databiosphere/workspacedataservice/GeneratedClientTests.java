@@ -12,6 +12,8 @@ import org.databiosphere.workspacedata.model.RecordResponse;
 import org.databiosphere.workspacedata.model.RecordTypeSchema;
 import org.databiosphere.workspacedata.model.SearchRequest;
 import org.databiosphere.workspacedata.model.TsvUploadResponse;
+import org.databiosphere.workspacedata.api.GeneralWdsInformationApi;
+import org.databiosphere.workspacedata.model.StatusResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -134,6 +136,14 @@ class GeneratedClientTests {
         recordsApi.updateRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId);
         RecordResponse record = recordsApi.getRecord(instanceId.toString(), version, entityType, recordId);
         assertThat(record.getAttributes()).containsEntry(attributeName, "Goodbye");
+    }
+
+    @Test
+    void checkStatus() throws ApiException {
+        GeneralWdsInformationApi statusApi = new GeneralWdsInformationApi();
+        statusApi.setApiClient(apiClient);
+        StatusResponse response = statusApi.statusGet();
+        //assertThat(response.status().equals("UP"));
     }
 
     private void createNewInstance(UUID instanceId) throws ApiException {
