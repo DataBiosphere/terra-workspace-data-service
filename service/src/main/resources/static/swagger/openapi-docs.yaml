@@ -763,8 +763,6 @@ components:
           type: string
         components:
           $ref: '#/components/schemas/components'
-        groups:
-          type: string
     build:
       type: object
       properties:
@@ -800,15 +798,13 @@ components:
          db:
            $ref: '#/components/schemas/dbComponent'
          diskSpace:
-           $ref: '#/components/schemas/component'
+           $ref: '#/components/schemas/diskSpaceComponent'
          ping:
            $ref: '#/components/schemas/component'
-         Permissions:
-           $ref: '#/components/schemas/component'
          mainDb:
-           $ref: '#/components/schemas/component'
+           $ref: '#/components/schemas/dbValidationcomponent'
          streamingDs:
-           $ref: '#/components/schemas/component'
+           $ref: '#/components/schemas/dbValidationcomponent'
     component:
       type: object
       properties:
@@ -823,3 +819,35 @@ components:
           type: string
         components:
           $ref: '#/components/schemas/component'
+    diskSpaceComponent:
+      type: object
+      properties:
+        status:
+          type: string
+        details:
+          $ref: '#/components/schemas/diskSpaceComponentDetails'         
+    diskSpaceComponentDetails:
+      type: object
+      properties:
+        total:
+          type: string
+        free:
+          type: float
+        threshold:
+          type: float
+        exists:
+          type: boolean
+    dbValidationcomponent:
+      type: object
+      properties:
+        status:
+          type: string
+        components:
+          $ref: '#/components/schemas/dbValidationcomponentDetails'
+    dbValidationcomponentDetails:
+      type: object
+      properties:
+        database:
+          type: string
+        validationQuery:
+          type: string

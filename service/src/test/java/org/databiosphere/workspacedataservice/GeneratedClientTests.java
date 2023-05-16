@@ -143,7 +143,7 @@ class GeneratedClientTests {
         GeneralWdsInformationApi statusApi = new GeneralWdsInformationApi();
         statusApi.setApiClient(apiClient);
         StatusResponse response = statusApi.statusGet();
-        //assertThat(response.status().equals("UP"));
+        assertThat(response.getStatus().equals("UP"));
     }
 
     private void createNewInstance(UUID instanceId) throws ApiException {
