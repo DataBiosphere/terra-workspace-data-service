@@ -1,8 +1,17 @@
 name: Tag
 on:
-  push:
-    branches:
-    - main
+  workflow_dispatch:
+    # Inputs the workflow accepts.
+    inputs:
+      name:
+        # Friendly description to be shown in the UI instead of 'name'
+        description: 'Reason for manual execution'
+        # Default value if no value is explicitly provided
+        default: 'WDS Release'
+        # Input has to be provided for the workflow to run
+        required: true
+        # The data type of the input
+        type: string
 
 jobs:
   tag-job:

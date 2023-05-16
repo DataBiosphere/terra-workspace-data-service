@@ -36,8 +36,8 @@ public class SentryInitializer  {
 
 	private static final Pattern SAM_ENV_PATTERN = Pattern.compile("\\.dsde-(\\p{Alnum}+)\\.");
 	private static final String DEFAULT_ENV = "unknown";
-	//Environments we want to monitor on sentry - don't send errors from local or bees
-	private static final List<String> environments = List.of("prod","alpha","staging", "dev", DEFAULT_ENV);
+	//Environments we want to monitor on sentry - don't send errors from local, bees, or Github actions
+	private static final List<String> environments = List.of("prod", "alpha", "staging", "dev");
 
 	@Bean
 	public SmartInitializingSingleton initialize() {
