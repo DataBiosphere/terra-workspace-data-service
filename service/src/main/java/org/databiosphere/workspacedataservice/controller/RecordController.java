@@ -98,7 +98,7 @@ public class RecordController {
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") String recordId, @RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey,
 			 @RequestBody RecordRequest recordRequest) {
-		return recordOrchestratorService.upsertSingleRecord(instanceId, version, recordType, recordId, primaryKey,
+			return recordOrchestratorService.upsertSingleRecord(instanceId, version, recordType, recordId, primaryKey,
 				recordRequest);
 	}
 
