@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.activitylog;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.dao.CachedQueryDao;
 import org.databiosphere.workspacedataservice.dao.DataSourceConfig;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
@@ -14,6 +15,9 @@ import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.RecordService;
+import org.databiosphere.workspacedataservice.shared.model.BatchOperation;
+import org.databiosphere.workspacedataservice.shared.model.OperationType;
+import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -26,9 +30,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -45,6 +57,8 @@ public class LogStatementTest {
     InstanceService instanceService;
     @Autowired
     RecordOrchestratorService recordOrchestratorService;
+    @Autowired
+    ObjectMapper objectMapper;
 
     @AfterEach
     void afterEach() {
@@ -145,11 +159,48 @@ public class LogStatementTest {
                         .formatted(recordType.getName()));
     }
 
-    // TODO: tsv upload
-    // TODO: batch upload
+    @Test
+    void tsvUploadLogging(CapturedOutput output) throws IOException {
+        UUID instanceId = UUID.randomUUID();
+        RecordType recordType = RecordType.valueOf("mytype");
+        instanceService.createInstance(instanceId, VERSION);
+
+        try (InputStream tsvStream = ClassLoader.getSystemResourceAsStream("small-test.tsv")) {
+            MultipartFile upload = new MockMultipartFile("myupload", tsvStream);
+            recordOrchestratorService.tsvUpload(instanceId, VERSION,
+                    recordType, Optional.empty(),
+                    upload);
+            assertThat(output.getOut())
+                    .contains("user anonymous upserted 2 record(s) of type %s"
+                            .formatted(recordType.getName()));
+        }
+    }
+
+    @Test
+    void batchWriteLogging(CapturedOutput output) throws IOException {
+        UUID instanceId = UUID.randomUUID();
+        RecordType recordType = RecordType.valueOf("mytype");
+        instanceService.createInstance(instanceId, VERSION);
+
+        BatchOperation[] ops = new BatchOperation[]{
+                new BatchOperation(new Record("aaa", recordType, RecordAttributes.empty()),
+                        OperationType.UPSERT),
+                new BatchOperation(new Record("bbb", recordType, RecordAttributes.empty()),
+                        OperationType.UPSERT),
+                new BatchOperation(new Record("aaa", recordType, RecordAttributes.empty()),
+                        OperationType.DELETE)
+        };
+
+        InputStream upload = new ByteArrayInputStream(objectMapper.writeValueAsBytes(ops));
+
+        recordOrchestratorService.streamingWrite(instanceId, VERSION,
+                recordType, Optional.empty(),
+                upload);
+        assertThat(output.getOut())
+                .contains("user anonymous modified 3 record(s) of type %s"
+                        .formatted(recordType.getName()));
+
+    }
+
     // TODO: link snapshot
-
-
-
-
 }
