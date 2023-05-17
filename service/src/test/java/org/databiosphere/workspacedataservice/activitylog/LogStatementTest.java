@@ -1,50 +1,44 @@
 package org.databiosphere.workspacedataservice.activitylog;
 
+import bio.terra.datarepo.api.RepositoryApi;
+import bio.terra.datarepo.client.ApiException;
+import bio.terra.datarepo.model.SnapshotModel;
+import bio.terra.workspace.api.ReferencedGcpResourceApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.databiosphere.workspacedataservice.dao.CachedQueryDao;
-import org.databiosphere.workspacedataservice.dao.DataSourceConfig;
-import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
-import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.datarepo.DataRepoConfig;
-import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
-import org.databiosphere.workspacedataservice.sam.SamConfig;
-import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.datarepo.DataRepoClientFactory;
 import org.databiosphere.workspacedataservice.service.DataRepoService;
-import org.databiosphere.workspacedataservice.service.DataTypeInfererConfig;
 import org.databiosphere.workspacedataservice.service.InstanceService;
-import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
-import org.databiosphere.workspacedataservice.service.RecordService;
 import org.databiosphere.workspacedataservice.shared.model.BatchOperation;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.databiosphere.workspacedataservice.tsv.TsvConfig;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerConfig;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerClientFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 @ActiveProfiles(profiles = { "mock-sam" })
 @SpringBootTest
@@ -58,7 +52,19 @@ public class LogStatementTest {
     @Autowired
     RecordOrchestratorService recordOrchestratorService;
     @Autowired
+    DataRepoService dataRepoService;
+    @Autowired
     ObjectMapper objectMapper;
+
+    // mocking for Workspace Manager
+    @MockBean
+    WorkspaceManagerClientFactory mockWorkspaceManagerClientFactory;
+    ReferencedGcpResourceApi mockReferencedGcpResourceApi = Mockito.mock(ReferencedGcpResourceApi.class);
+
+    // mocking for data repo
+    @MockBean
+    DataRepoClientFactory mockDataRepoClientFactory;
+    RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
 
     @AfterEach
     void afterEach() {
@@ -202,5 +208,24 @@ public class LogStatementTest {
 
     }
 
-    // TODO: link snapshot
+    @Test
+    void importSnapshotLogging(CapturedOutput output) throws ApiException {
+        UUID instanceId = UUID.randomUUID();
+        instanceService.createInstance(instanceId, VERSION);
+
+        UUID snapshotId = UUID.randomUUID();
+
+        given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi()).willReturn(mockReferencedGcpResourceApi);
+        given(mockDataRepoClientFactory.getRepositoryApi()).willReturn(mockRepositoryApi);
+
+        final SnapshotModel testSnapshot = new SnapshotModel().name("test snapshot").id(snapshotId);
+        given(mockRepositoryApi.retrieveSnapshot(any(), any()))
+                .willReturn(testSnapshot);
+
+
+        dataRepoService.importSnapshot(instanceId, snapshotId);
+        assertThat(output.getOut())
+                .contains("user anonymous linked 1 snapshot reference(s) with id(s) [%s]"
+                        .formatted(snapshotId));
+    }
 }
