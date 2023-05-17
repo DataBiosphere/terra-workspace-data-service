@@ -6,6 +6,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
+/**
+ * Save entries to an activity log. Currently implemented as writing to
+ * a Slf4j logger, but could be modified to write entries to a database
+ * table or other persistence.
+ */
 public class ActivityLogger {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ActivityLogger.class);
@@ -17,8 +22,33 @@ public class ActivityLogger {
     }
 
 
+    /**
+     * creates a new, empty event. In most cases, callers should use
+     * #saveEventForCurrentUser instead.
+     * @return event builder.
+     */
     public ActivityEventBuilder newEvent() {
-        return new ActivityEventBuilder(this, this.samDao);
+        return new ActivityEventBuilder(this.samDao);
+    }
+
+    /**
+     * interface for #saveEventForCurrentUser
+     */
+    @FunctionalInterface
+    public interface UserActivity {
+        ActivityEventBuilder builderForCurrentUser(ActivityEventBuilder activityEventBuilder);
+    }
+
+    /**
+     * Initializes a new event for the current user, allows the caller to specify the
+     * action, target, ids, etc. for that event, then saves that event.
+     * Example:
+     *     activityLogger.saveEventForCurrentUser(event ->
+     *                 event.created().record().withRecordType(mytype).withId(myid));
+     * @param userActivity lambda that adds details to an ActivityEventBuilder
+     */
+    public void saveEventForCurrentUser(UserActivity userActivity) {
+        saveEvent(userActivity.builderForCurrentUser(newEvent().currentUser()).build());
     }
 
     protected void saveEvent(ActivityEvent event) {

@@ -55,7 +55,11 @@ public class HttpSamClientSupport {
         try {
             LOGGER.debug("Sending {} request to Sam ...", loggerHint);
             T functionResult = samFunction.run();
-            LOGGER.debug("{} Sam request successful, result: {}", loggerHint, functionResult);
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("{} Sam request successful, result: {}", loggerHint, functionResult);
+            } else {
+                LOGGER.debug("{} Sam request successful", loggerHint);
+            }
             return functionResult;
         } catch (ApiException apiException) {
             LOGGER.error(loggerHint + " Sam request resulted in ApiException(" + apiException.getCode() + ")",

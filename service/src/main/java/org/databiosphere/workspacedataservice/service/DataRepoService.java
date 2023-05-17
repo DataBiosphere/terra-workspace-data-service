@@ -21,16 +21,17 @@ public class DataRepoService {
         this.activityLogger = activityLogger;
     }
 
-    public void importSnapshot(UUID instanceID, UUID snapshotId) {
+    public void importSnapshot(UUID instanceId, UUID snapshotId) {
         // getSnapshot will throw exception is caller does not have access
         SnapshotModel snapshot = dataRepoDao.getSnapshot(snapshotId);
 
         // createDataRepoSnapshotReference is required to setup policy and will throw exception if policy conflicts
         workspaceManagerDao.createDataRepoSnapshotReference(snapshot);
 
-        activityLogger.newEvent().currentUser().linked().snapshotReference().withUuid(snapshotId);
+        activityLogger.saveEventForCurrentUser(user ->
+                user.linked().snapshotReference().withUuid(snapshotId));
         //do the import
-        dataRepoDao.addSnapshot(snapshot, instanceID);
+        dataRepoDao.addSnapshot(snapshot, instanceId);
     }
 
 }

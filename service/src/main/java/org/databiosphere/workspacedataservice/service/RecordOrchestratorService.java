@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.service;
 import bio.terra.common.db.ReadTransaction;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.csv.CSVPrinter;
-import org.databiosphere.workspacedataservice.activitylog.ActivityEventBuilder;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
@@ -76,7 +75,8 @@ public class RecordOrchestratorService { // TODO give me a better name
         validateAndPermissions(instanceId, version);
         checkRecordTypeExists(instanceId, recordType);
         RecordResponse response = recordService.updateSingleRecord(instanceId, recordType, recordId, recordRequest);
-        activityLogger.newEvent().currentUser().updated().record().withRecordType(recordType).withId(recordId).persist();
+        activityLogger.saveEventForCurrentUser(user ->
+                user.updated().record().withRecordType(recordType).withId(recordId));
         return response;
     }
 
@@ -109,7 +109,8 @@ public class RecordOrchestratorService { // TODO give me a better name
             recordService.validatePrimaryKey(instanceId, recordType, primaryKey);
         }
         int qty = batchWriteService.batchWriteTsvStream(records.getInputStream(), instanceId, recordType, primaryKey);
-        activityLogger.newEvent().currentUser().upserted().record().withRecordType(recordType).ofQuantity(qty).persist();
+        activityLogger.saveEventForCurrentUser(user ->
+                user.upserted().record().withRecordType(recordType).ofQuantity(qty));
         return qty;
     }
 
@@ -169,11 +170,12 @@ public class RecordOrchestratorService { // TODO give me a better name
         validateAndPermissions(instanceId, version);
         ResponseEntity<RecordResponse> response = recordService.upsertSingleRecord(instanceId, recordType, recordId, primaryKey, recordRequest);
 
-        ActivityEventBuilder activityEventBuilder = activityLogger.newEvent().currentUser().record().withRecordType(recordType).withId(recordId);
         if (response.getStatusCode() == HttpStatus.CREATED) {
-            activityEventBuilder.created().persist();
+            activityLogger.saveEventForCurrentUser(user ->
+                    user.created().record().withRecordType(recordType).withId(recordId));
         } else {
-            activityEventBuilder.updated().persist();
+            activityLogger.saveEventForCurrentUser(user ->
+                    user.updated().record().withRecordType(recordType).withId(recordId));
         }
         return response;
 
@@ -183,7 +185,8 @@ public class RecordOrchestratorService { // TODO give me a better name
         validateAndPermissions(instanceId, version);
         checkRecordTypeExists(instanceId, recordType);
         boolean response = recordService.deleteSingleRecord(instanceId, recordType, recordId);
-        activityLogger.newEvent().currentUser().deleted().record().withRecordType(recordType).withId(recordId).persist();
+        activityLogger.saveEventForCurrentUser(user ->
+                user.deleted().record().withRecordType(recordType).withId(recordId));
         return response;
 
     }
@@ -192,7 +195,8 @@ public class RecordOrchestratorService { // TODO give me a better name
         validateAndPermissions(instanceId, version);
         checkRecordTypeExists(instanceId, recordType);
         recordService.deleteRecordType(instanceId, recordType);
-        activityLogger.newEvent().currentUser().deleted().table().ofQuantity(1).withRecordType(recordType).persist();
+        activityLogger.saveEventForCurrentUser(user ->
+                user.deleted().table().ofQuantity(1).withRecordType(recordType));
     }
 
     @ReadTransaction
@@ -220,7 +224,8 @@ public class RecordOrchestratorService { // TODO give me a better name
         }
 
         int qty = batchWriteService.batchWriteJsonStream(is, instanceId, recordType, primaryKey);
-        activityLogger.newEvent().currentUser().modified().record().withRecordType(recordType).ofQuantity(qty).persist();
+        activityLogger.saveEventForCurrentUser(user ->
+                user.modified().record().withRecordType(recordType).ofQuantity(qty));
         return qty;
     }
 
