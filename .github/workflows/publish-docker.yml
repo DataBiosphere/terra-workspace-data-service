@@ -5,6 +5,9 @@ on:
       new-tag:
         required: true
         type: string
+      jiraId:
+        required: true
+        type: string
     secrets:
       ACR_SP_PASSWORD:
         required: true
@@ -32,11 +35,11 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Look for AJ (Analysis Journeys) Jira ID in the commit message
+      - name: Look for AJ (Analysis Journeys) Jira ID in the manual workflow trigger message
         id: find-jira-id
         run: |
           set +e
-          JIRA_ID=$(echo "${{ github.event.head_commit.message }}" | grep -iEo -m 1 'AJ-[0-9]+' | head -1 || '')
+          JIRA_ID=$(echo "${{ inputs.jiraId }}" | grep -iEo -m 1 'AJ-[0-9]+' | head -1 || '')
           if [[ -z "$JIRA_ID" ]]; then
             echo "JIRA_ID=missing" >> $GITHUB_OUTPUT
           else 
@@ -91,7 +94,7 @@ jobs:
 
       - name: Re-tag image for ACR
         run: docker tag ${{ steps.gcr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} ${{ steps.acr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }}
-
+      
       - name: Add version tag to ACR
         run: docker image tag ${{ steps.acr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} ${{ steps.acr-image-name.outputs.name }}:${{ inputs.new-tag }}
 
@@ -100,6 +103,7 @@ jobs:
           echo ${{ secrets.ACR_SP_PASSWORD }} | docker login ${ACR_REGISTRY} \
           --username ${{ secrets.ACR_SP_USER }} \
           --password-stdin
+          docker push --all-tags ${{ steps.acr-image-name.outputs.name }}
           
       - name: Clone terra-helmfile
         uses: actions/checkout@v3
