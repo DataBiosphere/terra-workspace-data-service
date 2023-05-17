@@ -11,6 +11,7 @@ import org.databiosphere.workspacedataservice.service.DataRepoService;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerClientFactory;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -66,6 +67,12 @@ class DataRepoServiceTest {
         given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi()).willReturn(mockReferencedGcpResourceApi);
         if (!instanceDao.instanceSchemaExists(INSTANCE)) {
             instanceDao.createSchema(INSTANCE);
+        }
+    }
+    @AfterEach
+    void afterEach() {
+        if (instanceDao.instanceSchemaExists(INSTANCE)) {
+            instanceDao.dropSchema(INSTANCE);
         }
     }
 

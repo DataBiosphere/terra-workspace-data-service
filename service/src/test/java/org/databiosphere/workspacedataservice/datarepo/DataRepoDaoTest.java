@@ -7,9 +7,9 @@ import bio.terra.datarepo.model.TableModel;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,7 +26,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class DataRepoDaoTest {
 
     @Autowired
@@ -53,12 +52,20 @@ class DataRepoDaoTest {
         }
     }
 
+    @AfterEach
+    void afterEach() {
+        if (instanceDao.instanceSchemaExists(INSTANCE)) {
+            instanceDao.dropSchema(INSTANCE);
+        }
+    }
+
     @Test
     void testSnapshotReturned() throws ApiException {
         final SnapshotModel testSnapshot = new SnapshotModel().name("test snapshot").id(UUID.randomUUID());
         given(mockRepositoryApi.retrieveSnapshot(any(), any()))
                 .willReturn(testSnapshot);
         assertEquals(testSnapshot, dataRepoDao.getSnapshot(testSnapshot.getId()));
+        Mockito.clearInvocations(mockRepositoryApi);
     }
 
     @Test
@@ -68,6 +75,7 @@ class DataRepoDaoTest {
                 .willThrow(new ApiException(statusCode, "Intentional error thrown for unit test"));
         var exception = assertThrows(DataRepoException.class, () -> dataRepoDao.getSnapshot(UUID.randomUUID()));
         assertEquals(statusCode, exception.getRawStatusCode());
+        Mockito.clearInvocations(mockRepositoryApi);
     }
 
     @Test
