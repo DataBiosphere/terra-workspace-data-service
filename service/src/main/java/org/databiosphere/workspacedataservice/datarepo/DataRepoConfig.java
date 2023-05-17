@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.datarepo;
 
+import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,8 +22,8 @@ public class DataRepoConfig {
         }
 
         @Bean
-        public DataRepoDao dataRepoDao(DataRepoClientFactory dataRepoClientFactory) {
-                return new DataRepoDao(dataRepoClientFactory);
+        public DataRepoDao dataRepoDao(DataRepoClientFactory dataRepoClientFactory, RecordDao recordDao) {
+                return new DataRepoDao(dataRepoClientFactory, recordDao);
         }
 
 }

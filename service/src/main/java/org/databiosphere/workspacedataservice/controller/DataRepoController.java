@@ -33,6 +33,7 @@ public class DataRepoController {
         workspaceManagerDao.createDataRepoSnapshotReference(snapshot);
 
         // TODO do the import
+        dataRepoDao.addSnapshot(snapshot, instanceId);
 
         return new ResponseEntity<>(HttpStatus.ACCEPTED);
     }
