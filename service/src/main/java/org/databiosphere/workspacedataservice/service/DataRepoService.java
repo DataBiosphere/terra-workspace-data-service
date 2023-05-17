@@ -29,7 +29,7 @@ public class DataRepoService {
         workspaceManagerDao.createDataRepoSnapshotReference(snapshot);
 
         activityLogger.newEvent().currentUser().linked().snapshotReference().withUuid(snapshotId);
-        // TODO do the import
+        //do the import
         dataRepoDao.addSnapshot(snapshot, instanceID);
     }
 

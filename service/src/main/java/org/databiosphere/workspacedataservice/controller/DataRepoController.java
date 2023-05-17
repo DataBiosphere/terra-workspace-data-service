@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.controller;
 
 import org.databiosphere.workspacedataservice.retry.RetryableApi;
 import org.databiosphere.workspacedataservice.service.DataRepoService;
+import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,9 +17,11 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 public class DataRepoController {
 
     private final DataRepoService dataRepoService;
+    private final InstanceService instanceService;
 
-    public DataRepoController(DataRepoService dataRepoService) {
+    public DataRepoController(DataRepoService dataRepoService, InstanceService instanceService) {
         this.dataRepoService = dataRepoService;
+        this.instanceService = instanceService;
     }
 
     @PostMapping("/{instanceId}/snapshots/{version}/{snapshotId}")
@@ -27,7 +30,7 @@ public class DataRepoController {
                                                              @PathVariable("version") String version,
                                                              @PathVariable("snapshotId") UUID snapshotId) {
         validateVersion(version);
-        // TODO: validate the instance, when it's time to actually write anything to that instance
+        instanceService.validateInstance(instanceId);
         dataRepoService.importSnapshot(instanceId, snapshotId);
         return new ResponseEntity<>(HttpStatus.ACCEPTED);
     }
