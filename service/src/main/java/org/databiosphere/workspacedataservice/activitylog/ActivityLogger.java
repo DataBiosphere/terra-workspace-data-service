@@ -25,10 +25,10 @@ public class ActivityLogger {
         if (LOGGER.isInfoEnabled()) {
             StringBuilder sb = new StringBuilder();
             sb.append("user %s %s".formatted(event.subject(), event.action().getName()));
-            if (event.quantity() != null) {
-                sb.append(" %s".formatted(event.quantity()));
-            } else if (event.ids() != null) {
+            if (event.ids() != null) {
                 sb.append(" %s".formatted(event.ids().length));
+            } else if (event.quantity() != null) {
+                sb.append(" %s".formatted(event.quantity()));
             }
             sb.append(" %s(s)".formatted(event.thing().getName()));
             if (event.recordType() != null) {
