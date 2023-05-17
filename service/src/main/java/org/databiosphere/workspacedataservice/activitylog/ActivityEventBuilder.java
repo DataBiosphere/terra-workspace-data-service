@@ -9,9 +9,11 @@ import java.util.UUID;
 import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
 import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
+/**
+ * Builder for ActivityEvent, with many convenience functions
+ */
 public class ActivityEventBuilder {
 
-    private final ActivityLogger activityLogger;
     private final SamDao samDao;
 
     private String subject;
@@ -22,19 +24,19 @@ public class ActivityEventBuilder {
     private String[] ids;
 
     /**
-     * Takes a reference to the ActivityLogger that created this event, and which
-     * will eventually persist the event (to a log or to a db table)
-     * @param activityLogger the parent ActivityLogger
+     * Constructor.
      * @param samDao Sam dao to use for resolving the current user to a Sam id
      */
-    public ActivityEventBuilder(ActivityLogger activityLogger, SamDao samDao) {
-        this.activityLogger = activityLogger;
+    public ActivityEventBuilder(SamDao samDao) {
         this.samDao = samDao;
     }
 
 
     // ===== SUBJECT BUILDERS
 
+    /**
+     * initializes this builder with the current user's Sam id.
+     */
     public ActivityEventBuilder currentUser() {
         try {
             // grab the current user's bearer token (see BearerTokenFilter)
@@ -109,6 +111,10 @@ public class ActivityEventBuilder {
     }
 
     // QUANTITY BUILDERS
+    /**
+     * specifies the quantity of items being operated on. If ids are specified
+     * instead, the id[].length will take precedence over this quantity.
+     */
     public ActivityEventBuilder ofQuantity(int quantity) {
         this.quantity = quantity;
         return this;
@@ -126,11 +132,7 @@ public class ActivityEventBuilder {
         return this;
     }
 
-    public void persist() {
-        this.activityLogger.saveEvent(build());
-    }
-
-    private ActivityEvent build() {
+    protected ActivityEvent build() {
         return new ActivityEvent(subject, action, thing, recordType, quantity, ids);
     }
 }

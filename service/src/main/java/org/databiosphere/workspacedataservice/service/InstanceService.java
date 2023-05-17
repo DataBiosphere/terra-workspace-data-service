@@ -64,7 +64,8 @@ public class InstanceService {
         // create instance schema in Postgres
         instanceDao.createSchema(instanceId);
 
-        activityLogger.newEvent().currentUser().created().instance().withUuid(instanceId).persist();
+        activityLogger.saveEventForCurrentUser(event ->
+                event.created().instance().withUuid(instanceId));
     }
 
     public void deleteInstance(UUID instanceId, String version) {
@@ -82,7 +83,8 @@ public class InstanceService {
         // delete instance schema in Postgres
         instanceDao.dropSchema(instanceId);
 
-        activityLogger.newEvent().currentUser().deleted().instance().withUuid(instanceId).persist();
+        activityLogger.saveEventForCurrentUser(event ->
+                event.currentUser().deleted().instance().withUuid(instanceId));
     }
 
     public void validateInstance(UUID instanceId) {

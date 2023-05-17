@@ -28,7 +28,8 @@ public class DataRepoService {
         // createDataRepoSnapshotReference is required to setup policy and will throw exception if policy conflicts
         workspaceManagerDao.createDataRepoSnapshotReference(snapshot);
 
-        activityLogger.newEvent().currentUser().linked().snapshotReference().withUuid(snapshotId).persist();
+        activityLogger.saveEventForCurrentUser(event ->
+                event.linked().snapshotReference().withUuid(snapshotId));
         // TODO do the import
     }
 
