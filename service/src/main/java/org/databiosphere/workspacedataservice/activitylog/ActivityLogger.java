@@ -4,11 +4,13 @@ import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+
 public class ActivityLogger {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ActivityLogger.class);
 
-    private SamDao samDao;
+    private final SamDao samDao;
 
     public ActivityLogger(SamDao samDao) {
         this.samDao = samDao;
@@ -19,11 +21,24 @@ public class ActivityLogger {
         return new ActivityEventBuilder(this, this.samDao);
     }
 
-
     protected void saveEvent(ActivityEvent event) {
-        LOGGER.info("user {} {} {} {}(s) with ids {}", event.subject(), event.action().getName(),
-                event.ids().length, event.thing().getName(),
-                event.ids());
+        if (LOGGER.isInfoEnabled()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("user %s %s".formatted(event.subject(), event.action().getName()));
+            if (event.quantity() != null) {
+                sb.append(" %s".formatted(event.quantity()));
+            } else if (event.ids() != null) {
+                sb.append(" %s".formatted(event.ids().length));
+            }
+            sb.append(" %s(s)".formatted(event.thing().getName()));
+            if (event.recordType() != null) {
+                sb.append(" of type %s".formatted(event.recordType().getName()));
+            }
+            if (event.ids() != null) {
+                sb.append(" with id(s) %s".formatted(Arrays.toString(event.ids())));
+            }
+            LOGGER.info(sb.toString());
+        }
     }
 
 

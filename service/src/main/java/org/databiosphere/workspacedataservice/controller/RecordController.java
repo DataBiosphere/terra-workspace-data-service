@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.retry.RetryableApi;
 import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
@@ -40,12 +39,9 @@ public class RecordController {
 	private final InstanceService instanceService;
 	private final RecordOrchestratorService recordOrchestratorService;
 
-	private final ActivityLogger activityLogger;
-
-	public RecordController(InstanceService instanceService, RecordOrchestratorService recordOrchestratorService, ActivityLogger activityLogger) {
+	public RecordController(InstanceService instanceService, RecordOrchestratorService recordOrchestratorService) {
 		this.instanceService = instanceService;
 		this.recordOrchestratorService = recordOrchestratorService;
-		this.activityLogger = activityLogger;
 	}
 
 	@PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
@@ -55,7 +51,6 @@ public class RecordController {
 			@PathVariable("recordId") String recordId, @RequestBody RecordRequest recordRequest) {
 		RecordResponse response = recordOrchestratorService
 			.updateSingleRecord(instanceId, version, recordType, recordId, recordRequest);
-		activityLogger.newEvent().currentUser().updated().record().withId(recordId).persist();
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
@@ -103,11 +98,8 @@ public class RecordController {
 			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
 			@PathVariable("recordId") String recordId, @RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey,
 			 @RequestBody RecordRequest recordRequest) {
-		ResponseEntity<RecordResponse> response = recordOrchestratorService.upsertSingleRecord(instanceId, version, recordType, recordId, primaryKey,
+		return recordOrchestratorService.upsertSingleRecord(instanceId, version, recordType, recordId, primaryKey,
 				recordRequest);
-		// TODO: read response OK vs. CREATED and call updated() or created()
-		activityLogger.newEvent().currentUser().upserted().record().withId(recordId).persist();
-		return response;
 	}
 
 	@GetMapping("/instances/{version}")

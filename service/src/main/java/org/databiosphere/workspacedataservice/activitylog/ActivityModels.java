@@ -3,7 +3,9 @@ package org.databiosphere.workspacedataservice.activitylog;
 public class ActivityModels {
 
     public enum Action {
-        CREATE("created"), DELETE("deleted"), UPDATE("updated"), UPSERT("upserted");
+        CREATE("created"), DELETE("deleted"),
+        UPDATE("updated"), UPSERT("upserted"),
+        MODIFY("modified");
 
         private final String name;
 
