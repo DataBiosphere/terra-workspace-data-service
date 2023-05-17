@@ -76,6 +76,11 @@ public class ActivityEventBuilder {
         this.action = ActivityModels.Action.MODIFY;
         return this;
     }
+    public ActivityEventBuilder linked() {
+        this.action = ActivityModels.Action.LINK;
+        return this;
+
+    }
     // OBJECT BUILDERS
 
     public ActivityEventBuilder instance() {
@@ -93,6 +98,10 @@ public class ActivityEventBuilder {
         return this;
     }
 
+    public ActivityEventBuilder snapshotReference() {
+        this.thing = ActivityModels.Thing.SNAPSHOT_REFERENCE;
+        return this;
+    }
     // RECORD TYPE BUILDERS
     public ActivityEventBuilder withRecordType(RecordType recordType) {
         this.recordType = recordType;

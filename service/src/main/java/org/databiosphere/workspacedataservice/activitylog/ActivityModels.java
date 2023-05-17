@@ -5,7 +5,7 @@ public class ActivityModels {
     public enum Action {
         CREATE("created"), DELETE("deleted"),
         UPDATE("updated"), UPSERT("upserted"),
-        MODIFY("modified");
+        MODIFY("modified"), LINK("linked");
 
         private final String name;
 
@@ -19,7 +19,8 @@ public class ActivityModels {
     }
 
     public enum Thing {
-        INSTANCE("instance"), TABLE("table"), RECORD("record");
+        INSTANCE("instance"), TABLE("table"),
+        RECORD("record"), SNAPSHOT_REFERENCE("snapshot reference");
 
         private final String name;
 
