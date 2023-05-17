@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.broadinstitute.dsde.workbench.client.sam.ApiClient;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
+import org.broadinstitute.dsde.workbench.client.sam.api.UsersApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -76,6 +77,13 @@ public class HttpSamClientFactory implements SamClientFactory {
         StatusApi statusApi = new StatusApi();
         statusApi.setApiClient(apiClient);
         return statusApi;
+    }
+
+    public UsersApi getUsersApi(String token) {
+        ApiClient apiClient = getApiClient(token);
+        UsersApi usersApi = new UsersApi();
+        usersApi.setApiClient(apiClient);
+        return usersApi;
     }
 
 }

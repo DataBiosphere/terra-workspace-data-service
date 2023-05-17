@@ -3,6 +3,8 @@ package org.databiosphere.workspacedataservice.service;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
+import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
@@ -28,7 +30,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ActiveProfiles(profiles = "mock-instance-dao")
-@SpringBootTest(classes = { MockInstanceDaoConfig.class, SamConfig.class })
+@SpringBootTest(classes = { MockInstanceDaoConfig.class, SamConfig.class, ActivityLoggerConfig.class })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestPropertySource(properties = {"twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000"}) // example uuid from https://en.wikipedia.org/wiki/Universally_unique_identifier
 class InstanceServiceSamTest {
@@ -37,6 +39,7 @@ class InstanceServiceSamTest {
 
     @Autowired private InstanceDao instanceDao;
     @Autowired private SamDao samDao;
+    @Autowired private ActivityLogger activityLogger;
 
     // mock for the SamClientFactory; since this is a Spring bean we can use @MockBean
     @MockBean
@@ -50,7 +53,7 @@ class InstanceServiceSamTest {
 
     @BeforeEach
     void beforeEach() throws ApiException {
-        instanceService = new InstanceService(instanceDao, samDao);
+        instanceService = new InstanceService(instanceDao, samDao, activityLogger);
 
         // return the mock ResourcesApi from the mock SamClientFactory
         given(mockSamClientFactory.getResourcesApi(null))
