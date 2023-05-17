@@ -192,7 +192,7 @@ public class RecordOrchestratorService { // TODO give me a better name
         validateAndPermissions(instanceId, version);
         checkRecordTypeExists(instanceId, recordType);
         recordService.deleteRecordType(instanceId, recordType);
-        activityLogger.newEvent().currentUser().deleted().table().withRecordType(recordType).persist();
+        activityLogger.newEvent().currentUser().deleted().table().ofQuantity(1).withRecordType(recordType).persist();
     }
 
     @ReadTransaction
