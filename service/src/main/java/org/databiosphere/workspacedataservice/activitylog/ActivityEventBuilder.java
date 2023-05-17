@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.activitylog;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.springframework.web.context.request.RequestContextHolder;
 
-import java.util.Objects;
 import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
@@ -18,6 +17,17 @@ public class ActivityEventBuilder {
     private ActivityModels.Action action;
     private ActivityModels.Thing thing;
     private String[] ids;
+
+    /**
+     * Takes a reference to the ActivityLogger that created this event, and which
+     * will eventually persist the event (to a log or to a db table)
+     * @param activityLogger
+     * @param samDao
+     */
+    public ActivityEventBuilder(ActivityLogger activityLogger, SamDao samDao) {
+        this.activityLogger = activityLogger;
+        this.samDao = samDao;
+    }
 
 
     // ===== SUBJECT BUILDERS
@@ -55,11 +65,6 @@ public class ActivityEventBuilder {
         return this;
     }
 
-//    public ActivityEventBuilder setAction(ActivityModels.Action action) {
-//        this.action = action;
-//        return this;
-//    }
-
     // OBJECT BUILDERS
 
     public ActivityEventBuilder instance() {
@@ -75,16 +80,6 @@ public class ActivityEventBuilder {
     public ActivityEventBuilder record() {
         this.thing = ActivityModels.Thing.RECORD;
         return this;
-    }
-//
-//    public ActivityEventBuilder setThing(ActivityModels.Thing thing) {
-//        this.thing = thing;
-//        return this;
-//    }
-
-    public ActivityEventBuilder(ActivityLogger activityLogger, SamDao samDao) {
-        this.activityLogger = activityLogger;
-        this.samDao = samDao;
     }
 
     // ID BUILDERS
@@ -106,10 +101,10 @@ public class ActivityEventBuilder {
 
 
     public void persist() {
-        this.activityLogger.saveActivity(build());
+        this.activityLogger.saveEvent(build());
     }
 
-    public ActivityEvent build() {
-        return new ActivityEvent(subject, action, (long) ids.length, thing, ids);
+    private ActivityEvent build() {
+        return new ActivityEvent(subject, action, thing, ids);
     }
 }
