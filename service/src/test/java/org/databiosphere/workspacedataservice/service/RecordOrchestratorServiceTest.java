@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ActiveProfiles(profiles = { "mock-sam" })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest(properties = "spring.cache.type=NONE")
+@SpringBootTest
 class RecordOrchestratorServiceTest {
 
     @Autowired private InstanceDao instanceDao;
