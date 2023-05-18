@@ -5,6 +5,9 @@ on:
       new-tag:
         required: true
         type: string
+      jiraId:
+        required: true
+        type: string
     secrets:
       ACR_SP_PASSWORD:
         required: true
@@ -32,11 +35,11 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Look for AJ (Analysis Journeys) Jira ID in the commit message
+      - name: Look for AJ (Analysis Journeys) Jira ID in the manual workflow trigger message
         id: find-jira-id
         run: |
           set +e
-          JIRA_ID=$(echo "${{ github.event.head_commit.message }}" | grep -iEo -m 1 'AJ-[0-9]+' | head -1 || '')
+          JIRA_ID=$(echo "${{ inputs.jiraId }}" | grep -iEo -m 1 'AJ-[0-9]+' | head -1 || '')
           if [[ -z "$JIRA_ID" ]]; then
             echo "JIRA_ID=missing" >> $GITHUB_OUTPUT
           else 
@@ -91,7 +94,7 @@ jobs:
 
       - name: Re-tag image for ACR
         run: docker tag ${{ steps.gcr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} ${{ steps.acr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }}
-
+      
       - name: Add version tag to ACR
         run: docker image tag ${{ steps.acr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} ${{ steps.acr-image-name.outputs.name }}:${{ inputs.new-tag }}
 
@@ -102,14 +105,14 @@ jobs:
           --password-stdin
           docker push --all-tags ${{ steps.acr-image-name.outputs.name }}
           
-      - name: Clone Cromwhelm
+      - name: Clone terra-helmfile
         uses: actions/checkout@v3
         with:
-          repository: broadinstitute/cromwhelm
+          repository: broadinstitute/terra-helmfile
           token: ${{ secrets.BROADBOT_TOKEN }} # Has to be set at checkout AND later when pushing to work
-          path: cromwhelm
+          path: terra-helmfile
           
-      - name: Create Cromwhelm PR for latest WDS version
+      - name: Create terra-helmfile PR for latest WDS version
         env:
           BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
           GH_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
@@ -117,15 +120,15 @@ jobs:
           set -e
           JIRA_ID=${{ steps.find-jira-id.outputs.JIRA_ID }}
           if [[ $JIRA_ID == "missing" ]]; then
-            echo "JIRA_ID missing, PR to cromwhelm will not be created"
+            echo "JIRA_ID missing, PR to terra-helmfile will not be created"
             exit 0;
           fi
-          cd cromwhelm
-          HELM_CUR_TAG=$(grep "/terra-workspace-data-service:" terra-batch-libchart/values.yaml | sed "s,.*/terra-workspace-data-service:,,")
-          HELM_NEW_TAG=${{ steps.setHash.outputs.git_short_sha }}
+          cd terra-helmfile
+          HELM_CUR_TAG=$(grep "/terra-workspace-data-service:" charts/wds/values.yaml | sed "s,.*/terra-workspace-data-service:,,")
+          HELM_NEW_TAG=${{ inputs.new-tag }}
           git checkout -b ${JIRA_ID}-auto-update-${HELM_NEW_TAG}
           [[ -n "$HELM_CUR_TAG" && -n "$HELM_NEW_TAG" ]]
-          sed -i "s/$HELM_CUR_TAG/$HELM_NEW_TAG/" terra-batch-libchart/values.yaml
+          sed -i "s/$HELM_CUR_TAG/$HELM_NEW_TAG/" charts/wds/values.yaml
           git config --global user.name "broadbot"
           git config --global user.email "broadbot@broadinstitute.org"
           git commit -am "${JIRA_ID}: Auto update WDS version to $HELM_NEW_TAG"

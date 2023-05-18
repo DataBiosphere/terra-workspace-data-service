@@ -20,7 +20,7 @@ repositories {
 
 subprojects {
     group = 'org.databiosphere'
-    version = '0.2.72-SNAPSHOT'
+    version = '0.2.84-SNAPSHOT'
 
     apply plugin: 'idea'
     apply plugin: 'java'
@@ -40,6 +40,7 @@ subprojects {
         dependencies {
             dependency 'io.swagger.core.v3:swagger-annotations:2.1.13'
             dependency 'io.swagger.codegen.v3:swagger-codegen-cli:3.0.34'
+            dependency 'org.yaml:snakeyaml:2.0'
         }
     }
 

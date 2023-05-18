@@ -5,7 +5,6 @@ info:
   version: v0.2
   description: |
     This page lists current APIs.
-
     As of v0.2, all APIs are subject to change without notice.
   termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
   license:
@@ -25,6 +24,8 @@ tags:
     description: Schema Manipulation APIs (coming soon)
   - name: General WDS Information
     description: Information regarding versioning, health, info, etc. for WDS
+  - name: Snapshots
+    description: Snapshot APIs
 paths:
   /backup/azure:
     post:
@@ -428,7 +429,23 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+  /{instanceid}/snapshots/{v}/{snapshotid}:
+    post:
+      summary: Import a snapshot from Terra Data Repo
+      operationId: importSnapshot
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - Snapshots
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/snapshotIdPathParam'
+      responses:
+        202:
+          description: Success
+        403:
+          description: Forbidden
 components:
   securitySchemes:
     bearerAuth:
@@ -479,6 +496,14 @@ components:
       schema:
         type: string
         default: v0.2
+    snapshotIdPathParam:
+      name: snapshotid
+      in: path
+      description: snapshot id
+      required: true
+      schema:
+        type: string
+        format: uuid
 
   responses:
     RecordResponseBody:
