@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * This class tests CORS behavior for live deployments. WDS in live deployments sits behind
  * Azure Relay, and Relay handles CORS headers. Therefore, WDS should *not* reply with CORS
  * headers, as it will cause a conflict.
- *
+ * <p>
  * See also CorsLocalMockMvcTest for testing CORS behavior in the "local" Spring profile
  */
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)

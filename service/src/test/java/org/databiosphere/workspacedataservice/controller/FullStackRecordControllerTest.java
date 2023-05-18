@@ -52,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * This test spins up a web server and the full Spring Boot web stack. It was
  * necessary to add it in order to test error handling since MockMvc doesn't
  * match full Spring Boot error handling:
- * https://github.com/spring-projects/spring-framework/issues/17290 As a result,
+ * <a href="https://github.com/spring-projects/spring-framework/issues/17290">...</a> As a result,
  * this test suite is currently focused on validating expected error handling
  */
 @ActiveProfiles(profiles = "mock-sam")

@@ -15,7 +15,7 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 /**
  * In order for @Cacheable to function properly callers need to be outside the class where
  * the @Cacheable method is specified.
- * https://stackoverflow.com/questions/16899604/spring-cache-cacheable-not-working-while-calling-from-another-method-of-the-s
+ * <a href="https://stackoverflow.com/questions/16899604/spring-cache-cacheable-not-working-while-calling-from-another-method-of-the-s">...</a>
  * Many getPrimaryKeyColumn calls are in RecordDao thus that method can't belong to that class and still work properly with caching
  * so it's been moved here.  Any future db methods that should be cached that are invoked from RecordDao can be added here as well.
  */
