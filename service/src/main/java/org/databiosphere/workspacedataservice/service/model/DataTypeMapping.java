@@ -24,13 +24,13 @@ public enum DataTypeMapping {
 	ARRAY_OF_FILE(String[].class, "array_of_file", true, "?"),
 	ARRAY_OF_BOOLEAN(Boolean[].class, "boolean[]", true, "?");
 
-	private Class javaArrayTypeForDbWrites;
+	private final Class javaArrayTypeForDbWrites;
 
-	private String postgresType;
+	private final String postgresType;
 
-	private boolean isArrayType;
+	private final boolean isArrayType;
 
-	private String writePlaceholder;
+	private final String writePlaceholder;
 
 	private static final Map<String, DataTypeMapping> MAPPING_BY_PG_TYPE = new HashMap<>();
 
