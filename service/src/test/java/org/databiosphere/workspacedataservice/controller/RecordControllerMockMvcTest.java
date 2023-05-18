@@ -341,7 +341,7 @@ class RecordControllerMockMvcTest {
 		// append two separate batches, each of which use the same record ids
 		for (int batch = 0; batch < 2; batch++) {
 			for (int i = 0; i < batchSize; i++) {
-				tsvContent.append(i + "\ttada" + batch + "_" + i + "\n");
+				tsvContent.append(i).append("\ttada").append(batch).append("_").append(i).append("\n");
 			}
 		}
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
@@ -385,7 +385,7 @@ class RecordControllerMockMvcTest {
 	void simpleTsvUploadWithBatchingShouldSucceed(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
 		StringBuilder tsvContent = new StringBuilder("sys_name\tcol1\n");
 		for (int i = 0; i < batchSize + 1; i++) {
-			tsvContent.append(i + "\ttada" + i + "\n");
+			tsvContent.append(i).append("\ttada").append(i).append("\n");
 		}
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
@@ -404,7 +404,7 @@ class RecordControllerMockMvcTest {
 		String singleRel = RelationUtils.createRelationString(refType, "record_0");
 		String relArr = "[\"" + RelationUtils.createRelationString(refType, "record_1") + "\", \"" + RelationUtils.createRelationString(refType, "record_2") + "\"]";
 		for (int i = 0; i < 6; i++) {
-			tsvContent.append(i + "\t" +  singleRel + "\t" + relArr + "\n");
+			tsvContent.append(i).append("\t").append(singleRel).append("\t").append(relArr).append("\n");
 		}
 		MockMultipartFile file = new MockMultipartFile("records", "relation.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
@@ -430,15 +430,15 @@ class RecordControllerMockMvcTest {
 		StringBuilder tsvContent = new StringBuilder("sys_name\tarray\n");
 		//empty string/nulls
 		for (int i = 0; i < 10; i++) {
-			tsvContent.append(i + "null\t" + "\n");
+			tsvContent.append(i).append("null\t").append("\n");
 		}
 		//empty array
 		for (int i = 0; i < 10; i++) {
-			tsvContent.append(i + "empty\t[]\n");
+			tsvContent.append(i).append("empty\t[]\n");
 		}
 		//array of long
 		for (int i = 0; i < 10; i++) {
-			tsvContent.append(i + "valid\t[12]\n");
+			tsvContent.append(i).append("valid\t[12]\n");
 		}
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
@@ -458,7 +458,7 @@ class RecordControllerMockMvcTest {
 		StringBuilder secondUpload = new StringBuilder("sys_name\tarray\n");
 		//array of long
 		for (int i = 0; i < 10; i++) {
-			secondUpload.append(i + "valid\t[12.99]\n");
+			secondUpload.append(i).append("valid\t[12.99]\n");
 		}
 		file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				secondUpload.toString().getBytes());
