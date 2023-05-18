@@ -46,9 +46,9 @@ class DataRepoControllerMockMvcTest {
     @MockBean
     WorkspaceManagerClientFactory mockWorkspaceManagerClientFactory;
 
-    RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
+    final RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
 
-    ReferencedGcpResourceApi mockReferencedGcpResourceApi = Mockito.mock(ReferencedGcpResourceApi.class);
+    final ReferencedGcpResourceApi mockReferencedGcpResourceApi = Mockito.mock(ReferencedGcpResourceApi.class);
 
     @BeforeEach
     void beforeEach() {

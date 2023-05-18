@@ -33,7 +33,7 @@ class WorkspaceManagerDaoTest {
     @MockBean
     WorkspaceManagerClientFactory mockWorkspaceManagerClientFactory;
 
-    ReferencedGcpResourceApi mockReferencedGcpResourceApi = Mockito.mock(ReferencedGcpResourceApi.class);
+    final ReferencedGcpResourceApi mockReferencedGcpResourceApi = Mockito.mock(ReferencedGcpResourceApi.class);
 
     @BeforeEach
     void beforeEach() {

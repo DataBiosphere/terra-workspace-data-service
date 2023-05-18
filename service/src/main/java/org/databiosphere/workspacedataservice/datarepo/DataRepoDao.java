@@ -13,7 +13,7 @@ public class DataRepoDao {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DataRepoDao.class);
 
-    DataRepoClientFactory dataRepoClientFactory;
+    final DataRepoClientFactory dataRepoClientFactory;
 
     public DataRepoDao(DataRepoClientFactory dataRepoClientFactory) {
         this.dataRepoClientFactory = dataRepoClientFactory;

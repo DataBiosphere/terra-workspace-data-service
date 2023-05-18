@@ -14,7 +14,7 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
 
 public class HttpDataRepoClientFactory implements DataRepoClientFactory {
 
-    String dataRepoUrl;
+    final String dataRepoUrl;
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpDataRepoClientFactory.class);
 
 

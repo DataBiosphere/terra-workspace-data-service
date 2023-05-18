@@ -37,9 +37,9 @@ class PermissionsStatusServiceTest {
     SamClientFactory mockSamClientFactory;
 
     // mock for the StatusApi class inside the Sam client; since this is not a Spring bean we have to mock it manually
-    StatusApi mockStatusApi = Mockito.mock(StatusApi.class);
+    final StatusApi mockStatusApi = Mockito.mock(StatusApi.class);
     // mock for Health.Builder class that Spring Boot Actuator relies on to determine overall health of an application.
-    Health.Builder mockHealthBuilder = Mockito.mock(Health.Builder.class);
+    final Health.Builder mockHealthBuilder = Mockito.mock(Health.Builder.class);
 
     @BeforeEach
     void beforeEach() {

@@ -28,7 +28,7 @@ class DataRepoDaoTest {
     @MockBean
     DataRepoClientFactory mockDataRepoClientFactory;
 
-    RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
+    final RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
 
     @BeforeEach
     void beforeEach() {

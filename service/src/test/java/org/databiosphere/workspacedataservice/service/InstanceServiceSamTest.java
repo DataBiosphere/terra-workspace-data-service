@@ -43,7 +43,7 @@ class InstanceServiceSamTest {
     SamClientFactory mockSamClientFactory;
 
     // mock for the ResourcesApi class inside the Sam client; since this is not a Spring bean we have to mock it manually
-    ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
+    final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
     @Value("${twds.instance.workspace-id}")
     String parentWorkspaceId;
