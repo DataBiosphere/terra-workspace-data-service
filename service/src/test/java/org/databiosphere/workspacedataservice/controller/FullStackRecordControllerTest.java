@@ -47,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestUtils.generateNonRandomAttributes;
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * This test spins up a web server and the full Spring Boot web stack. It was
@@ -216,6 +217,7 @@ class FullStackRecordControllerTest {
 					"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT, requestEntity,
 					ErrorResponse.class, instanceId, versionId, "sample", "sample_1");
 			ErrorResponse err = response.getBody();
+			assertNotNull(err);
 			assertThat(err.getMessage()).containsPattern("Attribute .* or contain characters besides letters");
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		}
@@ -235,6 +237,7 @@ class FullStackRecordControllerTest {
 				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT, requestEntity,
 				ErrorResponse.class, instanceId, versionId, "samples-1", "sample_1");
 		ErrorResponse err = response.getBody();
+		assertNotNull(err);
 		assertThat(err.getMessage()).isEqualTo("Record type for relation does not exist");
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 	}
@@ -252,6 +255,7 @@ class FullStackRecordControllerTest {
 				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.PUT, requestEntity,
 				ErrorResponse.class, instanceId, versionId, "samples-2", "sample_1");
 		ErrorResponse responseContent = response.getBody();
+		assertNotNull(responseContent);
 		assertThat(responseContent.getMessage())
 				.isEqualTo("It looks like you're trying to reference a record that does not exist.");
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
@@ -266,6 +270,7 @@ class FullStackRecordControllerTest {
 				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.GET, requestEntity,
 				ErrorResponse.class, instanceId, versionId, "samples", "sample_1");
 		ErrorResponse responseContent = response.getBody();
+		assertNotNull(responseContent);
 		assertThat(responseContent.getMessage()).isEqualTo("Record does not exist");
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 	}
@@ -328,7 +333,9 @@ class FullStackRecordControllerTest {
 				HttpMethod.POST, new HttpEntity<>(mapper.writeValueAsString(operations), headers), ErrorResponse.class,
 				instanceId, versionId, recordType);
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-		assertThat(response.getBody().getMessage())
+		ErrorResponse err = response.getBody();
+		assertNotNull(err);
+		assertThat(err.getMessage())
 				.contains("Some of the records in your request don't have the proper data for the record type");
 		assertThat(response.getBody().getMessage()).contains(
 				"is a STRING in the request but is defined as NUMBER in the record type definition for bw-test");
@@ -354,7 +361,9 @@ class FullStackRecordControllerTest {
 		ResponseEntity<ErrorResponse> error = restTemplate.exchange("/{instanceid}/batch/{v}/{type}", HttpMethod.POST,
 				new HttpEntity<>(mapper.writeValueAsString(deleteOps), headers), ErrorResponse.class, instanceId,
 				versionId, referencedRT);
-		assertThat(error.getBody().getMessage()).contains("because another record has a relation to it");
+		ErrorResponse err = error.getBody();
+		assertNotNull(err);
+		assertThat(err.getMessage()).contains("because another record has a relation to it");
 		ResponseEntity<RecordResponse> stillPresentNonReferencedRecord = restTemplate.exchange(
 				"/{instanceId}/records/{version}/{recordType}/{recordId}", HttpMethod.GET, new HttpEntity<>(headers),
 				RecordResponse.class, instanceId, versionId, referencedRT, "record_1");
