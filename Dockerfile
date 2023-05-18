@@ -6,8 +6,16 @@
 FROM us.gcr.io/broad-dsp-gcr-public/base/jre:17-debian
 
 # Add postgres client for pg_dump command
-RUN apt-get update && \
-    apt-get install -y postgresql-client-15.2
+RUN apt-get update && apt-get dist-upgrade -y
+RUN apt-get install lsb-core -y
+RUN apt-get install gnupg2 ca-certificates wget -y
+# use the latest postgres repository
+RUN sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+# install the postgres public key
+RUN wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+# refresh the repository
+RUN apt-get update
+RUN apt-get install postgresql-client -y
 
 # Temp storage location for pg_dump outputs on Azure backups
 VOLUME /backup

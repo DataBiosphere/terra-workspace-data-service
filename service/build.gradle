@@ -21,7 +21,7 @@ repositories {
 jib {
 	from {
 		// see https://github.com/broadinstitute/dsp-appsec-blessed-images/tree/main/jre
-		image = "us.gcr.io/broad-dsp-gcr-public/sandbox/debian-aaron"
+		image = "us.gcr.io/broad-dsp-gcr-public/sandbox/wds-debian-davidan:latest"
 	}
 
 	container {
