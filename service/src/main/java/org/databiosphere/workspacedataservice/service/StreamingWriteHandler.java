@@ -19,10 +19,10 @@ public interface StreamingWriteHandler extends Closeable {
 	 * @return
 	 * @throws IOException
 	 */
-	public WriteStreamInfo readRecords(int numRecords) throws IOException;
+	WriteStreamInfo readRecords(int numRecords) throws IOException;
 
 
-	public static class WriteStreamInfo {
+	class WriteStreamInfo {
 
 		private final List<Record> records;
 
