@@ -33,7 +33,7 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 	private final InputStream inputStream;
 	private final MappingIterator<RecordAttributes> tsvIterator;
 
-	private String resolvedPrimaryKey;
+	private final String resolvedPrimaryKey;
 
 	public TsvStreamWriteHandler(InputStream inputStream, ObjectReader tsvReader, RecordType recordType, Optional<String> primaryKey) throws IOException {
 		this.inputStream = inputStream;

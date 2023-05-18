@@ -62,7 +62,7 @@ class RecordControllerMockMvcTest {
 
 	private static UUID instanceId;
 
-	private static String versionId = "v0.2";
+	private static final String versionId = "v0.2";
 
 	@Autowired
 	TestDao testDao;

@@ -404,7 +404,7 @@ public class RecordDao {
 
 	private class RelationRowMapper implements RowMapper<Relation> {
 
-		private RecordType recordType;
+		private final RecordType recordType;
 		public RelationRowMapper(RecordType recordType){
 			this.recordType = recordType;
 		}
