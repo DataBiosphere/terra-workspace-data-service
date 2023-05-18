@@ -23,7 +23,7 @@ public class PermissionsStatusService extends AbstractHealthIndicator {
     }
 
     @Override
-    public void doHealthCheck(Health.Builder builder) throws Exception {
+    public void doHealthCheck(Health.Builder builder) {
         builder.up();
         try {
             Boolean samStatus = samDao.getSystemStatusOk();
