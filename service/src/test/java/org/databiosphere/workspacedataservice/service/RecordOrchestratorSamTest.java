@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext
 @SpringBootTest
 @ActiveProfiles(profiles = { "mock-sam", "mock-instance-dao" })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
