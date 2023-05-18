@@ -45,9 +45,6 @@ public enum DataTypeMapping {
 		this.writePlaceholder = writePlaceholder;
 	}
 
-	DataTypeMapping() {
-	}
-
 	public Class getJavaArrayTypeForDbWrites() {
 		return javaArrayTypeForDbWrites;
 	}

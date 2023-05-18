@@ -20,7 +20,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
@@ -65,14 +64,14 @@ class InstanceServiceSamTest {
     @Test
     void createInstanceSamCalls() throws ApiException {
         UUID instanceId = UUID.randomUUID();
-        doCreateInstanceTest(instanceId, Optional.empty());
+        doCreateInstanceTest(instanceId);
     }
 
     @Test
     void createInstanceWithWorkspaceIdSamCalls() throws ApiException {
         UUID instanceId = UUID.randomUUID();
         UUID workspaceId = UUID.randomUUID();
-        doCreateInstanceTest(instanceId, Optional.of(workspaceId));
+        doCreateInstanceTest(instanceId);
     }
 
     @Test
@@ -82,7 +81,7 @@ class InstanceServiceSamTest {
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    void doCreateInstanceTest(UUID instanceId, Optional<UUID> workspaceIdInput) throws ApiException {
+    void doCreateInstanceTest(UUID instanceId) throws ApiException {
         // setup: capture order of calls to Sam
         InOrder callOrder = inOrder(mockResourcesApi);
 

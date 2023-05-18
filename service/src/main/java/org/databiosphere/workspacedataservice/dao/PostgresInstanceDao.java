@@ -59,13 +59,4 @@ public class PostgresInstanceDao implements InstanceDao {
         namedTemplate.getJdbcTemplate().update("delete from sys_wds.instance where id = ?", instanceId);
     }
 
-    private UUID safeParseUUID(String input) {
-        try {
-            return UUID.fromString(input);
-        } catch (IllegalArgumentException iae) {
-            LOGGER.warn("Found unexpected schema name while listing schemas: [{}]", input);
-            return null;
-        }
-    }
-
 }
