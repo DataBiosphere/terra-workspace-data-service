@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import bio.terra.common.db.WriteTransaction;
+import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.InstanceInitializerBean;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import com.azure.storage.blob.BlobContainerClient;
@@ -26,9 +27,6 @@ public class BackupService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BackupService.class);
 
-    @Autowired
-    private LocalProcessLauncher localProcessLauncher;
-
     @WriteTransaction
     public void backupAzureWDS(UUID workspaceId) throws Exception {
 
@@ -37,19 +35,14 @@ public class BackupService {
         String timestamp = now.format(formatter);
         String blobName = workspaceId.toString() + "-" + timestamp + ".sql";
 
-//        String dbHost = System.getenv("WDS_DB_HOST");
-//        String dbPort = System.getenv("WDS_DB_PORT");
-//        String dbUser = System.getenv("WDS_DB_USER");
-//        String dbName = System.getenv("WDS_DB_NAME");
-//        String dbPassword = System.getenv("WDS_DB_PASSWORD");
-        String dbHost = "0.0.0.0";
-        String dbPort = "5432";
-        String dbUser = "postgres";
-        String dbName = "wds";
-        String dbPassword = "postgres";
+        String dbHost = System.getenv("WDS_DB_HOST");
+        String dbPort = System.getenv("WDS_DB_PORT");
+        String dbUser = System.getenv("WDS_DB_USER");
+        String dbName = System.getenv("WDS_DB_NAME");
+        String dbPassword = System.getenv("WDS_DB_PASSWORD");
 
         Map<String, String> command = new LinkedHashMap<>();
-        command.put("pg_dump", null);
+        command.put("/usr/bin/pg_dump", null);
         command.put("-h", dbHost);
         command.put("-p", dbPort);
         command.put("-U", dbUser);
@@ -66,10 +59,23 @@ public class BackupService {
         }
         commandList.add("-v");
         commandList.add("-w");
-        System.out.println(commandList);
+        LOGGER.info("process command list: " + commandList);
 
-        InputStream inputStream = localProcessLauncher.launchProcess(commandList, dbPassword);
-        System.out.println(localProcessLauncher.getOutputForProcessFromStream(inputStream));
+        Map<String, String> envVars = Map.of("PGPASSWORD", dbPassword);
+
+        LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
+        localProcessLauncher.launchProcess(commandList, envVars);
+
+        String output = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.OUT);
+        String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
+
+        int exitCode = localProcessLauncher.waitForTerminate();
+
+        LOGGER.info("process exit code: " + exitCode);
+        LOGGER.info("process output: " + output);
+        if (StringUtils.isNotBlank(error)) {
+            LOGGER.error("process error: " + error);
+        }
 
 //        BlockBlobClient blockBlobClient = constructBlockBlobClient(workspaceId.toString() + "-backups", blobName);
 //        // -1 represents using the default parallelTransferOptions during upload to Azure
