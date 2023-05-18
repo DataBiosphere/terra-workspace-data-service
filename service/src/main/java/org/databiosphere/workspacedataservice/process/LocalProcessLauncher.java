@@ -1,17 +1,17 @@
 package org.databiosphere.workspacedataservice.process;
 
-import org.springframework.stereotype.Component;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /** This class provides utility methods for launching local child processes. */
-@Component
 public class LocalProcessLauncher {
     private Process process;
 
@@ -31,8 +31,8 @@ public class LocalProcessLauncher {
      * @param command the command and arguments to execute
      * @param envVars the environment variables to set or overwrite if already defined
      */
-    public void launchProcess(List<String> command) throws Exception {
-        launchProcess(command, "hello");
+    public void launchProcess(List<String> command, Map<String, String> envVars) {
+        launchProcess(command, envVars, null);
     }
 
     /**
@@ -43,25 +43,22 @@ public class LocalProcessLauncher {
      * @param envVars the environment variables to set or overwrite if already defined
      * @param workingDirectory the working directory to launch the process from
      */
-    public InputStream launchProcess(List<String> command, String dbPassword) throws Exception {
-        File file = new File("backup.sql");
-        String concatenatedString = command.stream().collect(Collectors.joining(" "));
-        System.out.println(concatenatedString);
-        ProcessBuilder procBuilder = new ProcessBuilder(concatenatedString);
-        procBuilder.environment().put("PGPASSWORD", dbPassword);
+    public void launchProcess(
+            List<String> command, Map<String, String> envVars, Path workingDirectory) {
+        // build and run process from the specified working directory
+        ProcessBuilder procBuilder = new ProcessBuilder(command);
+        if (workingDirectory != null) {
+            procBuilder.directory(workingDirectory.toFile());
+        }
+        if (envVars != null) {
+            Map<String, String> procEnvVars = procBuilder.environment();
+            procEnvVars.putAll(envVars);
+        }
+
         try {
-            Object lock = new Object();
             process = procBuilder.start();
-            procBuilder.directory();
-            synchronized (lock) {
-                // Wait for the process to complete
-                process.waitFor();
-            }
-            return process.getInputStream();
         } catch (IOException ioEx) {
             throw new LaunchProcessException("Error launching local process", ioEx);
-        } catch (InterruptedException e) {
-            throw new Exception(e);
         }
     }
 
@@ -70,7 +67,7 @@ public class LocalProcessLauncher {
      *
      * @param fromStream specifies which stream will be read from
      */
-    public String getOutputForProcessFromStream(InputStream fromStream) {
+    private String getOutputForProcessFromStream(InputStream fromStream) {
         try (BufferedReader bufferedReader =
                      new BufferedReader(new InputStreamReader(fromStream, StandardCharsets.UTF_8))) {
 
