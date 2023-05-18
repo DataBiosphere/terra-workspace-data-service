@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.sam;
 
-import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
