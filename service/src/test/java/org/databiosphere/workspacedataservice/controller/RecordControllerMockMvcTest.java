@@ -209,12 +209,10 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void storeLargeIntegerValue() throws Exception {
-		StringBuilder tsvContent = new StringBuilder("sys_name\tbigint\tbigfloat\n");
 		String bigIntValue = "11111111111111111111111111111111";
 		String bigFloatValue = "11111111111111111111111111111111.2222222222";
-		tsvContent.append(1 + "\t" + bigIntValue + "\t" + bigFloatValue +"\n");
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
-				tsvContent.toString().getBytes());
+				("sys_name\tbigint\tbigfloat\n" + 1 + "\t" + bigIntValue + "\t" + bigFloatValue + "\n").getBytes());
 
 		String recordType = "big-int-value";
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
