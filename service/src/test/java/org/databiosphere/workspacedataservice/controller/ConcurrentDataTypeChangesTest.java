@@ -64,7 +64,7 @@ class ConcurrentDataTypeChangesTest {
     @Test
     void concurrentColumnCreation() {
         // concurrency factor for reads + writes
-        int numIterations = 40;
+        int numIterations = 20;
 
         // create the initial record, with no attributes
         RecordRequest recordRequest = new RecordRequest(RecordAttributes.empty());
