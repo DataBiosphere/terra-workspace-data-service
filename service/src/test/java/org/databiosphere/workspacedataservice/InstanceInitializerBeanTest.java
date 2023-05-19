@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
@@ -18,6 +19,7 @@ import static org.mockito.Mockito.*;
 
 @ActiveProfiles({"mock-instance-dao", "local"})
 @TestPropertySource(properties = {"twds.instance.workspace-id=90e1b179-9f83-4a6f-a8c2-db083df4cd03"})
+@DirtiesContext
 @SpringBootTest(classes = {InstanceInitializerConfig.class, MockInstanceDaoConfig.class})
 class InstanceInitializerBeanTest {
 
