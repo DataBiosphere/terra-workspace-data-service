@@ -49,6 +49,9 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 		FormatSchema formatSchema = tsvIterator.getParser().getSchema();
 		if (formatSchema instanceof CsvSchema actualSchema) {
 			colNames = actualSchema.getColumnNames();
+			// ADINA NOTE: This removes empty columns/headers! 
+			// Except how do you actually commit this back to the stream? We cooooooooould throw an error I guess. 
+			colNames.removeIf(col -> col.isEmpty());
 		} else {
 			throw new InvalidTsvException("Could not determine primary key column; unexpected schema type:" + formatSchema.getSchemaType());
 		}

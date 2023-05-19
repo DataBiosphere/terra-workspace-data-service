@@ -100,8 +100,11 @@ public class RecordDao {
 	@SuppressWarnings("squid:S2077")
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
 			RelationCollection relations, String recordTypePrimaryKey) {
+		// ADINA NOTE: Why won't this remove null values???
+		tableInfo.values().removeAll(Collections.singleton(null));
 		//this handles the case where the user incorrectly includes the primary key data in the attributes
-		tableInfo = Maps.filterKeys(tableInfo, k -> !k.equals(recordTypePrimaryKey));
+		// ADINA NOTE: Why won't this remove empty keys???
+		tableInfo = Maps.filterKeys(tableInfo, k -> (!k.equals(recordTypePrimaryKey) || !k.isEmpty()));
 		String columnDefs = genColumnDefs(tableInfo, recordTypePrimaryKey);
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(recordType, instanceId)
