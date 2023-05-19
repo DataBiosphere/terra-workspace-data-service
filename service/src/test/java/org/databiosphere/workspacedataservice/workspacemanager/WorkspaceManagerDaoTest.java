@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.UUID;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.verify;
 
 
 @ActiveProfiles(profiles = "mock-sam")
+@DirtiesContext
 @SpringBootTest(classes = {WorkspaceManagerConfig.class})
 class WorkspaceManagerDaoTest {
 
