@@ -21,7 +21,7 @@ import java.util.UUID;
 import static org.mockito.Mockito.*;
 
 @ContextConfiguration
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext
 @SpringBootTest
 class RecordDaoCacheTest {
 
