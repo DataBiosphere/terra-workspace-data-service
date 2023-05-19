@@ -102,6 +102,18 @@ public class RecordAttributes {
 		return this;
 	}
 
+	public RecordAttributes removeNullHeaders() {
+		// Can't iterate over a TreeMap, so iterate over its set, check for empty keys, 
+		// then remove them from the TreeMap.
+		Set<Map.Entry<String, Object>> attributeSet = this.attributes.entrySet();
+		for(Map.Entry<String, Object> attribute : attributeSet) {
+			if (attribute.getKey().isEmpty()) {
+				this.attributes.remove(attribute.getKey());
+			}
+		}	
+		return this;
+	}
+
 	// ========== utils
 
 	@Override
