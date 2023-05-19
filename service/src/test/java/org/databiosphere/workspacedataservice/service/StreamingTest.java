@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.shared.model.OperationType.DELETE;
 import static org.databiosphere.workspacedataservice.shared.model.OperationType.UPSERT;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext
 @SpringBootTest(classes = JsonConfig.class)
 class StreamingTest {
 

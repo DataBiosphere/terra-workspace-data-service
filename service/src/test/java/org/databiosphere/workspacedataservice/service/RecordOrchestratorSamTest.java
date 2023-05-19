@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext
 @SpringBootTest(properties = {"sam.retry.maxAttempts=2",
         "sam.retry.backoff.delay=10"}) // aggressive retry settings so unit test doesn't run too long)
 @ActiveProfiles(profiles = { "mock-sam", "mock-instance-dao" })
