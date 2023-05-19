@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.Iterator;
 
 /**
  * Represents the attributes of a Record.
@@ -103,14 +104,18 @@ public class RecordAttributes {
 	}
 
 	public RecordAttributes removeNullHeaders() {
-		// Can't iterate over a TreeMap, so iterate over its set, check for empty keys, 
-		// then remove them from the TreeMap.
+		// Can't iterate over a TreeMap (or remove entries while iterating), so iterate over its 
+		// set, count empty keys, then iterate and remove them from the TreeMap.
 		Set<Map.Entry<String, Object>> attributeSet = this.attributes.entrySet();
+		int i = 0;
 		for(Map.Entry<String, Object> attribute : attributeSet) {
 			if (attribute.getKey().isEmpty()) {
-				this.attributes.remove(attribute.getKey());
+				i++;
 			}
 		}	
+		for(; i > 0; i--) {
+			this.attributes.remove("");
+		}
 		return this;
 	}
 

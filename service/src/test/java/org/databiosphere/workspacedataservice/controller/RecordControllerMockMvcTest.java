@@ -333,6 +333,20 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void tsvWithNullHeader() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "null_header.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"""
+					value		
+					foo
+					bar		
+					baz		""".getBytes());
+
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "null-headers")
+				.file(file)).andExpect(status().isOk());
+	}
+
+	@Test
+	@Transactional
 	void tsvWithDuplicateRowIdsInDifferentBatches(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
 		StringBuilder tsvContent = new StringBuilder("idcol\tcol1\n");
 		// append two separate batches, each of which use the same record ids
