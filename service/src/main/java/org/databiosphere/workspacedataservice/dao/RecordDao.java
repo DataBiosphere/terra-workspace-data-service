@@ -101,7 +101,7 @@ public class RecordDao {
 	public void createRecordType(UUID instanceId, Map<String, DataTypeMapping> tableInfo, RecordType recordType,
 			RelationCollection relations, String recordTypePrimaryKey) {
 		//this handles the case where the user incorrectly includes the primary key data in the attributes
-		tableInfo = Maps.filterKeys(tableInfo, k -> !k.equals(recordTypePrimaryKey)); 
+		tableInfo = Maps.filterKeys(tableInfo, k -> !k.equals(recordTypePrimaryKey));
 		String columnDefs = genColumnDefs(tableInfo, recordTypePrimaryKey);
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(recordType, instanceId)
