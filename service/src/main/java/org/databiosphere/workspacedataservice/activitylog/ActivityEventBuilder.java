@@ -2,6 +2,8 @@ package org.databiosphere.workspacedataservice.activitylog;
 
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.context.request.RequestContextHolder;
 
 import java.util.UUID;
@@ -22,6 +24,8 @@ public class ActivityEventBuilder {
     private RecordType recordType;
     private int quantity;
     private String[] ids;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ActivityEventBuilder.class);
 
     /**
      * Constructor.
@@ -50,7 +54,8 @@ public class ActivityEventBuilder {
             }
 
         } catch (Exception e) {
-            this.subject = "???";
+            LOGGER.warn("Error resolving user token to id via Sam: " + e.getMessage(), e);
+            this.subject = "(unknown due to exception)";
         }
         return this;
     }
