@@ -11,6 +11,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -24,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @see TsvJsonArgumentsProvider
  */
+@DirtiesContext
 @SpringBootTest(classes = {DataTypeInfererConfig.class, JsonConfig.class, TsvConfig.class})
 class TsvDeserializerTest {
 

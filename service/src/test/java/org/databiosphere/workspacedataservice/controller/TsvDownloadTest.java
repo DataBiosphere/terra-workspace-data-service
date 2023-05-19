@@ -37,7 +37,7 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ActiveProfiles(profiles = "mock-sam")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class TsvDownloadTest {
 
