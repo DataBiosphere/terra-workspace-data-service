@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext
 // aggressive retry settings to make this test fast; these are
 // inappropriate for runtime behavior.
 @SpringBootTest(properties = {
