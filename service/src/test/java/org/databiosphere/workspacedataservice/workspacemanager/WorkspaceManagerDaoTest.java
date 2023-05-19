@@ -48,7 +48,7 @@ class WorkspaceManagerDaoTest {
         workspaceManagerDao.createDataRepoSnapshotReference(testSnapshot);
         verify(mockReferencedGcpResourceApi).createDataRepoSnapshotReference(argThat(a ->
             a.getSnapshot().getSnapshot().equals(testSnapshot.getId().toString()) &&
-                a.getMetadata().getCloningInstructions().equals(CloningInstructionsEnum.LINK_REFERENCE) &&
+                a.getMetadata().getCloningInstructions().equals(CloningInstructionsEnum.REFERENCE) &&
                 a.getMetadata().getName().startsWith(testSnapshot.getName())), any());
     }
 
