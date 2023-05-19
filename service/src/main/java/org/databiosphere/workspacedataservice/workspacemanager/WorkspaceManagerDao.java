@@ -36,7 +36,7 @@ public class WorkspaceManagerDao {
                   .snapshot(snapshotModel.getId().toString()))
               .metadata(
                   new ReferenceResourceCommonFields()
-                      .cloningInstructions(CloningInstructionsEnum.LINK_REFERENCE)
+                      .cloningInstructions(CloningInstructionsEnum.REFERENCE)
                       .name("%s_%s".formatted(snapshotModel.getName(), timeStamp))
               ),
           UUID.fromString(workspaceId));
