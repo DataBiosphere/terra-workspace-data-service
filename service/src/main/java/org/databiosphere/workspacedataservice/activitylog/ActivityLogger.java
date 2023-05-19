@@ -70,6 +70,4 @@ public class ActivityLogger {
             LOGGER.info(sb.toString());
         }
     }
-
-
 }

@@ -32,11 +32,4 @@ public class ActivityModels {
             this.name = name;
         }
     }
-
-
-
-
-
-
-
 }
