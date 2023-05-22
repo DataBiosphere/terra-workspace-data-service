@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
 import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
@@ -29,14 +28,13 @@ class InstanceServiceTest {
     private InstanceService instanceService;
     @Autowired private InstanceDao instanceDao;
     @Autowired private SamDao samDao;
-    @Autowired private ActivityLogger activityLogger;
 
 
     private static final UUID INSTANCE = UUID.fromString("111e9999-e89b-12d3-a456-426614174000");
 
     @BeforeEach
     void setUp() {
-        instanceService = new InstanceService(instanceDao, samDao, activityLogger);
+        instanceService = new InstanceService(instanceDao, samDao);
         // Delete all instances
         instanceDao.listInstanceSchemas().forEach(instance -> {
             instanceDao.dropSchema(instance);

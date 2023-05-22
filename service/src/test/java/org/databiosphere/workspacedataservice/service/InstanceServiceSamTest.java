@@ -3,8 +3,6 @@ package org.databiosphere.workspacedataservice.service;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
-import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
-import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
@@ -41,7 +39,6 @@ class InstanceServiceSamTest {
 
     @Autowired private InstanceDao instanceDao;
     @Autowired private SamDao samDao;
-    @Autowired private ActivityLogger activityLogger;
 
     // mock for the SamClientFactory; since this is a Spring bean we can use @MockBean
     @MockBean
@@ -55,7 +52,7 @@ class InstanceServiceSamTest {
 
     @BeforeEach
     void beforeEach() throws ApiException {
-        instanceService = new InstanceService(instanceDao, samDao, activityLogger);
+        instanceService = new InstanceService(instanceDao, samDao);
 
         // return the mock ResourcesApi from the mock SamClientFactory
         given(mockSamClientFactory.getResourcesApi(null))

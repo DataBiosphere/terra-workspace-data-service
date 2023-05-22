@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
@@ -21,14 +20,12 @@ public class InstanceService {
 
     private final InstanceDao instanceDao;
     private final SamDao samDao;
-    private final ActivityLogger activityLogger;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceService.class);
 
-    public InstanceService(InstanceDao instanceDao, SamDao samDao, ActivityLogger activityLogger) {
+    public InstanceService(InstanceDao instanceDao, SamDao samDao) {
         this.instanceDao = instanceDao;
         this.samDao = samDao;
-        this.activityLogger = activityLogger;
     }
 
     public List<UUID> listInstances(String version) {
@@ -63,9 +60,6 @@ public class InstanceService {
 
         // create instance schema in Postgres
         instanceDao.createSchema(instanceId);
-
-        activityLogger.saveEventForCurrentUser(user ->
-                user.created().instance().withUuid(instanceId));
     }
 
     public void deleteInstance(UUID instanceId, String version) {
@@ -82,9 +76,6 @@ public class InstanceService {
 
         // delete instance schema in Postgres
         instanceDao.dropSchema(instanceId);
-
-        activityLogger.saveEventForCurrentUser(user ->
-                user.deleted().instance().withUuid(instanceId));
     }
 
     public void validateInstance(UUID instanceId) {

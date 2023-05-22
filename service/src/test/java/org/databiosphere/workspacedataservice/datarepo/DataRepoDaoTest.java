@@ -26,8 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 @DirtiesContext
-@SpringBootTest(
-        classes = {DataRepoConfig.class})
+@SpringBootTest
 class DataRepoDaoTest {
 
     @Autowired
