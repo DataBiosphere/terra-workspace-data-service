@@ -104,18 +104,8 @@ public class RecordAttributes {
 	}
 
 	public RecordAttributes removeNullHeaders() {
-		// Can't iterate over a TreeMap (or remove entries while iterating), so iterate over its 
-		// set, count empty keys, then iterate and remove them from the TreeMap.
-		Set<Map.Entry<String, Object>> attributeSet = this.attributes.entrySet();
-		int i = 0;
-		for(Map.Entry<String, Object> attribute : attributeSet) {
-			if (attribute.getKey().isEmpty()) {
-				i++;
-			}
-		}	
-		for(; i > 0; i--) {
-			this.attributes.remove("");
-		}
+		// There can only be one unique key so remove it.
+		attributes.remove("");
 		return this;
 	}
 

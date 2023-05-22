@@ -341,8 +341,13 @@ class RecordControllerMockMvcTest {
 					bar		
 					baz		""".getBytes());
 
-		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "null-headers")
+		String recordType = "null-headers";
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
 				.file(file)).andExpect(status().isOk());
+		MvcResult schemaResult = mockMvc
+				.perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType)).andReturn();
+		RecordTypeSchema schema = mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+		assertEquals(1, schema.attributes().size());
 	}
 
 	@Test

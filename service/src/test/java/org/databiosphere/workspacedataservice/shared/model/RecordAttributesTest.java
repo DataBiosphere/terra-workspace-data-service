@@ -31,8 +31,8 @@ class RecordAttributesTest {
         RecordAttributes recordAttributes = RecordAttributes.empty("Z");
         recordAttributes.putAttribute("a", 11);
         recordAttributes.putAttribute("", null);
-        recordAttributes.putAttribute("", null);
         recordAttributes.putAttribute("b", 12);
+        assertEquals(3, recordAttributes.attributeSet().size());
         recordAttributes.removeNullHeaders();
         assertEquals(2, recordAttributes.attributeSet().size());
     }
