@@ -1,8 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import bio.terra.common.db.WriteTransaction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -15,8 +13,6 @@ import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 
 @Repository
 public class PostgresInstanceDao implements InstanceDao {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PostgresInstanceDao.class);
 
     @Value("${spring.datasource.username}")
     private String wdsDbUser;
