@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.service;
 import bio.terra.common.db.ReadTransaction;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.csv.CSVPrinter;
-import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -52,32 +51,26 @@ public class RecordOrchestratorService { // TODO give me a better name
     private final InstanceService instanceService;
     private final ObjectMapper objectMapper;
     private final SamDao samDao;
-    private final ActivityLogger activityLogger;
 
     public RecordOrchestratorService(RecordDao recordDao,
                                      BatchWriteService batchWriteService,
                                      RecordService recordService,
                                      InstanceService instanceService,
                                      ObjectMapper objectMapper,
-                                     SamDao samDao,
-                                     ActivityLogger activityLogger) {
+                                     SamDao samDao) {
         this.recordDao = recordDao;
         this.batchWriteService = batchWriteService;
         this.recordService = recordService;
         this.instanceService = instanceService;
         this.objectMapper = objectMapper;
         this.samDao = samDao;
-        this.activityLogger = activityLogger;
     }
 
     public RecordResponse updateSingleRecord(UUID instanceId, String version, RecordType recordType, String recordId,
                               RecordRequest recordRequest) {
         validateAndPermissions(instanceId, version);
         checkRecordTypeExists(instanceId, recordType);
-        RecordResponse response = recordService.updateSingleRecord(instanceId, recordType, recordId, recordRequest);
-        activityLogger.saveEventForCurrentUser(user ->
-                user.updated().record().withRecordType(recordType).withId(recordId));
-        return response;
+        return recordService.updateSingleRecord(instanceId, recordType, recordId, recordRequest);
     }
 
     public void validateAndPermissions(UUID instanceId, String version) {
@@ -108,10 +101,7 @@ public class RecordOrchestratorService { // TODO give me a better name
         if(recordDao.recordTypeExists(instanceId, recordType)){
             recordService.validatePrimaryKey(instanceId, recordType, primaryKey);
         }
-        int qty = batchWriteService.batchWriteTsvStream(records.getInputStream(), instanceId, recordType, primaryKey);
-        activityLogger.saveEventForCurrentUser(user ->
-                user.upserted().record().withRecordType(recordType).ofQuantity(qty));
-        return qty;
+        return batchWriteService.batchWriteTsvStream(records.getInputStream(), instanceId, recordType, primaryKey);
     }
 
     // TODO: enable read transaction
@@ -168,26 +158,14 @@ public class RecordOrchestratorService { // TODO give me a better name
                                                              String recordId, Optional<String> primaryKey,
                                                              RecordRequest recordRequest) {
         validateAndPermissions(instanceId, version);
-        ResponseEntity<RecordResponse> response = recordService.upsertSingleRecord(instanceId, recordType, recordId, primaryKey, recordRequest);
-
-        if (response.getStatusCode() == HttpStatus.CREATED) {
-            activityLogger.saveEventForCurrentUser(user ->
-                    user.created().record().withRecordType(recordType).withId(recordId));
-        } else {
-            activityLogger.saveEventForCurrentUser(user ->
-                    user.updated().record().withRecordType(recordType).withId(recordId));
-        }
-        return response;
+        return recordService.upsertSingleRecord(instanceId, recordType, recordId, primaryKey, recordRequest);
 
     }
 
     public boolean deleteSingleRecord(UUID instanceId, String version, RecordType recordType, String recordId) {
         validateAndPermissions(instanceId, version);
         checkRecordTypeExists(instanceId, recordType);
-        boolean response = recordService.deleteSingleRecord(instanceId, recordType, recordId);
-        activityLogger.saveEventForCurrentUser(user ->
-                user.deleted().record().withRecordType(recordType).withId(recordId));
-        return response;
+        return recordService.deleteSingleRecord(instanceId, recordType, recordId);
 
     }
 
@@ -195,8 +173,7 @@ public class RecordOrchestratorService { // TODO give me a better name
         validateAndPermissions(instanceId, version);
         checkRecordTypeExists(instanceId, recordType);
         recordService.deleteRecordType(instanceId, recordType);
-        activityLogger.saveEventForCurrentUser(user ->
-                user.deleted().table().ofQuantity(1).withRecordType(recordType));
+
     }
 
     @ReadTransaction
@@ -222,11 +199,7 @@ public class RecordOrchestratorService { // TODO give me a better name
         if(recordDao.recordTypeExists(instanceId, recordType)){
             recordService.validatePrimaryKey(instanceId, recordType, primaryKey);
         }
-
-        int qty = batchWriteService.batchWriteJsonStream(is, instanceId, recordType, primaryKey);
-        activityLogger.saveEventForCurrentUser(user ->
-                user.modified().record().withRecordType(recordType).ofQuantity(qty));
-        return qty;
+        return batchWriteService.batchWriteJsonStream(is, instanceId, recordType, primaryKey);
     }
 
     private void checkRecordTypeExists(UUID instanceId, RecordType recordType) {
