@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.databiosphere.workspacedataservice.sam.HttpSamDao;
