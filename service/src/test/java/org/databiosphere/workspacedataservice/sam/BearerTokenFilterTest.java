@@ -23,7 +23,7 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
 /**
  * Tests for @see BearerTokenFilter
  */
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext
 @SpringBootTest
 class BearerTokenFilterTest {
 

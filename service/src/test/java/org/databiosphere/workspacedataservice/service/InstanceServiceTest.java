@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
-import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
 import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
@@ -12,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
@@ -22,7 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ActiveProfiles(profiles = { "mock-sam", "mock-instance-dao" })
-@SpringBootTest(classes = { MockInstanceDaoConfig.class, SamConfig.class, MockSamClientFactoryConfig.class, ActivityLoggerConfig.class })
+@DirtiesContext
+@SpringBootTest(classes = { MockInstanceDaoConfig.class, SamConfig.class, MockSamClientFactoryConfig.class })
 class InstanceServiceTest {
 
     private InstanceService instanceService;

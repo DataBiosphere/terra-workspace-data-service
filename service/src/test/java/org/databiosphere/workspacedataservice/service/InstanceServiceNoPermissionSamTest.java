@@ -17,6 +17,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
@@ -28,7 +29,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
 @ActiveProfiles(profiles = "mock-instance-dao")
-@SpringBootTest(classes = { MockInstanceDaoConfig.class, SamConfig.class, ActivityLoggerConfig.class })
+@DirtiesContext
+@SpringBootTest(classes = { MockInstanceDaoConfig.class, SamConfig.class })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InstanceServiceNoPermissionSamTest {
 

@@ -24,8 +24,10 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest
+
+@DirtiesContext
+@SpringBootTest(
+        classes = {DataRepoConfig.class})
 class DataRepoDaoTest {
 
     @Autowired
