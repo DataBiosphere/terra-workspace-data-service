@@ -361,9 +361,9 @@ class RecordDaoTest {
 				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.RELATION)));
 
 		// Should throw an error
-		assertThrows(ResponseStatusException.class, () -> {
-			recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord");
-		}, "Exception should be thrown when attempting to delete related record");
+		assertThrows(ResponseStatusException.class, () ->
+				recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord"),
+				"Exception should be thrown when attempting to delete related record");
 
 		//Record should not have been deleted
 		assert(recordDao.getSingleRecord(instanceId, recordType, "referencedRecord").isPresent());
@@ -395,9 +395,9 @@ class RecordDaoTest {
 		recordDao.insertIntoJoin(instanceId, arrayRelation, relationArrayType, List.of(new RelationValue(recordWithRelationArray, referencedRecord), new RelationValue(recordWithRelationArray, referencedRecord2)));
 
 		// Should throw an error
-		assertThrows(ResponseStatusException.class, () -> {
-			recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord1");
-		}, "Exception should be thrown when attempting to delete related record");
+		assertThrows(ResponseStatusException.class, () ->
+				recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord1"),
+				"Exception should be thrown when attempting to delete related record");
 
 		//Record should not have been deleted
 		assert(recordDao.getSingleRecord(instanceId, recordType, "referencedRecord1").isPresent());
@@ -521,9 +521,9 @@ class RecordDaoTest {
 				new HashMap<>(Map.of("relation", DataTypeMapping.RELATION)));
 
 		// Should throw an error
-		assertThrows(ResponseStatusException.class, () -> {
-			recordDao.deleteRecordType(instanceId, referencedType);
-		}, "Exception should be thrown when attempting to delete record type with relation");
+		assertThrows(ResponseStatusException.class, () ->
+				recordDao.deleteRecordType(instanceId, referencedType),
+				"Exception should be thrown when attempting to delete record type with relation");
 	}
 
 	@Test
