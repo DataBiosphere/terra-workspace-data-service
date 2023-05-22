@@ -53,4 +53,4 @@ That should use your local python installation to install the wds_client locally
 Python3 -m pip install .
 ```
 
-
+![python_xkcd](https://imgs.xkcd.com/comics/python_environment.png)
