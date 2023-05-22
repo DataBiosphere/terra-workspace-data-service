@@ -52,5 +52,17 @@
         </resources>
     </cache>
 
+    <cache alias="tokenResolution" uses-template="default">
+        <key-type>java.lang.Integer</key-type>
+        <value-type>java.lang.String</value-type>
+        <expiry>
+            <ttl unit="minutes">10</ttl>
+        </expiry>
+        <resources>
+            <heap unit="entries">500</heap>
+            <offheap unit="MB">8</offheap>
+        </resources>
+    </cache>
+
 
 </config>
