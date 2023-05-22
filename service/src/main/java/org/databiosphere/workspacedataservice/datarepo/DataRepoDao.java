@@ -34,7 +34,7 @@ public class DataRepoDao {
     public SnapshotModel getSnapshot(UUID snapshotId) {
         LOGGER.debug("Getting snapshot {}", snapshotId);
         try {
-            return dataRepoClientFactory.getRepositoryApi().retrieveSnapshot(snapshotId, List.of(SnapshotRetrieveIncludeModel.NONE));
+            return dataRepoClientFactory.getRepositoryApi().retrieveSnapshot(snapshotId, List.of(SnapshotRetrieveIncludeModel.TABLES));
         } catch (ApiException e) {
             throw new DataRepoException(e);
         }

@@ -6,8 +6,11 @@ import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.datarepo.model.TableModel;
 import bio.terra.workspace.api.ReferencedGcpResourceApi;
 import bio.terra.workspace.model.DataRepoSnapshotResource;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.datarepo.DataRepoClientFactory;
 import org.databiosphere.workspacedataservice.datarepo.DataRepoDao;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerClientFactory;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
@@ -22,10 +25,12 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -37,6 +42,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 class DataRepoControllerMockMvcTest {
+
+    @Autowired
+    private ObjectMapper mapper;
 
     @Autowired
     private MockMvc mockMvc;
@@ -89,7 +97,15 @@ class DataRepoControllerMockMvcTest {
         given(mockReferencedGcpResourceApi.createDataRepoSnapshotReference(any(), any()))
             .willReturn(new DataRepoSnapshotResource());
         mockMvc.perform(post("/{instanceId}/snapshots/{version}/{snapshotId}", instanceId, versionId, uuid)).andExpect(status().isAccepted());
-        //TODO validate import
+
+        //validate import
+        MvcResult result = mockMvc.perform(post("/{instanceId}/search/{version}/{recordType}", instanceId, versionId, DataRepoDao.TDRIMPORT_TABLE))
+                .andExpect(status().isOk()).andReturn();
+
+        RecordQueryResponse response = mapper.readValue(result.getResponse().getContentAsString(),
+                RecordQueryResponse.class);
+        assertEquals(2, response.totalRecords());
+        assertEquals("table1", response.records().get(0).recordId());
     }
 
     @Test
