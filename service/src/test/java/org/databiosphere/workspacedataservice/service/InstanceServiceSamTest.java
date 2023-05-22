@@ -85,7 +85,6 @@ class InstanceServiceSamTest {
         doDeleteInstanceTest(instanceId);
     }
 
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     void doCreateInstanceTest(UUID instanceId) throws ApiException {
         // setup: capture order of calls to Sam
         InOrder callOrder = inOrder(mockResourcesApi);
