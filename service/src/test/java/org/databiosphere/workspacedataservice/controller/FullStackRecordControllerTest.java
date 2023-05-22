@@ -284,13 +284,17 @@ class FullStackRecordControllerTest {
 		assertThat(response.getBody()).containsEntry("message", "Invalid API version specified");
 	}
 
-	private List<Record> createSomeRecords(RecordType recordType, int numRecords, Supplier<String>... recordIdSupplier)
+	private List<Record> createSomeRecords(RecordType recordType, int numRecords) throws Exception {
+		return createSomeRecords(recordType, numRecords, null);
+	}
+
+	private List<Record> createSomeRecords(RecordType recordType, int numRecords, Supplier<String> recordIdSupplier)
 			throws Exception {
 		List<Record> result = new ArrayList<>();
 		for (int i = 0; i < numRecords; i++) {
-			String recordId = recordIdSupplier == null || recordIdSupplier.length == 0
+			String recordId = recordIdSupplier == null
 					? "record_" + i
-					: recordIdSupplier[0].get();
+					: recordIdSupplier.get();
 			RecordAttributes attributes = generateRandomAttributes();
 			RecordRequest recordRequest = new RecordRequest(attributes);
 			ResponseEntity<String> response = restTemplate.exchange(
