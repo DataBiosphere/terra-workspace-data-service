@@ -85,5 +85,4 @@ public class HttpSamClientFactory implements SamClientFactory {
         usersApi.setApiClient(apiClient);
         return usersApi;
     }
-
 }

@@ -22,7 +22,7 @@ public class DataRepoService {
     }
 
     public void importSnapshot(UUID instanceId, UUID snapshotId) {
-        // getSnapshot will throw exception is caller does not have access
+        // getSnapshot will throw exception if caller does not have access
         SnapshotModel snapshot = dataRepoDao.getSnapshot(snapshotId);
 
         // createDataRepoSnapshotReference is required to setup policy and will throw exception if policy conflicts
@@ -32,5 +32,4 @@ public class DataRepoService {
                 user.linked().snapshotReference().withUuid(snapshotId));
         // TODO do the import
     }
-
 }
