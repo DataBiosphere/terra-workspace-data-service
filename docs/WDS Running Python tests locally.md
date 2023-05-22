@@ -31,6 +31,11 @@ Run this command to see what versions are downloaded, if 4.3.1 is not, use arrow
 openapi-generator-cli version-manager list
 ```
 
+To run tests, WDS uses pytest. Ensure that is installed by running: 
+```
+pip install pytest
+```
+
 ## Build wds_client locally
 
 Once you confirm that you have python and openapitools, you will need to build and create a local version of the wds_client package (make sure you are in the right branch that has the changes you want to test). Note that you will need to re-generate the client for each code change you make. To do that, run the following command (from the root of your repo or adjust path accordingly). If this command is generating errors, it is likely because the openapi is set to the wrong version. 
@@ -51,6 +56,13 @@ pip install .
 That should use your local python installation to install the wds_client locally. Once complete with no errors, you should be able to open a python shell and run "import wds_client" with no error. However, if you are still not able to do that, it is possible that your pip is tied to a different version of python installed on your machine that is not the default. There are a few ways to solve this problem but the easiest way to go about this is to specify a python version to run pip, something like this:
 ```
 python3 -m pip install .
+```
+
+## Running tests
+
+Once you have the wds_client package importing locally with no issues, you are ready to run the tests! Run the following command from the repo root (or adjust path accordingly): 
+```
+pytest service/src/test/python/test.py
 ```
 
 In case you get frustrated with python, go [here](https://xkcd.com/1987/) for a quick laugh. 
