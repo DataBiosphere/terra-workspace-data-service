@@ -19,6 +19,7 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.jetbrains.annotations.NotNull;
 import org.postgresql.jdbc.PgArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -554,7 +555,7 @@ public class RecordDao {
 					"delete from" + getQualifiedTableName(recordType, instanceId) + " where " + quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)) + " = ?",
 					new BatchPreparedStatementSetter() {
 						@Override
-						public void setValues(PreparedStatement ps, int i) throws SQLException {
+						public void setValues(@NotNull PreparedStatement ps, int i) throws SQLException {
 							ps.setString(1, recordIds.get(i));
 						}
 
