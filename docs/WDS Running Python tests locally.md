@@ -1,6 +1,6 @@
 # Running python tests locally
 
-This page provide instruction around how to replicate python tests failures that happen in the [following](https://github.com/DataBiosphere/terra-workspace-data-service/actions/workflows/release-python-client.yml) github action locally. 
+This page provides instruction around how to replicate python tests failures that happen in the [following](https://github.com/DataBiosphere/terra-workspace-data-service/actions/workflows/release-python-client.yml) github action locally. 
 
 ## Set up
 
@@ -21,19 +21,19 @@ Set openapi-generator-cli to the correct version (same as what the github action
 openapi-generator-cli version-manager set 4.3.1
 ```
 
-At time, openapi-generator-cli wont set to right version even if the command above is run, so it is recommended to verify. Sometimes the proper version needs to be explicitly downloaded before it can be set. To see all available commands: 
+At times, openapi-generator-cli wont set to right version even if the command above is run, so it is recommended to verify. Sometimes the proper version needs to be explicitly downloaded before it can be set. To see all available commands: 
 ```
 openapi-generator-cli
 ```
 
-Run this command to see what version are downloaded, if 4.3.1 is not, use arrow keys to navigate to it and download it (or if already downloaded to use it). 
+Run this command to see what versions are downloaded, if 4.3.1 is not, use arrow keys to navigate to it and download it (or if already downloaded to use it). 
 ```
 openapi-generator-cli version-manager list
 ```
 
 ## Build wds_client locally
 
-Once you confirm that you have python and openapitools, you will need to build and create a local version of the wds_client package. To do that, run the following command (from the root of your repo or adjust path accordingly). If this command is generating errors, it is likely because the openapi is set to the wrong version. 
+Once you confirm that you have python and openapitools, you will need to build and create a local version of the wds_client package (make sure you are in the right branch that has the changes you want to test). Note that you will need to re-generate the client for each code change you make. To do that, run the following command (from the root of your repo or adjust path accordingly). If this command is generating errors, it is likely because the openapi is set to the wrong version. 
 ```
   openapi-generator-cli generate \
   -i service/src/main/resources/static/swagger/openapi-docs.yaml \
@@ -43,14 +43,14 @@ Once you confirm that you have python and openapitools, you will need to build a
   --skip-validate-spec
 ```
 
-This will generate a folder called wds-client, go ahead and "cd" into that folder. Next, run:
+This will generate a folder called wds-client, go ahead and "cd" into that folder. Next, run this command to install wds_client locally:
 ```
 pip install .
 ```
 
-That should use your local python installation to install the wds_client locally. Once complete with no errors, you should be able to open a python shell and run "import wds_client" with no error. However, if you are still not able to do that, it is possible that your pip is tied to a different version of python installed on your machine that is not the default. There are a few ways to solve this problem but the easiest way to around this is to specify a python version to run pip, something like this
+That should use your local python installation to install the wds_client locally. Once complete with no errors, you should be able to open a python shell and run "import wds_client" with no error. However, if you are still not able to do that, it is possible that your pip is tied to a different version of python installed on your machine that is not the default. There are a few ways to solve this problem but the easiest way to go about this is to specify a python version to run pip, something like this:
 ```
-Python3 -m pip install .
+python3 -m pip install .
 ```
 
 In case you get frustrated with python, go [here](https://xkcd.com/1987/) for a quick laugh. 
