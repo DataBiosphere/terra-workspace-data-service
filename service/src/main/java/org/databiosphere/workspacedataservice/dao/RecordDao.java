@@ -400,7 +400,7 @@ public class RecordDao {
 				new RelationRowMapper(recordType));
 	}
 
-	private class RelationRowMapper implements RowMapper<Relation> {
+	private static class RelationRowMapper implements RowMapper<Relation> {
 
 		private final RecordType recordType;
 		public RelationRowMapper(RecordType recordType){
