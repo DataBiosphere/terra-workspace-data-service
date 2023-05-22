@@ -182,7 +182,7 @@ public class RecordDao {
 		params.addValue("tableName", recordType.getName());
 		List<String> attributeNames = namedTemplate.queryForList("select column_name from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
 				+ "and table_name = :tableName", params, String.class);
-		Collections.sort(attributeNames, new AttributeComparator(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)));
+		attributeNames.sort(new AttributeComparator(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)));
 		return attributeNames;
 	}
 
@@ -486,16 +486,15 @@ public class RecordDao {
 	}
 
 	private Object[] getListAsArray(List<?> attVal, DataTypeMapping typeMapping) {
-		switch (typeMapping){
-			case ARRAY_OF_STRING, ARRAY_OF_FILE, ARRAY_OF_RELATION, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_NUMBER, EMPTY_ARRAY:
-				return attVal.stream().map(Object::toString).toList().toArray(new String[0]);
-			case ARRAY_OF_BOOLEAN:
+		return switch (typeMapping) {
+			case ARRAY_OF_STRING, ARRAY_OF_FILE, ARRAY_OF_RELATION, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_NUMBER, EMPTY_ARRAY ->
+					attVal.stream().map(Object::toString).toList().toArray(new String[0]);
+			case ARRAY_OF_BOOLEAN ->
 				//accept all casings of True and False if they're strings
-				return attVal.stream().map(Object::toString).map(String::toLowerCase)
-						.map(Boolean::parseBoolean).toList().toArray(new Boolean[0]);
-			default:
-				throw new IllegalArgumentException("Unhandled array type " + typeMapping);
-		}
+					attVal.stream().map(Object::toString).map(String::toLowerCase)
+							.map(Boolean::parseBoolean).toList().toArray(new Boolean[0]);
+			default -> throw new IllegalArgumentException("Unhandled array type " + typeMapping);
+		};
 
 	}
 

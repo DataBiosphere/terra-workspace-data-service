@@ -65,24 +65,16 @@ public enum DataTypeMapping {
 		if(baseType == null){
 			return EMPTY_ARRAY;
 		}
-		switch (baseType){
-			case STRING :
-				return ARRAY_OF_STRING;
-			case FILE :
-				return ARRAY_OF_FILE;
-			case RELATION :
-				return ARRAY_OF_RELATION;
-			case BOOLEAN:
-				return ARRAY_OF_BOOLEAN;
-			case NUMBER:
-				return ARRAY_OF_NUMBER;
-			case DATE:
-				return ARRAY_OF_DATE;
-			case DATE_TIME:
-				return ARRAY_OF_DATE_TIME;
-			default:
-				throw new IllegalArgumentException("No supported array type for " + baseType);
-		}
+		return switch (baseType) {
+			case STRING -> ARRAY_OF_STRING;
+			case FILE -> ARRAY_OF_FILE;
+			case RELATION -> ARRAY_OF_RELATION;
+			case BOOLEAN -> ARRAY_OF_BOOLEAN;
+			case NUMBER -> ARRAY_OF_NUMBER;
+			case DATE -> ARRAY_OF_DATE;
+			case DATE_TIME -> ARRAY_OF_DATE_TIME;
+			default -> throw new IllegalArgumentException("No supported array type for " + baseType);
+		};
 	}
 
 	public String getWritePlaceholder() {
