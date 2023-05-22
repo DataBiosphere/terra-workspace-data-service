@@ -333,6 +333,21 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void tsvWithDuplicateColumnNames() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "duplicate_col_name.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"col1\tcol1\nfoo\tbar\n".getBytes());
+
+		MvcResult mvcResult = mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "duplicate-rowids")
+				.file(file)).andExpect(status().isBadRequest()).andReturn();
+
+		Exception e = mvcResult.getResolvedException();
+		assertNotNull(e, "expected an InvalidTsvException");
+		assertEquals("TSV contains duplicate column names."
+					+ "Please use distinct column names to prevent overwriting data", e.getMessage());
+	}
+
+	@Test
+	@Transactional
 	void tsvWithNullHeader() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "null_header.tsv", MediaType.TEXT_PLAIN_VALUE,
 				"""
