@@ -230,10 +230,13 @@ public class LogStatementTest {
 
         given(mockRepositoryApi.retrieveSnapshot(any(), any()))
                 .willReturn(testSnapshot);
-        
+
         dataRepoService.importSnapshot(instanceId, snapshotId);
         assertThat(output.getOut())
                 .contains("user anonymous linked 1 snapshot reference(s) with id(s) [%s]"
                         .formatted(snapshotId));
+        assertThat(output.getOut())
+                .contains("user anonymous created 1 table(s) with id(s) [%s]"
+                        .formatted("test snapshot"));
     }
 }

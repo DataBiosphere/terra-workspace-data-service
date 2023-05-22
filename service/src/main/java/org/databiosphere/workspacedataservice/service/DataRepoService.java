@@ -32,5 +32,7 @@ public class DataRepoService {
 
         //do the import
         dataRepoDao.addSnapshot(snapshot, instanceId);
+        activityLogger.saveEventForCurrentUser(user ->
+                user.created().table().withId(snapshot.getName()));
     }
 }
