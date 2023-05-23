@@ -9,6 +9,7 @@ import bio.terra.workspace.model.DataRepoSnapshotResource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.datarepo.DataRepoClientFactory;
 import org.databiosphere.workspacedataservice.datarepo.DataRepoDao;
+import org.databiosphere.workspacedataservice.service.DataRepoService;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerClientFactory;
@@ -99,7 +100,7 @@ class DataRepoControllerMockMvcTest {
         mockMvc.perform(post("/{instanceId}/snapshots/{version}/{snapshotId}", instanceId, versionId, uuid)).andExpect(status().isAccepted());
 
         //validate import
-        MvcResult result = mockMvc.perform(post("/{instanceId}/search/{version}/{recordType}", instanceId, versionId, DataRepoDao.TDRIMPORT_TABLE))
+        MvcResult result = mockMvc.perform(post("/{instanceId}/search/{version}/{recordType}", instanceId, versionId, DataRepoService.TDRIMPORT_TABLE))
                 .andExpect(status().isOk()).andReturn();
 
         RecordQueryResponse response = mapper.readValue(result.getResponse().getContentAsString(),

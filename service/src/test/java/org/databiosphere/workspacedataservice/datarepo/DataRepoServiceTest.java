@@ -89,10 +89,11 @@ class DataRepoServiceTest {
 
         dataRepoService.importSnapshot(INSTANCE, snapshotId);
 
-        assertTrue(recordDao.recordTypeExists(INSTANCE, RecordType.valueOf(DataRepoDao.TDRIMPORT_TABLE)));
-        List<org.databiosphere.workspacedataservice.shared.model.Record> result = recordDao.queryForRecords(RecordType.valueOf(DataRepoDao.TDRIMPORT_TABLE),3,0,"asc",null,INSTANCE);
+        assertTrue(recordDao.recordTypeExists(INSTANCE, RecordType.valueOf(DataRepoService.TDRIMPORT_TABLE)));
+        List<org.databiosphere.workspacedataservice.shared.model.Record> result = recordDao.queryForRecords(RecordType.valueOf(DataRepoService.TDRIMPORT_TABLE),3,0,"asc",null,INSTANCE);
         for (int i = 0; i < 3; i++){
             assertEquals(result.get(i).getId(), "table"+(i+1));
         }
     }
+
 }

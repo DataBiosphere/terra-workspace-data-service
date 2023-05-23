@@ -3,10 +3,8 @@ package org.databiosphere.workspacedataservice.datarepo;
 import bio.terra.datarepo.api.RepositoryApi;
 import bio.terra.datarepo.client.ApiException;
 import bio.terra.datarepo.model.SnapshotModel;
-import bio.terra.datarepo.model.TableModel;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,8 +15,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.annotation.DirtiesContext;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -79,20 +75,4 @@ class DataRepoDaoTest {
         Mockito.clearInvocations(mockRepositoryApi);
     }
 
-    @Test
-    void testAddSnapshot() {
-        List<TableModel> tables = new ArrayList<>();
-        for (int i = 0; i < 3; i++){
-            tables.add(new TableModel().name("table"+(i+1)));
-        }
-        final SnapshotModel testSnapshot = new SnapshotModel().name("test snapshot").id(UUID.randomUUID()).tables(tables);
-
-        dataRepoDao.addSnapshot(testSnapshot, INSTANCE);
-
-        assertTrue(recordDao.recordTypeExists(INSTANCE, RecordType.valueOf(DataRepoDao.TDRIMPORT_TABLE)));
-        List<org.databiosphere.workspacedataservice.shared.model.Record> result = recordDao.queryForRecords(RecordType.valueOf(DataRepoDao.TDRIMPORT_TABLE),3,0,"asc",null,INSTANCE);
-        for (int i = 0; i < 3; i++){
-            assertEquals(result.get(i).getId(), "table"+(i+1));
-        }
-    }
 }
