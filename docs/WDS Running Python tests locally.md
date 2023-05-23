@@ -4,7 +4,7 @@ This page provides instruction around how to replicate python tests failures tha
 
 ## Set up
 
-First thing is first, dont forget to have WDS running locally. You will need a WDS instance locally to ensure python tests have a WDS instance to connect to.
+First thing is first, dont forget to have [WDS running locally](README.md#setup). You will need a WDS instance locally to ensure python tests have a WDS instance to connect to.
 
 You will need a local python installation - doesnt really matter which version, since all should work but WDS defaults to python3.8. To check if you have python already installed, run the following: 
 ```
