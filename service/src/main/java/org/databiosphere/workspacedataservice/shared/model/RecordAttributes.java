@@ -102,6 +102,12 @@ public class RecordAttributes {
 		return this;
 	}
 
+	public RecordAttributes removeNullHeaders() {
+		// There can only be one unique key so remove it.
+		attributes.remove("");
+		return this;
+	}
+
 	// ========== utils
 
 	@Override

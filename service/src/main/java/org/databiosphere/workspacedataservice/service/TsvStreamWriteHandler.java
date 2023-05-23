@@ -100,6 +100,7 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 							+ " column or has a null or empty string value in that column");
 		}
 		row.removeAttribute(primaryKey);
+		row.removeNullHeaders();
 		return new Record(recordId.toString(), recordType, row);
 	}
 
