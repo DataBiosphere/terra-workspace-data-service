@@ -74,6 +74,12 @@ To run the application, first a postgres database must be running:
 ./local-dev/run_postgres.sh start
 ```
 
+To run the application against a local SAM_URL instead of dev, you can run the following commands (from repo root) to set up nginx in a docker container locally: 
+```bash
+docker run -v /service/src/test/resources/nginx.conf:/etc/nginx/nginx.conf -p 9889:80 -d nginx:1.23.3
+export SAM_URL=http://localhost:9889
+```
+
 To run WDS locally, you can either use the command line:
 ```bash
 ./gradlew bootRun
