@@ -1,6 +1,6 @@
 # Running python tests locally
 
-This page provides instruction around how to replicate python tests failures that happen in the [following](https://github.com/DataBiosphere/terra-workspace-data-service/actions/workflows/release-python-client.yml) github action locally. 
+This page provides instruction around how to replicate python tests failures that happen in the [following](https://github.com/DataBiosphere/terra-workspace-data-service/actions/workflows/release-python-client.yml) github action locally. You can do this on your dev machine or set this up inside a virtual environment. 
 
 ## Set up
 
@@ -38,13 +38,13 @@ pip install pytest
 
 ## Build wds_client locally
 
-Once you confirm that you have python and openapitools, you will need to build and create a local version of the wds_client package (make sure you are in the right branch that has the changes you want to test). Note that you will need to re-generate the client for each code change you make. To do that, run the following command (from the root of your repo or adjust path accordingly). If this command is generating errors, it is likely because the openapi is set to the wrong version. 
+Once you confirm that you have python and openapitools, you will need to build and create a local version of the wds_client package (make sure you are in the right branch that has the changes you want to test). Note that you will need to re-generate the client for each code change you make. To do that, run the following command (from the root of your repo or adjust path accordingly). If this command is generating errors, it is likely because the openapi is set to the wrong version. Note that package version is hard coded since it is not important to track locally - adjust as you se fit if you want to the version to change when you install the package locally. 
 ```
   openapi-generator-cli generate \
   -i service/src/main/resources/static/swagger/openapi-docs.yaml \
   -g python \
   -o wds-client \
-  --additional-properties=projectName=wds-client,packageName=wds_client,packageVersion=${{ inputs.new-tag }} \
+  --additional-properties=projectName=wds-client,packageName=wds_client,packageVersion=0.0.1 \
   --skip-validate-spec
 ```
 
