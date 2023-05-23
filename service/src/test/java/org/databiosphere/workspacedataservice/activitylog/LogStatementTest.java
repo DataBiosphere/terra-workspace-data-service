@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.activitylog;
 import bio.terra.datarepo.api.RepositoryApi;
 import bio.terra.datarepo.client.ApiException;
 import bio.terra.datarepo.model.SnapshotModel;
+import bio.terra.datarepo.model.TableModel;
 import bio.terra.workspace.api.ReferencedGcpResourceApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.datarepo.DataRepoClientFactory;
@@ -33,6 +34,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -220,14 +222,21 @@ public class LogStatementTest {
         given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi()).willReturn(mockReferencedGcpResourceApi);
         given(mockDataRepoClientFactory.getRepositoryApi()).willReturn(mockRepositoryApi);
 
-        final SnapshotModel testSnapshot = new SnapshotModel().name("test snapshot").id(snapshotId);
+        List<TableModel> tables = new ArrayList<>();
+        for (int i = 0; i < 3; i++){
+            tables.add(new TableModel().name("table"+(i+1)));
+        }
+        final SnapshotModel testSnapshot = new SnapshotModel().name("test snapshot").id(snapshotId).tables(tables);
+
         given(mockRepositoryApi.retrieveSnapshot(any(), any()))
                 .willReturn(testSnapshot);
-
 
         dataRepoService.importSnapshot(instanceId, snapshotId);
         assertThat(output.getOut())
                 .contains("user anonymous linked 1 snapshot reference(s) with id(s) [%s]"
                         .formatted(snapshotId));
+        assertThat(output.getOut())
+                .contains("user anonymous created 1 table(s) with id(s) [%s]"
+                        .formatted("test snapshot"));
     }
 }
