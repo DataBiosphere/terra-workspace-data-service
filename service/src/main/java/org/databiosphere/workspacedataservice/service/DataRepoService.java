@@ -30,7 +30,8 @@ public class DataRepoService {
 
     public static final String TDRIMPORT_TABLE = "tdr-imports";
     public static final String TDRIMPORT_PRIMARY_KEY = "tablename";
-
+    public static final String TDRIMPORT_SNAPSHOT_ID = "Snapshot Id";
+    public static final String TDRIMPORT_IMPORT_TIME = "Import Time";
     public DataRepoService(DataRepoDao dataRepoDao, WorkspaceManagerDao workspaceManagerDao, ActivityLogger activityLogger, RecordDao recordDao) {
         this.dataRepoDao = dataRepoDao;
         this.workspaceManagerDao = workspaceManagerDao;
@@ -49,22 +50,26 @@ public class DataRepoService {
 
         //do the import
         addSnapshot(snapshot, instanceId);
-        activityLogger.saveEventForCurrentUser(user ->
-                user.created().table().withId(snapshot.getName()));
     }
 
     public void addSnapshot(SnapshotModel snapshot, UUID instanceId) {
         LOGGER.debug("Importing snapshot {}", snapshot.getId());
         RecordType importType = RecordType.valueOf(TDRIMPORT_TABLE);
         if (!recordDao.recordTypeExists(instanceId, importType)){
-            recordDao.createRecordType(instanceId, Map.of("Snapshot Id", DataTypeMapping.STRING, "Import Time", DataTypeMapping.DATE_TIME), importType,
+            recordDao.createRecordType(instanceId, Map.of(TDRIMPORT_SNAPSHOT_ID, DataTypeMapping.STRING, TDRIMPORT_IMPORT_TIME, DataTypeMapping.DATE_TIME), importType,
                     new RelationCollection(Collections.emptySet(), Collections.emptySet()),
                     TDRIMPORT_PRIMARY_KEY);
+            activityLogger.saveEventForCurrentUser(user ->
+                    user.created().table().withId(snapshot.getName()));
         }
         List<Record> records = new ArrayList<>();
         for (TableModel table : snapshot.getTables()){
-            records.add(new Record(table.getName(), importType, RecordAttributes.empty().putAttribute("Snapshot Id", snapshot.getId()).putAttribute("Import Time", LocalDate.now())));
+            records.add(new Record(table.getName(), importType, RecordAttributes.empty().putAttribute(TDRIMPORT_SNAPSHOT_ID, snapshot.getId()).putAttribute(TDRIMPORT_IMPORT_TIME, LocalDate.now())));
         }
         recordDao.batchUpsert(instanceId, importType, records, Collections.emptyMap());
+        if (!records.isEmpty()) {
+            activityLogger.saveEventForCurrentUser(user ->
+                    user.created().record().withRecordType(importType).ofQuantity(records.size()));
+        }
     }
 }
