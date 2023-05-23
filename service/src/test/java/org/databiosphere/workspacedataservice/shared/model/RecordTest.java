@@ -55,9 +55,9 @@ class RecordTest {
 
 		invalidNames.forEach(testCase -> {
 			// Should throw an error
-			Exception ex = assertThrows(InvalidNameException.class, () -> {
-				RecordType.valueOf(testCase);
-			}, "Exception should be thrown when creating a RecordType of '" + testCase + "'");
+			Exception ex = assertThrows(InvalidNameException.class, () ->
+					RecordType.valueOf(testCase),
+					"Exception should be thrown when creating a RecordType of '" + testCase + "'");
 
 			assertTrue(ex.getMessage().contains(RESERVED_NAME_PREFIX),
 					"Exception message should contain 'sys_'. Was: '['" + ex.getMessage() + "']'");

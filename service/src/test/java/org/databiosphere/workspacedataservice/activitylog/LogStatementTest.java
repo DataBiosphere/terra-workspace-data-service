@@ -63,12 +63,12 @@ public class LogStatementTest {
     // mocking for Workspace Manager
     @MockBean
     WorkspaceManagerClientFactory mockWorkspaceManagerClientFactory;
-    ReferencedGcpResourceApi mockReferencedGcpResourceApi = Mockito.mock(ReferencedGcpResourceApi.class);
+    final ReferencedGcpResourceApi mockReferencedGcpResourceApi = Mockito.mock(ReferencedGcpResourceApi.class);
 
     // mocking for data repo
     @MockBean
     DataRepoClientFactory mockDataRepoClientFactory;
-    RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
+    final RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
 
     @AfterEach
     void afterEach() {

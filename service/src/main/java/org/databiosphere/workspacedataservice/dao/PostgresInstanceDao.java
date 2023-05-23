@@ -1,23 +1,18 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import bio.terra.common.db.WriteTransaction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 
 @Repository
 public class PostgresInstanceDao implements InstanceDao {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PostgresInstanceDao.class);
 
     @Value("${spring.datasource.username}")
     private String wdsDbUser;
@@ -58,15 +53,6 @@ public class PostgresInstanceDao implements InstanceDao {
     public void dropSchema(UUID instanceId) {
         namedTemplate.getJdbcTemplate().update("drop schema " + quote(instanceId.toString()) + " cascade");
         namedTemplate.getJdbcTemplate().update("delete from sys_wds.instance where id = ?", instanceId);
-    }
-
-    private UUID safeParseUUID(String input) {
-        try {
-            return UUID.fromString(input);
-        } catch (IllegalArgumentException iae) {
-            LOGGER.warn("Found unexpected schema name while listing schemas: [{}]", input);
-            return null;
-        }
     }
 
 }

@@ -44,7 +44,7 @@ subprojects {
         }
     }
 
-    tasks.withType(GenerateSwaggerCode).all {
+    tasks.withType(GenerateSwaggerCode).configureEach {
         jvmArgs = ['--add-opens=java.base/java.util=ALL-UNNAMED'] // for jvm 16+
     }
 }

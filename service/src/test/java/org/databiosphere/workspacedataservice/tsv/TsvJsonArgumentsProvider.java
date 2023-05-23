@@ -55,7 +55,7 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
                 Arguments.of("hello world", "hello world",  true),
                 Arguments.of("😍😎😺",     "😍😎😺",        true),
                 Arguments.of("12345A",     "12345A",        true),
-                    Arguments.of("\uD83D\uDCA9\u0207", "\uD83D\uDCA9\u0207", true),
+                    Arguments.of("\uD83D\uDCA9ȇ", "\uD83D\uDCA9ȇ", true),
 
                 // strings that look like other data types
                 Arguments.of("2021-10-03",          "2021-10-03",           true),

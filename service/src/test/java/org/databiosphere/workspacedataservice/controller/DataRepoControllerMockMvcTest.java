@@ -17,7 +17,6 @@ import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerD
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -62,13 +61,13 @@ class DataRepoControllerMockMvcTest {
     @MockBean
     WorkspaceManagerClientFactory mockWorkspaceManagerClientFactory;
 
-    RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
+    final RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
 
-    ReferencedGcpResourceApi mockReferencedGcpResourceApi = Mockito.mock(ReferencedGcpResourceApi.class);
+    final ReferencedGcpResourceApi mockReferencedGcpResourceApi = Mockito.mock(ReferencedGcpResourceApi.class);
 
     private static UUID instanceId;
 
-    private static String versionId = "v0.2";
+    private static final String versionId = "v0.2";
 
     @BeforeEach
     void beforeEach()  throws Exception {

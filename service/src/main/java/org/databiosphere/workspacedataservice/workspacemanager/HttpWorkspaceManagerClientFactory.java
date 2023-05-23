@@ -14,7 +14,7 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
 
 public class HttpWorkspaceManagerClientFactory implements WorkspaceManagerClientFactory {
 
-    String workspaceManagerUrl;
+    final String workspaceManagerUrl;
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpWorkspaceManagerClientFactory.class);
 
 

@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.databiosphere.workspacedataservice.sam.HttpSamDao;
@@ -11,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
-
 import org.mockito.exceptions.base.MockitoException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
@@ -38,12 +36,12 @@ class PermissionsStatusServiceTest {
     SamClientFactory mockSamClientFactory;
 
     // mock for the StatusApi class inside the Sam client; since this is not a Spring bean we have to mock it manually
-    StatusApi mockStatusApi = Mockito.mock(StatusApi.class);
+    final StatusApi mockStatusApi = Mockito.mock(StatusApi.class);
     // mock for Health.Builder class that Spring Boot Actuator relies on to determine overall health of an application.
-    Health.Builder mockHealthBuilder = Mockito.mock(Health.Builder.class);
+    final Health.Builder mockHealthBuilder = Mockito.mock(Health.Builder.class);
 
     @BeforeEach
-    void beforeEach() throws ApiException {
+    void beforeEach() {
         // return the mock StatusApi from the mock SamClientFactory
         given(mockSamClientFactory.getStatusApi()).willReturn(mockStatusApi);
         Mockito.clearInvocations(mockStatusApi);

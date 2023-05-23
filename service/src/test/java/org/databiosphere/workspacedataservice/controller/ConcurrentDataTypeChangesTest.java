@@ -103,9 +103,7 @@ class ConcurrentDataTypeChangesTest {
 
         // create our expected attributes
         Map<String, Object> attrs = new HashMap<>();
-        IntStream.rangeClosed(1, numIterations).boxed().forEach( i -> {
-            attrs.put("attr-" + i, "value-" + i);
-                });
+        IntStream.rangeClosed(1, numIterations).boxed().forEach( i -> attrs.put("attr-" + i, "value-" + i));
         // the final record will include the extra attribute "sys_name=concurrent-changes" because of the primary key
         attrs.put("sys_name", recordId);
         RecordAttributes expected = new RecordAttributes(attrs);
