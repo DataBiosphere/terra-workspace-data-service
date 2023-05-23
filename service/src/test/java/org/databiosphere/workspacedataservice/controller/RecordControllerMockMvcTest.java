@@ -336,6 +336,40 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void tsvWithDuplicateColumnNames() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "duplicate_col_name.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"col1\tcol1\nfoo\tbar\n".getBytes());
+
+		MvcResult mvcResult = mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "duplicate-rowids")
+				.file(file)).andExpect(status().isBadRequest()).andReturn();
+
+		Exception e = mvcResult.getResolvedException();
+		assertNotNull(e, "expected an InvalidTsvException");
+		assertEquals("TSV contains duplicate column names."
+					+ "Please use distinct column names to prevent overwriting data", e.getMessage());
+	}
+
+	@Test
+	@Transactional
+	void tsvWithNullHeader() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "null_header.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"""
+					value		
+					foo
+					bar		
+					baz		""".getBytes());
+
+		String recordType = "null-headers";
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
+				.file(file)).andExpect(status().isOk());
+		MvcResult schemaResult = mockMvc
+				.perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType)).andReturn();
+		RecordTypeSchema schema = mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+		assertEquals(1, schema.attributes().size());
+	}
+
+	@Test
+	@Transactional
 	void tsvWithDuplicateRowIdsInDifferentBatches(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
 		StringBuilder tsvContent = new StringBuilder("idcol\tcol1\n");
 		// append two separate batches, each of which use the same record ids

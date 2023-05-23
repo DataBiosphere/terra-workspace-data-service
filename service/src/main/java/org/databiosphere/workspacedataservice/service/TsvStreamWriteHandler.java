@@ -14,6 +14,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -44,11 +45,15 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 			throw new InvalidTsvException("We could not parse any data rows in your tsv file.");
 		}
 
-		// extract column names from the schema
+		// extract column names from the schema, throwing an error if we detect any duplicate column names.
 		List<String> colNames;
 		FormatSchema formatSchema = tsvIterator.getParser().getSchema();
 		if (formatSchema instanceof CsvSchema actualSchema) {
 			colNames = actualSchema.getColumnNames();
+			if (colNames.stream().anyMatch(col -> Collections.frequency(colNames, col) > 1)) {
+				throw new InvalidTsvException("TSV contains duplicate column names."
+					+ "Please use distinct column names to prevent overwriting data");
+			}
 		} else {
 			throw new InvalidTsvException("Could not determine primary key column; unexpected schema type:" + formatSchema.getSchemaType());
 		}
@@ -100,6 +105,7 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 							+ " column or has a null or empty string value in that column");
 		}
 		row.removeAttribute(primaryKey);
+		row.removeNullHeaders();
 		return new Record(recordId.toString(), recordType, row);
 	}
 
