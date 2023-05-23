@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.databiosphere.workspacedataservice.dao.*;
+import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;

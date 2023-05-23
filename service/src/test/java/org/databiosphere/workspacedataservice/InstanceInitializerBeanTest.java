@@ -29,7 +29,7 @@ class InstanceInitializerBeanTest {
     InstanceDao instanceDao;
 
     //randomly generated UUID
-    UUID instanceID = UUID.fromString("90e1b179-9f83-4a6f-a8c2-db083df4cd03");
+    final UUID instanceID = UUID.fromString("90e1b179-9f83-4a6f-a8c2-db083df4cd03");
 
     @BeforeEach
     void beforeEach() {

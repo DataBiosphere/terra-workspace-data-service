@@ -43,8 +43,8 @@ public class ActivityEventBuilderTest {
     @MockBean
     SamClientFactory mockSamClientFactory;
 
-    UsersApi mockUsersApi = Mockito.mock(UsersApi.class);
-    ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
+    final UsersApi mockUsersApi = Mockito.mock(UsersApi.class);
+    final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
     @BeforeEach
     void beforeEach() {

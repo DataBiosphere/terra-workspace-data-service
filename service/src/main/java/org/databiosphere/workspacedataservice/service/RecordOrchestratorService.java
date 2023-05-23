@@ -147,7 +147,7 @@ public class RecordOrchestratorService { // TODO give me a better name
                 "Limit must be more than 0 and can't exceed " + MAX_RECORDS + ", and offset must be positive.");
         }
         if (searchRequest.getSortAttribute() != null && !recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType)
-            .keySet().contains(searchRequest.getSortAttribute())) {
+                .containsKey(searchRequest.getSortAttribute())) {
             throw new MissingObjectException("Requested sort attribute");
         }
         int totalRecords = recordDao.countRecords(instanceId, recordType);

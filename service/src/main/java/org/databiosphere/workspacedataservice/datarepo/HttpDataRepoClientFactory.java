@@ -1,8 +1,8 @@
 package org.databiosphere.workspacedataservice.datarepo;
 
 import bio.terra.datarepo.api.RepositoryApi;
-import org.apache.commons.lang3.StringUtils;
 import bio.terra.datarepo.client.ApiClient;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -14,7 +14,7 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
 
 public class HttpDataRepoClientFactory implements DataRepoClientFactory {
 
-    String dataRepoUrl;
+    final String dataRepoUrl;
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpDataRepoClientFactory.class);
 
 

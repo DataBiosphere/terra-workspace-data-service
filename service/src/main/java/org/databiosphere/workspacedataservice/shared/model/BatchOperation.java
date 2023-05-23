@@ -5,9 +5,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class BatchOperation {
 
-	private Record rcd;
+	private final Record rcd;
 
-	private OperationType operation;
+	private final OperationType operation;
 
 	@JsonCreator
 	public BatchOperation(@JsonProperty("record") Record rcd, @JsonProperty("operation") OperationType operation) {

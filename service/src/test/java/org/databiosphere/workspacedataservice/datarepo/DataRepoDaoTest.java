@@ -14,7 +14,8 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -29,7 +30,7 @@ class DataRepoDaoTest {
     @MockBean
     DataRepoClientFactory mockDataRepoClientFactory;
 
-    RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
+    final RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
 
     @BeforeEach
     void beforeEach() {
