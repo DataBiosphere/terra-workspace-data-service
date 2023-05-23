@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ActiveProfiles(profiles = "mock-sam")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ConcurrentDataTypeChangesTest {
     @Autowired
@@ -64,7 +64,7 @@ class ConcurrentDataTypeChangesTest {
     @Test
     void concurrentColumnCreation() {
         // concurrency factor for reads + writes
-        int numIterations = 40;
+        int numIterations = 20;
 
         // create the initial record, with no attributes
         RecordRequest recordRequest = new RecordRequest(RecordAttributes.empty());

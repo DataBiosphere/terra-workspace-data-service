@@ -2,6 +2,8 @@ package org.databiosphere.workspacedataservice.service;
 
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
+import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
@@ -15,6 +17,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
@@ -26,7 +29,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
 @ActiveProfiles(profiles = "mock-instance-dao")
-@SpringBootTest(classes = { MockInstanceDaoConfig.class, SamConfig.class })
+@DirtiesContext
+@SpringBootTest(classes = { MockInstanceDaoConfig.class, SamConfig.class, ActivityLoggerConfig.class })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InstanceServiceNoPermissionSamTest {
 
@@ -34,6 +38,7 @@ class InstanceServiceNoPermissionSamTest {
 
     @Autowired private InstanceDao instanceDao;
     @Autowired private SamDao samDao;
+    @Autowired private ActivityLogger activityLogger;
 
     // mock for the SamClientFactory; since this is a Spring bean we can use @MockBean
     @MockBean
@@ -44,7 +49,7 @@ class InstanceServiceNoPermissionSamTest {
 
     @BeforeEach
     void beforeEach() {
-        instanceService = new InstanceService(instanceDao, samDao);
+        instanceService = new InstanceService(instanceDao, samDao, activityLogger);
     }
 
     @Test

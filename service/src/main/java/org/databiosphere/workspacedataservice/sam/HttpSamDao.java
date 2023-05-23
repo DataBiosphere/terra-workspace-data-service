@@ -1,11 +1,12 @@
 package org.databiosphere.workspacedataservice.sam;
 
+import org.apache.commons.lang3.StringUtils;
+import org.broadinstitute.dsde.workbench.client.sam.api.UsersApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
+import org.broadinstitute.dsde.workbench.client.sam.model.UserStatusInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.scheduling.annotation.Scheduled;
 
 import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.SamFunction;
 
@@ -85,26 +86,34 @@ public class HttpSamDao implements SamDao {
                 "hasWriteInstancePermission", token);
     }
 
+    // this cache uses token.hashCode as its key. This prevents any logging such as
+    // in CacheLogger from logging the raw token.
+    @Cacheable(cacheNames = "tokenResolution", key="#token.hashCode()")
+    public String getUserId(String token) {
+        return getUserInfo(token).getUserSubjectId();
+    }
+
+    public UserStatusInfo getUserInfo(String token) {
+        LOGGER.debug("Resolving Sam token to UserStatusInfo ...");
+        SamFunction<UserStatusInfo> samFunction = () -> samClientFactory.getUsersApi(token)
+                .getUserStatusInfo();
+        return httpSamClientSupport.withRetryAndErrorHandling(samFunction, "getUserInfo");
+    }
+
     /**
-     * Gets the System Status of Sam. Using @Cacheable, will reach out to Sam no more than once every 5 minutes.
-     * See also emptySamStatusCache()
+     * Gets the up/down status of Sam. Using @Cacheable, will reach out to Sam no more than
+     * once every 5 minutes (configured in ehcache.xml).
      */
-    @Cacheable(value = "samStatus", key="'getSystemStatus'")
+    @Cacheable(cacheNames = "samStatus", key="'getSystemStatus'")
+    public Boolean getSystemStatusOk() {
+        return getSystemStatus().getOk();
+    }
+
     public SystemStatus getSystemStatus() {
         SamFunction<SystemStatus> samFunction = () -> samClientFactory.getStatusApi().getSystemStatus();
         return httpSamClientSupport.withRetryAndErrorHandling(samFunction, "getSystemStatus");
     }
 
-    /**
-     * Clears the samStatus cache every 5 minutes, to ensure we get fresh results from Sam
-     * every so often. See also getSystemStatus()
-     */
-
-    @CacheEvict(value = "samStatus", key="'getSystemStatus'")
-    @Scheduled(fixedRateString = "${sam.healthcheck.pingTTL}")
-    public void emptySamStatusCache() {
-        LOGGER.debug("emptying samStatus cache");
-    }
 }
 
 

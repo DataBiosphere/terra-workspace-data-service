@@ -17,8 +17,15 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest
+@DirtiesContext
+// aggressive retry settings to make this test fast; these are
+// inappropriate for runtime behavior.
+@SpringBootTest(properties = {
+        "terra.common.retry.transaction.slowRetryMaxAttempts=2",
+        "terra.common.retry.transaction.slowRetryInitialInterval=250ms",
+        "terra.common.retry.transaction.slowRetryMultiplier=1.1",
+        "terra.common.retry.transaction.fastRetryMaxAttempts=2"
+})
 class TransactionRetryTest {
 
     @Autowired TransactionRetryTestBean transactionRetryTestBean;

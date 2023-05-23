@@ -12,6 +12,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -25,6 +26,7 @@ import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.Vo
 /**
  * Tests for @see HttpSamClientSupport
  */
+@DirtiesContext
 @SpringBootTest(classes = {SamConfig.class, RetryLoggingListener.class},
         properties = {"sam.retry.maxAttempts=2",
                 "sam.retry.backoff.delay=10"}) // aggressive retry settings so unit test doesn't run too long
