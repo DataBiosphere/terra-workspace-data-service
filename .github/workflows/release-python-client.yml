@@ -36,7 +36,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Python 3.8
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v4
         with:
           python-version: 3.8
 
@@ -84,6 +84,9 @@ jobs:
       - name: Run WDS service and tests
         run: |
             export SAM_URL=http://localhost:9889
+            export DATA_REPO_URL=http://localhost:9889
+            export WORKSPACE_MANAGER_URL=http://localhost:9889
+            export WORKSPACE_ID=123e4567-e89b-12d3-a456-426614174000
             ./gradlew --build-cache build -x test
             ./gradlew bootRun &
             count=20
@@ -96,7 +99,6 @@ jobs:
                 exit
               fi
             done
-            curl -v -X POST http://localhost:8080/instances/v0.2/123e4567-e89b-12d3-a456-426614174000
             pip install pytest
             pytest service/src/test/python/test.py
      

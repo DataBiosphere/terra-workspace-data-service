@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -17,6 +18,7 @@ import java.util.Map;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 import static org.junit.jupiter.api.Assertions.*;
 
+@DirtiesContext
 @SpringBootTest(classes = JsonConfig.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordTest {
@@ -53,9 +55,9 @@ class RecordTest {
 
 		invalidNames.forEach(testCase -> {
 			// Should throw an error
-			Exception ex = assertThrows(InvalidNameException.class, () -> {
-				RecordType.valueOf(testCase);
-			}, "Exception should be thrown when creating a RecordType of '" + testCase + "'");
+			Exception ex = assertThrows(InvalidNameException.class, () ->
+					RecordType.valueOf(testCase),
+					"Exception should be thrown when creating a RecordType of '" + testCase + "'");
 
 			assertTrue(ex.getMessage().contains(RESERVED_NAME_PREFIX),
 					"Exception message should contain 'sys_'. Was: '['" + ex.getMessage() + "']'");

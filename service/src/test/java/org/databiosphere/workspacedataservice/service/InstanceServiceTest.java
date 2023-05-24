@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
+import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
 import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
@@ -10,10 +12,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
@@ -21,28 +23,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ActiveProfiles(profiles = { "mock-sam", "mock-instance-dao" })
-@SpringBootTest(classes = { MockInstanceDaoConfig.class, SamConfig.class, MockSamClientFactoryConfig.class })
+@DirtiesContext
+@SpringBootTest(classes = { MockInstanceDaoConfig.class, SamConfig.class, MockSamClientFactoryConfig.class, ActivityLoggerConfig.class })
 class InstanceServiceTest {
 
     private InstanceService instanceService;
     @Autowired private InstanceDao instanceDao;
     @Autowired private SamDao samDao;
+    @Autowired private ActivityLogger activityLogger;
 
 
     private static final UUID INSTANCE = UUID.fromString("111e9999-e89b-12d3-a456-426614174000");
 
     @BeforeEach
     void setUp() {
-        instanceService = new InstanceService(instanceDao, samDao);
+        instanceService = new InstanceService(instanceDao, samDao, activityLogger);
         // Delete all instances
-        instanceDao.listInstanceSchemas().forEach(instance -> {
-            instanceDao.dropSchema(instance);
-        });
+        instanceDao.listInstanceSchemas().forEach(instance -> instanceDao.dropSchema(instance));
     }
 
     @Test
     void testCreateAndValidateInstance() {
-        instanceService.createInstance(INSTANCE, VERSION, Optional.empty());
+        instanceService.createInstance(INSTANCE, VERSION);
         instanceService.validateInstance(INSTANCE);
 
         UUID invalidInstance = UUID.fromString("000e4444-e22b-22d1-a333-426614174000");
@@ -55,10 +57,10 @@ class InstanceServiceTest {
 
     @Test
     void listInstances() {
-        instanceService.createInstance(INSTANCE, VERSION, Optional.empty());
+        instanceService.createInstance(INSTANCE, VERSION);
 
         UUID secondInstanceId = UUID.fromString("999e1111-e89b-12d3-a456-426614174000");
-        instanceService.createInstance(secondInstanceId, VERSION, Optional.empty());
+        instanceService.createInstance(secondInstanceId, VERSION);
 
         List<UUID> instances = instanceService.listInstances(VERSION);
 
@@ -72,7 +74,7 @@ class InstanceServiceTest {
 
     @Test
     void deleteInstance() {
-        instanceService.createInstance(INSTANCE, VERSION, Optional.empty());
+        instanceService.createInstance(INSTANCE, VERSION);
         instanceService.validateInstance(INSTANCE);
 
         instanceService.deleteInstance(INSTANCE, VERSION);

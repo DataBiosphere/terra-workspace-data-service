@@ -21,11 +21,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * This class tests CORS behavior for local development. WDS in local development does not sit behind
  * Azure Relay, and therefore does not inherit Relay's CORS responseheaders. By enabling the "local"
  * Spring profile, WDS sends its own CORS response headers.
- *
+ * <p>
  * See also CorsLiveMockMvcTest for testing CORS behavior in live deployments.
  */
 @ActiveProfiles(profiles = {"local"})
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
 class CorsLocalMockMvcTest {

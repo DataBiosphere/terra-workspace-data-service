@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice;
 
+import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -18,7 +19,7 @@ public class InstanceInitializer implements
     }
 
     @Override
-    public void onApplicationEvent(ContextRefreshedEvent event) {
+    public void onApplicationEvent(@NotNull ContextRefreshedEvent event) {
         instanceInitializerBean.initializeInstance();
     }
 

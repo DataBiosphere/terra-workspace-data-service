@@ -5,7 +5,6 @@ info:
   version: v0.2
   description: |
     This page lists current APIs.
-
     As of v0.2, all APIs are subject to change without notice.
   termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
   license:
@@ -23,6 +22,8 @@ tags:
     description: Schema Manipulation APIs (coming soon)
   - name: General WDS Information
     description: Information regarding versioning, health, info, etc. for WDS
+  - name: Snapshots
+    description: Snapshot APIs
 paths:
   /status:
     get:
@@ -307,7 +308,6 @@ paths:
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/workspaceIdQueryParam'
       responses:
         201:
           description: Success
@@ -408,7 +408,23 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+  /{instanceid}/snapshots/{v}/{snapshotid}:
+    post:
+      summary: Import a snapshot from Terra Data Repo
+      operationId: importSnapshot
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - Snapshots
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/snapshotIdPathParam'
+      responses:
+        202:
+          description: Success
+        403:
+          description: Forbidden
 components:
   securitySchemes:
     bearerAuth:
@@ -459,11 +475,11 @@ components:
       schema:
         type: string
         default: v0.2
-    workspaceIdQueryParam:
-      name: workspaceid
-      in: query
-      description: Id of workspace containing a WDS instance. If omitted, assumed to be equal to the instance id.
-      required: false
+    snapshotIdPathParam:
+      name: snapshotid
+      in: path
+      description: snapshot id
+      required: true
       schema:
         type: string
         format: uuid
@@ -772,8 +788,6 @@ components:
           type: string
         components:
           $ref: '#/components/schemas/components'
-        groups:
-          type: string
     build:
       type: object
       properties:
@@ -809,11 +823,13 @@ components:
          db:
            $ref: '#/components/schemas/dbComponent'
          diskSpace:
-           $ref: '#/components/schemas/component'
+           $ref: '#/components/schemas/diskSpaceComponent'
          ping:
            $ref: '#/components/schemas/component'
-         Permissions:
-           $ref: '#/components/schemas/component'
+         mainDb:
+           $ref: '#/components/schemas/dbValidationcomponent'
+         streamingDs:
+           $ref: '#/components/schemas/dbValidationcomponent'
     component:
       type: object
       properties:
@@ -827,4 +843,36 @@ components:
         status:
           type: string
         components:
+          $ref: '#/components/schemas/component'
+    diskSpaceComponent:
+      type: object
+      properties:
+        status:
+          type: string
+        details:
+          $ref: '#/components/schemas/diskSpaceComponentDetails'         
+    diskSpaceComponentDetails:
+      type: object
+      properties:
+        total:
+          type: string
+        free:
+          type: float
+        threshold:
+          type: float
+        exists:
+          type: boolean
+    dbValidationcomponent:
+      type: object
+      properties:
+        status:
+          type: string
+        components:
+          $ref: '#/components/schemas/dbValidationcomponentDetails'
+    dbValidationcomponentDetails:
+      type: object
+      properties:
+        database:
+          type: string
+        validationQuery:
           type: string

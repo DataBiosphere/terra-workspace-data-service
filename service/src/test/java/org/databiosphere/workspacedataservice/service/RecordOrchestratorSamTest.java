@@ -20,12 +20,14 @@ import org.springframework.test.context.ActiveProfiles;
 import java.util.UUID;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest
+@DirtiesContext
+@SpringBootTest(properties = {"sam.retry.maxAttempts=2",
+        "sam.retry.backoff.delay=10"}) // aggressive retry settings so unit test doesn't run too long)
 @ActiveProfiles(profiles = { "mock-sam", "mock-instance-dao" })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordOrchestratorSamTest {
@@ -39,7 +41,7 @@ class RecordOrchestratorSamTest {
     SamClientFactory mockSamClientFactory;
 
     // mock for the ResourcesApi class inside the Sam client; since this is not a Spring bean we have to mock it manually
-    ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
+    final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
 
     private static final UUID INSTANCE = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");

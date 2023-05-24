@@ -1,6 +1,6 @@
 ext {
 	swagger_annotations_version = "2.0.0"
-	jackson_version = "2.13.2"
+	jackson_version = "2.14.2"
 	jersey_version = "2.36"
 }
 
@@ -46,3 +46,6 @@ idea.module.generatedSourceDirs = [file("${generateSwaggerCode.outputDir}/src/ma
 sourceSets.main.java.srcDir "${generateSwaggerCode.outputDir}/src/main/java"
 compileJava.dependsOn generateSwaggerCode
 sourcesJar.dependsOn generateSwaggerCode
+
+// next line required by swagger client generation
+generateSwaggerCode.dependsOn generatePomFileForWdsClientPublication

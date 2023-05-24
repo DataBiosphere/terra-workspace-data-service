@@ -1,8 +1,17 @@
 name: Tag
 on:
-  push:
-    branches:
-    - main
+  workflow_dispatch:
+    # Inputs the workflow accepts.
+    inputs:
+      jiraId:
+        # Friendly description to be shown in the UI instead of 'name'
+        description: 'Jira ID'
+        # Default value if no value is explicitly provided
+        default: 'Required: Include latest Jira ID'
+        # Input has to be provided for the workflow to run
+        required: true
+        # The data type of the input
+        type: string
 
 jobs:
   tag-job:
@@ -17,7 +26,7 @@ jobs:
           
       - name: Bump the tag to a new version
         # https://github.com/DataBiosphere/github-actions/tree/master/actions/bumper
-        uses: databiosphere/github-actions/actions/bumper@bumper-0.0.6
+        uses: databiosphere/github-actions/actions/bumper@bumper-0.2.0
         id: tag
         env:
           GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
@@ -43,6 +52,7 @@ jobs:
       uses: ./.github/workflows/publish-docker.yml
       with:
         new-tag: ${{ needs.tag-job.outputs.new_tag }}
+        jiraId: ${{ inputs.jiraId }}
       secrets:
         ACR_SP_PASSWORD: ${{ secrets.ACR_SP_PASSWORD }}
         ACR_SP_USER: ${{ secrets.ACR_SP_USER }}

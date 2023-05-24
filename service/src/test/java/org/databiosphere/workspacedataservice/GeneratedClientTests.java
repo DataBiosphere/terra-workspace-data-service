@@ -12,10 +12,13 @@ import org.databiosphere.workspacedata.model.RecordResponse;
 import org.databiosphere.workspacedata.model.RecordTypeSchema;
 import org.databiosphere.workspacedata.model.SearchRequest;
 import org.databiosphere.workspacedata.model.TsvUploadResponse;
+import org.databiosphere.workspacedata.api.GeneralWdsInformationApi;
+import org.databiosphere.workspacedata.model.StatusResponse;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -27,7 +30,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles(profiles = "mock-sam")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class GeneratedClientTests {
 
@@ -44,6 +47,12 @@ class GeneratedClientTests {
         apiClient.setBasePath("http://localhost:" + port);
         createNewInstance(instanceId);
     }
+
+    @AfterEach
+    void afterEach() throws ApiException {
+        deleteInstance(instanceId);
+    }
+
     @Test
     void uploadTsv() throws ApiException, URISyntaxException {
         RecordsApi recordsApi = new RecordsApi(apiClient);
@@ -129,8 +138,21 @@ class GeneratedClientTests {
         assertThat(record.getAttributes()).containsEntry(attributeName, "Goodbye");
     }
 
+    @Test
+    void checkStatus() throws ApiException {
+        GeneralWdsInformationApi statusApi = new GeneralWdsInformationApi();
+        statusApi.setApiClient(apiClient);
+        StatusResponse response = statusApi.statusGet();
+        assertThat(response.getStatus().equals("UP"));
+    }
+
     private void createNewInstance(UUID instanceId) throws ApiException {
         InstancesApi instancesApi = new InstancesApi(apiClient);
-        instancesApi.createWDSInstance(instanceId.toString(), version, instanceId);
+        instancesApi.createWDSInstance(instanceId.toString(), version);
+    }
+
+    private void deleteInstance(UUID instanceId) throws ApiException {
+        InstancesApi instancesApi = new InstancesApi(apiClient);
+        instancesApi.deleteWDSInstance(instanceId.toString(), version);
     }
 }

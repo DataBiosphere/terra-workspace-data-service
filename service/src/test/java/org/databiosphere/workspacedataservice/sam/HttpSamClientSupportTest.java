@@ -12,19 +12,18 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.SamFunction;
 import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.VoidSamFunction;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for @see HttpSamClientSupport
  */
+@DirtiesContext
 @SpringBootTest(classes = {SamConfig.class, RetryLoggingListener.class},
         properties = {"sam.retry.maxAttempts=2",
                 "sam.retry.backoff.delay=10"}) // aggressive retry settings so unit test doesn't run too long

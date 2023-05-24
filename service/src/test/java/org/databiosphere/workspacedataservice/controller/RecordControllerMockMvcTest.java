@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.dao.TestDao;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.model.*;
+import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -16,9 +18,11 @@ import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -35,7 +39,11 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -43,13 +51,13 @@ import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAtt
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ActiveProfiles(profiles = "mock-sam")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext
 @SpringBootTest
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @AutoConfigureMockMvc
 class RecordControllerMockMvcTest {
 	@Autowired
@@ -59,7 +67,7 @@ class RecordControllerMockMvcTest {
 
 	private static UUID instanceId;
 
-	private static String versionId = "v0.2";
+	private static final String versionId = "v0.2";
 
 	@Autowired
 	TestDao testDao;
@@ -72,12 +80,24 @@ class RecordControllerMockMvcTest {
 	}
 
 	@AfterEach
-	void afterEach() throws Exception {
+	void afterEach() {
 		try {
 			mockMvc.perform(delete("/instances/{v}/{instanceid}",
 					versionId, instanceId).content("")).andExpect(status().isOk());
 		} catch (Throwable t)  {
 			 // noop - if we fail to delete the instance, don't fail the test
+		}
+	}
+
+	@AfterAll
+	void afterAll() throws Exception {
+		MvcResult response = mockMvc
+				.perform(get("/instances/{v}", versionId))
+				.andReturn();
+		UUID[] allInstances = mapper.readValue(response.getResponse().getContentAsString(), UUID[].class);
+		for (UUID id : allInstances) {
+			mockMvc.perform(delete("/instances/{v}/{instanceid}",
+					versionId, id).content(""));
 		}
 	}
 
@@ -189,12 +209,10 @@ class RecordControllerMockMvcTest {
 	@Test
 	@Transactional
 	void storeLargeIntegerValue() throws Exception {
-		StringBuilder tsvContent = new StringBuilder("sys_name\tbigint\tbigfloat\n");
 		String bigIntValue = "11111111111111111111111111111111";
 		String bigFloatValue = "11111111111111111111111111111111.2222222222";
-		tsvContent.append(1 + "\t" + bigIntValue + "\t" + bigFloatValue +"\n");
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
-				tsvContent.toString().getBytes());
+				("sys_name\tbigint\tbigfloat\n" + 1 + "\t" + bigIntValue + "\t" + bigFloatValue + "\n").getBytes());
 
 		String recordType = "big-int-value";
 		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
@@ -318,12 +336,46 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void tsvWithDuplicateColumnNames() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "duplicate_col_name.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"col1\tcol1\nfoo\tbar\n".getBytes());
+
+		MvcResult mvcResult = mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "duplicate-rowids")
+				.file(file)).andExpect(status().isBadRequest()).andReturn();
+
+		Exception e = mvcResult.getResolvedException();
+		assertNotNull(e, "expected an InvalidTsvException");
+		assertEquals("TSV contains duplicate column names."
+					+ "Please use distinct column names to prevent overwriting data", e.getMessage());
+	}
+
+	@Test
+	@Transactional
+	void tsvWithNullHeader() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "null_header.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"""
+					value		
+					foo
+					bar		
+					baz		""".getBytes());
+
+		String recordType = "null-headers";
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
+				.file(file)).andExpect(status().isOk());
+		MvcResult schemaResult = mockMvc
+				.perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType)).andReturn();
+		RecordTypeSchema schema = mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+		assertEquals(1, schema.attributes().size());
+	}
+
+	@Test
+	@Transactional
 	void tsvWithDuplicateRowIdsInDifferentBatches(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
 		StringBuilder tsvContent = new StringBuilder("idcol\tcol1\n");
 		// append two separate batches, each of which use the same record ids
 		for (int batch = 0; batch < 2; batch++) {
 			for (int i = 0; i < batchSize; i++) {
-				tsvContent.append(i + "\ttada" + batch + "_" + i + "\n");
+				tsvContent.append(i).append("\ttada").append(batch).append("_").append(i).append("\n");
 			}
 		}
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
@@ -367,7 +419,7 @@ class RecordControllerMockMvcTest {
 	void simpleTsvUploadWithBatchingShouldSucceed(@Value("${twds.write.batch.size}") int batchSize) throws Exception {
 		StringBuilder tsvContent = new StringBuilder("sys_name\tcol1\n");
 		for (int i = 0; i < batchSize + 1; i++) {
-			tsvContent.append(i + "\ttada" + i + "\n");
+			tsvContent.append(i).append("\ttada").append(i).append("\n");
 		}
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
@@ -386,7 +438,7 @@ class RecordControllerMockMvcTest {
 		String singleRel = RelationUtils.createRelationString(refType, "record_0");
 		String relArr = "[\"" + RelationUtils.createRelationString(refType, "record_1") + "\", \"" + RelationUtils.createRelationString(refType, "record_2") + "\"]";
 		for (int i = 0; i < 6; i++) {
-			tsvContent.append(i + "\t" +  singleRel + "\t" + relArr + "\n");
+			tsvContent.append(i).append("\t").append(singleRel).append("\t").append(relArr).append("\n");
 		}
 		MockMultipartFile file = new MockMultipartFile("records", "relation.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
@@ -412,15 +464,15 @@ class RecordControllerMockMvcTest {
 		StringBuilder tsvContent = new StringBuilder("sys_name\tarray\n");
 		//empty string/nulls
 		for (int i = 0; i < 10; i++) {
-			tsvContent.append(i + "null\t" + "\n");
+			tsvContent.append(i).append("null\t").append("\n");
 		}
 		//empty array
 		for (int i = 0; i < 10; i++) {
-			tsvContent.append(i + "empty\t[]\n");
+			tsvContent.append(i).append("empty\t[]\n");
 		}
 		//array of long
 		for (int i = 0; i < 10; i++) {
-			tsvContent.append(i + "valid\t[12]\n");
+			tsvContent.append(i).append("valid\t[12]\n");
 		}
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContent.toString().getBytes());
@@ -440,7 +492,7 @@ class RecordControllerMockMvcTest {
 		StringBuilder secondUpload = new StringBuilder("sys_name\tarray\n");
 		//array of long
 		for (int i = 0; i < 10; i++) {
-			secondUpload.append(i + "valid\t[12.99]\n");
+			secondUpload.append(i).append("valid\t[12.99]\n");
 		}
 		file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				secondUpload.toString().getBytes());

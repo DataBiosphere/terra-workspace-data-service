@@ -19,11 +19,11 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.jetbrains.annotations.NotNull;
 import org.postgresql.jdbc.PgArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -47,7 +47,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -183,7 +182,7 @@ public class RecordDao {
 		params.addValue("tableName", recordType.getName());
 		List<String> attributeNames = namedTemplate.queryForList("select column_name from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
 				+ "and table_name = :tableName", params, String.class);
-		Collections.sort(attributeNames, new AttributeComparator(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)));
+		attributeNames.sort(new AttributeComparator(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)));
 		return attributeNames;
 	}
 
@@ -402,9 +401,9 @@ public class RecordDao {
 				new RelationRowMapper(recordType));
 	}
 
-	private class RelationRowMapper implements RowMapper<Relation> {
+	private static class RelationRowMapper implements RowMapper<Relation> {
 
-		private RecordType recordType;
+		private final RecordType recordType;
 		public RelationRowMapper(RecordType recordType){
 			this.recordType = recordType;
 		}
@@ -487,16 +486,15 @@ public class RecordDao {
 	}
 
 	private Object[] getListAsArray(List<?> attVal, DataTypeMapping typeMapping) {
-		switch (typeMapping){
-			case ARRAY_OF_STRING, ARRAY_OF_FILE, ARRAY_OF_RELATION, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_NUMBER, EMPTY_ARRAY:
-				return attVal.stream().map(Object::toString).toList().toArray(new String[0]);
-			case ARRAY_OF_BOOLEAN:
+		return switch (typeMapping) {
+			case ARRAY_OF_STRING, ARRAY_OF_FILE, ARRAY_OF_RELATION, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_NUMBER, EMPTY_ARRAY ->
+					attVal.stream().map(Object::toString).toList().toArray(new String[0]);
+			case ARRAY_OF_BOOLEAN ->
 				//accept all casings of True and False if they're strings
-				return attVal.stream().map(Object::toString).map(String::toLowerCase)
-						.map(Boolean::parseBoolean).toList().toArray(new Boolean[0]);
-			default:
-				throw new IllegalArgumentException("Unhandled array type " + typeMapping);
-		}
+					attVal.stream().map(Object::toString).map(String::toLowerCase)
+							.map(Boolean::parseBoolean).toList().toArray(new Boolean[0]);
+			default -> throw new IllegalArgumentException("Unhandled array type " + typeMapping);
+		};
 
 	}
 
@@ -557,7 +555,7 @@ public class RecordDao {
 					"delete from" + getQualifiedTableName(recordType, instanceId) + " where " + quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)) + " = ?",
 					new BatchPreparedStatementSetter() {
 						@Override
-						public void setValues(PreparedStatement ps, int i) throws SQLException {
+						public void setValues(@NotNull PreparedStatement ps, int i) throws SQLException {
 							ps.setString(1, recordIds.get(i));
 						}
 

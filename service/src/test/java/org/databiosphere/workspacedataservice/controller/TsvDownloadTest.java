@@ -6,7 +6,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.csv.QuoteMode;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -15,28 +15,27 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.io.Resource;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.web.servlet.function.ServerRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.in;
-import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ActiveProfiles(profiles = "mock-sam")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class TsvDownloadTest {
 
@@ -53,7 +52,12 @@ class TsvDownloadTest {
 	void init(){
 		version = "v0.2";
 		instanceId = UUID.randomUUID();
-		recordController.createInstance(instanceId, version, Optional.empty());
+		recordController.createInstance(instanceId, version);
+	}
+
+	@AfterEach
+	void afterEach() {
+		recordController.deleteInstance(instanceId, version);
 	}
 
 	@ParameterizedTest(name = "PK name {0} should be honored")
@@ -101,7 +105,7 @@ class TsvDownloadTest {
 		rcd = iterator.next();
 		assertThat(rcd.get("description")).isEqualTo("\n,Weird\n String");
 		assertThat(rcd.get("location")).isEqualTo("Cambridge, \"MA\"");
-		assertThat(rcd.get("unicodeData")).isEqualTo("\uD83D\uDCA9\u0207");
+		assertThat(rcd.get("unicodeData")).isEqualTo("\uD83D\uDCA9ȇ");
 		assertThat(iterator.hasNext()).isFalse();
 		reader.close();
 	}

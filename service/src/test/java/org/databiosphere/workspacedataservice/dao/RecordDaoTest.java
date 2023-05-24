@@ -15,8 +15,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,12 +38,10 @@ import java.util.stream.IntStream;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.junit.jupiter.api.Assertions.*;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordDaoTest {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(RecordDaoTest.class);
 
 	private static final String PRIMARY_KEY = "row_id";
 	@Autowired
@@ -365,9 +361,9 @@ class RecordDaoTest {
 				new HashMap<>(Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.RELATION)));
 
 		// Should throw an error
-		assertThrows(ResponseStatusException.class, () -> {
-			recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord");
-		}, "Exception should be thrown when attempting to delete related record");
+		assertThrows(ResponseStatusException.class, () ->
+				recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord"),
+				"Exception should be thrown when attempting to delete related record");
 
 		//Record should not have been deleted
 		assert(recordDao.getSingleRecord(instanceId, recordType, "referencedRecord").isPresent());
@@ -399,9 +395,9 @@ class RecordDaoTest {
 		recordDao.insertIntoJoin(instanceId, arrayRelation, relationArrayType, List.of(new RelationValue(recordWithRelationArray, referencedRecord), new RelationValue(recordWithRelationArray, referencedRecord2)));
 
 		// Should throw an error
-		assertThrows(ResponseStatusException.class, () -> {
-			recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord1");
-		}, "Exception should be thrown when attempting to delete related record");
+		assertThrows(ResponseStatusException.class, () ->
+				recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord1"),
+				"Exception should be thrown when attempting to delete related record");
 
 		//Record should not have been deleted
 		assert(recordDao.getSingleRecord(instanceId, recordType, "referencedRecord1").isPresent());
@@ -525,9 +521,9 @@ class RecordDaoTest {
 				new HashMap<>(Map.of("relation", DataTypeMapping.RELATION)));
 
 		// Should throw an error
-		assertThrows(ResponseStatusException.class, () -> {
-			recordDao.deleteRecordType(instanceId, referencedType);
-		}, "Exception should be thrown when attempting to delete record type with relation");
+		assertThrows(ResponseStatusException.class, () ->
+				recordDao.deleteRecordType(instanceId, referencedType),
+				"Exception should be thrown when attempting to delete record type with relation");
 	}
 
 	@Test

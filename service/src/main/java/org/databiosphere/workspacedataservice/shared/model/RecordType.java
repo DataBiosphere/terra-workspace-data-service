@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.databiosphere.workspacedataservice.dao.SqlUtils;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 
