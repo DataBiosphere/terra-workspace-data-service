@@ -18,9 +18,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.stream.Collectors;
+import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
+import java.nio.charset.StandardCharsets;
 
 @Service
 public class BackupService {
@@ -66,22 +65,37 @@ public class BackupService {
         LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
         localProcessLauncher.launchProcess(commandList, envVars);
 
-        String output = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.OUT);
-        String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
+        streamOutputtoBloblStorage(localProcessLauncher.getInputStream());
+
+        //String output = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.OUT);
+        //String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
 
         int exitCode = localProcessLauncher.waitForTerminate();
 
         LOGGER.info("process exit code: " + exitCode);
-        LOGGER.info("process output: " + output);
-        if (StringUtils.isNotBlank(error)) {
-            LOGGER.error("process error: " + error);
-        }
+        //LOGGER.info("process output: " + output);
+        //if (StringUtils.isNotBlank(error)) {
+        //    LOGGER.error("process error: " + error);
+        //}
 
 //        BlockBlobClient blockBlobClient = constructBlockBlobClient(workspaceId.toString() + "-backups", blobName);
 //        // -1 represents using the default parallelTransferOptions during upload to Azure
 //        // From docs, this means each block size: 4 MB (4 * 1024 * 1024 bytes), maximum number of parallel transfers: 2
 //        blockBlobClient.upload(pgDumpOutput, -1);
 
+    }
+
+    private static void streamOutputtoBloblStorage(InputStream fromStream) {
+        try (BufferedReader bufferedReader =
+                     new BufferedReader(new InputStreamReader(fromStream, StandardCharsets.UTF_8))) {
+
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+
+            }
+        } catch (IOException ioEx) {
+            throw new LaunchProcessException("Error streaming output of child process", ioEx);
+        }
     }
 
     public BlockBlobClient constructBlockBlobClient(String containerName, String blobName) {
