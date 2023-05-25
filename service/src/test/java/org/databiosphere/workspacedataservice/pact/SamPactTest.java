@@ -45,7 +45,7 @@ class SamPactTest {
 
     @Test
     @PactTestFor(pactMethod = "statusApiPact")
-    public void testSamServiceStatusCheck(MockServer mockServer) {
+    void testSamServiceStatusCheck(MockServer mockServer) {
         SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
         SamDao samDao = new HttpSamDao(clientFactory, new HttpSamClientSupport(), UUID.randomUUID().toString());
 
