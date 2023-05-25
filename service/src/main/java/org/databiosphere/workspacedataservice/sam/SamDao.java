@@ -49,7 +49,7 @@ public interface SamDao {
 
     boolean hasWriteInstancePermission(String token);
 
-    public String getUserId(String token);
+    String getUserId(String token);
 
     /**
      * Gets the up/down system status of Sam.

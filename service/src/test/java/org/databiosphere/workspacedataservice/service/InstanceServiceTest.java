@@ -39,9 +39,7 @@ class InstanceServiceTest {
     void setUp() {
         instanceService = new InstanceService(instanceDao, samDao, activityLogger);
         // Delete all instances
-        instanceDao.listInstanceSchemas().forEach(instance -> {
-            instanceDao.dropSchema(instance);
-        });
+        instanceDao.listInstanceSchemas().forEach(instance -> instanceDao.dropSchema(instance));
     }
 
     @Test

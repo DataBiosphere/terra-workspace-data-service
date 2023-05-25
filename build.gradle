@@ -20,7 +20,7 @@ repositories {
 
 subprojects {
     group = 'org.databiosphere'
-    version = '0.2.85-SNAPSHOT'
+    version = '0.2.86-SNAPSHOT'
 
     apply plugin: 'idea'
     apply plugin: 'java'
@@ -44,7 +44,7 @@ subprojects {
         }
     }
 
-    tasks.withType(GenerateSwaggerCode).all {
+    tasks.withType(GenerateSwaggerCode).configureEach {
         jvmArgs = ['--add-opens=java.base/java.util=ALL-UNNAMED'] // for jvm 16+
     }
 }
