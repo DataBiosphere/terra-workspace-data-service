@@ -22,12 +22,29 @@ import java.nio.charset.StandardCharsets;
 
 @Service
 public class BackupService {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(BackupService.class);
 
     //TODO: in the future this will shift to "twds.instance.source-workspace-id"
     @Value("${twds.instance.workspace-id:}")
     private String workspaceId;
+
+    @Value("${twds.pg_dump.user:}")
+    private String dbUser;
+
+    @Value("${twds.pg_dump.dbName:}")
+    private String dbName;
+
+    @Value("${twds.pg_dump.password:}")
+    private String dbPassword;
+
+    @Value("${twds.pg_dump.port:}")
+    private String dbPort;
+
+    @Value("${twds.pg_dump.host:}")
+    private String dbHost;
+
+    @Value("${twds.pg_dump.path:}")
+    private String pgDumpPath;
 
     @WriteTransaction
     public void backupAzureWDS() throws Exception {
@@ -36,14 +53,8 @@ public class BackupService {
         String timestamp = now.format(formatter);
         String blobName = workspaceId.toString() + "-" + timestamp + ".sql";
 
-        String dbHost = System.getenv("WDS_DB_HOST");
-        String dbPort = System.getenv("WDS_DB_PORT");
-        String dbUser = System.getenv("WDS_DB_USER");
-        String dbName = System.getenv("WDS_DB_NAME");
-        String dbPassword = System.getenv("WDS_DB_PASSWORD");
-
         Map<String, String> command = new LinkedHashMap<>();
-        command.put("/usr/bin/pg_dump", null);
+        command.put(pgDumpPath, null);
         command.put("-h", dbHost);
         command.put("-p", dbPort);
         command.put("-U", dbUser);
