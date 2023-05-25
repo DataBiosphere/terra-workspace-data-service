@@ -123,13 +123,15 @@ public class RecordOrchestratorService { // TODO give me a better name
 
         // TODO: consider rewriting this using jackson-dataformat-csv and removing org.apache.commons:commons-csv altogether
         return httpResponseOutputStream -> {
-            try (Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType);
-                 CSVPrinter writer = TsvSupport.getOutputFormat(headers)
-                     .print(new OutputStreamWriter(httpResponseOutputStream))) {
-                TsvSupport.RecordEmitter recordEmitter = new TsvSupport.RecordEmitter(writer,
-                    headers.subList(1, headers.size()), objectMapper);
-                allRecords.forEach(recordEmitter);
+            try (Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType)) {
+                TsvSupport.WriteCsvToStream(allRecords, httpResponseOutputStream, headers);
             }
+            //      CSVPrinter writer = TsvSupport.getOutputFormat(headers)
+            //          .print(new OutputStreamWriter(httpResponseOutputStream))) {
+            //     TsvSupport.RecordEmitter recordEmitter = new TsvSupport.RecordEmitter(writer,
+            //         headers.subList(1, headers.size()), objectMapper);
+            //     allRecords.forEach(recordEmitter);
+            // }
         };
     }
 
