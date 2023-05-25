@@ -2,16 +2,14 @@ package org.databiosphere.workspacedataservice.service;
 
 import bio.terra.common.db.WriteTransaction;
 import org.apache.commons.lang3.StringUtils;
-import org.databiosphere.workspacedataservice.InstanceInitializerBean;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
-import com.azure.storage.blob.specialized.BlockBlobClient;
 import com.azure.storage.blob.specialized.BlobOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -27,8 +25,12 @@ public class BackupService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BackupService.class);
 
+    //TODO: in the future this will shift to "twds.instance.source-workspace-id"
+    @Value("${twds.instance.workspace-id:}")
+    private String workspaceId;
+
     @WriteTransaction
-    public void backupAzureWDS(UUID workspaceId) throws Exception {
+    public void backupAzureWDS() throws Exception {
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
         String timestamp = now.format(formatter);
@@ -97,7 +99,7 @@ public class BackupService {
                 .buildClient();
 
         // TODO: this will be used when connection to blob storage will be done via SAS token vs connection string
-        //BlobServiceClient storageClient = new BlobServiceClientBuilder().endpoint(endpoint).credential(credential).buildClient();
+        //BlobServiceClient storageClient = new BlobServiceClientBuilder().endpoint(endpoint).sasToken(token).buildClient();
 
         return blobServiceClient.getBlobContainerClient(containerName);
     }

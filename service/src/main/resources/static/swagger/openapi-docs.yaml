@@ -27,25 +27,17 @@ tags:
   - name: Snapshots
     description: Snapshot APIs
 paths:
-  /backup/azure:
+  /backup:
     post:
       tags:
         - Backup
       summary: Create a backup of a PostgreSQL instance and upload it to Azure Blob Storage
       operationId: createBackup
-      parameters:
-        - name: workspaceId
-          in: query
-          description: The UUID of the workspace
-          required: true
-          schema:
-            type: string
-            format: uuid
       responses:
-        '200':
+        200:
           description: Successfully initiated the backup process
-        '400':
-          description: Invalid input, UUIDs are required
+        400:
+          description: Something failed during backup
   /status:
     get:
       summary: Gets health status for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#health for details)
