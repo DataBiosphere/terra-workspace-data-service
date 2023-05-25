@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MockInstanceDao implements InstanceDao {
 
     // backing "database" for this mock
-    private Set<UUID> instances = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> instances = ConcurrentHashMap.newKeySet();
 
     public MockInstanceDao() {
         super();

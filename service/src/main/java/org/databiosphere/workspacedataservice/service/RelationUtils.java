@@ -1,12 +1,13 @@
 package org.databiosphere.workspacedataservice.service;
 
-import java.util.*;
-
 import com.google.common.base.Preconditions;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class RelationUtils {
 

@@ -1,11 +1,5 @@
 package org.databiosphere.workspacedataservice;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.*;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.DataTypeInfererConfig;
@@ -19,6 +13,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DirtiesContext
 @SpringBootTest(classes = {JsonConfig.class, DataTypeInfererConfig.class})

@@ -39,9 +39,9 @@ public class JsonStreamWriteHandler implements StreamingWriteHandler {
 	 * stream in which case we return early and keep the last record read in memory
 	 * so it can be returned in a subsequent call.
 	 * 
-	 * @param numRecords
-	 * @return
-	 * @throws IOException
+	 * @param numRecords max number of records to read
+	 * @return info about the records that were read
+	 * @throws IOException on error
 	 */
 	public WriteStreamInfo readRecords(int numRecords) throws IOException {
 		int recordsProcessed = 0;

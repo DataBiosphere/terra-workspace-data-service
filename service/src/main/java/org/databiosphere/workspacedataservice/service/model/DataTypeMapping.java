@@ -24,13 +24,13 @@ public enum DataTypeMapping {
 	ARRAY_OF_FILE(String[].class, "array_of_file", true, "?"),
 	ARRAY_OF_BOOLEAN(Boolean[].class, "boolean[]", true, "?");
 
-	private Class javaArrayTypeForDbWrites;
+	private final Class javaArrayTypeForDbWrites;
 
-	private String postgresType;
+	private final String postgresType;
 
-	private boolean isArrayType;
+	private final boolean isArrayType;
 
-	private String writePlaceholder;
+	private final String writePlaceholder;
 
 	private static final Map<String, DataTypeMapping> MAPPING_BY_PG_TYPE = new HashMap<>();
 
@@ -43,9 +43,6 @@ public enum DataTypeMapping {
 		this.postgresType = postgresType;
 		this.isArrayType = isArrayType;
 		this.writePlaceholder = writePlaceholder;
-	}
-
-	DataTypeMapping() {
 	}
 
 	public Class getJavaArrayTypeForDbWrites() {
@@ -68,24 +65,16 @@ public enum DataTypeMapping {
 		if(baseType == null){
 			return EMPTY_ARRAY;
 		}
-		switch (baseType){
-			case STRING :
-				return ARRAY_OF_STRING;
-			case FILE :
-				return ARRAY_OF_FILE;
-			case RELATION :
-				return ARRAY_OF_RELATION;
-			case BOOLEAN:
-				return ARRAY_OF_BOOLEAN;
-			case NUMBER:
-				return ARRAY_OF_NUMBER;
-			case DATE:
-				return ARRAY_OF_DATE;
-			case DATE_TIME:
-				return ARRAY_OF_DATE_TIME;
-			default:
-				throw new IllegalArgumentException("No supported array type for " + baseType);
-		}
+		return switch (baseType) {
+			case STRING -> ARRAY_OF_STRING;
+			case FILE -> ARRAY_OF_FILE;
+			case RELATION -> ARRAY_OF_RELATION;
+			case BOOLEAN -> ARRAY_OF_BOOLEAN;
+			case NUMBER -> ARRAY_OF_NUMBER;
+			case DATE -> ARRAY_OF_DATE;
+			case DATE_TIME -> ARRAY_OF_DATE_TIME;
+			default -> throw new IllegalArgumentException("No supported array type for " + baseType);
+		};
 	}
 
 	public String getWritePlaceholder() {
