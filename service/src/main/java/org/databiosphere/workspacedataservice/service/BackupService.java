@@ -8,6 +8,7 @@ import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.specialized.BlockBlobClient;
+import com.azure.storage.blob.specialized.BlobOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +29,6 @@ public class BackupService {
 
     @WriteTransaction
     public void backupAzureWDS(UUID workspaceId) throws Exception {
-
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
         String timestamp = now.format(formatter);
@@ -46,8 +46,6 @@ public class BackupService {
         command.put("-p", dbPort);
         command.put("-U", dbUser);
         command.put("-d", dbName);
-//        command.put("--no-owner", null);
-//        command.put("--no-acl", null);
 
         List<String> commandList = new ArrayList<>();
         for (Map.Entry<String, String> entry : command.entrySet()) {
@@ -64,52 +62,43 @@ public class BackupService {
 
         LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
         localProcessLauncher.launchProcess(commandList, envVars);
+        streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName);
 
-        streamOutputtoBloblStorage(localProcessLauncher.getInputStream());
-
-        //String output = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.OUT);
-        //String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
-
+        String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
         int exitCode = localProcessLauncher.waitForTerminate();
 
-        LOGGER.info("process exit code: " + exitCode);
-        //LOGGER.info("process output: " + output);
-        //if (StringUtils.isNotBlank(error)) {
-        //    LOGGER.error("process error: " + error);
-        //}
-
-//        BlockBlobClient blockBlobClient = constructBlockBlobClient(workspaceId.toString() + "-backups", blobName);
-//        // -1 represents using the default parallelTransferOptions during upload to Azure
-//        // From docs, this means each block size: 4 MB (4 * 1024 * 1024 bytes), maximum number of parallel transfers: 2
-//        blockBlobClient.upload(pgDumpOutput, -1);
-
+        if (exitCode != 0 && StringUtils.isNotBlank(error)) {
+            LOGGER.error("process error: " + error);
+        }
     }
 
-    private static void streamOutputtoBloblStorage(InputStream fromStream) {
-        try (BufferedReader bufferedReader =
-                     new BufferedReader(new InputStreamReader(fromStream, StandardCharsets.UTF_8))) {
+    private static void streamOutputToBlobStorage(InputStream fromStream, String blobName) {
+        // TODO: remove this once connection is switched to be done via SAS token
+        String storageConnectionString = System.getenv("STORAGE_CONNECTION_STRING");
+        BlobContainerClient blobContainerClient = constructBlockBlobClient("backup", storageConnectionString);
 
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-
+        // TODO: call function that generates a name for the backup
+        // https://learn.microsoft.com/en-us/java/api/overview/azure/storage-blob-readme?view=azure-java-stable#upload-a-blob-via-an-outputstream
+        try (BlobOutputStream blobOS = blobContainerClient.getBlobClient(blobName).getBlockBlobClient().getBlobOutputStream()) {
+            try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(fromStream, StandardCharsets.UTF_8))) {
+                int line;
+                while ((line = bufferedReader.read()) != -1) {
+                    blobOS.write(line);
+                }
             }
         } catch (IOException ioEx) {
             throw new LaunchProcessException("Error streaming output of child process", ioEx);
         }
     }
 
-    public BlockBlobClient constructBlockBlobClient(String containerName, String blobName) {
-        // Example Azure Postgres Connection String
-        String azureStorageConnectionString = "jdbc:postgresql://" + System.getenv("WDS_DB_HOST")
-                + "postgres.database.azure.com:" + System.getenv("WDS_DB_PORT") + "/" + System.getenv("WDS_DB_NAME")
-                + "?user=" + System.getenv("WDS_DB_USER") + "@" + System.getenv("WDS_DB_HOST") + "&password="
-                + System.getenv("WDS_DB_PASSWORD") + "&sslmode=require";
-
+    public static BlobContainerClient constructBlockBlobClient(String containerName, String connectionString) {
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
-                .connectionString(azureStorageConnectionString)
+                .connectionString(connectionString)
                 .buildClient();
-        BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
 
-        return blobContainerClient.getBlobClient(blobName).getBlockBlobClient();
+        // TODO: this will be used when connection to blob storage will be done via SAS token vs connection string
+        //BlobServiceClient storageClient = new BlobServiceClientBuilder().endpoint(endpoint).credential(credential).buildClient();
+
+        return blobServiceClient.getBlobContainerClient(containerName);
     }
 }
