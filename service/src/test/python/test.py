@@ -242,4 +242,11 @@ class WdsTests(TestCase):
     # import snapshot from TDR with appropriate permissions
     def test_import_snapshot(self):
         self.snapshot_client.import_snapshot(self.current_workspaceId, self.version, "123e4567-e89b-12d3-a456-426614174000")
-        #At this point, just testing that an error is not thrown.  Further work will do further testing.
+        # should create a tdr-imports table
+        ent_types = self.schema_client.describe_record_type(self.current_workspaceId, self.version, "tdr-imports")
+        self.assertEqual(ent_types.count, 2)
+
+        # clean up
+        response = self.schema_client.delete_record_type(self.current_workspaceId, self.version, "tdr-imports")
+        workspace_ent_type = self.schema_client.describe_all_record_types(self.current_workspaceId, self.version)
+        self.assertTrue(len(workspace_ent_type) == 0)
