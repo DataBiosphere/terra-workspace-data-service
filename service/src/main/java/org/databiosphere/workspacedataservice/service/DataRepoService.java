@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -55,8 +55,9 @@ public class DataRepoService {
     public void addSnapshot(SnapshotModel snapshot, UUID instanceId) {
         LOGGER.debug("Importing snapshot {}", snapshot.getId());
         RecordType importType = RecordType.valueOf(TDRIMPORT_TABLE);
+        Map<String, DataTypeMapping> schema = Map.of(TDRIMPORT_SNAPSHOT_ID, DataTypeMapping.STRING, TDRIMPORT_IMPORT_TIME, DataTypeMapping.DATE_TIME);
         if (!recordDao.recordTypeExists(instanceId, importType)){
-            recordDao.createRecordType(instanceId, Map.of(TDRIMPORT_SNAPSHOT_ID, DataTypeMapping.STRING, TDRIMPORT_IMPORT_TIME, DataTypeMapping.DATE_TIME), importType,
+            recordDao.createRecordType(instanceId, schema, importType,
                     new RelationCollection(Collections.emptySet(), Collections.emptySet()),
                     TDRIMPORT_PRIMARY_KEY);
             activityLogger.saveEventForCurrentUser(user ->
@@ -64,9 +65,9 @@ public class DataRepoService {
         }
         List<Record> records = new ArrayList<>();
         for (TableModel table : snapshot.getTables()){
-            records.add(new Record(table.getName(), importType, RecordAttributes.empty().putAttribute(TDRIMPORT_SNAPSHOT_ID, snapshot.getId()).putAttribute(TDRIMPORT_IMPORT_TIME, LocalDate.now())));
+            records.add(new Record(table.getName(), importType, RecordAttributes.empty().putAttribute(TDRIMPORT_SNAPSHOT_ID, snapshot.getId()).putAttribute(TDRIMPORT_IMPORT_TIME, LocalDateTime.now())));
         }
-        recordDao.batchUpsert(instanceId, importType, records, Collections.emptyMap());
+        recordDao.batchUpsert(instanceId, importType, records, schema);
         if (!records.isEmpty()) {
             activityLogger.saveEventForCurrentUser(user ->
                     user.created().record().withRecordType(importType).ofQuantity(records.size()));
