@@ -28,6 +28,11 @@ version-resolver:
       - 'patch'
   default: patch
 template: |
+  | Corresponding `terra-helmfile` chart | `???` |
+  | :--- | :--- |
+  | Leo commit for that chart | `???` |
+  | Terra monolith release for that Leo commit | `???` |
+
   ## Changes
 
   $CHANGES
