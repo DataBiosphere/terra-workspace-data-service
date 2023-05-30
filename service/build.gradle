@@ -108,4 +108,7 @@ tasks.register("pactTests", Test) {
 	useJUnitPlatform {
 		includeTags "pact-test"
 	}
+	testLogging {
+		showStandardStreams = true
+	}
 }
