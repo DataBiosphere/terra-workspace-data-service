@@ -171,7 +171,7 @@ class SamPactTest {
 
     @Test
     @PactTestFor(pactMethod = "userStatusPact")
-    public void testSamServiceUserStatusInfo(MockServer mockServer) {
+    void testSamServiceUserStatusInfo(MockServer mockServer) {
         SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
         SamDao samDao = new HttpSamDao(clientFactory, new HttpSamClientSupport(), UUID.randomUUID().toString());
         String userId = samDao.getUserId("accessToken");
@@ -180,7 +180,7 @@ class SamPactTest {
 
     @Test
     @PactTestFor(pactMethod = "noUserStatusPact")
-    public void testSamServiceNoUser(MockServer mockServer) {
+    void testSamServiceNoUser(MockServer mockServer) {
         SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
         SamDao samDao = new HttpSamDao(clientFactory, new HttpSamClientSupport(), UUID.randomUUID().toString());
         assertThrows(AuthenticationException.class,
