@@ -23,7 +23,7 @@ dependencies {
 
 
 generateSwaggerCode {
-	inputFile = file('../service/src/main/resources/static/swagger/openapi-docs.yaml')
+	inputFile = file('${projectDir}/service/src/main/resources/static/swagger/openapi-docs.yaml')
 	language = 'java'
 	library = 'jersey2'
 
