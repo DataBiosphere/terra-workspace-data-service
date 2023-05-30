@@ -1,10 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
-import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.BlobServiceClientBuilder;
-import com.azure.storage.blob.specialized.BlockBlobClient;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
-import org.junit.jupiter.api.BeforeEach;
+import org.databiosphere.workspacedataservice.storage.LocalFileStorage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,58 +14,21 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @TestPropertySource("classpath:test.properties")
-@ExtendWith(SpringExtension.class)
-@SpringBootTest
 public class BackupServiceTest {
-
-    UUID workspaceId = UUID.randomUUID();
-
-    @Autowired
-    private BackupService backupService;
-
     @MockBean
-    private LocalProcessLauncher localProcessLauncher;
+    private LocalFileStorage blobServiceClient = new LocalFileStorage();
 
-    // Probably need to revisit, build some type of wrapper
-    // this class in final, so it can't be mocked out via Mockito :(
-    @MockBean
-    private BlobServiceClientBuilder blobServiceClientBuilder;
+    @Test
+    public void testBackupAzureWDS() throws Exception {
+       InputStream inputStream = new ByteArrayInputStream("test-data".getBytes());
 
-    @MockBean
-    private BlobServiceClient blobServiceClient;
+        LocalProcessLauncher process = mock(LocalProcessLauncher.class);
+        when(process.getInputStream()).thenReturn(inputStream);
 
-//    @Test
-//    public void testBackupAzureWDS() {
-//        // this is failing -- see BlobServiceClientBuilder
-//        InputStream inputStream = new ByteArrayInputStream("test-data".getBytes());
-//        when(localProcessLauncher.launchProcess(any(), any(), any())).thenReturn(inputStream);
-//
-//        BlobServiceClientBuilder builder = mock(BlobServiceClientBuilder.class);
-//        when(builder.connectionString(any())).thenReturn(builder);
-//        when(builder.buildClient()).thenReturn(blobServiceClient);
-//        when(blobServiceClientBuilder.buildClient()).thenReturn(blobServiceClient);
-//
-//        backupService.backupAzureWDS(workspaceId);
-//
-//        verify(localProcessLauncher).launchProcess(any(), any(), any());
-//    }
-//
-//    @Test
-//    public void testConstructBlockBlobClient() {
-//        // this is failing as well -- see BlobServiceClientBuilder
-//        String blobName = "test-blob";
-//        BlobServiceClientBuilder builder = mock(BlobServiceClientBuilder.class);
-//        when(builder.connectionString(any())).thenReturn(builder);
-//        when(builder.buildClient()).thenReturn(blobServiceClient);
-//        when(blobServiceClientBuilder.buildClient()).thenReturn(blobServiceClient);
-//
-//        BlockBlobClient blockBlobClient = backupService.constructBlockBlobClient(blobName);
-//
-//        assertNotNull(blockBlobClient);
-//    }
+        blobServiceClient.streamOutputToBlobStorage(inputStream, "backup");
+    }
 }

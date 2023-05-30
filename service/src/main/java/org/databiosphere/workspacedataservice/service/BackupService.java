@@ -3,22 +3,15 @@ package org.databiosphere.workspacedataservice.service;
 import bio.terra.common.db.WriteTransaction;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
-import com.azure.storage.blob.BlobContainerClient;
-import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.BlobServiceClientBuilder;
-import com.azure.storage.blob.specialized.BlobOutputStream;
+import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-
-import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
-import java.nio.charset.StandardCharsets;
 
 @Service
 public class BackupService {
@@ -47,11 +40,8 @@ public class BackupService {
     private String pgDumpPath;
 
     @WriteTransaction
-    public void backupAzureWDS() throws Exception {
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
-        String timestamp = now.format(formatter);
-        String blobName = workspaceId.toString() + "-" + timestamp + ".sql";
+    public boolean backupAzureWDS(BackUpFileStorage storage) throws Exception {
+        String blobName = GenerateBackUpFileName(workspaceId);
 
         Map<String, String> command = new LinkedHashMap<>();
         command.put(pgDumpPath, null);
@@ -69,49 +59,30 @@ public class BackupService {
         }
         commandList.add("-v");
         commandList.add("-w");
-        LOGGER.info("process command list: " + commandList);
 
         Map<String, String> envVars = Map.of("PGPASSWORD", dbPassword);
 
         LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
         localProcessLauncher.launchProcess(commandList, envVars);
-        streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName);
+        storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName);
 
         String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
         int exitCode = localProcessLauncher.waitForTerminate();
 
         if (exitCode != 0 && StringUtils.isNotBlank(error)) {
-            LOGGER.error("process error: " + error);
+            LOGGER.error("process error: {}", error);
+            return false;
         }
+
+        return true;
     }
 
-    private static void streamOutputToBlobStorage(InputStream fromStream, String blobName) {
-        // TODO: remove this once connection is switched to be done via SAS token
-        String storageConnectionString = System.getenv("STORAGE_CONNECTION_STRING");
-        BlobContainerClient blobContainerClient = constructBlockBlobClient("backup", storageConnectionString);
+    public static String GenerateBackUpFileName(String workspaceId) {
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
+        String timestamp = now.format(formatter);
+        String blobName = workspaceId.toString() + "-" + timestamp + ".sql";
 
-        // TODO: call function that generates a name for the backup
-        // https://learn.microsoft.com/en-us/java/api/overview/azure/storage-blob-readme?view=azure-java-stable#upload-a-blob-via-an-outputstream
-        try (BlobOutputStream blobOS = blobContainerClient.getBlobClient(blobName).getBlockBlobClient().getBlobOutputStream()) {
-            try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(fromStream, StandardCharsets.UTF_8))) {
-                int line;
-                while ((line = bufferedReader.read()) != -1) {
-                    blobOS.write(line);
-                }
-            }
-        } catch (IOException ioEx) {
-            throw new LaunchProcessException("Error streaming output of child process", ioEx);
-        }
-    }
-
-    public static BlobContainerClient constructBlockBlobClient(String containerName, String connectionString) {
-        BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
-                .connectionString(connectionString)
-                .buildClient();
-
-        // TODO: this will be used when connection to blob storage will be done via SAS token vs connection string
-        //BlobServiceClient storageClient = new BlobServiceClientBuilder().endpoint(endpoint).sasToken(token).buildClient();
-
-        return blobServiceClient.getBlobContainerClient(containerName);
+        return blobName;
     }
 }
