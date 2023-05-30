@@ -5,6 +5,7 @@ plugins {
 	id 'org.sonarqube'
 	id 'com.gorylenko.gradle-git-properties'
 	id 'jacoco'
+	id "au.com.dius.pact" version "4.3.10"
 }
 
 springBoot {
@@ -66,6 +67,7 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
 	testImplementation project(':client')
+	testImplementation 'au.com.dius.pact.consumer:junit5:4.1.7'
 
 	constraints {
 		implementation('org.json:json:20230227') {
@@ -97,5 +99,19 @@ jacocoTestReport {
 	reports {
 		// sonarqube requires XML coverage output to upload coverage data
 		xml.required = true
+	}
+}
+
+test {
+	systemProperties['pact.rootDir'] = "$buildDir/pacts"
+	systemProperties['pact.provider.version'] = "$project.version"
+}
+
+tasks.register("pactTests", Test) {
+	useJUnitPlatform {
+		includeTags "pact-test"
+	}
+	testLogging {
+		showStandardStreams = true
 	}
 }

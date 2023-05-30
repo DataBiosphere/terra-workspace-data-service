@@ -8,6 +8,7 @@ import bio.terra.workspace.api.ReferencedGcpResourceApi;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.DataRepoService;
+import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerClientFactory;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
@@ -26,8 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -92,7 +92,10 @@ class DataRepoServiceTest {
         assertTrue(recordDao.recordTypeExists(INSTANCE, RecordType.valueOf(DataRepoService.TDRIMPORT_TABLE)));
         List<org.databiosphere.workspacedataservice.shared.model.Record> result = recordDao.queryForRecords(RecordType.valueOf(DataRepoService.TDRIMPORT_TABLE),3,0,"asc",null,INSTANCE);
         for (int i = 0; i < 3; i++){
-            assertEquals(result.get(i).getId(), "table"+(i+1));
+            Record rec = result.get(i);
+            assertEquals("table"+(i+1), rec.getId());
+            assertEquals(snapshotId.toString(), rec.getAttributeValue(DataRepoService.TDRIMPORT_SNAPSHOT_ID));
+            assertNotNull(rec.getAttributeValue(DataRepoService.TDRIMPORT_IMPORT_TIME));
         }
     }
 
