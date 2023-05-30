@@ -2,8 +2,6 @@ name: Build, test and publish Python client to PyPI
 
 on:
   pull_request:
-    paths:
-      - '**/openapi-docs.yaml'
   workflow_call:
     inputs:
       new-tag:

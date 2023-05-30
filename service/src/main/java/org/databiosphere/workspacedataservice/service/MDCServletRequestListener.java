@@ -1,13 +1,14 @@
 package org.databiosphere.workspacedataservice.service;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import org.slf4j.MDC;
+import org.springframework.stereotype.Component;
+
 import javax.servlet.ServletRequestEvent;
 import javax.servlet.ServletRequestListener;
 import javax.servlet.http.HttpServletRequest;
-import org.slf4j.MDC;
-import org.springframework.stereotype.Component;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * Servlet request listener that sets a unique request id into the SLF4J MDC context for this request. This listener

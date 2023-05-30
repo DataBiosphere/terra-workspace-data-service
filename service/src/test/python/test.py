@@ -5,8 +5,6 @@ from unittest import TestCase
 import  wds_client
 from datetime import date, datetime
 import random
-import uuid
-import json
 import csv
 
 # generate records for testing
@@ -242,4 +240,16 @@ class WdsTests(TestCase):
     # import snapshot from TDR with appropriate permissions
     def test_import_snapshot(self):
         self.snapshot_client.import_snapshot(self.current_workspaceId, self.version, "123e4567-e89b-12d3-a456-426614174000")
-        #At this point, just testing that an error is not thrown.  Further work will do further testing.
+        # should create a tdr-imports table
+        ent_types = self.schema_client.describe_record_type(self.current_workspaceId, self.version, "tdr-imports")
+        self.assertEqual(ent_types.count, 2)
+        search_request = { "offset": 0, "limit": 10}
+        records = self.records_client.query_records(self.current_workspaceId, self.version, "tdr-imports", search_request)
+        testRecord = records.records[0]
+        self.assertEqual(testRecord.id, "table1")
+        self.assertEqual(testRecord.attributes['Snapshot Id'], "123e4567-e89b-12d3-a456-426614174000")
+        self.assertIsNotNone(testRecord.attributes['Import Time'])
+        # clean up
+        response = self.schema_client.delete_record_type(self.current_workspaceId, self.version, "tdr-imports")
+        workspace_ent_type = self.schema_client.describe_all_record_types(self.current_workspaceId, self.version)
+        self.assertTrue(len(workspace_ent_type) == 0)
