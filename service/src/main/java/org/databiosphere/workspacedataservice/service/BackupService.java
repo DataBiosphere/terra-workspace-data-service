@@ -4,6 +4,7 @@ import bio.terra.common.db.WriteTransaction;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
+import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +14,8 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+
+import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 
 @Service
 public class BackupService {
@@ -41,9 +44,29 @@ public class BackupService {
     private String pgDumpPath;
 
     @WriteTransaction
-    public boolean backupAzureWDS(BackUpFileStorage storage) {
+    public BackupResponse backupAzureWDS(BackUpFileStorage storage, String version) {
+        validateVersion(version);
         String blobName = GenerateBackupFilename(workspaceId);
 
+        List<String> commandList = GenerateCommandList();
+        Map<String, String> envVars = Map.of("PGPASSWORD", dbPassword);
+
+        LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
+        localProcessLauncher.launchProcess(commandList, envVars);
+        storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName);
+
+        String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
+        int exitCode = localProcessLauncher.waitForTerminate();
+
+        if (exitCode != 0 && StringUtils.isNotBlank(error)) {
+            LOGGER.error("process error: {}", error);
+            return new BackupResponse(false, error);
+        }
+
+        return new BackupResponse(true, "Backup successfully completed.");
+    }
+
+    public List<String> GenerateCommandList() {
         Map<String, String> command = new LinkedHashMap<>();
         command.put(pgDumpPath, null);
         command.put("-h", dbHost);
@@ -61,21 +84,7 @@ public class BackupService {
         commandList.add("-v");
         commandList.add("-w");
 
-        Map<String, String> envVars = Map.of("PGPASSWORD", dbPassword);
-
-        LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
-        localProcessLauncher.launchProcess(commandList, envVars);
-        storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName);
-
-        String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
-        int exitCode = localProcessLauncher.waitForTerminate();
-
-        if (exitCode != 0 && StringUtils.isNotBlank(error)) {
-            LOGGER.error("process error: {}", error);
-            return false;
-        }
-
-        return true;
+        return commandList;
     }
 
     public static String GenerateBackupFilename(String workspaceId) {

@@ -13,7 +13,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
 public class AzureBlobStorage implements BackUpFileStorage {
-    private static String backUpContainerName = "backup";
+    private static String backUpContainerName = "backup2";
 
     public AzureBlobStorage() {}
 
@@ -23,7 +23,6 @@ public class AzureBlobStorage implements BackUpFileStorage {
         String storageConnectionString = System.getenv("STORAGE_CONNECTION_STRING");
         BlobContainerClient blobContainerClient = constructBlockBlobClient(backUpContainerName, storageConnectionString);
 
-        // TODO: call function that generates a name for the backup
         // https://learn.microsoft.com/en-us/java/api/overview/azure/storage-blob-readme?view=azure-java-stable#upload-a-blob-via-an-outputstream
         try (BlobOutputStream blobOS = blobContainerClient.getBlobClient(blobName).getBlockBlobClient().getBlobOutputStream()) {
             try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(fromStream, StandardCharsets.UTF_8))) {
@@ -45,6 +44,6 @@ public class AzureBlobStorage implements BackUpFileStorage {
         // TODO: this will be used when connection to blob storage will be done via SAS token vs connection string
         //BlobServiceClient storageClient = new BlobServiceClientBuilder().endpoint(endpoint).sasToken(token).buildClient();
 
-        return blobServiceClient.getBlobContainerClient(containerName);
+        return blobServiceClient.createBlobContainerIfNotExists(containerName);
     }
 }

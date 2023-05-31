@@ -3,28 +3,28 @@ package org.databiosphere.workspacedataservice.service;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import org.databiosphere.workspacedataservice.storage.LocalFileStorage;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Scanner;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+@SpringBootTest(properties = "spring.cache.type=NONE")
 @TestPropertySource("classpath:test.properties")
 class BackupServiceTest {
-    @MockBean
-    private LocalFileStorage blobServiceClient = new LocalFileStorage();
+    @Autowired
+    private BackupService mockBackupService;
 
+    @MockBean
+    private LocalFileStorage blobServiceClient;
     @Test
     void testBackupAzureWDS() throws Exception {
         String text = "test-data";
@@ -43,5 +43,12 @@ class BackupServiceTest {
             assertThat(data) .isEqualTo(text);
         }
         myReader.close();
+    }
+
+    @Test
+    void CheckCommandLine() {
+        List<String> commandList = mockBackupService.GenerateCommandList();
+        String command = String.join(" ", commandList);
+        assert(command).equals("/usr/bin/pg_dump -h localhost -p 5432 -U postgres -d wds -v -w");
     }
 }

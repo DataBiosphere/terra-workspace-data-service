@@ -1,8 +1,7 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import org.databiosphere.workspacedataservice.retry.RetryableApi;
 import org.databiosphere.workspacedataservice.service.BackupService;
-import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
+import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.storage.AzureBlobStorage;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,10 +18,10 @@ public class BackupController {
         this.backupService = backupService;
     }
 
-    @PostMapping("/backup")
-    @RetryableApi
-    public ResponseEntity<String> createBackup() {
-        if(backupService.backupAzureWDS(storage)) {
+    @PostMapping("/backup/{version}")
+    public ResponseEntity<String> createBackup(@PathVariable("version") String version) {
+        BackupResponse response = backupService.backupAzureWDS(storage, version);
+        if(response.backupStatus()) {
             return new ResponseEntity<>(HttpStatus.OK);
         }
         

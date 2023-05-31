@@ -27,17 +27,27 @@ tags:
   - name: Snapshots
     description: Snapshot APIs
 paths:
-  /backup:
+  /backup/{v}:
     post:
       tags:
         - Backup
+      parameters:
+        - $ref: '#/components/parameters/versionPathParam'
       summary: Create a backup of a PostgreSQL instance and upload it to Azure Blob Storage
       operationId: createBackup
       responses:
         200:
           description: Successfully initiated the backup process
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupResponse'
         400:
           description: Something failed during backup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupResponse'
   /status:
     get:
       summary: Gets health status for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#health for details)
@@ -801,6 +811,15 @@ components:
           type: string
         components:
           $ref: '#/components/schemas/components'
+    BackupResponse:
+      type: object
+      properties:
+        backupStatus:
+          type: boolean
+          description: status of backup
+        message:
+          type: string
+          description: message regarding backup status
     build:
       type: object
       properties:
