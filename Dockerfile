@@ -23,7 +23,7 @@ RUN wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 RUN apt-get update
 
 # Add postgres client for pg_dump command
-RUN apt-get install postgresql-client -y
+RUN apt-get install postgresql-client-15 -y
 
 # remove prerequisites we no longer need
 RUN apt-get remove wget gnupg2 -y
