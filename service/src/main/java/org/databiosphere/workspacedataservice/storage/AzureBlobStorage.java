@@ -17,6 +17,7 @@ public class AzureBlobStorage implements BackUpFileStorage {
 
     public AzureBlobStorage() {}
 
+    @Override
     public void streamOutputToBlobStorage(InputStream fromStream, String blobName) {
         // TODO: remove this once connection is switched to be done via SAS token
         String storageConnectionString = System.getenv("STORAGE_CONNECTION_STRING");

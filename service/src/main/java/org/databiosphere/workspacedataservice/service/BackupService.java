@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import bio.terra.common.db.WriteTransaction;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
+import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +41,8 @@ public class BackupService {
     private String pgDumpPath;
 
     @WriteTransaction
-    public boolean backupAzureWDS(BackUpFileStorage storage) throws Exception {
-        String blobName = GenerateBackUpFileName(workspaceId);
+    public boolean backupAzureWDS(BackUpFileStorage storage) {
+        String blobName = GenerateBackupFilename(workspaceId);
 
         Map<String, String> command = new LinkedHashMap<>();
         command.put(pgDumpPath, null);
@@ -77,12 +78,10 @@ public class BackupService {
         return true;
     }
 
-    public static String GenerateBackUpFileName(String workspaceId) {
+    public static String GenerateBackupFilename(String workspaceId) {
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
         String timestamp = now.format(formatter);
-        String blobName = workspaceId.toString() + "-" + timestamp + ".sql";
-
-        return blobName;
+        return  workspaceId + "-" + timestamp + ".sql";
     }
 }
