@@ -12,19 +12,18 @@ public class BackupController {
 
     private final BackupService backupService;
     private final AzureBlobStorage storage;
-
     public BackupController(BackupService backupService) {
         this.storage = new AzureBlobStorage();
         this.backupService = backupService;
     }
 
     @PostMapping("/backup/{version}")
-    public ResponseEntity<String> createBackup(@PathVariable("version") String version) {
+    public ResponseEntity<BackupResponse> createBackup(@PathVariable("version") String version) {
         BackupResponse response = backupService.backupAzureWDS(storage, version);
         if(response.backupStatus()) {
-            return new ResponseEntity<>(HttpStatus.OK);
+            return new ResponseEntity<>(response, HttpStatus.OK);
         }
         
-        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
