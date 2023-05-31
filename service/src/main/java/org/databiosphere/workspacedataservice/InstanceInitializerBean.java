@@ -19,6 +19,15 @@ public class InstanceInitializerBean {
     @Value("${twds.instance.source-workspace-id}")
     private String sourceWorkspaceId;
 
+    /*
+        currently unused; future code will use this token to:
+            - ask WSM about the workspace's storage container
+            - retrieve a SAS token for that container from WSM
+            - kick off a backup operation in the source WDS
+     */
+    @Value("${twds.startup-token}")
+    private String startupToken;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceInitializerBean.class);
 
     public InstanceInitializerBean(InstanceDao instanceDao){
