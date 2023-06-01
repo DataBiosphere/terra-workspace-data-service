@@ -30,21 +30,20 @@ jobs:
           elif [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
             GITHUB_REF=refs/heads/${{ github.head_ref }}
             GITHUB_SHA=${{ github.event.pull_request.head.sha }}
+          elif [[ "$GITHUB_EVENT_NAME" == "merge_group" ]]; then
+            GITHUB_REF=refs/heads/${{ github.head_ref }}
           else
             echo "Failed to extract branch information"
             exit 1
           fi
-          echo "ref=$GITHUB_REF" >> $GITHUB_OUTPUT
-          echo "sha=$GITHUB_SHA" >> $GITHUB_OUTPUT
-          echo "sha-short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          echo "branch=${GITHUB_REF/refs\/heads\//""}" >> $GITHUB_OUTPUT
-
-      - name: Echo branch information
+          echo "repo-branch=${GITHUB_REF/refs\/heads\//""}" >> $GITHUB_OUTPUT
+          echo "repo-version=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+      - name: Echo repo and branch information
         run: |
-          echo ${{ steps.extract-branch.outputs.ref }}
-          echo ${{ steps.extract-branch.outputs.sha }}
-          echo ${{ steps.extract-branch.outputs.sha-short }}
-          echo ${{ steps.extract-branch.outputs.branch }}
+          echo "repo-owner=${{ github.repository_owner }}"
+          echo "repo-name=${{ github.event.repository.name }}"
+          echo "repo-branch=${{ steps.extract-branch.outputs.repo-branch }}"
+          echo "repo-version=${{ steps.extract-branch.outputs.repo-version }}"
         
   run-consumer-contract-tests:
     runs-on: ubuntu-latest
