@@ -45,22 +45,27 @@ public class BackupService {
 
     @WriteTransaction
     public BackupResponse backupAzureWDS(BackUpFileStorage storage, String version) {
-        validateVersion(version);
-        String blobName = GenerateBackupFilename();
+        try {
+            validateVersion(version);
+            String blobName = GenerateBackupFilename();
 
-        List<String> commandList = GenerateCommandList();
-        Map<String, String> envVars = Map.of("PGPASSWORD", dbPassword);
+            List<String> commandList = GenerateCommandList();
+            Map<String, String> envVars = Map.of("PGPASSWORD", dbPassword);
 
-        LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
-        localProcessLauncher.launchProcess(commandList, envVars);
-        storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName);
+            LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
+            localProcessLauncher.launchProcess(commandList, envVars);
 
-        String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
-        int exitCode = localProcessLauncher.waitForTerminate();
+            storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName);
+            String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
+            int exitCode = localProcessLauncher.waitForTerminate();
 
-        if (exitCode != 0 && StringUtils.isNotBlank(error)) {
-            LOGGER.error("process error: {}", error);
-            return new BackupResponse(false, error);
+            if (exitCode != 0 && StringUtils.isNotBlank(error)) {
+                LOGGER.error("process error: {}", error);
+                return new BackupResponse(false, error);
+            }
+        }
+        catch (LaunchProcessException ex){
+            return new BackupResponse(false, ex.getMessage());
         }
 
         return new BackupResponse(true, "Backup successfully completed.");

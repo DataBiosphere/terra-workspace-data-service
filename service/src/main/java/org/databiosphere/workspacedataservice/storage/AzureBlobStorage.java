@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.storage;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.specialized.BlobOutputStream;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 
@@ -13,10 +14,8 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
 public class AzureBlobStorage implements BackUpFileStorage {
-    private static String backUpContainerName = "backup2";
-
+    private static String backUpContainerName = "backup";
     public AzureBlobStorage() {}
-
     @Override
     public void streamOutputToBlobStorage(InputStream fromStream, String blobName) {
         // TODO: remove this once connection is switched to be done via SAS token
@@ -44,6 +43,12 @@ public class AzureBlobStorage implements BackUpFileStorage {
         // TODO: this will be used when connection to blob storage will be done via SAS token vs connection string
         //BlobServiceClient storageClient = new BlobServiceClientBuilder().endpoint(endpoint).sasToken(token).buildClient();
 
-        return blobServiceClient.createBlobContainerIfNotExists(containerName);
+        // if the backup container in storage doesnt already exists, it will need to be created
+        try {
+            return blobServiceClient.getBlobContainerClient(containerName);
+        }
+        catch (BlobStorageException e){
+            return blobServiceClient.createBlobContainerIfNotExists(containerName);
+        }
     }
 }
