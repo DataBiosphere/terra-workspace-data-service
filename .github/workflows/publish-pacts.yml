@@ -14,6 +14,8 @@ jobs:
       runs-on: ubuntu-latest
       outputs:
         sha-short: ${{ steps.extract-branch.outputs.sha-short }}
+        repo-branch: ${{ steps.extract-branch.outputs.repo-branch }}
+        repo-version: ${{ steps.extract-branch.outputs.repo-version }}
         
       steps:
       - uses: actions/checkout@v3
@@ -75,10 +77,10 @@ jobs:
       id-token: 'write'
     steps:
       - name: Dispatch to terra-github-workflows
-        uses: aurelien-baudet/workflow-dispatch@93e95b157d791ae7f42aef8f8a0d3d723eba1c31 #commit sha for v2.1.1
+        uses: broadinstitute/workflow-dispatch@v3
         with:
           workflow: publish-pacts.yaml
           repo: broadinstitute/terra-github-workflows
           ref: refs/heads/main
           token: ${{ secrets.BROADBOT_TOKEN }} # github token for access to kick off a job in the private repo
-          inputs: '{ "consumer-name": "wds-consumer", "consumer-version": "${{ needs.init-github-context.outputs.sha-short }}", "provider-name": "sam-provider", "pact-b64": "${{ needs.run-consumer-contract-tests.outputs.pact-b64 }}" }'
+          inputs: '{ "pact-b64": "${{ needs.run-consumer-contract-tests.outputs.pact-b64 }}", "repo-owner": "${{ github.repository_owner }}", "repo-name": "${{ github.event.repository.name }}", "repo-branch": "${{ needs.init-github-context.outputs.repo-branch }}" }'
