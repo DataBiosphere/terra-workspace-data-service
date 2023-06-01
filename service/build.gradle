@@ -6,6 +6,7 @@ plugins {
 	id 'com.gorylenko.gradle-git-properties'
 	id 'jacoco'
 	id "au.com.dius.pact" version "4.3.10"
+	id 'jvm-test-suite'
 }
 
 springBoot {
@@ -113,5 +114,27 @@ tasks.register("pactTests", Test) {
 	}
 	testLogging {
 		showStandardStreams = true
+	}
+}
+
+testing {
+    suites {
+        integrationTest(JvmTestSuite) {
+            dependencies {
+        		implementation project()
+        		implementation project(':client')
+				implementation 'org.springframework.boot:spring-boot-starter-test'
+				implementation 'org.liquibase:liquibase-core:4.21.1'
+            }
+        }
+    }
+}
+
+tasks.named('integrationTest') {
+	testLogging {
+		events = ["passed", "failed", "skipped", "started"]
+		exceptionFormat = "full"
+		// should command-line test output show stdout/stderr?
+		showStandardStreams = false
 	}
 }

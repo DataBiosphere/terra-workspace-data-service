@@ -46,7 +46,7 @@ public class BackupService {
     @WriteTransaction
     public BackupResponse backupAzureWDS(BackUpFileStorage storage, String version) {
         validateVersion(version);
-        String blobName = GenerateBackupFilename(workspaceId);
+        String blobName = GenerateBackupFilename();
 
         List<String> commandList = GenerateCommandList();
         Map<String, String> envVars = Map.of("PGPASSWORD", dbPassword);
@@ -87,10 +87,10 @@ public class BackupService {
         return commandList;
     }
 
-    public static String GenerateBackupFilename(String workspaceId) {
+    public String GenerateBackupFilename() {
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
         String timestamp = now.format(formatter);
-        return  workspaceId + "-" + timestamp + ".sql";
+        return workspaceId + "-" + timestamp + ".sql";
     }
 }

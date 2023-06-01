@@ -5,6 +5,7 @@ plugins {
 
 	id 'com.jfrog.artifactory' version '4.18.2'
 	id 'org.hidetake.swagger.generator'
+	id 'jvm-test-suite'
 }
 
 repositories {
