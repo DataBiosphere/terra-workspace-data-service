@@ -3,13 +3,11 @@ on:
   pull_request:
     branches:
       - main
-    paths-ignore:
-      - 'README.md'
+    paths-ignore: [ '**.md' ]
   push:
     branches:
       - main
-    paths-ignore:
-      - 'README.md'
+    paths-ignore: [ '**.md' ]
 
 jobs:
   init-github-context:
