@@ -28,7 +28,7 @@ jobs:
       postgres:
         image: postgres:13.1
         env:
-          POSTGRES_PASSWORD: password
+          POSTGRES_PASSWORD: postgres
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -47,7 +47,7 @@ jobs:
 
       - name: Initialize Postgres DB
         env:
-          PGPASSWORD: password
+          PGPASSWORD: postgres
         run: psql -h 127.0.0.1 -U postgres -f ./local-dev/local-postgres-init.sql
 
       - name: Set up JDK
