@@ -43,7 +43,6 @@ public class BackupService {
     @Value("${twds.pg_dump.path:}")
     private String pgDumpPath;
 
-    @WriteTransaction
     public BackupResponse backupAzureWDS(BackUpFileStorage storage, String version) {
         try {
             validateVersion(version);
