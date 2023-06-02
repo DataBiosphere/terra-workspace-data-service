@@ -35,6 +35,7 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+          
       - name: Look for AJ (Analysis Journeys) Jira ID in the manual workflow trigger message
         id: find-jira-id
         run: |
@@ -53,6 +54,16 @@ jobs:
           git_short_sha=$(git rev-parse --short HEAD)
           echo $git_short_sha
           echo "git_short_sha=${git_short_sha}" >> $GITHUB_OUTPUT
+          
+      - name: Build WDS base Docker image 
+        run: docker build -f Dockerfile --no-cache -t wdsbase:snapshot .
+         
+      - name: Tag WDS base Docker image 
+        run: docker tag wdsbase:snapshot us.gcr.io/broad-dsp-gcr-public/base/wds-debian-pg-dump:latest
+        
+      - name: Push WDS base Docker image 
+        run: docker push us.gcr.io/broad-dsp-gcr-public/base/wds-debian-pg-dump:latest
+        
       - name: Construct GCR docker image name
         id: gcr-image-name
         run: echo "name=${GCR_REGISTRY}/${GOOGLE_PROJECT}/${SERVICE_NAME}" >> $GITHUB_OUTPUT
