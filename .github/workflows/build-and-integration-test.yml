@@ -30,7 +30,7 @@ jobs:
       postgres:
         image: postgres:13.1
         env:
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: password
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -43,10 +43,13 @@ jobs:
         # Needed by sonar to get the git history for the branch the PR will be merged into.
         with:
           fetch-depth: 0
+          
+      -   name: Install pg_dump
+          run: sudo apt install postgresql postgresql-contrib
 
       - name: Initialize Postgres DB
         env:
-          PGPASSWORD: postgres
+          PGPASSWORD: password
         run: psql -h 127.0.0.1 -U postgres -f ./local-dev/local-postgres-init.sql
 
       - name: Set up JDK
