@@ -12,6 +12,7 @@ public class BackupController {
 
     private final BackupService backupService;
     private final AzureBlobStorage storage;
+
     public BackupController(BackupService backupService) {
         this.storage = new AzureBlobStorage();
         this.backupService = backupService;
@@ -23,7 +24,7 @@ public class BackupController {
         if(response.backupStatus()) {
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
-        
+
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

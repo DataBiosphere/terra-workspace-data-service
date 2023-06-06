@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.workspacemanager;
 
 import bio.terra.workspace.api.ReferencedGcpResourceApi;
+import bio.terra.workspace.api.ControlledAzureResourceApi;
+import bio.terra.workspace.api.ResourceApi;
 import bio.terra.workspace.client.ApiClient;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -45,7 +47,15 @@ public class HttpWorkspaceManagerClientFactory implements WorkspaceManagerClient
         return apiClient;
     }
 
-    public ReferencedGcpResourceApi getReferencedGcpResourceApi(){
+    public ReferencedGcpResourceApi getReferencedGcpResourceApi() {
         return new ReferencedGcpResourceApi(getApiClient());
+    }
+
+    public ResourceApi getResourceApi() {
+        return new ResourceApi(getApiClient());
+    }
+
+    public ControlledAzureResourceApi getAzureResourceApi() {
+        return new ControlledAzureResourceApi(getApiClient());
     }
 }
