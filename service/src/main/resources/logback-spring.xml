@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <appender name="Console"
-              class="ch.qos.logback.core.ConsoleAppender">
-        <layout class="ch.qos.logback.classic.PatternLayout">
-            <Pattern>
-                %green(%d{ISO8601}) %highlight(%-5level) [%blue(%X{requestId})] %yellow(%C{1.}): %msg%n%throwable
-            </Pattern>
-        </layout>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- inspired by Spring default ${FILE_LOG_PATTERN} from defaults.xml, modified to include requestId -->
+    <property name="WDS_LOG_PATTERN" value="%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}} ${LOG_LEVEL_PATTERN:-%5p} [%36X{requestId}] [%t] %-40.40logger{39} : %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${WDS_LOG_PATTERN}</pattern>
+            <charset>${CONSOLE_LOG_CHARSET}</charset>
+        </encoder>
     </appender>
 
     <appender name="Sentry" class="io.sentry.logback.SentryAppender">
@@ -18,51 +21,26 @@
     </appender>
 
     <springProfile name="!local">
-        <property name="LOGS" value="./logs" />
-        <appender name="RollingFile"
-                  class="ch.qos.logback.core.rolling.RollingFileAppender">
-            <file>${LOGS}/spring-boot-logger.log</file>
-            <encoder
-                    class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-                <Pattern>%d %p %C{1.} [%X{requestId}] %m%n</Pattern>
-            </encoder>
-
-            <rollingPolicy
-                    class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-                <!-- rollover daily and when the file reaches 10 MegaBytes -->
-                <fileNamePattern>${LOGS}/archived/spring-boot-logger-%d{yyyy-MM-dd}.%i.log
-                </fileNamePattern>
-                <timeBasedFileNamingAndTriggeringPolicy
-                        class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                    <maxFileSize>10MB</maxFileSize>
-                </timeBasedFileNamingAndTriggeringPolicy>
-            </rollingPolicy>
-        </appender>
-
         <!-- log everything at INFO level -->
         <root level="info">
-            <appender-ref ref="RollingFile" />
             <appender-ref ref="Console" />
             <appender-ref ref="Sentry" />
         </root>
 
         <!-- log WDS at DEBUG level -->
         <logger name="org.databiosphere.workspacedataservice" level="debug" additivity="false">
-            <appender-ref ref="RollingFile" />
             <appender-ref ref="Console" />
             <appender-ref ref="Sentry" />
         </logger>
 
         <!-- log WDS Sam integration at DEBUG level -->
         <logger name="org.databiosphere.workspacedataservice.sam" level="debug" additivity="false">
-            <appender-ref ref="RollingFile" />
             <appender-ref ref="Console" />
             <appender-ref ref="Sentry" />
         </logger>
 
         <!-- log org.springframework.web at DEBUG level -->
         <logger name="org.springframework.web" level="debug" additivity="false">
-            <appender-ref ref="RollingFile" />
             <appender-ref ref="Console" />
             <appender-ref ref="Sentry" />
         </logger>
