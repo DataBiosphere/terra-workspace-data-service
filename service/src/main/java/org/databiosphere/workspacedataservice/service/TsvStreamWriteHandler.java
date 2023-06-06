@@ -64,7 +64,7 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 		// if a primary key is specified, check if it is present in the TSV
 		if (primaryKey.isPresent() && !colNames.contains(primaryKey.get())) {
 			throw new InvalidTsvException(
-					"Uploaded TSV is either missing the " + primaryKey
+					"Uploaded TSV is either missing the " + primaryKey.get()
 							+ " column or has a null or empty string value in that column");
 		}
 
