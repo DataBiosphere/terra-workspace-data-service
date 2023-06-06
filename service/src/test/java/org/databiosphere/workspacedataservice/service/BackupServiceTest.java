@@ -10,7 +10,6 @@ import java.util.List;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @SpringBootTest(properties = "spring.cache.type=NONE")
-@TestPropertySource("classpath:test.properties")
 class BackupServiceTest {
     @Autowired
     private BackupService backupService;
