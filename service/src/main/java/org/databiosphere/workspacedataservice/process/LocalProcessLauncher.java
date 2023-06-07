@@ -100,4 +100,9 @@ public class LocalProcessLauncher {
             throw new LaunchProcessException("Error waiting for child process to terminate", intEx);
         }
     }
+
+    /** Get stdout input stream from the child process. */
+    public InputStream getInputStream() {
+        return process.getInputStream();
+    }
 }

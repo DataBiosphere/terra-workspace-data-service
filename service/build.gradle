@@ -6,6 +6,7 @@ plugins {
 	id 'com.gorylenko.gradle-git-properties'
 	id 'jacoco'
 	id "au.com.dius.pact" version "4.3.10"
+	id 'jvm-test-suite'
 }
 
 springBoot {
@@ -22,7 +23,7 @@ repositories {
 jib {
 	from {
 		// see https://github.com/broadinstitute/dsp-appsec-blessed-images/tree/main/jre
-		image = "us.gcr.io/broad-dsp-gcr-public/base/jre:17-distroless"
+		image = "us.gcr.io/broad-dsp-gcr-public/base/wds-debian-pg-dump:latest"
 	}
 
 	container {
@@ -32,7 +33,10 @@ jib {
 }
 
 dependencies {
+	// Azure libraries
 	implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.9'
+	implementation 'com.azure:azure-storage-blob:12.18.0'
+
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -110,5 +114,26 @@ tasks.register("pactTests", Test) {
 	}
 	testLogging {
 		showStandardStreams = true
+	}
+}
+
+testing {
+    suites {
+        integrationTest(JvmTestSuite) {
+            dependencies {
+				implementation project(':service')
+				implementation 'org.springframework.boot:spring-boot-starter-test'
+				implementation 'org.liquibase:liquibase-core:4.21.1'
+            }
+        }
+    }
+}
+
+tasks.named('integrationTest') {
+	testLogging {
+		events = ["passed", "failed", "skipped", "started"]
+		exceptionFormat = "full"
+		// should command-line test output show stdout/stderr?
+		showStandardStreams = false
 	}
 }
