@@ -121,7 +121,7 @@ public class RecordOrchestratorService { // TODO give me a better name
 
         return httpResponseOutputStream -> {
             try (Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType)) {
-                TsvSupport.WriteCsvToStream(allRecords, httpResponseOutputStream, headers);
+                TsvSupport.writeCsvToStream(allRecords, httpResponseOutputStream, headers);
             }
         };
     }

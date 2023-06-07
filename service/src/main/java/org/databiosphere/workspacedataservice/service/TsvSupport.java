@@ -17,11 +17,12 @@ public class TsvSupport {
 	private TsvSupport() {
 	}
 
-	public static void WriteCsvToStream (Stream<Record> records, OutputStream stream, List<String> headers) throws IOException {
+	public static void writeCsvToStream (Stream<Record> records, OutputStream stream, List<String> headers) throws IOException {
 
 		CsvSchema tsvHeaderSchema = CsvSchema.emptySchema()
 		.withEscapeChar('\\')
-		.withColumnSeparator('\t');
+		.withColumnSeparator('\t')
+		.withNullValue("");
 
 		final CsvMapper tsvMapper = CsvMapper.builder()
 		.build();
@@ -30,13 +31,13 @@ public class TsvSupport {
 			.writeValues(stream);
 		seqW.write(headers);
 		for (Record record : records.toList()) {
-			List<Object> row = RecordToRow(record, headers);
+			List<Object> row = recordToRow(record, headers);
 			seqW.write(row);
 		}
 		seqW.close();		
 	}
 
-	private static List<Object> RecordToRow(Record record, List<String> headers) {
+	private static List<Object> recordToRow(Record record, List<String> headers) {
 		List<Object> row = new ArrayList<Object>();
 		row.add(record.getId());
 		headers.forEach(h -> {
