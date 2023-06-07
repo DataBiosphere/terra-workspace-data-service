@@ -45,6 +45,7 @@ public class InstanceInitializerBean {
             }
             try {
                 //TODO: this is a placeholder for checking that the db has already been cloned;
+                // like in case if wds restarts later on or fails during cloning start up but back up is already there/etc
                 //In the future it could check the clone status,
                 //But for now assuming if we've created a workspace schema, work is done
                 return !instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
@@ -60,14 +61,18 @@ public class InstanceInitializerBean {
 
     public void initCloneMode(){
         LOGGER.info("Starting in clone mode...");
+
+        // trigger back up
     }
 
     public void initializeInstance() {
         LOGGER.info("Default workspace id loaded as {}", workspaceId);
-        LOGGER.info("Source workspace id loaded as {}", sourceWorkspaceId);
-        if (isInCloneMode(sourceWorkspaceId))
+        if (isInCloneMode(sourceWorkspaceId)) {
+            LOGGER.info("Source workspace id loaded as {}", sourceWorkspaceId);
             initCloneMode();
-        initializeDefaultInstance(); //TODO Wrap this in an else once cloning is implemented
+        }
+        else
+            initializeDefaultInstance(); //TODO Wrap this in an else once cloning is implemented
     }
 
     public void initializeDefaultInstance() {

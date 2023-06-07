@@ -5,7 +5,6 @@ import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,7 +18,6 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 
 @Service
 public class BackupService {
-    private final WorkspaceManagerDao workspaceManagerDao;
     private static final Logger LOGGER = LoggerFactory.getLogger(BackupService.class);
 
     //TODO: in the future this will shift to "twds.instance.source-workspace-id"
@@ -44,10 +42,6 @@ public class BackupService {
     @Value("${twds.pg_dump.path:}")
     private String pgDumpPath;
 
-    public BackupService(WorkspaceManagerDao workspaceManagerDao) {
-        this.workspaceManagerDao = workspaceManagerDao;
-    }
-
     public BackupResponse backupAzureWDS(BackUpFileStorage storage, String version) {
         try {
             validateVersion(version);
@@ -58,8 +52,6 @@ public class BackupService {
 
             LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
             localProcessLauncher.launchProcess(commandList, envVars);
-
-            var url = workspaceManagerDao.getBlobStorageUrl();
 
             storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName);
             String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
