@@ -31,17 +31,17 @@ public class TsvSupport {
 			.writeValues(stream);
 		seqW.write(headers);
 		for (Record record : records.toList()) {
-			List<Object> row = recordToRow(record, headers);
+			List<String> row = recordToRow(record, headers);
 			seqW.write(row);
 		}
 		seqW.close();		
 	}
 
-	private static List<Object> recordToRow(Record record, List<String> headers) {
-		List<Object> row = new ArrayList<Object>();
-		row.add(record.getId());
+	private static List<String> recordToRow(Record record, List<String> headers) {
+		List<String> row = new ArrayList<String>();
+		//row.add(record.getId());
 		headers.forEach(h -> {
-			row.add(record.getAttributeValue(h));
+			row.add(record.getAttributeValue(h) == null ? "" : record.getAttributeValue(h).toString());
 		});
 		return row;
 	}
