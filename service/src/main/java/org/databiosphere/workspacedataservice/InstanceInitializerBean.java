@@ -1,7 +1,12 @@
 package org.databiosphere.workspacedataservice;
 
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
+import org.databiosphere.workspacedataservice.sourcewds.HttpWorkspaceDataServiceClientFactory;
+import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceClientFactory;
+import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +17,9 @@ import java.util.UUID;
 public class InstanceInitializerBean {
 
     private final InstanceDao instanceDao;
+
+    private final LeonardoDao leoDao;
+    private final BackupDao backupDao;
 
     @Value("${twds.instance.workspace-id}")
     private String workspaceId;
@@ -30,8 +38,10 @@ public class InstanceInitializerBean {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceInitializerBean.class);
 
-    public InstanceInitializerBean(InstanceDao instanceDao){
+    public InstanceInitializerBean(InstanceDao instanceDao, LeonardoDao leoDao, BackupDao backupDao){
         this.instanceDao = instanceDao;
+        this.leoDao = leoDao;
+        this.backupDao = backupDao;
     }
 
     public boolean isInCloneMode(String sourceWorkspaceId) {
@@ -48,6 +58,8 @@ public class InstanceInitializerBean {
                 // like in case if wds restarts later on or fails during cloning start up but back up is already there/etc
                 //In the future it could check the clone status,
                 //But for now assuming if we've created a workspace schema, work is done
+
+
                 return !instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
             } catch (IllegalArgumentException e) {
                 LOGGER.warn("Workspace id could not be parsed, unable to clone DB. Provided default workspace id: {}", workspaceId);
@@ -62,7 +74,15 @@ public class InstanceInitializerBean {
     public void initCloneMode(){
         LOGGER.info("Starting in clone mode...");
 
-        // trigger back up
+        // first get source wds url based on source workspace id and the provided access token
+        var sourceWdsEndpoint = leoDao.getWdsEndpointUrl(startupToken);
+        WorkspaceDataServiceClientFactory wdsfactory = new HttpWorkspaceDataServiceClientFactory(sourceWdsEndpoint);
+        WorkspaceDataServiceDao wdsDao = new WorkspaceDataServiceDao(wdsfactory, sourceWorkspaceId);
+
+        // make the call to source wds to trigger back up
+        var response = wdsDao.triggerBackup(startupToken);
+
+        // check that backup was successfully kicked off, next wait to check if backup is ready
     }
 
     public void initializeInstance() {

@@ -41,14 +41,10 @@ public class AzureBlobStorage implements BackUpFileStorage {
     }
 
     public BlobContainerClient constructBlockBlobClient(String containerName, String connectionString) {
-        var url = workspaceManagerDao.getBlobStorageUrl();
+        // get  workspace blob storage endpoint and token
+        var blobstorageDetails = workspaceManagerDao.getBlobStorageUrl();
 
-        BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
-                .connectionString(connectionString)
-                .buildClient();
-
-        // TODO: this will be used when connection to blob storage will be done via SAS token vs connection string
-        //BlobServiceClient storageClient = new BlobServiceClientBuilder().endpoint(endpoint).sasToken(token).buildClient();
+        BlobServiceClient blobServiceClient = new BlobServiceClientBuilder().endpoint(blobstorageDetails.getUrl()).sasToken(blobstorageDetails.getToken()).buildClient();
 
         // if the backup container in storage doesnt already exists, it will need to be created
         try {

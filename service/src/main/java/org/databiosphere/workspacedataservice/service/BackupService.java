@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
@@ -18,6 +19,7 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 
 @Service
 public class BackupService {
+    private final BackupDao backupDao;
     private static final Logger LOGGER = LoggerFactory.getLogger(BackupService.class);
 
     //TODO: in the future this will shift to "twds.instance.source-workspace-id"
@@ -42,7 +44,16 @@ public class BackupService {
     @Value("${twds.pg_dump.path:}")
     private String pgDumpPath;
 
-    public BackupResponse backupAzureWDS(BackUpFileStorage storage, String version) {
+    public BackupService(BackupDao backupDao) {
+        this.backupDao = backupDao;
+    }
+
+    public BackupResponse checkBackupStatus(String trackingId) {
+
+        return new BackupResponse(true, "Backup successfully completed.");
+    }
+
+    public void backupAzureWDS(BackUpFileStorage storage, String version, String trackingId) {
         try {
             validateVersion(version);
             String blobName = GenerateBackupFilename();
@@ -59,14 +70,11 @@ public class BackupService {
 
             if (exitCode != 0 && StringUtils.isNotBlank(error)) {
                 LOGGER.error("process error: {}", error);
-                return new BackupResponse(false, error);
             }
         }
         catch (LaunchProcessException ex){
-            return new BackupResponse(false, ex.getMessage());
+            LOGGER.error("process error: {}", ex);
         }
-
-        return new BackupResponse(true, "Backup successfully completed.");
     }
 
     public List<String> GenerateCommandList() {
