@@ -30,6 +30,8 @@ public class TsvSupport {
 		SequenceWriter seqW = tsvMapper.writer(tsvHeaderSchema)
 			.writeValues(stream);
 		seqW.write(headers);
+		// First header is Primary Key, and value is stored in record.id. Remove header here and add record.id manually.
+		headers.remove(0);
 		for (Record record : records.toList()) {
 			List<String> row = recordToRow(record, headers);
 			seqW.write(row);
@@ -39,7 +41,7 @@ public class TsvSupport {
 
 	private static List<String> recordToRow(Record record, List<String> headers) {
 		List<String> row = new ArrayList<String>();
-		//row.add(record.getId());
+		row.add(record.getId());
 		headers.forEach(h -> {
 			row.add(record.getAttributeValue(h) == null ? "" : record.getAttributeValue(h).toString());
 		});
