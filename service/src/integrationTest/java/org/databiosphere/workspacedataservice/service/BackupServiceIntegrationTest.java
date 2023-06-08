@@ -18,6 +18,7 @@ public class BackupServiceIntegrationTest {
 
     @Test
     void testBackupAzureWDS() throws Exception {
+
         var trackingId = String.valueOf(UUID.randomUUID());
         backupService.backupAzureWDS(storage, "v0.2", trackingId);
 

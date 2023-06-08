@@ -2,7 +2,7 @@ package org.databiosphere.workspacedataservice.sourcewds;
 
 
 import org.databiosphere.workspacedata.client.ApiException;
-import org.databiosphere.workspacedata.model.BackupResponse;
+import org.databiosphere.workspacedata.model.BackupTrackingResponse;
 
 
 public class WorkspaceDataServiceDao {
@@ -17,7 +17,7 @@ public class WorkspaceDataServiceDao {
   /**
    * Triggers a backup in source workspace data service.
    */
-  public BackupResponse triggerBackup(String token) {
+  public BackupTrackingResponse triggerBackup(String token) {
     var backupClient = this.workspaceDataServiceClientFactory.getBackupClient(token);
     try {
       var response = backupClient.createBackup("vo.2");

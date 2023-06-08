@@ -49,7 +49,10 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 		List<String> colNames;
 		FormatSchema formatSchema = tsvIterator.getParser().getSchema();
 		if (formatSchema instanceof CsvSchema actualSchema) {
-			colNames = actualSchema.getColumnNames();
+			colNames = StreamSupport.stream(actualSchema.spliterator(), false)
+					.map(CsvSchema.Column::getName)
+					.toList();
+
 			if (colNames.stream().anyMatch(col -> Collections.frequency(colNames, col) > 1)) {
 				throw new InvalidTsvException("TSV contains duplicate column names."
 					+ "Please use distinct column names to prevent overwriting data");
@@ -61,7 +64,7 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 		// if a primary key is specified, check if it is present in the TSV
 		if (primaryKey.isPresent() && !colNames.contains(primaryKey.get())) {
 			throw new InvalidTsvException(
-					"Uploaded TSV is either missing the " + primaryKey
+					"Uploaded TSV is either missing the " + primaryKey.get()
 							+ " column or has a null or empty string value in that column");
 		}
 

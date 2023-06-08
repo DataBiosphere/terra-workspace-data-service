@@ -8,6 +8,7 @@ import com.azure.storage.blob.specialized.BlobOutputStream;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,12 +16,12 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
 public class AzureBlobStorage implements BackUpFileStorage {
-
     private final WorkspaceManagerDao workspaceManagerDao;
     private static String backUpContainerName = "backup";
     public AzureBlobStorage(WorkspaceManagerDao workspaceManagerDao) {
         this.workspaceManagerDao = workspaceManagerDao;
     }
+
     @Override
     public void streamOutputToBlobStorage(InputStream fromStream, String blobName) {
         // TODO: remove this once connection is switched to be done via SAS token
