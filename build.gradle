@@ -24,6 +24,7 @@ subprojects {
 
     apply plugin: 'idea'
     apply plugin: 'java'
+    apply plugin: 'jvm-test-suite'
     apply plugin: 'org.hidetake.swagger.generator'
 
     ext {

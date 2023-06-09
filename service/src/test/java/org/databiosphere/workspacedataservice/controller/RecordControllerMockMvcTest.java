@@ -306,6 +306,26 @@ class RecordControllerMockMvcTest {
 	}
 
 	@Test
+	void tsvConflictPrimaryKeyShouldFail() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "tsv_orig.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"col1\tcol2\nfoo\tbar\n".getBytes());
+
+		String recordType = "tsv-pk-change";
+		mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
+				.file(file)).andExpect(status().isOk());
+
+
+		MockMultipartFile file2 = new MockMultipartFile("records", "tsv_pk_change.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"id\tcol2\nfoo\tbar\n".getBytes());
+		MvcResult mvcResult = mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, recordType)
+				.file(file2)).andExpect(status().isBadRequest()).andReturn();
+		//Return message should be helpful
+		Exception e = mvcResult.getResolvedException();
+		assertNotNull(e, "expected an InvalidTsvException");
+		assertTrue(e.getMessage().contains("Uploaded TSV is either missing"));
+	}
+
+	@Test
 	@Transactional
 	void tsvWithEmptyStringIdentifier() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "empty_row_id.tsv", MediaType.TEXT_PLAIN_VALUE,

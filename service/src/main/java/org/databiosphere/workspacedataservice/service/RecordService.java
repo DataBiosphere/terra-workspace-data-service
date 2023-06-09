@@ -277,10 +277,12 @@ public class RecordService {
         prepareAndUpsert(instanceId, recordType, records, requestSchema, primaryKey.orElse(ReservedNames.RECORD_ID));
     }
 
-    public void validatePrimaryKey(UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
-        if (primaryKey.isPresent() && !primaryKey.get().equals(recordDao.getPrimaryKeyColumn(recordType, instanceId))) {
+    public String validatePrimaryKey(UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
+        String existingKey = recordDao.getPrimaryKeyColumn(recordType, instanceId);
+        if (primaryKey.isPresent() && !primaryKey.get().equals(existingKey)) {
             throw new NewPrimaryKeyException(primaryKey.get(), recordType);
         }
+        return existingKey;
     }
 
     @WriteTransaction
