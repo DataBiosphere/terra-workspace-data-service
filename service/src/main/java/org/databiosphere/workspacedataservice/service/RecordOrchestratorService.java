@@ -104,7 +104,7 @@ public class RecordOrchestratorService { // TODO give me a better name
                           MultipartFile records) throws IOException {
         validateAndPermissions(instanceId, version);
         if(recordDao.recordTypeExists(instanceId, recordType)){
-            recordService.validatePrimaryKey(instanceId, recordType, primaryKey);
+            primaryKey = Optional.of(recordService.validatePrimaryKey(instanceId, recordType, primaryKey));
         }
         int qty = batchWriteService.batchWriteTsvStream(records.getInputStream(), instanceId, recordType, primaryKey);
         activityLogger.saveEventForCurrentUser(user ->
