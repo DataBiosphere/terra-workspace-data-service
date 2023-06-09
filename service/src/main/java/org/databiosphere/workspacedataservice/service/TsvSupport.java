@@ -19,7 +19,7 @@ public class TsvSupport {
 	private TsvSupport() {
 	}
 
-	public static void writeCsvToStream (Stream<Record> records, OutputStream stream, List<String> headers) throws IOException {
+	public static void writeTsvToStream (Stream<Record> records, OutputStream stream, List<String> headers) throws IOException {
 
 		CsvSchema tsvHeaderSchema = CsvSchema.emptySchema()
 		.withEscapeChar('\\')
