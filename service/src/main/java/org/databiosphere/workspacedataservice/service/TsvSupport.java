@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import com.fasterxml.jackson.databind.SequenceWriter;
+import com.fasterxml.jackson.dataformat.csv.CsvGenerator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.UnexpectedTsvException;
@@ -22,10 +23,10 @@ public class TsvSupport {
 
 		CsvSchema tsvHeaderSchema = CsvSchema.emptySchema()
 		.withEscapeChar('\\')
-		.withColumnSeparator('\t')
-		.withoutQuoteChar();
+		.withColumnSeparator('\t');
 
 		final CsvMapper tsvMapper = CsvMapper.builder()
+		.enable(CsvGenerator.Feature.STRICT_CHECK_FOR_QUOTING)
 		.build();
 
 		SequenceWriter seqW = tsvMapper.writer(tsvHeaderSchema)
