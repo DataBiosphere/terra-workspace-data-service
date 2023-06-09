@@ -38,20 +38,20 @@ public class TsvSupport {
 		seqW.close();		
 	}
 
-	private static void writeRowToTsv(SequenceWriter seqW, Record record, List<String> headers) {
+	private static void writeRowToTsv(SequenceWriter seqW, Record rcd, List<String> headers) {
 		try {
-			List<String> row = recordToRow(record, headers);
+			List<String> row = recordToRow(rcd, headers);
 			seqW.write(row);
 		} catch (Exception e) {
 			throw new UnexpectedTsvException("Error writing TSV: " + e.getMessage());
 		}
 	}
 
-	private static List<String> recordToRow(Record record, List<String> headers) {
-		List<String> row = new ArrayList<String>();
-		row.add(record.getId());
+	private static List<String> recordToRow(Record rcd, List<String> headers) {
+		List<String> row = new ArrayList<>();
+		row.add(rcd.getId());
 		headers.forEach(h -> {
-			Object attr = record.getAttributeValue(h);
+			Object attr = rcd.getAttributeValue(h);
 			row.add(attr == null ? "" : attr.toString());
 		});
 		return row;

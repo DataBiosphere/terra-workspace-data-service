@@ -48,7 +48,6 @@ public class RecordOrchestratorService { // TODO give me a better name
     private final BatchWriteService batchWriteService;
     private final RecordService recordService;
     private final InstanceService instanceService;
-    private final ObjectMapper objectMapper;
     private final SamDao samDao;
     private final ActivityLogger activityLogger;
 
@@ -63,7 +62,6 @@ public class RecordOrchestratorService { // TODO give me a better name
         this.batchWriteService = batchWriteService;
         this.recordService = recordService;
         this.instanceService = instanceService;
-        this.objectMapper = objectMapper;
         this.samDao = samDao;
         this.activityLogger = activityLogger;
     }
