@@ -38,7 +38,12 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 
 	public TsvStreamWriteHandler(InputStream inputStream, ObjectReader tsvReader, RecordType recordType, Optional<String> primaryKey) throws IOException {
 		this.inputStream = inputStream;
-		this.tsvIterator = tsvReader.readValues(inputStream);
+		try {
+			this.tsvIterator = tsvReader.readValues(inputStream);
+		} catch (Exception e) {
+			throw new InvalidTsvException("Error reading TSV. Please check the format of your upload. " +
+					"Underlying error is " + e.getClass().getSimpleName() + ": " + e.getMessage());
+		}
 
 		// check for no rows in TSV
 		if (!tsvIterator.hasNext()) {
@@ -87,11 +92,20 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 	 */
 	@SuppressWarnings("StatementWithEmptyBody")
 	public WriteStreamInfo readRecords(int numRecords) {
-		List<Record> result = new ArrayList<>(numRecords);
-		for (int i = 0; i < numRecords && recordSpliterator.tryAdvance(result::add); i++) {
-			// noop; the action happens in result:add
+		try {
+			List<Record> result = new ArrayList<>(numRecords);
+			for (int i = 0; i < numRecords && recordSpliterator.tryAdvance(result::add); i++) {
+				// noop; the action happens in result:add
+			}
+			return new WriteStreamInfo(result, OperationType.UPSERT);
+		} catch (InvalidTsvException ite) {
+			// if we already have an InvalidTsvException, just rethrow it
+			throw ite;
+		} catch (Exception e) {
+			// but if we catch something else, wrap it with a more helpful error message
+			throw new InvalidTsvException("Error reading TSV. Please check the format of your upload. " +
+					"Underlying error is " + e.getClass().getSimpleName() + ": " + e.getMessage());
 		}
-		return new WriteStreamInfo(result, OperationType.UPSERT);
 	}
 
 	@Override
