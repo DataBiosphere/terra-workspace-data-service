@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
 import bio.terra.common.db.ReadTransaction;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
@@ -55,7 +54,6 @@ public class RecordOrchestratorService { // TODO give me a better name
                                      BatchWriteService batchWriteService,
                                      RecordService recordService,
                                      InstanceService instanceService,
-                                     ObjectMapper objectMapper,
                                      SamDao samDao,
                                      ActivityLogger activityLogger) {
         this.recordDao = recordDao;

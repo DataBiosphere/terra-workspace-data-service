@@ -32,9 +32,9 @@ public class TsvSupport {
 		SequenceWriter seqW = tsvMapper.writer(tsvHeaderSchema)
 			.writeValues(stream);
 		seqW.write(headers);
-		// First header is Primary Key, and value is stored in record.id. Remove header here and add record.id manually.
+		// First header is Primary Key, and value is stored in rcd.id. Remove header here and add rcd.id manually.
 		headers.remove(0);
-		records.forEach(record -> writeRowToTsv(seqW, record, headers));
+		records.forEach(rcd -> writeRowToTsv(seqW, rcd, headers));
 		seqW.close();		
 	}
 
