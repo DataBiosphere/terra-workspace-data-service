@@ -1,50 +1,59 @@
 package org.databiosphere.workspacedataservice.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
-import org.apache.commons.csv.QuoteMode;
+import com.fasterxml.jackson.databind.SequenceWriter;
+import com.fasterxml.jackson.dataformat.csv.CsvGenerator;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import org.databiosphere.workspacedataservice.service.model.exception.UnexpectedTsvException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.ArrayList;
+import java.util.stream.Stream;
+
 
 public class TsvSupport {
 
 	private TsvSupport() {
 	}
 
-	public static CSVFormat getOutputFormat(List<String> headers) {
-		return CSVFormat.DEFAULT.builder().setDelimiter('\t').setQuoteMode(QuoteMode.MINIMAL)
-				.setHeader(headers.toArray(new String[0])).build();
+	public static void writeTsvToStream (Stream<Record> records, OutputStream stream, List<String> headers) throws IOException {
+
+		CsvSchema tsvHeaderSchema = CsvSchema.emptySchema()
+		.withEscapeChar('\\')
+		.withColumnSeparator('\t');
+
+		final CsvMapper tsvMapper = CsvMapper.builder()
+		.enable(CsvGenerator.Feature.STRICT_CHECK_FOR_QUOTING)
+		.build();
+
+		SequenceWriter seqW = tsvMapper.writer(tsvHeaderSchema)
+			.writeValues(stream);
+		seqW.write(headers);
+		// First header is Primary Key, and value is stored in rcd.id. Remove header here and add rcd.id manually.
+		headers.remove(0);
+		records.forEach(rcd -> writeRowToTsv(seqW, rcd, headers));
+		seqW.close();		
 	}
 
-	public static class RecordEmitter implements Consumer<Record> {
-
-		private final CSVPrinter csvPrinter;
-		private final List<String> attributeNames;
-
-		private final ObjectMapper objectMapper;
-
-		public RecordEmitter(CSVPrinter csvPrinter, List<String> attributeNames, ObjectMapper objectMapper) {
-			this.csvPrinter = csvPrinter;
-			this.attributeNames = attributeNames;
-			this.objectMapper = objectMapper;
+	private static void writeRowToTsv(SequenceWriter seqW, Record rcd, List<String> headers) {
+		try {
+			List<String> row = recordToRow(rcd, headers);
+			seqW.write(row);
+		} catch (Exception e) {
+			throw new UnexpectedTsvException("Error writing TSV: " + e.getMessage());
 		}
+	}
 
-		@Override
-		public void accept(Record rcd) {
-			try {
-				csvPrinter.print(rcd.getId());
-				for (String attributeName : attributeNames) {
-					Object attributeValue = rcd.getAttributeValue(attributeName);
-					csvPrinter.print(attributeValue != null && attributeValue.getClass().isArray() ? objectMapper.writeValueAsString(attributeValue) : attributeValue);
-				}
-				csvPrinter.println();
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		}
+	private static List<String> recordToRow(Record rcd, List<String> headers) {
+		List<String> row = new ArrayList<>();
+		row.add(rcd.getId());
+		headers.forEach(h -> {
+			Object attr = rcd.getAttributeValue(h);
+			row.add(attr == null ? "" : attr.toString());
+		});
+		return row;
 	}
 }

@@ -1,8 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
 import bio.terra.common.db.ReadTransaction;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.csv.CSVPrinter;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
@@ -29,7 +27,6 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +47,6 @@ public class RecordOrchestratorService { // TODO give me a better name
     private final BatchWriteService batchWriteService;
     private final RecordService recordService;
     private final InstanceService instanceService;
-    private final ObjectMapper objectMapper;
     private final SamDao samDao;
     private final ActivityLogger activityLogger;
 
@@ -58,14 +54,12 @@ public class RecordOrchestratorService { // TODO give me a better name
                                      BatchWriteService batchWriteService,
                                      RecordService recordService,
                                      InstanceService instanceService,
-                                     ObjectMapper objectMapper,
                                      SamDao samDao,
                                      ActivityLogger activityLogger) {
         this.recordDao = recordDao;
         this.batchWriteService = batchWriteService;
         this.recordService = recordService;
         this.instanceService = instanceService;
-        this.objectMapper = objectMapper;
         this.samDao = samDao;
         this.activityLogger = activityLogger;
     }
@@ -121,14 +115,9 @@ public class RecordOrchestratorService { // TODO give me a better name
         checkRecordTypeExists(instanceId, recordType);
         List<String> headers = recordDao.getAllAttributeNames(instanceId, recordType);
 
-        // TODO: consider rewriting this using jackson-dataformat-csv and removing org.apache.commons:commons-csv altogether
         return httpResponseOutputStream -> {
-            try (Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType);
-                 CSVPrinter writer = TsvSupport.getOutputFormat(headers)
-                     .print(new OutputStreamWriter(httpResponseOutputStream))) {
-                TsvSupport.RecordEmitter recordEmitter = new TsvSupport.RecordEmitter(writer,
-                    headers.subList(1, headers.size()), objectMapper);
-                allRecords.forEach(recordEmitter);
+            try (Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType)) {
+                TsvSupport.writeTsvToStream(allRecords, httpResponseOutputStream, headers);
             }
         };
     }
