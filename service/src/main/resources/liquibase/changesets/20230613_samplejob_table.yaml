@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20230613_samplejob_table
+      author: davidan
+      changes:
+        - createTable:
+            schemaName: sys_wds
+            tableName: samplejob
+            columns:
+              - column:
+                  name: id
+                  type: char(36)
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: duration
+                  type: integer

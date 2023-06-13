@@ -14,6 +14,8 @@ servers:
   - url: ../
     description: Relative to the current swagger page
 tags:
+  - name: Async Things
+    description: POC for async APIs
   - name: Backup
     description: Backup APIs
   - name: Records
@@ -26,7 +28,36 @@ tags:
     description: Information regarding versioning, health, info, etc. for WDS
   - name: Snapshots
     description: Snapshot APIs
+
 paths:
+  /async:
+    post:
+      tags:
+        - Async Things
+      summary: start an asynchronous job
+      operationId: startAsyncJob
+      responses:
+        201:
+          description: async job created
+  /async/{jobId}:
+    get:
+      tags:
+        - Async Things
+      summary: get status and result of an asynchronous job
+      operationId: describeAsyncJob
+      parameters:
+        - name: jobId
+          in: path
+          description: job for which to get status
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: job complete
+        202:
+          description: job still running
+
   /backup/{v}:
     post:
       tags:
