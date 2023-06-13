@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import org.hashids.Hashids;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
@@ -8,7 +9,7 @@ import javax.servlet.ServletRequestListener;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Servlet request listener that sets a unique request id into the SLF4J MDC context for this request. This listener
@@ -31,6 +32,8 @@ public class MDCServletRequestListener implements ServletRequestListener {
     // we could add other headers here, such as: x-vcap-request-id, X─B3─ParentSpanId, X─B3─SpanId, X─B3─Sampled, x-amzn-trace-id
     static final List<String> INCOMING_HEADERS = Arrays.asList(RESPONSE_HEADER, "x-request-id", "trace-id");
 
+    private final Hashids hashids = new Hashids(MDCServletRequestListener.class.getName(), 8);
+
     @Override
     public void requestInitialized(ServletRequestEvent requestEvent) {
         String uniqueId = null;
@@ -47,13 +50,22 @@ public class MDCServletRequestListener implements ServletRequestListener {
 
         // if we did not find an id in incoming headers, make a unique one
         if (uniqueId == null) {
-            uniqueId = UUID.randomUUID().toString();
+            uniqueId = generateId();
         }
 
         // add id to MDC logging
         MDC.put(MDC_KEY, uniqueId);
     }
 
+
+    /*
+        Pseudo-random ID generation is fine here. These ids are meant to uniquely identify a
+        single request. They are not used for cryptography or anything security-sensitive.
+     */
+    @SuppressWarnings("java:S2245")
+    private String generateId() {
+        return hashids.encode(ThreadLocalRandom.current().nextLong(0, Integer.MAX_VALUE));
+    }
 
 
     @Override

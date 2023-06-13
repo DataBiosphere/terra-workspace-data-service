@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.controller;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.service.MDCServletRequestListener;
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -17,6 +18,8 @@ import org.springframework.test.annotation.DirtiesContext;
 import java.util.List;
 import java.util.UUID;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DirtiesContext
@@ -45,7 +48,7 @@ class FullStackMDCRequestResponseTest {
 		List<String> actualResponseHeaders = resp.getHeaders().get(MDCServletRequestListener.RESPONSE_HEADER);
 		assertNotNull(actualResponseHeaders);
 		assertEquals(1, actualResponseHeaders.size());
-		assertDoesNotThrow( () -> UUID.fromString(actualResponseHeaders.get(0)) );
+		assertThat(actualResponseHeaders.get(0), CoreMatchers.not(emptyOrNullString()));
 	}
 
 	// "strings" input should match MDCFilter.INCOMING_HEADERS
@@ -86,7 +89,7 @@ class FullStackMDCRequestResponseTest {
 		List<String> actualResponseHeaders = resp.getHeaders().get(MDCServletRequestListener.RESPONSE_HEADER);
 		assertNotNull(actualResponseHeaders);
 		assertEquals(1, actualResponseHeaders.size());
-		assertDoesNotThrow( () -> UUID.fromString(actualResponseHeaders.get(0)) );
+		assertThat(actualResponseHeaders.get(0), CoreMatchers.not(emptyOrNullString()));
 	}
 
 	@Test
