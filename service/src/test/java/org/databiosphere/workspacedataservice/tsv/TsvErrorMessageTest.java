@@ -56,7 +56,7 @@ public class TsvErrorMessageTest {
 
     @ParameterizedTest(name = "The malformed TSV file '{0}' should throw a helpful error")
     @ValueSource(strings = {"tsv-errors/column-separator.tsv", "tsv-errors/empty-header-line.tsv",
-            "tsv-errors/invalid-middle-byte.tsv", "tsv-errors/too-man-entries.tsv",})
+            "tsv-errors/invalid-middle-byte.tsv", "tsv-errors/too-many-entries.tsv"})
     void testBadTsvFile(String badTsvFile) throws Exception {
         try (InputStream inputStream = ClassLoader.getSystemResourceAsStream(badTsvFile)) {
 
