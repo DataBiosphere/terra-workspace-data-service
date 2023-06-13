@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.sam;
 
+import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
 import org.broadinstitute.dsde.workbench.client.sam.ApiClient;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
@@ -22,16 +23,24 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
 public class HttpSamClientFactory implements SamClientFactory {
 
     private final String samUrl;
+    private final OkHttpClient commonHttpClient;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpSamClientFactory.class);
 
     public HttpSamClientFactory(String samUrl) {
         this.samUrl = samUrl;
+        this.commonHttpClient = new ApiClient()
+                .getHttpClient()
+                .newBuilder()
+                .build();
+        // TODO: add tracing interceptor for distributed tracing to Sam.
+        // this requires we import terra-common-lib
     }
 
     private ApiClient getApiClient(String accessToken) {
         // create a new Sam client
         ApiClient apiClient = new ApiClient();
+        apiClient.setHttpClient(commonHttpClient);
         // initialize the client with the url to Sam
         if (StringUtils.isNotBlank(samUrl)) {
             apiClient.setBasePath(samUrl);
