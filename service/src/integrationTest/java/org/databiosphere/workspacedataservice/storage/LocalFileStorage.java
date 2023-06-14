@@ -18,7 +18,7 @@ public class LocalFileStorage implements BackUpFileStorage {
                 }
             }
         } catch (IOException ioEx) {
-            throw new LaunchProcessException("Error streaming output during local test", ioEx);
+            throw new LaunchProcessException("error streaming output during local test", ioEx);
         }
     }
 }

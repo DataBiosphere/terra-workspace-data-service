@@ -56,7 +56,7 @@ public class SamConfig {
             LOGGER.warn("Workspace id could not be parsed, all Sam permission checks will fail. Provided id: {}", workspaceIdArgument);
             return new MisconfiguredSamDao("WDS was started with invalid WORKSPACE_ID of: " + workspaceIdArgument);
         } catch (Exception e) {
-            LOGGER.warn("Error during initial Sam configuration: " + e.getMessage());
+            LOGGER.warn("error during initial Sam configuration: " + e.getMessage());
             return new MisconfiguredSamDao(e.getMessage());
         }
     }

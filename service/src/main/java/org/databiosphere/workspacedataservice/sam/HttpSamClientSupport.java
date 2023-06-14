@@ -79,11 +79,11 @@ public class HttpSamClientSupport {
                 if (Objects.isNull(resolvedStatus)) {
                     resolvedStatus = HttpStatus.INTERNAL_SERVER_ERROR;
                 }
-                throw new SamException(resolvedStatus, "Error from Sam: " + apiException.getMessage());
+                throw new SamException(resolvedStatus, "error from Sam: " + apiException.getMessage());
             }
         } catch (Exception e) {
             LOGGER.error(loggerHint + " Sam request resulted in " + e.getMessage(), e);
-            throw new SamException(HttpStatus.INTERNAL_SERVER_ERROR, "Error from Sam: " + e.getMessage());
+            throw new SamException(HttpStatus.INTERNAL_SERVER_ERROR, "error from Sam: " + e.getMessage());
         }
     }
 

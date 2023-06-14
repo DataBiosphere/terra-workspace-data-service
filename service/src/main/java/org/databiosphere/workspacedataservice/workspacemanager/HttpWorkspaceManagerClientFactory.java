@@ -55,7 +55,19 @@ public class HttpWorkspaceManagerClientFactory implements WorkspaceManagerClient
         return new ResourceApi(getApiClient());
     }
 
+    public ResourceApi getResourceApi(String token) {
+        var apiClient = getApiClient();
+        apiClient.setAccessToken(token);
+        return new ResourceApi(apiClient);
+    }
+
     public ControlledAzureResourceApi getAzureResourceApi() {
         return new ControlledAzureResourceApi(getApiClient());
+    }
+
+    public ControlledAzureResourceApi getAzureResourceApi(String token) {
+        var apiClient = getApiClient();
+        apiClient.setAccessToken(token);
+        return new ControlledAzureResourceApi(apiClient);
     }
 }

@@ -33,6 +33,7 @@ paths:
         - Backup
       parameters:
         - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/requestorWorkspacePathParam'
       summary: Create a backup of a PostgreSQL instance and upload it to Azure Blob Storage
       operationId: createBackup
       responses:
@@ -48,6 +49,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BackupTrackingResponse'
+    /backup/status/{trackingId}:
+    get:
+      tags:
+        - Backup
+      parameters:
+        - $ref: '#/components/parameters/trackingIdPathParam'
+      summary: Check status of a backup of a PostgreSQL instance
+      operationId: getBackupStatus
+      responses:
+        200:
+          description: Returns backup status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupResponse'
+        400:
+          description: Something failed during backup status check
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupResponse'
   /status:
     get:
       summary: Gets health status for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#health for details)
@@ -498,10 +520,26 @@ components:
       schema:
         type: string
         default: v0.2
+    requestorWorkspacePathParam:
+      name: requestorWorkspaceId
+      in: path
+      description: Cloning source workspace Id
+      required: true
+      schema:
+        type: string
+        format: uuid
     snapshotIdPathParam:
       name: snapshotid
       in: path
       description: snapshot id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    trackingIdPathParam:
+      name: trackingId
+      in: path
+      description: Backup tracking id
       required: true
       schema:
         type: string
@@ -820,6 +858,9 @@ components:
         state:
           type: string
           description: backup status
+        filename:
+          type: string
+          description: backup location
         message:
           type: string
           description: message regarding backup status
@@ -828,6 +869,7 @@ components:
       properties:
         trackingId:
           type: string
+          format: uuid
           description: backup status    
     build:
       type: object

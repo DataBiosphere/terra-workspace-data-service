@@ -7,7 +7,8 @@ import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.specialized.BlobOutputStream;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,16 +18,15 @@ import java.nio.charset.StandardCharsets;
 
 public class AzureBlobStorage implements BackUpFileStorage {
     private final WorkspaceManagerDao workspaceManagerDao;
-    private static String backUpContainerName = "backup";
     public AzureBlobStorage(WorkspaceManagerDao workspaceManagerDao) {
         this.workspaceManagerDao = workspaceManagerDao;
     }
+    private static final Logger LOGGER = LoggerFactory.getLogger(AzureBlobStorage.class);
 
     @Override
-    public void streamOutputToBlobStorage(InputStream fromStream, String blobName) {
+    public void streamOutputToBlobStorage(InputStream fromStream, String blobName, String workspaceId) {
         // TODO: remove this once connection is switched to be done via SAS token
-        String storageConnectionString = System.getenv("STORAGE_CONNECTION_STRING");
-        BlobContainerClient blobContainerClient = constructBlockBlobClient(backUpContainerName, storageConnectionString);
+        BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId);
 
         // https://learn.microsoft.com/en-us/java/api/overview/azure/storage-blob-readme?view=azure-java-stable#upload-a-blob-via-an-outputstream
         try (BlobOutputStream blobOS = blobContainerClient.getBlobClient(blobName).getBlockBlobClient().getBlobOutputStream()) {
@@ -37,22 +37,27 @@ public class AzureBlobStorage implements BackUpFileStorage {
                 }
             }
         } catch (IOException ioEx) {
-            throw new LaunchProcessException("Error streaming output of child process", ioEx);
+            throw new LaunchProcessException("error streaming output of child process", ioEx);
         }
     }
 
-    public BlobContainerClient constructBlockBlobClient(String containerName, String connectionString) {
+    public BlobContainerClient constructBlockBlobClient(String workspaceId) {
         // get  workspace blob storage endpoint and token
         var blobstorageDetails = workspaceManagerDao.getBlobStorageUrl();
 
-        BlobServiceClient blobServiceClient = new BlobServiceClientBuilder().endpoint(blobstorageDetails.getUrl()).sasToken(blobstorageDetails.getToken()).buildClient();
+        // the url we get from WSM already contains the token in it, so no need to specify sasToken separately
+        BlobServiceClient blobServiceClient = new BlobServiceClientBuilder().endpoint(blobstorageDetails.getUrl()).buildClient();
 
-        // if the backup container in storage doesnt already exists, it will need to be created
         try {
-            return blobServiceClient.getBlobContainerClient(containerName);
+            // the way storage containers are set up in a workspace are as follows:
+            // billing project gets a single azure storage account
+            // each workspace gets a container inside of that storage account to keep its data
+            return blobServiceClient.getBlobContainerClient("sc-"+ workspaceId);
         }
         catch (BlobStorageException e){
-            return blobServiceClient.createBlobContainerIfNotExists(containerName);
+            // if the default workspace container doesn't exist, something went horribly wrong
+            LOGGER.error("Default storage container missing for workspace id {}", workspaceId);
+            throw(e);
         }
     }
 }

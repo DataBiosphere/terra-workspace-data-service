@@ -95,7 +95,7 @@ class LocalProcessLaunchTest {
 
         assertThrows(LaunchProcessException.class,
                 () -> localProcessLauncher.launchProcess(processCommand, null),
-                "Error launching local process"
+                "error launching local process"
         );
     }
 }

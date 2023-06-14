@@ -19,7 +19,7 @@ public class BackupServiceIntegrationTest {
     @Test
     void testBackupAzureWDS() throws Exception {
 
-        var trackingId = String.valueOf(UUID.randomUUID());
+        var trackingId = UUID.randomUUID();
         backupService.backupAzureWDS(storage, "v0.2", trackingId);
 
         // todo change the assert to check the internal state instead

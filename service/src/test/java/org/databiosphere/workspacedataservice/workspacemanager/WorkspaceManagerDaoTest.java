@@ -1,7 +1,9 @@
 package org.databiosphere.workspacedataservice.workspacemanager;
 
 import bio.terra.datarepo.model.SnapshotModel;
+import bio.terra.workspace.api.ControlledAzureResourceApi;
 import bio.terra.workspace.api.ReferencedGcpResourceApi;
+import bio.terra.workspace.api.ResourceApi;
 import bio.terra.workspace.client.ApiException;
 import bio.terra.workspace.model.CloningInstructionsEnum;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +38,8 @@ class WorkspaceManagerDaoTest {
     WorkspaceManagerClientFactory mockWorkspaceManagerClientFactory;
 
     final ReferencedGcpResourceApi mockReferencedGcpResourceApi = Mockito.mock(ReferencedGcpResourceApi.class);
+    final ResourceApi mockResourceApi = Mockito.mock(ResourceApi.class);
+    final ControlledAzureResourceApi mockControlledAzureResourceApi = Mockito.mock(ControlledAzureResourceApi.class);
 
     @BeforeEach
     void beforeEach() {

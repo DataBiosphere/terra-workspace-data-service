@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
+import org.databiosphere.workspacedataservice.service.model.BackupSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
@@ -48,12 +49,21 @@ public class BackupService {
         this.backupDao = backupDao;
     }
 
-    public BackupResponse checkBackupStatus(String trackingId) {
+    public BackupResponse checkBackupStatus(UUID trackingId) {
+        var backup = backupDao.getBackupStatus(trackingId);
 
-        return new BackupResponse(true, "Backup successfully completed.");
+        if(backup !=null && backup == BackupSchema.BackupState.Completed.toString()) {
+            return new BackupResponse(true, BackupSchema.BackupState.Completed.toString(),"", "Backup successfully completed.");
+        }
+        else if(backup !=null && backup == BackupSchema.BackupState.Error.toString()) {
+            return new BackupResponse(true, BackupSchema.BackupState.Error.toString(),"", "Backup completed with an error.");
+        }
+        else {
+            return new BackupResponse(false, backup,"", "Backup still in progress.");
+        }
     }
 
-    public void backupAzureWDS(BackUpFileStorage storage, String version, String trackingId) {
+    public void backupAzureWDS(BackUpFileStorage storage, String version, UUID trackingId) {
         try {
             validateVersion(version);
             String blobName = GenerateBackupFilename();
@@ -64,16 +74,22 @@ public class BackupService {
             LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
             localProcessLauncher.launchProcess(commandList, envVars);
 
-            storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName);
+            backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.Started.toString());
+            storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName, workspaceId);
             String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
             int exitCode = localProcessLauncher.waitForTerminate();
 
             if (exitCode != 0 && StringUtils.isNotBlank(error)) {
                 LOGGER.error("process error: {}", error);
+                backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.Error.toString());
             }
+
+            // if no errors happen and code reaches here, the backup has been completed succesfully
+            backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.Completed.toString());
         }
         catch (LaunchProcessException ex){
             LOGGER.error("process error: {}", ex);
+            backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.Error.toString());
         }
     }
 
@@ -102,7 +118,7 @@ public class BackupService {
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
         String timestamp = now.format(formatter);
-        return workspaceId + "-" + timestamp + ".sql";
+        return "backup/" + workspaceId + "-" + timestamp + ".sql";
     }
 }
 

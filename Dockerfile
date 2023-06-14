@@ -3,7 +3,7 @@
 ### to faciliate the cloning of a WDS instance/workspace in Terra
 
 ### Sourced from https://github.com/broadinstitute/dsp-appsec-blessed-images/blob/main/jre/Dockerfile.17-debian
-FROM us.gcr.io/broad-dsp-gcr-public/base/jre:17-debian
+FROM us.gcr.io/broad-dsp-gcr-public/sandbox/debian-test-wds
 
 # freshen up
 RUN apt-get update

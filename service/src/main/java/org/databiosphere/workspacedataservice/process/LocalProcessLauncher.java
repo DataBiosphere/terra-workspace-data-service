@@ -54,7 +54,7 @@ public class LocalProcessLauncher {
         try {
             process = procBuilder.start();
         } catch (IOException ioEx) {
-            throw new LaunchProcessException("Error launching local process", ioEx);
+            throw new LaunchProcessException("error launching local process", ioEx);
         }
     }
 
@@ -75,7 +75,7 @@ public class LocalProcessLauncher {
 
             return processOutput.toString().trim();
         } catch (IOException ioEx) {
-            throw new LaunchProcessException("Error streaming output of child process", ioEx);
+            throw new LaunchProcessException("error streaming output of child process", ioEx);
         }
     }
 
@@ -97,7 +97,7 @@ public class LocalProcessLauncher {
             return process.waitFor();
         } catch (InterruptedException intEx) {
             Thread.currentThread().interrupt();
-            throw new LaunchProcessException("Error waiting for child process to terminate", intEx);
+            throw new LaunchProcessException("error waiting for child process to terminate", intEx);
         }
     }
 

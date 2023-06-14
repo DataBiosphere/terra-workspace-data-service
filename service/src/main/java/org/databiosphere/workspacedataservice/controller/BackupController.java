@@ -8,7 +8,6 @@ import org.databiosphere.workspacedataservice.storage.AzureBlobStorage;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,18 +29,17 @@ public class BackupController {
     }
 
     @PostMapping("/backup/{version}")
-    @Async("asyncExecutor")
-    public ResponseEntity<BackupTrackingResponse> createBackup(@PathVariable("version") String version) {
-        String trackingId = String.valueOf(UUID.randomUUID());
+    public ResponseEntity<BackupTrackingResponse> createBackup(@PathVariable("version") String version, String requestorWorkspaceId) {
+        UUID trackingId = UUID.randomUUID();
         // need to read on how to make this async and keep executing in the background after the controller has returned (and that session is no longer active)
-        // need to verify that the token gets taken from api call and doesnt need to passed explicitly when source receives this
-        backupDao.createBackupEntry(trackingId);
+        // need to verify that the token gets taken from api call and doesn't need to passed explicitly when source receives this
+        backupDao.createBackupEntry(trackingId, UUID.fromString(requestorWorkspaceId));
         backupService.backupAzureWDS(storage, version, trackingId);
-        return new ResponseEntity<>(new BackupTrackingResponse(trackingId), HttpStatus.OK);
+        return new ResponseEntity<>(new BackupTrackingResponse(String.valueOf(trackingId)), HttpStatus.OK);
     }
 
     @PostMapping("/backup/status/{trackingId}")
-    public ResponseEntity<BackupResponse> getBackupStatus(@PathVariable("trackingId") String trackingId) {
+    public ResponseEntity<BackupResponse> getBackupStatus(@PathVariable("trackingId") UUID trackingId) {
         var response = backupService.checkBackupStatus(trackingId);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }

@@ -54,7 +54,7 @@ public class ActivityEventBuilder {
             }
 
         } catch (Exception e) {
-            LOGGER.warn("Error resolving user token to id via Sam: " + e.getMessage(), e);
+            LOGGER.warn("error resolving user token to id via Sam: " + e.getMessage(), e);
             this.subject = "(unknown due to exception)";
         }
         return this;
