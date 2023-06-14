@@ -1,9 +1,9 @@
 package org.databiosphere.workspacedataservice.samplejob;
 
 import com.maximeroussy.invitrode.WordGenerator;
-import org.jobrunr.jobs.annotations.Job;
-import org.jobrunr.jobs.context.JobContext;
-import org.jobrunr.jobs.lambdas.JobRequestHandler;
+import org.quartz.Job;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -16,13 +16,13 @@ import java.util.concurrent.ThreadLocalRandom;
     Does most of the work for our SampleJobs.
  */
 @Component
-public class SampleJobRequestHandler implements JobRequestHandler<SampleJobRequest> {
+public class SampleJob implements Job {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SampleJobRequestHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SampleJob.class);
 
     private final NamedParameterJdbcTemplate namedTemplate;
 
-    public SampleJobRequestHandler(NamedParameterJdbcTemplate namedTemplate) {
+    public SampleJob(NamedParameterJdbcTemplate namedTemplate) {
         this.namedTemplate = namedTemplate;
     }
 
@@ -34,18 +34,21 @@ public class SampleJobRequestHandler implements JobRequestHandler<SampleJobReque
      *      - when successful, generate a random word and save that word to the db.
      */
     @Override
-    @Job(name = "My sample JobRunr job", retries = 2)
     @SuppressWarnings("java:S2245")
-    public void run(SampleJobRequest jobRequest) throws Exception {
+    public void execute(JobExecutionContext context) throws JobExecutionException {
 
-        UUID jobId = jobContext().getJobId();
+        UUID jobId = UUID.randomUUID();
 
         LOGGER.info("***** starting job " + jobId + " ...");
 
         long start = System.currentTimeMillis();
 
         int randomMillis = ThreadLocalRandom.current().nextInt(5000, 30000);
-        Thread.sleep(randomMillis);
+        try {
+            Thread.sleep(randomMillis);
+        } catch (InterruptedException e) {
+            throw new JobExecutionException(e);
+        }
 
         // to mock real behavior, throw exceptions sometimes.
         // jobs whose id starts with a number should succeed; those
@@ -65,8 +68,4 @@ public class SampleJobRequestHandler implements JobRequestHandler<SampleJobReque
         LOGGER.info("***** job " + jobId + " completed; duration was " + duration);
     }
 
-    @Override
-    public JobContext jobContext() {
-        return JobRequestHandler.super.jobContext();
-    }
 }

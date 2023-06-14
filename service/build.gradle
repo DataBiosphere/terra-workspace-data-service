@@ -41,6 +41,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	implementation 'org.springframework.boot:spring-boot-starter-quartz' // quartz for Spring Boot
 	implementation 'org.springframework.retry:spring-retry:1.3.4'
 	implementation 'org.aspectj:aspectjweaver:1.8.9' // required by spring-retry, not used directly by WDS
 	implementation 'org.apache.commons:commons-lang3'
@@ -55,7 +56,6 @@ dependencies {
 	implementation 'javax.cache:cache-api'
 	implementation 'org.ehcache:ehcache:3.10.8'
 	implementation 'org.hashids:hashids:1.0.3'
-	implementation 'org.jobrunr:jobrunr-spring-boot-2-starter:6.2.1'	// JobRunr
 	implementation 'com.maximeroussy.invitrode:invitrode:2.0.2'			// silly little library just for random words
 
 	// Terra libraries

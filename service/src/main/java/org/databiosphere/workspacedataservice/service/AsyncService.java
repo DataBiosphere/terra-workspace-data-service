@@ -2,7 +2,8 @@ package org.databiosphere.workspacedataservice.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.databiosphere.workspacedataservice.dao.AsyncDao;
-import org.databiosphere.workspacedataservice.service.model.SampleJob;
+import org.databiosphere.workspacedataservice.samplejob.SampleJobResponse;
+import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -22,12 +23,12 @@ public class AsyncService {
     }
 
     // POC for starting an asynchronous job
-    public SampleJob startAsyncJob() {
+    public SampleJobResponse startAsyncJob() throws SchedulerException {
         return asyncDao.createJob();
     }
 
     // POC for getting status of an asynchronous job
-    public SampleJob describeAsyncJob(String jobId) throws JsonProcessingException {
+    public SampleJobResponse describeAsyncJob(String jobId) throws JsonProcessingException, SchedulerException {
         return asyncDao.getJob(jobId);
     }
 

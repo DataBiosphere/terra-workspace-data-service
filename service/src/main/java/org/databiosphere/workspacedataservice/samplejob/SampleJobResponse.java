@@ -1,15 +1,14 @@
-package org.databiosphere.workspacedataservice.service.model;
+package org.databiosphere.workspacedataservice.samplejob;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
 
 @JsonInclude(NON_NULL)
-public class SampleJob {
+public class SampleJobResponse {
 
     private String jobId, status, signature, failure, word;
     private LocalDateTime created, updated;

@@ -2,7 +2,8 @@ package org.databiosphere.workspacedataservice.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.databiosphere.workspacedataservice.service.AsyncService;
-import org.databiosphere.workspacedataservice.service.model.SampleJob;
+import org.databiosphere.workspacedataservice.samplejob.SampleJobResponse;
+import org.quartz.SchedulerException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,20 +24,20 @@ public class AsyncProofController {
     }
 
     /*
-     * Start a new async SampleJob; return the job's id.
+     * Start a new async SampleJobResponse; return the job's id.
      */
     @PostMapping("/async")
-    public ResponseEntity<SampleJob> startAsyncJob() {
-        SampleJob newJobId = asyncService.startAsyncJob();
+    public ResponseEntity<SampleJobResponse> startAsyncJob() throws SchedulerException {
+        SampleJobResponse newJobId = asyncService.startAsyncJob();
         return new ResponseEntity<>(newJobId, HttpStatus.CREATED);
     }
 
     /*
-     * Get status for a SampleJob, given the job's id. Includes the job's result if the job is complete.
+     * Get status for a SampleJobResponse, given the job's id. Includes the job's result if the job is complete.
      */
     @GetMapping("/async/{jobId}")
-    public ResponseEntity<SampleJob> describeAsyncJob(@PathVariable("jobId") String jobId) throws JsonProcessingException {
-        SampleJob response = asyncService.describeAsyncJob(jobId);
+    public ResponseEntity<SampleJobResponse> describeAsyncJob(@PathVariable("jobId") String jobId) throws JsonProcessingException, SchedulerException {
+        SampleJobResponse response = asyncService.describeAsyncJob(jobId);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }
