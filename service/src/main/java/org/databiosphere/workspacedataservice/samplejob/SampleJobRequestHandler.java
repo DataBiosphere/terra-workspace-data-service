@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.samplejob;
 
+import com.maximeroussy.invitrode.WordGenerator;
 import org.databiosphere.workspacedataservice.dao.AsyncDao;
 import org.jobrunr.jobs.annotations.Job;
 import org.jobrunr.jobs.context.JobContext;
@@ -44,12 +45,22 @@ public class SampleJobRequestHandler implements JobRequestHandler<SampleJobReque
         int randomMillis = ThreadLocalRandom.current().nextInt(5000, 60000);
         Thread.sleep(randomMillis);
 
+        // to mock real behavior, throw exceptions sometimes.
+        // jobs whose id starts with a number should succeed; those
+        // that start with a letter will fail.
+        if ("abcdef".contains(jobId.toString().substring(0,1))) {
+            throw new RuntimeException("whoops, async job hit an exception.");
+        }
+
+        WordGenerator generator = new WordGenerator();
+        String randomWord = generator.newWord(9);
+
         long duration = System.currentTimeMillis() - start;
 
         LOGGER.info("***** job " + jobId + " completed; duration was " + duration);
 
-        namedTemplate.getJdbcTemplate().update("insert into sys_wds.samplejob(id, duration) values (?, ?)",
-                jobId, duration);
+        namedTemplate.getJdbcTemplate().update("insert into sys_wds.samplejob(id, duration, word) values (?, ?, ?)",
+                jobId, duration, randomWord);
     }
 
     @Override

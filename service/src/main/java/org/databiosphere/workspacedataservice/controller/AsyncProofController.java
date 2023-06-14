@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.databiosphere.workspacedataservice.service.AsyncService;
 import org.databiosphere.workspacedataservice.service.model.SampleJob;
 import org.springframework.http.HttpStatus;
@@ -22,12 +23,12 @@ public class AsyncProofController {
     }
 
     @PostMapping("/async")
-    public ResponseEntity<String> startAsyncJob() {
-        String newJobId = asyncService.startAsyncJob();
+    public ResponseEntity<SampleJob> startAsyncJob() {
+        SampleJob newJobId = asyncService.startAsyncJob();
         return new ResponseEntity<>(newJobId, HttpStatus.CREATED);
     }
     @GetMapping("/async/{jobId}")
-    public ResponseEntity<SampleJob> describeAsyncJob(@PathVariable("jobId") String jobId) {
+    public ResponseEntity<SampleJob> describeAsyncJob(@PathVariable("jobId") String jobId) throws JsonProcessingException {
         SampleJob response = asyncService.describeAsyncJob(jobId);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }

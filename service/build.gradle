@@ -55,7 +55,8 @@ dependencies {
 	implementation 'javax.cache:cache-api'
 	implementation 'org.ehcache:ehcache:3.10.8'
 	implementation 'org.hashids:hashids:1.0.3'
-	implementation 'org.jobrunr:jobrunr-spring-boot-2-starter:6.2.1'
+	implementation 'org.jobrunr:jobrunr-spring-boot-2-starter:6.2.1'	// JobRunr
+	implementation 'com.maximeroussy.invitrode:invitrode:2.0.2'			// silly little library just for random words
 
 	// Terra libraries
 	implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-08b6588'

@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.databiosphere.workspacedataservice.dao.AsyncDao;
 import org.databiosphere.workspacedataservice.samplejob.SampleJobRequest;
 import org.databiosphere.workspacedataservice.service.model.SampleJob;
@@ -27,12 +28,12 @@ public class AsyncService {
     }
 
     // POC for starting an asynchronous job
-    public String startAsyncJob() {
+    public SampleJob startAsyncJob() {
         return asyncDao.createJob();
     }
 
     // POC for getting status of an asynchronous job
-    public SampleJob describeAsyncJob(String jobId) {
+    public SampleJob describeAsyncJob(String jobId) throws JsonProcessingException {
         return asyncDao.getJob(jobId);
     }
 

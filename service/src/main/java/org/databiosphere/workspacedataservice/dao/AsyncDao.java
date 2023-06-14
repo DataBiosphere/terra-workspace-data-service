@@ -1,12 +1,15 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.samplejob.SampleJobRequest;
-import org.databiosphere.workspacedataservice.service.AsyncService;
+import org.databiosphere.workspacedataservice.service.model.JobDetails;
+import org.databiosphere.workspacedataservice.service.model.JobHistory;
 import org.databiosphere.workspacedataservice.service.model.SampleJob;
-import org.databiosphere.workspacedataservice.shared.model.AttributeComparator;
 import org.jobrunr.jobs.JobId;
 import org.jobrunr.jobs.lambdas.JobRequest;
 import org.jobrunr.scheduling.BackgroundJobRequest;
+import org.jobrunr.jobs.states.StateName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.RowMapper;
@@ -16,9 +19,9 @@ import org.springframework.stereotype.Component;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Proof-of-concept DAO for working with async jobs
@@ -29,11 +32,14 @@ public class AsyncDao {
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncDao.class);
     private final NamedParameterJdbcTemplate namedTemplate;
 
-    public AsyncDao(NamedParameterJdbcTemplate namedTemplate) {
+    private final ObjectMapper objectMapper;
+
+    public AsyncDao(NamedParameterJdbcTemplate namedTemplate, ObjectMapper objectMapper) {
         this.namedTemplate = namedTemplate;
+        this.objectMapper = objectMapper;
     }
 
-    public String createJob() {
+    public SampleJob createJob() {
         UUID uuid = UUID.randomUUID();
         JobRequest jobRequest = new SampleJobRequest(uuid);
 
@@ -43,7 +49,9 @@ public class AsyncDao {
 
         LOGGER.info("... job queued, actual id is " + uuid);
 
-        return jobId.toString();
+        SampleJob job = new SampleJob();
+        job.setJobId(jobId.toString());
+        return job;
     }
 
 
@@ -62,11 +70,11 @@ public class AsyncDao {
      * @param jobId
      * @return
      */
-    public SampleJob getJob(String jobId) {
+    public SampleJob getJob(String jobId) throws JsonProcessingException {
         MapSqlParameterSource params = new MapSqlParameterSource("jobId", jobId);
 
         List<SampleJob> jobs = namedTemplate.query(
-                "select state, jobsignature from sys_wds.jobrunr_jobs where id = :jobId",
+                "select id, state, jobsignature, createdat, updatedat from sys_wds.jobrunr_jobs where id = :jobId",
                 params, new AsyncJobRowMapper());
 
         if (jobs.size() != 1) {
@@ -76,15 +84,52 @@ public class AsyncDao {
         SampleJob job = jobs.get(0);
 
         // is this job done?
-        if (job.status().equals("SUCCEEDED")) {
+        if (job.getStatus().equals(StateName.SUCCEEDED.name())) {
             // job is done; now, query the job's dedicated table to get the result
             Integer duration = namedTemplate.queryForObject(
                     "select duration from sys_wds.samplejob where id = :jobId",
                     params, Integer.class);
 
-            return new SampleJob(job.status(), job.signature(), duration);
+            String word = namedTemplate.queryForObject(
+                    "select word from sys_wds.samplejob where id = :jobId",
+                    params, String.class);
+
+            SampleJob response = new SampleJob();
+            response.setJobId(jobId);
+            response.setStatus(job.getStatus());
+            response.setSignature(job.getSignature());
+            response.setDuration(duration);
+            response.setWord(word);
+            response.setCreated(job.getCreated());
+            response.setUpdated(job.getUpdated());
+
+            return response;
+
+
+        } else if (job.getStatus().equals(StateName.FAILED.name())) {
+            // job failed. Retrieve the job history from the jobrunr table
+            String jobasjson = namedTemplate.queryForObject("select jobasjson from sys_wds.jobrunr_jobs where id = :jobId",
+                    params, String.class);
+            // deserialize the json
+            JobDetails jobDetails = objectMapper.readValue(jobasjson, JobDetails.class);
+            // find the last failure (there may be multiple due to retries
+            List<JobHistory> failures = jobDetails.jobHistory().stream()
+                    .filter(hist -> hist.state().equals(StateName.FAILED.name()))
+                    .toList();
+            JobHistory lastFailure = failures.get(failures.size()-1);
+
+            String failureMsg = lastFailure.exceptionType() + ": " + lastFailure.exceptionMessage();
+
+            SampleJob response = new SampleJob();
+            response.setJobId(jobId);
+            response.setStatus(job.getStatus());
+            response.setSignature(job.getSignature());
+            response.setFailure(failureMsg);
+            response.setCreated(job.getCreated());
+            response.setUpdated(job.getUpdated());
+            return response;
         } else {
-            // handle different states here, like FAILED
+            // ENQUEUED or PROCESSING
             return job;
         }
     }
@@ -95,11 +140,14 @@ public class AsyncDao {
     private static class AsyncJobRowMapper implements RowMapper<SampleJob> {
         @Override
         public SampleJob mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new SampleJob(rs.getString("state"),
-                    rs.getString("jobsignature"),
-                    null);
+            SampleJob job = new SampleJob();
+            job.setJobId(rs.getString("id"));
+            job.setStatus(rs.getString("state"));
+            job.setSignature(rs.getString("jobsignature"));
+            job.setCreated(rs.getTimestamp("createdat").toLocalDateTime());
+            job.setUpdated(rs.getTimestamp("updatedat").toLocalDateTime());
+            return job;
         }
     }
-
 
 }
