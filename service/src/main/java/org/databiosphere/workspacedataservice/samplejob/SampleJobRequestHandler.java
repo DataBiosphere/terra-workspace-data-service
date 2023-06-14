@@ -35,6 +35,7 @@ public class SampleJobRequestHandler implements JobRequestHandler<SampleJobReque
      */
     @Override
     @Job(name = "My sample JobRunr job", retries = 2)
+    @SuppressWarnings("java:S2245")
     public void run(SampleJobRequest jobRequest) throws Exception {
 
         UUID jobId = jobContext().getJobId();
