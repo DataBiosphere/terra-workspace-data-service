@@ -22,11 +22,18 @@ public class AsyncProofController {
         this.asyncService = asyncService;
     }
 
+    /*
+     * Start a new async SampleJob; return the job's id.
+     */
     @PostMapping("/async")
     public ResponseEntity<SampleJob> startAsyncJob() {
         SampleJob newJobId = asyncService.startAsyncJob();
         return new ResponseEntity<>(newJobId, HttpStatus.CREATED);
     }
+
+    /*
+     * Get status for a SampleJob, given the job's id. Includes the job's result if the job is complete.
+     */
     @GetMapping("/async/{jobId}")
     public ResponseEntity<SampleJob> describeAsyncJob(@PathVariable("jobId") String jobId) throws JsonProcessingException {
         SampleJob response = asyncService.describeAsyncJob(jobId);

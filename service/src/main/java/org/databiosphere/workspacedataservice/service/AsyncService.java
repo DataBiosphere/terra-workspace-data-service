@@ -2,16 +2,10 @@ package org.databiosphere.workspacedataservice.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.databiosphere.workspacedataservice.dao.AsyncDao;
-import org.databiosphere.workspacedataservice.samplejob.SampleJobRequest;
 import org.databiosphere.workspacedataservice.service.model.SampleJob;
-import org.jobrunr.jobs.JobId;
-import org.jobrunr.jobs.lambdas.JobRequest;
-import org.jobrunr.scheduling.BackgroundJobRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
 
 /**
  * Proof-of-concept service for asynchronous APIs
@@ -36,7 +30,6 @@ public class AsyncService {
     public SampleJob describeAsyncJob(String jobId) throws JsonProcessingException {
         return asyncDao.getJob(jobId);
     }
-
 
 
 }
