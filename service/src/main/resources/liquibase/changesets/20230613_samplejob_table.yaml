@@ -5,6 +5,27 @@ databaseChangeLog:
       changes:
         - createTable:
             schemaName: sys_wds
+            tableName: job
+            columns:
+              - column:
+                  name: id
+                  type: char(36)
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: status
+                  type: text
+              - column:
+                  name: start
+                  type: timestamp
+              - column:
+                  name: finish
+                  type: timestamp
+              - column:
+                  name: error
+                  type: text
+        - createTable:
+            schemaName: sys_wds
             tableName: samplejob
             columns:
               - column:
@@ -12,6 +33,10 @@ databaseChangeLog:
                   type: char(36)
                   constraints:
                     primaryKey: true
+                    foreignKeyName: myfk
+                    referencedTableSchemaName: sys_wds
+                    referencedTableName: job
+                    referencedColumnNames: id
               - column:
                   name: duration
                   type: integer

@@ -36,12 +36,31 @@ public class SampleJob implements Job {
     @Override
     @SuppressWarnings("java:S2245")
     public void execute(JobExecutionContext context) throws JobExecutionException {
-
-        UUID jobId = UUID.randomUUID();
+        String jobId = context.getJobDetail().getKey().getName();
 
         LOGGER.info("***** starting job " + jobId + " ...");
 
+        namedTemplate.getJdbcTemplate().update("insert into sys_wds.samplejob(id) values(?) " +
+                        "on conflict(id) do nothing",
+                jobId.toString());
+
+        try {
+            doTheJob(context);
+        } catch (Exception e) {
+            // do what?
+            throw e;
+        }
+
+        LOGGER.info("***** job " + jobId + " completed");
+    }
+
+
+    private void doTheJob(JobExecutionContext context) throws JobExecutionException {
+        String jobId = context.getJobDetail().getKey().getName();
         long start = System.currentTimeMillis();
+
+        // job starting ...
+
 
         int randomMillis = ThreadLocalRandom.current().nextInt(5000, 30000);
         try {
@@ -62,10 +81,13 @@ public class SampleJob implements Job {
 
         long duration = System.currentTimeMillis() - start;
 
-        namedTemplate.getJdbcTemplate().update("insert into sys_wds.samplejob(id, duration, word) values (?, ?, ?)",
-                jobId, duration, randomWord);
-
-        LOGGER.info("***** job " + jobId + " completed; duration was " + duration);
+        namedTemplate.getJdbcTemplate().update("update sys_wds.samplejob " +
+                        " set duration = ?, word = ?" +
+                        " where id = ?",
+                duration, randomWord, jobId);
     }
+
+
+
 
 }

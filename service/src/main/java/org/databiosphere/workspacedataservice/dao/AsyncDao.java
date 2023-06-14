@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.dao;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.samplejob.SampleJob;
+import org.databiosphere.workspacedataservice.samplejob.SampleJobListener;
 import org.databiosphere.workspacedataservice.samplejob.SampleJobResponse;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
@@ -26,6 +27,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.quartz.impl.matchers.EverythingMatcher.allJobs;
+
 /**
  * Proof-of-concept DAO for working with async jobs
  */
@@ -43,6 +46,13 @@ public class AsyncDao {
         this.namedTemplate = namedTemplate;
         this.objectMapper = objectMapper;
         this.scheduler = scheduler;
+
+        try {
+            this.scheduler.getListenerManager().addJobListener(new SampleJobListener(namedTemplate), allJobs());
+        } catch (SchedulerException e) {
+            LOGGER.error("error registering listener: " + e.getMessage(), e);
+        }
+
     }
 
     /*
@@ -52,21 +62,31 @@ public class AsyncDao {
         UUID uuid = UUID.randomUUID();
         LOGGER.info("attempting to queue job with id " + uuid + " ...");
 
+        JobKey jobKey = new JobKey(uuid.toString(), GROUPNAME);
+
         // what to run
         JobDetail jobDetail = JobBuilder.newJob().ofType(SampleJob.class)
                 .storeDurably()
-                .withIdentity(uuid.toString(), GROUPNAME) // name, group
+                .withIdentity(jobKey)
                 .withDescription("Invoke Sample Job service...")
                 .build();
 
         // when to run it
-        Trigger trigger = TriggerBuilder.newTrigger().forJob(jobDetail)
-                .withIdentity("run-now")
-                .withDescription("Sample trigger")
-                .startNow()
-                .build();
+//        Trigger trigger = TriggerBuilder.newTrigger().forJob(jobDetail)
+//                .withIdentity("run-now")
+//                .withDescription("Sample trigger")
+//                .startNow()
+//                .build();
 
-        scheduler.scheduleJob(jobDetail, trigger);
+        // run the job once, immediately
+        scheduler.addJob(jobDetail, true);
+        scheduler.triggerJob(jobKey);
+        // job starting ...
+//        namedTemplate.getJdbcTemplate().update("insert into sys_wds.samplejob(id) values (?)",
+//                jobKey.getName());
+
+
+//        scheduler.scheduleJob(jobDetail, trigger);
 
         LOGGER.info("... job " + uuid + " queued.");
 
