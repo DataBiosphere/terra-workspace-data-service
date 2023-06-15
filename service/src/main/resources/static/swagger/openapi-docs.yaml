@@ -16,8 +16,8 @@ servers:
 tags:
   - name: Async Things
     description: POC for async APIs
-  - name: Backup
-    description: Backup APIs
+  - name: Cloning
+    description: Cloning APIs including Backup and Restore
   - name: Records
     description: Record APIs
   - name: Instances
@@ -61,7 +61,7 @@ paths:
   /backup/{v}:
     post:
       tags:
-        - Backup
+        - Cloning
       parameters:
         - $ref: '#/components/parameters/versionPathParam'
       summary: Create a backup of a PostgreSQL instance and upload it to Azure Blob Storage

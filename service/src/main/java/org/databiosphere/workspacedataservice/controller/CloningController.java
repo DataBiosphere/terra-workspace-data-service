@@ -8,11 +8,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-public class BackupController {
+public class CloningController {
 
     private final BackupService backupService;
     private final AzureBlobStorage storage;
-    public BackupController(BackupService backupService) {
+    public CloningController(BackupService backupService) {
         this.storage = new AzureBlobStorage();
         this.backupService = backupService;
     }
