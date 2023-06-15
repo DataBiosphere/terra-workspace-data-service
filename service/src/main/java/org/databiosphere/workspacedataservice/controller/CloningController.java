@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import org.databiosphere.workspacedataservice.service.BackupService;
+import org.databiosphere.workspacedataservice.shared.model.AsyncJob;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.storage.AzureBlobStorage;
 import org.springframework.http.HttpStatus;
@@ -17,7 +18,8 @@ public class CloningController {
         this.backupService = backupService;
     }
 
-    @PostMapping("/backup/{version}")
+    // TODO: remove when async backups are fully working; leaving this here for comparison until then
+    @PostMapping("/synchronousbackup/{version}")
     public ResponseEntity<BackupResponse> createBackup(@PathVariable("version") String version) {
         BackupResponse response = backupService.backupAzureWDS(storage, version);
         if(response.backupStatus()) {
@@ -25,5 +27,17 @@ public class CloningController {
         }
         
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @PostMapping("/backup/{version}")
+    public ResponseEntity<AsyncJob> startBackup(@PathVariable("version") String version) {
+        AsyncJob response = backupService.startBackup(storage, version);
+        return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+    }
+
+    @GetMapping("/backup/{version}/{jobId}")
+    public ResponseEntity<AsyncJob> describeBackup(@PathVariable("version") String version, @PathVariable("jobId") String jobId) {
+        AsyncJob response = backupService.describeBackup(jobId, version);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }

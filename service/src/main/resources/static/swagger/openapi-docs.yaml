@@ -33,7 +33,51 @@ paths:
         - Cloning
       parameters:
         - $ref: '#/components/parameters/versionPathParam'
+      summary: Start a backup of all user data
+      description: |
+        Begins the backup process for all data in WDS. This endpoint returns a job id, then continues
+        processing in the background. Use the describeBackup endpoint to monitor status of the
+        background job.
+      operationId: startBackup
+      responses:
+        202:
+          description: Successfully initiated the backup process
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJobId'
+  /backup/{v}/{jobId}:
+    get:
+      tags:
+        - Cloning
+      parameters:
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/jobIdPathParam'
+      summary: Retrieve status of a backup job
+      description: |
+        Returns information about a backup job. Will show the status of jobs in progress.
+        If a backup job has succeeded, will return the path to the backup file. If the job
+        failed, will return the error message from the failure.
+      operationId: describeBackup
+      responses:
+        200:
+          description: Successfully initiated the backup process
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupJob'
+        404:
+          description: Job not found
+  /synchronousbackup/{v}:
+    post:
+      deprecated: true
+      tags:
+        - Cloning
+      parameters:
+        - $ref: '#/components/parameters/versionPathParam'
       summary: Create a backup of a PostgreSQL instance and upload it to Azure Blob Storage
+      description: |
+        Will be removed once we switch fully over to async
       operationId: createBackup
       responses:
         200:
@@ -490,6 +534,13 @@ components:
       required: true
       schema:
         type: string
+    jobIdPathParam:
+      name: jobId
+      in: path
+      description: id of a background job
+      required: true
+      schema:
+        type: string
     versionPathParam:
       name: v
       in: path
@@ -551,6 +602,12 @@ components:
             items:
               $ref: '#/components/schemas/BatchOperation'
   schemas:
+    AsyncJobId:
+      type: object
+      properties:
+        jobId:
+          type: string
+          description: id of background job
     AttributeSchema:
       type: object
       required:
@@ -569,6 +626,38 @@ components:
         relatesTo:
           type: string
           description: Name of type to which this attribute relates. Only present if this is a relation attribute.
+    BackupJob:
+      type: object
+      required:
+        - jobId
+        - status
+        - created
+        - updated
+      properties:
+        jobId:
+          type: string
+        status:
+          type: string
+          enum: [ QUEUED, STARTED, RUNNING, SUCCEEDED, FAILED ]
+        created:
+          type: string
+          format: date-time
+        updated:
+          type: string
+          format: date-time
+        errorMessage:
+          type: string
+        exception:
+          type: string
+        result:
+          $ref: '#/components/schemas/BackupResult'
+    BackupResult:
+      type: object
+      required:
+        - backupFile
+      properties:
+        backupFile:
+          type: string
     BatchOperation:
       type: object
       required:

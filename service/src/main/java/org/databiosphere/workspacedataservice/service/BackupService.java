@@ -1,13 +1,16 @@
 package org.databiosphere.workspacedataservice.service;
 
-import bio.terra.common.db.WriteTransaction;
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
+import org.databiosphere.workspacedataservice.shared.model.AsyncJob;
+import org.databiosphere.workspacedataservice.shared.model.AsyncJobBuilder;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -42,6 +45,18 @@ public class BackupService {
 
     @Value("${twds.pg_dump.path:}")
     private String pgDumpPath;
+
+    @Autowired
+    BackupDao backupDao;
+
+    public AsyncJob startBackup(BackUpFileStorage storage, String version) {
+        String jobId = UUID.randomUUID().toString();
+        return new AsyncJobBuilder(jobId).build();
+    }
+
+    public AsyncJob describeBackup(String jobId, String version) {
+        return backupDao.describeBackupJob(jobId);
+    }
 
     public BackupResponse backupAzureWDS(BackUpFileStorage storage, String version) {
         try {

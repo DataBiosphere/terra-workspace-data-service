@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20230615_backup_table
+      author: davidan
+      changes:
+        - createTable:
+            schemaName: sys_wds
+            tableName: backup
+            columns:
+              - column:
+                  name: id
+                  type: varchar(36)
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: status
+                  type: varchar(32)
+              - column:
+                  name: backupFile
+                  type: varchar(256)
+              - column:
+                  name: created
+                  type: timestamp
+              - column:
+                  name: updated
+                  type: timestamp
+              - column:
+                  name: errorMessage
+                  type: text
+              - column:
+                  name: exception
+                  type: text
