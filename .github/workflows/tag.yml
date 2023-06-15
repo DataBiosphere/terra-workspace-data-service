@@ -58,6 +58,7 @@ jobs:
         ACR_SP_USER: ${{ secrets.ACR_SP_USER }}
         BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
   release-job:
+    needs: tag-job
     permissions:
       # write permission is required to create a github release
       contents: write
