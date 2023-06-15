@@ -22,11 +22,14 @@ import org.springframework.stereotype.Component;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.quartz.TriggerBuilder.newTrigger;
 import static org.quartz.impl.matchers.EverythingMatcher.allJobs;
 
 /**
@@ -47,6 +50,8 @@ public class AsyncDao {
         this.objectMapper = objectMapper;
         this.scheduler = scheduler;
 
+        // register the SampleJobListener which provides additional logging. This listener isn't really necessary,
+        // but I wanted to explore the technique in case we need it for future use cases.
         try {
             this.scheduler.getListenerManager().addJobListener(new SampleJobListener(namedTemplate), allJobs());
         } catch (SchedulerException e) {
@@ -63,36 +68,34 @@ public class AsyncDao {
         LOGGER.info("attempting to queue job with id " + uuid + " ...");
 
         JobKey jobKey = new JobKey(uuid.toString(), GROUPNAME);
-
         // what to run
         JobDetail jobDetail = JobBuilder.newJob().ofType(SampleJob.class)
-                .storeDurably()
+                .storeDurably(false)
                 .withIdentity(jobKey)
                 .withDescription("Invoke Sample Job service...")
                 .build();
 
-        // when to run it
-//        Trigger trigger = TriggerBuilder.newTrigger().forJob(jobDetail)
-//                .withIdentity("run-now")
-//                .withDescription("Sample trigger")
-//                .startNow()
-//                .build();
+        // define the job
+//        scheduler.addJob(jobDetail, true);
+        namedTemplate.getJdbcTemplate().update(
+                "insert into sys_wds.samplejob(id, status, createdat) values (?, ?, ?)",
+                jobKey.getName(),
+                "CREATED",
+                Timestamp.from(Instant.now()));
+
+        Trigger trigger = newTrigger()
+                .withIdentity(uuid.toString())
+                .forJob(jobKey)
+                .startNow()
+                .build();
 
         // run the job once, immediately
-        scheduler.addJob(jobDetail, true);
-        scheduler.triggerJob(jobKey);
-        // job starting ...
-//        namedTemplate.getJdbcTemplate().update("insert into sys_wds.samplejob(id) values (?)",
-//                jobKey.getName());
-
-
-//        scheduler.scheduleJob(jobDetail, trigger);
-
-        LOGGER.info("... job " + uuid + " queued.");
+        scheduler.scheduleJob(jobDetail, trigger);
+        updateStatus(jobKey.getName(), "QUEUED");
 
         // create the response object
         SampleJobResponse job = new SampleJobResponse();
-        job.setJobId(uuid.toString());
+        job.setJobId(jobKey.getName());
         return job;
     }
 
@@ -103,79 +106,28 @@ public class AsyncDao {
     public SampleJobResponse getJob(String jobId) throws JsonProcessingException, SchedulerException {
         MapSqlParameterSource params = new MapSqlParameterSource("jobId", jobId);
 
-        JobKey jobKey = new JobKey(jobId, GROUPNAME); // name, group
+        List<SampleJobResponse> jobs = namedTemplate.query(
+                "select id, duration, word, status, createdat, updatedat, error " +
+                        "from sys_wds.samplejob where id = :jobId",
+                params, new AsyncJobRowMapper());
 
-        List<JobExecutionContext> currentJobs = scheduler.getCurrentlyExecutingJobs();
-        Optional<JobExecutionContext> maybeJob = currentJobs.stream()
-                .filter(jec -> jec.getJobDetail().getKey().equals(jobKey))
-                .findFirst();
-
-        if (maybeJob.isEmpty()) {
-            throw new RuntimeException("job not found");
+        if (jobs.size() != 1) {
+            throw new RuntimeException("found " + jobs.size() + " jobs for specified id.");
         }
+        SampleJobResponse job = jobs.get(0);
 
-        JobExecutionContext jobExecutionContext = maybeJob.get();
-
-        SampleJobResponse response = new SampleJobResponse();
-        response.setJobId(jobId);
-        response.setStatus("???");
-        response.setSignature("???");
-        response.setDuration(Long.valueOf(jobExecutionContext.getJobRunTime()).intValue());
-        response.setWord("???");
-        response.setUpdated(jobExecutionContext.getFireTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
-        response.setCreated(jobExecutionContext.getScheduledFireTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
-
-        return response;
-
-        // is this job done?
-//        if (job.getStatus().equals(StateName.SUCCEEDED.name())) {
-//            // job is done; now, query the job's dedicated table to get the results.
-//            // note this is a WDS-controlled table, not a JobRunr table.
-//            Integer duration = namedTemplate.queryForObject(
-//                    "select duration from sys_wds.samplejob where id = :jobId",
-//                    params, Integer.class);
-//            String word = namedTemplate.queryForObject(
-//                    "select word from sys_wds.samplejob where id = :jobId",
-//                    params, String.class);
-//
-//            SampleJobResponse response = new SampleJobResponse();
-//            response.setJobId(jobId);
-//            response.setStatus(job.getStatus());
-//            response.setSignature(job.getSignature());
-//            response.setDuration(duration);
-//            response.setWord(word);
-//            response.setCreated(job.getCreated());
-//            response.setUpdated(job.getUpdated());
-//            return response;
-//        } else if (job.getStatus().equals(StateName.FAILED.name())) {
-//            // job failed. Retrieve the job history from the jobrunr table
-//            String jobasjson = namedTemplate.queryForObject(
-//                    "select jobasjson from sys_wds.jobrunr_jobs where id = :jobId",
-//                    params, String.class);
-//            // deserialize the json
-//            JobDetails jobDetails = objectMapper.readValue(jobasjson, JobDetails.class);
-//            // find the last failure (there may be multiple failures in the job history due to retries)
-//            List<JobHistory> failures = jobDetails.jobHistory().stream()
-//                    .filter(hist -> hist.state().equals(StateName.FAILED.name()))
-//                    .toList();
-//            JobHistory lastFailure = failures.get(failures.size() - 1);
-//            // build a failure message
-//            String failureMsg = lastFailure.exceptionType() + ": " + lastFailure.exceptionMessage();
-//
-//            SampleJobResponse response = new SampleJobResponse();
-//            response.setJobId(jobId);
-//            response.setStatus(job.getStatus());
-//            response.setSignature(job.getSignature());
-//            response.setFailure(failureMsg);
-//            response.setCreated(job.getCreated());
-//            response.setUpdated(job.getUpdated());
-//            return response;
-//        } else {
-//            // SCHEDULED, ENQUEUED, PROCESSING, or DELETED (might need other handling for DELETED)
-//            return job;
-//        }
+        return job;
     }
 
+    public void updateStatus(String jobId, String newStatus) {
+        namedTemplate.getJdbcTemplate().update(
+                "update sys_wds.samplejob set status = ?, updatedat = ? where id = ?",
+                newStatus,
+                Timestamp.from(Instant.now()),
+                jobId
+        );
+        LOGGER.info("***** job " + jobId + " is now " + newStatus);
+    }
 
     // rowmapper for retrieving SampleJobResponse objects from the db
     private static class AsyncJobRowMapper implements RowMapper<SampleJobResponse> {
@@ -183,10 +135,12 @@ public class AsyncDao {
         public SampleJobResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
             SampleJobResponse job = new SampleJobResponse();
             job.setJobId(rs.getString("id"));
-            job.setStatus(rs.getString("state"));
-            job.setSignature(rs.getString("jobsignature"));
+            job.setDuration(rs.getInt("duration"));
+            job.setWord(rs.getString("word"));
+            job.setStatus(rs.getString("status"));
             job.setCreated(rs.getTimestamp("createdat").toLocalDateTime());
             job.setUpdated(rs.getTimestamp("updatedat").toLocalDateTime());
+            job.setFailure(rs.getString("error"));
             return job;
         }
     }

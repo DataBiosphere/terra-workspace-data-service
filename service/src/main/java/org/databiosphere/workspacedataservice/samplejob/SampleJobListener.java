@@ -27,32 +27,15 @@ public class SampleJobListener implements JobListener {
     @Override
     public void jobToBeExecuted(JobExecutionContext context) {
         LOGGER.info("jobToBeExecuted: " + context.getJobDetail().getKey());
-        namedTemplate.getJdbcTemplate().update("insert into sys_wds.job(id, status) values (?, ?)" +
-                        " on conflict(id) do update set status = ?",
-                context.getJobDetail().getKey().getName(), "QUEUED", "QUEUED");
     }
 
     @Override
     public void jobExecutionVetoed(JobExecutionContext context) {
         LOGGER.info("jobExecutionVetoed: " + context.getJobDetail().getKey());
-        namedTemplate.getJdbcTemplate().update("insert into sys_wds.job(id, status) values (?, ?)" +
-                        " on conflict(id) do update set status = ?",
-                context.getJobDetail().getKey().getName(), "VETOED", "VETOED");
     }
 
     @Override
     public void jobWasExecuted(JobExecutionContext context, JobExecutionException jobException) {
         LOGGER.info("jobWasExecuted: " + context.getJobDetail().getKey());
-        if (jobException == null) {
-            namedTemplate.getJdbcTemplate().update("insert into sys_wds.job(id, status) values (?, ?)" +
-                            " on conflict(id) do update set status = ?",
-                    context.getJobDetail().getKey().getName(), "SUCCEEDED", "SUCCEEDED");
-        } else {
-            namedTemplate.getJdbcTemplate().update("insert into sys_wds.job(id, status, error) values (?, ?, ?)" +
-                            " on conflict(id) do update set status = ?, error = ?",
-                    context.getJobDetail().getKey().getName(), jobException.getMessage(),
-                    "FAILED", "FAILED", jobException.getMessage());
-        }
-
     }
 }
