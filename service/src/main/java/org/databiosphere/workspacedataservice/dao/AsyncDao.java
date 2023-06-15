@@ -1,18 +1,15 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.samplejob.SampleJob;
 import org.databiosphere.workspacedataservice.samplejob.SampleJobListener;
 import org.databiosphere.workspacedataservice.samplejob.SampleJobResponse;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
-import org.quartz.JobExecutionContext;
 import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
-import org.quartz.TriggerBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.RowMapper;
@@ -24,9 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.quartz.TriggerBuilder.newTrigger;
@@ -40,16 +35,16 @@ public class AsyncDao {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncDao.class);
     private final NamedParameterJdbcTemplate namedTemplate;
-    private final ObjectMapper objectMapper;
     private final Scheduler scheduler; // the quartz scheduler
 
+    // not super necessary, since we're using unique ids for job names,
+    // but we could use the GROUPNAME to easily distinguish different types of
+    // async jobs: PFB import vs. backup, etc.
     private final String GROUPNAME = "sample-group";
 
-    public AsyncDao(NamedParameterJdbcTemplate namedTemplate, ObjectMapper objectMapper, Scheduler scheduler) {
+    public AsyncDao(NamedParameterJdbcTemplate namedTemplate, Scheduler scheduler) {
         this.namedTemplate = namedTemplate;
-        this.objectMapper = objectMapper;
         this.scheduler = scheduler;
-
         // register the SampleJobListener which provides additional logging. This listener isn't really necessary,
         // but I wanted to explore the technique in case we need it for future use cases.
         try {
@@ -57,7 +52,6 @@ public class AsyncDao {
         } catch (SchedulerException e) {
             LOGGER.error("error registering listener: " + e.getMessage(), e);
         }
-
     }
 
     /*
@@ -65,31 +59,30 @@ public class AsyncDao {
      */
     public SampleJobResponse createJob() throws SchedulerException {
         UUID uuid = UUID.randomUUID();
+        JobKey jobKey = new JobKey(uuid.toString(), GROUPNAME);
         LOGGER.info("attempting to queue job with id " + uuid + " ...");
 
-        JobKey jobKey = new JobKey(uuid.toString(), GROUPNAME);
         // what to run
-        JobDetail jobDetail = JobBuilder.newJob().ofType(SampleJob.class)
-                .storeDurably(false)
+        JobDetail jobDetail = JobBuilder.newJob()
+                .ofType(SampleJob.class)
                 .withIdentity(jobKey)
+                .storeDurably(false) // delete from the quartz table after the job finishes
                 .withDescription("Invoke Sample Job service...")
                 .build();
 
-        // define the job
-//        scheduler.addJob(jobDetail, true);
+        // create the db entry to track this job
         namedTemplate.getJdbcTemplate().update(
                 "insert into sys_wds.samplejob(id, status, createdat) values (?, ?, ?)",
                 jobKey.getName(),
                 "CREATED",
                 Timestamp.from(Instant.now()));
 
+        // run the job once, immediately
         Trigger trigger = newTrigger()
                 .withIdentity(uuid.toString())
                 .forJob(jobKey)
                 .startNow()
                 .build();
-
-        // run the job once, immediately
         scheduler.scheduleJob(jobDetail, trigger);
         updateStatus(jobKey.getName(), "QUEUED");
 
@@ -101,11 +94,11 @@ public class AsyncDao {
 
 
     /*
-     *
+     * Retrieve the row from our custom samplejob table.
      */
     public SampleJobResponse getJob(String jobId) throws JsonProcessingException, SchedulerException {
-        MapSqlParameterSource params = new MapSqlParameterSource("jobId", jobId);
 
+        MapSqlParameterSource params = new MapSqlParameterSource("jobId", jobId);
         List<SampleJobResponse> jobs = namedTemplate.query(
                 "select id, duration, word, status, createdat, updatedat, error " +
                         "from sys_wds.samplejob where id = :jobId",
@@ -119,6 +112,9 @@ public class AsyncDao {
         return job;
     }
 
+    /*
+     * Update the job's status
+     */
     public void updateStatus(String jobId, String newStatus) {
         namedTemplate.getJdbcTemplate().update(
                 "update sys_wds.samplejob set status = ?, updatedat = ? where id = ?",

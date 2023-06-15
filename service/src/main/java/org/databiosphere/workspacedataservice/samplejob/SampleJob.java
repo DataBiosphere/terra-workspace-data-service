@@ -10,9 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /*
@@ -44,21 +41,21 @@ public class SampleJob implements Job {
     public void execute(JobExecutionContext context) throws JobExecutionException {
         String jobId = context.getJobDetail().getKey().getName();
 
-        updateStatus(jobId, "STARTED");
+        asyncDao.updateStatus(jobId, "STARTED");
 
         try {
             doTheJob(context);
-            updateStatus(jobId, "SUCCEEDED");
+            asyncDao.updateStatus(jobId, "SUCCEEDED");
         } catch (Exception e) {
+            LOGGER.error("job hit an error" + e.getMessage(), e);
             namedTemplate.getJdbcTemplate().update(
                     "update sys_wds.samplejob set error = ? where id = ?",
                     e.getClass().getSimpleName() + ": " + e.getMessage(),
                     jobId
             );
-
-            updateStatus(jobId, "FAILED");
-            // do what?
-            throw e;
+            asyncDao.updateStatus(jobId, "FAILED");
+            // throw with refireImmediately = false
+            throw new JobExecutionException("error in job" + e.getMessage(), e, false);
         }
     }
 
@@ -67,8 +64,7 @@ public class SampleJob implements Job {
         long start = System.currentTimeMillis();
 
         // job starting ...
-        updateStatus(jobId, "RUNNING");
-
+        asyncDao.updateStatus(jobId, "RUNNING");
 
         int randomMillis = ThreadLocalRandom.current().nextInt(5000, 30000);
         try {
@@ -94,16 +90,5 @@ public class SampleJob implements Job {
                         " where id = ?",
                 duration, randomWord, jobId);
     }
-
-    private void updateStatus(String jobId, String newStatus) {
-        namedTemplate.getJdbcTemplate().update(
-                "update sys_wds.samplejob set status = ?, updatedat = ? where id = ?",
-                newStatus,
-                Timestamp.from(Instant.now()),
-                jobId
-        );
-        LOGGER.info("***** job " + jobId + " is now " + newStatus);
-    }
-
 
 }
