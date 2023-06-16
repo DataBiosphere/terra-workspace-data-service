@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.sourcewds;
 
-import org.databiosphere.workspacedata.api.BackupApi;
+import org.databiosphere.workspacedata.api.CloningApi;
 import org.databiosphere.workspacedata.client.ApiClient;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -51,7 +51,7 @@ public class HttpWorkspaceDataServiceClientFactory implements WorkspaceDataServi
         return apiClient;
     }
 
-    public BackupApi getBackupClient(String token) {
-        return new BackupApi(getApiClient(token));
+    public CloningApi getBackupClient(String token) {
+        return new CloningApi(getApiClient(token));
     }
 }

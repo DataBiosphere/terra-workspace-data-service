@@ -52,7 +52,7 @@ paths:
     /backup/status/{trackingId}:
     get:
       tags:
-        - Backup
+        - Cloning
       parameters:
         - $ref: '#/components/parameters/trackingIdPathParam'
       summary: Check status of a backup of a PostgreSQL instance

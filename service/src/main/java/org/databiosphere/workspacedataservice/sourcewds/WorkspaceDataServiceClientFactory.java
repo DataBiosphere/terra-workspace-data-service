@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.sourcewds;
 
-import org.databiosphere.workspacedata.api.BackupApi;
+import org.databiosphere.workspacedata.api.CloningApi;
 
 public interface WorkspaceDataServiceClientFactory {
-    BackupApi getBackupClient(String token);
+    CloningApi getBackupClient(String token);
 }

@@ -28,11 +28,11 @@ public class CloningController {
     }
 
     @PostMapping("/backup/{version}")
-    public ResponseEntity<BackupTrackingResponse> createBackup(@PathVariable("version") String version, String requestorWorkspaceId) {
+    public ResponseEntity<BackupTrackingResponse> createBackup(@PathVariable("version") String version, UUID requestorWorkspaceId) {
         UUID trackingId = UUID.randomUUID();
         // need to read on how to make this async and keep executing in the background after the controller has returned (and that session is no longer active)
         // need to verify that the token gets taken from api call and doesn't need to passed explicitly when source receives this
-        backupDao.createBackupEntry(trackingId, UUID.fromString(requestorWorkspaceId));
+        backupDao.createBackupEntry(trackingId, requestorWorkspaceId);
         backupService.backupAzureWDS(storage, version, trackingId);
         return new ResponseEntity<>(new BackupTrackingResponse(String.valueOf(trackingId)), HttpStatus.OK);
     }
