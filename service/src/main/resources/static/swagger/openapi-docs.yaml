@@ -48,6 +48,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BackupResponse'
+  /restore/{v}:
+    post:
+      tags:
+        - Cloning
+      parameters:
+        - $ref: '#/components/parameters/versionPathParam'
+      summary: Restore a PostgreSQL workspace instance from Azure Blob Storage
+      operationId: restoreBackup
+      responses:
+        200:
+          description: Successfully restored PostgreSQL backup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestoreResponse'
+        400:
+          description: Something failed during restore
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestoreResponse'
   /status:
     get:
       summary: Gets health status for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#health for details)
@@ -820,6 +841,15 @@ components:
         message:
           type: string
           description: message regarding backup status
+    RestoreResponse:
+      type: object
+      properties:
+        restoreStatus:
+          type: boolean
+          description: status of database restore
+        message:
+          type: string
+          description: message regarding restore status
     build:
       type: object
       properties:
