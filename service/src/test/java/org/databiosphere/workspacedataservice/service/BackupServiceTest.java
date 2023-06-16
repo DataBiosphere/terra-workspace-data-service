@@ -13,11 +13,11 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 @TestPropertySource(properties = {"twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000"})
 class BackupServiceTest {
     @Autowired
-    private BackupService backupService;
+    private BackupRestoreService backupService;
 
     @Test
     void CheckCommandLine() {
-        List<String> commandList = backupService.GenerateCommandList();
+        List<String> commandList = backupService.GenerateCommandList(true);
         String command = String.join(" ", commandList);
         assertThat(command).isEqualTo("/usr/bin/pg_dump -h localhost -p 5432 -U wds -d wds -v -w");
     }
