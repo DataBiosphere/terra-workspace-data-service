@@ -15,13 +15,12 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-public class BackupController {
+public class CloningController {
     private final WorkspaceManagerDao workspaceManagerDao;
     private final BackupDao backupDao;
     private final BackupService backupService;
     private final AzureBlobStorage storage;
-
-    public BackupController(WorkspaceManagerDao workspaceManagerDao, BackupDao backupDao, BackupService backupService) {
+    public CloningController(WorkspaceManagerDao workspaceManagerDao, BackupDao backupDao, BackupService backupService) {
         this.workspaceManagerDao = workspaceManagerDao;
         this.backupDao = backupDao;
         this.storage = new AzureBlobStorage(this.workspaceManagerDao);

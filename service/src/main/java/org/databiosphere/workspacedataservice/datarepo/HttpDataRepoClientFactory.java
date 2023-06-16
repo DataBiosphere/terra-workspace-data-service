@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.context.request.RequestContextHolder;
 
+import javax.ws.rs.client.Client;
 import java.util.Objects;
 
 import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
@@ -15,16 +16,19 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
 public class HttpDataRepoClientFactory implements DataRepoClientFactory {
 
     final String dataRepoUrl;
+    private final Client commonHttpClient;
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpDataRepoClientFactory.class);
 
 
     public HttpDataRepoClientFactory(String dataRepoUrl) {
         this.dataRepoUrl = dataRepoUrl;
+        this.commonHttpClient = new ApiClient().getHttpClient();
     }
 
     private ApiClient getApiClient() {
         // create a new data repo client
         ApiClient apiClient = new ApiClient();
+        apiClient.setHttpClient(commonHttpClient);
 
         // initialize the client with the url to data repo
         if (StringUtils.isNotBlank(dataRepoUrl)) {
