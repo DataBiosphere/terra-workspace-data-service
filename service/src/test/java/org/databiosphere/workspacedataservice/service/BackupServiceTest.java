@@ -19,7 +19,7 @@ class BackupServiceTest {
     void CheckCommandLine() {
         List<String> commandList = backupService.GenerateCommandList();
         String command = String.join(" ", commandList);
-        assert(command).equals("/usr/bin/pg_dump -h localhost -p 5432 -U postgres -d wds -v -w");
+        assertThat(command).isEqualTo("/usr/bin/pg_dump -h localhost -p 5432 -U wds -d wds -v -w");
     }
 
     @Test

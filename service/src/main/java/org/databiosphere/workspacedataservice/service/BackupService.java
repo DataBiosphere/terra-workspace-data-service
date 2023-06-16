@@ -1,11 +1,12 @@
 package org.databiosphere.workspacedataservice.service;
 
-import bio.terra.common.db.WriteTransaction;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
+import org.postgresql.plugin.AuthenticationRequestType;
+import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +17,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
+
+import com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticationPlugin;
 
 @Service
 public class BackupService {
@@ -43,13 +46,16 @@ public class BackupService {
     @Value("${twds.pg_dump.path:}")
     private String pgDumpPath;
 
+    @Value("${twds.pg_dump.useAzureIdentity:}")
+    private boolean useAzureIdentity;
+
     public BackupResponse backupAzureWDS(BackUpFileStorage storage, String version) {
         try {
             validateVersion(version);
             String blobName = GenerateBackupFilename();
 
             List<String> commandList = GenerateCommandList();
-            Map<String, String> envVars = Map.of("PGPASSWORD", dbPassword);
+            Map<String, String> envVars = Map.of("PGPASSWORD", determinePassword());
 
             LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
             localProcessLauncher.launchProcess(commandList, envVars);
@@ -63,11 +69,20 @@ public class BackupService {
                 return new BackupResponse(false, error);
             }
         }
-        catch (LaunchProcessException ex){
+        catch (LaunchProcessException | PSQLException ex){
             return new BackupResponse(false, ex.getMessage());
         }
 
         return new BackupResponse(true, "Backup successfully completed.");
+    }
+
+    private String determinePassword() throws PSQLException {
+        if (useAzureIdentity) {
+            return new String(new AzurePostgresqlAuthenticationPlugin(new Properties())
+                .getPassword(AuthenticationRequestType.CLEARTEXT_PASSWORD));
+        } else {
+            return dbPassword;
+        }
     }
 
     public List<String> GenerateCommandList() {
