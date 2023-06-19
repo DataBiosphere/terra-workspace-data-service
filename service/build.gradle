@@ -32,6 +32,10 @@ jib {
 	}
 }
 
+ext {
+	jersey_version = "2.36"
+}
+
 dependencies {
 	// Azure libraries
 	implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.9'
@@ -55,6 +59,7 @@ dependencies {
 	implementation 'javax.cache:cache-api'
 	implementation 'org.ehcache:ehcache:3.10.8'
 	implementation 'org.hashids:hashids:1.0.3'
+	implementation 'javax.ws.rs:javax.ws.rs-api:2.1.1'
 
 	// Terra libraries
 	implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-08b6588'
@@ -65,9 +70,9 @@ dependencies {
 	implementation project(path: ':client')
 
 	// hk2 is required to use WSM client, but not correctly exposed by the client
-	implementation "org.glassfish.jersey.inject:jersey-hk2:2.32"
-	implementation "org.glassfish.jersey.core:jersey-client:2.32"
-	implementation "org.glassfish.jersey.core:jersey-common:2.32"
+	implementation "org.glassfish.jersey.inject:jersey-hk2:$jersey_version"
+	implementation "org.glassfish.jersey.core:jersey-client:$jersey_version"
+	implementation "org.glassfish.jersey.core:jersey-common:$jersey_version"
 
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 	runtimeOnly 'org.webjars.npm:swagger-ui-dist:4.12.0'
@@ -75,10 +80,8 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
 	testImplementation project(':client')
+	testImplementation 'javax.ws.rs:javax.ws.rs-api:2.1.1'
 	testImplementation 'au.com.dius.pact.consumer:junit5:4.1.7'
-	//testImplementation "org.glassfish.jersey.core:jersey-client:2.32"
-	testImplementation "org.glassfish.jersey.core:jersey-common:2.32"
-	//testImplementation "org.glassfish.jersey.inject:jersey-hk2:2.32"
 
 	constraints {
 		implementation('org.json:json:20230227') {
@@ -134,9 +137,9 @@ testing {
 				implementation project(':service')
 				implementation 'org.springframework.boot:spring-boot-starter-test'
 				implementation 'org.liquibase:liquibase-core:4.21.1'
-				implementation "org.glassfish.jersey.core:jersey-client:2.32"
-				implementation "org.glassfish.jersey.core:jersey-common:2.32"
-				implementation "org.glassfish.jersey.inject:jersey-hk2:2.32"
+				implementation "org.glassfish.jersey.core:jersey-client:$jersey_version"
+				implementation "org.glassfish.jersey.core:jersey-common:$jersey_version"
+				implementation "org.glassfish.jersey.inject:jersey-hk2:$jersey_version"
             }
         }
     }

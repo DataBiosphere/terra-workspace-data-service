@@ -1,7 +1,7 @@
 ext {
 	swagger_annotations_version = "2.0.0"
 	jackson_version = "2.14.2"
-	jersey_version = "2.32"
+	jersey_version = "2.36"
 }
 
 dependencies {

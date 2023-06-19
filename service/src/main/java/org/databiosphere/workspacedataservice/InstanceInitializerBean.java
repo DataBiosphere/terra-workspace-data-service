@@ -13,7 +13,6 @@ import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.dao.DataAccessException;
 
 import java.util.UUID;
@@ -50,7 +49,7 @@ public class InstanceInitializerBean {
 
     public boolean isInCloneMode(String sourceWorkspaceId) {
         if (StringUtils.isNotBlank(sourceWorkspaceId)){
-            LOGGER.info("Source workspace id found, checking database");
+            LOGGER.info("DEBUGMODE: Source workspace id found, checking database");
             try {
                 UUID.fromString(sourceWorkspaceId);
             } catch (IllegalArgumentException e){
@@ -62,7 +61,8 @@ public class InstanceInitializerBean {
                 // when the restore operation is added, it would be important to check if any record of restore state is present
                 // it is also possible to check if backup was initiated and completed (since if it did, we dont need to request it again)
                 // and can just kick off the restore
-                return !instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
+                LOGGER.info("DEBUGMODE: checking if true " + !instanceDao.instanceSchemaExists(UUID.fromString(workspaceId)));
+                return true;
             } catch (IllegalArgumentException e) {
                 LOGGER.warn("Workspace id could not be parsed, unable to clone DB. Provided default workspace id: {}.", workspaceId);
                 return false;
@@ -74,7 +74,7 @@ public class InstanceInitializerBean {
     }
 
     public void initCloneMode(){
-        LOGGER.info("Starting in clone mode...");
+        LOGGER.info("DEBUGMODE: Starting in clone mode...");
         LOGGER.info("start up token for debug: " + startupToken);
 
         try {
