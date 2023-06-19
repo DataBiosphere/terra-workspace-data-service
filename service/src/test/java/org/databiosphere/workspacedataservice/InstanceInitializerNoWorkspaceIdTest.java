@@ -1,11 +1,15 @@
 package org.databiosphere.workspacedataservice;
 
+import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.MockBackupDaoConfig;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
+import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -15,16 +19,20 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-@ActiveProfiles({"mock-instance-dao", "local"})
+@ActiveProfiles({"mock-instance-dao", "mock-backup-dao","local"})
 @TestPropertySource(properties = {"twds.instance.workspace-id="})
 @DirtiesContext
-@SpringBootTest(classes = {InstanceInitializerConfig.class, MockInstanceDaoConfig.class})
+@SpringBootTest(classes = {InstanceInitializerConfig.class, MockInstanceDaoConfig.class, MockBackupDaoConfig.class})
 class InstanceInitializerNoWorkspaceIdTest {
 
     @Autowired
     InstanceInitializerBean instanceInitializerBean;
+
     @SpyBean
     InstanceDao instanceDao;
+
+    @SpyBean
+    BackupDao backupDao;
 
     @Test
     void workspaceIDNotProvidedNoExceptionThrown() {

@@ -76,6 +76,9 @@ dependencies {
 	testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
 	testImplementation project(':client')
 	testImplementation 'au.com.dius.pact.consumer:junit5:4.1.7'
+	//testImplementation "org.glassfish.jersey.core:jersey-client:2.32"
+	testImplementation "org.glassfish.jersey.core:jersey-common:2.32"
+	//testImplementation "org.glassfish.jersey.inject:jersey-hk2:2.32"
 
 	constraints {
 		implementation('org.json:json:20230227') {

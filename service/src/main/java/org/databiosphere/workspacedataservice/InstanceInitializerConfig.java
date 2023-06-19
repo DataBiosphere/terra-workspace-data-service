@@ -11,8 +11,8 @@ import org.springframework.context.annotation.Configuration;
 public class InstanceInitializerConfig {
 
     @Bean
-    public InstanceInitializerBean instanceInitializerBean(InstanceDao instanceDao, LeonardoDao leoDao, BackupDao backupDao) {
-        return new InstanceInitializerBean(instanceDao, leoDao, backupDao);
+    public InstanceInitializerBean instanceInitializerBean(InstanceDao instanceDao, BackupDao backupDao) {
+        return new InstanceInitializerBean(instanceDao, backupDao);
     }
 
     @Bean
