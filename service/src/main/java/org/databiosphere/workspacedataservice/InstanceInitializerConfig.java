@@ -14,10 +14,4 @@ public class InstanceInitializerConfig {
     public InstanceInitializerBean instanceInitializerBean(InstanceDao instanceDao, BackupDao backupDao) {
         return new InstanceInitializerBean(instanceDao, backupDao);
     }
-
-    @Bean
-    public ManagedIdentityDao managedIdentityDao() {
-        return new ManagedIdentityDao();
-    }
-
 }
