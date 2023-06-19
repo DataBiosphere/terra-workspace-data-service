@@ -30,7 +30,7 @@ public class DataRepoService {
 
     public static final String TDRIMPORT_TABLE = "tdr-imports";
     public static final String TDRIMPORT_PRIMARY_KEY = "tablename";
-    public static final String TDRIMPORT_SNAPSHOT_ID = "Snapshot id";
+    public static final String TDRIMPORT_SNAPSHOT_ID = "Snapshot Id";
     public static final String TDRIMPORT_IMPORT_TIME = "Import Time";
     public DataRepoService(DataRepoDao dataRepoDao, WorkspaceManagerDao workspaceManagerDao, ActivityLogger activityLogger, RecordDao recordDao) {
         this.dataRepoDao = dataRepoDao;
