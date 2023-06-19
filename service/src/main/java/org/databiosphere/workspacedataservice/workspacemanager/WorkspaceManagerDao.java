@@ -15,7 +15,7 @@ public class WorkspaceManagerDao {
   public static final String INSTANCE_NAME = "terra";
   private final WorkspaceManagerClientFactory workspaceManagerClientFactory;
   private final String workspaceId;
-
+  
   public WorkspaceManagerDao(WorkspaceManagerClientFactory workspaceManagerClientFactory, String workspaceId) {
     this.workspaceManagerClientFactory = workspaceManagerClientFactory;
     this.workspaceId = workspaceId;
