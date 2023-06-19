@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice;
 
 import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
-import org.databiosphere.workspacedataservice.dao.ManagedIdentityDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
