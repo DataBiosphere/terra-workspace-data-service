@@ -7,6 +7,8 @@ import org.databiosphere.workspacedataservice.service.model.BackupSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
+import org.postgresql.plugin.AuthenticationRequestType;
+import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +19,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
+
+import com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticationPlugin;
 
 @Service
 public class BackupService {
@@ -44,6 +48,9 @@ public class BackupService {
 
     @Value("${twds.pg_dump.path:}")
     private String pgDumpPath;
+  
+    @Value("${twds.pg_dump.useAzureIdentity:}")
+    private boolean useAzureIdentity;
 
     public BackupService(BackupDao backupDao) {
         this.backupDao = backupDao;
@@ -69,7 +76,7 @@ public class BackupService {
             String blobName = GenerateBackupFilename();
 
             List<String> commandList = GenerateCommandList();
-            Map<String, String> envVars = Map.of("PGPASSWORD", dbPassword);
+            Map<String, String> envVars = Map.of("PGPASSWORD", determinePassword());
 
             LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
             localProcessLauncher.launchProcess(commandList, envVars);
@@ -87,9 +94,18 @@ public class BackupService {
             // if no errors happen and code reaches here, the backup has been completed succesfully
             backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.Completed.toString());
         }
-        catch (LaunchProcessException ex){
+        catch (LaunchProcessException | PSQLException ex) {
             LOGGER.error("process error: {}", ex);
             backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.Error.toString());
+        }
+    }
+
+    private String determinePassword() throws PSQLException {
+        if (useAzureIdentity) {
+            return new String(new AzurePostgresqlAuthenticationPlugin(new Properties())
+                .getPassword(AuthenticationRequestType.CLEARTEXT_PASSWORD));
+        } else {
+            return dbPassword;
         }
     }
 
