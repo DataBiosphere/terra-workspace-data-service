@@ -64,7 +64,8 @@ class SamPactTest {
     @Pact(consumer = "wds-consumer", provider = "sam-provider")
     public RequestResponsePact writeNoPermissionPact(PactDslWithProvider builder) {
         return builder
-                .given("user does not have write permission")
+                .given("user does not have write permission", Map.of("dummyResourceId",
+                        dummyResourceId))
                 .uponReceiving("a request for write permission on workspace")
                 .pathFromProviderState(
                         "/api/resources/v2/workspace/${dummyResourceId}/action/write",
@@ -80,7 +81,8 @@ class SamPactTest {
     public RequestResponsePact writePermissionPact(PactDslWithProvider builder) {
         return builder
                 .given("user has write permission")
-                .uponReceiving("a request for write permission on workspace")
+                .uponReceiving("a request for write permission on workspace", Map.of("dummyResourceId",
+                        dummyResourceId))
                 .pathFromProviderState(
                         "/api/resources/v2/workspace/${dummyResourceId}/action/write",
                         String.format("/api/resources/v2/workspace/%s/action/write", dummyResourceId))
@@ -95,7 +97,8 @@ class SamPactTest {
     public RequestResponsePact deletePermissionPact(PactDslWithProvider builder) {
         return builder
                 .given("user has delete permission")
-                .uponReceiving("a request for delete permission on workspace")
+                .uponReceiving("a request for delete permission on workspace", Map.of("dummyResourceId",
+                        dummyResourceId))
                 .pathFromProviderState(
                         "/api/resources/v2/workspace/${dummyResourceId}/action/delete",
                         String.format("/api/resources/v2/workspace/%s/action/delete", dummyResourceId))
@@ -110,7 +113,8 @@ class SamPactTest {
     public RequestResponsePact deleteNoPermissionPact(PactDslWithProvider builder) {
         return builder
                 .given("user does not have delete permission")
-                .uponReceiving("a request for delete permission on workspace")
+                .uponReceiving("a request for delete permission on workspace", Map.of("dummyResourceId",
+                        dummyResourceId))
                 .pathFromProviderState(
                         "/api/resources/v2/workspace/${dummyResourceId}/action/delete",
                         String.format("/api/resources/v2/workspace/%s/action/delete", dummyResourceId))
