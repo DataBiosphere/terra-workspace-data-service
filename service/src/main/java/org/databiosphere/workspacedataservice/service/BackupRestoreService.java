@@ -11,6 +11,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -78,22 +81,46 @@ public class BackupRestoreService {
     public BackupRestoreResponse restoreAzureWDS(BackUpFileStorage storage, String version) {
         validateVersion(version);
         try {
-            // TODO grab blob from storage
-            storage.streamInputFromBlobStorage(backupName);
+            // grab blob from storage
+            storage.downloadFromBlobStorage(backupName);
             
-            // TODO rename workspace from source to dest
-            // TODO pgdump restore
+            // restore pgdump
             List<String> commandList = GenerateCommandList(false);
+            commandList.add("-f" + backupName);
             Map<String, String> envVars = Map.of("PGPASSWORD", dbPassword);
 
             LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
             localProcessLauncher.launchProcess(commandList, envVars);
 
-            // TODO delete backup file
+            String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
+            int exitCode = localProcessLauncher.waitForTerminate();
+            if (exitCode != 0 && StringUtils.isNotBlank(error)) {
+                LOGGER.error("process error: {}", error);
+                return new BackupRestoreResponse(false, error);
+            }
+
+            // rename workspace from source to dest
+            commandList.remove(commandList.size() - 1);
+            //TODO: in the future this will shift to source and current workspace id 
+            commandList.add(String.format("-c ALTER SCHEMA \"%s\" RENAME TO \"%s\"", workspaceId, "12345678-1234-1234-1234-123456789012"));
+            localProcessLauncher.launchProcess(commandList, envVars);
+            
+            error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
+            exitCode = localProcessLauncher.waitForTerminate();
+            if (exitCode != 0 && StringUtils.isNotBlank(error)) {
+                LOGGER.error("process error: {}", error);
+                return new BackupRestoreResponse(false, error);
+            }
+            
+            // delete backup file
+            Files.deleteIfExists(Paths.get(backupName));
             return new BackupRestoreResponse(true, "Successfully completed restore");
         } 
         catch (LaunchProcessException ex){
             return new BackupRestoreResponse(false, ex.getMessage());
+        }
+        catch(IOException ex) {
+            return new BackupRestoreResponse(false, "Trouble deleting Azure Blob file, specifically:" + ex.getMessage());
         }
     }
 
@@ -105,9 +132,6 @@ public class BackupRestoreService {
         command.put("-p", dbPort);
         command.put("-U", dbUser);
         command.put("-d", dbName);
-        if(!isBackup) {
-            command.put("-f", backupName);
-        }
 
         List<String> commandList = new ArrayList<>();
         for (Map.Entry<String, String> entry : command.entrySet()) {
