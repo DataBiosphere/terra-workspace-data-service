@@ -27,7 +27,7 @@ import com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticati
 public class BackupRestoreService {
     private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
 
-    private final String backupName = "backup.sql";
+    private static final String backupName = "backup.sql";
 
     //TODO: in the future this will shift to "twds.instance.source-workspace-id"
     @Value("${twds.instance.workspace-id:}")
@@ -60,20 +60,18 @@ public class BackupRestoreService {
     public BackupRestoreResponse backupAzureWDS(BackUpFileStorage storage, String version) {
         try {
             validateVersion(version);
-            String blobName = GenerateBackupFilename();
+            String blobName = generateBackupFilename();
 
-            List<String> commandList = GenerateCommandList(true);
+
+            List<String> commandList = generateCommandList(true);
             Map<String, String> envVars = Map.of("PGPASSWORD", determinePassword());
 
             LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
             localProcessLauncher.launchProcess(commandList, envVars);
 
             storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName);
-            String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
-            int exitCode = localProcessLauncher.waitForTerminate();
-
-            if (exitCode != 0 && StringUtils.isNotBlank(error)) {
-                LOGGER.error("process error: {}", error);
+            String error = checkForError(localProcessLauncher, LOGGER);
+            if (StringUtils.isNotBlank(error)) {
                 return new BackupRestoreResponse(false, error);
             }
         }
@@ -91,17 +89,14 @@ public class BackupRestoreService {
             storage.downloadFromBlobStorage(backupName);
             
             // restore pgdump
-            List<String> commandList = GenerateCommandList(false);
+            List<String> commandList = generateCommandList(false);
             commandList.add("-f" + backupName);
             Map<String, String> envVars = Map.of("PGPASSWORD", dbPassword);
 
             LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
             localProcessLauncher.launchProcess(commandList, envVars);
-
-            String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
-            int exitCode = localProcessLauncher.waitForTerminate();
-            if (exitCode != 0 && StringUtils.isNotBlank(error)) {
-                LOGGER.error("process error: {}", error);
+            String error = checkForError(localProcessLauncher, LOGGER);
+            if (StringUtils.isNotBlank(error)) {
                 return new BackupRestoreResponse(false, error);
             }
 
@@ -110,11 +105,8 @@ public class BackupRestoreService {
             //TODO: in the future this will shift to source and current workspace id 
             commandList.add(String.format("-c ALTER SCHEMA \"%s\" RENAME TO \"%s\"", workspaceId, "12345678-1234-1234-1234-123456789012"));
             localProcessLauncher.launchProcess(commandList, envVars);
-            
-            error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
-            exitCode = localProcessLauncher.waitForTerminate();
-            if (exitCode != 0 && StringUtils.isNotBlank(error)) {
-                LOGGER.error("process error: {}", error);
+            error = checkForError(localProcessLauncher, LOGGER);
+            if (StringUtils.isNotBlank(error)) {
                 return new BackupRestoreResponse(false, error);
             }
             
@@ -140,7 +132,7 @@ public class BackupRestoreService {
     }
 
     // Same args, different command depending on whether we're doing backup or restore.
-    public List<String> GenerateCommandList(Boolean isBackup) {
+    public List<String> generateCommandList(boolean isBackup) {
         Map<String, String> command = new LinkedHashMap<>();
         command.put(isBackup ? pgDumpPath : psqlPath, null);
         command.put("-h", dbHost);
@@ -161,10 +153,20 @@ public class BackupRestoreService {
         return commandList;
     }
 
-    public String GenerateBackupFilename() {
+    public String generateBackupFilename() {
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
         String timestamp = now.format(formatter);
         return workspaceId + "-" + timestamp + ".sql";
+    }
+
+    private String checkForError(LocalProcessLauncher localProcessLauncher, Logger log) {
+        String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
+        int exitCode = localProcessLauncher.waitForTerminate();
+        if (exitCode != 0 && StringUtils.isNotBlank(error)) {
+            log.error("process error: {}", error);
+            return error;
+        }
+        return error;
     }
 }
