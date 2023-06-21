@@ -166,7 +166,8 @@ public class BackupRestoreService {
         int exitCode = localProcessLauncher.waitForTerminate();
         if (exitCode != 0 && StringUtils.isNotBlank(error)) {
             log.error("process error: {}", error);
+            return error;
         }
-        return error;
+        return "";
     }
 }
