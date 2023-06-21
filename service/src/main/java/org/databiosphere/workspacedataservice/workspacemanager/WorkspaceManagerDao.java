@@ -48,16 +48,16 @@ public class WorkspaceManagerDao {
   /**
   Retrieves the azure storage container url and sas token for a given workspace.
    */
-  public CreatedAzureStorageContainerSasToken getBlobStorageUrl() {
+  public String getBlobStorageUrl() {
     final ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi();
     final ControlledAzureResourceApi azureResourceApi = this.workspaceManagerClientFactory.getAzureResourceApi();
     try {
-      UUID workspace_UUID = UUID.fromString(workspaceId);
+      UUID workspace_UUID = UUID.fromString("5d5eacea-da7e-4746-8358-f846af34a8da");
       ResourceList resourceList = resourceApi.enumerateResources(workspace_UUID, 0, 10, null, null);
       UUID storageUUID = resourceList.getResources().get(0).getMetadata().getResourceId();
 
       CreatedAzureStorageContainerSasToken sasBundle = azureResourceApi.createAzureStorageContainerSasToken(workspace_UUID, storageUUID, null, null, null, null);
-      return sasBundle;
+      return sasBundle.getUrl();
     } catch (ApiException e) {
       throw new WorkspaceManagerException(e);
     }

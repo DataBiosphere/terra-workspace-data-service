@@ -2,8 +2,9 @@ package org.databiosphere.workspacedataservice.dao;
 
 import bio.terra.common.db.WriteTransaction;
 import org.databiosphere.workspacedataservice.service.model.BackupSchema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -16,6 +17,8 @@ public class PostgresBackupDao implements BackupDao {
 
     @Value("${spring.datasource.username}")
     private String wdsDbUser;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PostgresBackupDao.class);
 
     private final NamedParameterJdbcTemplate namedTemplate;
 
@@ -41,6 +44,7 @@ public class PostgresBackupDao implements BackupDao {
                 new MapSqlParameterSource("trackingId", trackingId), Boolean.class));
     }
 
+    @Override
     public boolean backupExistsForGivenSource(UUID sourceWorkspaceId) {
         return Boolean.TRUE.equals(namedTemplate.queryForObject(
                 "select exists(select from sys_wds.backup WHERE sourceworkspaceid = :sourceWorkspaceId)",

@@ -1,11 +1,8 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.service.BackupService;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.BackupTrackingResponse;
-import org.databiosphere.workspacedataservice.storage.AzureBlobStorage;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,24 +13,17 @@ import java.util.UUID;
 
 @RestController
 public class CloningController {
-    private final WorkspaceManagerDao workspaceManagerDao;
-    private final BackupDao backupDao;
     private final BackupService backupService;
-    private final AzureBlobStorage storage;
-    public CloningController(WorkspaceManagerDao workspaceManagerDao, BackupDao backupDao, BackupService backupService) {
-        this.workspaceManagerDao = workspaceManagerDao;
-        this.backupDao = backupDao;
-        this.storage = new AzureBlobStorage(this.workspaceManagerDao);
+    public CloningController(BackupService backupService) {
         this.backupService = backupService;
     }
 
-    @PostMapping("/backup/{version}")
-    public ResponseEntity<BackupTrackingResponse> createBackup(@PathVariable("version") String version, UUID requestorWorkspaceId) {
+    @PostMapping("/backup/{version}/{requestorWorkspaceId}")
+    public ResponseEntity<BackupTrackingResponse> createBackup(@PathVariable("version") String version, @PathVariable("requestorWorkspaceId") UUID requestorWorkspaceId) {
         UUID trackingId = UUID.randomUUID();
         // need to read on how to make this async and keep executing in the background after the controller has returned (and that session is no longer active)
         // need to verify that the token gets taken from api call and doesn't need to passed explicitly when source receives this
-        backupDao.createBackupEntry(trackingId, requestorWorkspaceId);
-        backupService.backupAzureWDS(storage, version, trackingId);
+        backupService.backupAzureWDS(version, trackingId, requestorWorkspaceId);
         return new ResponseEntity<>(new BackupTrackingResponse(String.valueOf(trackingId)), HttpStatus.OK);
     }
 

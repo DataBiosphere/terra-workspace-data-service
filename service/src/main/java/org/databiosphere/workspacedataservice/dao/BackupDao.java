@@ -10,5 +10,8 @@ public interface BackupDao {
     void createBackupEntry(UUID trackingId, UUID sourceWorkspaceId);
 
     void updateBackupStatus(UUID trackingId, String status);
+
+    boolean backupExistsForGivenSource(UUID sourceWorkspaceId);
+
     void updateFilename(UUID trackingId, String filename);
 }

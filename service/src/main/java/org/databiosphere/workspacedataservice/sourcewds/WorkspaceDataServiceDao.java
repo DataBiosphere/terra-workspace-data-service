@@ -10,11 +10,9 @@ import java.util.UUID;
 
 public class WorkspaceDataServiceDao {
   private final WorkspaceDataServiceClientFactory workspaceDataServiceClientFactory;
-  private final String workspaceId;
 
   public WorkspaceDataServiceDao(WorkspaceDataServiceClientFactory workspaceDataServiceClientFactory, String workspaceId) {
     this.workspaceDataServiceClientFactory = workspaceDataServiceClientFactory;
-    this.workspaceId = workspaceId;
   }
 
   /**
@@ -23,7 +21,7 @@ public class WorkspaceDataServiceDao {
   public BackupTrackingResponse triggerBackup(String token, UUID requesterWorkspaceId) {
     var backupClient = this.workspaceDataServiceClientFactory.getBackupClient(token);
     try {
-      var response = backupClient.createBackup("vo.2", requesterWorkspaceId);
+      var response = backupClient.createBackup("v0.2", requesterWorkspaceId);
       return response;
     } catch (ApiException e) {
       throw new WorkspaceDataServiceException(e);

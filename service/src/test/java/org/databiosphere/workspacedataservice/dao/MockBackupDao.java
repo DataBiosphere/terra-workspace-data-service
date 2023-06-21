@@ -1,9 +1,5 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import org.postgresql.util.ServerErrorMessage;
-
-import java.sql.SQLException;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,4 +42,8 @@ public class MockBackupDao implements BackupDao {
 
     }
 
+    @Override
+    public boolean backupExistsForGivenSource(UUID sourceWorkspaceId) {
+        return backups.contains(sourceWorkspaceId);
+    }
 }

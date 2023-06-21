@@ -1,12 +1,15 @@
 package org.databiosphere.workspacedataservice.service;
 
+import com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticationPlugin;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import org.databiosphere.workspacedataservice.service.model.BackupSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
+import org.databiosphere.workspacedataservice.storage.AzureBlobStorage;
 import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.postgresql.plugin.AuthenticationRequestType;
 import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
@@ -20,11 +23,11 @@ import java.util.*;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 
-import com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticationPlugin;
-
 @Service
 public class BackupService {
     private final BackupDao backupDao;
+    private final WorkspaceManagerDao workspaceManagerDao;
+    private final BackUpFileStorage storage;
     private static final Logger LOGGER = LoggerFactory.getLogger(BackupService.class);
 
     //TODO: in the future this will shift to "twds.instance.source-workspace-id"
@@ -52,8 +55,10 @@ public class BackupService {
     @Value("${twds.pg_dump.useAzureIdentity:}")
     private boolean useAzureIdentity;
 
-    public BackupService(BackupDao backupDao) {
+    public BackupService(BackupDao backupDao, WorkspaceManagerDao workspaceManagerDao) {
         this.backupDao = backupDao;
+        this.workspaceManagerDao = workspaceManagerDao;
+        this.storage = new AzureBlobStorage(this.workspaceManagerDao);
     }
 
     public BackupResponse checkBackupStatus(UUID trackingId) {
@@ -70,9 +75,15 @@ public class BackupService {
         }
     }
 
-    public void backupAzureWDS(BackUpFileStorage storage, String version, UUID trackingId) {
+    public void backupAzureWDS(String version, UUID trackingId, UUID requestorWorkspaceId) {
         try {
             validateVersion(version);
+            backupDao.createBackupEntry(trackingId, requestorWorkspaceId);
+
+            workspaceId = "5d5eacea-da7e-4746-8358-f846af34a8da";
+            var blobstorageDetails = workspaceManagerDao.getBlobStorageUrl();
+            LOGGER.info("DEBUG: " + blobstorageDetails);
+
             String blobName = GenerateBackupFilename();
 
             List<String> commandList = GenerateCommandList();
@@ -82,6 +93,7 @@ public class BackupService {
             localProcessLauncher.launchProcess(commandList, envVars);
 
             backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.Started.toString());
+
             storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName, workspaceId);
             String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
             int exitCode = localProcessLauncher.waitForTerminate();
@@ -91,7 +103,7 @@ public class BackupService {
                 backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.Error.toString());
             }
 
-            // if no errors happen and code reaches here, the backup has been completed succesfully
+            // if no errors happen and code reaches here, the backup has been completed successfully
             backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.Completed.toString());
         }
         catch (LaunchProcessException | PSQLException ex) {

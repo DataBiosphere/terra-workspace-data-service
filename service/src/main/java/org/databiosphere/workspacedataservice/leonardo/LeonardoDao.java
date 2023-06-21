@@ -20,10 +20,16 @@ public class LeonardoDao {
     var workspaceApps = this.leonardoClientFactory.getAppsV2Api(token);
     try {
       var response = workspaceApps.listAppsV2(workspaceId, null, false, null);
-      Map<String, String> proxyUrls = ((Map<String, String>) response.get(0).getProxyUrls());
       // unsure what the key would be if there is more than 1 wds present in the listed apps, but in this case our assumption is
       // it is acceptable to fail if we cant find a single wds in the proxy urls
-      return proxyUrls.get("wds");
+      for(int i=0; i< response.size(); i++) {
+        Map<String, String> proxyUrls = ((Map<String, String>) response.get(i).getProxyUrls());
+        var url = proxyUrls.get("wds");
+        if(url != null) {
+          return url;
+        }
+      }
+      throw new ApiException("Did not locate WDS source url.");
     } catch (ApiException e) {
       throw new LeonardoServiceException(e);
     }

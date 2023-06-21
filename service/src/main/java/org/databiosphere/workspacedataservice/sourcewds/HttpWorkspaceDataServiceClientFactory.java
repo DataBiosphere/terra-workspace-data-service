@@ -13,22 +13,20 @@ import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRI
 import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
 public class HttpWorkspaceDataServiceClientFactory implements WorkspaceDataServiceClientFactory {
-
-    final String workspaceDataManagerUrl;
+    final String workspaceDataServiceUrl;
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpWorkspaceDataServiceClientFactory.class);
 
-
-    public HttpWorkspaceDataServiceClientFactory(String workspaceDataManagerUrl) {
-        this.workspaceDataManagerUrl = workspaceDataManagerUrl;
+    public HttpWorkspaceDataServiceClientFactory(String wdsUrl) {
+        this.workspaceDataServiceUrl = wdsUrl;
     }
 
     private ApiClient getApiClient(String token) {
-        // create a new data repo client
+        // create a new client
         ApiClient apiClient = new ApiClient();
 
         // initialize the client with the url to data repo
-        if (StringUtils.isNotBlank(workspaceDataManagerUrl)) {
-            apiClient.setBasePath(workspaceDataManagerUrl);
+        if (StringUtils.isNotBlank(workspaceDataServiceUrl)) {
+            apiClient.setBasePath(workspaceDataServiceUrl);
         }
 
         // grab the current user's bearer token (see BearerTokenFilter)
@@ -36,7 +34,7 @@ public class HttpWorkspaceDataServiceClientFactory implements WorkspaceDataServi
             Object userToken = RequestContextHolder.currentRequestAttributes()
                     .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
             // add the user's bearer token to the client
-            if (!Objects.isNull(token)) {
+            if (!Objects.isNull(userToken)) {
                 LOGGER.debug("setting access token for workspace data service request");
                 apiClient.setAccessToken(userToken.toString());
             } else {

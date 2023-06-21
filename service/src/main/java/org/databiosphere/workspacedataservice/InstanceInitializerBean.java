@@ -75,7 +75,6 @@ public class InstanceInitializerBean {
 
     public void initCloneMode(){
         LOGGER.info("DEBUGMODE: Starting in clone mode...");
-        LOGGER.info("start up token for debug: " + startupToken);
 
         try {
             // first get source wds url based on source workspace id and the provided access token
@@ -101,6 +100,7 @@ public class InstanceInitializerBean {
                 var backupFileName = "";
 
                 long startTime = System.currentTimeMillis(); //fetch starting time
+                LOGGER.info("DEBUG: Checking for status");
                 while (!complete || (System.currentTimeMillis()-startTime)<3600000) { // exit loop after 60 minutes
                     LOGGER.info("Checking status for tracking id " + response.getTrackingId());
                     var statusResponse = wdsDao.checkBackupStatus(startupToken, response.getTrackingId());
@@ -114,14 +114,14 @@ public class InstanceInitializerBean {
                 }
 
                 if(!complete) {
-                    LOGGER.error("An error occured during clone mode.");
+                    LOGGER.error("An error occured during clone mode - job not complete.");
                 }
             }
 
             //TODO do the restore
         }
         catch(Exception e){
-            LOGGER.error("An error occured during clone mode.");
+            LOGGER.error("An error occured during clone mode." + e);
         }
     }
 
@@ -154,5 +154,4 @@ public class InstanceInitializerBean {
             LOGGER.error("Failed to create default schema id for workspaceId {}.", workspaceId);
         }
     }
-
 }

@@ -27,7 +27,7 @@ tags:
   - name: Snapshots
     description: Snapshot APIs
 paths:
-  /backup/{v}:
+  /backup/{v}/{requestorWorkspaceId}:
     post:
       tags:
         - Cloning
@@ -36,6 +36,8 @@ paths:
         - $ref: '#/components/parameters/requestorWorkspacePathParam'
       summary: Create a backup of a PostgreSQL instance and upload it to Azure Blob Storage
       operationId: createBackup
+      security:
+        - bearerAuth: [ ]      
       responses:
         200:
           description: Successfully initiated the backup process
@@ -49,7 +51,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BackupTrackingResponse'
-    /backup/status/{trackingId}:
+  /backup/status/{trackingId}:
     get:
       tags:
         - Cloning
