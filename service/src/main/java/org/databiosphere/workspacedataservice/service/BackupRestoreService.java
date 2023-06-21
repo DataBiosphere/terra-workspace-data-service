@@ -65,7 +65,6 @@ public class BackupRestoreService {
             validateVersion(version);
             String blobName = generateBackupFilename();
 
-
             List<String> commandList = generateCommandList(true);
             Map<String, String> envVars = Map.of("PGPASSWORD", determinePassword());
 
