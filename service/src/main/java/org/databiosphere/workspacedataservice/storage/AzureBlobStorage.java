@@ -38,13 +38,13 @@ public class AzureBlobStorage implements BackUpFileStorage {
     }
     
     @Override
-    public void streamInputFromBlobStorage(String blobName) {
+    public void downloadFromBlobStorage(String blobName) {
         // TODO: remove this once connection is switched to be done via SAS token
         String storageConnectionString = System.getenv("STORAGE_CONNECTION_STRING");
         BlobContainerClient blobContainerClient = constructBlockBlobClient(backUpContainerName, storageConnectionString);
         
         try{
-            blobContainerClient.getBlobClient(blobName).downloadToFile("backup.sql");
+            blobContainerClient.getBlobClient(blobName).downloadToFile(blobName);
         } catch(UncheckedIOException ioEx) {
             throw new LaunchProcessException("Error downloading backup file from Azure Storage", ioEx);
         }
