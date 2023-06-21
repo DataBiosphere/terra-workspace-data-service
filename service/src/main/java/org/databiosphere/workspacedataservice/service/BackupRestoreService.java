@@ -27,11 +27,14 @@ import com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticati
 public class BackupRestoreService {
     private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
 
-    private static final String backupName = "backup.sql";
+    private static final String BackupFileName = "backup.sql";
 
     //TODO: in the future this will shift to "twds.instance.source-workspace-id"
     @Value("${twds.instance.workspace-id:}")
     private String workspaceId;
+
+    @Value("${twds.instance.source-workspace-id:}")
+    private String sourceWorkspaceId;
 
     @Value("${twds.pg_dump.user:}")
     private String dbUser;
@@ -86,11 +89,11 @@ public class BackupRestoreService {
         validateVersion(version);
         try {
             // grab blob from storage
-            storage.downloadFromBlobStorage(backupName);
+            storage.downloadFromBlobStorage(BackupFileName);
             
             // restore pgdump
             List<String> commandList = generateCommandList(false);
-            commandList.add("-f" + backupName);
+            commandList.add("-f" + BackupFileName);
             Map<String, String> envVars = Map.of("PGPASSWORD", dbPassword);
 
             LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
@@ -100,10 +103,9 @@ public class BackupRestoreService {
                 return new BackupRestoreResponse(false, error);
             }
 
-            // rename workspace from source to dest
+            // rename workspace schema from source to dest
             commandList.remove(commandList.size() - 1);
-            //TODO: in the future this will shift to source and current workspace id 
-            commandList.add(String.format("-c ALTER SCHEMA \"%s\" RENAME TO \"%s\"", workspaceId, "12345678-1234-1234-1234-123456789012"));
+            commandList.add(String.format("-c ALTER SCHEMA \"%s\" RENAME TO \"%s\"", sourceWorkspaceId, workspaceId));
             localProcessLauncher.launchProcess(commandList, envVars);
             error = checkForError(localProcessLauncher, LOGGER);
             if (StringUtils.isNotBlank(error)) {
@@ -111,7 +113,7 @@ public class BackupRestoreService {
             }
             
             // delete backup file
-            Files.deleteIfExists(Paths.get(backupName));
+            Files.deleteIfExists(Paths.get(BackupFileName));
             return new BackupRestoreResponse(true, "Successfully completed restore");
         } 
         catch (LaunchProcessException ex){
@@ -165,7 +167,6 @@ public class BackupRestoreService {
         int exitCode = localProcessLauncher.waitForTerminate();
         if (exitCode != 0 && StringUtils.isNotBlank(error)) {
             log.error("process error: {}", error);
-            return error;
         }
         return error;
     }
