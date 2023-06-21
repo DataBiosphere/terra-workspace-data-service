@@ -17,14 +17,14 @@ class BackupServiceTest {
 
     @Test
     void CheckCommandLine() {
-        List<String> commandList = backupService.GenerateCommandList(true);
+        List<String> commandList = backupService.generateCommandList(true);
         String command = String.join(" ", commandList);
         assertThat(command).isEqualTo("/usr/bin/pg_dump -h localhost -p 5432 -U wds -d wds -v -w");
     }
 
     @Test
     void VerifyBackupFileName() {
-        String blobName = backupService.GenerateBackupFilename();
+        String blobName = backupService.generateBackupFilename();
         assertThat(blobName).containsPattern("[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}-[0-9]{4}-[0-9]{2}-[0-9]{2}_([0-9]+(-[0-9]+)+)\\.sql");
     }
 }
