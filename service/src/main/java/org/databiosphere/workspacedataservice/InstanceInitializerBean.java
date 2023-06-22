@@ -28,12 +28,6 @@ public class InstanceInitializerBean {
     @Value("${twds.instance.source-workspace-id}")
     private String sourceWorkspaceId;
 
-    /*
-        currently unused; future code will use this token to:
-            - ask WSM about the workspace's storage container
-            - retrieve a SAS token for that container from WSM
-            - kick off a backup operation in the source WDS
-     */
     @Value("${twds.startup-token}")
     private String startupToken;
 
@@ -77,8 +71,8 @@ public class InstanceInitializerBean {
 
         try {
             // first get source wds url based on source workspace id and the provided access token
-            LeonardoClientFactory leofactory = new HttpLeonardoClientFactory(leoUrl);
-            LeonardoDao leoDao = new LeonardoDao(leofactory, sourceWorkspaceId);
+            LeonardoClientFactory leoFactory = new HttpLeonardoClientFactory(leoUrl);
+            LeonardoDao leoDao = new LeonardoDao(leoFactory, sourceWorkspaceId);
             var sourceWdsEndpoint = leoDao.getWdsEndpointUrl(startupToken);
 
             // make the call to source wds to trigger back up
@@ -95,24 +89,14 @@ public class InstanceInitializerBean {
                 backupDao.createBackupEntry(response.getTrackingId(), UUID.fromString(sourceWorkspaceId));
 
                 // check that backup was successfully kicked off, next wait to check if backup is ready
-                var complete = false;
                 var backupFileName = "";
 
-                long startTime = System.currentTimeMillis(); //fetch starting time
-                LOGGER.info("DEBUG: Checking for status");
-                while (!complete || (System.currentTimeMillis()-startTime)<3600000) { // exit loop after 60 minutes
-                    LOGGER.info("Checking status for tracking id " + response.getTrackingId());
-                    var statusResponse = wdsDao.checkBackupStatus(startupToken, response.getTrackingId());
-                    if (statusResponse.getState() == BackupSchema.BackupState.Completed.toString() || statusResponse.getState() == BackupSchema.BackupState.Error.toString()) {
-                        backupDao.updateBackupStatus(response.getTrackingId(),statusResponse.getState());
-                        backupFileName = statusResponse.getFilename();
-                        complete = true;
-                    }
-                    // sleep 10 seconds before pulling state again
-                    Thread.sleep(10 * 1000);
+                var statusResponse = wdsDao.checkBackupStatus(startupToken, response.getTrackingId());
+                if (statusResponse.getState() == BackupSchema.BackupState.Completed.toString() || statusResponse.getState() == BackupSchema.BackupState.Error.toString()) {
+                    backupDao.updateBackupStatus(response.getTrackingId(),statusResponse.getState());
+                    backupFileName = statusResponse.getFilename();
                 }
-
-                if(!complete) {
+                else {
                     LOGGER.error("An error occured during clone mode - job not complete.");
                 }
             }
@@ -120,7 +104,7 @@ public class InstanceInitializerBean {
             //TODO do the restore
         }
         catch(Exception e){
-            LOGGER.error("An error occured during clone mode." + e);
+            LOGGER.error("An error occurred during clone mode. Will start with empty database." + e);
         }
     }
 

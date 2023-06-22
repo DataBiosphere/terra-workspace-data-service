@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.leonardo;
 
+import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
 import org.broadinstitute.dsde.workbench.client.leonardo.ApiClient;
 import org.broadinstitute.dsde.workbench.client.leonardo.api.AppsV2Api;
@@ -7,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.context.request.RequestContextHolder;
 
+import javax.ws.rs.client.Client;
 import java.util.Objects;
 
 import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
@@ -15,16 +17,19 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
 public class HttpLeonardoClientFactory implements LeonardoClientFactory {
 
     final String leoEndpointUrl;
+    private final Client commonHttpClient;
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpLeonardoClientFactory.class);
 
 
     public HttpLeonardoClientFactory(String leoUrl) {
         this.leoEndpointUrl = leoUrl;
+        this.commonHttpClient = new bio.terra.workspace.client.ApiClient().getHttpClient();
     }
 
     private ApiClient getApiClient(String token) {
         // create a new data repo client
         ApiClient apiClient = new ApiClient();
+        apiClient.setHttpClient((OkHttpClient) commonHttpClient);
 
         // initialize the client with the url to data repo
         if (StringUtils.isNotBlank(leoEndpointUrl)) {

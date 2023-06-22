@@ -7,7 +7,5 @@ import bio.terra.workspace.api.ResourceApi;
 public interface WorkspaceManagerClientFactory {
   ReferencedGcpResourceApi getReferencedGcpResourceApi();
   ResourceApi getResourceApi();
-  ResourceApi getResourceApi(String token);
   ControlledAzureResourceApi getAzureResourceApi();
-  ControlledAzureResourceApi getAzureResourceApi(String token);
 }

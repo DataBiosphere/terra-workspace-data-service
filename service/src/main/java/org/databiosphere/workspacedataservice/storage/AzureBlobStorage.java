@@ -26,9 +26,9 @@ public class AzureBlobStorage implements BackUpFileStorage {
     @Override
     public void streamOutputToBlobStorage(InputStream fromStream, String blobName, String workspaceId) {
         // TODO: remove this once connection is switched to be done via SAS token
-        LOGGER.info("DEBUG: Creating blob storage client. ");
+        LOGGER.info("Creating blob storage client. ");
         BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId);
-        LOGGER.info("DEBUG: About to write to blob storage. ");
+        LOGGER.info("About to write to blob storage. ");
         // https://learn.microsoft.com/en-us/java/api/overview/azure/storage-blob-readme?view=azure-java-stable#upload-a-blob-via-an-outputstream
         try (BlobOutputStream blobOS = blobContainerClient.getBlobClient(blobName).getBlockBlobClient().getBlobOutputStream()) {
             try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(fromStream, StandardCharsets.UTF_8))) {

@@ -7,7 +7,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Mock implementation of InstanceDao that is in-memory instead of requiring Postgres
+ * Mock implementation of BackupDao that is in-memory instead of requiring Postgres
  */
 public class MockBackupDao implements BackupDao {
 
@@ -25,8 +25,8 @@ public class MockBackupDao implements BackupDao {
     }
 
     @Override
-    public String getBackupStatus(UUID trackingId) {
-        return "";
+    public BackupSchema getBackupStatus(UUID trackingId) {
+        return backups.stream().filter(backupInList -> backupInList.id == trackingId).findFirst().orElse(null);
     }
 
     @Override
@@ -37,12 +37,18 @@ public class MockBackupDao implements BackupDao {
 
     @Override
     public void updateBackupStatus(UUID trackingId, String status) {
-        BackupSchema backup = backups.
+        BackupSchema backup = getBackupStatus(trackingId);
+        backups.remove(backup);
+        backup.state = BackupSchema.BackupState.valueOf(status);
+        backups.add(backup);
     }
 
     @Override
     public void updateFilename(UUID trackingId, String filename) {
-
+        BackupSchema backup = getBackupStatus(trackingId);
+        backups.remove(backup);
+        backup.filename = filename;
+        backups.add(backup);
     }
 
     @Override

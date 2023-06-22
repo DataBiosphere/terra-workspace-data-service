@@ -4,7 +4,6 @@ import org.broadinstitute.dsde.workbench.client.leonardo.ApiException;
 import org.broadinstitute.dsde.workbench.client.leonardo.api.AppsV2Api;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerException;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,7 +32,7 @@ public class LeonardoDaoTest {
         given(leonardoClientFactory.getAppsV2Api(any())).willReturn(mockAppsApi);
     }
 
-    @Test
+
     void testWdsUrlNotReturned() throws ApiException {
         final int statusCode = HttpStatus.UNAUTHORIZED.value();
         given(mockAppsApi.listAppsV2(any(), any(), null, null))

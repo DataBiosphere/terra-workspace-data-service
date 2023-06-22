@@ -1,9 +1,11 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import org.databiosphere.workspacedataservice.service.model.BackupSchema;
+
 import java.util.UUID;
 
 public interface BackupDao {
-    String getBackupStatus(UUID trackingId);
+    BackupSchema getBackupStatus(UUID trackingId);
 
     boolean backupExists(UUID trackingId);
 

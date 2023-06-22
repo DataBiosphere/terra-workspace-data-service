@@ -28,6 +28,9 @@ public class WorkspaceDataServiceDao {
     }
   }
 
+  /**
+   * Checks status of a backup in source workspace data service.
+   */
   public BackupResponse checkBackupStatus(String token, UUID trackingId) {
     var backupClient = this.workspaceDataServiceClientFactory.getBackupClient(token);
     try {

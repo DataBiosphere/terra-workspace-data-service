@@ -5,10 +5,13 @@ import org.databiosphere.workspacedataservice.service.model.BackupSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.UUID;
 
@@ -27,10 +30,11 @@ public class PostgresBackupDao implements BackupDao {
     }
 
     @Override
-    public String getBackupStatus(UUID trackingId) {
+    public BackupSchema getBackupStatus(UUID trackingId) {
         try {
-            return namedTemplate.getJdbcTemplate().queryForObject(
-                    "select status from sys_wds.backup WHERE trackingId = ?", String.class, trackingId);
+            MapSqlParameterSource params = new MapSqlParameterSource("trackingId", trackingId);
+            return namedTemplate.query(
+                    "select status from sys_wds.backup WHERE trackingId = :trackingId", params, new BackupSchemaRowMapper()).get(0);
         }
         catch(Exception e) {
             return null;
@@ -79,5 +83,19 @@ public class PostgresBackupDao implements BackupDao {
     @SuppressWarnings("squid:S2077") // since trackingId must be a UUID, it is safe to use inline
     public void updateFilename(UUID trackingId, String filename) {
         namedTemplate.getJdbcTemplate().update("update sys_wds.backup SET filename = ? where id = ?", filename, trackingId);
+    }
+
+    // rowmapper for retrieving BackupSchema objects from the db
+    private static class BackupSchemaRowMapper implements RowMapper<BackupSchema> {
+        @Override
+        public BackupSchema mapRow(ResultSet rs, int rowNum) throws SQLException {
+            BackupSchema backup = new BackupSchema();
+            backup.setError(rs.getString("error"));
+            backup.setState(BackupSchema.BackupState.valueOf(rs.getString("state")));
+            backup.setFileName(rs.getString("fileName"));
+            backup.setId(UUID.fromString(rs.getString("id")));
+            backup.setSourceworkspaceid(UUID.fromString(rs.getString("upsourceworkspaceiddatedat")));
+            return backup;
+        }
     }
 }

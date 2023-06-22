@@ -22,6 +22,8 @@ public class BackupSchema {
     public String error;
     public String filename;
 
+    public BackupSchema() {}
+
     public BackupSchema(UUID trackingId, UUID sourceWorkspaceId)
     {
         id = trackingId;
@@ -41,7 +43,7 @@ public class BackupSchema {
 
     public void setState(BackupState state) { this.state = state; }
     public void setFileName(String filename) { this.filename = filename; }
-    public void setError(String error) {
-        this.error = error; }
-
+    public void setError(String error) { this.error = error; }
+    public void setId(UUID id) { this.id = id; }
+    public void setSourceworkspaceid(UUID sourceworkspaceid) { this.sourceworkspaceid = sourceworkspaceid; }
 }

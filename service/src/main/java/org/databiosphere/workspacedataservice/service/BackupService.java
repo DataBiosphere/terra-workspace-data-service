@@ -64,14 +64,14 @@ public class BackupService {
     public BackupResponse checkBackupStatus(UUID trackingId) {
         var backup = backupDao.getBackupStatus(trackingId);
 
-        if(backup !=null && backup == BackupSchema.BackupState.Completed.toString()) {
-            return new BackupResponse(true, BackupSchema.BackupState.Completed.toString(),"", "Backup successfully completed.");
+        if(backup !=null && backup.getState() == BackupSchema.BackupState.Completed) {
+            return new BackupResponse(true, BackupSchema.BackupState.Completed.toString(),backup.getFilename(), "Backup successfully completed.");
         }
-        else if(backup !=null && backup == BackupSchema.BackupState.Error.toString()) {
+        else if(backup !=null && backup.getState() == BackupSchema.BackupState.Error) {
             return new BackupResponse(true, BackupSchema.BackupState.Error.toString(),"", "Backup completed with an error.");
         }
         else {
-            return new BackupResponse(false, backup,"", "Backup still in progress.");
+            return new BackupResponse(false, backup.getState().toString(),"", "Backup still in progress.");
         }
     }
 
@@ -79,10 +79,6 @@ public class BackupService {
         try {
             validateVersion(version);
             backupDao.createBackupEntry(trackingId, requestorWorkspaceId);
-
-            workspaceId = "5d5eacea-da7e-4746-8358-f846af34a8da";
-            var blobstorageDetails = workspaceManagerDao.getBlobStorageUrl();
-            LOGGER.info("DEBUG: " + blobstorageDetails);
 
             String blobName = GenerateBackupFilename();
 

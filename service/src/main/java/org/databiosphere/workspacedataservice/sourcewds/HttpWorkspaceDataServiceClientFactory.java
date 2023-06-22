@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.context.request.RequestContextHolder;
 
+import javax.ws.rs.client.Client;
 import java.util.Objects;
 
 import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
@@ -14,15 +15,18 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
 
 public class HttpWorkspaceDataServiceClientFactory implements WorkspaceDataServiceClientFactory {
     final String workspaceDataServiceUrl;
+    private final Client commonHttpClient;
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpWorkspaceDataServiceClientFactory.class);
 
     public HttpWorkspaceDataServiceClientFactory(String wdsUrl) {
         this.workspaceDataServiceUrl = wdsUrl;
+        this.commonHttpClient = new bio.terra.workspace.client.ApiClient().getHttpClient();
     }
 
     private ApiClient getApiClient(String token) {
         // create a new client
         ApiClient apiClient = new ApiClient();
+        apiClient.setHttpClient(commonHttpClient);
 
         // initialize the client with the url to data repo
         if (StringUtils.isNotBlank(workspaceDataServiceUrl)) {
@@ -45,7 +49,6 @@ public class HttpWorkspaceDataServiceClientFactory implements WorkspaceDataServi
             apiClient.setAccessToken(token);
         }
 
-        // return the client
         return apiClient;
     }
 

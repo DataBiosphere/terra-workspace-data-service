@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 public class LocalFileStorage implements BackUpFileStorage {
     public LocalFileStorage() {}
 
+
     public void streamOutputToBlobStorage(InputStream fromStream, String blobName) {
         File targetFile = new File("backup.sql");
         try(OutputStream outStream = new FileOutputStream(targetFile)) {
