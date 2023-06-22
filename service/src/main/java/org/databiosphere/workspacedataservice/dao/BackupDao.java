@@ -7,13 +7,17 @@ import java.util.UUID;
 public interface BackupDao {
     BackupSchema getBackupStatus(UUID trackingId);
 
+    String getBackupRequestStatus(UUID sourceWorkspaceId, UUID destinationWorkspaceId);
+
     boolean backupExists(UUID trackingId);
 
-    void createBackupEntry(UUID trackingId, UUID sourceWorkspaceId);
+    void createBackupEntry(UUID trackingId);
 
     void updateBackupStatus(UUID trackingId, String status);
 
-    boolean backupExistsForGivenSource(UUID sourceWorkspaceId);
+    void updateBackupRequestStatus(UUID sourceWorkspaceId, BackupSchema.BackupState status);
+
+    void createBackupRequestsEntry(UUID destinationWorkspaceId, UUID sourceWorkspaceId);
 
     void updateFilename(UUID trackingId, String filename);
 }

@@ -26,33 +26,43 @@ public class MockBackupDao implements BackupDao {
 
     @Override
     public BackupSchema getBackupStatus(UUID trackingId) {
-        return backups.stream().filter(backupInList -> backupInList.id == trackingId).findFirst().orElse(null);
+        return backups.stream().filter(backupInList -> backupInList.getId() == trackingId).findFirst().orElse(null);
     }
 
     @Override
-    public void createBackupEntry(UUID trackingId, UUID sourceWorkspaceId) {
-        BackupSchema backup = new BackupSchema(trackingId, sourceWorkspaceId);
+    public String getBackupRequestStatus(UUID sourceWorkspaceId, UUID destinationWorkspaceId) {
+        return "";
+    }
+
+    @Override
+    public void createBackupEntry(UUID trackingId) {
+        BackupSchema backup = new BackupSchema(trackingId);
         backups.add(backup);
+    }
+
+    @Override
+    public void createBackupRequestsEntry(UUID trackingId, UUID sourceWorkspaceId) {
+
     }
 
     @Override
     public void updateBackupStatus(UUID trackingId, String status) {
         BackupSchema backup = getBackupStatus(trackingId);
         backups.remove(backup);
-        backup.state = BackupSchema.BackupState.valueOf(status);
+        backup.setState(BackupSchema.BackupState.valueOf(status));
         backups.add(backup);
+    }
+
+    @Override
+    public void updateBackupRequestStatus(UUID sourceWorkspaceId, BackupSchema.BackupState status){
+
     }
 
     @Override
     public void updateFilename(UUID trackingId, String filename) {
         BackupSchema backup = getBackupStatus(trackingId);
         backups.remove(backup);
-        backup.filename = filename;
+        backup.setFileName(filename);
         backups.add(backup);
-    }
-
-    @Override
-    public boolean backupExistsForGivenSource(UUID sourceWorkspaceId) {
-        return backups.contains(sourceWorkspaceId);
     }
 }

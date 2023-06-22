@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 
 public class AzureBlobStorage implements BackUpFileStorage {
     private final WorkspaceManagerDao workspaceManagerDao;
+
     public AzureBlobStorage(WorkspaceManagerDao workspaceManagerDao) {
         this.workspaceManagerDao = workspaceManagerDao;
     }

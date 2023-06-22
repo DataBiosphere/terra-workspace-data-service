@@ -59,6 +59,8 @@ paths:
         - $ref: '#/components/parameters/trackingIdPathParam'
       summary: Check status of a backup of a PostgreSQL instance
       operationId: getBackupStatus
+      security:
+        - bearerAuth: [ ]
       responses:
         200:
           description: Returns backup status

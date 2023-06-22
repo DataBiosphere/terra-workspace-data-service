@@ -24,7 +24,7 @@ public class LeonardoConfig {
         }
 
         @Bean
-        public LeonardoDao LeonardoDao(LeonardoClientFactory leonardoClientFactory) {
+        public LeonardoDao leonardoDao(LeonardoClientFactory leonardoClientFactory) {
                 return new LeonardoDao(leonardoClientFactory, workspaceId);
         }
 }

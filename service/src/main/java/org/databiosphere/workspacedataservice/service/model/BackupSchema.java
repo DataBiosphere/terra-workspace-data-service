@@ -6,35 +6,32 @@ import java.util.UUID;
 
 public class BackupSchema {
     public enum BackupState {
-        Initiated,
-        Started,
-        InProgress,
-        Completed,
-        Error,
-        Cancelled
+        INITIATED,
+        STARTED,
+        INPROGRESS,
+        COMPLETED,
+        ERROR,
+        CANCELLED
     }
 
-    public UUID id;
-    public UUID sourceworkspaceid;
-    public Timestamp createdtime;
-    public Timestamp completedtime;
-    public BackupState state;
-    public String error;
-    public String filename;
+    private UUID id;
+    private Timestamp createdtime;
+    private Timestamp completedtime;
+    private BackupState state;
+    private String error;
+    private String filename;
 
     public BackupSchema() {}
 
-    public BackupSchema(UUID trackingId, UUID sourceWorkspaceId)
+    public BackupSchema(UUID trackingId)
     {
-        id = trackingId;
-        sourceworkspaceid = sourceWorkspaceId;
+        this.id = trackingId;
         Date currentDate = new Date();
-        createdtime = new Timestamp(currentDate.getTime());
-        state = BackupState.Initiated;
+        this.createdtime = new Timestamp(currentDate.getTime());
+        this.state = BackupState.INITIATED;
     }
 
     public UUID getId() { return id; }
-    public UUID getSourceworkspaceid() { return sourceworkspaceid; }
     public Timestamp getCreatedtime() { return createdtime; }
     public Timestamp getCompletedtime() { return completedtime; }
     public BackupState getState() { return state; }
@@ -45,5 +42,9 @@ public class BackupSchema {
     public void setFileName(String filename) { this.filename = filename; }
     public void setError(String error) { this.error = error; }
     public void setId(UUID id) { this.id = id; }
-    public void setSourceworkspaceid(UUID sourceworkspaceid) { this.sourceworkspaceid = sourceworkspaceid; }
+
+    public void setCompletedtime() {
+        Date currentDate = new Date();
+        this.completedtime = new Timestamp(currentDate.getTime());
+    }
 }

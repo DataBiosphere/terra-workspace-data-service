@@ -16,9 +16,6 @@ databaseChangeLog:
                   name: status
                   type: varchar(10)
               - column:
-                  name: sourceworkspaceid
-                  type: uuid
-              - column:
                   name: error
                   type: varchar(255)
               - column:

@@ -52,15 +52,15 @@ public class WorkspaceManagerDao {
     final ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi();
     final ControlledAzureResourceApi azureResourceApi = this.workspaceManagerClientFactory.getAzureResourceApi();
     try {
-      UUID workspace_UUID = UUID.fromString(workspaceId);
-      ResourceList resourceList = resourceApi.enumerateResources(workspace_UUID, 0, 5, ResourceType.AZURE_STORAGE_CONTAINER, null);
+      UUID workspaceUUID = UUID.fromString(workspaceId);
+      ResourceList resourceList = resourceApi.enumerateResources(workspaceUUID, 0, 5, ResourceType.AZURE_STORAGE_CONTAINER, null);
       // note: it is possible a workspace may have more than one storage container associated with it
       // but currently there is no way to tell which one is the primary except for checking the actual container name
       var resourceStorage = resourceList.getResources().stream().filter(resource -> resource.getMetadata().getName().contains(workspaceId)).findFirst().orElse(null);
       if(resourceStorage != null) {
         var storageUUID = resourceStorage.getMetadata().getResourceId();
 
-        CreatedAzureStorageContainerSasToken sasBundle = azureResourceApi.createAzureStorageContainerSasToken(workspace_UUID, storageUUID, null, null, null, null);
+        CreatedAzureStorageContainerSasToken sasBundle = azureResourceApi.createAzureStorageContainerSasToken(workspaceUUID, storageUUID, null, null, null, null);
         return sasBundle.getUrl();
       }
       else throw new ApiException("Cant locate a storage resource matching workspace Id. ");

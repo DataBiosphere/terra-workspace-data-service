@@ -76,35 +76,36 @@ public class InstanceInitializerBean {
             var sourceWdsEndpoint = leoDao.getWdsEndpointUrl(startupToken);
 
             // make the call to source wds to trigger back up
-            WorkspaceDataServiceClientFactory wdsfactory = new HttpWorkspaceDataServiceClientFactory(sourceWdsEndpoint);
-            WorkspaceDataServiceDao wdsDao = new WorkspaceDataServiceDao(wdsfactory, sourceWorkspaceId);
+            WorkspaceDataServiceClientFactory wdsfactory = new HttpWorkspaceDataServiceClientFactory("http://localhost:8080");//(sourceWdsEndpoint);
+            WorkspaceDataServiceDao wdsDao = new WorkspaceDataServiceDao(wdsfactory);
 
             // check if our current workspace has already sent a request for backup for the source
             // if it did, no need to do it again
-            if (!backupDao.backupExists(UUID.fromString(sourceWorkspaceId))) {
+            var backupFileName = "";
+            if (backupDao.getBackupRequestStatus(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId)) == null) {
                 // TODO since the backup api is not async, this will return once the backup finishes
                 var response = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
 
-                // in current WDS backup state, record that backup was kicked off (save the source workspace id)
-                backupDao.createBackupEntry(response.getTrackingId(), UUID.fromString(sourceWorkspaceId));
-
-                // check that backup was successfully kicked off, next wait to check if backup is ready
-                var backupFileName = "";
+                // record the request this workspace made for backup
+                backupDao.createBackupRequestsEntry(UUID.fromString(workspaceId), UUID.fromString(sourceWorkspaceId));
 
                 var statusResponse = wdsDao.checkBackupStatus(startupToken, response.getTrackingId());
-                if (statusResponse.getState() == BackupSchema.BackupState.Completed.toString() || statusResponse.getState() == BackupSchema.BackupState.Error.toString()) {
-                    backupDao.updateBackupStatus(response.getTrackingId(),statusResponse.getState());
+                if (statusResponse.getState().equals(BackupSchema.BackupState.COMPLETED.name()) || statusResponse.equals(BackupSchema.BackupState.ERROR.name())) {
                     backupFileName = statusResponse.getFilename();
+                    backupDao.updateBackupRequestStatus(UUID.fromString(sourceWorkspaceId), BackupSchema.BackupState.COMPLETED);
                 }
                 else {
                     LOGGER.error("An error occured during clone mode - job not complete.");
+                    backupDao.updateBackupRequestStatus(UUID.fromString(sourceWorkspaceId), BackupSchema.BackupState.ERROR);
                 }
             }
 
             //TODO do the restore
+            LOGGER.info("Restore from the following path on the source workspace storage container: {}", backupFileName);
         }
         catch(Exception e){
-            LOGGER.error("An error occurred during clone mode. Will start with empty database." + e);
+            LOGGER.error("An error occurred during clone mode. Will start with empty database. Error: {}", e.getMessage());
+            backupDao.updateBackupRequestStatus(UUID.fromString(sourceWorkspaceId), BackupSchema.BackupState.ERROR);
         }
     }
 

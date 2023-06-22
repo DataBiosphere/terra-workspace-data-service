@@ -5,6 +5,7 @@ import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.BackupTrackingResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,6 +14,7 @@ import java.util.UUID;
 
 @RestController
 public class CloningController {
+
     private final BackupService backupService;
     public CloningController(BackupService backupService) {
         this.backupService = backupService;
@@ -26,7 +28,7 @@ public class CloningController {
         return new ResponseEntity<>(new BackupTrackingResponse(String.valueOf(trackingId)), HttpStatus.OK);
     }
 
-    @PostMapping("/backup/status/{trackingId}")
+    @GetMapping("/backup/status/{trackingId}")
     public ResponseEntity<BackupResponse> getBackupStatus(@PathVariable("trackingId") UUID trackingId) {
         var response = backupService.checkBackupStatus(trackingId);
         return new ResponseEntity<>(response, HttpStatus.OK);

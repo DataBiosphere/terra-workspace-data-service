@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import bio.terra.common.db.WriteTransaction;
+import org.databiosphere.workspacedataservice.InstanceInitializerBean;
 import org.databiosphere.workspacedataservice.service.model.BackupSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.UUID;
 
 @Repository
@@ -21,22 +21,34 @@ public class PostgresBackupDao implements BackupDao {
     @Value("${spring.datasource.username}")
     private String wdsDbUser;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PostgresBackupDao.class);
-
     private final NamedParameterJdbcTemplate namedTemplate;
 
     public PostgresBackupDao(NamedParameterJdbcTemplate namedTemplate) {
         this.namedTemplate = namedTemplate;
     }
+    private static final Logger LOGGER = LoggerFactory.getLogger(InstanceInitializerBean.class);
 
     @Override
     public BackupSchema getBackupStatus(UUID trackingId) {
         try {
             MapSqlParameterSource params = new MapSqlParameterSource("trackingId", trackingId);
-            return namedTemplate.query(
-                    "select status from sys_wds.backup WHERE trackingId = :trackingId", params, new BackupSchemaRowMapper()).get(0);
+            var object = namedTemplate.query(
+                    "select id, status, createdtime, completedtime, error, filename from sys_wds.backup WHERE id = :trackingId", params, new BackupSchemaRowMapper()).get(0);
+            return object;
         }
         catch(Exception e) {
+            return null;
+        }
+    }
+
+    @Override
+    public String getBackupRequestStatus(UUID sourceWorkspaceId, UUID destinationWorkspaceId) {
+        try {
+            return namedTemplate.getJdbcTemplate().queryForObject(
+                    "select status from sys_wds.backup_requests WHERE sourceworkspaceid = ? and destinationworkspaceid = ?", String.class, sourceWorkspaceId, destinationWorkspaceId);
+        }
+        catch(Exception e) {
+            LOGGER.info("error is" + e);
             return null;
         }
     }
@@ -49,34 +61,38 @@ public class PostgresBackupDao implements BackupDao {
     }
 
     @Override
-    public boolean backupExistsForGivenSource(UUID sourceWorkspaceId) {
-        return Boolean.TRUE.equals(namedTemplate.queryForObject(
-                "select exists(select from sys_wds.backup WHERE sourceworkspaceid = :sourceWorkspaceId)",
-                new MapSqlParameterSource("sourceWorkspaceId", sourceWorkspaceId), Boolean.class));
+    @WriteTransaction
+    @SuppressWarnings("squid:S2077") // since trackingId must be a UUID, it is safe to use inline
+    public void createBackupEntry(UUID trackingId) {
+        // an empty source id would basically mean that the backup record corresponds to current workspace id
+        BackupSchema schema = new BackupSchema(trackingId);
+        namedTemplate.getJdbcTemplate().update("insert into sys_wds.backup(id, status, createdtime, completedtime, error) " +
+                "values (?,?,?,?,?)", schema.getId(), String.valueOf(schema.getState()), schema.getCreatedtime(), schema.getCompletedtime(), schema.getError());
     }
 
     @Override
     @WriteTransaction
     @SuppressWarnings("squid:S2077") // since trackingId must be a UUID, it is safe to use inline
-    public void createBackupEntry(UUID trackingId, UUID sourceWorkspaceId) {
-        // an empty source id would basically mean that the backup record corresponds to current workspace id
-        BackupSchema schema = new BackupSchema(trackingId, sourceWorkspaceId);
-        UUID id = schema.getId();
-        String status = String.valueOf(schema.getState());
-        Timestamp createdTime = schema.getCreatedtime();
-        Timestamp completedTime = schema.getCompletedtime();
-        String error = schema.getError();
-        UUID sourceId = schema.getSourceworkspaceid();
-        namedTemplate.getJdbcTemplate().update("insert into sys_wds.backup(id, status, createdtime, completedtime, error, sourceworkspaceid) values (?,?,?,?,?,?)", id, status, createdTime, completedTime, error, schema.getSourceworkspaceid());
+    public void createBackupRequestsEntry(UUID destinationWorkspaceId, UUID sourceWorkspaceId) {
+        namedTemplate.getJdbcTemplate().update("insert into sys_wds.backup_requests(sourceworkspaceid, destinationworkspaceid, status) " +
+                "values (?,?,?)", sourceWorkspaceId, destinationWorkspaceId, BackupSchema.BackupState.INITIATED.toString());
     }
 
     @Override
     @WriteTransaction
     @SuppressWarnings("squid:S2077") // since trackingId must be a UUID, it is safe to use inline
     public void updateBackupStatus(UUID trackingId, String status) {
+        // TODO need to also update completed time (if this is for completed or error backups)
         namedTemplate.getJdbcTemplate().update("update sys_wds.backup SET status = ? where id = ?", status, trackingId);
     }
 
+    @Override
+    @WriteTransaction
+    @SuppressWarnings("squid:S2077") // since trackingId must be a UUID, it is safe to use inline
+    public void updateBackupRequestStatus(UUID sourceWorkspaceId, BackupSchema.BackupState status) {
+        // TODO need to also update completed time (if this is for completed or error backups)
+        namedTemplate.getJdbcTemplate().update("update sys_wds.backup_requests SET status = ? where sourceworkspaceid = ?", status.toString(), sourceWorkspaceId);
+    }
 
     @Override
     @WriteTransaction
@@ -91,10 +107,10 @@ public class PostgresBackupDao implements BackupDao {
         public BackupSchema mapRow(ResultSet rs, int rowNum) throws SQLException {
             BackupSchema backup = new BackupSchema();
             backup.setError(rs.getString("error"));
-            backup.setState(BackupSchema.BackupState.valueOf(rs.getString("state")));
+            backup.setState(BackupSchema.BackupState.valueOf(rs.getString("status")));
             backup.setFileName(rs.getString("fileName"));
             backup.setId(UUID.fromString(rs.getString("id")));
-            backup.setSourceworkspaceid(UUID.fromString(rs.getString("upsourceworkspaceiddatedat")));
+            //backup.setSourceworkspaceid(UUID.fromString(rs.getString("sourceworkspaceid")));
             return backup;
         }
     }

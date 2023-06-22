@@ -11,7 +11,7 @@ import java.util.UUID;
 public class WorkspaceDataServiceDao {
   private final WorkspaceDataServiceClientFactory workspaceDataServiceClientFactory;
 
-  public WorkspaceDataServiceDao(WorkspaceDataServiceClientFactory workspaceDataServiceClientFactory, String workspaceId) {
+  public WorkspaceDataServiceDao(WorkspaceDataServiceClientFactory workspaceDataServiceClientFactory) {
     this.workspaceDataServiceClientFactory = workspaceDataServiceClientFactory;
   }
 
@@ -21,8 +21,7 @@ public class WorkspaceDataServiceDao {
   public BackupTrackingResponse triggerBackup(String token, UUID requesterWorkspaceId) {
     var backupClient = this.workspaceDataServiceClientFactory.getBackupClient(token);
     try {
-      var response = backupClient.createBackup("v0.2", requesterWorkspaceId);
-      return response;
+      return backupClient.createBackup("v0.2", requesterWorkspaceId);
     } catch (ApiException e) {
       throw new WorkspaceDataServiceException(e);
     }
@@ -34,8 +33,7 @@ public class WorkspaceDataServiceDao {
   public BackupResponse checkBackupStatus(String token, UUID trackingId) {
     var backupClient = this.workspaceDataServiceClientFactory.getBackupClient(token);
     try {
-      var response = backupClient.getBackupStatus(trackingId);
-      return response;
+      return backupClient.getBackupStatus(trackingId);
     } catch (ApiException e) {
       throw new WorkspaceDataServiceException(e);
     }

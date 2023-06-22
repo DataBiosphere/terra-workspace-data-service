@@ -2,14 +2,10 @@ package org.databiosphere.workspacedataservice.sourcewds;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class WorkspaceDataServiceConfig {
-
-        @Value("${twds.instance.workspace-id:}")
-        private String workspaceId;
 
         private static final Logger LOGGER = LoggerFactory.getLogger(WorkspaceDataServiceConfig.class);
 
@@ -19,6 +15,6 @@ public class WorkspaceDataServiceConfig {
         }
 
         public WorkspaceDataServiceDao workspaceManagerDao(WorkspaceDataServiceClientFactory workspaceDataServiceClientFactory) {
-                return new WorkspaceDataServiceDao(workspaceDataServiceClientFactory, workspaceId);
+                return new WorkspaceDataServiceDao(workspaceDataServiceClientFactory);
         }
 }
