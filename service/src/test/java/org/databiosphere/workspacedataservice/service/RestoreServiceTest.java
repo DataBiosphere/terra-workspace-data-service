@@ -17,7 +17,7 @@ public class RestoreServiceTest {
 
     @Test
     void CheckCommandLine() {
-        List<String> commandList = backupRestoreService.generateCommandList(true);
+        List<String> commandList = backupRestoreService.generateCommandList(false);
         String command = String.join(" ", commandList);
         assertThat(command).isEqualTo("/usr/bin/psql -h localhost -p 5432 -U wds -d wds -v -w");
     }
