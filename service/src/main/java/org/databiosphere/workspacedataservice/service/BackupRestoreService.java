@@ -93,7 +93,7 @@ public class BackupRestoreService {
             // restore pgdump
             List<String> commandList = generateCommandList(false);
             commandList.add("-f" + BackupFileName);
-            Map<String, String> envVars = Map.of("PGPASSWORD", dbPassword);
+            Map<String, String> envVars = Map.of("PGPASSWORD", determinePassword());
 
             LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
             localProcessLauncher.launchProcess(commandList, envVars);
@@ -115,7 +115,7 @@ public class BackupRestoreService {
             Files.deleteIfExists(Paths.get(BackupFileName));
             return new BackupRestoreResponse(true, "Successfully completed restore");
         } 
-        catch (LaunchProcessException ex){
+        catch (LaunchProcessException | PSQLException ex){
             return new BackupRestoreResponse(false, ex.getMessage());
         }
         catch(IOException ex) {
