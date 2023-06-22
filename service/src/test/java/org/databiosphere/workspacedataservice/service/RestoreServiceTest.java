@@ -11,7 +11,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @SpringBootTest(properties = "spring.cache.type=NONE")
 @TestPropertySource(properties = {"twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000"})
-public class RestoreServiceTest {
+class RestoreServiceTest {
     @Autowired
     private BackupRestoreService backupRestoreService;
 

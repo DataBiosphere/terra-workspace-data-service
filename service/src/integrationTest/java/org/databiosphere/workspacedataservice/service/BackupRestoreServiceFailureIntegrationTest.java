@@ -10,8 +10,8 @@ import org.springframework.test.context.TestPropertySource;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @SpringBootTest(properties = "spring.cache.type=NONE")
-@TestPropertySource(properties = {"twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000", "twds.instance.source-workspace-id=123e4567-e89b-12d3-a456-426614174000"})
-public class RestoreServiceFailureIntegrationTest {
+@TestPropertySource(properties = {"twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000", "twds.instance.source-workspace-id=123e4567-e89b-12d3-a456-426614174000", "twds.pg_dump.host="})
+public class BackupRestoreServiceFailureIntegrationTest {
     @Autowired
     private BackupRestoreService backupRestoreService;
 
@@ -19,6 +19,12 @@ public class RestoreServiceFailureIntegrationTest {
 
     @Test
     void testRestoreAzureWDSErrorHandling() {
+        BackupRestoreResponse response = backupRestoreService.restoreAzureWDS(storage, "v0.2");
+        assertFalse(response.backupRestoreStatus());
+    }
+    
+    @Test
+    void testBackupAzureWDSErrorHandling() {
         BackupRestoreResponse response = backupRestoreService.backupAzureWDS(storage, "v0.2");
         assertFalse(response.backupRestoreStatus());
     }

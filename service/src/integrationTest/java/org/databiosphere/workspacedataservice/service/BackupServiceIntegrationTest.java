@@ -22,10 +22,4 @@ public class BackupServiceIntegrationTest {
         var response = backupRestoreService.backupAzureWDS(storage, "v0.2");
         assertTrue(response.backupRestoreStatus(), response.message());
     }
-    
-    @Test
-    void testBackupAzureWDSErrorHandling() {
-        BackupRestoreResponse response = backupRestoreService.backupAzureWDS(null, "v0.2");
-        assertFalse(response.backupRestoreStatus());
-    }
 }
