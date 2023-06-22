@@ -1,5 +1,8 @@
 package org.databiosphere.workspacedataservice.service;
 
+import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
+import org.databiosphere.workspacedataservice.shared.model.BackupRestoreResponse;
 import org.databiosphere.workspacedataservice.storage.LocalFileStorage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
 
 
 @SpringBootTest(properties = "spring.cache.type=NONE")
@@ -38,6 +43,8 @@ public class RestoreServiceIntegrationTest {
         backupRestoreService.backupAzureWDS(storage, "v0.2");
         // Rename GUID in file to be "source" 
         modifySourceWorkspaceId();
+        // Clean database of workspace-id value
+        cleanDatabase();
         var response = backupRestoreService.restoreAzureWDS(storage, "v0.2");
         assertTrue(response.backupRestoreStatus(), response.message());
     }
@@ -52,6 +59,19 @@ public class RestoreServiceIntegrationTest {
         }
         catch(IOException ex) {
             System.err.format("IOException in RestoreServiceIntegrationTest.testRestoreAzureWDS: %s%n", ex);
+        }
+    }
+
+    private void cleanDatabase() {
+        List<String> commandList = backupRestoreService.generateCommandList(false);
+        commandList.add(String.format("-c DROP SCHEMA IF EXISTS %s CASCADE; DROP SCHEMA IF EXISTS %s CASCADE", "123e4567-e89b-12d3-a456-426614174000", "sys_wds"));
+        Map<String, String> envVars = Map.of("PGPASSWORD", "wds");
+        LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
+        localProcessLauncher.launchProcess(commandList, envVars);
+        String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
+        int exitCode = localProcessLauncher.waitForTerminate();
+        if (exitCode != 0 && StringUtils.isNotBlank(error)) {
+            System.err.println("Error clearing database: " + error);
         }
     }
 }
