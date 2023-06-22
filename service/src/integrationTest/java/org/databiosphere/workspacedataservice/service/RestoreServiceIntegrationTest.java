@@ -6,6 +6,7 @@ import org.databiosphere.workspacedataservice.shared.model.BackupRestoreResponse
 import org.databiosphere.workspacedataservice.storage.LocalFileStorage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 
@@ -35,6 +36,12 @@ public class RestoreServiceIntegrationTest {
     @Autowired
     private BackupRestoreService backupRestoreService;
 
+    @Value("${twds.instance.workspace-id:}")
+    private String workspaceId;
+
+    @Value("${twds.instance.source-workspace-id:}")
+    private String sourceWorkspaceId;
+
     private LocalFileStorage storage = new LocalFileStorage();
     
     @Test
@@ -54,7 +61,7 @@ public class RestoreServiceIntegrationTest {
         try {
             Path path = Paths.get("backup.sql");
             String content = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
-            content = content.replaceAll("123e4567-e89b-12d3-a456-426614174000", "123e4567-e89b-12d3-a456-426614174001");
+            content = content.replaceAll(workspaceId, sourceWorkspaceId);
             Files.write(path, content.getBytes(StandardCharsets.UTF_8));
         }
         catch(IOException ex) {
@@ -64,7 +71,7 @@ public class RestoreServiceIntegrationTest {
 
     private void cleanDatabase() {
         List<String> commandList = backupRestoreService.generateCommandList(false);
-        commandList.add(String.format("-c DROP SCHEMA IF EXISTS %s CASCADE; DROP SCHEMA IF EXISTS %s CASCADE", "123e4567-e89b-12d3-a456-426614174000", "sys_wds"));
+        commandList.add(String.format("-c DROP SCHEMA IF EXISTS \"%s\" CASCADE; DROP SCHEMA IF EXISTS \"%s\" CASCADE;", workspaceId, "sys_wds"));
         Map<String, String> envVars = Map.of("PGPASSWORD", "wds");
         LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
         localProcessLauncher.launchProcess(commandList, envVars);
