@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import org.databiosphere.workspacedataservice.InstanceInitializerConfig;
 import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
 import org.databiosphere.workspacedataservice.storage.LocalFileStorage;
 import org.junit.jupiter.api.Test;
@@ -9,12 +10,11 @@ import org.springframework.test.context.TestPropertySource;
 
 import java.util.UUID;
 
-@SpringBootTest(properties = "spring.cache.type=NONE")
+@SpringBootTest(properties = "spring.cache.type=NONE", classes = {LocalFileStorage.class})
 @TestPropertySource(properties = {"twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000"})
 public class BackupServiceIntegrationTest {
     @Autowired
     private BackupService backupService;
-    private BackUpFileStorage storage = new LocalFileStorage();
 
     @Test
     void testBackupAzureWDS() throws Exception {

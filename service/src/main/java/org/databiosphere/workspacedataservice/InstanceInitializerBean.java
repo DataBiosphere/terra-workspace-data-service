@@ -61,8 +61,7 @@ public class InstanceInitializerBean {
                 // when the restore operation is added, it would be important to check if any record of restore state is present
                 // it is also possible to check if backup was initiated and completed (since if it did, we dont need to request it again)
                 // and can just kick off the restore
-                LOGGER.info("DEBUGMODE: checking if true " + !instanceDao.instanceSchemaExists(UUID.fromString(workspaceId)));
-                return true;
+                return !instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
             } catch (IllegalArgumentException e) {
                 LOGGER.warn("Workspace id could not be parsed, unable to clone DB. Provided default workspace id: {}.", workspaceId);
                 return false;
@@ -74,7 +73,7 @@ public class InstanceInitializerBean {
     }
 
     public void initCloneMode(){
-        LOGGER.info("DEBUGMODE: Starting in clone mode...");
+        LOGGER.info("Starting in clone mode...");
 
         try {
             // first get source wds url based on source workspace id and the provided access token

@@ -96,10 +96,9 @@ class InstanceInitializerBeanTest {
         assert(cloneMode);
     }
 
-        @Test
-        void sourceWorkspaceIDInvalid() {
-            boolean cloneMode = instanceInitializerBean.isInCloneMode("invalidUUID");
-            assertFalse(cloneMode);
-        }
-
+    @Test
+    void sourceWorkspaceIDInvalid() {
+        boolean cloneMode = instanceInitializerBean.isInCloneMode("invalidUUID");
+        assertFalse(cloneMode);
+    }
 }

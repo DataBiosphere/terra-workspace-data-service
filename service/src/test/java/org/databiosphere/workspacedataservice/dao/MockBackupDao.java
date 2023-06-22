@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import org.databiosphere.workspacedataservice.service.model.BackupSchema;
+
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MockBackupDao implements BackupDao {
 
     // backing "database" for this mock
-    private final Set<UUID> backups = ConcurrentHashMap.newKeySet();
+    private final Set<BackupSchema> backups = ConcurrentHashMap.newKeySet();
 
     public MockBackupDao() {
         super();
@@ -29,12 +31,13 @@ public class MockBackupDao implements BackupDao {
 
     @Override
     public void createBackupEntry(UUID trackingId, UUID sourceWorkspaceId) {
-
+        BackupSchema backup = new BackupSchema(trackingId, sourceWorkspaceId);
+        backups.add(backup);
     }
 
     @Override
     public void updateBackupStatus(UUID trackingId, String status) {
-
+        BackupSchema backup = backups.
     }
 
     @Override
