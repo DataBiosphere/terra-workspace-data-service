@@ -21,4 +21,10 @@ public class LocalFileStorage implements BackUpFileStorage {
             throw new LaunchProcessException("Error streaming output during local test", ioEx);
         }
     }
+
+    public void downloadFromBlobStorage(String blobName) {
+        File backupFile = new File("backup.sql");
+        if(!backupFile.exists())
+            throw new LaunchProcessException("Error accessing backup.sql for test Please make sure BackupRestoreService.backupAzureWDS is called first.");
+    }
 }

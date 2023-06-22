@@ -44,7 +44,7 @@ public class AzureBlobStorage implements BackUpFileStorage {
         BlobContainerClient blobContainerClient = constructBlockBlobClient(backUpContainerName, storageConnectionString);
         
         try{
-            blobContainerClient.getBlobClient(blobName).downloadToFile(blobName);
+            blobContainerClient.getBlobClient(blobName).downloadToFile(blobName, true);
         } catch(UncheckedIOException ioEx) {
             throw new LaunchProcessException("Error downloading backup file from Azure Storage", ioEx);
         }
