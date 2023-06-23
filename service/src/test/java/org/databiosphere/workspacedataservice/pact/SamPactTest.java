@@ -17,6 +17,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -64,7 +65,8 @@ class SamPactTest {
     @Pact(consumer = "wds-consumer", provider = "sam-provider")
     public RequestResponsePact writeNoPermissionPact(PactDslWithProvider builder) {
         return builder
-                .given("user does not have write permission")
+                .given("user does not have write permission", Map.of("dummyResourceId",
+                        dummyResourceId))
                 .uponReceiving("a request for write permission on workspace")
                 .pathFromProviderState(
                         "/api/resources/v2/workspace/${dummyResourceId}/action/write",
@@ -79,7 +81,8 @@ class SamPactTest {
     @Pact(consumer = "wds-consumer", provider = "sam-provider")
     public RequestResponsePact writePermissionPact(PactDslWithProvider builder) {
         return builder
-                .given("user has write permission")
+                .given("user has write permission", Map.of("dummyResourceId",
+                                dummyResourceId))
                 .uponReceiving("a request for write permission on workspace")
                 .pathFromProviderState(
                         "/api/resources/v2/workspace/${dummyResourceId}/action/write",
@@ -94,7 +97,8 @@ class SamPactTest {
     @Pact(consumer = "wds-consumer", provider = "sam-provider")
     public RequestResponsePact deletePermissionPact(PactDslWithProvider builder) {
         return builder
-                .given("user has delete permission")
+                .given("user has delete permission", Map.of("dummyResourceId",
+                        dummyResourceId))
                 .uponReceiving("a request for delete permission on workspace")
                 .pathFromProviderState(
                         "/api/resources/v2/workspace/${dummyResourceId}/action/delete",
@@ -109,7 +113,8 @@ class SamPactTest {
     @Pact(consumer = "wds-consumer", provider = "sam-provider")
     public RequestResponsePact deleteNoPermissionPact(PactDslWithProvider builder) {
         return builder
-                .given("user does not have delete permission")
+                .given("user does not have delete permission", Map.of("dummyResourceId",
+                        dummyResourceId))
                 .uponReceiving("a request for delete permission on workspace")
                 .pathFromProviderState(
                         "/api/resources/v2/workspace/${dummyResourceId}/action/delete",
