@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Profile;
 public class LocalFileStorageConfig {
     @Bean
     @Profile("mock-storage")
-    BackUpFileStorage mockStorage() {
+    public BackUpFileStorage getStorage() {
         return new LocalFileStorage();
     }
 }

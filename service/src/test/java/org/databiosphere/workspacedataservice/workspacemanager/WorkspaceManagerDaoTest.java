@@ -5,7 +5,7 @@ import bio.terra.workspace.api.ControlledAzureResourceApi;
 import bio.terra.workspace.api.ReferencedGcpResourceApi;
 import bio.terra.workspace.api.ResourceApi;
 import bio.terra.workspace.client.ApiException;
-import bio.terra.workspace.model.CloningInstructionsEnum;
+import bio.terra.workspace.model.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -16,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -68,9 +70,20 @@ class WorkspaceManagerDaoTest {
         assertEquals(statusCode, exception.getRawStatusCode());
     }
 
-    //@Test
+    @Test
     void testResourceReturn() throws ApiException {
-        workspaceManagerDao.getBlobStorageUrl();
-
+        UUID workspaceId = UUID.randomUUID();
+        ResourceList resourceList = new ResourceList();
+        ResourceDescription resourceDescription = new ResourceDescription();
+        ResourceMetadata meta = new ResourceMetadata();
+        resourceDescription.setMetadata(meta);
+        resourceDescription.getMetadata().setName("test");
+        resourceDescription.getMetadata().setResourceId(workspaceId);
+        resourceDescription.getMetadata().setResourceType(ResourceType.AZURE_STORAGE_CONTAINER);
+        List<ResourceDescription> listOfDescriptions = new ArrayList<ResourceDescription>();
+        resourceList.addResourcesItem(resourceDescription);
+        resourceList.setResources(listOfDescriptions);
+        var resourceUUID = workspaceManagerDao.extractResourceId(resourceList);
+        assertEquals(null, resourceUUID);
     }
 }

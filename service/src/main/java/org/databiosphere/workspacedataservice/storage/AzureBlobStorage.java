@@ -9,6 +9,10 @@ import org.databiosphere.workspacedataservice.service.model.exception.LaunchProc
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -16,12 +20,18 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
+@Configuration
 public class AzureBlobStorage implements BackUpFileStorage {
     private final WorkspaceManagerDao workspaceManagerDao;
 
     public AzureBlobStorage(WorkspaceManagerDao workspaceManagerDao) {
         this.workspaceManagerDao = workspaceManagerDao;
     }
+
+    @Bean
+    @Profile("prod-storage")
+    @Primary
+    public BackUpFileStorage getStorage() {return new AzureBlobStorage(workspaceManagerDao); }
     private static final Logger LOGGER = LoggerFactory.getLogger(AzureBlobStorage.class);
 
     @Override
