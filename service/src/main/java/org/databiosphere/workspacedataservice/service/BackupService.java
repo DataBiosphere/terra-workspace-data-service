@@ -8,7 +8,6 @@ import org.databiosphere.workspacedataservice.service.model.BackupSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.postgresql.plugin.AuthenticationRequestType;
 import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
@@ -25,8 +24,6 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 @Service
 public class BackupService {
     private final BackupDao backupDao;
-    private final WorkspaceManagerDao workspaceManagerDao;
-
     private BackUpFileStorage storage;
     private static final Logger LOGGER = LoggerFactory.getLogger(BackupService.class);
 
@@ -55,9 +52,8 @@ public class BackupService {
     private boolean useAzureIdentity;
 
 
-    public BackupService(BackupDao backupDao, WorkspaceManagerDao workspaceManagerDao, BackUpFileStorage backUpFileStorage) {
+    public BackupService(BackupDao backupDao, BackUpFileStorage backUpFileStorage) {
         this.backupDao = backupDao;
-        this.workspaceManagerDao = workspaceManagerDao;
         this.storage = backUpFileStorage;
     }
 
@@ -115,7 +111,7 @@ public class BackupService {
             backupDao.updateBackupRequestStatus(UUID.fromString(workspaceId), BackupSchema.BackupState.COMPLETED);
         }
         catch (LaunchProcessException | PSQLException ex) {
-            LOGGER.error("process error: {}", ex);
+            LOGGER.error("Process error: {}", ex.getMessage());
             backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.ERROR.toString());
             backupDao.updateBackupRequestStatus(UUID.fromString(workspaceId), BackupSchema.BackupState.ERROR);
         }

@@ -70,8 +70,7 @@ public class WorkspaceManagerDao {
   public UUID extractResourceId(ResourceList resourceList) {
     var resourceStorage = resourceList.getResources().stream().filter(resource -> resource.getMetadata().getName().contains(workspaceId)).findFirst().orElse(null);
     if(resourceStorage != null) {
-      var storageUUID = resourceStorage.getMetadata().getResourceId();
-      return storageUUID;
+      return resourceStorage.getMetadata().getResourceId();
     }
     return null;
   }

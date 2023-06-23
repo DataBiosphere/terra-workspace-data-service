@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 @DirtiesContext
 @SpringBootTest(classes = {LeonardoConfig.class})
 @TestPropertySource(properties = {"twds.instance.workspace-id=90e1b179-9f83-4a6f-a8c2-db083df4cd03"})
-public class LeonardoDaoTest {
+class LeonardoDaoTest {
     @Autowired
     LeonardoDao leonardoDao;
 
@@ -75,7 +75,7 @@ public class LeonardoDaoTest {
         when(response.getStatus()).thenReturn(wdsStatus);
         List<ListAppResponse> responseList = new ArrayList<>();
         responseList.add(response);
-        var url = leonardoDao.ExtractWdsUrl(responseList);
+        var url = leonardoDao.extractWdsUrl(responseList);
         return url;
     }
 }

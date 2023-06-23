@@ -1,10 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import bio.terra.common.db.WriteTransaction;
-import org.databiosphere.workspacedataservice.InstanceInitializerBean;
 import org.databiosphere.workspacedataservice.service.model.BackupSchema;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -26,15 +23,13 @@ public class PostgresBackupDao implements BackupDao {
     public PostgresBackupDao(NamedParameterJdbcTemplate namedTemplate) {
         this.namedTemplate = namedTemplate;
     }
-    private static final Logger LOGGER = LoggerFactory.getLogger(InstanceInitializerBean.class);
 
     @Override
     public BackupSchema getBackupStatus(UUID trackingId) {
         try {
             MapSqlParameterSource params = new MapSqlParameterSource("trackingId", trackingId);
-            var object = namedTemplate.query(
+            return namedTemplate.query(
                     "select id, status, createdtime, completedtime, error, filename from sys_wds.backup WHERE id = :trackingId", params, new BackupSchemaRowMapper()).get(0);
-            return object;
         }
         catch(Exception e) {
             return null;
@@ -109,7 +104,6 @@ public class PostgresBackupDao implements BackupDao {
             backup.setState(BackupSchema.BackupState.valueOf(rs.getString("status")));
             backup.setFileName(rs.getString("fileName"));
             backup.setId(UUID.fromString(rs.getString("id")));
-            //backup.setSourceworkspaceid(UUID.fromString(rs.getString("sourceworkspaceid")));
             return backup;
         }
     }

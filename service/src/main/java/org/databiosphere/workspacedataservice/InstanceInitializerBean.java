@@ -76,7 +76,7 @@ public class InstanceInitializerBean {
             var sourceWdsEndpoint = leoDao.getWdsEndpointUrl(startupToken);
 
             // make the call to source wds to trigger back up
-            WorkspaceDataServiceClientFactory wdsfactory = new HttpWorkspaceDataServiceClientFactory("http://localhost:8080");//(sourceWdsEndpoint);
+            WorkspaceDataServiceClientFactory wdsfactory = new HttpWorkspaceDataServiceClientFactory(sourceWdsEndpoint);
             WorkspaceDataServiceDao wdsDao = new WorkspaceDataServiceDao(wdsfactory);
 
             // check if our current workspace has already sent a request for backup for the source
