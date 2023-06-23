@@ -48,7 +48,6 @@ public class PostgresBackupDao implements BackupDao {
                     "select status from sys_wds.backup_requests WHERE sourceworkspaceid = ? and destinationworkspaceid = ?", String.class, sourceWorkspaceId, destinationWorkspaceId);
         }
         catch(Exception e) {
-            LOGGER.info("error is" + e);
             return null;
         }
     }

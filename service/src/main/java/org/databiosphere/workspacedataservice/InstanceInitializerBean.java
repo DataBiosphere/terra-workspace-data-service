@@ -82,7 +82,6 @@ public class InstanceInitializerBean {
             // check if our current workspace has already sent a request for backup for the source
             // if it did, no need to do it again
             var backupFileName = "";
-            // todo this check needs work
             if (backupDao.getBackupRequestStatus(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId)) == null) {
                 // TODO since the backup api is not async, this will return once the backup finishes
                 var response = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
@@ -96,7 +95,7 @@ public class InstanceInitializerBean {
                     backupDao.updateBackupRequestStatus(UUID.fromString(sourceWorkspaceId), BackupSchema.BackupState.COMPLETED);
                 }
                 else {
-                    LOGGER.error("An error occured during clone mode - backup not complete.");
+                    LOGGER.error("An error occurred during clone mode - backup not complete.");
                     backupDao.updateBackupRequestStatus(UUID.fromString(sourceWorkspaceId), BackupSchema.BackupState.ERROR);
                 }
             }

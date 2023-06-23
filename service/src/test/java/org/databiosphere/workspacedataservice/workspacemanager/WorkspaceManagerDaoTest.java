@@ -10,11 +10,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +33,7 @@ import static org.mockito.Mockito.verify;
 @ActiveProfiles(profiles = "mock-sam")
 @DirtiesContext
 @SpringBootTest(classes = {WorkspaceManagerConfig.class})
+@TestPropertySource(properties = {"twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000"})
 class WorkspaceManagerDaoTest {
 
     @Autowired
@@ -38,6 +41,9 @@ class WorkspaceManagerDaoTest {
 
     @MockBean
     WorkspaceManagerClientFactory mockWorkspaceManagerClientFactory;
+
+    @Value("${twds.instance.workspace-id:}")
+    private UUID workspaceId;
 
     final ReferencedGcpResourceApi mockReferencedGcpResourceApi = Mockito.mock(ReferencedGcpResourceApi.class);
     final ResourceApi mockResourceApi = Mockito.mock(ResourceApi.class);
@@ -71,19 +77,29 @@ class WorkspaceManagerDaoTest {
     }
 
     @Test
-    void testResourceReturn() throws ApiException {
-        UUID workspaceId = UUID.randomUUID();
+    void testResourceReturnSuccess() {
+        var resourceUUID = helperMethod(workspaceId, "sc-" + workspaceId, ResourceType.AZURE_STORAGE_CONTAINER);
+        assertEquals(workspaceId, resourceUUID);
+    }
+
+    @Test
+    void testResourceReturnFailure() {
+        var resourceUUID = helperMethod(workspaceId, "sc-" + UUID.randomUUID(), ResourceType.AZURE_STORAGE_CONTAINER);
+        assertEquals(null, resourceUUID);
+    }
+
+    UUID helperMethod(UUID workspaceId, String name, ResourceType type) {
         ResourceList resourceList = new ResourceList();
         ResourceDescription resourceDescription = new ResourceDescription();
         ResourceMetadata meta = new ResourceMetadata();
         resourceDescription.setMetadata(meta);
-        resourceDescription.getMetadata().setName("test");
+        resourceDescription.getMetadata().setName(name);
         resourceDescription.getMetadata().setResourceId(workspaceId);
-        resourceDescription.getMetadata().setResourceType(ResourceType.AZURE_STORAGE_CONTAINER);
-        List<ResourceDescription> listOfDescriptions = new ArrayList<ResourceDescription>();
-        resourceList.addResourcesItem(resourceDescription);
+        resourceDescription.getMetadata().setResourceType(type);
+        List<ResourceDescription> listOfDescriptions = new ArrayList<>();
+        listOfDescriptions.add(resourceDescription);
         resourceList.setResources(listOfDescriptions);
         var resourceUUID = workspaceManagerDao.extractResourceId(resourceList);
-        assertEquals(null, resourceUUID);
+        return resourceUUID;
     }
 }
