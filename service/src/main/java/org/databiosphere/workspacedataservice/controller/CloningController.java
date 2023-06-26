@@ -20,11 +20,8 @@ public class CloningController {
     @PostMapping("/backup/{version}")
     public ResponseEntity<BackupRestoreResponse> createBackup(@PathVariable("version") String version) {
         BackupRestoreResponse response = backupRestoreService.backupAzureWDS(storage, version);
-        if(response.backupRestoreStatus()) {
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        }
-        
-        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        var status = response.backupRestoreStatus() ? HttpStatus.OK : HttpStatus.INTERNAL_SERVER_ERROR;
+        return new ResponseEntity<>(response, status);
     }
 
     @PostMapping("/restore/{version}")

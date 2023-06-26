@@ -29,7 +29,6 @@ public class BackupRestoreService {
 
     private static final String BackupFileName = "backup.sql";
 
-    //TODO: in the future this will shift to "twds.instance.source-workspace-id"
     @Value("${twds.instance.workspace-id:}")
     private String workspaceId;
 
@@ -72,7 +71,7 @@ public class BackupRestoreService {
             localProcessLauncher.launchProcess(commandList, envVars);
 
             storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName);
-            String error = checkForError(localProcessLauncher, LOGGER);
+            String error = checkForError(localProcessLauncher);
             if (StringUtils.isNotBlank(error)) {
                 return new BackupRestoreResponse(false, error);
             }
@@ -87,39 +86,33 @@ public class BackupRestoreService {
     public BackupRestoreResponse restoreAzureWDS(BackUpFileStorage storage, String version) {
         validateVersion(version);
         try {
-            // grab blob from storage
-            storage.downloadFromBlobStorage(BackupFileName);
-            
             // restore pgdump
             List<String> commandList = generateCommandList(false);
-            commandList.add("-f" + BackupFileName);
             Map<String, String> envVars = Map.of("PGPASSWORD", determinePassword());
 
             LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
             localProcessLauncher.launchProcess(commandList, envVars);
-            String error = checkForError(localProcessLauncher, LOGGER);
+
+            // grab blob from storage
+            storage.streamInputFromBlobStorage(localProcessLauncher.getOutputStream(), BackupFileName);
+
+            String error = checkForError(localProcessLauncher);
             if (StringUtils.isNotBlank(error)) {
                 return new BackupRestoreResponse(false, error);
             }
 
             // rename workspace schema from source to dest
-            commandList.remove(commandList.size() - 1);
             commandList.add(String.format("-c ALTER SCHEMA \"%s\" RENAME TO \"%s\"", sourceWorkspaceId, workspaceId));
             localProcessLauncher.launchProcess(commandList, envVars);
-            error = checkForError(localProcessLauncher, LOGGER);
+            error = checkForError(localProcessLauncher);
             if (StringUtils.isNotBlank(error)) {
                 return new BackupRestoreResponse(false, error);
             }
-            
-            // delete backup file
-            Files.deleteIfExists(Paths.get(BackupFileName));
+
             return new BackupRestoreResponse(true, "Successfully completed restore");
         } 
         catch (LaunchProcessException | PSQLException ex){
             return new BackupRestoreResponse(false, ex.getMessage());
-        }
-        catch(IOException ex) {
-            return new BackupRestoreResponse(false, "Trouble deleting Azure Blob file, specifically:" + ex.getMessage());
         }
     }
 
@@ -161,11 +154,11 @@ public class BackupRestoreService {
         return workspaceId + "-" + timestamp + ".sql";
     }
 
-    private String checkForError(LocalProcessLauncher localProcessLauncher, Logger log) {
+    private String checkForError(LocalProcessLauncher localProcessLauncher) {
         String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
         int exitCode = localProcessLauncher.waitForTerminate();
         if (exitCode != 0 && StringUtils.isNotBlank(error)) {
-            log.error("process error: {}", error);
+            LOGGER.error("process error: {}", error);
             return error;
         }
         return "";

@@ -8,9 +8,11 @@ import com.azure.storage.blob.specialized.BlobOutputStream;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 
@@ -38,15 +40,14 @@ public class AzureBlobStorage implements BackUpFileStorage {
     }
     
     @Override
-    public void downloadFromBlobStorage(String blobName) {
+    public void streamInputFromBlobStorage(OutputStream toStream, String blobName) {
         // TODO: remove this once connection is switched to be done via SAS token
         String storageConnectionString = System.getenv("STORAGE_CONNECTION_STRING");
         BlobContainerClient blobContainerClient = constructBlockBlobClient(backUpContainerName, storageConnectionString);
-        
-        try{
-            blobContainerClient.getBlobClient(blobName).downloadToFile(blobName, true);
-        } catch(UncheckedIOException ioEx) {
-            throw new LaunchProcessException("Error downloading backup file from Azure Storage", ioEx);
+        try (toStream) {
+            blobContainerClient.getBlobClient(blobName).downloadStream(toStream);
+        } catch (IOException ioEx) {
+            throw new LaunchProcessException("Error streaming input to child process", ioEx);  
         }
     }
 
