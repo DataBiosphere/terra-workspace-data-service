@@ -61,7 +61,7 @@ public class WorkspaceManagerDao {
         CreatedAzureStorageContainerSasToken sasBundle = azureResourceApi.createAzureStorageContainerSasToken(workspaceUUID, storageUUID, null, null, null, null);
         return sasBundle.getUrl();
       }
-      else throw new ApiException("Cant locate a storage resource matching workspace Id. ");
+      else throw new ApiException("Can't locate a storage resource matching workspace Id. ");
     } catch (ApiException e) {
       throw new WorkspaceManagerException(e);
     }

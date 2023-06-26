@@ -78,17 +78,17 @@ class WorkspaceManagerDaoTest {
 
     @Test
     void testResourceReturnSuccess() {
-        var resourceUUID = helperMethod(workspaceId, "sc-" + workspaceId, ResourceType.AZURE_STORAGE_CONTAINER);
+        var resourceUUID = buildResourceListObjectAndCallExtraction(workspaceId, "sc-" + workspaceId, ResourceType.AZURE_STORAGE_CONTAINER);
         assertEquals(workspaceId, resourceUUID);
     }
 
     @Test
     void testResourceReturnFailure() {
-        var resourceUUID = helperMethod(workspaceId, "sc-" + UUID.randomUUID(), ResourceType.AZURE_STORAGE_CONTAINER);
+        var resourceUUID = buildResourceListObjectAndCallExtraction(workspaceId, "sc-" + UUID.randomUUID(), ResourceType.AZURE_STORAGE_CONTAINER);
         assertEquals(null, resourceUUID);
     }
 
-    UUID helperMethod(UUID workspaceId, String name, ResourceType type) {
+    UUID buildResourceListObjectAndCallExtraction(UUID workspaceId, String name, ResourceType type) {
         ResourceList resourceList = new ResourceList();
         ResourceDescription resourceDescription = new ResourceDescription();
         ResourceMetadata meta = new ResourceMetadata();

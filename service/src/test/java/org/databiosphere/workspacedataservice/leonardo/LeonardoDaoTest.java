@@ -51,23 +51,23 @@ class LeonardoDaoTest {
 
     @Test
     void testWdsUrlReturned() throws ApiException {
-        var url = helperMethod("wds", AppStatus.RUNNING);
+        var url = buildAppResponseAndCallExtraction("wds", AppStatus.RUNNING);
         assertEquals(expectedUrl, url);
     }
 
     @Test
     void testWdsUrlNotFoundWrongStatus() throws ApiException {
-        var url = helperMethod("wds", AppStatus.DELETED);
+        var url = buildAppResponseAndCallExtraction("wds", AppStatus.DELETED);
         assertEquals(null, url);
     }
 
     @Test
     void testWdsUrlNotFoundWrongKey() throws ApiException {
-        var url = helperMethod("not-wds", AppStatus.RUNNING);
+        var url = buildAppResponseAndCallExtraction("not-wds", AppStatus.RUNNING);
         assertEquals(null, url);
     }
 
-    String helperMethod(String wdsKey, AppStatus wdsStatus){
+    String buildAppResponseAndCallExtraction(String wdsKey, AppStatus wdsStatus){
         ListAppResponse response = mock(ListAppResponse.class);
         Map<String, String> proxyUrls = new HashMap<String, String>() ;
         proxyUrls.put(wdsKey, expectedUrl);

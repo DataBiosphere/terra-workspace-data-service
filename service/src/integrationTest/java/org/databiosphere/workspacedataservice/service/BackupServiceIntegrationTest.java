@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import org.databiosphere.workspacedataservice.dao.BackupDao;
+import org.databiosphere.workspacedataservice.service.model.BackupSchema;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -31,7 +32,7 @@ class BackupServiceIntegrationTest {
 
         var response = backupService.checkBackupStatus(trackingId);
         assertEquals(true, response.backupStatus());
-        assertEquals("COMPLETED", response.state());
+        assertEquals(BackupSchema.BackupState.COMPLETED.toString(), response.state());
 
         var backupRecord = backupDao.getBackupStatus(trackingId);
         assertNotNull(backupRecord);

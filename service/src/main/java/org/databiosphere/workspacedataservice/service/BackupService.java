@@ -70,7 +70,6 @@ public class BackupService {
             }
         }
         else {
-            backupDao.updateFilename(UUID.randomUUID(), "hi");
             return new BackupResponse(false, "", "", "Backup not found.");
         }
     }

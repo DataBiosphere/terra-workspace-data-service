@@ -43,7 +43,7 @@ public class InstanceInitializerBean {
 
     public boolean isInCloneMode(String sourceWorkspaceId) {
         if (StringUtils.isNotBlank(sourceWorkspaceId)){
-            LOGGER.info("DEBUGMODE: Source workspace id found, checking database");
+            LOGGER.info("Source workspace id found, checking database");
             try {
                 UUID.fromString(sourceWorkspaceId);
             } catch (IllegalArgumentException e){
