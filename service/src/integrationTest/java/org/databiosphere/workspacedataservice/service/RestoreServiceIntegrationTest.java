@@ -13,6 +13,7 @@ import org.springframework.test.context.TestPropertySource;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,53 +38,12 @@ public class RestoreServiceIntegrationTest {
     @Autowired
     private BackupRestoreService backupRestoreService;
 
-    @Value("${twds.instance.workspace-id:}")
-    private String workspaceId;
-
-    @Value("${twds.instance.source-workspace-id:}")
-    private String sourceWorkspaceId;
-
-    @Value("${twds.pg_dump.password:}")
-    private String password;
-
     private LocalFileStorage storage = new LocalFileStorage();
     
     @Test
     void testRestoreAzureWDS() throws Exception {
-        // Create the local pg_dump file by calling backup first.
-        backupRestoreService.backupAzureWDS(storage, "v0.2");
-        // Rename GUID in file to be "source" 
-        modifySourceWorkspaceId();
-        // Clean database of workspace-id value
-        cleanDatabase();
         var response = backupRestoreService.restoreAzureWDS(storage, "v0.2");
         assertTrue(response.backupRestoreStatus(), response.message());
-    }
-
-    private void modifySourceWorkspaceId() {
-        // We know the pg_dump will always be "backup.sql"
-        try {
-            Path path = Paths.get("backup.sql");
-            String content = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
-            content = content.replaceAll(workspaceId, sourceWorkspaceId);
-            Files.write(path, content.getBytes(StandardCharsets.UTF_8));
-        }
-        catch(IOException ex) {
-            System.err.format("IOException in RestoreServiceIntegrationTest.testRestoreAzureWDS: %s%n", ex);
-        }
-    }
-
-    private void cleanDatabase() {
-        List<String> commandList = backupRestoreService.generateCommandList(false);
-        commandList.add(String.format("-c DROP SCHEMA IF EXISTS \"%s\" CASCADE; DROP SCHEMA IF EXISTS \"%s\" CASCADE;", workspaceId, "sys_wds"));
-        Map<String, String> envVars = Map.of("PGPASSWORD", password);
-        LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
-        localProcessLauncher.launchProcess(commandList, envVars);
-        String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
-        int exitCode = localProcessLauncher.waitForTerminate();
-        if (exitCode != 0 && StringUtils.isNotBlank(error)) {
-            System.err.println("Error clearing database: " + error);
-        }
     }
 }
 
