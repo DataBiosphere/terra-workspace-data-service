@@ -29,6 +29,7 @@ import java.util.Map;
         "twds.pg_dump.port=5432",
         "twds.pg_dump.user=wds",
         "twds.pg_dump.dbName=wds",
+        "twds.pg_dump.password=wds",
         "twds.pg_dump.host=localhost"
     }
 )
@@ -41,6 +42,9 @@ public class RestoreServiceIntegrationTest {
 
     @Value("${twds.instance.source-workspace-id:}")
     private String sourceWorkspaceId;
+
+    @Value("${twds.pg_dump.password:}")
+    private String password;
 
     private LocalFileStorage storage = new LocalFileStorage();
     
@@ -72,7 +76,7 @@ public class RestoreServiceIntegrationTest {
     private void cleanDatabase() {
         List<String> commandList = backupRestoreService.generateCommandList(false);
         commandList.add(String.format("-c DROP SCHEMA IF EXISTS \"%s\" CASCADE; DROP SCHEMA IF EXISTS \"%s\" CASCADE;", workspaceId, "sys_wds"));
-        Map<String, String> envVars = Map.of("PGPASSWORD", "wds");
+        Map<String, String> envVars = Map.of("PGPASSWORD", password);
         LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
         localProcessLauncher.launchProcess(commandList, envVars);
         String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
