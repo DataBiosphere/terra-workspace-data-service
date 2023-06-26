@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreResponse;
@@ -10,6 +11,7 @@ import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -22,6 +24,7 @@ import com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticati
 
 @Service
 public class BackupRestoreService {
+    private final InstanceDao instanceDao;
     private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
 
     private static final String BackupFileName = "backup.sql";
@@ -55,6 +58,10 @@ public class BackupRestoreService {
 
     @Value("${twds.pg_dump.useAzureIdentity:}")
     private boolean useAzureIdentity;
+
+    public BackupRestoreService(InstanceDao instanceDao) {
+        this.instanceDao = instanceDao;
+    }
 
     public BackupRestoreResponse backupAzureWDS(BackUpFileStorage storage, String version) {
         try {
@@ -99,16 +106,11 @@ public class BackupRestoreService {
             }
 
             // rename workspace schema from source to dest
-            commandList.add(String.format("-c ALTER SCHEMA \"%s\" RENAME TO \"%s\"", sourceWorkspaceId, workspaceId));
-            localProcessLauncher.launchProcess(commandList, envVars);
-            error = checkForError(localProcessLauncher);
-            if (StringUtils.isNotBlank(error)) {
-                return new BackupRestoreResponse(false, error);
-            }
+            instanceDao.alterSchema(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId));
 
             return new BackupRestoreResponse(true, "Successfully completed restore");
         } 
-        catch (LaunchProcessException | PSQLException ex){
+        catch (LaunchProcessException | PSQLException | DataAccessException ex){
             return new BackupRestoreResponse(false, ex.getMessage());
         }
     }

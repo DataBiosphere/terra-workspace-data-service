@@ -53,4 +53,15 @@ public class MockInstanceDao implements InstanceDao {
         instances.remove(instanceId);
     }
 
+    @Override
+    public void alterSchema(UUID sourceWorkspaceId, UUID workspaceId) {
+        if (!instances.contains(sourceWorkspaceId)) {
+            ServerErrorMessage sqlMsg = new ServerErrorMessage("ERROR: schema \"" + sourceWorkspaceId.toString() + "\" does not exist");
+            SQLException ex = new org.postgresql.util.PSQLException(sqlMsg);
+            String sql = "alter schema \"" + sourceWorkspaceId + "\" rename to \"" + workspaceId + "\"";
+            throw new org.springframework.jdbc.BadSqlGrammarException("StatementCallback", sql, ex);
+        }
+        instances.remove(sourceWorkspaceId);
+        instances.add(workspaceId);
+    }
 }
