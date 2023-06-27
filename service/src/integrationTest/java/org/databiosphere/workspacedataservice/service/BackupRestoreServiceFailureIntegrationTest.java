@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.databiosphere.workspacedataservice.shared.model.BackupRestoreResponse;
+import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.storage.LocalFileStorage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,13 +19,13 @@ public class BackupRestoreServiceFailureIntegrationTest {
 
     @Test
     void testRestoreAzureWDSErrorHandling() {
-        BackupRestoreResponse response = backupRestoreService.restoreAzureWDS(storage, "v0.2");
-        assertFalse(response.backupRestoreStatus());
+        var response = backupRestoreService.restoreAzureWDS(storage, "v0.2");
+        assertFalse(response);
     }
     
     @Test
     void testBackupAzureWDSErrorHandling() {
-        BackupRestoreResponse response = backupRestoreService.backupAzureWDS(storage, "v0.2");
-        assertFalse(response.backupRestoreStatus());
+        BackupResponse response = backupRestoreService.backupAzureWDS(storage, "v0.2");
+        assertFalse(response.backupStatus());
     }
 }

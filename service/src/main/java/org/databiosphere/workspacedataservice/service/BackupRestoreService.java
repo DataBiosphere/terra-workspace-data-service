@@ -4,7 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
-import org.databiosphere.workspacedataservice.shared.model.BackupRestoreResponse;
+import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
 import org.postgresql.plugin.AuthenticationRequestType;
 import org.postgresql.util.PSQLException;
@@ -63,7 +63,7 @@ public class BackupRestoreService {
         this.instanceDao = instanceDao;
     }
 
-    public BackupRestoreResponse backupAzureWDS(BackUpFileStorage storage, String version) {
+    public BackupResponse backupAzureWDS(BackUpFileStorage storage, String version) {
         try {
             validateVersion(version);
             String blobName = generateBackupFilename();
@@ -77,17 +77,17 @@ public class BackupRestoreService {
             storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName);
             String error = checkForError(localProcessLauncher);
             if (StringUtils.isNotBlank(error)) {
-                return new BackupRestoreResponse(false, error);
+                return new BackupResponse(false, error);
             }
         }
         catch (LaunchProcessException | PSQLException ex){
-            return new BackupRestoreResponse(false, ex.getMessage());
+            return new BackupResponse(false, ex.getMessage());
         }
 
-        return new BackupRestoreResponse(true, "Backup successfully completed.");
+        return new BackupResponse(true, "Backup successfully completed.");
     }
 
-    public BackupRestoreResponse restoreAzureWDS(BackUpFileStorage storage, String version) {
+    public boolean restoreAzureWDS(BackUpFileStorage storage, String version) {
         validateVersion(version);
         try {
             // restore pgdump
@@ -102,16 +102,18 @@ public class BackupRestoreService {
 
             String error = checkForError(localProcessLauncher);
             if (StringUtils.isNotBlank(error)) {
-                return new BackupRestoreResponse(false, error);
+                return false;
+                //throw new LaunchProcessException(error);
             }
 
             // rename workspace schema from source to dest
             instanceDao.alterSchema(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId));
 
-            return new BackupRestoreResponse(true, "Successfully completed restore");
+            return true;
         } 
         catch (LaunchProcessException | PSQLException | DataAccessException ex){
-            return new BackupRestoreResponse(false, ex.getMessage());
+            return false;
+            //throw new LaunchProcessException(ex.getMessage());
         }
     }
 

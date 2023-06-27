@@ -41,7 +41,7 @@ public class RestoreServiceIntegrationTest {
         // Clean database of workspace-id value
         instanceDao.dropSchema(UUID.fromString(workspaceId));
         var response = backupRestoreService.restoreAzureWDS(storage, "v0.2");
-        assertTrue(response.backupRestoreStatus(), response.message());
+        assertTrue(response);
     }
 }
 

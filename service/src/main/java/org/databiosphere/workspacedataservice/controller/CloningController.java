@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
-import org.databiosphere.workspacedataservice.shared.model.BackupRestoreResponse;
+import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.storage.AzureBlobStorage;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,19 +18,9 @@ public class CloningController {
     }
 
     @PostMapping("/backup/{version}")
-    public ResponseEntity<BackupRestoreResponse> createBackup(@PathVariable("version") String version) {
-        BackupRestoreResponse response = backupRestoreService.backupAzureWDS(storage, version);
-        var status = response.backupRestoreStatus() ? HttpStatus.OK : HttpStatus.INTERNAL_SERVER_ERROR;
+    public ResponseEntity<BackupResponse> createBackup(@PathVariable("version") String version) {
+        BackupResponse response = backupRestoreService.backupAzureWDS(storage, version);
+        var status = response.backupStatus() ? HttpStatus.OK : HttpStatus.INTERNAL_SERVER_ERROR;
         return new ResponseEntity<>(response, status);
-    }
-
-    @PostMapping("/restore/{version}")
-    public ResponseEntity<BackupRestoreResponse> restoreBackup(@PathVariable("version") String version) {
-        BackupRestoreResponse response = backupRestoreService.restoreAzureWDS(storage, version);
-        if(response.backupRestoreStatus()) {
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        }
-        
-        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
