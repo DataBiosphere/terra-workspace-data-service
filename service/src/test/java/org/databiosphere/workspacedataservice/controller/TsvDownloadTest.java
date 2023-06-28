@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -37,6 +38,8 @@ import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -138,32 +141,34 @@ class TsvDownloadTest {
 						STRING, "hello"),
 				Arguments.of("embedded\ttab",
 						STRING, "\"embedded\ttab\""),
+				Arguments.of("2021-10-03",
+						DATE, "2021-10-03"),
+				Arguments.of("2021-10-03T19:01:23",
+						DATE_TIME, "2021-10-03T19:01:23"),
 				Arguments.of(BigDecimal.valueOf(789),
 						NUMBER, "789"),
+//				Arguments.of("https://account_name.blob.core.windows.net/container-1/blob1",
+//						FILE, "https://account_name.blob.core.windows.net/container-1/blob1"),
+//				Arguments.of("terra-wds:/type/id",
+//						RELATION, "terra-wds:/type/id"),
 				Arguments.of("{\"foo\": \"bar\", \"arr\": [2,4,6]}",
 						JSON, "\"{\"\"arr\"\":[2,4,6],\"\"foo\"\":\"\"bar\"\"}\""),
+//				Arguments.of(new String[]{},
+//						EMPTY_ARRAY, "[]"),
 				Arguments.of(List.of("foo", "bar", "baz"),
 						ARRAY_OF_STRING, "\"[\"\"foo\"\",\"\"bar\"\",\"\"baz\"\"]\""),
 				Arguments.of(List.of(BigDecimal.valueOf(1), BigDecimal.valueOf(3), BigDecimal.valueOf(5)),
-						ARRAY_OF_NUMBER, "[1,3,5]")
-
-
-//				Arguments.of("2021-10-03",          "2021-10-03",           true),
-//				Arguments.of("2021-10-03T19:01:23", "2021-10-03T19:01:23",  true),
-//				Arguments.of("terra-wds:/type/id",  "terra-wds:/type/id",   true),
-//				Arguments.of("[]", Collections.EMPTY_LIST, false),
-//
-//				// arrays of booleans
-//				Arguments.of("[true,false,true]",       List.of(true, false, true),     false),
-
-//				Arguments.of("[\"2021-10-03\", \"2022-11-04\"]",                    List.of("2021-10-03", "2022-11-04"),                    false),
-//				Arguments.of("[\"2021-10-03T19:01:23\", \"2021-11-04T20:02:24\"]",  List.of("2021-10-03T19:01:23", "2021-11-04T20:02:24"),  false),
-//				Arguments.of("[\"terra-wds:/type/id\", \"terra-wds:/type/id2\"]",   List.of("terra-wds:/type/id", "terra-wds:/type/id2"),   false),
-//
-//				// mixed array (these deserialize as mixed lists, will be coerced to a single data type later in processing)
-//				Arguments.of("[\"hello\", 123, true]",  List.of("hello", BigInteger.valueOf(123), true),    false),
-
-
+						ARRAY_OF_NUMBER, "[1,3,5]"),
+				Arguments.of(List.of(Boolean.TRUE, Boolean.FALSE, Boolean.TRUE),
+						ARRAY_OF_BOOLEAN, "[true,false,true]"),
+				Arguments.of(List.of(LocalDate.parse("2021-10-03"), LocalDate.parse("2022-11-04")),
+						ARRAY_OF_DATE, "\"[\"\"2021-10-03\"\",\"\"2022-11-04\"\"]\""),
+				Arguments.of(List.of(LocalDateTime.parse("2021-10-03T19:01:23"), LocalDateTime.parse("2021-11-04T20:02:24")),
+						ARRAY_OF_DATE_TIME, "\"[\"\"2021-10-03T19:01:23\"\",\"\"2021-11-04T20:02:24\"\"]\"")
+//				Arguments.of("[\"drs://drs.example.org/file_id_1\", \"https://account_name.blob.core.windows.net/container-2/blob2\"]",
+//						ARRAY_OF_FILE, "[\"drs://drs.example.org/file_id_1\", \"https://account_name.blob.core.windows.net/container-2/blob2\"]")
+//				Arguments.of("[\"terra-wds:/type/id\", \"terra-wds:/type/id2\"]",
+//						ARRAY_OF_RELATION, "[\"terra-wds:/type/id\", \"terra-wds:/type/id2\"]")
 				);
 	}
 
