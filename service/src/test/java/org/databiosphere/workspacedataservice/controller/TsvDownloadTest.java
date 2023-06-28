@@ -145,6 +145,8 @@ class TsvDownloadTest {
 						DATE_TIME, "2021-10-03T19:01:23"),
 				Arguments.of(BigDecimal.valueOf(789),
 						NUMBER, "789"),
+				Arguments.of(BigDecimal.valueOf(25.5),
+						NUMBER, "25.5"),
 				Arguments.of("https://accountname.blob.core.windows.net/container-1/blob1",
 						FILE, "https://accountname.blob.core.windows.net/container-1/blob1"),
 				Arguments.of("terra-wds:/target/1",
