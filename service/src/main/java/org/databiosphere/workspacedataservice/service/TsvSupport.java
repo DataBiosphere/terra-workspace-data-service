@@ -70,13 +70,8 @@ public class TsvSupport {
 
 			// handle null/empty values
 			if (attr == null) {
-				if (dataType.isArrayType()) {
-					row.add("[]");
-				} else if (JSON.equals(dataType)) {
-					row.add("{}");
-				} else {
-					row.add("");
-				}
+				// TODO: output [] for arrays and {} for json?
+				row.add("");
 
 			// handle arrays and json objects
 			} else if (dataType.isArrayType() || JSON.equals(dataType)) {
