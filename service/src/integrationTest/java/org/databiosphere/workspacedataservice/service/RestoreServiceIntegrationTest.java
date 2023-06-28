@@ -16,12 +16,7 @@ import java.util.UUID;
 @TestPropertySource(
     properties = {
         "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000", 
-        "twds.instance.source-workspace-id=123e4567-e89b-12d3-a456-426614174001", 
-        "twds.pg_dump.port=5432",
-        "twds.pg_dump.user=wds",
-        "twds.pg_dump.dbName=wds",
-        "twds.pg_dump.password=wds",
-        "twds.pg_dump.host=localhost"
+        "twds.instance.source-workspace-id=123e4567-e89b-12d3-a456-426614174001",
     }
 )
 public class RestoreServiceIntegrationTest {
