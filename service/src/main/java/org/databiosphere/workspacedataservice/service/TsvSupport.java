@@ -68,16 +68,28 @@ public class TsvSupport {
 			Object attr = rcd.getAttributeValue(h);
 			DataTypeMapping dataType = typeSchema.get(h);
 
-			if (dataType.isArrayType() || JSON.equals(dataType)) {
+			// handle null/empty values
+			if (attr == null) {
+				if (dataType.isArrayType()) {
+					row.add("[]");
+				} else if (JSON.equals(dataType)) {
+					row.add("{}");
+				} else {
+					row.add("");
+				}
+
+			// handle arrays and json objects
+			} else if (dataType.isArrayType() || JSON.equals(dataType)) {
 				try {
-					// TODO: handle nulls/empties
 					row.add(objectMapper.writeValueAsString(attr));
 				} catch (JsonProcessingException e) {
-					row.add(attr.toString());
-					logger.warn("Failed to properly serialize value of type {} to TSV: {}", dataType.name(), e.getMessage());
+					logger.error("Could not create TSV: " + e.getMessage(), e);
+					throw new UnexpectedTsvException("Could not create TSV: " + e.getMessage());
 				}
+
+			// all other data types
 			} else {
-				row.add(attr == null ? "" : attr.toString());
+				row.add(attr.toString());
 			}
 
 		});
