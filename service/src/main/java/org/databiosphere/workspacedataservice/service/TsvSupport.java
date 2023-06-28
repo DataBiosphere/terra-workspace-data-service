@@ -72,7 +72,6 @@ public class TsvSupport {
 			if (attr == null) {
 				// TODO: output [] for arrays and {} for json?
 				row.add("");
-
 			// handle arrays and json objects
 			} else if (dataType.isArrayType() || JSON.equals(dataType)) {
 				try {
@@ -81,15 +80,12 @@ public class TsvSupport {
 					logger.error("Could not create TSV: " + e.getMessage(), e);
 					throw new UnexpectedTsvException("Could not create TSV: " + e.getMessage());
 				}
-
 			// all other data types
 			} else {
 				row.add(attr.toString());
 			}
-
 		});
 		return row;
 	}
-
 
 }
