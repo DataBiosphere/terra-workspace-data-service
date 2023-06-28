@@ -11,6 +11,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.TsvUploadResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -211,6 +212,43 @@ class TsvDownloadTest {
 			String secondLine = reader.readLine();
 			assertThat(secondLine).isEqualTo(recordId + "\t" + expectedCellValue);
 		}
+	}
+
+	@ParameterizedTest(name = "TSV round trip for a {1} should be correct")
+	@MethodSource("tsvDownloadValues")
+	void tsvRoundTrip(Object toUpload, DataTypeMapping expectedDataType, String cellValue) throws IOException {
+		RecordType recordType = RecordType.valueOf(RandomStringUtils.randomAlphabetic(8));
+		String recordId = "123";
+		String attrName = RandomStringUtils.randomAlphabetic(8);
+
+		// upload a record containing the attribute in question
+		RecordAttributes uploadAttrs = new RecordAttributes(Map.of(attrName, toUpload));
+		RecordRequest recordRequest = new RecordRequest(uploadAttrs);
+
+		ResponseEntity<RecordResponse> response = recordController.upsertSingleRecord(instanceId, version, recordType, recordId, Optional.empty(), recordRequest);
+		assertThat(response.getStatusCodeValue()).isEqualTo(201);
+
+		// verify the backend datatype
+		Map<String, DataTypeMapping> tableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
+		assertThat(tableSchema.keySet()).contains(attrName);
+		DataTypeMapping actualDataType = tableSchema.get(attrName);
+		assertThat(actualDataType).isEqualTo(expectedDataType);
+
+		// create a TSV
+		String tsvContents = "sys_name\t" + attrName + "\n" + recordId + "\t" + cellValue + "\n";
+
+		// upload the TSV
+		MockMultipartFile file = new MockMultipartFile("records", "roundtrip.tsv", MediaType.TEXT_PLAIN_VALUE,
+				tsvContents.getBytes());
+		ResponseEntity<TsvUploadResponse> uploadResponse = recordController.tsvUpload(instanceId, version, recordType, Optional.empty(), file);
+		assertThat(uploadResponse.getStatusCodeValue()).isEqualTo(200);
+
+		// verify the backend datatype again; it should not have changed
+		tableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
+		assertThat(tableSchema.keySet()).contains(attrName);
+		actualDataType = tableSchema.get(attrName);
+		assertThat(actualDataType).isEqualTo(expectedDataType);
+
 	}
 
 }
