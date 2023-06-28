@@ -70,6 +70,7 @@ public class TsvSupport {
 
 			if (dataType.isArrayType() || JSON.equals(dataType)) {
 				try {
+					// TODO: handle nulls/empties
 					row.add(objectMapper.writeValueAsString(attr));
 				} catch (JsonProcessingException e) {
 					row.add(attr.toString());

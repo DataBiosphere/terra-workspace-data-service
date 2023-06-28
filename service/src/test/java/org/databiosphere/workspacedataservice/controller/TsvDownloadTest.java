@@ -35,7 +35,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -144,7 +146,25 @@ class TsvDownloadTest {
 						ARRAY_OF_STRING, "\"[\"\"foo\"\",\"\"bar\"\",\"\"baz\"\"]\""),
 				Arguments.of(List.of(BigDecimal.valueOf(1), BigDecimal.valueOf(3), BigDecimal.valueOf(5)),
 						ARRAY_OF_NUMBER, "[1,3,5]")
-		);
+
+
+//				Arguments.of("2021-10-03",          "2021-10-03",           true),
+//				Arguments.of("2021-10-03T19:01:23", "2021-10-03T19:01:23",  true),
+//				Arguments.of("terra-wds:/type/id",  "terra-wds:/type/id",   true),
+//				Arguments.of("[]", Collections.EMPTY_LIST, false),
+//
+//				// arrays of booleans
+//				Arguments.of("[true,false,true]",       List.of(true, false, true),     false),
+
+//				Arguments.of("[\"2021-10-03\", \"2022-11-04\"]",                    List.of("2021-10-03", "2022-11-04"),                    false),
+//				Arguments.of("[\"2021-10-03T19:01:23\", \"2021-11-04T20:02:24\"]",  List.of("2021-10-03T19:01:23", "2021-11-04T20:02:24"),  false),
+//				Arguments.of("[\"terra-wds:/type/id\", \"terra-wds:/type/id2\"]",   List.of("terra-wds:/type/id", "terra-wds:/type/id2"),   false),
+//
+//				// mixed array (these deserialize as mixed lists, will be coerced to a single data type later in processing)
+//				Arguments.of("[\"hello\", 123, true]",  List.of("hello", BigInteger.valueOf(123), true),    false),
+
+
+				);
 	}
 
 
