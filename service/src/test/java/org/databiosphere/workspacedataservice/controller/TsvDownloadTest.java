@@ -1,10 +1,11 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.csv.QuoteMode;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
-import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import com.fasterxml.jackson.databind.MappingIterator;
-import com.fasterxml.jackson.databind.ObjectReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -45,8 +47,6 @@ class TsvDownloadTest {
 	private String version;
 	private UUID instanceId;
 
-	@Autowired
-    private ObjectReader tsvReader;
 
 	@BeforeEach
 	void init(){
@@ -71,13 +71,16 @@ class TsvDownloadTest {
 		ResponseEntity<Resource> stream = restTemplate.exchange("/{instanceId}/tsv/{version}/{recordType}",
 				HttpMethod.GET, new HttpEntity<>(headers), Resource.class, instanceId, version, recordType);
 		InputStream inputStream = stream.getBody().getInputStream();
+		CSVFormat csvFormat = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).setDelimiter("\t")
+				.setQuoteMode(QuoteMode.MINIMAL).build();
 		InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
-        MappingIterator<RecordAttributes> tsvIterator = tsvReader.readValues(reader);
-        RecordAttributes recordAttributes = tsvIterator.next();
-		assertThat(recordAttributes.getAttributeValue(primaryKeyName)).isEqualTo(primaryKeyName+"_val");
-		assertThat(recordAttributes.getAttributeValue("col_1")).isEqualTo("Fido");
-		assertThat(recordAttributes.getAttributeValue("col_2")).isEqualTo("Jerry");
-		assertThat(tsvIterator.hasNext()).isFalse();
+		Iterable<CSVRecord> records = new CSVParser(reader, csvFormat);
+		Iterator<CSVRecord> iterator = records.iterator();
+		CSVRecord rcd = iterator.next();
+		assertThat(rcd.get(primaryKeyName)).isEqualTo(primaryKeyName+"_val");
+		assertThat(rcd.get("col_1")).isEqualTo("Fido");
+		assertThat(rcd.get("col_2")).isEqualTo("Jerry");
+		assertThat(iterator.hasNext()).isFalse();
 		reader.close();
 	}
 	@Test
@@ -92,15 +95,18 @@ class TsvDownloadTest {
 		ResponseEntity<Resource> stream = restTemplate.exchange("/{instanceId}/tsv/{version}/{recordType}",
 				HttpMethod.GET, new HttpEntity<>(headers), Resource.class, instanceId, version, recordType);
 		InputStream inputStream = stream.getBody().getInputStream();
+		CSVFormat csvFormat = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).setDelimiter("\t")
+				.setQuoteMode(QuoteMode.MINIMAL).build();
 		InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
-        MappingIterator<RecordAttributes> tsvIterator = tsvReader.readValues(reader);
-		RecordAttributes recordAttributes = tsvIterator.next();
-		assertThat(recordAttributes.getAttributeValue("description")).isEqualTo("Embedded\tTab");
-		recordAttributes = tsvIterator.next();
-		assertThat(recordAttributes.getAttributeValue("description")).isEqualTo("\n,Weird\n String");
-		assertThat(recordAttributes.getAttributeValue("location")).isEqualTo("Cambridge, \"MA\"");
-		assertThat(recordAttributes.getAttributeValue("unicodeData")).isEqualTo("\uD83D\uDCA9ȇ");
-		assertThat(tsvIterator.hasNext()).isFalse();
+		Iterable<CSVRecord> records = new CSVParser(reader, csvFormat);
+		Iterator<CSVRecord> iterator = records.iterator();
+		CSVRecord rcd = iterator.next();
+		assertThat(rcd.get("description")).isEqualTo("Embedded\tTab");
+		rcd = iterator.next();
+		assertThat(rcd.get("description")).isEqualTo("\n,Weird\n String");
+		assertThat(rcd.get("location")).isEqualTo("Cambridge, \"MA\"");
+		assertThat(rcd.get("unicodeData")).isEqualTo("\uD83D\uDCA9ȇ");
+		assertThat(iterator.hasNext()).isFalse();
 		reader.close();
 	}
 }
