@@ -2,10 +2,8 @@ package org.databiosphere.workspacedataservice.controller;
 
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectReader;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -37,13 +35,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -83,7 +80,7 @@ class TsvDownloadTest {
 
 	@ParameterizedTest(name = "PK name {0} should be honored")
 	@ValueSource(strings = {"Alfalfa", "buckWheat", "boo-yah", "sample id", "sample_id", "buttHead", "may 12 sample"})
-	void tsvUploadWithChoosenPrimaryKeyFollowedByDownload(String primaryKeyName) throws IOException {
+	void tsvUploadWithChosenPrimaryKeyFollowedByDownload(String primaryKeyName) throws IOException {
 		MockMultipartFile file = new MockMultipartFile("records", "simple.tsv", MediaType.TEXT_PLAIN_VALUE,
 				("col_1\tcol_2\t" + primaryKeyName + "\n" + "Fido\tJerry\t" + primaryKeyName + "_val\n").getBytes());
 		String recordType = primaryKeyName+"_rt";
@@ -91,7 +88,7 @@ class TsvDownloadTest {
 		HttpHeaders headers = new HttpHeaders();
 		ResponseEntity<Resource> stream = restTemplate.exchange("/{instanceId}/tsv/{version}/{recordType}",
 				HttpMethod.GET, new HttpEntity<>(headers), Resource.class, instanceId, version, recordType);
-		InputStream inputStream = stream.getBody().getInputStream();
+		InputStream inputStream = Objects.requireNonNull(stream.getBody()).getInputStream();
 		InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
         MappingIterator<RecordAttributes> tsvIterator = tsvReader.readValues(reader);
         RecordAttributes recordAttributes = tsvIterator.next();
@@ -109,11 +106,11 @@ class TsvDownloadTest {
 		InputStream is = TsvDownloadTest.class.getResourceAsStream("/batch_write_tsv_data.json");
 		ResponseEntity<BatchResponse> response = recordController.streamingWrite(instanceId, version, recordType, Optional.empty(), is);
 		assertThat(response.getStatusCodeValue()).isEqualTo(200);
-		assertThat(response.getBody().recordsModified()).isEqualTo(2);
+		assertThat(Objects.requireNonNull(response.getBody()).recordsModified()).isEqualTo(2);
 		HttpHeaders headers = new HttpHeaders();
 		ResponseEntity<Resource> stream = restTemplate.exchange("/{instanceId}/tsv/{version}/{recordType}",
 				HttpMethod.GET, new HttpEntity<>(headers), Resource.class, instanceId, version, recordType);
-		InputStream inputStream = stream.getBody().getInputStream();
+		InputStream inputStream = Objects.requireNonNull(stream.getBody()).getInputStream();
 		InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
         MappingIterator<RecordAttributes> tsvIterator = tsvReader.readValues(reader);
 		RecordAttributes recordAttributes = tsvIterator.next();
@@ -127,7 +124,7 @@ class TsvDownloadTest {
 	}
 
 
-	private static Stream<Arguments> tsvDownloadValues() {
+	private static Stream<Arguments> tsvExemplarData() {
         /* Arguments are sets:
             - first value is the Object to insert as an attribute
             - second value is the expected data type that the object creates
@@ -148,14 +145,14 @@ class TsvDownloadTest {
 						DATE_TIME, "2021-10-03T19:01:23"),
 				Arguments.of(BigDecimal.valueOf(789),
 						NUMBER, "789"),
-//				Arguments.of("https://account_name.blob.core.windows.net/container-1/blob1",
-//						FILE, "https://account_name.blob.core.windows.net/container-1/blob1"),
-//				Arguments.of("terra-wds:/type/id",
-//						RELATION, "terra-wds:/type/id"),
+				Arguments.of("https://accountname.blob.core.windows.net/container-1/blob1",
+						FILE, "https://accountname.blob.core.windows.net/container-1/blob1"),
+				Arguments.of("terra-wds:/target/1",
+						RELATION, "terra-wds:/target/1"),
 				Arguments.of("{\"foo\": \"bar\", \"arr\": [2,4,6]}",
 						JSON, "\"{\"\"arr\"\":[2,4,6],\"\"foo\"\":\"\"bar\"\"}\""),
-//				Arguments.of(new String[]{},
-//						EMPTY_ARRAY, "[]"),
+				Arguments.of(List.of(),
+						ARRAY_OF_STRING, "[]"),
 				Arguments.of(List.of("foo", "bar", "baz"),
 						ARRAY_OF_STRING, "\"[\"\"foo\"\",\"\"bar\"\",\"\"baz\"\"]\""),
 				Arguments.of(List.of(BigDecimal.valueOf(1), BigDecimal.valueOf(3), BigDecimal.valueOf(5)),
@@ -165,26 +162,30 @@ class TsvDownloadTest {
 				Arguments.of(List.of(LocalDate.parse("2021-10-03"), LocalDate.parse("2022-11-04")),
 						ARRAY_OF_DATE, "\"[\"\"2021-10-03\"\",\"\"2022-11-04\"\"]\""),
 				Arguments.of(List.of(LocalDateTime.parse("2021-10-03T19:01:23"), LocalDateTime.parse("2021-11-04T20:02:24")),
-						ARRAY_OF_DATE_TIME, "\"[\"\"2021-10-03T19:01:23\"\",\"\"2021-11-04T20:02:24\"\"]\"")
-//				Arguments.of("[\"drs://drs.example.org/file_id_1\", \"https://account_name.blob.core.windows.net/container-2/blob2\"]",
-//						ARRAY_OF_FILE, "[\"drs://drs.example.org/file_id_1\", \"https://account_name.blob.core.windows.net/container-2/blob2\"]")
-//				Arguments.of("[\"terra-wds:/type/id\", \"terra-wds:/type/id2\"]",
-//						ARRAY_OF_RELATION, "[\"terra-wds:/type/id\", \"terra-wds:/type/id2\"]")
+						ARRAY_OF_DATE_TIME, "\"[\"\"2021-10-03T19:01:23\"\",\"\"2021-11-04T20:02:24\"\"]\""),
+				Arguments.of(List.of("drs://drs.example.org/file_id_1", "https://accountname.blob.core.windows.net/container-2/blob2"),
+						ARRAY_OF_FILE, "\"[\"\"drs://drs.example.org/file_id_1\"\",\"\"https://accountname.blob.core.windows.net/container-2/blob2\"\"]\""),
+				Arguments.of(List.of("terra-wds:/target/1", "terra-wds:/target/1"),
+						ARRAY_OF_RELATION, "\"[\"\"terra-wds:/target/1\"\",\"\"terra-wds:/target/1\"\"]\"")
 				);
 	}
 
 
 	@ParameterizedTest(name = "TSV download for a {1} should be correct")
-	@MethodSource("tsvDownloadValues")
-	void tsvDownloadVariousDataTypes(Object toUpload, DataTypeMapping expectedDataType, String expectedCellValue) throws IOException {
-		RecordType recordType = RecordType.valueOf(RandomStringUtils.randomAlphabetic(8));
+	@MethodSource("tsvExemplarData")
+	void tsvDownloadDataTypeFidelity(Object toUpload, DataTypeMapping expectedDataType, String expectedCellValue) throws IOException {
+		RecordType recordType = RecordType.valueOf("myType");
 		String recordId = "123";
-		String attrName = RandomStringUtils.randomAlphabetic(8);
+		String attrName = "attrName";
+
+		// upload a record to serve as the target for any relations
+		RecordRequest targetRequest = new RecordRequest(new RecordAttributes(Map.of()));
+		ResponseEntity<RecordResponse> targetResponse = recordController.upsertSingleRecord(instanceId, version, RecordType.valueOf("target"), "1", Optional.empty(), targetRequest);
+		assertThat(targetResponse.getStatusCodeValue()).isEqualTo(201);
 
 		// upload a record containing the attribute in question
 		RecordAttributes uploadAttrs = new RecordAttributes(Map.of(attrName, toUpload));
 		RecordRequest recordRequest = new RecordRequest(uploadAttrs);
-
 		ResponseEntity<RecordResponse> response = recordController.upsertSingleRecord(instanceId, version, recordType, recordId, Optional.empty(), recordRequest);
 		assertThat(response.getStatusCodeValue()).isEqualTo(201);
 
@@ -203,7 +204,7 @@ class TsvDownloadTest {
 		// a MappingIterator<RecordAttributes>, for example. This allows us to assert on the string representation
 		// of values within the TSV.
 		try (
-				InputStream inputStream = stream.getBody().getInputStream();
+				InputStream inputStream = Objects.requireNonNull(stream.getBody()).getInputStream();
 				BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))
 		) {
 			String firstLine = reader.readLine();
@@ -214,17 +215,22 @@ class TsvDownloadTest {
 		}
 	}
 
-	@ParameterizedTest(name = "TSV round trip for a {1} should be correct")
-	@MethodSource("tsvDownloadValues")
-	void tsvRoundTrip(Object toUpload, DataTypeMapping expectedDataType, String cellValue) throws IOException {
-		RecordType recordType = RecordType.valueOf(RandomStringUtils.randomAlphabetic(8));
+	// TODO: this tsv upload test shouldn't be in a class named "TsvDownloadTest"
+	@ParameterizedTest(name = "TSV upload for a {1} should be correct")
+	@MethodSource("tsvExemplarData")
+	void tsvUploadDataTypeFidelity(Object toUpload, DataTypeMapping expectedDataType, String cellValue) throws IOException {
+		RecordType recordType = RecordType.valueOf("myType");
 		String recordId = "123";
-		String attrName = RandomStringUtils.randomAlphabetic(8);
+		String attrName = "attrName";
+
+		// upload a record to serve as the target for any relations
+		RecordRequest targetRequest = new RecordRequest(new RecordAttributes(Map.of()));
+		ResponseEntity<RecordResponse> targetResponse = recordController.upsertSingleRecord(instanceId, version, RecordType.valueOf("target"), "1", Optional.empty(), targetRequest);
+		assertThat(targetResponse.getStatusCodeValue()).isEqualTo(201);
 
 		// upload a record containing the attribute in question
 		RecordAttributes uploadAttrs = new RecordAttributes(Map.of(attrName, toUpload));
 		RecordRequest recordRequest = new RecordRequest(uploadAttrs);
-
 		ResponseEntity<RecordResponse> response = recordController.upsertSingleRecord(instanceId, version, recordType, recordId, Optional.empty(), recordRequest);
 		assertThat(response.getStatusCodeValue()).isEqualTo(201);
 
@@ -238,7 +244,7 @@ class TsvDownloadTest {
 		String tsvContents = "sys_name\t" + attrName + "\n" + recordId + "\t" + cellValue + "\n";
 
 		// upload the TSV
-		MockMultipartFile file = new MockMultipartFile("records", "roundtrip.tsv", MediaType.TEXT_PLAIN_VALUE,
+		MockMultipartFile file = new MockMultipartFile("records", "roundTrip.tsv", MediaType.TEXT_PLAIN_VALUE,
 				tsvContents.getBytes());
 		ResponseEntity<TsvUploadResponse> uploadResponse = recordController.tsvUpload(instanceId, version, recordType, Optional.empty(), file);
 		assertThat(uploadResponse.getStatusCodeValue()).isEqualTo(200);
