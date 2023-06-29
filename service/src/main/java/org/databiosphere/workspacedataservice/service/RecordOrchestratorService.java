@@ -50,18 +50,22 @@ public class RecordOrchestratorService { // TODO give me a better name
     private final SamDao samDao;
     private final ActivityLogger activityLogger;
 
+    private final TsvSupport tsvSupport;
+
     public RecordOrchestratorService(RecordDao recordDao,
                                      BatchWriteService batchWriteService,
                                      RecordService recordService,
                                      InstanceService instanceService,
                                      SamDao samDao,
-                                     ActivityLogger activityLogger) {
+                                     ActivityLogger activityLogger,
+                                     TsvSupport tsvSupport) {
         this.recordDao = recordDao;
         this.batchWriteService = batchWriteService;
         this.recordService = recordService;
         this.instanceService = instanceService;
         this.samDao = samDao;
         this.activityLogger = activityLogger;
+        this.tsvSupport = tsvSupport;
     }
 
     public RecordResponse updateSingleRecord(UUID instanceId, String version, RecordType recordType, String recordId,
@@ -115,9 +119,11 @@ public class RecordOrchestratorService { // TODO give me a better name
         checkRecordTypeExists(instanceId, recordType);
         List<String> headers = recordDao.getAllAttributeNames(instanceId, recordType);
 
+        Map<String, DataTypeMapping> typeSchema = recordDao.getExistingTableSchema(instanceId, recordType);
+
         return httpResponseOutputStream -> {
             try (Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType)) {
-                TsvSupport.writeTsvToStream(allRecords, httpResponseOutputStream, headers);
+                tsvSupport.writeTsvToStream(allRecords, typeSchema, httpResponseOutputStream, headers);
             }
         };
     }

@@ -5,10 +5,7 @@
 ### Sourced from https://github.com/broadinstitute/dsp-appsec-blessed-images/blob/main/jre/Dockerfile.17-debian
 FROM us.gcr.io/broad-dsp-gcr-public/base/jre:17-debian
 
-# freshen up
 RUN apt-get update
 
 # Add postgres client for pg_dump command
 RUN apt-get install postgresql-client-14 -y
-
-# remove prerequisites we no longer need
