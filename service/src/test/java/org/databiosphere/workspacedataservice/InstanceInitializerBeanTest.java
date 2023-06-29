@@ -4,14 +4,12 @@ import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.MockBackupDao;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
-import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -34,6 +32,9 @@ class InstanceInitializerBeanTest {
     InstanceDao instanceDao;
     @SpyBean
     BackupDao backupDao;
+
+    @Value("${twds.instance.workspace-id}")
+    String workspaceId;
 
     //randomly generated UUID
     final UUID instanceID = UUID.fromString("90e1b179-9f83-4a6f-a8c2-db083df4cd03");
@@ -99,6 +100,12 @@ class InstanceInitializerBeanTest {
     @Test
     void sourceWorkspaceIDInvalid() {
         boolean cloneMode = instanceInitializerBean.isInCloneMode("invalidUUID");
+        assertFalse(cloneMode);
+    }
+
+    @Test
+    void sourceAndCurrentWorkspaceIdsMatch() {
+        boolean cloneMode = instanceInitializerBean.isInCloneMode(workspaceId);
         assertFalse(cloneMode);
     }
 }

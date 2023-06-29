@@ -17,7 +17,7 @@ public interface BackupDao {
 
     void updateBackupRequestStatus(UUID sourceWorkspaceId, BackupSchema.BackupState status);
 
-    void createBackupRequestsEntry(UUID destinationWorkspaceId, UUID sourceWorkspaceId);
+    void createBackupRequestsEntry(UUID sourceWorkspaceId, UUID destinationWorkspaceId) ;
 
     void updateFilename(UUID trackingId, String filename);
 }

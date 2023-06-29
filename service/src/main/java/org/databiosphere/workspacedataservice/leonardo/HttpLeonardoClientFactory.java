@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.leonardo;
 
+import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
 import org.broadinstitute.dsde.workbench.client.leonardo.ApiClient;
 import org.broadinstitute.dsde.workbench.client.leonardo.api.AppsV2Api;
@@ -15,16 +16,22 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
 public class HttpLeonardoClientFactory implements LeonardoClientFactory {
 
     final String leoEndpointUrl;
+    private final OkHttpClient commonHttpClient;
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpLeonardoClientFactory.class);
 
 
     public HttpLeonardoClientFactory(String leoUrl) {
         this.leoEndpointUrl = leoUrl;
+        this.commonHttpClient = new org.broadinstitute.dsde.workbench.client.sam.ApiClient()
+                .getHttpClient()
+                .newBuilder()
+                .build();
     }
 
     private ApiClient getApiClient(String token) {
         // create a new data repo client
         ApiClient apiClient = new ApiClient();
+        apiClient.setHttpClient(commonHttpClient);
 
         // initialize the client with the url to data repo
         if (StringUtils.isNotBlank(leoEndpointUrl)) {

@@ -31,6 +31,7 @@ public class MockBackupDao implements BackupDao {
 
     @Override
     public String getBackupRequestStatus(UUID sourceWorkspaceId, UUID destinationWorkspaceId) {
+        // currently not used in tests but needs to be here due to the interface
         return null;
     }
 
@@ -41,7 +42,7 @@ public class MockBackupDao implements BackupDao {
     }
 
     @Override
-    public void createBackupRequestsEntry(UUID trackingId, UUID sourceWorkspaceId) {
+    public void createBackupRequestsEntry (UUID sourceWorkspaceId, UUID destinationWorkspaceId) {
         // currently not used in tests but needs to be here due to the interface
     }
 

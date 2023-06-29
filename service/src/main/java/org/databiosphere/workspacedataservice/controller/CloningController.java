@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
+import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
+
 @RestController
 public class CloningController {
 
@@ -28,8 +30,9 @@ public class CloningController {
         return new ResponseEntity<>(new BackupTrackingResponse(String.valueOf(trackingId)), HttpStatus.OK);
     }
 
-    @GetMapping("/backup/status/{trackingId}")
-    public ResponseEntity<BackupResponse> getBackupStatus(@PathVariable("trackingId") UUID trackingId) {
+    @GetMapping("/backup/{version}/status/{trackingId}")
+    public ResponseEntity<BackupResponse> getBackupStatus(@PathVariable("version") String version, @PathVariable("trackingId") UUID trackingId) {
+        validateVersion(version);
         var response = backupService.checkBackupStatus(trackingId);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }

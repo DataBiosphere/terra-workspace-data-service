@@ -51,7 +51,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BackupTrackingResponse'
-  /backup/status/{trackingId}:
+  /backup/{v}/status/{trackingId}:
     get:
       tags:
         - Cloning

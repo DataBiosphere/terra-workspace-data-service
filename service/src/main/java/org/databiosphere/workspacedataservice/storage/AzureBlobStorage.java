@@ -27,9 +27,19 @@ public class AzureBlobStorage implements BackUpFileStorage {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AzureBlobStorage.class);
 
+    /*
+    6/28/2023 - Terra's storage inside a billing project is organized as follows:
+    by default a billing project gets a single blob storage azure resource
+    each workspace that gets created inside of that billing project will get its own container inside the blob storage
+    the container will follow the naming of "sc-<workspaceId>"
+    all files that are uploaded into the workspace will be inside the appropriate workspace container
+    containers are restricted to have the same access as the users who have access to the workspace
+
+    backups will be stored inside the workspace container in a path determined by function GenerateBackupFilename
+    which exists within BackupService.java.
+     */
     @Override
     public void streamOutputToBlobStorage(InputStream fromStream, String blobName, String workspaceId) {
-        // TODO: remove this once connection is switched to be done via SAS token
         LOGGER.info("Creating blob storage client. ");
         BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId);
         LOGGER.info("About to write to blob storage. ");

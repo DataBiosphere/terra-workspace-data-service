@@ -47,10 +47,9 @@ public class BackupService {
 
     @Value("${twds.pg_dump.path:}")
     private String pgDumpPath;
-  
+
     @Value("${twds.pg_dump.useAzureIdentity:}")
     private boolean useAzureIdentity;
-
 
     public BackupService(BackupDao backupDao, BackUpFileStorage backUpFileStorage) {
         this.backupDao = backupDao;
@@ -60,7 +59,7 @@ public class BackupService {
     public BackupResponse checkBackupStatus(UUID trackingId) {
         var backup = backupDao.getBackupStatus(trackingId);
 
-        if(backup !=null) {
+        if(backup != null) {
             if (backup.getState() == BackupSchema.BackupState.COMPLETED) {
                 return new BackupResponse(true, BackupSchema.BackupState.COMPLETED.toString(), backup.getFilename(), "Backup successfully completed.");
             } else if (backup.getState() == BackupSchema.BackupState.ERROR) {

@@ -50,6 +50,12 @@ public class InstanceInitializerBean {
                     LOGGER.warn("Source workspace id could not be parsed, unable to clone DB. Provided source workspace id: {}.", sourceWorkspaceId);
                     return false;
             }
+
+            if (sourceWorkspaceId == workspaceId) {
+                LOGGER.warn("Source workspace id and current workspace Id can't be the same.");
+                return false;
+            }
+
             try {
                 // TODO at this stage of cloning work (where only backup is getting generated), just checking if an instance schema already exists is sufficient
                 // when the restore operation is added, it would be important to check if any record of restore state is present
@@ -66,6 +72,13 @@ public class InstanceInitializerBean {
 
     }
 
+    /*
+    Cloning comes from the concept of copying an original (source) workspace data (from WDS data tables) into
+    a newly created (destination) workspace. WDS at start up will always have a current WorkspaceId, which in the
+    context of cloning will effectively be the destination. The SourceWorkspaceId will only be populated if the currently
+    starting WDS was initiated via a clone operation and will contain the WorkspaceId of the original workspace where the cloning
+    was triggered.
+    */
     public void initCloneMode(){
         LOGGER.info("Starting in clone mode...");
 
@@ -74,6 +87,8 @@ public class InstanceInitializerBean {
             LeonardoClientFactory leoFactory = new HttpLeonardoClientFactory(leoUrl);
             LeonardoDao leoDao = new LeonardoDao(leoFactory, sourceWorkspaceId);
             var sourceWdsEndpoint = leoDao.getWdsEndpointUrl(startupToken);
+
+            LOGGER.info("Retrieved source wds endpoint url {}", sourceWdsEndpoint);
 
             // make the call to source wds to trigger back up
             WorkspaceDataServiceClientFactory wdsfactory = new HttpWorkspaceDataServiceClientFactory(sourceWdsEndpoint);
@@ -104,7 +119,7 @@ public class InstanceInitializerBean {
             LOGGER.info("Restore from the following path on the source workspace storage container: {}", backupFileName);
         }
         catch(Exception e){
-            LOGGER.error("An error occurred during clone mode. Will start with empty database. Error: {}", e.getMessage());
+            LOGGER.error("An error occurred during clone mode. Will start with empty database. Error: {}", e);
             backupDao.updateBackupRequestStatus(UUID.fromString(sourceWorkspaceId), BackupSchema.BackupState.ERROR);
         }
     }
