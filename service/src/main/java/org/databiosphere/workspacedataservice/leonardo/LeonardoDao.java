@@ -1,11 +1,15 @@
 package org.databiosphere.workspacedataservice.leonardo;
 
+import com.nimbusds.oauth2.sdk.util.StringUtils;
 import org.broadinstitute.dsde.workbench.client.leonardo.ApiException;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.AppStatus;
+import org.broadinstitute.dsde.workbench.client.leonardo.model.AppType;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.ListAppResponse;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class LeonardoDao {
   private final LeonardoClientFactory leonardoClientFactory;
@@ -36,12 +40,29 @@ public class LeonardoDao {
     }
   }
 
+  class AppCreationDateComparator implements Comparator<ListAppResponse> {
+    @Override
+    public int compare(ListAppResponse o1, ListAppResponse o2) {
+      return o1.getAuditInfo().getCreatedDate().compareTo(o2.getAuditInfo().getCreatedDate());
+    }
+    @Override
+    public boolean equals(Object obj) {
+      return false;
+    }
+  }
   public String extractWdsUrl(List<ListAppResponse> response) {
-    for(int i=0; i< response.size(); i++) {
-      Map<String, String> proxyUrls = ((Map<String, String>) response.get(i).getProxyUrls());
-      var url = proxyUrls.get("wds");
-      if (url != null && response.get(i).getStatus() == AppStatus.RUNNING) {
-        return url;
+    // look for apps of type "WDS" which are in "RUNNING" status.
+    // if more than one, choose the earliest-created. This matches Terra UI logic.
+    Optional<ListAppResponse> maybeApp = response.stream()
+            .filter(app -> AppType.WDS.equals(app.getAppType()) && AppStatus.RUNNING.equals(app.getStatus()))
+            .min(new AppCreationDateComparator());
+    if (maybeApp.isPresent()) {
+      Map<String, String> proxyUrls = ((Map<String, String>) maybeApp.get().getProxyUrls());
+      if (proxyUrls != null) {
+        String url = proxyUrls.getOrDefault("wds", "");
+        if (StringUtils.isNotBlank(url)) {
+          return url;
+        }
       }
     }
     return null;

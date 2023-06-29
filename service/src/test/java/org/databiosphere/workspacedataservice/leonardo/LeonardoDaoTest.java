@@ -3,6 +3,8 @@ package org.databiosphere.workspacedataservice.leonardo;
 import org.broadinstitute.dsde.workbench.client.leonardo.ApiException;
 import org.broadinstitute.dsde.workbench.client.leonardo.api.AppsV2Api;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.AppStatus;
+import org.broadinstitute.dsde.workbench.client.leonardo.model.AppType;
+import org.broadinstitute.dsde.workbench.client.leonardo.model.AuditInfo;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.ListAppResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,32 +54,54 @@ class LeonardoDaoTest {
 
     @Test
     void testWdsUrlReturned() throws ApiException {
-        var url = buildAppResponseAndCallExtraction("wds", AppStatus.RUNNING);
+        var url = buildAppResponseAndCallExtraction(generateListAppResponse("wds", AppStatus.RUNNING,1));
         assertEquals(expectedUrl, url);
     }
 
     @Test
     void testWdsUrlNotFoundWrongStatus() throws ApiException {
-        var url = buildAppResponseAndCallExtraction("wds", AppStatus.DELETED);
+        var url = buildAppResponseAndCallExtraction(generateListAppResponse("wds", AppStatus.DELETED, 1));
         assertEquals(null, url);
     }
 
     @Test
     void testWdsUrlNotFoundWrongKey() throws ApiException {
-        var url = buildAppResponseAndCallExtraction("not-wds", AppStatus.RUNNING);
+        var url = buildAppResponseAndCallExtraction(generateListAppResponse("not-wds", AppStatus.RUNNING, 1));
         assertEquals(null, url);
     }
 
-    String buildAppResponseAndCallExtraction(String wdsKey, AppStatus wdsStatus){
-        ListAppResponse response = mock(ListAppResponse.class);
-        Map<String, String> proxyUrls = new HashMap<String, String>() ;
-        proxyUrls.put(wdsKey, expectedUrl);
-        when(response.getProxyUrls()).thenReturn(proxyUrls);
-        when(response.getStatus()).thenReturn(wdsStatus);
-        List<ListAppResponse> responseList = new ArrayList<>();
-        responseList.add(response);
-        var url = leonardoDao.extractWdsUrl(responseList);
+    @Test
+    void testWdsUrlMultiple() throws ApiException {
+        // tests the case if there are 2 running wds apps
+        var url = buildAppResponseAndCallExtraction(generateListAppResponse("wds", AppStatus.RUNNING,2));
+        assertEquals(url, url);
+    }
+
+    String buildAppResponseAndCallExtraction(List<ListAppResponse> responses ){
+        var url = leonardoDao.extractWdsUrl(responses);
         return url;
+    }
+
+    List<ListAppResponse> generateListAppResponse(String wdsKey, AppStatus wdsStatus, int count) {
+        List<ListAppResponse> responseList = new ArrayList<>();
+        var url = expectedUrl;
+        while(count != 0) {
+            ListAppResponse response = mock(ListAppResponse.class);
+            Map<String, String> proxyUrls = new HashMap<String, String>();
+            proxyUrls.put(wdsKey, url);
+            when(response.getProxyUrls()).thenReturn(proxyUrls);
+            when(response.getStatus()).thenReturn(wdsStatus);
+            when(response.getAppType()).thenReturn(AppType.WDS);
+            when(response.getAuditInfo()).thenReturn(mock(AuditInfo.class));
+            when(response.getAuditInfo().getCreatedDate()).thenReturn(new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime()));
+            responseList.add(response);
+            count--;
+
+            // only one wds entry will have a valid url, so mark url to be an empty string for all but the first loop through
+            url = "";
+        }
+
+        return responseList;
     }
 }
 
