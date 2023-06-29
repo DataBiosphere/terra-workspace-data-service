@@ -11,9 +11,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 public class AzureBlobStorage implements BackUpFileStorage {
+    // TODO: we won't have access to a unique container name, move to workspaceid container with specific path
     private static String backUpContainerName = "backup";
     public AzureBlobStorage() {}
     @Override
@@ -32,6 +34,18 @@ public class AzureBlobStorage implements BackUpFileStorage {
             }
         } catch (IOException ioEx) {
             throw new LaunchProcessException("Error streaming output of child process", ioEx);
+        }
+    }
+    
+    @Override
+    public void streamInputFromBlobStorage(OutputStream toStream, String blobName) {
+        // TODO: remove this once connection is switched to be done via SAS token
+        String storageConnectionString = System.getenv("STORAGE_CONNECTION_STRING");
+        BlobContainerClient blobContainerClient = constructBlockBlobClient(backUpContainerName, storageConnectionString);
+        try (toStream) {
+            blobContainerClient.getBlobClient(blobName).downloadStream(toStream);
+        } catch (IOException ioEx) {
+            throw new LaunchProcessException("Error streaming input to child process", ioEx);  
         }
     }
 

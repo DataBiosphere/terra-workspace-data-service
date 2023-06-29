@@ -21,4 +21,17 @@ public class LocalFileStorage implements BackUpFileStorage {
             throw new LaunchProcessException("Error streaming output during local test", ioEx);
         }
     }
+
+    public void streamInputFromBlobStorage(OutputStream toStream, String blobName) {
+        try(InputStream inStream = LocalFileStorage.class.getResourceAsStream("/backup-test.sql")) {
+            try(BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(toStream, StandardCharsets.UTF_8))) {
+                int line;
+                while((line = inStream.read()) != -1) {
+                    bufferedWriter.write((line));
+                }
+            }
+        } catch (IOException ioEx) {
+            throw new LaunchProcessException("Error streaming input during local test", ioEx);
+        }
+    }
 }

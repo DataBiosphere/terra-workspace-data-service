@@ -10,13 +10,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest(properties = "spring.cache.type=NONE")
 public class BackupServiceIntegrationTest {
     @Autowired
-    private BackupService backupService;
+    private BackupRestoreService backupRestoreService;
 
     private LocalFileStorage storage = new LocalFileStorage();
 
     @Test
     void testBackupAzureWDS() throws Exception {
-        var response = backupService.backupAzureWDS(storage, "v0.2");
+        var response = backupRestoreService.backupAzureWDS(storage, "v0.2");
         assertTrue(response.backupStatus(), response.message());
     }
 }
