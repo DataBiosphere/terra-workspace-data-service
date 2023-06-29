@@ -18,7 +18,7 @@ public class LeonardoConfig {
         private static final Logger LOGGER = LoggerFactory.getLogger(LeonardoConfig.class);
 
         @Bean
-        public LeonardoClientFactory getWorkspaceDataServiceClientFactory() {
+        public LeonardoClientFactory getLeonardoClientFactory() {
                 LOGGER.info("Using leonardo url: '{}'", leonardoUrl);
                 return new HttpLeonardoClientFactory(leonardoUrl);
         }

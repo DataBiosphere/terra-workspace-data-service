@@ -14,22 +14,21 @@ import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRI
 import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
 public class HttpWorkspaceDataServiceClientFactory implements WorkspaceDataServiceClientFactory {
-    final String workspaceDataServiceUrl;
     private final Client commonHttpClient;
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpWorkspaceDataServiceClientFactory.class);
 
-    public HttpWorkspaceDataServiceClientFactory(String wdsUrl) {
-        this.workspaceDataServiceUrl = wdsUrl;
+    public HttpWorkspaceDataServiceClientFactory() {
         this.commonHttpClient = new bio.terra.workspace.client.ApiClient().getHttpClient();
     }
 
-    private ApiClient getApiClient(String token) {
+    private ApiClient getApiClient(String token, String workspaceDataServiceUrl) {
         // create a new client
         ApiClient apiClient = new ApiClient();
         apiClient.setHttpClient(commonHttpClient);
 
         // initialize the client with the url to data repo
         if (StringUtils.isNotBlank(workspaceDataServiceUrl)) {
+            LOGGER.info("Setting Wds endpoint url to: {}", workspaceDataServiceUrl);
             apiClient.setBasePath(workspaceDataServiceUrl);
         }
 
@@ -52,7 +51,7 @@ public class HttpWorkspaceDataServiceClientFactory implements WorkspaceDataServi
         return apiClient;
     }
 
-    public CloningApi getBackupClient(String token) {
-        return new CloningApi(getApiClient(token));
+    public CloningApi getBackupClient(String token, String wdsUrl) {
+        return new CloningApi(getApiClient(token, wdsUrl));
     }
 }

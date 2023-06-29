@@ -3,12 +3,8 @@ package org.databiosphere.workspacedataservice;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
-import org.databiosphere.workspacedataservice.leonardo.HttpLeonardoClientFactory;
-import org.databiosphere.workspacedataservice.leonardo.LeonardoClientFactory;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.service.model.BackupSchema;
-import org.databiosphere.workspacedataservice.sourcewds.HttpWorkspaceDataServiceClientFactory;
-import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceClientFactory;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +17,8 @@ public class InstanceInitializerBean {
 
     private final InstanceDao instanceDao;
     private final BackupDao backupDao;
+    private final LeonardoDao leoDao;
+    private WorkspaceDataServiceDao wdsDao;
 
     @Value("${twds.instance.workspace-id}")
     private String workspaceId;
@@ -36,9 +34,11 @@ public class InstanceInitializerBean {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceInitializerBean.class);
 
-    public InstanceInitializerBean(InstanceDao instanceDao, BackupDao backupDao){
+    public InstanceInitializerBean(InstanceDao instanceDao, BackupDao backupDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao){
         this.instanceDao = instanceDao;
         this.backupDao = backupDao;
+        this.leoDao = leoDao;
+        this.wdsDao = wdsDao;
     }
 
     public boolean isInCloneMode(String sourceWorkspaceId) {
@@ -84,15 +84,13 @@ public class InstanceInitializerBean {
 
         try {
             // first get source wds url based on source workspace id and the provided access token
-            LeonardoClientFactory leoFactory = new HttpLeonardoClientFactory(leoUrl);
-            LeonardoDao leoDao = new LeonardoDao(leoFactory, sourceWorkspaceId);
             var sourceWdsEndpoint = leoDao.getWdsEndpointUrl(startupToken);
 
             LOGGER.info("Retrieved source wds endpoint url {}", sourceWdsEndpoint);
 
-            // make the call to source wds to trigger back up
-            WorkspaceDataServiceClientFactory wdsfactory = new HttpWorkspaceDataServiceClientFactory(sourceWdsEndpoint);
-            WorkspaceDataServiceDao wdsDao = new WorkspaceDataServiceDao(wdsfactory);
+            // make the call to source wds to trigger back up, to do that set the source WDS dao endpoint
+            // url to the url retrieved from Leo
+            wdsDao.setWorkspaceDataServiceUrl(sourceWdsEndpoint);
 
             // check if our current workspace has already sent a request for backup for the source
             // if it did, no need to do it again
