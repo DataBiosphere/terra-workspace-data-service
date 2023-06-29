@@ -4,6 +4,7 @@ import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.storage.LocalFileStorage;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,15 +41,19 @@ public class RestoreServiceIntegrationTest {
     private String sourceWorkspaceId;
 
     private LocalFileStorage storage = new LocalFileStorage();
+    
+    @BeforeEach 
+    void beforeEach() { 
+        // clean up any instances left in the db 
+        List<UUID> allInstances = instanceDao.listInstanceSchemas(); 
+        allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId)); 
+    } 
 
     // this test references the file src/integrationTest/resources/backup-test.sql as its backup
     @Test
     void testRestoreAzureWDS() throws Exception {
         UUID sourceInstance = UUID.fromString(sourceWorkspaceId);
         UUID destInstance = UUID.fromString(workspaceId);
-
-        // clean database of workspace-id value created from autowire
-        instanceDao.dropSchema(destInstance);
         
         // confirm neither source nor destination instance should exist in our list of schemas to start
         List<UUID> instancesBefore = instanceDao.listInstanceSchemas();
