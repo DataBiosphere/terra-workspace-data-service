@@ -51,7 +51,7 @@ public class InstanceInitializerBean {
                     return false;
             }
 
-            if (sourceWorkspaceId == workspaceId) {
+            if (sourceWorkspaceId.equals(workspaceId)) {
                 LOGGER.warn("Source workspace id and current workspace Id can't be the same.");
                 return false;
             }
@@ -117,7 +117,7 @@ public class InstanceInitializerBean {
             LOGGER.info("Restore from the following path on the source workspace storage container: {}", backupFileName);
         }
         catch(Exception e){
-            LOGGER.error("An error occurred during clone mode. Will start with empty database. Error: {}", e);
+            LOGGER.error("An error occurred during clone mode. Will start with empty database. Error: {}", e.toString());
             backupDao.updateBackupRequestStatus(UUID.fromString(sourceWorkspaceId), BackupSchema.BackupState.ERROR);
         }
     }
