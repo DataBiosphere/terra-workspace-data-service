@@ -4,6 +4,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.LaunchProc
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 public class LocalFileStorage implements BackUpFileStorage {
     public LocalFileStorage() {}
@@ -38,7 +39,7 @@ public class LocalFileStorage implements BackUpFileStorage {
         try(InputStream inStream = LocalFileStorage.class.getResourceAsStream("/backup-test.sql")) {
             try(BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(toStream, StandardCharsets.UTF_8))) {
                 int line;
-                while((line = inStream.read()) != -1) {
+                while((line = Objects.requireNonNull(inStream).read()) != -1) {
                     bufferedWriter.write((line));
                 }
             }

@@ -29,7 +29,7 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 @Service
 public class BackupRestoreService {
     private final BackupDao backupDao;
-    private BackUpFileStorage storage;
+    private final BackUpFileStorage storage;
     private final InstanceDao instanceDao;
     private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
     private static final String BackupFileName = "backup.sql";
@@ -84,7 +84,8 @@ public class BackupRestoreService {
         try {
             validateVersion(version);
 
-            UUID requestorWorkspaceId = backupRequest.requestingWorkspaceId() == null ? UUID.fromString(workspaceId) : backupRequest.requestingWorkspaceId();
+            // if request did not specify which workspace asked for the backup, default to the current workspace
+            UUID requesterWorkspaceId = backupRequest.requestingWorkspaceId() == null ? UUID.fromString(workspaceId) : backupRequest.requestingWorkspaceId();
 
             // create an entry to track progress of this backup
             backupDao.createBackupEntry(trackingId, backupRequest);
@@ -99,7 +100,7 @@ public class BackupRestoreService {
 
             backupDao.updateBackupStatus(trackingId, JobStatus.STARTED);
             LOGGER.info("Starting streaming backup to storage.");
-            storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName, String.valueOf(requestorWorkspaceId));
+            storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName, String.valueOf(requesterWorkspaceId));
             String error = checkForError(localProcessLauncher);
 
             if (StringUtils.isNotBlank(error)) {

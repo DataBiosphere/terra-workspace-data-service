@@ -18,13 +18,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 @ActiveProfiles({"mock-storage", "local"})
 @ContextConfiguration(name = "mockStorage")
 @SpringBootTest
-@TestPropertySource(properties = {"twds.pg_dump.useAzureIdentity=false", "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000", "twds.instance.source-workspace-id=123e4567-e89b-12d3-a456-426614174000", "twds.pg_dump.host="})
+@TestPropertySource(properties = {
+        "twds.pg_dump.useAzureIdentity=false",
+        "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000",
+        "twds.instance.source-workspace-id=123e4567-e89b-12d3-a456-426614174001",
+        "twds.pg_dump.host="
+})
 public class BackupRestoreServiceFailureIntegrationTest {
     @Autowired
     private BackupRestoreService backupRestoreService;
-
-    @Value("${twds.instance.workspace-id}")
-    private String workspaceId;
 
     @Value("${twds.instance.source-workspace-id}")
     private String sourceWorkspaceId;
@@ -32,6 +34,7 @@ public class BackupRestoreServiceFailureIntegrationTest {
     @Test
     void testRestoreAzureWDSErrorHandling() {
         var response = backupRestoreService.restoreAzureWDS("v0.2");
+        // will fail because twds.pg_dump.host is blank
         assertFalse(response);
     }
 
@@ -40,6 +43,7 @@ public class BackupRestoreServiceFailureIntegrationTest {
         var trackingId = UUID.randomUUID();
         backupRestoreService.backupAzureWDS("v0.2", trackingId, new BackupRequest(UUID.fromString(sourceWorkspaceId), null));
         var response = backupRestoreService.checkBackupStatus(trackingId);
+        // will fail because twds.pg_dump.host is blank
         assertEquals(JobStatus.ERROR, response.getStatus());
     }
 }

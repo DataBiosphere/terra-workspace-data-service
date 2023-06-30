@@ -35,7 +35,7 @@ paths:
         - $ref: '#/components/parameters/versionPathParam'
       requestBody:
         $ref: '#/components/requestBodies/BackupRequestBody'
-      summary: Create a backup of all WDS Data
+      summary: Create a backup of all WDS data
       operationId: createBackup
       security:
         - bearerAuth: [ ]
@@ -53,7 +53,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/versionPathParam'
         - $ref: '#/components/parameters/trackingIdPathParam'
-      summary: Check status of a backup of a PostgreSQL instance
+      summary: Check status of a WDS data backup
       operationId: getBackupStatus
       security:
         - bearerAuth: [ ]
@@ -514,14 +514,6 @@ components:
       schema:
         type: string
         default: v0.2
-    requestorWorkspacePathParam:
-      name: requestorWorkspaceId
-      in: path
-      description: Cloning source workspace Id
-      required: true
-      schema:
-        type: string
-        format: uuid
     snapshotIdPathParam:
       name: snapshotid
       in: path
@@ -893,18 +885,16 @@ components:
     BackupResponse:
       type: object
       properties:
-        backupStatus:
-          type: boolean
-          description: status of backup
-        state:
-          type: string
-          description: backup status
         filename:
           type: string
           description: backup location
-        message:
+        requester:
           type: string
-          description: message regarding backup status
+          format: uuid
+          description: workspace which initiated the backup
+        description:
+          type: string
+          description: description of this backup
     build:
       type: object
       properties:

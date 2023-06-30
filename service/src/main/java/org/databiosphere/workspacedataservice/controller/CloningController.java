@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.controller;
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
-import org.databiosphere.workspacedataservice.shared.model.BackupTrackingResponse;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

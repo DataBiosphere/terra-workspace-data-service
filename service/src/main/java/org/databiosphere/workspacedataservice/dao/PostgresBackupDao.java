@@ -37,9 +37,9 @@ public class PostgresBackupDao implements BackupDao {
         try {
             MapSqlParameterSource params = new MapSqlParameterSource("trackingId", trackingId);
             return namedTemplate.query(
-                    "select id, status, error, createdtime, updatedtime, requester, filename, description from sys_wds.backup WHERE id = :trackingId", params, new BackupJobRowMapper()).get(0);
-        }
-        catch(Exception e) {
+                    "select id, status, error, createdtime, updatedtime, requester, filename, description from sys_wds.backup WHERE id = :trackingId",
+                    params, new BackupJobRowMapper()).get(0);
+        } catch (Exception e) {
             LOGGER.error("Unable to insert record into sys_wds.backup due to error {}.", e.getMessage());
             return null;
         }
@@ -63,7 +63,6 @@ public class PostgresBackupDao implements BackupDao {
     @Override
     @WriteTransaction
     public void updateBackupStatus(UUID trackingId, JobStatus status) {
-        // TODO need to also update completed time (if this is for completed or error backups)
         namedTemplate.getJdbcTemplate().update("update sys_wds.backup SET status = ?, updatedtime = ? where id = ?",
                 status.toString(), Timestamp.from(Instant.now()), trackingId);
         LOGGER.info("Backup request job is now {}", status);
@@ -86,7 +85,7 @@ public class PostgresBackupDao implements BackupDao {
         namedTemplate.getJdbcTemplate().update("update sys_wds.backup SET filename = ? where id = ?", filename, trackingId);
     }
 
-    // rowmapper for retrieving BackupSchema objects from the db
+    // rowmapper for retrieving Job<BackupResponse> objects from the db
     private static class BackupJobRowMapper implements RowMapper<Job<BackupResponse>> {
         @Override
         public Job<BackupResponse> mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -101,9 +100,7 @@ public class PostgresBackupDao implements BackupDao {
             LocalDateTime created = rs.getTimestamp("createdtime").toLocalDateTime();
             LocalDateTime updated = rs.getTimestamp("updatedtime").toLocalDateTime();
 
-
             return new Job<>(jobId, status, errorMessage, created, updated, backupResponse);
-
         }
     }
 }
