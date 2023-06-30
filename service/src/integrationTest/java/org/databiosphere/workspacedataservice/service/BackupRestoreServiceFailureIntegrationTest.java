@@ -1,31 +1,45 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
-import org.databiosphere.workspacedataservice.storage.LocalFileStorage;
+import org.databiosphere.workspacedataservice.service.model.BackupSchema;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+@ActiveProfiles({"mock-storage", "local"})
+@ContextConfiguration(name = "mockStorage")
 @SpringBootTest
-@TestPropertySource(properties = {"twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000", "twds.instance.source-workspace-id=123e4567-e89b-12d3-a456-426614174000", "twds.pg_dump.host="})
+@TestPropertySource(properties = {"twds.pg_dump.useAzureIdentity=false", "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000", "twds.instance.source-workspace-id=123e4567-e89b-12d3-a456-426614174000", "twds.pg_dump.host="})
 public class BackupRestoreServiceFailureIntegrationTest {
     @Autowired
     private BackupRestoreService backupRestoreService;
 
-    private LocalFileStorage storage = new LocalFileStorage();
+    @Value("${twds.instance.workspace-id}")
+    private String workspaceId;
+
+    @Value("${twds.instance.source-workspace-id}")
+    private String sourceWorkspaceId;
 
     @Test
     void testRestoreAzureWDSErrorHandling() {
-        var response = backupRestoreService.restoreAzureWDS(storage, "v0.2");
+        var response = backupRestoreService.restoreAzureWDS("v0.2");
         assertFalse(response);
     }
-    
+
     @Test
-    void testBackupAzureWDSErrorHandling() {
-        BackupResponse response = backupRestoreService.backupAzureWDS(storage, "v0.2");
-        assertFalse(response.backupStatus());
+    void testBackupAzureWDS() {
+        var trackingId = UUID.randomUUID();
+        backupRestoreService.backupAzureWDS("v0.2", trackingId, UUID.fromString(sourceWorkspaceId));
+        var response = backupRestoreService.checkBackupStatus(trackingId);
+        assertEquals(true, response.backupStatus());
+        assertEquals(BackupSchema.BackupState.ERROR.toString(), response.state());
     }
 }

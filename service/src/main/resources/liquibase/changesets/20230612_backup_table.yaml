@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20230612_backup_schema
+      author: yuliadub
+      changes:
+        - createTable:
+            schemaName: sys_wds
+            tableName: backup
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: status
+                  type: varchar(10)
+              - column:
+                  name: error
+                  type: varchar(2000)
+              - column:
+                  name: createdtime
+                  type: datetime
+              - column:
+                  name: completedtime
+                  type: datetime
+              - column:
+                  name: filename
+                  type: varchar(255)

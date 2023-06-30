@@ -27,23 +27,50 @@ tags:
   - name: Snapshots
     description: Snapshot APIs
 paths:
-  /backup/{v}:
+  /backup/{v}/{requestorWorkspaceId}:
     post:
       tags:
         - Cloning
       parameters:
         - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/requestorWorkspacePathParam'
       summary: Create a backup of a PostgreSQL instance and upload it to Azure Blob Storage
       operationId: createBackup
+      security:
+        - bearerAuth: [ ]
       responses:
         200:
           description: Successfully initiated the backup process
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BackupResponse'
+                $ref: '#/components/schemas/BackupTrackingResponse'
         400:
           description: Something failed during backup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupTrackingResponse'
+  /backup/{v}/status/{trackingId}:
+    get:
+      tags:
+        - Cloning
+      parameters:
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/trackingIdPathParam'
+      summary: Check status of a backup of a PostgreSQL instance
+      operationId: getBackupStatus
+      security:
+        - bearerAuth: [ ]
+      responses:
+        200:
+          description: Returns backup status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupResponse'
+        400:
+          description: Something failed during backup status check
           content:
             application/json:
               schema:
@@ -498,10 +525,26 @@ components:
       schema:
         type: string
         default: v0.2
+    requestorWorkspacePathParam:
+      name: requestorWorkspaceId
+      in: path
+      description: Cloning source workspace Id
+      required: true
+      schema:
+        type: string
+        format: uuid
     snapshotIdPathParam:
       name: snapshotid
       in: path
       description: snapshot id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    trackingIdPathParam:
+      name: trackingId
+      in: path
+      description: Backup tracking id
       required: true
       schema:
         type: string
@@ -817,9 +860,22 @@ components:
         backupStatus:
           type: boolean
           description: status of backup
+        state:
+          type: string
+          description: backup status
+        filename:
+          type: string
+          description: backup location
         message:
           type: string
           description: message regarding backup status
+    BackupTrackingResponse:
+      type: object
+      properties:
+        trackingId:
+          type: string
+          format: uuid
+          description: backup status
     build:
       type: object
       properties:
@@ -837,10 +893,10 @@ components:
     git:
       type: object
       properties:
-          branch:
-            type: string
-          commit:
-            $ref: '#/components/schemas/commit'
+        branch:
+          type: string
+        commit:
+          $ref: '#/components/schemas/commit'
     commit:
       type: object
       properties:
@@ -852,16 +908,16 @@ components:
     components:
       type: object
       properties:
-         db:
-           $ref: '#/components/schemas/dbComponent'
-         diskSpace:
-           $ref: '#/components/schemas/diskSpaceComponent'
-         ping:
-           $ref: '#/components/schemas/component'
-         mainDb:
-           $ref: '#/components/schemas/dbValidationcomponent'
-         streamingDs:
-           $ref: '#/components/schemas/dbValidationcomponent'
+        db:
+          $ref: '#/components/schemas/dbComponent'
+        diskSpace:
+          $ref: '#/components/schemas/diskSpaceComponent'
+        ping:
+          $ref: '#/components/schemas/component'
+        mainDb:
+          $ref: '#/components/schemas/dbValidationcomponent'
+        streamingDs:
+          $ref: '#/components/schemas/dbValidationcomponent'
     component:
       type: object
       properties:
@@ -882,7 +938,7 @@ components:
         status:
           type: string
         details:
-          $ref: '#/components/schemas/diskSpaceComponentDetails'         
+          $ref: '#/components/schemas/diskSpaceComponentDetails'
     diskSpaceComponentDetails:
       type: object
       properties:
