@@ -16,7 +16,7 @@ public class BackupSchema {
 
     private UUID id;
     private Timestamp createdtime;
-    private Timestamp completedtime;
+    private Timestamp updatedtime;
     private BackupState state;
     private String error;
     private String filename;
@@ -33,7 +33,7 @@ public class BackupSchema {
 
     public UUID getId() { return id; }
     public Timestamp getCreatedtime() { return createdtime; }
-    public Timestamp getCompletedtime() { return completedtime; }
+    public Timestamp getUpdatedtime() { return updatedtime; }
     public BackupState getState() { return state; }
     public String getError() { return error; }
     public String getFilename() { return filename; }
@@ -42,9 +42,4 @@ public class BackupSchema {
     public void setFileName(String filename) { this.filename = filename; }
     public void setError(String error) { this.error = error; }
     public void setId(UUID id) { this.id = id; }
-
-    public void setCompletedtime() {
-        Date currentDate = new Date();
-        this.completedtime = new Timestamp(currentDate.getTime());
-    }
 }

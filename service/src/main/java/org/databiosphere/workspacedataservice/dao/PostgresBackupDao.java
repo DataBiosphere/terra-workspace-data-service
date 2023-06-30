@@ -11,6 +11,8 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.UUID;
 
 @Repository
@@ -29,7 +31,7 @@ public class PostgresBackupDao implements BackupDao {
         try {
             MapSqlParameterSource params = new MapSqlParameterSource("trackingId", trackingId);
             return namedTemplate.query(
-                    "select id, status, createdtime, completedtime, error, filename from sys_wds.backup WHERE id = :trackingId", params, new BackupSchemaRowMapper()).get(0);
+                    "select id, status, createdtime, updatedtime, error, filename from sys_wds.backup WHERE id = :trackingId", params, new BackupSchemaRowMapper()).get(0);
         }
         catch(Exception e) {
             LOGGER.error("Unable to insert record into sys_wds.backup due to error {}.", e.getMessage());
@@ -48,15 +50,16 @@ public class PostgresBackupDao implements BackupDao {
     @WriteTransaction
     public void createBackupEntry(UUID trackingId) {
         BackupSchema schema = new BackupSchema(trackingId);
-        namedTemplate.getJdbcTemplate().update("insert into sys_wds.backup(id, status, createdtime, completedtime, error) " +
-                "values (?,?,?,?,?)", schema.getId(), String.valueOf(schema.getState()), schema.getCreatedtime(), schema.getCompletedtime(), schema.getError());
+        namedTemplate.getJdbcTemplate().update("insert into sys_wds.backup(id, status, createdtime, updatedtime, error) " +
+                "values (?,?,?,?,?)", schema.getId(), String.valueOf(schema.getState()), schema.getCreatedtime(), schema.getUpdatedtime(), schema.getError());
     }
 
     @Override
     @WriteTransaction
     public void updateBackupStatus(UUID trackingId, BackupSchema.BackupState status) {
         // TODO need to also update completed time (if this is for completed or error backups)
-        namedTemplate.getJdbcTemplate().update("update sys_wds.backup SET status = ? where id = ?", status.toString(), trackingId);
+        namedTemplate.getJdbcTemplate().update("update sys_wds.backup SET status = ?, updatedtime = ? where id = ?",
+                status.toString(), Timestamp.from(Instant.now()), trackingId);
         LOGGER.info("Backup request job is now {}", status);
     }
 
