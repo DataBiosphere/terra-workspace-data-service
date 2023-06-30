@@ -92,7 +92,7 @@ public class BackupRestoreService {
             UUID requestorWorkspaceId = backupRequest.requestingWorkspaceId() == null ? UUID.fromString(workspaceId) : backupRequest.requestingWorkspaceId();
 
             // create an entry to track progress of this backup
-            backupDao.createBackupEntry(trackingId);
+            backupDao.createBackupEntry(trackingId, backupRequest);
 
             String blobName = generateBackupFilename();
 
@@ -109,7 +109,7 @@ public class BackupRestoreService {
 
             if (StringUtils.isNotBlank(error)) {
                 LOGGER.error("process error: {}", error);
-                backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.ERROR);
+                backupDao.saveBackupError(trackingId, error);
             }
             else {
                 // if no errors happen and code reaches here, the backup has been completed successfully
@@ -117,9 +117,9 @@ public class BackupRestoreService {
                 backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.COMPLETED);
             }
         }
-        catch (LaunchProcessException | PSQLException ex) {
+        catch (Exception ex) {
             LOGGER.error("Process error: {}", ex.getMessage());
-            backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.ERROR);
+            backupDao.saveBackupError(trackingId, ex.getMessage());
         }
     }
 

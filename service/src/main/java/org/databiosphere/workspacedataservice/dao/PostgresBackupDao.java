@@ -1,7 +1,9 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import bio.terra.common.db.WriteTransaction;
+import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.BackupSchema;
+import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.RowMapper;
@@ -9,6 +11,7 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import javax.annotation.Nullable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -31,7 +34,7 @@ public class PostgresBackupDao implements BackupDao {
         try {
             MapSqlParameterSource params = new MapSqlParameterSource("trackingId", trackingId);
             return namedTemplate.query(
-                    "select id, status, createdtime, updatedtime, error, filename from sys_wds.backup WHERE id = :trackingId", params, new BackupSchemaRowMapper()).get(0);
+                    "select id, status, error, createdtime, updatedtime, requester, filename, description from sys_wds.backup WHERE id = :trackingId", params, new BackupSchemaRowMapper()).get(0);
         }
         catch(Exception e) {
             LOGGER.error("Unable to insert record into sys_wds.backup due to error {}.", e.getMessage());
@@ -48,10 +51,10 @@ public class PostgresBackupDao implements BackupDao {
 
     @Override
     @WriteTransaction
-    public void createBackupEntry(UUID trackingId) {
-        BackupSchema schema = new BackupSchema(trackingId);
-        namedTemplate.getJdbcTemplate().update("insert into sys_wds.backup(id, status, createdtime, updatedtime, error) " +
-                "values (?,?,?,?,?)", schema.getId(), String.valueOf(schema.getState()), schema.getCreatedtime(), schema.getUpdatedtime(), schema.getError());
+    public void createBackupEntry(UUID trackingId, BackupRequest backupRequest) {
+        BackupSchema schema = new BackupSchema(trackingId, backupRequest);
+        namedTemplate.getJdbcTemplate().update("insert into sys_wds.backup(id, status, createdtime, updatedtime, requester, description) " +
+                "values (?,?,?,?,?,?)", schema.getId(), String.valueOf(schema.getState()), schema.getCreatedtime(), schema.getUpdatedtime(), schema.getRequester(), schema.getDescription());
     }
 
     @Override
@@ -65,6 +68,17 @@ public class PostgresBackupDao implements BackupDao {
 
     @Override
     @WriteTransaction
+    public void saveBackupError(UUID trackingId, String error) {
+
+        namedTemplate.getJdbcTemplate().update("update sys_wds.backup SET error = ? where id = ?",
+                StringUtils.abbreviate(error, 2000), trackingId);
+        // because saveBackupError is annotated with @WriteTransaction, we can ignore IntelliJ warnings about
+        // self-invocation of transactions on the following line:
+        updateBackupStatus(trackingId, BackupSchema.BackupState.ERROR);
+    }
+
+    @Override
+    @WriteTransaction
     public void updateFilename(UUID trackingId, String filename) {
         namedTemplate.getJdbcTemplate().update("update sys_wds.backup SET filename = ? where id = ?", filename, trackingId);
     }
@@ -74,10 +88,14 @@ public class PostgresBackupDao implements BackupDao {
         @Override
         public BackupSchema mapRow(ResultSet rs, int rowNum) throws SQLException {
             BackupSchema backup = new BackupSchema();
-            backup.setError(rs.getString("error"));
-            backup.setState(BackupSchema.BackupState.valueOf(rs.getString("status")));
-            backup.setFileName(rs.getString("fileName"));
             backup.setId(UUID.fromString(rs.getString("id")));
+            backup.setState(BackupSchema.BackupState.valueOf(rs.getString("status")));
+            backup.setError(rs.getString("error"));
+            backup.setCreatedtime(rs.getTimestamp("createdtime"));
+            backup.setUpdatedtime(rs.getTimestamp("updatedtime"));
+            backup.setRequester(UUID.fromString(rs.getString("requester")));
+            backup.setFileName(rs.getString("fileName"));
+            backup.setDescription(rs.getString("description"));
             return backup;
         }
     }
