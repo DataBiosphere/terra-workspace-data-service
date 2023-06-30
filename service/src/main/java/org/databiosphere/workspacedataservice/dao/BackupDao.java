@@ -13,7 +13,7 @@ public interface BackupDao {
 
     void createBackupEntry(UUID trackingId);
 
-    void updateBackupStatus(UUID trackingId, String status);
+    void updateBackupStatus(UUID trackingId, BackupSchema.BackupState status);
 
     void updateBackupRequestStatus(UUID sourceWorkspaceId, BackupSchema.BackupState status);
 

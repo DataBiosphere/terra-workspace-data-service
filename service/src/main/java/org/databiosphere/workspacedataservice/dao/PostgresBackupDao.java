@@ -73,9 +73,10 @@ public class PostgresBackupDao implements BackupDao {
 
     @Override
     @WriteTransaction
-    public void updateBackupStatus(UUID trackingId, String status) {
+    public void updateBackupStatus(UUID trackingId, BackupSchema.BackupState status) {
         // TODO need to also update completed time (if this is for completed or error backups)
-        namedTemplate.getJdbcTemplate().update("update sys_wds.backup SET status = ? where id = ?", status, trackingId);
+        namedTemplate.getJdbcTemplate().update("update sys_wds.backup SET status = ? where id = ?", status.toString(), trackingId);
+        LOGGER.info("Backup request job is now {}", status);
     }
 
     @Override
@@ -83,6 +84,7 @@ public class PostgresBackupDao implements BackupDao {
     public void updateBackupRequestStatus(UUID sourceWorkspaceId, BackupSchema.BackupState status) {
         // TODO need to also update completed time (if this is for completed or error backups)
         namedTemplate.getJdbcTemplate().update("update sys_wds.backup_requests SET status = ? where sourceworkspaceid = ?", status.toString(), sourceWorkspaceId);
+        LOGGER.info("Backup request job is now {}", status);
     }
 
     @Override

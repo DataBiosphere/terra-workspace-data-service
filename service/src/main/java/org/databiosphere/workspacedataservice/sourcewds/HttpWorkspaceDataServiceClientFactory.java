@@ -26,7 +26,7 @@ public class HttpWorkspaceDataServiceClientFactory implements WorkspaceDataServi
         ApiClient apiClient = new ApiClient();
         apiClient.setHttpClient(commonHttpClient);
 
-        // initialize the client with the url to data repo
+        // initialize the client with the url to wds endpoint
         if (StringUtils.isNotBlank(workspaceDataServiceUrl)) {
             LOGGER.info("Setting Wds endpoint url to: {}", workspaceDataServiceUrl);
             apiClient.setBasePath(workspaceDataServiceUrl);

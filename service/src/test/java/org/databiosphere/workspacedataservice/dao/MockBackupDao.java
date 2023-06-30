@@ -47,10 +47,10 @@ public class MockBackupDao implements BackupDao {
     }
 
     @Override
-    public void updateBackupStatus(UUID trackingId, String status) {
+    public void updateBackupStatus(UUID trackingId, BackupSchema.BackupState status) {
         BackupSchema backup = getBackupStatus(trackingId);
         backups.remove(backup);
-        backup.setState(BackupSchema.BackupState.valueOf(status));
+        backup.setState(status);
         backups.add(backup);
     }
 

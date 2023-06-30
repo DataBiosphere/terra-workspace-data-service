@@ -101,26 +101,26 @@ public class BackupRestoreService {
             LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
             localProcessLauncher.launchProcess(commandList, envVars);
 
-            backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.STARTED.toString());
+            backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.STARTED);
             LOGGER.info("Starting streaming backup to storage.");
             storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName, String.valueOf(requestorWorkspaceId));
             String error = checkForError(localProcessLauncher);
 
             if (StringUtils.isNotBlank(error)) {
                 LOGGER.error("process error: {}", error);
-                backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.ERROR.toString());
+                backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.ERROR);
                 backupDao.updateBackupRequestStatus(UUID.fromString(workspaceId), BackupSchema.BackupState.ERROR);
             }
             else {
                 // if no errors happen and code reaches here, the backup has been completed successfully
                 backupDao.updateFilename(trackingId, blobName);
-                backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.COMPLETED.toString());
+                backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.COMPLETED);
                 backupDao.updateBackupRequestStatus(UUID.fromString(workspaceId), BackupSchema.BackupState.COMPLETED);
             }
         }
         catch (LaunchProcessException | PSQLException ex) {
             LOGGER.error("Process error: {}", ex.getMessage());
-            backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.ERROR.toString());
+            backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.ERROR);
             backupDao.updateBackupRequestStatus(UUID.fromString(workspaceId), BackupSchema.BackupState.ERROR);
         }
     }

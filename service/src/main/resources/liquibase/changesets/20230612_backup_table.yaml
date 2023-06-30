@@ -17,7 +17,7 @@ databaseChangeLog:
                   type: varchar(10)
               - column:
                   name: error
-                  type: varchar(255)
+                  type: varchar(2000)
               - column:
                   name: createdtime
                   type: datetime
@@ -26,4 +26,4 @@ databaseChangeLog:
                   type: datetime
               - column:
                   name: filename
-                  type: varchar(255)                  
+                  type: varchar(255)

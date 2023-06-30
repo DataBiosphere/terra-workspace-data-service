@@ -9,7 +9,7 @@ public class LocalFileStorage implements BackUpFileStorage {
     public LocalFileStorage() {}
 
     public void streamOutputToBlobStorage(InputStream fromStream, String blobName, String workspaceId) {
-        File targetFile = new File(blobName);
+        File targetFile = new File("backup-test.sql");
         try(OutputStream outStream = new FileOutputStream(targetFile)) {
             try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(fromStream, StandardCharsets.UTF_8))) {
                 int line;

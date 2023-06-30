@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice;
 
-import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.MockBackupDao;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
@@ -32,8 +31,6 @@ class InstanceInitializerBeanTest {
     InstanceInitializerBean instanceInitializerBean;
     @SpyBean
     InstanceDao instanceDao;
-    @SpyBean
-    BackupDao backupDao;
 
     @Value("${twds.instance.workspace-id}")
     String workspaceId;

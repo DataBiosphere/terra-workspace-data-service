@@ -33,7 +33,7 @@ public class HttpLeonardoClientFactory implements LeonardoClientFactory {
         ApiClient apiClient = new ApiClient();
         apiClient.setHttpClient(commonHttpClient);
 
-        // initialize the client with the url to data repo
+        // initialize the client with the url to leo endpoint
         if (StringUtils.isNotBlank(leoEndpointUrl)) {
             apiClient.setBasePath(leoEndpointUrl);
         }
