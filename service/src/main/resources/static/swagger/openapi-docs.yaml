@@ -945,9 +945,9 @@ components:
         total:
           type: string
         free:
-          type: float
+          type: number
         threshold:
-          type: float
+          type: number
         exists:
           type: boolean
     dbValidationcomponent:
