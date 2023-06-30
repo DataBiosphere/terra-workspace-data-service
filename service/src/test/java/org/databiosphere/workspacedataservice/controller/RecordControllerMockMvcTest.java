@@ -371,6 +371,36 @@ class RecordControllerMockMvcTest {
 
 	@Test
 	@Transactional
+	void tsvWithTrailingTabs() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "trailing_tabs.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"col1\tcol2\t\t\t\nfoo\tbar\n".getBytes());
+
+		MvcResult mvcResult = mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "duplicate-rowids")
+				.file(file)).andExpect(status().isBadRequest()).andReturn();
+
+		Exception e = mvcResult.getResolvedException();
+		assertNotNull(e, "expected an InvalidTsvException");
+		assertEquals("TSV headers contain unexpected whitespace. "
+					+ "Please delete the whitespace and resubmit.", e.getMessage());
+	}
+
+	@Test
+	@Transactional
+	void tsvWithBlankHeader() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("records", "blank_header.tsv", MediaType.TEXT_PLAIN_VALUE,
+				"col1\t\t\nfoo\tbar\n".getBytes());
+
+		MvcResult mvcResult = mockMvc.perform(multipart("/{instanceId}/tsv/{version}/{recordType}", instanceId, versionId, "duplicate-rowids")
+				.file(file)).andExpect(status().isBadRequest()).andReturn();
+
+		Exception e = mvcResult.getResolvedException();
+		assertNotNull(e, "expected an InvalidTsvException");
+		assertEquals("TSV headers contain unexpected whitespace. "
+					+ "Please delete the whitespace and resubmit.", e.getMessage());
+	}
+
+	@Test
+	@Transactional
 	void tsvWithNullHeader() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("records", "null_header.tsv", MediaType.TEXT_PLAIN_VALUE,
 				"""

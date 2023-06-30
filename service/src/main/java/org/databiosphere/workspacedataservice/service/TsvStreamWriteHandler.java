@@ -57,8 +57,12 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 			colNames = StreamSupport.stream(actualSchema.spliterator(), false)
 					.map(CsvSchema.Column::getName)
 					.toList();
-
-			if (colNames.stream().anyMatch(col -> Collections.frequency(colNames, col) > 1 && !col.isBlank())) {
+			// any blank headers or trailing tabs is considered malformed 
+			if(colNames.stream().anyMatch(col -> col.isBlank())) {
+				throw new InvalidTsvException("TSV headers contain unexpected whitespace. "
+					+ "Please delete the whitespace and resubmit.");
+			}
+			else if (colNames.stream().anyMatch(col -> Collections.frequency(colNames, col) > 1)) {
 				throw new InvalidTsvException("TSV contains duplicate column names. "
 					+ "Please use distinct column names to prevent overwriting data");
 			}
