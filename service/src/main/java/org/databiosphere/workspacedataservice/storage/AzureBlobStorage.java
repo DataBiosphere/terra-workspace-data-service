@@ -15,10 +15,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 @Configuration
 public class AzureBlobStorage implements BackUpFileStorage {
+
     private final WorkspaceManagerDao workspaceManagerDao;
 
     public AzureBlobStorage(WorkspaceManagerDao workspaceManagerDao) {
@@ -53,6 +55,16 @@ public class AzureBlobStorage implements BackUpFileStorage {
             }
         } catch (IOException ioEx) {
             throw new LaunchProcessException("Error streaming output of child process", ioEx);
+        }
+    }
+    
+    @Override
+    public void streamInputFromBlobStorage(OutputStream toStream, String blobName, String workspaceId) {
+        BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId);
+        try (toStream) {
+            blobContainerClient.getBlobClient(blobName).downloadStream(toStream);
+        } catch (IOException ioEx) {
+            throw new LaunchProcessException("Error streaming input to child process", ioEx);  
         }
     }
 

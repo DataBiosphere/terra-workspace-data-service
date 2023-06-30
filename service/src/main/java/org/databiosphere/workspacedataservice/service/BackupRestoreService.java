@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticationPlugin;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.dao.BackupDao;
+import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import org.databiosphere.workspacedataservice.service.model.BackupSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
@@ -13,6 +14,7 @@ import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -22,13 +24,18 @@ import java.util.*;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 
 @Service
-public class BackupService {
+public class BackupRestoreService {
     private final BackupDao backupDao;
     private BackUpFileStorage storage;
-    private static final Logger LOGGER = LoggerFactory.getLogger(BackupService.class);
+    private final InstanceDao instanceDao;
+    private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
+    private static final String BackupFileName = "backup.sql";
 
     @Value("${twds.instance.workspace-id:}")
     private String workspaceId;
+
+    @Value("${twds.instance.source-workspace-id:}")
+    private String sourceWorkspaceId;
 
     @Value("${twds.pg_dump.user:}")
     private String dbUser;
@@ -48,11 +55,15 @@ public class BackupService {
     @Value("${twds.pg_dump.path:}")
     private String pgDumpPath;
 
+    @Value("${twds.pg_dump.psqlPath:}")
+    private String psqlPath;
+
     @Value("${twds.pg_dump.useAzureIdentity:}")
     private boolean useAzureIdentity;
 
-    public BackupService(BackupDao backupDao, BackUpFileStorage backUpFileStorage) {
+    public BackupRestoreService(BackupDao backupDao, InstanceDao instanceDao, BackUpFileStorage backUpFileStorage) {
         this.backupDao = backupDao;
+        this.instanceDao = instanceDao;
         this.storage = backUpFileStorage;
     }
 
@@ -82,10 +93,9 @@ public class BackupService {
 
             // create an entry to track who requested this backup
             backupDao.createBackupRequestsEntry(requestorWorkspaceId, UUID.fromString(workspaceId));
+            String blobName = generateBackupFilename();
 
-            String blobName = GenerateBackupFilename();
-
-            List<String> commandList = GenerateCommandList();
+            List<String> commandList = generateCommandList(true);
             Map<String, String> envVars = Map.of("PGPASSWORD", determinePassword());
 
             LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
@@ -93,25 +103,55 @@ public class BackupService {
 
             backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.STARTED.toString());
             LOGGER.info("Starting streaming backup to storage.");
-            storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName, workspaceId);
-            String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
-            int exitCode = localProcessLauncher.waitForTerminate();
+            storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName, String.valueOf(requestorWorkspaceId));
+            String error = checkForError(localProcessLauncher);
 
-            if (exitCode != 0 && StringUtils.isNotBlank(error)) {
+            if (StringUtils.isNotBlank(error)) {
                 LOGGER.error("process error: {}", error);
                 backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.ERROR.toString());
                 backupDao.updateBackupRequestStatus(UUID.fromString(workspaceId), BackupSchema.BackupState.ERROR);
             }
-
-            // if no errors happen and code reaches here, the backup has been completed successfully
-            backupDao.updateFilename(trackingId, blobName);
-            backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.COMPLETED.toString());
-            backupDao.updateBackupRequestStatus(UUID.fromString(workspaceId), BackupSchema.BackupState.COMPLETED);
+            else {
+                // if no errors happen and code reaches here, the backup has been completed successfully
+                backupDao.updateFilename(trackingId, blobName);
+                backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.COMPLETED.toString());
+                backupDao.updateBackupRequestStatus(UUID.fromString(workspaceId), BackupSchema.BackupState.COMPLETED);
+            }
         }
         catch (LaunchProcessException | PSQLException ex) {
             LOGGER.error("Process error: {}", ex.getMessage());
             backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.ERROR.toString());
             backupDao.updateBackupRequestStatus(UUID.fromString(workspaceId), BackupSchema.BackupState.ERROR);
+        }
+    }
+
+    public boolean restoreAzureWDS(String version) {
+        validateVersion(version);
+        try {
+            // restore pgdump
+            List<String> commandList = generateCommandList(false);
+            Map<String, String> envVars = Map.of("PGPASSWORD", determinePassword());
+
+            LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
+            localProcessLauncher.launchProcess(commandList, envVars);
+
+            // grab blob from storage
+            storage.streamInputFromBlobStorage(localProcessLauncher.getOutputStream(), BackupFileName, workspaceId);
+
+            String error = checkForError(localProcessLauncher);
+            if (StringUtils.isNotBlank(error)) {
+                return false;
+                //throw new LaunchProcessException(error);
+            }
+
+            // rename workspace schema from source to dest
+            instanceDao.alterSchema(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId));
+
+            return true;
+        } 
+        catch (LaunchProcessException | PSQLException | DataAccessException ex){
+            return false;
+            //throw new LaunchProcessException(ex.getMessage());
         }
     }
 
@@ -124,9 +164,10 @@ public class BackupService {
         }
     }
 
-    public List<String> GenerateCommandList() {
+    // Same args, different command depending on whether we're doing backup or restore.
+    public List<String> generateCommandList(boolean isBackup) {
         Map<String, String> command = new LinkedHashMap<>();
-        command.put(pgDumpPath, null);
+        command.put(isBackup ? pgDumpPath : psqlPath, null);
         command.put("-h", dbHost);
         command.put("-p", dbPort);
         command.put("-U", dbUser);
@@ -145,11 +186,21 @@ public class BackupService {
         return commandList;
     }
 
-    public String GenerateBackupFilename() {
+    public String generateBackupFilename() {
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
         String timestamp = now.format(formatter);
         return "wdsservice/cloning/backup/" + workspaceId + "-" + timestamp + ".sql";
+    }
+
+    private String checkForError(LocalProcessLauncher localProcessLauncher) {
+        String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
+        int exitCode = localProcessLauncher.waitForTerminate();
+        if (exitCode != 0 && StringUtils.isNotBlank(error)) {
+            LOGGER.error("process error: {}", error);
+            return error;
+        }
+        return "";
     }
 }
 

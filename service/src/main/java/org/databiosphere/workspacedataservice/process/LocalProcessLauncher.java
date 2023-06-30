@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
@@ -104,5 +105,10 @@ public class LocalProcessLauncher {
     /** Get stdout input stream from the child process. */
     public InputStream getInputStream() {
         return process.getInputStream();
+    }
+
+    /** Get stdin output stream from the child process. */
+    public OutputStream getOutputStream() {
+        return process.getOutputStream();
     }
 }
