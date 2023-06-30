@@ -35,7 +35,7 @@ class BackupServiceIntegrationTest {
         backupRestoreService.backupAzureWDS("v0.2", trackingId, new BackupRequest(sourceWorkspaceId, null));
 
         var response = backupRestoreService.checkBackupStatus(trackingId);
-        assertEquals(JobStatus.COMPLETED, response.getStatus());
+        assertEquals(JobStatus.SUCCEEDED, response.getStatus());
 
         var backupRecord = backupDao.getBackupStatus(trackingId);
         assertNotNull(backupRecord);

@@ -98,7 +98,7 @@ public class BackupRestoreService {
             LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
             localProcessLauncher.launchProcess(commandList, envVars);
 
-            backupDao.updateBackupStatus(trackingId, JobStatus.STARTED);
+            backupDao.updateBackupStatus(trackingId, JobStatus.RUNNING);
             LOGGER.info("Starting streaming backup to storage.");
             storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName, String.valueOf(requesterWorkspaceId));
             String error = checkForError(localProcessLauncher);
@@ -110,7 +110,7 @@ public class BackupRestoreService {
             else {
                 // if no errors happen and code reaches here, the backup has been completed successfully
                 backupDao.updateFilename(trackingId, blobName);
-                backupDao.updateBackupStatus(trackingId, JobStatus.COMPLETED);
+                backupDao.updateBackupStatus(trackingId, JobStatus.SUCCEEDED);
             }
         }
         catch (Exception ex) {

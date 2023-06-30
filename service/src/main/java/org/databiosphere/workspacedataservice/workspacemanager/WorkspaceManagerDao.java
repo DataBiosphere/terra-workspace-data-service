@@ -52,6 +52,7 @@ public class WorkspaceManagerDao {
   /**
    Retrieves the azure storage container url and sas token for a given workspace.
    */
+  // TODO: consider implementing retries to avoid any transient errors
   public String getBlobStorageUrl() {
     final ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi();
     final ControlledAzureResourceApi azureResourceApi = this.workspaceManagerClientFactory.getAzureResourceApi();

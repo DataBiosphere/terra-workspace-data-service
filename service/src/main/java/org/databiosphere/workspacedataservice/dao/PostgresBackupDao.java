@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.dao;
 
 import bio.terra.common.db.WriteTransaction;
 import org.apache.commons.lang3.StringUtils;
-import org.databiosphere.workspacedataservice.service.model.BackupSchema;
 import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
@@ -19,6 +18,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -34,14 +34,16 @@ public class PostgresBackupDao implements BackupDao {
 
     @Override
     public Job<BackupResponse> getBackupStatus(UUID trackingId) {
-        try {
-            MapSqlParameterSource params = new MapSqlParameterSource("trackingId", trackingId);
-            return namedTemplate.query(
-                    "select id, status, error, createdtime, updatedtime, requester, filename, description from sys_wds.backup WHERE id = :trackingId",
-                    params, new BackupJobRowMapper()).get(0);
-        } catch (Exception e) {
-            LOGGER.error("Unable to insert record into sys_wds.backup due to error {}.", e.getMessage());
+        MapSqlParameterSource params = new MapSqlParameterSource("trackingId", trackingId);
+        List<Job<BackupResponse>> responses = namedTemplate.query(
+                "select id, status, error, createdtime, updatedtime, requester, filename, description from sys_wds.backup WHERE id = :trackingId",
+                params, new BackupJobRowMapper());
+        if (responses.size() == 1) {
+            return responses.get(0);
+        } else if (responses.isEmpty()) {
             return null;
+        } else {
+            throw new RuntimeException("Unexpected error: %s rows found for backup status query".formatted(responses.size()));
         }
     }
 
@@ -55,17 +57,17 @@ public class PostgresBackupDao implements BackupDao {
     @Override
     @WriteTransaction
     public void createBackupEntry(UUID trackingId, BackupRequest backupRequest) {
-        BackupSchema schema = new BackupSchema(trackingId, backupRequest);
+        Timestamp now = Timestamp.from(Instant.now());
         namedTemplate.getJdbcTemplate().update("insert into sys_wds.backup(id, status, createdtime, updatedtime, requester, description) " +
-                "values (?,?,?,?,?,?)", schema.getId(), String.valueOf(schema.getState()), schema.getCreatedtime(), schema.getUpdatedtime(), schema.getRequester(), schema.getDescription());
-        LOGGER.info("Backup job {} is now {}", trackingId, schema.getState());
+                "values (?,?,?,?,?,?)", trackingId, JobStatus.QUEUED.name(), now, now, backupRequest.requestingWorkspaceId(), backupRequest.description());
+        LOGGER.info("Backup job {} is now {}", trackingId, JobStatus.QUEUED);
     }
 
     @Override
     @WriteTransaction
     public void updateBackupStatus(UUID trackingId, JobStatus status) {
         namedTemplate.getJdbcTemplate().update("update sys_wds.backup SET status = ?, updatedtime = ? where id = ?",
-                status.toString(), Timestamp.from(Instant.now()), trackingId);
+                status.name(), Timestamp.from(Instant.now()), trackingId);
         LOGGER.info("Backup job {} is now {}", trackingId, status);
     }
 
@@ -95,8 +97,14 @@ public class PostgresBackupDao implements BackupDao {
             UUID requester = rs.getObject("requester", UUID.class);
             BackupResponse backupResponse = new BackupResponse(filename, requester, description);
 
-            JobStatus status = JobStatus.valueOf(rs.getString("status"));
             UUID jobId = rs.getObject("id", UUID.class);
+            JobStatus status = JobStatus.UNKNOWN;
+            String dbStatus = rs.getString("status");
+            try {
+                status = JobStatus.valueOf(dbStatus);
+            } catch (Exception e) {
+                LOGGER.warn("Unknown status for backup job {}: [{}] with error {}", jobId, dbStatus, e.getMessage());
+            }
             String errorMessage = rs.getString("error");
             LocalDateTime created = rs.getTimestamp("createdtime").toLocalDateTime();
             LocalDateTime updated = rs.getTimestamp("updatedtime").toLocalDateTime();
