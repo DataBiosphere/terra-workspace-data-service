@@ -5,6 +5,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Represents a long-running, probably asynchronous, process which moves
+ * through multiple states before completing.
+ * Different jobs can specify different JobResult implementations to
+ * satisfy their own response payloads.
+ *
+ * @param <T> the response payload for this job.
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Job<T extends JobResult> {
 
