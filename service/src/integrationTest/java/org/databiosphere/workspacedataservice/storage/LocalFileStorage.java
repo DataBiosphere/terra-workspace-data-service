@@ -9,7 +9,13 @@ public class LocalFileStorage implements BackUpFileStorage {
     public LocalFileStorage() {}
 
     public void streamOutputToBlobStorage(InputStream fromStream, String blobName, String workspaceId) {
-        File targetFile = new File("backup-test.sql");
+        File targetFile;
+        try {
+            targetFile = File.createTempFile("WDS-integrationTest-LocalFileStorage-", ".sql");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        System.err.println("writing to " + targetFile.toString());
         try(OutputStream outStream = new FileOutputStream(targetFile)) {
             try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(fromStream, StandardCharsets.UTF_8))) {
                 int line;
@@ -19,6 +25,13 @@ public class LocalFileStorage implements BackUpFileStorage {
             }
         } catch (IOException ioEx) {
             throw new LaunchProcessException("Error streaming output during local test", ioEx);
+        } finally {
+            try {
+                // clean up the temp file
+                targetFile.delete();
+            } catch (Exception e) {
+                // could not clean up the temp file; don't fail the test due to this.
+            }
         }
     }
 
