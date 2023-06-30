@@ -58,8 +58,8 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 					.map(CsvSchema.Column::getName)
 					.toList();
 
-			if (colNames.stream().anyMatch(col -> Collections.frequency(colNames, col) > 1)) {
-				throw new InvalidTsvException("TSV contains duplicate column names."
+			if (colNames.stream().anyMatch(col -> Collections.frequency(colNames, col) > 1 && !col.isBlank())) {
+				throw new InvalidTsvException("TSV contains duplicate column names. "
 					+ "Please use distinct column names to prevent overwriting data");
 			}
 		} else {
