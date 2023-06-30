@@ -58,6 +58,7 @@ public class PostgresBackupDao implements BackupDao {
         BackupSchema schema = new BackupSchema(trackingId, backupRequest);
         namedTemplate.getJdbcTemplate().update("insert into sys_wds.backup(id, status, createdtime, updatedtime, requester, description) " +
                 "values (?,?,?,?,?,?)", schema.getId(), String.valueOf(schema.getState()), schema.getCreatedtime(), schema.getUpdatedtime(), schema.getRequester(), schema.getDescription());
+        LOGGER.info("Backup job {} is now {}", trackingId, schema.getState());
     }
 
     @Override
@@ -65,7 +66,7 @@ public class PostgresBackupDao implements BackupDao {
     public void updateBackupStatus(UUID trackingId, JobStatus status) {
         namedTemplate.getJdbcTemplate().update("update sys_wds.backup SET status = ?, updatedtime = ? where id = ?",
                 status.toString(), Timestamp.from(Instant.now()), trackingId);
-        LOGGER.info("Backup request job is now {}", status);
+        LOGGER.info("Backup job {} is now {}", trackingId, status);
     }
 
     @Override
