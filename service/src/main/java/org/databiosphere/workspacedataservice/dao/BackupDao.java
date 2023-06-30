@@ -2,17 +2,20 @@ package org.databiosphere.workspacedataservice.dao;
 
 import org.databiosphere.workspacedataservice.service.model.BackupSchema;
 import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
+import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
+import org.databiosphere.workspacedataservice.shared.model.job.Job;
+import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 
 import java.util.UUID;
 
 public interface BackupDao {
-    BackupSchema getBackupStatus(UUID trackingId);
+    Job<BackupResponse> getBackupStatus(UUID trackingId);
 
     boolean backupExists(UUID trackingId);
 
     void createBackupEntry(UUID trackingId, BackupRequest backupRequest);
 
-    void updateBackupStatus(UUID trackingId, BackupSchema.BackupState status);
+    void updateBackupStatus(UUID trackingId, JobStatus status);
 
     void saveBackupError(UUID trackingId, String error);
 

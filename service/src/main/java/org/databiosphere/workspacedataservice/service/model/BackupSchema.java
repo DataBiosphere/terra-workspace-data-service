@@ -1,24 +1,16 @@
 package org.databiosphere.workspacedataservice.service.model;
 
 import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
+import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Date;
 import java.util.UUID;
 
 public class BackupSchema {
-    public enum BackupState {
-        INITIATED,
-        STARTED,
-        INPROGRESS,
-        COMPLETED,
-        ERROR,
-        CANCELLED
-    }
 
     private UUID id;
-    private BackupState state;
+    private JobStatus state;
     private String error;
     private Timestamp createdtime;
     private Timestamp updatedtime;
@@ -34,7 +26,7 @@ public class BackupSchema {
         Timestamp now = Timestamp.from(Instant.now());
         this.createdtime = now;
         this.updatedtime = now;
-        this.state = BackupState.INITIATED;
+        this.state = JobStatus.INITIATED;
         this.requester = backupRequest.requestingWorkspaceId();
         this.description = backupRequest.description();
     }
@@ -51,7 +43,7 @@ public class BackupSchema {
         return updatedtime;
     }
 
-    public BackupState getState() {
+    public JobStatus getState() {
         return state;
     }
 
@@ -91,7 +83,7 @@ public class BackupSchema {
         this.filename = filename;
     }
 
-    public void setState(BackupState state) {
+    public void setState(JobStatus state) {
         this.state = state;
     }
 

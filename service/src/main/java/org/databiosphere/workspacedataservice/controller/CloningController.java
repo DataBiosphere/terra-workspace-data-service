@@ -4,6 +4,7 @@ import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.BackupTrackingResponse;
+import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,16 +26,16 @@ public class CloningController {
     }
 
     @PostMapping("/backup/{version}")
-    public ResponseEntity<BackupTrackingResponse> createBackup(@PathVariable("version") String version,
+    public ResponseEntity<Job<BackupResponse>> createBackup(@PathVariable("version") String version,
                                                                @RequestBody BackupRequest backupRequest) {
         UUID trackingId = UUID.randomUUID();
         // TODO: make async
-        backupRestoreService.backupAzureWDS(version, trackingId, backupRequest);
-        return new ResponseEntity<>(new BackupTrackingResponse(String.valueOf(trackingId)), HttpStatus.OK);
+        Job<BackupResponse> backupJob = backupRestoreService.backupAzureWDS(version, trackingId, backupRequest);
+        return new ResponseEntity<>(backupJob, HttpStatus.OK);
     }
 
     @GetMapping("/backup/{version}/{trackingId}")
-    public ResponseEntity<BackupResponse> getBackupStatus(@PathVariable("version") String version, @PathVariable("trackingId") UUID trackingId) {
+    public ResponseEntity<Job<BackupResponse>> getBackupStatus(@PathVariable("version") String version, @PathVariable("trackingId") UUID trackingId) {
         validateVersion(version);
         var response = backupRestoreService.checkBackupStatus(trackingId);
         return new ResponseEntity<>(response, HttpStatus.OK);

@@ -5,10 +5,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
-import org.databiosphere.workspacedataservice.service.model.BackupSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
+import org.databiosphere.workspacedataservice.shared.model.job.Job;
+import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
 import org.postgresql.plugin.AuthenticationRequestType;
 import org.postgresql.util.PSQLException;
@@ -68,24 +70,17 @@ public class BackupRestoreService {
         this.storage = backUpFileStorage;
     }
 
-    public BackupResponse checkBackupStatus(UUID trackingId) {
-        var backup = backupDao.getBackupStatus(trackingId);
+    public Job<BackupResponse> checkBackupStatus(UUID trackingId) {
+        var backupJob = backupDao.getBackupStatus(trackingId);
 
-        if(backup != null) {
-            if (backup.getState() == BackupSchema.BackupState.COMPLETED) {
-                return new BackupResponse(true, BackupSchema.BackupState.COMPLETED.toString(), backup.getFilename(), "Backup successfully completed.");
-            } else if (backup.getState() == BackupSchema.BackupState.ERROR) {
-                return new BackupResponse(true, BackupSchema.BackupState.ERROR.toString(), "", "Backup completed with an error.");
-            } else {
-                return new BackupResponse(false, backup.getState().toString(), "", "Backup still in progress.");
-            }
+        if (backupJob == null) {
+            throw new MissingObjectException("Backup job");
         }
-        else {
-            return new BackupResponse(false, "", "", "Backup not found.");
-        }
+
+        return backupJob;
     }
 
-    public void backupAzureWDS(String version, UUID trackingId, BackupRequest backupRequest) {
+    public Job<BackupResponse> backupAzureWDS(String version, UUID trackingId, BackupRequest backupRequest) {
         try {
             validateVersion(version);
 
@@ -102,7 +97,7 @@ public class BackupRestoreService {
             LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
             localProcessLauncher.launchProcess(commandList, envVars);
 
-            backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.STARTED);
+            backupDao.updateBackupStatus(trackingId, JobStatus.STARTED);
             LOGGER.info("Starting streaming backup to storage.");
             storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName, String.valueOf(requestorWorkspaceId));
             String error = checkForError(localProcessLauncher);
@@ -114,13 +109,15 @@ public class BackupRestoreService {
             else {
                 // if no errors happen and code reaches here, the backup has been completed successfully
                 backupDao.updateFilename(trackingId, blobName);
-                backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.COMPLETED);
+                backupDao.updateBackupStatus(trackingId, JobStatus.COMPLETED);
             }
         }
         catch (Exception ex) {
             LOGGER.error("Process error: {}", ex.getMessage());
             backupDao.saveBackupError(trackingId, ex.getMessage());
         }
+
+        return backupDao.getBackupStatus(trackingId);
     }
 
     public boolean restoreAzureWDS(String version) {

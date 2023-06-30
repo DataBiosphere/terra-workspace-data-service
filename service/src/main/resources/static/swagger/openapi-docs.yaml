@@ -45,13 +45,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BackupTrackingResponse'
-        400:
-          description: Something failed during backup
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackupTrackingResponse'
+                $ref: '#/components/schemas/BackupJob'
   /backup/{v}/{trackingId}:
     get:
       tags:
@@ -69,13 +63,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BackupResponse'
-        400:
-          description: Something failed during backup status check
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackupResponse'
+                $ref: '#/components/schemas/BackupJob'
   /status:
     get:
       summary: Gets health status for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#health for details)
@@ -630,6 +618,13 @@ components:
         description:
           type: string
           description: User-friendly description to associate with this backup. Optional.
+    BackupJob:
+      allOf:
+        - $ref: '#/components/schemas/Job'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/BackupResponse'
     BatchOperation:
       type: object
       required:
@@ -664,6 +659,29 @@ components:
           type: string
         recordsModified:
           type: integer
+    Job:
+      type: object
+      required:
+        - jobId
+        - status
+        - created
+        - updated
+      properties:
+        jobId:
+          type: string
+        status:
+          type: string
+          enum: [ QUEUED, STARTED, RUNNING, SUCCEEDED, FAILED ]
+        created:
+          type: string
+          format: date-time
+        updated:
+          type: string
+          format: date-time
+        errorMessage:
+          type: string
+        exception:
+          type: string
     TsvUploadResponse:
       type: object
       required:
@@ -887,13 +905,6 @@ components:
         message:
           type: string
           description: message regarding backup status
-    BackupTrackingResponse:
-      type: object
-      properties:
-        trackingId:
-          type: string
-          format: uuid
-          description: backup status
     build:
       type: object
       properties:
