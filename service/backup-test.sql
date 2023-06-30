@@ -5,7 +5,7 @@
 -- Dumped from database version 14.8 (Debian 14.8-1.pgdg110+1)
 -- Dumped by pg_dump version 14.8 (Ubuntu 14.8-0ubuntu0.22.04.1)
 
--- Started on 2023-06-29 22:20:08 PDT
+-- Started on 2023-06-29 22:30:35 PDT
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -19,7 +19,7 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- TOC entry 6 (class 2615 OID 16428)
+-- TOC entry 5 (class 2615 OID 16436)
 -- Name: 123e4567-e89b-12d3-a456-426614174000; Type: SCHEMA; Schema: -; Owner: wds
 --
 
@@ -83,7 +83,7 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- TOC entry 216 (class 1259 OID 16429)
+-- TOC entry 216 (class 1259 OID 16437)
 -- Name: test; Type: TABLE; Schema: 123e4567-e89b-12d3-a456-426614174000; Owner: wds
 --
 
@@ -188,7 +188,7 @@ CREATE TABLE sys_wds.instance (
 ALTER TABLE sys_wds.instance OWNER TO wds;
 
 --
--- TOC entry 3352 (class 0 OID 16429)
+-- TOC entry 3352 (class 0 OID 16437)
 -- Dependencies: 216
 -- Data for Name: test; Type: TABLE DATA; Schema: 123e4567-e89b-12d3-a456-426614174000; Owner: wds
 --
@@ -210,6 +210,9 @@ COPY public.databasechangelog (id, author, filename, dateexecuted, orderexecuted
 20230426_syswds_schema	davidan	liquibase/changesets/20230426_instance_table.yaml	2023-06-29 22:07:20.546986	3	EXECUTED	8:2d6affed0e524144ac539739229d7529	createTable tableName=instance		\N	4.21.1	\N	\N	8101640417
 20230612_backup_schema	yuliadub	liquibase/changesets/20230612_backup_table.yaml	2023-06-29 22:07:20.56315	4	EXECUTED	8:238700bb4ca8e35e78d210d2dfd60665	createTable tableName=backup		\N	4.21.1	\N	\N	8101640417
 20230622_backup_requests_schema	yuliadub	liquibase/changesets/20230622_backup_requests_table.yaml	2023-06-29 22:07:20.575079	5	EXECUTED	8:0fe32e644a53dd3c9f9f937c24150806	createTable tableName=backup_requests		\N	4.21.1	\N	\N	8101640417
+20230426_syswds_schema	davidan	liquibase/changesets/20230426_syswds_schema.yaml	2023-06-20 11:56:41.068049	1	EXECUTED	8:b29510f962527373c017911411232c5a	sql		\N	4.21.1	\N	\N	7287400976
+20230426_syswds_schema	davidan	liquibase/changesets/20230426_domains.yaml	2023-06-20 11:56:41.100602	2	EXECUTED	8:23c121fb77a7a2dcbf2761b7cf3851b3	sql		\N	4.21.1	\N	\N	7287400976
+20230426_syswds_schema	davidan	liquibase/changesets/20230426_instance_table.yaml	2023-06-20 11:56:41.116706	3	EXECUTED	8:2d6affed0e524144ac539739229d7529	createTable tableName=instance		\N	4.21.1	\N	\N	7287400976
 20230426_syswds_schema	davidan	liquibase/changesets/20230426_syswds_schema.yaml	2023-06-20 11:56:41.068049	1	EXECUTED	8:b29510f962527373c017911411232c5a	sql		\N	4.21.1	\N	\N	7287400976
 20230426_syswds_schema	davidan	liquibase/changesets/20230426_domains.yaml	2023-06-20 11:56:41.100602	2	EXECUTED	8:23c121fb77a7a2dcbf2761b7cf3851b3	sql		\N	4.21.1	\N	\N	7287400976
 20230426_syswds_schema	davidan	liquibase/changesets/20230426_instance_table.yaml	2023-06-20 11:56:41.116706	3	EXECUTED	8:2d6affed0e524144ac539739229d7529	createTable tableName=instance		\N	4.21.1	\N	\N	7287400976
@@ -243,7 +246,9 @@ d82ca04f-6eee-40c4-9399-0f745d9d7b00	ERROR	\N	2023-06-29 22:08:42.334	\N	\N
 c0bc149d-0aff-4a59-93fe-64b12e92e0a9	ERROR	\N	2023-06-29 22:08:43.719	\N	\N
 629e2c78-1898-475e-a86d-0a8212e4dfb4	STARTED	\N	2023-06-29 22:18:02.881	\N	\N
 5aeaeb06-9fdc-4910-8ecf-cd94fb36f737	ERROR	\N	2023-06-29 22:20:06.714	\N	\N
-3cd09c1a-b60d-4864-ab18-ae6ef721bbb6	STARTED	\N	2023-06-29 22:20:08.188	\N	\N
+3cd09c1a-b60d-4864-ab18-ae6ef721bbb6	COMPLETED	\N	2023-06-29 22:20:08.188	\N	wdsservice/cloning/backup/123e4567-e89b-12d3-a456-426614174000-2023-06-29_22-20-08.sql
+78278005-6802-4ad7-8bb0-8056d08fdbf0	ERROR	\N	2023-06-29 22:30:34.096	\N	\N
+cd840a85-fef2-48fd-a990-e6fc88766446	STARTED	\N	2023-06-29 22:30:35.592	\N	\N
 \.
 
 
@@ -257,6 +262,8 @@ COPY sys_wds.backup_requests (sourceworkspaceid, destinationworkspaceid, status)
 123e4567-e89b-12d3-a456-426614174001	123e4567-e89b-12d3-a456-426614174000	INITIATED
 123e4567-e89b-12d3-a456-426614174001	123e4567-e89b-12d3-a456-426614174000	INITIATED
 123e4567-e89b-12d3-a456-426614174001	123e4567-e89b-12d3-a456-426614174000	INITIATED
+123e4567-e89b-12d3-a456-426614174001	123e4567-e89b-12d3-a456-426614174000	INITIATED
+123e4567-e89b-12d3-a456-426614174000	123e4567-e89b-12d3-a456-426614174000	ERROR
 123e4567-e89b-12d3-a456-426614174000	123e4567-e89b-12d3-a456-426614174000	ERROR
 123e4567-e89b-12d3-a456-426614174000	123e4567-e89b-12d3-a456-426614174000	ERROR
 123e4567-e89b-12d3-a456-426614174000	123e4567-e89b-12d3-a456-426614174000	ERROR
@@ -276,7 +283,7 @@ COPY sys_wds.instance (id) FROM stdin;
 
 
 --
--- TOC entry 3207 (class 2606 OID 16435)
+-- TOC entry 3207 (class 2606 OID 16443)
 -- Name: test test_pkey; Type: CONSTRAINT; Schema: 123e4567-e89b-12d3-a456-426614174000; Owner: wds
 --
 
@@ -311,7 +318,7 @@ ALTER TABLE ONLY sys_wds.instance
     ADD CONSTRAINT instance_pkey PRIMARY KEY (id);
 
 
--- Completed on 2023-06-29 22:20:08 PDT
+-- Completed on 2023-06-29 22:30:35 PDT
 
 --
 -- PostgreSQL database dump complete

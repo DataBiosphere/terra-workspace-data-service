@@ -38,7 +38,7 @@ public class WorkspaceDataServiceDao {
   public BackupResponse checkBackupStatus(String token, UUID trackingId) {
     var backupClient = this.workspaceDataServiceClientFactory.getBackupClient(token, workspaceDataServiceUrl);
     try {
-      return backupClient.getBackupStatus(trackingId);
+      return backupClient.getBackupStatus("v0.2", trackingId);
     } catch (ApiException e) {
       throw new WorkspaceDataServiceException(e);
     }

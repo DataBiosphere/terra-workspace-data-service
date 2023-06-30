@@ -47,7 +47,7 @@ public class InstanceInitializerBean {
             try {
                 UUID.fromString(sourceWorkspaceId);
             } catch (IllegalArgumentException e){
-                    LOGGER.warn("Source workspace id could not be parsed, unable to clone DB. Provided source workspace id: {}.", sourceWorkspaceId);
+                    LOGGER.warn("Source workspace Id could not be parsed, unable to clone DB. Provided source workspace id: {}.", sourceWorkspaceId);
                     return false;
             }
 
