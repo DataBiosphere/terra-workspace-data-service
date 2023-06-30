@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.service;
 
 import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.service.model.BackupSchema;
+import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,7 +29,7 @@ class BackupServiceIntegrationTest {
     void testBackupAzureWDS() {
         var trackingId = UUID.randomUUID();
         var sourceWorkspaceId = UUID.fromString("123e4567-e89b-12d3-a456-426614174001");
-        backupRestoreService.backupAzureWDS("v0.2", trackingId, sourceWorkspaceId);
+        backupRestoreService.backupAzureWDS("v0.2", trackingId, new BackupRequest(sourceWorkspaceId, null));
 
         var response = backupRestoreService.checkBackupStatus(trackingId);
         assertEquals(true, response.backupStatus());

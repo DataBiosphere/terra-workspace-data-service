@@ -15,7 +15,6 @@ public class LocalFileStorage implements BackUpFileStorage {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        System.err.println("writing to " + targetFile.toString());
         try(OutputStream outStream = new FileOutputStream(targetFile)) {
             try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(fromStream, StandardCharsets.UTF_8))) {
                 int line;

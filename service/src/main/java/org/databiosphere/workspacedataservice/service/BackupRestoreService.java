@@ -7,6 +7,7 @@ import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import org.databiosphere.workspacedataservice.service.model.BackupSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
+import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
 import org.postgresql.plugin.AuthenticationRequestType;
@@ -84,9 +85,11 @@ public class BackupRestoreService {
         }
     }
 
-    public void backupAzureWDS(String version, UUID trackingId, UUID requestorWorkspaceId) {
+    public void backupAzureWDS(String version, UUID trackingId, BackupRequest backupRequest) {
         try {
             validateVersion(version);
+
+            UUID requestorWorkspaceId = backupRequest.requestingWorkspaceId() == null ? UUID.fromString(workspaceId) : backupRequest.requestingWorkspaceId();
 
             // create an entry to track progress of this backup
             backupDao.createBackupEntry(trackingId);

@@ -27,14 +27,15 @@ tags:
   - name: Snapshots
     description: Snapshot APIs
 paths:
-  /backup/{v}/{requestorWorkspaceId}:
+  /backup/{v}:
     post:
       tags:
         - Cloning
       parameters:
         - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/requestorWorkspacePathParam'
-      summary: Create a backup of a PostgreSQL instance and upload it to Azure Blob Storage
+      requestBody:
+        $ref: '#/components/requestBodies/BackupRequestBody'
+      summary: Create a backup of all WDS Data
       operationId: createBackup
       security:
         - bearerAuth: [ ]
@@ -51,7 +52,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BackupTrackingResponse'
-  /backup/{v}/status/{trackingId}:
+  /backup/{v}/{trackingId}:
     get:
       tags:
         - Cloning
@@ -570,6 +571,13 @@ components:
           schema:
             $ref: '#/components/schemas/StatusResponse'
   requestBodies:
+    BackupRequestBody:
+      description: A backup request
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BackupRequest'
     SearchRequestBody:
       description: A paginated search request
       required: true
@@ -612,6 +620,16 @@ components:
         relatesTo:
           type: string
           description: Name of type to which this attribute relates. Only present if this is a relation attribute.
+    BackupRequest:
+      type: object
+      properties:
+        requestingWorkspaceId:
+          type: string
+          format: uuid
+          description: workspace requesting the backup. Optional; defaults to the workspace in which this WDS is running.
+        description:
+          type: string
+          description: User-friendly description to associate with this backup. Optional.
     BatchOperation:
       type: object
       required:
