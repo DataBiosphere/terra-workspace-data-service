@@ -365,7 +365,7 @@ class RecordControllerMockMvcTest {
 
 		Exception e = mvcResult.getResolvedException();
 		assertNotNull(e, "expected an InvalidTsvException");
-		assertEquals("TSV contains duplicate column names."
+		assertEquals("TSV contains duplicate column names. "
 					+ "Please use distinct column names to prevent overwriting data", e.getMessage());
 	}
 
