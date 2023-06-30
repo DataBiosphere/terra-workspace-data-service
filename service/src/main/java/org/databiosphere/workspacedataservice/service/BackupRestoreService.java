@@ -94,8 +94,6 @@ public class BackupRestoreService {
             // create an entry to track progress of this backup
             backupDao.createBackupEntry(trackingId);
 
-            // create an entry to track who requested this backup
-            backupDao.createBackupRequestsEntry(requestorWorkspaceId, UUID.fromString(workspaceId));
             String blobName = generateBackupFilename();
 
             List<String> commandList = generateCommandList(true);
@@ -112,19 +110,16 @@ public class BackupRestoreService {
             if (StringUtils.isNotBlank(error)) {
                 LOGGER.error("process error: {}", error);
                 backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.ERROR);
-                backupDao.updateBackupRequestStatus(UUID.fromString(workspaceId), BackupSchema.BackupState.ERROR);
             }
             else {
                 // if no errors happen and code reaches here, the backup has been completed successfully
                 backupDao.updateFilename(trackingId, blobName);
                 backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.COMPLETED);
-                backupDao.updateBackupRequestStatus(UUID.fromString(workspaceId), BackupSchema.BackupState.COMPLETED);
             }
         }
         catch (LaunchProcessException | PSQLException ex) {
             LOGGER.error("Process error: {}", ex.getMessage());
             backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.ERROR);
-            backupDao.updateBackupRequestStatus(UUID.fromString(workspaceId), BackupSchema.BackupState.ERROR);
         }
     }
 

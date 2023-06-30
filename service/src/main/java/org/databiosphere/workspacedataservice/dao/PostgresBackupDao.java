@@ -38,18 +38,6 @@ public class PostgresBackupDao implements BackupDao {
     }
 
     @Override
-    public String getBackupRequestStatus(UUID sourceWorkspaceId, UUID destinationWorkspaceId) {
-        try {
-            return namedTemplate.getJdbcTemplate().queryForObject(
-                    "select status from sys_wds.backup_requests WHERE sourceworkspaceid = ? and destinationworkspaceid = ?", String.class, sourceWorkspaceId, destinationWorkspaceId);
-        }
-        catch(Exception e) {
-            LOGGER.error("Unable to insert record into sys_wds.backup_requests due to error {}.", e.getMessage());
-            return null;
-        }
-    }
-
-    @Override
     public boolean backupExists(UUID trackingId) {
         return Boolean.TRUE.equals(namedTemplate.queryForObject(
                 "select exists(select from sys_wds.backup WHERE id = :trackingId)",
@@ -66,24 +54,9 @@ public class PostgresBackupDao implements BackupDao {
 
     @Override
     @WriteTransaction
-    public void createBackupRequestsEntry(UUID sourceWorkspaceId, UUID destinationWorkspaceId) {
-        namedTemplate.getJdbcTemplate().update("insert into sys_wds.backup_requests(sourceworkspaceid, destinationworkspaceid, status) " +
-                "values (?,?,?)", sourceWorkspaceId, destinationWorkspaceId, BackupSchema.BackupState.INITIATED.toString());
-    }
-
-    @Override
-    @WriteTransaction
     public void updateBackupStatus(UUID trackingId, BackupSchema.BackupState status) {
         // TODO need to also update completed time (if this is for completed or error backups)
         namedTemplate.getJdbcTemplate().update("update sys_wds.backup SET status = ? where id = ?", status.toString(), trackingId);
-        LOGGER.info("Backup request job is now {}", status);
-    }
-
-    @Override
-    @WriteTransaction
-    public void updateBackupRequestStatus(UUID sourceWorkspaceId, BackupSchema.BackupState status) {
-        // TODO need to also update completed time (if this is for completed or error backups)
-        namedTemplate.getJdbcTemplate().update("update sys_wds.backup_requests SET status = ? where sourceworkspaceid = ?", status.toString(), sourceWorkspaceId);
         LOGGER.info("Backup request job is now {}", status);
     }
 
