@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice;
 
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedata.model.Job;
 import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
@@ -104,7 +105,7 @@ public class InstanceInitializerBean {
                 backupDao.createBackupEntry(UUID.fromString(response.getJobId()), new BackupRequest(UUID.fromString(workspaceId), "Track backup progress"));
                 var trackingId = UUID.fromString(response.getJobId());
                 var statusResponse = wdsDao.checkBackupStatus(startupToken, UUID.fromString(response.getJobId()));
-                if (statusResponse.getStatus().equals(JobStatus.SUCCEEDED)) {
+                if (statusResponse.getStatus().equals(Job.StatusEnum.SUCCEEDED)) {
                     backupFileName = statusResponse.getResult().getFilename();
                     backupDao.updateBackupStatus(trackingId, JobStatus.SUCCEEDED);
                 }

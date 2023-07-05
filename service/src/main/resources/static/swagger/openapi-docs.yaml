@@ -27,7 +27,7 @@ tags:
   - name: Snapshots
     description: Snapshot APIs
 paths:
-  /backup/{v}/{requestorWorkspaceId}:
+  /backup/{v}:
     post:
       tags:
         - Cloning

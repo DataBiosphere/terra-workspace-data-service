@@ -49,6 +49,13 @@ public class LeonardoDao {
     public boolean equals(Object obj) {
       return false;
     }
+
+    @Override
+    public int hashCode() {
+      // sonar is complaining that hashCode has to be overwritten as well if equals is
+      // since we are not using any object instances in this class, returning a default value 
+      return -1;
+    }
   }
   public String extractWdsUrl(List<ListAppResponse> response) {
     // look for apps of type "WDS" which are in "RUNNING" status.

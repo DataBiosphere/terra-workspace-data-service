@@ -65,4 +65,3 @@ public class HttpWorkspaceManagerClientFactory implements WorkspaceManagerClient
         return new ControlledAzureResourceApi(getApiClient());
     }
 }
-

@@ -74,7 +74,7 @@ class LeonardoDaoTest {
     void testWdsUrlMultiple() throws ApiException {
         // tests the case if there are 2 running wds apps
         var url = buildAppResponseAndCallExtraction(generateListAppResponse("wds", AppStatus.RUNNING,2));
-        assertEquals(url, url);
+        assertEquals(expectedUrl, url);
     }
 
     String buildAppResponseAndCallExtraction(List<ListAppResponse> responses ){
