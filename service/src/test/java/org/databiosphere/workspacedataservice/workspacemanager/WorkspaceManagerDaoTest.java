@@ -61,9 +61,9 @@ class WorkspaceManagerDaoTest {
         final SnapshotModel testSnapshot = new SnapshotModel().name("test snapshot").id(UUID.randomUUID());
         workspaceManagerDao.createDataRepoSnapshotReference(testSnapshot);
         verify(mockReferencedGcpResourceApi).createDataRepoSnapshotReference(argThat(a ->
-            a.getSnapshot().getSnapshot().equals(testSnapshot.getId().toString()) &&
-                a.getMetadata().getCloningInstructions().equals(CloningInstructionsEnum.REFERENCE) &&
-                a.getMetadata().getName().startsWith(testSnapshot.getName())), any());
+                a.getSnapshot().getSnapshot().equals(testSnapshot.getId().toString()) &&
+                        a.getMetadata().getCloningInstructions().equals(CloningInstructionsEnum.REFERENCE) &&
+                        a.getMetadata().getName().startsWith(testSnapshot.getName())), any());
     }
 
     @Test

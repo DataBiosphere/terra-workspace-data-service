@@ -1,6 +1,9 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import org.databiosphere.workspacedataservice.service.model.BackupSchema;
+import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
+import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
+import org.databiosphere.workspacedataservice.shared.model.job.Job;
+import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 
 import java.util.Set;
 import java.util.UUID;
@@ -12,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MockBackupDao implements BackupDao {
 
     // backing "database" for this mock
-    private final Set<BackupSchema> backups = ConcurrentHashMap.newKeySet();
+    private final Set<Job<BackupResponse> > backups = ConcurrentHashMap.newKeySet();
 
     public MockBackupDao() {
         super();
@@ -25,45 +28,35 @@ public class MockBackupDao implements BackupDao {
     }
 
     @Override
-    public BackupSchema getBackupStatus(UUID trackingId) {
-        return backups.stream().filter(backupInList -> backupInList.getId() == trackingId).findFirst().orElse(null);
+    public Job<BackupResponse> getBackupStatus(UUID trackingId) {
+        return backups.stream().filter(backupInList -> backupInList.getJobId() == trackingId).findFirst().orElse(null);
     }
 
     @Override
-    public String getBackupRequestStatus(UUID sourceWorkspaceId, UUID destinationWorkspaceId) {
-        // currently not used in tests but needs to be here due to the interface
-        return null;
-    }
-
-    @Override
-    public void createBackupEntry(UUID trackingId) {
-        BackupSchema backup = new BackupSchema(trackingId);
+    public void createBackupEntry(UUID trackingId, BackupRequest request) {
+        Job<BackupResponse> backup = new Job<>(trackingId, JobStatus.QUEUED,"",null, null, null);
         backups.add(backup);
     }
 
     @Override
-    public void createBackupRequestsEntry (UUID sourceWorkspaceId, UUID destinationWorkspaceId) {
-        // currently not used in tests but needs to be here due to the interface
-    }
-
-    @Override
-    public void updateBackupStatus(UUID trackingId, BackupSchema.BackupState status) {
-        BackupSchema backup = getBackupStatus(trackingId);
+    public void updateBackupStatus(UUID trackingId, JobStatus status) {
+        var backup = getBackupStatus(trackingId);
         backups.remove(backup);
-        backup.setState(status);
+        backup.setStatus(status);
         backups.add(backup);
-    }
-
-    @Override
-    public void updateBackupRequestStatus(UUID sourceWorkspaceId, BackupSchema.BackupState status){
-        // currently not used in tests but needs to be here due to the interface
     }
 
     @Override
     public void updateFilename(UUID trackingId, String filename) {
-        BackupSchema backup = getBackupStatus(trackingId);
+        var backup = getBackupStatus(trackingId);
         backups.remove(backup);
-        backup.setFileName(filename);
+        BackupResponse response = new BackupResponse(filename, null, "backup success");
+        backup.setResult(response);
         backups.add(backup);
+    }
+
+    @Override
+    public void terminateBackupToError(UUID trackingId, String error) {
+
     }
 }

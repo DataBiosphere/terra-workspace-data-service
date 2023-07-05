@@ -95,21 +95,21 @@ public class InstanceInitializerBean {
             // check if our current workspace has already sent a request for backup for the source
             // if it did, no need to do it again
             var backupFileName = "";
-            if (backupDao.getBackupRequestStatus(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId)) == null) {
+            if (true){//backupDao.getBackupRequestStatus(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId)) == null) {
                 // TODO since the backup api is not async, this will return once the backup finishes
                 var response = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
 
                 // record the request this workspace made for backup
-                backupDao.createBackupRequestsEntry(UUID.fromString(workspaceId), UUID.fromString(sourceWorkspaceId));
+                //backupDao.createBackupRequestsEntry(UUID.fromString(workspaceId), UUID.fromString(sourceWorkspaceId));
 
-                var statusResponse = wdsDao.checkBackupStatus(startupToken, response.getTrackingId());
-                if (statusResponse.getState().equals(BackupSchema.BackupState.COMPLETED.toString())) {
-                    backupFileName = statusResponse.getFilename();
-                    backupDao.updateBackupRequestStatus(UUID.fromString(sourceWorkspaceId), BackupSchema.BackupState.COMPLETED);
+                var statusResponse = wdsDao.checkBackupStatus(startupToken, UUID.fromString(response.getJobId()));
+                if (statusResponse.getStatus().equals(BackupSchema.BackupState.COMPLETED.toString())) {
+                    backupFileName = statusResponse.getResult().getFilename();
+                    //backupDao.updateBackupRequestStatus(UUID.fromString(sourceWorkspaceId), BackupSchema.BackupState.COMPLETED);
                 }
                 else {
                     LOGGER.error("An error occurred during clone mode - backup not complete.");
-                    backupDao.updateBackupRequestStatus(UUID.fromString(sourceWorkspaceId), BackupSchema.BackupState.ERROR);
+                    //backupDao.updateBackupRequestStatus(UUID.fromString(sourceWorkspaceId), BackupSchema.BackupState.ERROR);
                 }
             }
 
@@ -118,7 +118,7 @@ public class InstanceInitializerBean {
         }
         catch(Exception e){
             LOGGER.error("An error occurred during clone mode. Will start with empty database. Error: {}", e.toString());
-            backupDao.updateBackupRequestStatus(UUID.fromString(sourceWorkspaceId), BackupSchema.BackupState.ERROR);
+            //backupDao.updateBackupRequestStatus(UUID.fromString(sourceWorkspaceId), BackupSchema.BackupState.ERROR);
         }
     }
 

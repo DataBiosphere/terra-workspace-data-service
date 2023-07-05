@@ -22,8 +22,14 @@ databaseChangeLog:
                   name: createdtime
                   type: datetime
               - column:
-                  name: completedtime
+                  name: updatedtime
                   type: datetime
+              - column:
+                  name: requester
+                  type: uuid
               - column:
                   name: filename
                   type: varchar(255)
+              - column:
+                  name: description
+                  type: varchar(2000)

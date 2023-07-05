@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.databiosphere.workspacedataservice.service.model.BackupSchema;
+import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
+import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,7 +18,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 @ActiveProfiles({"mock-storage", "local"})
 @ContextConfiguration(name = "mockStorage")
 @SpringBootTest
-@TestPropertySource(properties = {"twds.pg_dump.useAzureIdentity=false", "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000", "twds.instance.source-workspace-id=123e4567-e89b-12d3-a456-426614174000", "twds.pg_dump.host="})
+@TestPropertySource(properties = {
+        "twds.pg_dump.useAzureIdentity=false",
+        "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000",
+        "twds.instance.source-workspace-id=123e4567-e89b-12d3-a456-426614174001",
+        "twds.pg_dump.host="
+})
 public class BackupRestoreServiceFailureIntegrationTest {
     @Autowired
     private BackupRestoreService backupRestoreService;
@@ -31,15 +37,16 @@ public class BackupRestoreServiceFailureIntegrationTest {
     @Test
     void testRestoreAzureWDSErrorHandling() {
         var response = backupRestoreService.restoreAzureWDS("v0.2");
+        // will fail because twds.pg_dump.host is blank
         assertFalse(response);
     }
 
     @Test
     void testBackupAzureWDS() {
         var trackingId = UUID.randomUUID();
-        backupRestoreService.backupAzureWDS("v0.2", trackingId, UUID.fromString(sourceWorkspaceId));
+        backupRestoreService.backupAzureWDS("v0.2", trackingId, new BackupRequest(UUID.fromString(sourceWorkspaceId), null));
         var response = backupRestoreService.checkBackupStatus(trackingId);
-        assertEquals(true, response.backupStatus());
-        assertEquals(BackupSchema.BackupState.ERROR.toString(), response.state());
+        // will fail because twds.pg_dump.host is blank
+        assertEquals(JobStatus.ERROR, response.getStatus());
     }
 }

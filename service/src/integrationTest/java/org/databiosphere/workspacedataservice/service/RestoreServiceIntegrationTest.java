@@ -22,18 +22,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ContextConfiguration(name = "mockStorage")
 @SpringBootTest
 @TestPropertySource(
-    properties = {
-        "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000", 
-        "twds.instance.source-workspace-id=123e4567-e89b-12d3-a456-426614174001",
-        "twds.pg_dump.useAzureIdentity=false"
-    }
-)
+        properties = {
+                "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000",
+                "twds.instance.source-workspace-id=123e4567-e89b-12d3-a456-426614174001",
+                "twds.pg_dump.useAzureIdentity=false"
+})
 public class RestoreServiceIntegrationTest {
     @Autowired
     private BackupRestoreService backupRestoreService;
 
     @Autowired
-	InstanceDao instanceDao;
+    InstanceDao instanceDao;
 
     @Autowired
     RecordDao recordDao;
@@ -43,20 +42,20 @@ public class RestoreServiceIntegrationTest {
 
     @Value("${twds.instance.source-workspace-id:}")
     private String sourceWorkspaceId;
-    
+
     @BeforeEach
-    void beforeEach() { 
-        // clean up any instances left in the db 
-        List<UUID> allInstances = instanceDao.listInstanceSchemas(); 
-        allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId)); 
-    } 
+    void beforeEach() {
+        // clean up any instances left in the db
+        List<UUID> allInstances = instanceDao.listInstanceSchemas();
+        allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
+    }
 
     // this test references the file src/integrationTest/resources/backup-test.sql as its backup
     @Test
     void testRestoreAzureWDS() throws Exception {
         UUID sourceInstance = UUID.fromString(sourceWorkspaceId);
         UUID destInstance = UUID.fromString(workspaceId);
-        
+
         // confirm neither source nor destination instance should exist in our list of schemas to start
         List<UUID> instancesBefore = instanceDao.listInstanceSchemas();
         assertThat(instancesBefore).doesNotContain(destInstance);
@@ -77,4 +76,3 @@ public class RestoreServiceIntegrationTest {
         assertThat(tables).contains(RecordType.valueOf("test"));
     }
 }
-

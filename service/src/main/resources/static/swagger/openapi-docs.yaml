@@ -33,32 +33,27 @@ paths:
         - Cloning
       parameters:
         - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/requestorWorkspacePathParam'
-      summary: Create a backup of a PostgreSQL instance and upload it to Azure Blob Storage
+      requestBody:
+        $ref: '#/components/requestBodies/BackupRequestBody'
+      summary: Create a backup of all WDS data
       operationId: createBackup
       security:
-        - bearerAuth: [ ]      
+        - bearerAuth: [ ]
       responses:
         200:
           description: Successfully initiated the backup process
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BackupTrackingResponse'
-        400:
-          description: Something failed during backup
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackupTrackingResponse'
-  /backup/{v}/status/{trackingId}:
+                $ref: '#/components/schemas/BackupJob'
+  /backup/{v}/{trackingId}:
     get:
       tags:
         - Cloning
       parameters:
         - $ref: '#/components/parameters/versionPathParam'
         - $ref: '#/components/parameters/trackingIdPathParam'
-      summary: Check status of a backup of a PostgreSQL instance
+      summary: Check status of a WDS data backup
       operationId: getBackupStatus
       security:
         - bearerAuth: [ ]
@@ -68,13 +63,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BackupResponse'
-        400:
-          description: Something failed during backup status check
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackupResponse'
+                $ref: '#/components/schemas/BackupJob'
   /status:
     get:
       summary: Gets health status for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#health for details)
@@ -570,6 +559,13 @@ components:
           schema:
             $ref: '#/components/schemas/StatusResponse'
   requestBodies:
+    BackupRequestBody:
+      description: A backup request
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BackupRequest'
     SearchRequestBody:
       description: A paginated search request
       required: true
@@ -612,6 +608,23 @@ components:
         relatesTo:
           type: string
           description: Name of type to which this attribute relates. Only present if this is a relation attribute.
+    BackupRequest:
+      type: object
+      properties:
+        requestingWorkspaceId:
+          type: string
+          format: uuid
+          description: workspace requesting the backup. Optional; defaults to the workspace in which this WDS is running.
+        description:
+          type: string
+          description: User-friendly description to associate with this backup. Optional.
+    BackupJob:
+      allOf:
+        - $ref: '#/components/schemas/Job'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/BackupResponse'
     BatchOperation:
       type: object
       required:
@@ -646,6 +659,29 @@ components:
           type: string
         recordsModified:
           type: integer
+    Job:
+      type: object
+      required:
+        - jobId
+        - status
+        - created
+        - updated
+      properties:
+        jobId:
+          type: string
+        status:
+          type: string
+          enum: [ QUEUED, STARTED, RUNNING, SUCCEEDED, FAILED ]
+        created:
+          type: string
+          format: date-time
+        updated:
+          type: string
+          format: date-time
+        errorMessage:
+          type: string
+        exception:
+          type: string
     TsvUploadResponse:
       type: object
       required:
@@ -857,25 +893,16 @@ components:
     BackupResponse:
       type: object
       properties:
-        backupStatus:
-          type: boolean
-          description: status of backup
-        state:
-          type: string
-          description: backup status
         filename:
           type: string
           description: backup location
-        message:
-          type: string
-          description: message regarding backup status
-    BackupTrackingResponse:
-      type: object
-      properties:
-        trackingId:
+        requester:
           type: string
           format: uuid
-          description: backup status    
+          description: workspace which initiated the backup
+        description:
+          type: string
+          description: description of this backup
     build:
       type: object
       properties:
@@ -893,10 +920,10 @@ components:
     git:
       type: object
       properties:
-          branch:
-            type: string
-          commit:
-            $ref: '#/components/schemas/commit'
+        branch:
+          type: string
+        commit:
+          $ref: '#/components/schemas/commit'
     commit:
       type: object
       properties:
@@ -908,16 +935,16 @@ components:
     components:
       type: object
       properties:
-         db:
-           $ref: '#/components/schemas/dbComponent'
-         diskSpace:
-           $ref: '#/components/schemas/diskSpaceComponent'
-         ping:
-           $ref: '#/components/schemas/component'
-         mainDb:
-           $ref: '#/components/schemas/dbValidationcomponent'
-         streamingDs:
-           $ref: '#/components/schemas/dbValidationcomponent'
+        db:
+          $ref: '#/components/schemas/dbComponent'
+        diskSpace:
+          $ref: '#/components/schemas/diskSpaceComponent'
+        ping:
+          $ref: '#/components/schemas/component'
+        mainDb:
+          $ref: '#/components/schemas/dbValidationcomponent'
+        streamingDs:
+          $ref: '#/components/schemas/dbValidationcomponent'
     component:
       type: object
       properties:
@@ -938,16 +965,16 @@ components:
         status:
           type: string
         details:
-          $ref: '#/components/schemas/diskSpaceComponentDetails'         
+          $ref: '#/components/schemas/diskSpaceComponentDetails'
     diskSpaceComponentDetails:
       type: object
       properties:
         total:
           type: string
         free:
-          type: float
+          type: number
         threshold:
-          type: float
+          type: number
         exists:
           type: boolean
     dbValidationcomponent:

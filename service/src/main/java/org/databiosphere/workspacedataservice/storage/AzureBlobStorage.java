@@ -57,14 +57,14 @@ public class AzureBlobStorage implements BackUpFileStorage {
             throw new LaunchProcessException("Error streaming output of child process", ioEx);
         }
     }
-    
+
     @Override
     public void streamInputFromBlobStorage(OutputStream toStream, String blobName, String workspaceId) {
         BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId);
         try (toStream) {
             blobContainerClient.getBlobClient(blobName).downloadStream(toStream);
         } catch (IOException ioEx) {
-            throw new LaunchProcessException("Error streaming input to child process", ioEx);  
+            throw new LaunchProcessException("Error streaming input to child process", ioEx);
         }
     }
 

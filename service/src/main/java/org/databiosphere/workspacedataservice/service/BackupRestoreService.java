@@ -5,9 +5,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
-import org.databiosphere.workspacedataservice.service.model.BackupSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
+import org.databiosphere.workspacedataservice.shared.model.job.Job;
+import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
 import org.postgresql.plugin.AuthenticationRequestType;
 import org.postgresql.util.PSQLException;
@@ -26,7 +29,8 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 @Service
 public class BackupRestoreService {
     private final BackupDao backupDao;
-    private BackUpFileStorage storage;
+    private final BackUpFileStorage storage;
+
     private final InstanceDao instanceDao;
     private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
     private static final String BackupFileName = "backup.sql";
@@ -67,32 +71,26 @@ public class BackupRestoreService {
         this.storage = backUpFileStorage;
     }
 
-    public BackupResponse checkBackupStatus(UUID trackingId) {
-        var backup = backupDao.getBackupStatus(trackingId);
+    public Job<BackupResponse> checkBackupStatus(UUID trackingId) {
+        var backupJob = backupDao.getBackupStatus(trackingId);
 
-        if(backup != null) {
-            if (backup.getState() == BackupSchema.BackupState.COMPLETED) {
-                return new BackupResponse(true, BackupSchema.BackupState.COMPLETED.toString(), backup.getFilename(), "Backup successfully completed.");
-            } else if (backup.getState() == BackupSchema.BackupState.ERROR) {
-                return new BackupResponse(true, BackupSchema.BackupState.ERROR.toString(), "", "Backup completed with an error.");
-            } else {
-                return new BackupResponse(false, backup.getState().toString(), "", "Backup still in progress.");
-            }
+        if (backupJob == null) {
+            throw new MissingObjectException("Backup job");
         }
-        else {
-            return new BackupResponse(false, "", "", "Backup not found.");
-        }
+
+        return backupJob;
     }
 
-    public void backupAzureWDS(String version, UUID trackingId, UUID requestorWorkspaceId) {
+    public Job<BackupResponse> backupAzureWDS(String version, UUID trackingId, BackupRequest backupRequest) {
         try {
             validateVersion(version);
 
-            // create an entry to track progress of this backup
-            backupDao.createBackupEntry(trackingId);
+            // if request did not specify which workspace asked for the backup, default to the current workspace
+            UUID requesterWorkspaceId = backupRequest.requestingWorkspaceId() == null ? UUID.fromString(workspaceId) : backupRequest.requestingWorkspaceId();
 
-            // create an entry to track who requested this backup
-            backupDao.createBackupRequestsEntry(requestorWorkspaceId, UUID.fromString(workspaceId));
+            // create an entry to track progress of this backup
+            backupDao.createBackupEntry(trackingId, backupRequest);
+
             String blobName = generateBackupFilename();
 
             List<String> commandList = generateCommandList(true);
@@ -101,28 +99,28 @@ public class BackupRestoreService {
             LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
             localProcessLauncher.launchProcess(commandList, envVars);
 
-            backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.STARTED);
+            backupDao.updateBackupStatus(trackingId, JobStatus.RUNNING);
             LOGGER.info("Starting streaming backup to storage.");
-            storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName, String.valueOf(requestorWorkspaceId));
+            storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName, String.valueOf(requesterWorkspaceId));
+
             String error = checkForError(localProcessLauncher);
 
             if (StringUtils.isNotBlank(error)) {
                 LOGGER.error("process error: {}", error);
-                backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.ERROR);
-                backupDao.updateBackupRequestStatus(UUID.fromString(workspaceId), BackupSchema.BackupState.ERROR);
+                backupDao.terminateBackupToError(trackingId, error);
             }
             else {
                 // if no errors happen and code reaches here, the backup has been completed successfully
                 backupDao.updateFilename(trackingId, blobName);
-                backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.COMPLETED);
-                backupDao.updateBackupRequestStatus(UUID.fromString(workspaceId), BackupSchema.BackupState.COMPLETED);
+                backupDao.updateBackupStatus(trackingId, JobStatus.SUCCEEDED);
             }
         }
-        catch (LaunchProcessException | PSQLException ex) {
+        catch (Exception ex) {
             LOGGER.error("Process error: {}", ex.getMessage());
-            backupDao.updateBackupStatus(trackingId, BackupSchema.BackupState.ERROR);
-            backupDao.updateBackupRequestStatus(UUID.fromString(workspaceId), BackupSchema.BackupState.ERROR);
+            backupDao.terminateBackupToError(trackingId, ex.getMessage());
         }
+
+        return backupDao.getBackupStatus(trackingId);
     }
 
     public boolean restoreAzureWDS(String version) {
@@ -148,7 +146,7 @@ public class BackupRestoreService {
             instanceDao.alterSchema(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId));
 
             return true;
-        } 
+        }
         catch (LaunchProcessException | PSQLException | DataAccessException ex){
             return false;
             //throw new LaunchProcessException(ex.getMessage());
@@ -158,7 +156,7 @@ public class BackupRestoreService {
     private String determinePassword() throws PSQLException {
         if (useAzureIdentity) {
             return new String(new AzurePostgresqlAuthenticationPlugin(new Properties())
-                .getPassword(AuthenticationRequestType.CLEARTEXT_PASSWORD));
+                    .getPassword(AuthenticationRequestType.CLEARTEXT_PASSWORD));
         } else {
             return dbPassword;
         }

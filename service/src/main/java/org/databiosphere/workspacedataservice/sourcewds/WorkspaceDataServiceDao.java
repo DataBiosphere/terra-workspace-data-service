@@ -2,8 +2,8 @@ package org.databiosphere.workspacedataservice.sourcewds;
 
 
 import org.databiosphere.workspacedata.client.ApiException;
-import org.databiosphere.workspacedata.model.BackupResponse;
-import org.databiosphere.workspacedata.model.BackupTrackingResponse;
+import org.databiosphere.workspacedata.model.BackupJob;
+import org.databiosphere.workspacedata.model.BackupRequest;
 
 import java.util.UUID;
 
@@ -23,10 +23,12 @@ public class WorkspaceDataServiceDao {
   /**
    * Triggers a backup in source workspace data service.
    */
-  public BackupTrackingResponse triggerBackup(String token, UUID requesterWorkspaceId) {
-    var backupClient = this.workspaceDataServiceClientFactory.getBackupClient(token, workspaceDataServiceUrl);
+  public BackupJob triggerBackup(String token, UUID requesterWorkspaceId) {
     try {
-      return backupClient.createBackup("v0.2", requesterWorkspaceId);
+      var backupClient = this.workspaceDataServiceClientFactory.getBackupClient(token, workspaceDataServiceUrl);
+      BackupRequest body = new BackupRequest();
+      body.setRequestingWorkspaceId(requesterWorkspaceId);
+      return backupClient.createBackup(body,"v0.2");
     } catch (ApiException e) {
       throw new WorkspaceDataServiceException(e);
     }
@@ -35,7 +37,7 @@ public class WorkspaceDataServiceDao {
   /**
    * Checks status of a backup in source workspace data service.
    */
-  public BackupResponse checkBackupStatus(String token, UUID trackingId) {
+  public BackupJob checkBackupStatus(String token, UUID trackingId) {
     var backupClient = this.workspaceDataServiceClientFactory.getBackupClient(token, workspaceDataServiceUrl);
     try {
       return backupClient.getBackupStatus("v0.2", trackingId);

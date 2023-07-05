@@ -6,6 +6,8 @@ import bio.terra.workspace.api.ReferencedGcpResourceApi;
 import bio.terra.workspace.api.ResourceApi;
 import bio.terra.workspace.client.ApiException;
 import bio.terra.workspace.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.UUID;
@@ -15,7 +17,8 @@ public class WorkspaceManagerDao {
   public static final String INSTANCE_NAME = "terra";
   private final WorkspaceManagerClientFactory workspaceManagerClientFactory;
   private final String workspaceId;
-  
+  private static final Logger LOGGER = LoggerFactory.getLogger(WorkspaceManagerDao.class);
+
   public WorkspaceManagerDao(WorkspaceManagerClientFactory workspaceManagerClientFactory, String workspaceId) {
     this.workspaceManagerClientFactory = workspaceManagerClientFactory;
     this.workspaceId = workspaceId;
@@ -46,18 +49,21 @@ public class WorkspaceManagerDao {
   }
 
   /**
-  Retrieves the azure storage container url and sas token for a given workspace.
+   Retrieves the azure storage container url and sas token for a given workspace.
    */
+  // TODO: consider implementing retries to avoid any transient errors
   public String getBlobStorageUrl() {
     final ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi();
     final ControlledAzureResourceApi azureResourceApi = this.workspaceManagerClientFactory.getAzureResourceApi();
     try {
       UUID workspaceUUID = UUID.fromString(workspaceId);
+      LOGGER.debug("Finding storage resource for workspace {} from Workspace Manager ...", workspaceUUID);
       ResourceList resourceList = resourceApi.enumerateResources(workspaceUUID, 0, 5, ResourceType.AZURE_STORAGE_CONTAINER, null);
       // note: it is possible a workspace may have more than one storage container associated with it
       // but currently there is no way to tell which one is the primary except for checking the actual container name
       var storageUUID = extractResourceId(resourceList);
       if(storageUUID != null) {
+        LOGGER.debug("Requesting SAS token-enabled storage url or workspace {} from Workspace Manager ...", workspaceUUID);
         CreatedAzureStorageContainerSasToken sasBundle = azureResourceApi.createAzureStorageContainerSasToken(workspaceUUID, storageUUID, null, null, null, null);
         return sasBundle.getUrl();
       }
