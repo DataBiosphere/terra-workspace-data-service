@@ -57,13 +57,9 @@ def get_wds_url(workspaceId, env):
 response = get_wds_url(current_workspaceId, "dev")
 
 for entries in response:
-    try:
-        if entries['proxyUrls']['wds'] is not None:
+    if entries['appType'] == 'WDS' and entries['proxyUrls']['wds'] is not None:
             wds_url = entries['proxyUrls']['wds']
             break
-    except:
-        # entry in response is for a different app
-        continue
 
 if wds_url is None: 
     print("WDS is missing in current workspace")
