@@ -24,7 +24,14 @@ public class MockBackupDao implements BackupDao {
 
     @Override
     public boolean backupExists(UUID trackingId) {
-        return backups.contains(trackingId);
+        var data = backups.stream().filter(entry -> entry.getJobId().equals(trackingId));
+        return data == null ? false : true ;
+    }
+
+    @Override
+    public boolean backupExistsForWorkspace(UUID workspaceId)  {
+        var data = backups.stream().filter(entry -> entry.getResult().requester().equals(workspaceId));
+        return data == null ? false : true ;
     }
 
     @Override

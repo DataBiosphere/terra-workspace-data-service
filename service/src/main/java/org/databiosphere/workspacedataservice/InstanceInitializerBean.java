@@ -4,7 +4,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
-import org.databiosphere.workspacedataservice.service.model.BackupSchema;
+import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
+import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,24 +93,24 @@ public class InstanceInitializerBean {
             // url to the url retrieved from Leo
             wdsDao.setWorkspaceDataServiceUrl(sourceWdsEndpoint);
 
-            // check if our current workspace has already sent a request for backup for the source
+            // check if our current workspace has already sent a request for backup
             // if it did, no need to do it again
             var backupFileName = "";
-            if (true){//backupDao.getBackupRequestStatus(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId)) == null) {
+            if (!backupDao.backupExistsForWorkspace(UUID.fromString(workspaceId))) {
                 // TODO since the backup api is not async, this will return once the backup finishes
                 var response = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
 
                 // record the request this workspace made for backup
-                //backupDao.createBackupRequestsEntry(UUID.fromString(workspaceId), UUID.fromString(sourceWorkspaceId));
-
+                backupDao.createBackupEntry(UUID.fromString(response.getJobId()), new BackupRequest(UUID.fromString(workspaceId), "Track backup progress"));
+                var trackingId = UUID.fromString(response.getJobId();
                 var statusResponse = wdsDao.checkBackupStatus(startupToken, UUID.fromString(response.getJobId()));
-                if (statusResponse.getStatus().equals(BackupSchema.BackupState.COMPLETED.toString())) {
+                if (statusResponse.getStatus().equals(JobStatus.SUCCEEDED)) {
                     backupFileName = statusResponse.getResult().getFilename();
-                    //backupDao.updateBackupRequestStatus(UUID.fromString(sourceWorkspaceId), BackupSchema.BackupState.COMPLETED);
+                    backupDao.updateBackupStatus(trackingId, JobStatus.SUCCEEDED);
                 }
                 else {
                     LOGGER.error("An error occurred during clone mode - backup not complete.");
-                    //backupDao.updateBackupRequestStatus(UUID.fromString(sourceWorkspaceId), BackupSchema.BackupState.ERROR);
+                    backupDao.updateBackupStatus(trackingId, JobStatus.ERROR);
                 }
             }
 
@@ -118,7 +119,6 @@ public class InstanceInitializerBean {
         }
         catch(Exception e){
             LOGGER.error("An error occurred during clone mode. Will start with empty database. Error: {}", e.toString());
-            //backupDao.updateBackupRequestStatus(UUID.fromString(sourceWorkspaceId), BackupSchema.BackupState.ERROR);
         }
     }
 

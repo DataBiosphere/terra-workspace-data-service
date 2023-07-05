@@ -14,6 +14,8 @@ public interface BackupDao {
 
     boolean backupExists(UUID trackingId);
 
+    boolean backupExistsForWorkspace(UUID workspaceId);
+
     void createBackupEntry(UUID trackingId, BackupRequest backupRequest);
 
     void updateBackupStatus(UUID trackingId, JobStatus status);

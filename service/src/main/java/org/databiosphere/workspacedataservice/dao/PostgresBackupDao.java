@@ -48,22 +48,18 @@ public class PostgresBackupDao implements BackupDao {
         }
     }
 
-    /*@Override
-    public String getBackupRequestStatus(UUID sourceWorkspaceId, UUID destinationWorkspaceId) {
-        try {
-            return namedTemplate.getJdbcTemplate().queryForObject(
-                    "select status from sys_wds.backup_requests WHERE sourceworkspaceid = ? and destinationworkspaceid = ?", String.class, sourceWorkspaceId, destinationWorkspaceId);
-        } catch (Exception e) {
-            LOGGER.error("Unable to insert record into sys_wds.backup_requests due to error {}.", e.getMessage());
-            return null;
-        }
-    }*/
-
     @Override
     public boolean backupExists(UUID trackingId) {
         return Boolean.TRUE.equals(namedTemplate.queryForObject(
                 "select exists(select from sys_wds.backup WHERE id = :trackingId)",
                 new MapSqlParameterSource("trackingId", trackingId), Boolean.class));
+    }
+
+    @Override
+    public boolean backupExistsForWorkspace(UUID requester)  {
+        return Boolean.TRUE.equals(namedTemplate.queryForObject(
+                "select exists(select from sys_wds.backup WHERE requester = :requester)",
+                new MapSqlParameterSource("requester", requester), Boolean.class));
     }
 
     @Override
@@ -82,14 +78,6 @@ public class PostgresBackupDao implements BackupDao {
                 status.name(), Timestamp.from(Instant.now()), trackingId);
         LOGGER.info("Backup job {} is now {}", trackingId, status);
     }
-
-    /*@Override
-    @WriteTransaction
-    public void updateBackupRequestStatus(UUID sourceWorkspaceId, BackupSchema.BackupState status) {
-        // TODO need to also update completed time (if this is for completed or error backups)
-        namedTemplate.getJdbcTemplate().update("update sys_wds.backup_requests SET status = ? where sourceworkspaceid = ?", status.toString(), sourceWorkspaceId);
-        LOGGER.info("Backup request job is now {}", status);
-    }*/
 
     @Override
     @WriteTransaction
