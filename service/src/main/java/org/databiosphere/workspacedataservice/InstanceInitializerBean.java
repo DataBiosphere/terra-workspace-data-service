@@ -102,7 +102,7 @@ public class InstanceInitializerBean {
 
                 // record the request this workspace made for backup
                 backupDao.createBackupEntry(UUID.fromString(response.getJobId()), new BackupRequest(UUID.fromString(workspaceId), "Track backup progress"));
-                var trackingId = UUID.fromString(response.getJobId();
+                var trackingId = UUID.fromString(response.getJobId());
                 var statusResponse = wdsDao.checkBackupStatus(startupToken, UUID.fromString(response.getJobId()));
                 if (statusResponse.getStatus().equals(JobStatus.SUCCEEDED)) {
                     backupFileName = statusResponse.getResult().getFilename();
