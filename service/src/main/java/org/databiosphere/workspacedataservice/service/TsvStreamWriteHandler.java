@@ -58,7 +58,7 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
 					.map(CsvSchema.Column::getName)
 					.toList();
 			// any blank headers or trailing tabs is considered malformed 
-			if(colNames.stream().anyMatch(col -> col.isBlank())) {
+			if(colNames.stream().anyMatch(String::isBlank)) {
 				throw new InvalidTsvException("TSV headers contain unexpected whitespace. "
 					+ "Please delete the whitespace and resubmit.");
 			}
