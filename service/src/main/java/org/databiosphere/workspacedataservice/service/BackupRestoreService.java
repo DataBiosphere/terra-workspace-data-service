@@ -30,7 +30,6 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 public class BackupRestoreService {
     private final BackupDao backupDao;
     private final BackUpFileStorage storage;
-
     private final InstanceDao instanceDao;
     private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
     private static final String BackupFileName = "backup.sql";

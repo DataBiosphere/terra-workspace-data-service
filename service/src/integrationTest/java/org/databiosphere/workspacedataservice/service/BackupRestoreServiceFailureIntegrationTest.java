@@ -28,9 +28,6 @@ public class BackupRestoreServiceFailureIntegrationTest {
     @Autowired
     private BackupRestoreService backupRestoreService;
 
-    @Value("${twds.instance.workspace-id}")
-    private String workspaceId;
-
     @Value("${twds.instance.source-workspace-id}")
     private String sourceWorkspaceId;
 

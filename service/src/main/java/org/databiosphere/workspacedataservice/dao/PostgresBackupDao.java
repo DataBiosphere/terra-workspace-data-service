@@ -26,6 +26,10 @@ public class PostgresBackupDao implements BackupDao {
 
     private final NamedParameterJdbcTemplate namedTemplate;
 
+    /*
+    PostgresBackupDao is used to interact with sys_wds backup table in postgres that tracks status of backups.
+    This class will help add entries to the table, check if entries already exist and udpate them as necessary.
+     */
     public PostgresBackupDao(NamedParameterJdbcTemplate namedTemplate) {
         this.namedTemplate = namedTemplate;
     }
@@ -44,7 +48,6 @@ public class PostgresBackupDao implements BackupDao {
             return null;
         } else {
             throw new RuntimeException("Unexpected error: %s rows found for backup status query".formatted(responses.size()));
-
         }
     }
 

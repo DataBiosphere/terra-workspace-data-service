@@ -15,6 +15,11 @@ public class PostgresInstanceDao implements InstanceDao {
 
     private final NamedParameterJdbcTemplate namedTemplate;
 
+    /*
+     PostgresInstanceDao is used to interact with sys_wds instance table in postgres.
+     This table tracks activity such as instance creation and deletion, as well as returning existing instances.
+     This class will help add entries to the table, check if entries already exist and update them as necessary.
+      */
     public PostgresInstanceDao(NamedParameterJdbcTemplate namedTemplate) {
         this.namedTemplate = namedTemplate;
     }
