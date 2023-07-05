@@ -36,7 +36,7 @@ public class LocalFileStorage implements BackUpFileStorage {
     }
 
     public void streamInputFromBlobStorage(OutputStream toStream, String blobName, String workspaceId) {
-        try(InputStream inStream = LocalFileStorage.class.getResourceAsStream("/backup-test.sql")) {
+        try(InputStream inStream = LocalFileStorage.class.getResourceAsStream("/WDS-integrationTest-LocalFileStorage-input.sql")) {
             try(BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(toStream, StandardCharsets.UTF_8))) {
                 int line;
                 while((line = Objects.requireNonNull(inStream).read()) != -1) {
