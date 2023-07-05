@@ -73,7 +73,7 @@ public class PostgresBackupDao implements BackupDao {
 
     @Override
     @WriteTransaction
-    public void saveBackupError(UUID trackingId, String error) {
+    public void terminateBackupToError(UUID trackingId, String error) {
 
         namedTemplate.getJdbcTemplate().update("update sys_wds.backup SET error = ? where id = ?",
                 StringUtils.abbreviate(error, 2000), trackingId);

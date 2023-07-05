@@ -16,7 +16,7 @@ public interface BackupDao {
 
     void updateBackupStatus(UUID trackingId, JobStatus status);
 
-    void saveBackupError(UUID trackingId, String error);
+    void terminateBackupToError(UUID trackingId, String error);
 
     void updateFilename(UUID trackingId, String filename);
 }

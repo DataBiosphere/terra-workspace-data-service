@@ -105,7 +105,7 @@ public class BackupRestoreService {
 
             if (StringUtils.isNotBlank(error)) {
                 LOGGER.error("process error: {}", error);
-                backupDao.saveBackupError(trackingId, error);
+                backupDao.terminateBackupToError(trackingId, error);
             }
             else {
                 // if no errors happen and code reaches here, the backup has been completed successfully
@@ -115,7 +115,7 @@ public class BackupRestoreService {
         }
         catch (Exception ex) {
             LOGGER.error("Process error: {}", ex.getMessage());
-            backupDao.saveBackupError(trackingId, ex.getMessage());
+            backupDao.terminateBackupToError(trackingId, ex.getMessage());
         }
 
         return backupDao.getBackupStatus(trackingId);
