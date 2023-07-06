@@ -56,8 +56,8 @@ def get_wds_url(workspaceId, env):
 # the response will return all proxy urls for the workspace
 response = get_wds_url(current_workspaceId, "dev")
 
-for entries in response: 
-    if entries['proxyUrls']['wds'] is not None:
+for entries in response:
+    if entries['appType'] == 'WDS' and entries['proxyUrls']['wds'] is not None:
         wds_url = entries['proxyUrls']['wds']
         break
 

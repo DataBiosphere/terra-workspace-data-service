@@ -19,10 +19,9 @@ public class HttpLeonardoClientFactory implements LeonardoClientFactory {
     private final OkHttpClient commonHttpClient;
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpLeonardoClientFactory.class);
 
-
     public HttpLeonardoClientFactory(String leoUrl) {
         this.leoEndpointUrl = leoUrl;
-        this.commonHttpClient = new org.broadinstitute.dsde.workbench.client.sam.ApiClient()
+        this.commonHttpClient = new ApiClient()
                 .getHttpClient()
                 .newBuilder()
                 .build();

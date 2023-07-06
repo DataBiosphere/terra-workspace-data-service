@@ -134,9 +134,11 @@ class SamPactTest {
                         .stringType("userEmail")
                         .booleanType("enabled");
         return builder
+                .given("user status info request with access token")
                 .uponReceiving("a request for the user's status")
                 .path("/register/user/v2/self/info")
                 .method("GET")
+                .headers("Authorization", "Bearer accessToken")
                 .willRespondWith()
                 .status(200)
                 .body(userResponseShape)
@@ -146,6 +148,7 @@ class SamPactTest {
     @Pact(consumer = "wds-consumer", provider = "sam-provider")
     public RequestResponsePact noUserStatusPact(PactDslWithProvider builder) {
         return builder
+                .given("user status info request without access token")
                 .uponReceiving("a request for the user's status without a token")
                 .path("/register/user/v2/self/info")
                 .method("GET")

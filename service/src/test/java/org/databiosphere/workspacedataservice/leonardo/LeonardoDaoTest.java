@@ -18,8 +18,8 @@ import org.springframework.test.context.TestPropertySource;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -53,33 +53,33 @@ class LeonardoDaoTest {
     }
 
     @Test
-    void testWdsUrlReturned() throws ApiException {
+
+    void testWdsUrlReturned() {
         var url = buildAppResponseAndCallExtraction(generateListAppResponse("wds", AppStatus.RUNNING,1));
         assertEquals(expectedUrl, url);
     }
 
     @Test
-    void testWdsUrlNotFoundWrongStatus() throws ApiException {
+    void testWdsUrlNotFoundWrongStatus() {
         var url = buildAppResponseAndCallExtraction(generateListAppResponse("wds", AppStatus.DELETED, 1));
-        assertEquals(null, url);
+        assertNull(url);
     }
 
     @Test
-    void testWdsUrlNotFoundWrongKey() throws ApiException {
+    void testWdsUrlNotFoundWrongKey() {
         var url = buildAppResponseAndCallExtraction(generateListAppResponse("not-wds", AppStatus.RUNNING, 1));
-        assertEquals(null, url);
+        assertNull(url);
     }
 
     @Test
-    void testWdsUrlMultiple() throws ApiException {
+    void testWdsUrlMultiple() {
         // tests the case if there are 2 running wds apps
         var url = buildAppResponseAndCallExtraction(generateListAppResponse("wds", AppStatus.RUNNING,2));
         assertEquals(expectedUrl, url);
     }
 
     String buildAppResponseAndCallExtraction(List<ListAppResponse> responses ){
-        var url = leonardoDao.extractWdsUrl(responses);
-        return url;
+        return leonardoDao.extractWdsUrl(responses);
     }
 
     List<ListAppResponse> generateListAppResponse(String wdsKey, AppStatus wdsStatus, int count) {
@@ -87,7 +87,7 @@ class LeonardoDaoTest {
         var url = expectedUrl;
         while(count != 0) {
             ListAppResponse response = mock(ListAppResponse.class);
-            Map<String, String> proxyUrls = new HashMap<String, String>();
+            Map<String, String> proxyUrls = new HashMap<>();
             proxyUrls.put(wdsKey, url);
             when(response.getProxyUrls()).thenReturn(proxyUrls);
             when(response.getStatus()).thenReturn(wdsStatus);
@@ -104,4 +104,3 @@ class LeonardoDaoTest {
         return responseList;
     }
 }
-
