@@ -5,6 +5,8 @@ import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,7 +43,8 @@ public class MockBackupDao implements BackupDao {
 
     @Override
     public void createBackupEntry(UUID trackingId, BackupRequest request) {
-        Job<BackupResponse> backup = new Job<>(trackingId, JobStatus.QUEUED,"",null, null, null);
+        Timestamp now = Timestamp.from(Instant.now());
+        Job<BackupResponse> backup = new Job<>(trackingId, JobStatus.QUEUED,"", now.toLocalDateTime(), now.toLocalDateTime(), null);
         backups.add(backup);
     }
 
@@ -57,13 +60,17 @@ public class MockBackupDao implements BackupDao {
     public void updateFilename(UUID trackingId, String filename) {
         var backup = getBackupStatus(trackingId);
         backups.remove(backup);
-        BackupResponse response = new BackupResponse(filename, null, "backup success");
+        BackupResponse response = new BackupResponse(filename, null, "Backup successfully completed.");
         backup.setResult(response);
         backups.add(backup);
     }
 
     @Override
     public void terminateBackupToError(UUID trackingId, String error) {
-
+        var backup = getBackupStatus(trackingId);
+        backups.remove(backup);
+        backup.setStatus(JobStatus.ERROR);
+        backup.setErrorMessage(error);
+        backups.add(backup);
     }
 }

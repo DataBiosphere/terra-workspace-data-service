@@ -47,7 +47,7 @@ public class HttpLeonardoClientFactory implements LeonardoClientFactory {
                 LOGGER.debug("setting access token for leonardo request");
                 apiClient.setAccessToken(userToken.toString());
             } else {
-                LOGGER.warn("No access token found for leoanrdo request.");
+                LOGGER.warn("No access token found for leonardo request.");
             }
         }
         else {
