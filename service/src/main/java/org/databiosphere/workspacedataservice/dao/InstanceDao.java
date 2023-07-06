@@ -11,4 +11,6 @@ public interface InstanceDao {
     void createSchema(UUID instanceId);
 
     void dropSchema(UUID instanceId);
+
+    void alterSchema(UUID sourceWorkspaceId, UUID workspaceId);
 }
