@@ -9,11 +9,7 @@ import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import java.util.UUID;
 
 public interface BackupDao {
-
     Job<BackupResponse> getBackupStatus(UUID trackingId);
-
-    boolean backupExists(UUID trackingId);
-
     boolean backupExistsForWorkspace(UUID workspaceId);
 
     void createBackupEntry(UUID trackingId, BackupRequest backupRequest);

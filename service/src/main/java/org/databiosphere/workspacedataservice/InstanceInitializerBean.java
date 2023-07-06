@@ -45,16 +45,16 @@ public class InstanceInitializerBean {
 
     public boolean isInCloneMode(String sourceWorkspaceId) {
         if (StringUtils.isNotBlank(sourceWorkspaceId)){
-            LOGGER.info("Source workspace id found, checking database");
+            LOGGER.info("SourceWorkspaceId found, checking database");
             try {
                 UUID.fromString(sourceWorkspaceId);
             } catch (IllegalArgumentException e){
-                    LOGGER.warn("Source workspace Id could not be parsed, unable to clone DB. Provided source workspace id: {}.", sourceWorkspaceId);
+                    LOGGER.warn("SourceWorkspaceId could not be parsed, unable to clone DB. Provided SourceWorkspaceId: {}.", sourceWorkspaceId);
                     return false;
             }
 
             if (sourceWorkspaceId.equals(workspaceId)) {
-                LOGGER.warn("Source workspace id and current workspace Id can't be the same.");
+                LOGGER.warn("SourceWorkspaceId and current WorkspaceId can't be the same.");
                 return false;
             }
 
@@ -65,11 +65,11 @@ public class InstanceInitializerBean {
                 // and can just kick off the restore
                 return !instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
             } catch (IllegalArgumentException e) {
-                LOGGER.warn("Workspace id could not be parsed, unable to clone DB. Provided default workspace id: {}.", workspaceId);
+                LOGGER.warn("WorkspaceId could not be parsed, unable to clone DB. Provided default WorkspaceId: {}.", workspaceId);
                 return false;
             }
         }
-        LOGGER.info("No source workspace id found, initializing default schema.");
+        LOGGER.info("No SourceWorkspaceId found, initializing default schema.");
         return false;
 
     }
@@ -94,9 +94,10 @@ public class InstanceInitializerBean {
             // url to the url retrieved from Leo
             wdsDao.setWorkspaceDataServiceUrl(sourceWdsEndpoint);
 
-            // check if our current workspace has already sent a request for backup
-            // if it did, no need to do it again
+            // this fileName will be used for the restore
             var backupFileName = "";
+            // check if the  current workspace has already sent a request for backup
+            // if it did, no need to do it again
             if (!backupDao.backupExistsForWorkspace(UUID.fromString(workspaceId))) {
                 // TODO since the backup api is not async, this will return once the backup finishes
                 var response = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
@@ -111,7 +112,7 @@ public class InstanceInitializerBean {
                 }
                 else {
                     LOGGER.error("An error occurred during clone mode - backup not complete.");
-                    backupDao.updateBackupStatus(trackingId, JobStatus.ERROR);
+                    backupDao.terminateBackupToError(trackingId, statusResponse.getErrorMessage());
                 }
             }
 
@@ -119,7 +120,7 @@ public class InstanceInitializerBean {
             LOGGER.info("Restore from the following path on the source workspace storage container: {}", backupFileName);
         }
         catch(Exception e){
-            LOGGER.error("An error occurred during clone mode. Will start with empty database. Error: {}", e.toString());
+            LOGGER.error("An error occurred during clone mode. Will start with empty default instance schema. Error: {}", e.toString());
         }
     }
 

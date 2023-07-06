@@ -52,13 +52,6 @@ public class PostgresBackupDao implements BackupDao {
     }
 
     @Override
-    public boolean backupExists(UUID trackingId) {
-        return Boolean.TRUE.equals(namedTemplate.queryForObject(
-                "select exists(select from sys_wds.backup WHERE id = :trackingId)",
-                new MapSqlParameterSource("trackingId", trackingId), Boolean.class));
-    }
-
-    @Override
     public boolean backupExistsForWorkspace(UUID requester)  {
         return Boolean.TRUE.equals(namedTemplate.queryForObject(
                 "select exists(select from sys_wds.backup WHERE requester = :requester)",

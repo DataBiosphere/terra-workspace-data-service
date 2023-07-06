@@ -514,14 +514,6 @@ components:
       schema:
         type: string
         default: v0.2
-    requestorWorkspacePathParam:
-      name: requestorWorkspaceId
-      in: path
-      description: Cloning source workspace Id
-      required: true
-      schema:
-        type: string
-        format: uuid
     snapshotIdPathParam:
       name: snapshotid
       in: path

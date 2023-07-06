@@ -18,7 +18,6 @@ import org.springframework.test.context.TestPropertySource;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -53,7 +52,6 @@ class LeonardoDaoTest {
     }
 
     @Test
-
     void testWdsUrlReturned() {
         var url = buildAppResponseAndCallExtraction(generateListAppResponse("wds", AppStatus.RUNNING,1));
         assertEquals(expectedUrl, url);

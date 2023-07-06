@@ -101,7 +101,6 @@ public class BackupRestoreService {
             backupDao.updateBackupStatus(trackingId, JobStatus.RUNNING);
             LOGGER.info("Starting streaming backup to storage.");
             storage.streamOutputToBlobStorage(localProcessLauncher.getInputStream(), blobName, String.valueOf(requesterWorkspaceId));
-
             String error = checkForError(localProcessLauncher);
 
             if (StringUtils.isNotBlank(error)) {
@@ -200,4 +199,3 @@ public class BackupRestoreService {
         return "";
     }
 }
-
