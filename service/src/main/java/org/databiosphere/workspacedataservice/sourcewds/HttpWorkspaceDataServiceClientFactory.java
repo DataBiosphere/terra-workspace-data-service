@@ -18,7 +18,7 @@ public class HttpWorkspaceDataServiceClientFactory implements WorkspaceDataServi
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpWorkspaceDataServiceClientFactory.class);
 
     public HttpWorkspaceDataServiceClientFactory() {
-        this.commonHttpClient = new bio.terra.workspace.client.ApiClient().getHttpClient();
+        this.commonHttpClient = new ApiClient().getHttpClient();
     }
 
     private ApiClient getApiClient(String token, String workspaceDataServiceUrl) {
