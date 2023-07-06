@@ -85,7 +85,7 @@ class LeonardoDaoTest {
         var url = expectedUrl;
         while(count != 0) {
             ListAppResponse response = mock(ListAppResponse.class);
-            Map<String, String> proxyUrls = new HashMap<String, String>();
+            Map<String, String> proxyUrls = new HashMap<>();
             proxyUrls.put(wdsKey, url);
             when(response.getProxyUrls()).thenReturn(proxyUrls);
             when(response.getStatus()).thenReturn(wdsStatus);
