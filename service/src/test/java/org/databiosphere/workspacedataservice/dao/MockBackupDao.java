@@ -37,7 +37,7 @@ public class MockBackupDao implements BackupDao {
     @Override
     public void createBackupEntry(UUID trackingId, BackupRequest request) {
         Timestamp now = Timestamp.from(Instant.now());
-        Job<BackupResponse> backup = new Job<>(trackingId, JobStatus.QUEUED,"", now.toLocalDateTime(), now.toLocalDateTime(), null);
+        Job<BackupResponse> backup = new Job<>(trackingId, JobStatus.QUEUED, "", now.toLocalDateTime(), now.toLocalDateTime(), null);
         backups.add(backup);
     }
 

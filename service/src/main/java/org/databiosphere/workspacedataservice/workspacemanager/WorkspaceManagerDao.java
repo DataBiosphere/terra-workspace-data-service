@@ -37,11 +37,11 @@ public class WorkspaceManagerDao {
               new DataRepoSnapshotAttributes()
                   .instanceName(INSTANCE_NAME)
                   .snapshot(snapshotModel.getId().toString()))
-            .metadata(
-                new ReferenceResourceCommonFields()
-                    .cloningInstructions(CloningInstructionsEnum.REFERENCE)
-                    .name("%s_%s".formatted(snapshotModel.getName(), timeStamp))
-            ),
+              .metadata(
+                  new ReferenceResourceCommonFields()
+                      .cloningInstructions(CloningInstructionsEnum.REFERENCE)
+                      .name("%s_%s".formatted(snapshotModel.getName(), timeStamp))
+              ),
           UUID.fromString(workspaceId));
     } catch (ApiException e) {
       throw new WorkspaceManagerException(e);
