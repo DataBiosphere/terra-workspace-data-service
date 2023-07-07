@@ -3,9 +3,11 @@ package org.databiosphere.workspacedataservice;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedata.model.Job;
 import org.databiosphere.workspacedataservice.dao.BackupDao;
+import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
+import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
 import org.slf4j.Logger;
@@ -20,7 +22,8 @@ public class InstanceInitializerBean {
     private final InstanceDao instanceDao;
     private final BackupDao backupDao;
     private final LeonardoDao leoDao;
-    private WorkspaceDataServiceDao wdsDao;
+    private final WorkspaceDataServiceDao wdsDao;
+    private final CloneDao cloneDao;
 
     @Value("${twds.instance.workspace-id}")
     private String workspaceId;
@@ -31,16 +34,14 @@ public class InstanceInitializerBean {
     @Value("${twds.startup-token}")
     private String startupToken;
 
-    @Value("${leoUrl}")
-    private String leoUrl;
-
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceInitializerBean.class);
 
-    public InstanceInitializerBean(InstanceDao instanceDao, BackupDao backupDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao){
+    public InstanceInitializerBean(InstanceDao instanceDao, BackupDao backupDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao, CloneDao cloneDao){
         this.instanceDao = instanceDao;
         this.backupDao = backupDao;
         this.leoDao = leoDao;
         this.wdsDao = wdsDao;
+        this.cloneDao = cloneDao;
     }
 
     public boolean isInCloneMode(String sourceWorkspaceId) {
@@ -96,10 +97,12 @@ public class InstanceInitializerBean {
 
             // this fileName will be used for the restore
             var backupFileName = "";
-            // check if the  current workspace has already sent a request for backup
+            // check if the current workspace has already sent a request for backup
             // if it did, no need to do it again
-            if (!backupDao.backupExistsForWorkspace(UUID.fromString(workspaceId))) {
-                LOGGER.info("No backup exists, will iniated one.");
+            // TODO can also check the status and decide if backup should be tried again
+            if (!cloneDao.cloneExistsForWorkspace(UUID.fromString(sourceWorkspaceId))) {
+                LOGGER.info("No backup exists, will initiate one.");
+                cloneDao.createCloneEntry(UUID.fromString(sourceWorkspaceId));
                 // TODO since the backup api is not async, this will return once the backup finishes
                 var response = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
 
@@ -112,10 +115,12 @@ public class InstanceInitializerBean {
                 if (statusResponse.getStatus().equals(Job.StatusEnum.SUCCEEDED)) {
                     backupFileName = statusResponse.getResult().getFilename();
                     backupDao.updateBackupStatus(trackingId, JobStatus.SUCCEEDED);
+                    cloneDao.updateCloneEntryStatus(UUID.fromString(sourceWorkspaceId), CloneStatus.BACKUPSUCCEEDED);
                 }
                 else {
                     LOGGER.error("An error occurred during clone mode - backup not complete.");
                     backupDao.terminateBackupToError(trackingId, statusResponse.getErrorMessage());
+                    cloneDao.updateCloneEntryStatus(UUID.fromString(sourceWorkspaceId), CloneStatus.BACKUPERROR);
                 }
             }
 

@@ -10,13 +10,8 @@ import java.util.UUID;
 
 public interface BackupDao {
     Job<BackupResponse> getBackupStatus(UUID trackingId);
-    boolean backupExistsForWorkspace(UUID workspaceId);
-
     void createBackupEntry(UUID trackingId, BackupRequest backupRequest);
-
     void updateBackupStatus(UUID trackingId, JobStatus status);
-
     void terminateBackupToError(UUID trackingId, String error);
-
     void updateFilename(UUID trackingId, String filename);
 }

@@ -16,7 +16,7 @@ import java.util.UUID;
 public class WorkspaceManagerDao {
   public static final String INSTANCE_NAME = "terra";
   private final WorkspaceManagerClientFactory workspaceManagerClientFactory;
-  private String workspaceId;
+  private final String workspaceId;
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkspaceManagerDao.class);
 
   public WorkspaceManagerDao(WorkspaceManagerClientFactory workspaceManagerClientFactory, String workspaceId) {
@@ -52,11 +52,11 @@ public class WorkspaceManagerDao {
    Retrieves the azure storage container url and sas token for a given workspace.
    */
   // TODO: consider implementing retries to avoid any transient errors
-  public String getBlobStorageUrl(String workspaceId) {
+  public String getBlobStorageUrl(String storageWorkspaceId) {
     final ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi();
     final ControlledAzureResourceApi azureResourceApi = this.workspaceManagerClientFactory.getAzureResourceApi();
     try {
-      UUID workspaceUUID = UUID.fromString(workspaceId);
+      UUID workspaceUUID = UUID.fromString(storageWorkspaceId);
       LOGGER.debug("Finding storage resource for workspace {} from Workspace Manager ...", workspaceUUID);
       ResourceList resourceList = resourceApi.enumerateResources(workspaceUUID, 0, 5, ResourceType.AZURE_STORAGE_CONTAINER, null);
       // note: it is possible a workspace may have more than one storage container associated with it
