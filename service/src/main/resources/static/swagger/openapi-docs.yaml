@@ -666,10 +666,8 @@ components:
           enum: [ QUEUED, RUNNING, SUCCEEDED, ERROR, CANCELLED, UNKNOWN ]
         created:
           type: string
-          format: date-time
         updated:
           type: string
-          format: date-time
         errorMessage:
           type: string
         exception:

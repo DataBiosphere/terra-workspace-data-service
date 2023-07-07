@@ -28,5 +28,5 @@ databaseChangeLog:
                   name: sourceworkspaceid
                   type: uuid
               - column:
-                  name: cloneStatus
+                  name: clonestatus
                   type: varchar(10)

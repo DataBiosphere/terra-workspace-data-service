@@ -39,7 +39,7 @@ public class PostgresCloneDao implements CloneDao {
     @WriteTransaction
     public void createCloneEntry(UUID trackingId, UUID sourceWorkspaceId) {
         Timestamp now = Timestamp.from(Instant.now());
-        namedTemplate.getJdbcTemplate().update("insert into sys_wds.clone(id, status, createdtime, updatedtime, sourceworkspaceid, cloneStatus) " +
+        namedTemplate.getJdbcTemplate().update("insert into sys_wds.clone(id, status, createdtime, updatedtime, sourceworkspaceid, clonestatus) " +
                 "values (?,?,?,?,?,?)", trackingId, JobStatus.QUEUED.name(), now, now, sourceWorkspaceId, CloneStatus.BACKUPQUEUED.name());
     }
 
@@ -47,13 +47,13 @@ public class PostgresCloneDao implements CloneDao {
     @WriteTransaction
     public void updateCloneEntryStatus(UUID trackingId, CloneStatus status) {
         try {
-            namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET cloneStatus = ?, status = ? where id = ?",
-                    status.name(), JobStatus.SUCCEEDED, trackingId);
+            namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET clonestatus = ?, status = ? where id = ?",
+                    status.name(), JobStatus.SUCCEEDED.name(), trackingId);
             LOGGER.info("Clone status is now {}", status);
         }
         catch (Exception e){
             namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET status = ? where id = ?",
-                    JobStatus.ERROR, trackingId);
+                    JobStatus.ERROR.name(), trackingId);
         }
     }
 
@@ -62,8 +62,6 @@ public class PostgresCloneDao implements CloneDao {
     public void terminateBackupToError(UUID trackingId, String error) {
         namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET error = ? where id = ?",
                 StringUtils.abbreviate(error, 2000), trackingId);
-        // because saveBackupError is annotated with @WriteTransaction, we can ignore IntelliJ warnings about
-        // self-invocation of transactions on the following line:
         updateCloneEntryStatus(trackingId, CloneStatus.BACKUPERROR);
     }
 }
