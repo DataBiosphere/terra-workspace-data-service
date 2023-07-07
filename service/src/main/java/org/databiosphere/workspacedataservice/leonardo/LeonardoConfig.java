@@ -12,14 +12,14 @@ public class LeonardoConfig {
         @Value("${leoUrl:}")
         private String leonardoUrl;
 
-        @Value("${twds.instance.workspace-id:}")
+        @Value("${twds.instance.source-workspace-id:}")
         private String workspaceId;
 
         private static final Logger LOGGER = LoggerFactory.getLogger(LeonardoConfig.class);
 
         @Bean
         public LeonardoClientFactory getLeonardoClientFactory() {
-                LOGGER.info("Using leonardo url: '{}'", leonardoUrl);
+                LOGGER.info("Using leonardo url: '{}' with workspaceId {}", leonardoUrl, workspaceId);
                 return new HttpLeonardoClientFactory(leonardoUrl);
         }
 

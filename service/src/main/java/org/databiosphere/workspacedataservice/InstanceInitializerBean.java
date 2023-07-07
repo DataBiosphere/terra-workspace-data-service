@@ -99,12 +99,15 @@ public class InstanceInitializerBean {
             // check if the  current workspace has already sent a request for backup
             // if it did, no need to do it again
             if (!backupDao.backupExistsForWorkspace(UUID.fromString(workspaceId))) {
+                LOGGER.info("No backup exists, will iniated one.");
                 // TODO since the backup api is not async, this will return once the backup finishes
                 var response = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
 
+                LOGGER.info("Create backup entry in WDS to track cloning process.");
                 // record the request this workspace made for backup
                 backupDao.createBackupEntry(UUID.fromString(response.getJobId()), new BackupRequest(UUID.fromString(workspaceId), "Track cloning backup progress."));
                 var trackingId = UUID.fromString(response.getJobId());
+                LOGGER.info("Check on backup status in source workspace with Job Id {}.", response.getJobId());
                 var statusResponse = wdsDao.checkBackupStatus(startupToken, UUID.fromString(response.getJobId()));
                 if (statusResponse.getStatus().equals(Job.StatusEnum.SUCCEEDED)) {
                     backupFileName = statusResponse.getResult().getFilename();
