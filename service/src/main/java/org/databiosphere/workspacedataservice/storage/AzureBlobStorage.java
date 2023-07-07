@@ -70,7 +70,6 @@ public class AzureBlobStorage implements BackUpFileStorage {
 
     public BlobContainerClient constructBlockBlobClient(String workspaceId) {
         // get workspace blob storage endpoint and token
-
         var blobstorageDetails = workspaceManagerDao.getBlobStorageUrl(workspaceId);
 
         // the url we get from WSM already contains the token in it, so no need to specify sasToken separately
