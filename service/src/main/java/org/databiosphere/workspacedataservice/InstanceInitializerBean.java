@@ -6,7 +6,6 @@ import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
-import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
@@ -102,14 +101,13 @@ public class InstanceInitializerBean {
             // TODO can also check the status and decide if backup should be tried again
             if (!cloneDao.cloneExistsForWorkspace(UUID.fromString(sourceWorkspaceId))) {
                 LOGGER.info("No backup exists, will initiate one.");
-                cloneDao.createCloneEntry(UUID.fromString(sourceWorkspaceId));
+
                 // TODO since the backup api is not async, this will return once the backup finishes
                 var response = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
-
-                LOGGER.info("Create backup entry in WDS to track cloning process.");
-                // record the request this workspace made for backup
-                backupDao.createBackupEntry(UUID.fromString(response.getJobId()), new BackupRequest(UUID.fromString(workspaceId), "Track cloning backup progress."));
                 var trackingId = UUID.fromString(response.getJobId());
+                LOGGER.info("Create clone entry in WDS to track cloning process.");
+                cloneDao.createCloneEntry(trackingId, UUID.fromString(sourceWorkspaceId));
+
                 LOGGER.info("Check on backup status in source workspace with Job Id {}.", response.getJobId());
                 var statusResponse = wdsDao.checkBackupStatus(startupToken, UUID.fromString(response.getJobId()));
                 if (statusResponse.getStatus().equals(Job.StatusEnum.SUCCEEDED)) {

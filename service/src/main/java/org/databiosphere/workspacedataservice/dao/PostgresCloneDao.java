@@ -9,6 +9,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.UUID;
 
 @Repository
@@ -34,16 +36,17 @@ public class PostgresCloneDao implements CloneDao {
 
     @Override
     @WriteTransaction
-    public void createCloneEntry(UUID sourceWorkspaceId) {
-        namedTemplate.getJdbcTemplate().update("insert into sys_wds.clone(sourceworkspaceid, status) " +
-                "values (?,?,?)", sourceWorkspaceId, JobStatus.QUEUED.name());
+    public void createCloneEntry(UUID trackingId, UUID sourceWorkspaceId) {
+        Timestamp now = Timestamp.from(Instant.now());
+        namedTemplate.getJdbcTemplate().update("insert into sys_wds.clone(id, status, createdtime, updatedtime, sourceworkspaceid, cloneStatus) " +
+                "values (?,?,?,?,?,?)", trackingId, JobStatus.QUEUED.name(), now, now, sourceWorkspaceId, CloneStatus.BACKUPQUEUED.name());
     }
 
     @Override
     @WriteTransaction
     public void updateCloneEntryStatus(UUID sourceWorkspaceId, CloneStatus status) {
-        namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET status = ? where sourceWorkspaceId = ?",
-                status.name(), sourceWorkspaceId);
+        namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET cloneStatus = ?, status = ? where sourceWorkspaceId = ?",
+                status.name(), JobStatus.SUCCEEDED, sourceWorkspaceId);
         LOGGER.info("Clone status for workspace {} is now {}", sourceWorkspaceId, status);
     }
 }

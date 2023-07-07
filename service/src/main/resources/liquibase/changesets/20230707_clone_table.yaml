@@ -8,11 +8,25 @@ databaseChangeLog:
             tableName: clone
             columns:
               - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: status
+                  type: varchar(10)
+              - column:
+                  name: error
+                  type: varchar(2000)
+              - column:
+                  name: createdtime
+                  type: datetime
+              - column:
+                  name: updatedtime
+                  type: datetime
+              - column:
                   name: sourceworkspaceid
                   type: uuid
               - column:
-                  name: destinationworkspaceid
-                  type: uuid
-              - column:
-                  name: status
+                  name: cloneStatus
                   type: varchar(10)
