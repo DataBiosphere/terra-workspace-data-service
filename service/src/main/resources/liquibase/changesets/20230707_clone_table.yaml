@@ -29,4 +29,4 @@ databaseChangeLog:
                   type: uuid
               - column:
                   name: clonestatus
-                  type: varchar(10)
+                  type: varchar(25)
