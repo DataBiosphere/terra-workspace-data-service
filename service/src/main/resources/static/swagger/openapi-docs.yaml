@@ -663,7 +663,7 @@ components:
           type: string
         status:
           type: string
-          enum: [ QUEUED, STARTED, RUNNING, SUCCEEDED, FAILED ]
+          enum: [ QUEUED, RUNNING, SUCCEEDED, ERROR, CANCELLED, UNKNOWN ]
         created:
           type: string
           format: date-time
