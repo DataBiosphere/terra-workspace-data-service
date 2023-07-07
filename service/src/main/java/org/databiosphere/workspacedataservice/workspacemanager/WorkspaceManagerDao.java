@@ -55,21 +55,24 @@ public class WorkspaceManagerDao {
   public String getBlobStorageUrl(String storageWorkspaceId) {
     final ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi();
     final ControlledAzureResourceApi azureResourceApi = this.workspaceManagerClientFactory.getAzureResourceApi();
-    try {
-      UUID workspaceUUID = UUID.fromString(storageWorkspaceId);
-      LOGGER.debug("Finding storage resource for workspace {} from Workspace Manager ...", workspaceUUID);
-      ResourceList resourceList = resourceApi.enumerateResources(workspaceUUID, 0, 5, ResourceType.AZURE_STORAGE_CONTAINER, null);
-      // note: it is possible a workspace may have more than one storage container associated with it
-      // but currently there is no way to tell which one is the primary except for checking the actual container name
-      var storageUUID = extractResourceId(resourceList);
-      if(storageUUID != null) {
-        LOGGER.debug("Requesting SAS token-enabled storage url or workspace {} from Workspace Manager ...", workspaceUUID);
-        CreatedAzureStorageContainerSasToken sasBundle = azureResourceApi.createAzureStorageContainerSasToken(workspaceUUID, storageUUID, null, null, null, null);
-        return sasBundle.getUrl();
+    int count = 0;
+    int maxTries = 3;
+    while(true) {
+      try {
+        UUID workspaceUUID = UUID.fromString(storageWorkspaceId);
+        LOGGER.debug("Finding storage resource for workspace {} from Workspace Manager ...", workspaceUUID);
+        ResourceList resourceList = resourceApi.enumerateResources(workspaceUUID, 0, 5, ResourceType.AZURE_STORAGE_CONTAINER, null);
+        // note: it is possible a workspace may have more than one storage container associated with it
+        // but currently there is no way to tell which one is the primary except for checking the actual container name
+        var storageUUID = extractResourceId(resourceList);
+        if (storageUUID != null) {
+          LOGGER.debug("Requesting SAS token-enabled storage url or workspace {} from Workspace Manager ...", workspaceUUID);
+          CreatedAzureStorageContainerSasToken sasBundle = azureResourceApi.createAzureStorageContainerSasToken(workspaceUUID, storageUUID, null, null, null, null);
+          return sasBundle.getUrl();
+        } else throw new ApiException("Can't locate a storage resource matching workspace Id. ");
+      } catch (ApiException e) {
+        if (++count == maxTries) throw new WorkspaceManagerException(e);
       }
-      else throw new ApiException("Can't locate a storage resource matching workspace Id. ");
-    } catch (ApiException e) {
-      throw new WorkspaceManagerException(e);
     }
   }
 

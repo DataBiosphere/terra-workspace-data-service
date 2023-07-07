@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import bio.terra.common.db.WriteTransaction;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
@@ -33,12 +34,30 @@ public class MockCloneDao implements CloneDao {
     }
 
     @Override
-    public void updateCloneEntryStatus(UUID sourceWorkspaceId, CloneStatus status) {
-        var cloneEntry = clone.stream().filter(entry -> entry.getResult().sourceWorkspaceId.equals(sourceWorkspaceId)).findFirst().orElse(null);
+    public void updateCloneEntryStatus(UUID trackingId, CloneStatus status) {
+        try {
+            var cloneEntry = clone.stream().filter(entry -> entry.getJobId().equals(trackingId)).findFirst().orElse(null);
+            clone.remove(cloneEntry);
+            cloneEntry.getResult().status = status;
+            cloneEntry.setStatus(JobStatus.SUCCEEDED);
+            clone.add(cloneEntry);
+        }
+        catch(Exception e) {
+            var cloneEntry = clone.stream().filter(entry -> entry.getJobId().equals(trackingId)).findFirst().orElse(null);
+            clone.remove(cloneEntry);
+            cloneEntry.setStatus(JobStatus.ERROR);
+            clone.add(cloneEntry);
+        }
+    }
+
+    @Override
+    @WriteTransaction
+    public void terminateBackupToError(UUID trackingId, String error) {
+        var cloneEntry = clone.stream().filter(entry -> entry.getJobId().equals(trackingId)).findFirst().orElse(null);
         clone.remove(cloneEntry);
-        cloneEntry.getResult().status = status;
-        cloneEntry.setStatus(JobStatus.SUCCEEDED);
+        cloneEntry.setErrorMessage(error);
         clone.add(cloneEntry);
+        updateCloneEntryStatus(trackingId, CloneStatus.BACKUPERROR);
     }
 
     class CloneEntry implements JobResult {

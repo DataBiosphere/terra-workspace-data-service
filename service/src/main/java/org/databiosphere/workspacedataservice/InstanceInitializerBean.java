@@ -7,7 +7,6 @@ import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
-import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,29 +102,27 @@ public class InstanceInitializerBean {
                 LOGGER.info("No backup exists, will initiate one.");
 
                 // TODO since the backup api is not async, this will return once the backup finishes
-                var response = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
-                var trackingId = UUID.fromString(response.getJobId());
+                var backupResponse = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
+                var trackingId = UUID.fromString(backupResponse.getJobId());
                 LOGGER.info("Create clone entry in WDS to track cloning process.");
                 cloneDao.createCloneEntry(trackingId, UUID.fromString(sourceWorkspaceId));
 
-                LOGGER.info("Check on backup status in source workspace with Job Id {}.", response.getJobId());
-                var statusResponse = wdsDao.checkBackupStatus(startupToken, UUID.fromString(response.getJobId()));
-                if (statusResponse.getStatus().equals(Job.StatusEnum.SUCCEEDED)) {
-                    backupFileName = statusResponse.getResult().getFilename();
-                    backupDao.updateBackupStatus(trackingId, JobStatus.SUCCEEDED);
+                LOGGER.info("Check on backup status in source workspace with Job Id {}.", backupResponse.getJobId());
+                var backupStatusResponse = wdsDao.checkBackupStatus(startupToken, UUID.fromString(backupResponse.getJobId()));
+                if (backupStatusResponse.getStatus().equals(Job.StatusEnum.SUCCEEDED)) {
+                    backupFileName = backupStatusResponse.getResult().getFilename();
                     cloneDao.updateCloneEntryStatus(UUID.fromString(sourceWorkspaceId), CloneStatus.BACKUPSUCCEEDED);
                 }
                 else {
                     LOGGER.error("An error occurred during clone mode - backup not complete.");
-                    backupDao.terminateBackupToError(trackingId, statusResponse.getErrorMessage());
-                    cloneDao.updateCloneEntryStatus(UUID.fromString(sourceWorkspaceId), CloneStatus.BACKUPERROR);
+                    cloneDao.terminateBackupToError(trackingId, backupStatusResponse.getErrorMessage());
                 }
             }
 
             //TODO do the restore
             LOGGER.info("Restore from the following path on the source workspace storage container: {}", backupFileName);
         }
-        catch(Exception e){
+        catch(Exception e) {
             LOGGER.error("An error occurred during clone mode. Will start with empty default instance schema. Error: {}", e.toString());
         }
     }

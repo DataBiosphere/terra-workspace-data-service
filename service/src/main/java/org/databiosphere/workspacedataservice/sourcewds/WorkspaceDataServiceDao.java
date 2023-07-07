@@ -28,7 +28,7 @@ public class WorkspaceDataServiceDao {
       var backupClient = this.workspaceDataServiceClientFactory.getBackupClient(token, workspaceDataServiceUrl);
       BackupRequest body = new BackupRequest();
       body.setRequestingWorkspaceId(requesterWorkspaceId);
-      return backupClient.createBackup(body,"v0.2");
+     return backupClient.createBackup(body,"v0.2");
     } catch (ApiException e) {
       throw new WorkspaceDataServiceException(e);
     }

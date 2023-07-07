@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import bio.terra.common.db.WriteTransaction;
+import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.slf4j.Logger;
@@ -28,10 +29,10 @@ public class PostgresCloneDao implements CloneDao {
     private static final Logger LOGGER = LoggerFactory.getLogger(PostgresCloneDao.class);
 
     @Override
-    public boolean cloneExistsForWorkspace(UUID requester)  {
+    public boolean cloneExistsForWorkspace(UUID sourceWorkspaceId)  {
         return Boolean.TRUE.equals(namedTemplate.queryForObject(
-                "select exists(select from sys_wds.clone WHERE requester = :requester)",
-                new MapSqlParameterSource("requester", requester), Boolean.class));
+                "select exists(select from sys_wds.clone WHERE sourceworkspaceid = :sourceWorkspaceId)",
+                new MapSqlParameterSource("sourceWorkspaceId", sourceWorkspaceId), Boolean.class));
     }
 
     @Override
@@ -44,9 +45,25 @@ public class PostgresCloneDao implements CloneDao {
 
     @Override
     @WriteTransaction
-    public void updateCloneEntryStatus(UUID sourceWorkspaceId, CloneStatus status) {
-        namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET cloneStatus = ?, status = ? where sourceWorkspaceId = ?",
-                status.name(), JobStatus.SUCCEEDED, sourceWorkspaceId);
-        LOGGER.info("Clone status for workspace {} is now {}", sourceWorkspaceId, status);
+    public void updateCloneEntryStatus(UUID trackingId, CloneStatus status) {
+        try {
+            namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET cloneStatus = ?, status = ? where id = ?",
+                    status.name(), JobStatus.SUCCEEDED, trackingId);
+            LOGGER.info("Clone status is now {}", status);
+        }
+        catch (Exception e){
+            namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET status = ? where id = ?",
+                    JobStatus.ERROR, trackingId);
+        }
+    }
+
+    @Override
+    @WriteTransaction
+    public void terminateBackupToError(UUID trackingId, String error) {
+        namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET error = ? where id = ?",
+                StringUtils.abbreviate(error, 2000), trackingId);
+        // because saveBackupError is annotated with @WriteTransaction, we can ignore IntelliJ warnings about
+        // self-invocation of transactions on the following line:
+        updateCloneEntryStatus(trackingId, CloneStatus.BACKUPERROR);
     }
 }
