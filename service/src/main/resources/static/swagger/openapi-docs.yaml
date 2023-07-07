@@ -871,6 +871,8 @@ components:
     VersionResponse:
       type: object
       properties:
+        app:
+          $ref: '#/components/schemas/app'
         git:
           $ref: '#/components/schemas/git'
         build:
@@ -908,6 +910,13 @@ components:
         version:
           type: string
         group:
+          type: string
+    app:
+      type: object
+      properties:
+        chart-version:
+          type: string
+        image:
           type: string
     git:
       type: object
