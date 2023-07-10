@@ -115,7 +115,7 @@ public class InstanceInitializerBean {
                 }
                 else {
                     LOGGER.error("An error occurred during clone mode - backup not complete.");
-                    cloneDao.terminateBackupToError(trackingId, backupStatusResponse.getErrorMessage());
+                    cloneDao.terminateCloneToError(trackingId, backupStatusResponse.getErrorMessage());
                 }
             }
 

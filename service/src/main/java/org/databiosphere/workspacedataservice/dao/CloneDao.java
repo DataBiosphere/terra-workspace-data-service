@@ -8,5 +8,5 @@ public interface CloneDao {
     void createCloneEntry(UUID trackingId, UUID sourceWorkspaceId);
     void updateCloneEntryStatus(UUID trackingId, CloneStatus status);
     boolean cloneExistsForWorkspace(UUID sourceWorkspaceId);
-    void terminateBackupToError(UUID trackingId, String error);
+    void terminateCloneToError(UUID trackingId, String error);
 }

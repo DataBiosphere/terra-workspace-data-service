@@ -52,7 +52,7 @@ public class MockCloneDao implements CloneDao {
 
     @Override
     @WriteTransaction
-    public void terminateBackupToError(UUID trackingId, String error) {
+    public void terminateCloneToError(UUID trackingId, String error) {
         var cloneEntry = clone.stream().filter(entry -> entry.getJobId().equals(trackingId)).findFirst().orElse(null);
         clone.remove(cloneEntry);
         cloneEntry.setErrorMessage(error);

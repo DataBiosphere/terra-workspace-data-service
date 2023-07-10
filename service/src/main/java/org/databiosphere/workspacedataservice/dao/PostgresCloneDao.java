@@ -47,19 +47,19 @@ public class PostgresCloneDao implements CloneDao {
     @WriteTransaction
     public void updateCloneEntryStatus(UUID trackingId, CloneStatus status) {
         try {
+            var jobStatus = status.equals(CloneStatus.BACKUPSUCCEEDED) ? JobStatus.SUCCEEDED.name() : JobStatus.ERROR.name();
             namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET clonestatus = ?, status = ? where id = ?",
-                    status.name(), JobStatus.SUCCEEDED.name(), trackingId);
+                    status.name(), jobStatus, trackingId);
             LOGGER.info("Clone status is now {}", status);
         }
         catch (Exception e){
-            namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET status = ? where id = ?",
-                    JobStatus.ERROR.name(), trackingId);
+            terminateCloneToError(trackingId, e.getMessage());
         }
     }
 
     @Override
     @WriteTransaction
-    public void terminateBackupToError(UUID trackingId, String error) {
+    public void terminateCloneToError(UUID trackingId, String error) {
         namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET error = ? where id = ?",
                 StringUtils.abbreviate(error, 2000), trackingId);
         updateCloneEntryStatus(trackingId, CloneStatus.BACKUPERROR);
