@@ -33,7 +33,7 @@ public class BackupRestoreServiceFailureIntegrationTest {
 
     @Test
     void testRestoreAzureWDSErrorHandling() {
-        var response = backupRestoreService.restoreAzureWDS("v0.2");
+        var response = backupRestoreService.restoreAzureWDS("v0.2", "backup.sql");
         // will fail because twds.pg_dump.host is blank
         assertFalse(response);
     }

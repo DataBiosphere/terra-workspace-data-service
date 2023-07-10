@@ -47,4 +47,8 @@ public class LocalFileStorage implements BackUpFileStorage {
             throw new LaunchProcessException("Error streaming input during local test", ioEx);
         }
     }
+
+    public void DeleteBlob(String blobFile, String workspaceId) {
+        // delete is handled in stream output for local set up
+    }
 }

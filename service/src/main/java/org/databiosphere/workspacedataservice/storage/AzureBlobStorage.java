@@ -11,11 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 @Configuration
@@ -61,6 +57,7 @@ public class AzureBlobStorage implements BackUpFileStorage {
     @Override
     public void streamInputFromBlobStorage(OutputStream toStream, String blobName, String workspaceId) {
         BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId);
+        LOGGER.info("Blob storage container client was found. ");
         try (toStream) {
             blobContainerClient.getBlobClient(blobName).downloadStream(toStream);
         } catch (IOException ioEx) {
@@ -84,6 +81,19 @@ public class AzureBlobStorage implements BackUpFileStorage {
         catch (BlobStorageException e){
             // if the default workspace container doesn't exist, something went horribly wrong
             LOGGER.error("Default storage container missing for workspace id {}", workspaceId);
+            throw(e);
+        }
+    }
+
+    public void DeleteBlob(String blobFile, String workspaceId) {
+        BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId);
+
+        try {
+            var blobClient = blobContainerClient.getBlobClient(blobFile);
+            blobClient.delete();
+        }
+        catch (BlobStorageException e){
+            LOGGER.error("Failed to delete file with name {}. ", blobFile);
             throw(e);
         }
     }

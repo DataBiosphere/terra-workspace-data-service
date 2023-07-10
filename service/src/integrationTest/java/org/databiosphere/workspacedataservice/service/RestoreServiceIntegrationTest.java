@@ -62,7 +62,7 @@ public class RestoreServiceIntegrationTest {
         assertThat(instancesBefore).doesNotContain(sourceInstance);
 
         // perform the restore
-        var response = backupRestoreService.restoreAzureWDS("v0.2");
+        var response = backupRestoreService.restoreAzureWDS("v0.2", "backup.sql");
         assertTrue(response);
 
         // after restore, confirm destination instance exists but source does not

@@ -32,7 +32,6 @@ public class BackupRestoreService {
     private final BackUpFileStorage storage;
     private final InstanceDao instanceDao;
     private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
-    private static final String BackupFileName = "backup.sql";
 
     @Value("${twds.instance.workspace-id:}")
     private String workspaceId;
@@ -121,31 +120,35 @@ public class BackupRestoreService {
         return backupDao.getBackupStatus(trackingId);
     }
 
-    public boolean restoreAzureWDS(String version) {
+    public boolean restoreAzureWDS(String version, String backupFileName) {
         validateVersion(version);
         try {
             // restore pgdump
+            LOGGER.info("Starting restore. ");
             List<String> commandList = generateCommandList(false);
             Map<String, String> envVars = Map.of("PGPASSWORD", determinePassword());
 
             LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
             localProcessLauncher.launchProcess(commandList, envVars);
 
+            LOGGER.info("Grabbing data from the backup file. ");
             // grab blob from storage
-            storage.streamInputFromBlobStorage(localProcessLauncher.getOutputStream(), BackupFileName, workspaceId);
+            storage.streamInputFromBlobStorage(localProcessLauncher.getOutputStream(), backupFileName, workspaceId);
 
             String error = checkForError(localProcessLauncher);
             if (StringUtils.isNotBlank(error)) {
+                LOGGER.error("process error: {}", error);
                 return false;
                 //throw new LaunchProcessException(error);
             }
 
             // rename workspace schema from source to dest
             instanceDao.alterSchema(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId));
-
+            storage.DeleteBlob(backupFileName, workspaceId);
             return true;
         }
         catch (LaunchProcessException | PSQLException | DataAccessException ex){
+            LOGGER.error("process error: {}", ex.getMessage());
             return false;
             //throw new LaunchProcessException(ex.getMessage());
         }

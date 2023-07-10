@@ -1,10 +1,13 @@
 package org.databiosphere.workspacedataservice;
 
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedata.model.Job;
 import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
+import org.databiosphere.workspacedataservice.service.BackupRestoreService;
+import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +24,8 @@ public class InstanceInitializerBean {
     private final WorkspaceDataServiceDao wdsDao;
     private final CloneDao cloneDao;
 
+    private final BackupRestoreService restoreService;
+
     @Value("${twds.instance.workspace-id}")
     private String workspaceId;
 
@@ -32,12 +37,13 @@ public class InstanceInitializerBean {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceInitializerBean.class);
 
-    public InstanceInitializerBean(InstanceDao instanceDao, BackupDao backupDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao, CloneDao cloneDao){
+    public InstanceInitializerBean(InstanceDao instanceDao, BackupDao backupDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao, CloneDao cloneDao, BackupRestoreService restoreService){
         this.instanceDao = instanceDao;
         this.backupDao = backupDao;
         this.leoDao = leoDao;
         this.wdsDao = wdsDao;
         this.cloneDao = cloneDao;
+        this.restoreService = restoreService;
     }
 
     public boolean isInCloneMode(String sourceWorkspaceId) {
@@ -68,7 +74,6 @@ public class InstanceInitializerBean {
         }
         LOGGER.info("No SourceWorkspaceId found, initializing default schema.");
         return false;
-
     }
 
     /*
@@ -81,7 +86,6 @@ public class InstanceInitializerBean {
     public void initCloneMode(){
         LOGGER.info("Starting in clone mode...");
 
-        /* Commenting out to prevent cloning from generating files in storage before restore is implemented.
         try {
             // first get source wds url based on source workspace id and the provided access token
             var sourceWdsEndpoint = leoDao.getWdsEndpointUrl(startupToken);
@@ -120,11 +124,11 @@ public class InstanceInitializerBean {
 
             //TODO do the restore
             LOGGER.info("Restore from the following path on the source workspace storage container: {}", backupFileName);
+            restoreService.restoreAzureWDS("v0.2", backupFileName);
         }
         catch(Exception e) {
             LOGGER.error("An error occurred during clone mode. Will start with empty default instance schema. Error: {}", e.toString());
         }
-        */
     }
 
     public void initializeInstance() {
