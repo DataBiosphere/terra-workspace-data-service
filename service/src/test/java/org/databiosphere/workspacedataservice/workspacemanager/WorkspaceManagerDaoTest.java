@@ -99,7 +99,7 @@ class WorkspaceManagerDaoTest {
         List<ResourceDescription> listOfDescriptions = new ArrayList<>();
         listOfDescriptions.add(resourceDescription);
         resourceList.setResources(listOfDescriptions);
-        var resourceUUID = workspaceManagerDao.extractResourceId(resourceList);
+        var resourceUUID = workspaceManagerDao.extractResourceId(resourceList, String.valueOf(workspaceId));
         return resourceUUID;
     }
 }

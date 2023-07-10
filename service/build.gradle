@@ -32,6 +32,10 @@ jib {
 	}
 }
 
+ext {
+	jersey_version = "2.36"
+}
+
 dependencies {
 	// Azure libraries
 	implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.9'
@@ -66,7 +70,12 @@ dependencies {
 	implementation "bio.terra:workspace-manager-client:0.254.717-SNAPSHOT"
 	implementation project(path: ':client')
 
-	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+	// hk2 is required to use WSM client, but not correctly exposed by the client
+	implementation "org.glassfish.jersey.inject:jersey-hk2:$jersey_version"
+	implementation "org.glassfish.jersey.core:jersey-client:$jersey_version"
+	implementation "org.glassfish.jersey.core:jersey-common:$jersey_version"
+
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 	runtimeOnly 'org.webjars.npm:swagger-ui-dist:4.12.0'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -128,6 +137,9 @@ testing {
 				implementation project(':service')
 				implementation 'org.springframework.boot:spring-boot-starter-test'
 				implementation 'org.liquibase:liquibase-core:4.21.1'
+				implementation "org.glassfish.jersey.core:jersey-client:$jersey_version"
+				implementation "org.glassfish.jersey.core:jersey-common:$jersey_version"
+				implementation "org.glassfish.jersey.inject:jersey-hk2:$jersey_version"
             }
         }
     }

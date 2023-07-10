@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import bio.terra.common.db.WriteTransaction;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -14,11 +13,13 @@ import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 @Repository
 public class PostgresInstanceDao implements InstanceDao {
 
-    @Value("${spring.datasource.username}")
-    private String wdsDbUser;
-
     private final NamedParameterJdbcTemplate namedTemplate;
 
+    /*
+     PostgresInstanceDao is used to interact with sys_wds instance table in postgres.
+     This table tracks activity such as instance creation and deletion, as well as returning existing instances.
+     This class will help add entries to the table, check if entries already exist and update them as necessary.
+      */
     public PostgresInstanceDao(NamedParameterJdbcTemplate namedTemplate) {
         this.namedTemplate = namedTemplate;
     }

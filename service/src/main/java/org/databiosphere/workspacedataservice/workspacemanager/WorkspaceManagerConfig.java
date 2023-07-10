@@ -27,5 +27,4 @@ public class WorkspaceManagerConfig {
         public WorkspaceManagerDao workspaceManagerDao(WorkspaceManagerClientFactory workspaceManagerClientFactory) {
                 return new WorkspaceManagerDao(workspaceManagerClientFactory, workspaceId);
         }
-
 }

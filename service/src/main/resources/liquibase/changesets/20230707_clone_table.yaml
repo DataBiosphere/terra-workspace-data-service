@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20230612_backup_schema
+      author: yuliadub
+      changes:
+        - createTable:
+            schemaName: sys_wds
+            tableName: clone
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: status
+                  type: varchar(10)
+              - column:
+                  name: error
+                  type: varchar(2000)
+              - column:
+                  name: createdtime
+                  type: datetime
+              - column:
+                  name: updatedtime
+                  type: datetime
+              - column:
+                  name: sourceworkspaceid
+                  type: uuid
+              - column:
+                  name: clonestatus
+                  type: varchar(25)
