@@ -1,12 +1,10 @@
 package org.databiosphere.workspacedataservice;
 
 import org.apache.commons.lang3.StringUtils;
-import org.databiosphere.workspacedata.model.Job;
 import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
-import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,6 +81,7 @@ public class InstanceInitializerBean {
     public void initCloneMode(){
         LOGGER.info("Starting in clone mode...");
 
+        /* Commenting out to prevent cloning from generating files in storage before restore is implemented.
         try {
             // first get source wds url based on source workspace id and the provided access token
             var sourceWdsEndpoint = leoDao.getWdsEndpointUrl(startupToken);
@@ -125,6 +124,7 @@ public class InstanceInitializerBean {
         catch(Exception e) {
             LOGGER.error("An error occurred during clone mode. Will start with empty default instance schema. Error: {}", e.toString());
         }
+        */
     }
 
     public void initializeInstance() {
