@@ -6,7 +6,7 @@ public class ActivityModels {
         CREATE("created"), DELETE("deleted"),
         UPDATE("updated"), UPSERT("upserted"),
         MODIFY("modified"), LINK("linked"),
-        RESTORE("restore");
+        RESTORE("restored");
 
         private final String name;
 
