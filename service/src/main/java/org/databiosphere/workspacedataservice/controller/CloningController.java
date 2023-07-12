@@ -45,6 +45,7 @@ public class CloningController {
     public ResponseEntity<Job<CloneResponse>> getCloningStatus(@PathVariable("version") String version) {
         validateVersion(version);
         var response = backupRestoreService.checkCloneStatus();
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        var status = (response == null) ? HttpStatus.NOT_FOUND : HttpStatus.OK;
+        return new ResponseEntity<>(response, status);
     }
 }

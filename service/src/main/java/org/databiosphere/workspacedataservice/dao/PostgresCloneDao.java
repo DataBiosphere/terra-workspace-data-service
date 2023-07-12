@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.dao;
 
 import bio.terra.common.db.WriteTransaction;
 import org.apache.commons.lang3.StringUtils;
-import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
@@ -99,7 +98,7 @@ public class PostgresCloneDao implements CloneDao {
     private static class CloneJobRowMapper implements RowMapper<Job<CloneResponse>> {
         @Override
         public Job<CloneResponse> mapRow(ResultSet rs, int rowNum) throws SQLException {
-            UUID sourceworksapceid = rs.getObject("sourceworkspaceid", UUID.class);
+            UUID sourceWorkspaceId = rs.getObject("sourceworkspaceid", UUID.class);
             CloneStatus cloneStatus = CloneStatus.UNKNOWN;
             String cloneStatusString = rs.getString("clonestatus");
 
@@ -118,7 +117,7 @@ public class PostgresCloneDao implements CloneDao {
                 LOGGER.warn("Unknown clone status for clone job {}: [{}] with error {}", jobId, cloneStatus, e.getMessage());
             }
 
-            CloneResponse cloneResponse = new CloneResponse(sourceworksapceid, cloneStatus);
+            CloneResponse cloneResponse = new CloneResponse(sourceWorkspaceId, cloneStatus);
 
             String errorMessage = rs.getString("error");
             LocalDateTime created = rs.getTimestamp("createdtime").toLocalDateTime();
