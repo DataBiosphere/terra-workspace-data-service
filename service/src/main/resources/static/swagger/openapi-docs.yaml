@@ -925,7 +925,7 @@ components:
         sourceworkspaceid:
           type: string
           format: uuid
-          description: workspace which initiated the backup
+          description: workspace which initiated the clone
         clonestatus:
           type: string
           description: description of this clone status
