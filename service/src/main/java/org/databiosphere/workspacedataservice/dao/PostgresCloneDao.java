@@ -90,7 +90,7 @@ public class PostgresCloneDao implements CloneDao {
         }
     }
 
-    // rowmapper for retrieving Job<BackupResponse> objects from the db
+    // rowmapper for retrieving Job<CloneResponse> objects from the db
     private static class CloneJobRowMapper implements RowMapper<Job<CloneResponse>> {
         @Override
         public Job<CloneResponse> mapRow(ResultSet rs, int rowNum) throws SQLException {
