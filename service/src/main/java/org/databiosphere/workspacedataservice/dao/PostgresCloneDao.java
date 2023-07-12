@@ -61,7 +61,7 @@ public class PostgresCloneDao implements CloneDao {
             var jobStatus = status.equals(CloneStatus.BACKUPSUCCEEDED) ? JobStatus.SUCCEEDED.name() : JobStatus.ERROR.name();
             namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET clonestatus = ?, status = ?, updatedtime = ? where id = ?",
                     status.name(), jobStatus, Timestamp.from(Instant.now()), trackingId);
-            LOGGER.info("Clone status is now {} tracknig Id", status, trackingId);
+            LOGGER.info("Clone status is now {}.", status);
         }
         catch (Exception e){
             terminateCloneToError(trackingId, e.getMessage());
@@ -104,13 +104,13 @@ public class PostgresCloneDao implements CloneDao {
             try {
                 status = JobStatus.valueOf(dbStatus);
             } catch (Exception e) {
-                LOGGER.warn("Unknown status for backup job {}: [{}] with error {}", jobId, dbStatus, e.getMessage());
+                LOGGER.warn("Unknown status for clone job {}: [{}] with error {}", jobId, dbStatus, e.getMessage());
             }
 
             try {
                 cloneStatus = CloneStatus.valueOf(cloneStatusString);
             } catch (Exception e) {
-                LOGGER.warn("Unknown status for clone job {}: [{}] with error {}", jobId, cloneStatus, e.getMessage());
+                LOGGER.warn("Unknown clone status for clone job {}: [{}] with error {}", jobId, cloneStatus, e.getMessage());
             }
 
             CloneResponse cloneResponse = new CloneResponse(sourceworksapceid, cloneStatus);
