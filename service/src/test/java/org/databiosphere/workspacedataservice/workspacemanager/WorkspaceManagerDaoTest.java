@@ -51,9 +51,9 @@ class WorkspaceManagerDaoTest {
 
     @BeforeEach
     void beforeEach() {
-        given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi()).willReturn(mockReferencedGcpResourceApi);
-        given(mockWorkspaceManagerClientFactory.getResourceApi()).willReturn(mockResourceApi);
-        given(mockWorkspaceManagerClientFactory.getAzureResourceApi()).willReturn(mockControlledAzureResourceApi);
+        given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi("")).willReturn(mockReferencedGcpResourceApi);
+        given(mockWorkspaceManagerClientFactory.getResourceApi("")).willReturn(mockResourceApi);
+        given(mockWorkspaceManagerClientFactory.getAzureResourceApi("")).willReturn(mockControlledAzureResourceApi);
     }
 
     @Test
