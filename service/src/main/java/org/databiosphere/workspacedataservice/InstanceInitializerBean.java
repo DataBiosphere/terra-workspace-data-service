@@ -121,17 +121,21 @@ public class InstanceInitializerBean {
                     cloneDao.terminateCloneToError(trackingId, backupStatusResponse.getErrorMessage());
                 }
             }
-
-            //TODO do the restore
-            LOGGER.info("Restore from the following path on the source workspace storage container: {}", backupFileName);
-            var restoreResponse = restoreService.restoreAzureWDS("v0.2", backupFileName, startupToken);
-            //LOGGER.info("How Restore went: {} {}", restoreResponse.getResult().getStatus(), restoreResponse.getResult().getErrorMessage());
-
-            //restoreService.restoreAzureWDS("v0.2", backupFileName);
-
+            
+            // TODO: re-evaluate running restore this way once backup becomes async. Will need to wait on it. 
+            // continue on to restore if backup has succeded. otherwise start with default instance schema.
+            if(cloneDao.getCloneStatus().getResult().status() == CloneStatus.BACKUPSUCCEEDED) {
+                LOGGER.info("Restore from the following path on the source workspace storage container: {}", backupFileName);
+                var restoreResponse = restoreService.restoreAzureWDS("v0.2", backupFileName, startupToken);
+                //LOGGER.info("How Restore went: {} {}", restoreResponse.getResult().getStatus(), restoreResponse.getResult().getErrorMessage());
+            } else {
+                LOGGER.error("Backup not successful, cannot restore. Will start with empty default instance schema.");
+                initializeDefaultInstance();
+            }
         }
         catch(Exception e) {
             LOGGER.error("An error occurred during clone mode. Will start with empty default instance schema. Error: {}", e.toString());
+            initializeDefaultInstance();
         }
     }
 
