@@ -120,7 +120,7 @@ public class BackupRestoreService {
         return backupDao.getBackupStatus(trackingId);
     }
 
-    public boolean restoreAzureWDS(String version, String backupFileName) {
+    public Job<BackupResponse> restoreAzureWDS(String version, String backupFileName, String startupToken) {
         validateVersion(version);
         try {
             // restore pgdump
@@ -133,23 +133,23 @@ public class BackupRestoreService {
 
             LOGGER.info("Grabbing data from the backup file. ");
             // grab blob from storage
-            storage.streamInputFromBlobStorage(localProcessLauncher.getOutputStream(), backupFileName, workspaceId);
+            storage.streamInputFromBlobStorage(localProcessLauncher.getOutputStream(), backupFileName, workspaceId, startupToken);
 
             String error = checkForError(localProcessLauncher);
             if (StringUtils.isNotBlank(error)) {
                 LOGGER.error("process error: {}", error);
-                return false;
+                return new Job<BackupResponse>(new UUID(0, 0), JobStatus.ERROR, error, null, null, null);
                 //throw new LaunchProcessException(error);
             }
 
             // rename workspace schema from source to dest
             instanceDao.alterSchema(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId));
             storage.DeleteBlob(backupFileName, workspaceId);
-            return true;
+            return new Job<BackupResponse>(new UUID(0, 0), JobStatus.SUCCEEDED, "backup complete", null, null, null);
         }
         catch (LaunchProcessException | PSQLException | DataAccessException ex){
             LOGGER.error("process error: {}", ex.getMessage());
-            return false;
+            return new Job<BackupResponse>(new UUID(0, 0), JobStatus.ERROR, ex.getMessage(), null, null, null);
             //throw new LaunchProcessException(ex.getMessage());
         }
     }

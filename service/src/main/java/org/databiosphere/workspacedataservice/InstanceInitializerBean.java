@@ -124,7 +124,11 @@ public class InstanceInitializerBean {
 
             //TODO do the restore
             LOGGER.info("Restore from the following path on the source workspace storage container: {}", backupFileName);
-            restoreService.restoreAzureWDS("v0.2", backupFileName);
+            var restoreResponse = restoreService.restoreAzureWDS("v0.2", backupFileName, startupToken);
+            //LOGGER.info("How Restore went: {} {}", restoreResponse.getResult().getStatus(), restoreResponse.getResult().getErrorMessage());
+
+            //restoreService.restoreAzureWDS("v0.2", backupFileName);
+
         }
         catch(Exception e) {
             LOGGER.error("An error occurred during clone mode. Will start with empty default instance schema. Error: {}", e.toString());

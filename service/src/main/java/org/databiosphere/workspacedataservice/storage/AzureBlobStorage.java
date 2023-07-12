@@ -55,7 +55,8 @@ public class AzureBlobStorage implements BackUpFileStorage {
     }
 
     @Override
-    public void streamInputFromBlobStorage(OutputStream toStream, String blobName, String workspaceId) {
+    public void streamInputFromBlobStorage(OutputStream toStream, String blobName, String workspaceId, String authToken) {
+        workspaceManagerDao.setAuthToken(authToken);
         BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId);
         LOGGER.info("Blob storage container client was found. ");
         try (toStream) {
@@ -66,8 +67,10 @@ public class AzureBlobStorage implements BackUpFileStorage {
     }
 
     public BlobContainerClient constructBlockBlobClient(String workspaceId) {
+        LOGGER.info("about to get endpoint and token ");
         // get workspace blob storage endpoint and token
         var blobstorageDetails = workspaceManagerDao.getBlobStorageUrl(workspaceId);
+        LOGGER.info("successfully got endpoint and token");
 
         // the url we get from WSM already contains the token in it, so no need to specify sasToken separately
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder().endpoint(blobstorageDetails).buildClient();
