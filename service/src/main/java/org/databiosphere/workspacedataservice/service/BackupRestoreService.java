@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.service;
 
 import com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticationPlugin;
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
@@ -34,6 +35,7 @@ public class BackupRestoreService {
     private final CloneDao cloneDao;
     private final BackUpFileStorage storage;
     private final InstanceDao instanceDao;
+    private final ActivityLogger activityLogger;
     private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
     private static final String BackupFileName = "backup.sql";
 
@@ -67,11 +69,16 @@ public class BackupRestoreService {
     @Value("${twds.pg_dump.useAzureIdentity:}")
     private boolean useAzureIdentity;
 
-    public BackupRestoreService(BackupDao backupDao, InstanceDao instanceDao, CloneDao cloneDao, BackUpFileStorage backUpFileStorage) {
+    public BackupRestoreService(BackupDao backupDao, 
+                                InstanceDao instanceDao,
+                                BackUpFileStorage backUpFileStorage,
+                                CloneDao cloneDao,
+                                ActivityLogger activityLogger) {
         this.backupDao = backupDao;
         this.instanceDao = instanceDao;
         this.cloneDao = cloneDao;
         this.storage = backUpFileStorage;
+        this.activityLogger = activityLogger;
     }
 
     public Job<BackupResponse> checkBackupStatus(UUID trackingId) {
@@ -119,6 +126,8 @@ public class BackupRestoreService {
                 // if no errors happen and code reaches here, the backup has been completed successfully
                 backupDao.updateFilename(trackingId, blobName);
                 backupDao.updateBackupStatus(trackingId, JobStatus.SUCCEEDED);
+                activityLogger.saveEventForCurrentUser(user ->
+                        user.created().backup().withId(blobName));
             }
         }
         catch (Exception ex) {
@@ -150,6 +159,9 @@ public class BackupRestoreService {
 
             // rename workspace schema from source to dest
             instanceDao.alterSchema(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId));
+
+            activityLogger.saveEventForCurrentUser(user ->
+                    user.restored().backup().withId(BackupFileName));
 
             return true;
         }
