@@ -4,12 +4,14 @@ import com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticati
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.BackupDao;
+import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
+import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
@@ -30,6 +32,7 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 @Service
 public class BackupRestoreService {
     private final BackupDao backupDao;
+    private final CloneDao cloneDao;
     private final BackUpFileStorage storage;
     private final InstanceDao instanceDao;
     private final ActivityLogger activityLogger;
@@ -66,11 +69,14 @@ public class BackupRestoreService {
     @Value("${twds.pg_dump.useAzureIdentity:}")
     private boolean useAzureIdentity;
 
-    public BackupRestoreService(BackupDao backupDao, InstanceDao instanceDao,
+    public BackupRestoreService(BackupDao backupDao, 
+                                InstanceDao instanceDao,
                                 BackUpFileStorage backUpFileStorage,
+                                CloneDao cloneDao,
                                 ActivityLogger activityLogger) {
         this.backupDao = backupDao;
         this.instanceDao = instanceDao;
+        this.cloneDao = cloneDao;
         this.storage = backUpFileStorage;
         this.activityLogger = activityLogger;
     }
@@ -83,6 +89,10 @@ public class BackupRestoreService {
         }
 
         return backupJob;
+    }
+
+    public Job<CloneResponse> checkCloneStatus() {
+        return cloneDao.getCloneStatus();
     }
 
     public Job<BackupResponse> backupAzureWDS(String version, UUID trackingId, BackupRequest backupRequest) {

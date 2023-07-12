@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.controller;
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
+import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,5 +39,13 @@ public class CloningController {
         validateVersion(version);
         var response = backupRestoreService.checkBackupStatus(trackingId);
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/clone/{version}")
+    public ResponseEntity<Job<CloneResponse>> getCloningStatus(@PathVariable("version") String version) {
+        validateVersion(version);
+        var response = backupRestoreService.checkCloneStatus();
+        var status = (response == null) ? HttpStatus.NOT_FOUND : HttpStatus.OK;
+        return new ResponseEntity<>(response, status);
     }
 }

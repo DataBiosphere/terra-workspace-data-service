@@ -110,7 +110,7 @@ public class InstanceInitializerBean {
                 var backupStatusResponse = wdsDao.checkBackupStatus(startupToken, UUID.fromString(backupResponse.getJobId()));
                 if (backupStatusResponse.getStatus().equals(Job.StatusEnum.SUCCEEDED)) {
                     backupFileName = backupStatusResponse.getResult().getFilename();
-                    cloneDao.updateCloneEntryStatus(UUID.fromString(sourceWorkspaceId), CloneStatus.BACKUPSUCCEEDED);
+                    cloneDao.updateCloneEntryStatus(trackingId, CloneStatus.BACKUPSUCCEEDED);
                 }
                 else {
                     LOGGER.error("An error occurred during clone mode - backup not complete.");
