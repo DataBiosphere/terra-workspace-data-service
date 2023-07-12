@@ -85,13 +85,7 @@ public class BackupRestoreService {
     }
 
     public Job<CloneResponse> checkCloneStatus() {
-        var cloneJob = cloneDao.getCloneStatus();
-
-        if (cloneJob == null) {
-            throw new MissingObjectException("Clone job");
-        }
-
-        return cloneJob;
+        return cloneDao.getCloneStatus();
     }
 
     public Job<BackupResponse> backupAzureWDS(String version, UUID trackingId, BackupRequest backupRequest) {
