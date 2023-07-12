@@ -19,8 +19,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * Mock implementation of CloneDao that is in-memory instead of requiring Postgres
  */
 public class MockCloneDao implements CloneDao {
-    @Value("${twds.instance.workspace-id:}")
-    private String workspaceId;
     private final Set<Job<CloneResponse>> clone = ConcurrentHashMap.newKeySet();
     public MockCloneDao() {
         super();
