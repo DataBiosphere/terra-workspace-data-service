@@ -185,7 +185,16 @@ public class BackupRestoreService {
     // Same args, different command depending on whether we're doing backup or restore.
     public List<String> generateCommandList(boolean isBackup) {
         Map<String, String> command = new LinkedHashMap<>();
-        command.put(isBackup ? pgDumpPath : psqlPath, null);
+        if (isBackup) {
+            command.put(pgDumpPath, null);
+            command.put("-b", null);
+            // Grab all workspace instances/schemas in wds
+            for (UUID id : instanceDao.listInstanceSchemas()) {
+                command.put("-n", id.toString());
+            }
+        } else {
+            command.put(psqlPath, null);
+        }
         command.put("-h", dbHost);
         command.put("-p", dbPort);
         command.put("-U", dbUser);
