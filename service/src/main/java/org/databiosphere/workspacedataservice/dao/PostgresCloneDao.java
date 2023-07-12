@@ -76,6 +76,11 @@ public class PostgresCloneDao implements CloneDao {
         updateCloneEntryStatus(trackingId, CloneStatus.BACKUPERROR);
     }
 
+    /*
+       If a workspace starts up in clone mode, its overall state will be recorded in a single row, saving the source workspace id
+       along with the status of the cloning operations. If no data is returned by this function (i.e. null) it is safe to assume
+       that the following workspace was not created from a clone.
+     */
     @Override
     public Job<CloneResponse> getCloneStatus() {
         List<Job<CloneResponse>> responses = namedTemplate.query(
