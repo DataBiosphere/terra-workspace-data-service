@@ -64,6 +64,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BackupJob'
+  /clone/{v}:
+    get:
+      tags:
+        - Cloning
+      parameters:
+        - $ref: '#/components/parameters/versionPathParam'
+      summary: Check status of a WDS data clone
+      operationId: getCloneStatus
+      security:
+        - bearerAuth: [ ]
+      responses:
+        200:
+          description: Returns clone status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloneJob'
   /status:
     get:
       summary: Gets health status for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#health for details)
@@ -617,6 +634,13 @@ components:
           properties:
             result:
               $ref: '#/components/schemas/BackupResponse'
+    CloneJob:
+      allOf:
+        - $ref: '#/components/schemas/Job'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/CloneResponse'
     BatchOperation:
       type: object
       required:
@@ -895,6 +919,16 @@ components:
         description:
           type: string
           description: description of this backup
+    CloneResponse:
+      type: object
+      properties:
+        sourceworkspaceid:
+          type: string
+          format: uuid
+          description: workspace which initiated the clone
+        clonestatus:
+          type: string
+          description: description of this clone status
     build:
       type: object
       properties:
