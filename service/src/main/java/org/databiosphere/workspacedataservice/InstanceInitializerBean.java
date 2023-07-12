@@ -140,10 +140,9 @@ public class InstanceInitializerBean {
         if (isInCloneMode(sourceWorkspaceId)) {
             LOGGER.info("Source workspace id loaded as {}.", sourceWorkspaceId);
             initCloneMode();
+        } else {
+            initializeDefaultInstance();
         }
-
-        //TODO Wrap this in an else once restore for cloning is implemented (currently only backup is being kicked off)
-        initializeDefaultInstance();
     }
 
     public void initializeDefaultInstance() {
