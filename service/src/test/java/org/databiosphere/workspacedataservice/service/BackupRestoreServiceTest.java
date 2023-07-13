@@ -20,7 +20,7 @@ class BackupRestoreServiceTest {
     void CheckBackupCommandLine() {
         List<String> commandList = backupRestoreService.generateCommandList(true);
         String command = String.join(" ", commandList);
-        assertThat(command).isEqualTo("/usr/bin/pg_dump -h localhost -p 5432 -U wds -d wds -v -w");
+        assertThat(command).isEqualTo("/usr/bin/pg_dump -b -n 123e4567-e89b-12d3-a456-426614174000 -h localhost -p 5432 -U wds -d wds -v -w");
     }
 
     @Test
