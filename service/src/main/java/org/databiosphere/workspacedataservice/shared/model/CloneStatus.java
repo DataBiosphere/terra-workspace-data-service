@@ -7,5 +7,8 @@ public enum CloneStatus {
     UNKNOWN, // in case it cant be retrieved
     BACKUPQUEUED,     // backup job has been created but not yet started
     BACKUPSUCCEEDED,  // backup job completed as expected
-    BACKUPERROR      // backup job failed
+    BACKUPERROR,      // backup job failed
+    RESTOREQUEUED,     // restore job has been created but not yet started
+    RESTORESUCCEEDED,  // restore job completed as expected
+    RESTOREERROR      // restore job failed
 }

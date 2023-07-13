@@ -12,6 +12,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.MissingObj
 import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
+import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
@@ -137,11 +138,14 @@ public class BackupRestoreService {
         return backupDao.getBackupStatus(trackingId);
     }
 
-    public Job<BackupResponse> restoreAzureWDS(String version, String backupFileName, String startupToken) {
+    public Job<BackupResponse> restoreAzureWDS(String version, String backupFileName, UUID trackingId, String startupToken) {
         validateVersion(version);
         try {
-            // restore pgdump
             LOGGER.info("Starting restore. ");
+            // update state
+            cloneDao.updateCloneEntryStatus(trackingId, CloneStatus.RESTOREQUEUED);
+
+            // generate psql query
             List<String> commandList = generateCommandList(false);
             Map<String, String> envVars = Map.of("PGPASSWORD", determinePassword());
 
@@ -155,19 +159,23 @@ public class BackupRestoreService {
             String error = checkForError(localProcessLauncher);
             if (StringUtils.isNotBlank(error)) {
                 LOGGER.error("process error: {}", error);
+                cloneDao.terminateCloneToError(trackingId, error, false);
                 return new Job<BackupResponse>(new UUID(0, 0), JobStatus.ERROR, error, null, null, null);
                 //throw new LaunchProcessException(error);
             }
 
             // rename workspace schema from source to dest
             instanceDao.alterSchema(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId));
+            // clean up
             storage.DeleteBlob(backupFileName, workspaceId);
             activityLogger.saveEventForCurrentUser(user ->
                 user.restored().backup().withId(backupFileName));
+            cloneDao.updateCloneEntryStatus(trackingId, CloneStatus.RESTORESUCCEEDED);
             return new Job<BackupResponse>(new UUID(0, 0), JobStatus.SUCCEEDED, "backup complete", null, null, null);
         }
         catch (LaunchProcessException | PSQLException | DataAccessException ex){
             LOGGER.error("process error: {}", ex.getMessage());
+            cloneDao.terminateCloneToError(trackingId, ex.getMessage(), false);
             return new Job<BackupResponse>(new UUID(0, 0), JobStatus.ERROR, ex.getMessage(), null, null, null);
             //throw new LaunchProcessException(ex.getMessage());
         }

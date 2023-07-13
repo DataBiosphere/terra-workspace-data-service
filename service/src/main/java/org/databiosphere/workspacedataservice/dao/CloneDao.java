@@ -11,5 +11,5 @@ public interface CloneDao {
     void updateCloneEntryStatus(UUID trackingId, CloneStatus status);
     boolean cloneExistsForWorkspace(UUID sourceWorkspaceId);
     Job<CloneResponse> getCloneStatus();
-    void terminateCloneToError(UUID trackingId, String error);
+    void terminateCloneToError(UUID trackingId, String error, Boolean isBackup);
 }

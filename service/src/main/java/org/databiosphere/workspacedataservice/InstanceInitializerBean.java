@@ -118,15 +118,16 @@ public class InstanceInitializerBean {
                 }
                 else {
                     LOGGER.error("An error occurred during clone mode - backup not complete.");
-                    cloneDao.terminateCloneToError(trackingId, backupStatusResponse.getErrorMessage());
+                    cloneDao.terminateCloneToError(trackingId, backupStatusResponse.getErrorMessage(), true);
                 }
             }
             
             // TODO: re-evaluate running restore this way once backup becomes async. Will need to wait on it. 
             // continue on to restore if backup has succeded. otherwise start with default instance schema.
-            if(cloneDao.getCloneStatus().getResult().status() == CloneStatus.BACKUPSUCCEEDED) {
+            var cloneStatus = cloneDao.getCloneStatus();
+            if(cloneStatus.getResult().status() == CloneStatus.BACKUPSUCCEEDED) {
                 LOGGER.info("Restore from the following path on the source workspace storage container: {}", backupFileName);
-                var restoreResponse = restoreService.restoreAzureWDS("v0.2", backupFileName, startupToken);
+                var restoreResponse = restoreService.restoreAzureWDS("v0.2", backupFileName, cloneStatus.getJobId(), startupToken);
                 //LOGGER.info("How Restore went: {} {}", restoreResponse.getResult().getStatus(), restoreResponse.getResult().getErrorMessage());
             } else {
                 LOGGER.error("Backup not successful, cannot restore. Will start with empty default instance schema.");
