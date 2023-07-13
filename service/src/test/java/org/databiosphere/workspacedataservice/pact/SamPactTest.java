@@ -179,7 +179,7 @@ class SamPactTest {
     }
 
     @Test
-    @PactTestFor(pactMethod = "userStatusPact")
+    @PactTestFor(pactMethod = "userStatusPact", pactVersion = PactSpecVersion.V3)
     void testSamServiceUserStatusInfo(MockServer mockServer) {
         SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
         SamDao samDao = new HttpSamDao(clientFactory, new HttpSamClientSupport(), UUID.randomUUID().toString());
@@ -207,7 +207,7 @@ class SamPactTest {
     }
 
     @Test
-    @PactTestFor(pactMethod = "deletePermissionPact")
+    @PactTestFor(pactMethod = "deletePermissionPact", pactVersion = PactSpecVersion.V3)
     void testSamDeletePermission(MockServer mockServer) {
         SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
         SamDao samDao = new HttpSamDao(clientFactory, new HttpSamClientSupport(), dummyResourceId);
