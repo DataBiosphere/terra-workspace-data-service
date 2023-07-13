@@ -8,6 +8,7 @@ import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
+import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,7 +129,11 @@ public class InstanceInitializerBean {
             if(cloneStatus.getResult().status() == CloneStatus.BACKUPSUCCEEDED) {
                 LOGGER.info("Restore from the following path on the source workspace storage container: {}", backupFileName);
                 var restoreResponse = restoreService.restoreAzureWDS("v0.2", backupFileName, cloneStatus.getJobId(), startupToken);
-                //LOGGER.info("How Restore went: {} {}", restoreResponse.getResult().getStatus(), restoreResponse.getResult().getErrorMessage());
+                if(restoreResponse.getStatus() != JobStatus.SUCCEEDED) {
+                    LOGGER.error("Something went wrong with restore: {}. Starting with empty default instance schema.", restoreResponse.getErrorMessage());
+                    initializeDefaultInstance();
+                }
+                LOGGER.info("Restore Successful");
             } else {
                 LOGGER.error("Backup not successful, cannot restore. Will start with empty default instance schema.");
                 initializeDefaultInstance();

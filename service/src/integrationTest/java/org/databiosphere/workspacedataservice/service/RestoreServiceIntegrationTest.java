@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,8 +63,8 @@ public class RestoreServiceIntegrationTest {
         assertThat(instancesBefore).doesNotContain(sourceInstance);
 
         // perform the restore
-        var response = backupRestoreService.restoreAzureWDS("v0.2", "backup.sql");
-        assertTrue(response);
+        var response = backupRestoreService.restoreAzureWDS("v0.2", "backup.sql", UUID.randomUUID(), "");
+        assertTrue(response.getStatus() == JobStatus.SUCCEEDED);
 
         // after restore, confirm destination instance exists but source does not
         List<UUID> instancesAfter = instanceDao.listInstanceSchemas();

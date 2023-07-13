@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.service;
 
 import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
+import org.databiosphere.workspacedataservice.shared.model.job.Job;
+import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +16,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ActiveProfiles({"mock-storage", "local"})
 @ContextConfiguration(name = "mockStorage")
@@ -31,11 +34,14 @@ public class BackupRestoreServiceFailureIntegrationTest {
     @Value("${twds.instance.source-workspace-id}")
     private String sourceWorkspaceId;
 
+    private String restoreSuccessMessage = "restore complete";
+
     @Test
     void testRestoreAzureWDSErrorHandling() {
-        var response = backupRestoreService.restoreAzureWDS("v0.2", "backup.sql");
+        Job<JobResult> response = backupRestoreService.restoreAzureWDS("v0.2", "backup.sql", UUID.randomUUID(), "");
         // will fail because twds.pg_dump.host is blank
-        assertFalse(response);
+        assertTrue(response.getStatus() == JobStatus.ERROR);
+        assertFalse(response.getErrorMessage() == restoreSuccessMessage);
     }
 
     @Test
