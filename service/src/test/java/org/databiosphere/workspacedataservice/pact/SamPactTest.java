@@ -5,6 +5,7 @@ import au.com.dius.pact.consumer.dsl.PactDslJsonBody;
 import au.com.dius.pact.consumer.dsl.PactDslWithProvider;
 import au.com.dius.pact.consumer.junit5.PactConsumerTestExt;
 import au.com.dius.pact.consumer.junit5.PactTestFor;
+import au.com.dius.pact.core.model.PactSpecVersion;
 import au.com.dius.pact.core.model.RequestResponsePact;
 import au.com.dius.pact.core.model.annotations.Pact;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
@@ -158,7 +159,7 @@ class SamPactTest {
     }
 
     @Test
-    @PactTestFor(pactMethod = "statusApiPact")
+    @PactTestFor(pactMethod = "statusApiPact", pactVersion = PactSpecVersion.V3)
     void testSamServiceStatusCheck(MockServer mockServer) {
         SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
         SamDao samDao = new HttpSamDao(clientFactory, new HttpSamClientSupport(), UUID.randomUUID().toString());
@@ -168,7 +169,7 @@ class SamPactTest {
     }
 
     @Test
-    @PactTestFor(pactMethod = "downStatusApiPact")
+    @PactTestFor(pactMethod = "downStatusApiPact", pactVersion = PactSpecVersion.V3)
     void testSamServiceDown(MockServer mockServer) {
         SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
         SamDao samDao = new HttpSamDao(clientFactory, new HttpSamClientSupport(), UUID.randomUUID().toString());
@@ -187,7 +188,7 @@ class SamPactTest {
     }
 
     @Test
-    @PactTestFor(pactMethod = "noUserStatusPact")
+    @PactTestFor(pactMethod = "noUserStatusPact", pactVersion = PactSpecVersion.V3)
     void testSamServiceNoUser(MockServer mockServer) {
         SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
         SamDao samDao = new HttpSamDao(clientFactory, new HttpSamClientSupport(), UUID.randomUUID().toString());
@@ -197,7 +198,7 @@ class SamPactTest {
     }
 
     @Test
-    @PactTestFor(pactMethod = "deleteNoPermissionPact")
+    @PactTestFor(pactMethod = "deleteNoPermissionPact", pactVersion = PactSpecVersion.V3)
     void testSamDeleteNoPermission(MockServer mockServer) {
         SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
         SamDao samDao = new HttpSamDao(clientFactory, new HttpSamClientSupport(), dummyResourceId);
@@ -215,7 +216,7 @@ class SamPactTest {
     }
 
     @Test
-    @PactTestFor(pactMethod = "writeNoPermissionPact")
+    @PactTestFor(pactMethod = "writeNoPermissionPact", pactVersion = PactSpecVersion.V3)
     void testSamWriteNoPermission(MockServer mockServer) {
         SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
         SamDao samDao = new HttpSamDao(clientFactory, new HttpSamClientSupport(), dummyResourceId);
@@ -224,7 +225,7 @@ class SamPactTest {
     }
 
     @Test
-    @PactTestFor(pactMethod = "writePermissionPact")
+    @PactTestFor(pactMethod = "writePermissionPact", pactVersion = PactSpecVersion.V3)
     void testSamWritePermission(MockServer mockServer) {
         SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
         SamDao samDao = new HttpSamDao(clientFactory, new HttpSamClientSupport(), dummyResourceId);
