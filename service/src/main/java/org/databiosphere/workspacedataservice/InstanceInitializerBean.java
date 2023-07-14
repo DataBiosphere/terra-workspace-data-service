@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice;
 
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedata.model.Job;
-import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
@@ -20,7 +19,6 @@ import java.util.UUID;
 public class InstanceInitializerBean {
 
     private final InstanceDao instanceDao;
-    private final BackupDao backupDao;
     private final LeonardoDao leoDao;
     private final WorkspaceDataServiceDao wdsDao;
     private final CloneDao cloneDao;
@@ -38,9 +36,8 @@ public class InstanceInitializerBean {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceInitializerBean.class);
 
-    public InstanceInitializerBean(InstanceDao instanceDao, BackupDao backupDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao, CloneDao cloneDao, BackupRestoreService restoreService){
+    public InstanceInitializerBean(InstanceDao instanceDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao, CloneDao cloneDao, BackupRestoreService restoreService){
         this.instanceDao = instanceDao;
-        this.backupDao = backupDao;
         this.leoDao = leoDao;
         this.wdsDao = wdsDao;
         this.cloneDao = cloneDao;
@@ -126,16 +123,21 @@ public class InstanceInitializerBean {
             // TODO: re-evaluate running restore this way once backup becomes async. Will need to wait on it. 
             // continue on to restore if backup has succeded. otherwise start with default instance schema.
             var cloneStatus = cloneDao.getCloneStatus();
-            if(cloneStatus.getResult().status() == CloneStatus.BACKUPSUCCEEDED) {
+            if(cloneStatus.getResult().status().equals(CloneStatus.BACKUPSUCCEEDED)) {
                 LOGGER.info("Restore from the following path on the source workspace storage container: {}", backupFileName);
+                cloneDao.updateCloneEntryStatus(cloneStatus.getJobId(), CloneStatus.RESTOREQUEUED);
                 var restoreResponse = restoreService.restoreAzureWDS("v0.2", backupFileName, cloneStatus.getJobId(), startupToken);
-                if(restoreResponse.getStatus() != JobStatus.SUCCEEDED) {
+                if(!restoreResponse.getStatus().equals(JobStatus.SUCCEEDED)) {
                     LOGGER.error("Something went wrong with restore: {}. Starting with empty default instance schema.", restoreResponse.getErrorMessage());
+                    cloneDao.updateCloneEntryStatus(cloneStatus.getJobId(), CloneStatus.RESTOREERROR);
                     initializeDefaultInstance();
+                } else {
+                    LOGGER.info("Restore Successful");
+                    cloneDao.updateCloneEntryStatus(cloneStatus.getJobId(), CloneStatus.RESTORESUCCEEDED);
                 }
-                LOGGER.info("Restore Successful");
             } else {
                 LOGGER.error("Backup not successful, cannot restore. Will start with empty default instance schema.");
+                cloneDao.updateCloneEntryStatus(cloneStatus.getJobId(), CloneStatus.RESTOREERROR);
                 initializeDefaultInstance();
             }
         }

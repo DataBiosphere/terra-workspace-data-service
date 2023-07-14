@@ -11,7 +11,7 @@ public class MockBackupDaoConfig {
     @Bean
     @Profile("mock-backup-dao")
     @Primary
-    BackupDao mockBackupDao() {
+    BackupRestoreDao mockBackupDao() {
         return new MockBackupDao();
     }
 }

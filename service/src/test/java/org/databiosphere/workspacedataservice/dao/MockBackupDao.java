@@ -1,8 +1,9 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
+import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
+import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 
 import java.sql.Timestamp;
@@ -12,53 +13,53 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Mock implementation of BackupDao that is in-memory instead of requiring Postgres
+ * Mock implementation of BackupRestoreDao that is in-memory instead of requiring Postgres
  */
-public class MockBackupDao implements BackupDao {
+public class MockBackupDao <T extends JobResult> implements BackupRestoreDao<T> {
 
     // backing "database" for this mock
-    private final Set<Job<BackupResponse> > backups = ConcurrentHashMap.newKeySet();
+    private final Set<Job<T> > entries = ConcurrentHashMap.newKeySet();
 
     public MockBackupDao() {
         super();
     }
 
     @Override
-    public Job<BackupResponse> getBackupStatus(UUID trackingId) {
-        return backups.stream().filter(backupInList -> backupInList.getJobId() == trackingId).findFirst().orElse(null);
+    public Job<T> getStatus(UUID trackingId) {
+        return entries.stream().filter(backupInList -> backupInList.getJobId() == trackingId).findFirst().orElse(null);
     }
 
     @Override
-    public void createBackupEntry(UUID trackingId, BackupRequest request) {
+    public void createEntry(UUID trackingId, BackupRestoreRequest request) {
         Timestamp now = Timestamp.from(Instant.now());
         var metadata = new BackupResponse("", request.requestingWorkspaceId(), request.description());
-        Job<BackupResponse> backup = new Job<>(trackingId, JobStatus.QUEUED, "", now.toLocalDateTime(), now.toLocalDateTime(), metadata);
-        backups.add(backup);
+        Job<T> backup = new Job<T>(trackingId, JobStatus.QUEUED, "", now.toLocalDateTime(), now.toLocalDateTime(), metadata);
+        entries.add(backup);
     }
 
     @Override
-    public void updateBackupStatus(UUID trackingId, JobStatus status) {
-        var backup = getBackupStatus(trackingId);
-        backups.remove(backup);
+    public void updateStatus(UUID trackingId, JobStatus status) {
+        var backup = getStatus(trackingId);
+        entries.remove(backup);
         backup.setStatus(status);
-        backups.add(backup);
+        entries.add(backup);
     }
 
     @Override
     public void updateFilename(UUID trackingId, String filename) {
-        var backup = getBackupStatus(trackingId);
-        backups.remove(backup);
+        var backup = getStatus(trackingId);
+        entries.remove(backup);
         BackupResponse response = new BackupResponse(filename, null, "Backup successfully completed.");
         backup.setResult(response);
-        backups.add(backup);
+        entries.add(backup);
     }
 
     @Override
-    public void terminateBackupToError(UUID trackingId, String error) {
-        var backup = getBackupStatus(trackingId);
-        backups.remove(backup);
+    public void terminateToError(UUID trackingId, String error) {
+        var backup = getStatus(trackingId);
+        entries.remove(backup);
         backup.setStatus(JobStatus.ERROR);
         backup.setErrorMessage(error);
-        backups.add(backup);
+        entries.add(backup);
     }
 }
