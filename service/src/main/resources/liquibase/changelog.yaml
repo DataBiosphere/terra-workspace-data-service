@@ -14,6 +14,3 @@ databaseChangeLog:
   - include:
       file: changesets/20230707_clone_table.yaml
       relativeToChangelogFile: true
-  - include:
-      file: changesets/20230713_restore_table.yaml
-      relativeToChangelogFile: true

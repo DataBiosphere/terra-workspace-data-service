@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
+import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -38,7 +38,7 @@ public class BackupRestoreServiceFailureIntegrationTest {
 
     @Test
     void testRestoreAzureWDSErrorHandling() {
-        var response = backupRestoreService.restoreAzureWDS("v0.2", "backup.sql", UUID.randomUUID(), "");
+        Job<JobResult> response = backupRestoreService.restoreAzureWDS("v0.2", "backup.sql", UUID.randomUUID(), "");
         // will fail because twds.pg_dump.host is blank
         assertTrue(response.getStatus() == JobStatus.ERROR);
         assertFalse(response.getErrorMessage() == restoreSuccessMessage);
@@ -47,8 +47,8 @@ public class BackupRestoreServiceFailureIntegrationTest {
     @Test
     void testBackupAzureWDS() {
         var trackingId = UUID.randomUUID();
-        backupRestoreService.backupAzureWDS("v0.2", trackingId, new BackupRestoreRequest(UUID.fromString(sourceWorkspaceId), null));
-        var response = backupRestoreService.checkStatus(trackingId, true);
+        backupRestoreService.backupAzureWDS("v0.2", trackingId, new BackupRequest(UUID.fromString(sourceWorkspaceId), null));
+        var response = backupRestoreService.checkBackupStatus(trackingId);
         // will fail because twds.pg_dump.host is blank
         assertEquals(JobStatus.ERROR, response.getStatus());
     }

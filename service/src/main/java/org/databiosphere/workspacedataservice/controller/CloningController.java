@@ -1,8 +1,8 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
-import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
-import org.databiosphere.workspacedataservice.shared.model.BackupRestoreResponse;
+import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
+import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.springframework.http.HttpStatus;
@@ -26,18 +26,18 @@ public class CloningController {
     }
 
     @PostMapping("/backup/{version}")
-    public ResponseEntity<Job<BackupRestoreResponse>> createBackup(@PathVariable("version") String version,
-                                                               @RequestBody BackupRestoreRequest BackupRestoreRequest) {
+    public ResponseEntity<Job<BackupResponse>> createBackup(@PathVariable("version") String version,
+                                                               @RequestBody BackupRequest backupRequest) {
         UUID trackingId = UUID.randomUUID();
         // TODO: make async
-        Job<BackupRestoreResponse> backupJob = backupRestoreService.backupAzureWDS(version, trackingId, BackupRestoreRequest);
+        Job<BackupResponse> backupJob = backupRestoreService.backupAzureWDS(version, trackingId, backupRequest);
         return new ResponseEntity<>(backupJob, HttpStatus.OK);
     }
 
     @GetMapping("/backup/{version}/{trackingId}")
-    public ResponseEntity<Job<BackupRestoreResponse>> getBackupStatus(@PathVariable("version") String version, @PathVariable("trackingId") UUID trackingId) {
+    public ResponseEntity<Job<BackupResponse>> getBackupStatus(@PathVariable("version") String version, @PathVariable("trackingId") UUID trackingId) {
         validateVersion(version);
-        var response = backupRestoreService.checkStatus(trackingId, true);
+        var response = backupRestoreService.checkBackupStatus(trackingId);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

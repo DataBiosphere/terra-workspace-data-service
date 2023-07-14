@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.databiosphere.workspacedataservice.dao.BackupRestoreDao;
-import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
+import org.databiosphere.workspacedataservice.dao.BackupDao;
+import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,17 +27,17 @@ class BackupServiceIntegrationTest {
     private BackupRestoreService backupRestoreService;
 
     @Autowired
-    private BackupRestoreDao BackupRestoreDao;
+    private BackupDao backupDao;
     @Test
     void testBackupAzureWDS() {
         var trackingId = UUID.randomUUID();
         var sourceWorkspaceId = UUID.fromString("123e4567-e89b-12d3-a456-426614174001");
-        backupRestoreService.backupAzureWDS("v0.2", trackingId, new BackupRestoreRequest(sourceWorkspaceId, null));
+        backupRestoreService.backupAzureWDS("v0.2", trackingId, new BackupRequest(sourceWorkspaceId, null));
 
-        var response = backupRestoreService.checkStatus(trackingId, true);
+        var response = backupRestoreService.checkBackupStatus(trackingId);
         assertEquals(JobStatus.SUCCEEDED, response.getStatus());
 
-        var backupRecord = BackupRestoreDao.getStatus(trackingId, true);
+        var backupRecord = backupDao.getBackupStatus(trackingId);
         assertNotNull(backupRecord);
         assertEquals(response.getStatus(), backupRecord.getStatus());
         assertNotNull(backupRecord.getResult().filename());

@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice;
 
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
-import org.databiosphere.workspacedataservice.dao.MockBackupRestoreDaoConfig;
+import org.databiosphere.workspacedataservice.dao.MockBackupDaoConfig;
 import org.databiosphere.workspacedataservice.dao.MockCloneDaoConfig;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoConfig;
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.verify;
 @ActiveProfiles({"mock-instance-dao", "mock-backup-dao","mock-clone-dao", "local"})
 @TestPropertySource(properties = {"twds.instance.workspace-id="})
 @DirtiesContext
-@SpringBootTest(classes = {InstanceInitializerConfig.class, MockInstanceDaoConfig.class, MockBackupRestoreDaoConfig.class, LeonardoConfig.class, WorkspaceDataServiceConfig.class, MockCloneDaoConfig.class})
+@SpringBootTest(classes = {InstanceInitializerConfig.class, MockInstanceDaoConfig.class, MockBackupDaoConfig.class, LeonardoConfig.class, WorkspaceDataServiceConfig.class, MockCloneDaoConfig.class})
 class InstanceInitializerNoWorkspaceIdTest {
 
     @Autowired
