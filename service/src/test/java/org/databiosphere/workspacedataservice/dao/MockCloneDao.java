@@ -3,10 +3,9 @@ package org.databiosphere.workspacedataservice.dao;
 import bio.terra.common.db.WriteTransaction;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
+import org.databiosphere.workspacedataservice.shared.model.CloneTable;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
-import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -55,12 +54,12 @@ public class MockCloneDao implements CloneDao {
 
     @Override
     @WriteTransaction
-    public void terminateCloneToError(UUID trackingId, String error, Boolean isBackup) {
+    public void terminateCloneToError(UUID trackingId, String error, CloneTable table) {
         var cloneEntry = clone.stream().filter(entry -> entry.getJobId().equals(trackingId)).findFirst().orElse(null);
         clone.remove(cloneEntry);
         cloneEntry.setErrorMessage(error);
         clone.add(cloneEntry);
-        updateCloneEntryStatus(trackingId, isBackup ? CloneStatus.BACKUPERROR : CloneStatus.RESTOREERROR);
+        updateCloneEntryStatus(trackingId, table.equals(CloneTable.BACKUP) ? CloneStatus.BACKUPERROR : CloneStatus.RESTOREERROR);
     }
 
     @Override

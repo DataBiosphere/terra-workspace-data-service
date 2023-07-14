@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.service;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
-import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
