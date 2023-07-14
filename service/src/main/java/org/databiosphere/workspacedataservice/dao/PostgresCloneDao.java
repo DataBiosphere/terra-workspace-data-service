@@ -4,6 +4,7 @@ import bio.terra.common.db.WriteTransaction;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
+import org.databiosphere.workspacedataservice.shared.model.CloneTable;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.slf4j.Logger;
@@ -63,16 +64,16 @@ public class PostgresCloneDao implements CloneDao {
             LOGGER.info("Clone status is now {}.", status);
         }
         catch (Exception e){
-            terminateCloneToError(trackingId, e.getMessage(), status.name().contains("BACKUP"));
+            terminateCloneToError(trackingId, e.getMessage(), status.name().contains("BACKUP") ? CloneTable.BACKUP : CloneTable.RESTORE);
         }
     }
 
     @Override
     @WriteTransaction
-    public void terminateCloneToError(UUID trackingId, String error, Boolean isBackup) {
+    public void terminateCloneToError(UUID trackingId, String error, CloneTable table) {
         namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET error = ? where id = ?",
                 StringUtils.abbreviate(error, 2000), trackingId);
-        updateCloneEntryStatus(trackingId, isBackup ? CloneStatus.BACKUPERROR : CloneStatus.RESTOREERROR);
+        updateCloneEntryStatus(trackingId, table.equals(CloneTable.BACKUP) ? CloneStatus.BACKUPERROR : CloneStatus.RESTOREERROR);
     }
 
     /*

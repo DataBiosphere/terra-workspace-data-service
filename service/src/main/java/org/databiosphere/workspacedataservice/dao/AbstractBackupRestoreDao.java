@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.dao;
 import bio.terra.common.db.WriteTransaction;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
+import org.databiosphere.workspacedataservice.shared.model.CloneTable;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -18,15 +19,15 @@ public class AbstractBackupRestoreDao <T extends JobResult> implements BackupRes
 
     protected final NamedParameterJdbcTemplate namedTemplate;
 
-    protected final String dbName;
+    protected final CloneTable tableName;
 
     /*
     AbstractBackupRestoreDao abstracts functionality used to interact with sys_wds backup and restore tables to track progress of each.
     Functionality for backup and restore specific content (such as overwriting dbName) will be implemented in PostgresBackupDao and PostgresRestoreDao.
     */
-    public AbstractBackupRestoreDao(NamedParameterJdbcTemplate namedTemplate, String dbName) {
+    public AbstractBackupRestoreDao(NamedParameterJdbcTemplate namedTemplate, CloneTable tableName) {
         this.namedTemplate = namedTemplate;
-        this.dbName = dbName;
+        this.tableName = tableName;
     }
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(PostgresBackupDao.class);
@@ -41,7 +42,7 @@ public class AbstractBackupRestoreDao <T extends JobResult> implements BackupRes
     @Override
     @WriteTransaction
     public void updateStatus(UUID trackingId, JobStatus status) {
-        namedTemplate.getJdbcTemplate().update(String.format("update sys_wds.%s SET status = ?, updatedtime = ? where id = ?", dbName),
+        namedTemplate.getJdbcTemplate().update(String.format("update sys_wds.%s SET status = ?, updatedtime = ? where id = ?", tableName.name().toLowerCase()),
                 status.name(), Timestamp.from(Instant.now()), trackingId);
         LOGGER.info("Job {} is now {}", trackingId, status);
     }
@@ -50,7 +51,7 @@ public class AbstractBackupRestoreDao <T extends JobResult> implements BackupRes
     @WriteTransaction
     public void terminateToError(UUID trackingId, String error) {
 
-        namedTemplate.getJdbcTemplate().update(String.format("update sys_wds.%s SET error = ? where id = ?", dbName),
+        namedTemplate.getJdbcTemplate().update(String.format("update sys_wds.%s SET error = ? where id = ?", tableName.name().toLowerCase()),
                 StringUtils.abbreviate(error, 2000), trackingId);
         // because saveBackupError is annotated with @WriteTransaction, we can ignore IntelliJ warnings about
         // self-invocation of transactions on the following line:
@@ -60,6 +61,6 @@ public class AbstractBackupRestoreDao <T extends JobResult> implements BackupRes
     @Override
     @WriteTransaction
     public void updateFilename(UUID trackingId, String filename) {
-        namedTemplate.getJdbcTemplate().update(String.format("update sys_wds.%s SET filename = ? where id = ?", dbName), filename, trackingId);
+        namedTemplate.getJdbcTemplate().update(String.format("update sys_wds.%s SET filename = ? where id = ?", tableName.name().toLowerCase()), filename, trackingId);
     }
 }

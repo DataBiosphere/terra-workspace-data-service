@@ -7,6 +7,7 @@ import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
+import org.databiosphere.workspacedataservice.shared.model.CloneTable;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
 import org.slf4j.Logger;
@@ -116,7 +117,7 @@ public class InstanceInitializerBean {
                 }
                 else {
                     LOGGER.error("An error occurred during clone mode - backup not complete.");
-                    cloneDao.terminateCloneToError(trackingId, backupStatusResponse.getErrorMessage(), true);
+                    cloneDao.terminateCloneToError(trackingId, backupStatusResponse.getErrorMessage(), CloneTable.BACKUP);
                 }
             }
             
@@ -129,7 +130,7 @@ public class InstanceInitializerBean {
                 var restoreResponse = restoreService.restoreAzureWDS("v0.2", backupFileName, cloneStatus.getJobId(), startupToken);
                 if(!restoreResponse.getStatus().equals(JobStatus.SUCCEEDED)) {
                     LOGGER.error("Something went wrong with restore: {}. Starting with empty default instance schema.", restoreResponse.getErrorMessage());
-                    cloneDao.updateCloneEntryStatus(cloneStatus.getJobId(), CloneStatus.RESTOREERROR);
+                    cloneDao.terminateCloneToError(cloneStatus.getJobId(), restoreResponse.getErrorMessage(), CloneTable.RESTORE);
                     initializeDefaultInstance();
                 } else {
                     LOGGER.info("Restore Successful");
@@ -137,7 +138,7 @@ public class InstanceInitializerBean {
                 }
             } else {
                 LOGGER.error("Backup not successful, cannot restore. Will start with empty default instance schema.");
-                cloneDao.updateCloneEntryStatus(cloneStatus.getJobId(), CloneStatus.RESTOREERROR);
+                cloneDao.terminateCloneToError(cloneStatus.getJobId(), "Backup not successful, cannot restore.", CloneTable.RESTORE);
                 initializeDefaultInstance();
             }
         }

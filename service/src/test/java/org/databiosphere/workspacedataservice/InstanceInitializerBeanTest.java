@@ -1,11 +1,17 @@
 package org.databiosphere.workspacedataservice;
 
+import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.MockBackupDao;
 import org.databiosphere.workspacedataservice.dao.MockCloneDaoConfig;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoConfig;
+import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
+import org.databiosphere.workspacedataservice.sam.SamConfig;
+import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceConfig;
+import org.databiosphere.workspacedataservice.storage.AzureBlobStorage;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,12 +26,13 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@ActiveProfiles({"mock-instance-dao", "mock-backup-dao", "mock-clone-dao", "local"})
+@ActiveProfiles({"mock-instance-dao", "mock-backup-dao", "mock-clone-dao", "local,", "mock-sam"})
 @TestPropertySource(properties = {"twds.instance.workspace-id=90e1b179-9f83-4a6f-a8c2-db083df4cd03"})
 @DirtiesContext
-@SpringBootTest(classes = {InstanceInitializerConfig.class, MockInstanceDaoConfig.class, MockBackupDao.class, LeonardoConfig.class, WorkspaceDataServiceConfig.class, MockCloneDaoConfig.class})
+@SpringBootTest(classes = {InstanceInitializerConfig.class, MockInstanceDaoConfig.class, MockBackupDao.class, LeonardoConfig.class, WorkspaceDataServiceConfig.class, MockCloneDaoConfig.class, BackupRestoreService.class, AzureBlobStorage.class, WorkspaceManagerConfig.class, ActivityLoggerConfig.class, SamConfig.class, MockSamClientFactoryConfig.class})
 class InstanceInitializerBeanTest {
 
     @Autowired

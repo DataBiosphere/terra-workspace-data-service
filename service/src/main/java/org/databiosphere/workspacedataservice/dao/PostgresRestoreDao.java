@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dao;
 
 import bio.terra.common.db.WriteTransaction;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
+import org.databiosphere.workspacedataservice.shared.model.CloneTable;
 import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -26,7 +27,7 @@ public class PostgresRestoreDao extends AbstractBackupRestoreDao<RestoreResponse
     This class will help add entries to the table, check if entries already exist and update them as necessary.
      */
     public PostgresRestoreDao(NamedParameterJdbcTemplate namedTemplate) {
-        super(namedTemplate, "restore");
+        super(namedTemplate, CloneTable.RESTORE);
     }
 
     @Override
