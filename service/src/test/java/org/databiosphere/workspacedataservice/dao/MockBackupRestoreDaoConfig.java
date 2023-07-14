@@ -7,11 +7,11 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-public class MockBackupDaoConfig {
+public class MockBackupRestoreDaoConfig {
     @Bean
     @Profile("mock-backup-dao")
     @Primary
-    BackupDao mockBackupDao() {
-        return new MockBackupDao();
+    BackupRestoreDao mockBackupRestoreDao() {
+        return new MockBackupRestoreDao();
     }
 }

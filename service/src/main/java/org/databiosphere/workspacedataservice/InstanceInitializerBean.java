@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice;
 
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedata.model.Job;
-import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
@@ -20,7 +19,6 @@ import java.util.UUID;
 public class InstanceInitializerBean {
 
     private final InstanceDao instanceDao;
-    private final BackupDao backupDao;
     private final LeonardoDao leoDao;
     private final WorkspaceDataServiceDao wdsDao;
     private final CloneDao cloneDao;
@@ -38,9 +36,8 @@ public class InstanceInitializerBean {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceInitializerBean.class);
 
-    public InstanceInitializerBean(InstanceDao instanceDao, BackupDao backupDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao, CloneDao cloneDao, BackupRestoreService restoreService){
+    public InstanceInitializerBean(InstanceDao instanceDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao, CloneDao cloneDao, BackupRestoreService restoreService){
         this.instanceDao = instanceDao;
-        this.backupDao = backupDao;
         this.leoDao = leoDao;
         this.wdsDao = wdsDao;
         this.cloneDao = cloneDao;
@@ -106,13 +103,13 @@ public class InstanceInitializerBean {
                 LOGGER.info("No backup exists, will initiate one.");
 
                 // TODO since the backup api is not async, this will return once the backup finishes
-                var backupResponse = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
-                var trackingId = UUID.fromString(backupResponse.getJobId());
+                var BackupRestoreResponse = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
+                var trackingId = UUID.fromString(BackupRestoreResponse.getJobId());
                 LOGGER.info("Create clone entry in WDS to track cloning process.");
                 cloneDao.createCloneEntry(trackingId, UUID.fromString(sourceWorkspaceId));
 
-                LOGGER.info("Check on backup status in source workspace with Job Id {}.", backupResponse.getJobId());
-                var backupStatusResponse = wdsDao.checkBackupStatus(startupToken, UUID.fromString(backupResponse.getJobId()));
+                LOGGER.info("Check on backup status in source workspace with Job Id {}.", BackupRestoreResponse.getJobId());
+                var backupStatusResponse = wdsDao.checkBackupStatus(startupToken, UUID.fromString(BackupRestoreResponse.getJobId()));
                 if (backupStatusResponse.getStatus().equals(Job.StatusEnum.SUCCEEDED)) {
                     backupFileName = backupStatusResponse.getResult().getFilename();
                     cloneDao.updateCloneEntryStatus(trackingId, CloneStatus.BACKUPSUCCEEDED);
@@ -128,12 +125,15 @@ public class InstanceInitializerBean {
             var cloneStatus = cloneDao.getCloneStatus();
             if(cloneStatus.getResult().status() == CloneStatus.BACKUPSUCCEEDED) {
                 LOGGER.info("Restore from the following path on the source workspace storage container: {}", backupFileName);
+                cloneDao.updateCloneEntryStatus(cloneStatus.getJobId(), CloneStatus.RESTOREQUEUED);
                 var restoreResponse = restoreService.restoreAzureWDS("v0.2", backupFileName, cloneStatus.getJobId(), startupToken);
                 if(restoreResponse.getStatus() != JobStatus.SUCCEEDED) {
                     LOGGER.error("Something went wrong with restore: {}. Starting with empty default instance schema.", restoreResponse.getErrorMessage());
+                    cloneDao.terminateCloneToError(cloneStatus.getJobId(), "Something went wrong with restore: " + restoreResponse.getErrorMessage(), false);
                     initializeDefaultInstance();
                 }
                 LOGGER.info("Restore Successful");
+                cloneDao.updateCloneEntryStatus(cloneStatus.getJobId(), CloneStatus.RESTORESUCCEEDED);
             } else {
                 LOGGER.error("Backup not successful, cannot restore. Will start with empty default instance schema.");
                 initializeDefaultInstance();

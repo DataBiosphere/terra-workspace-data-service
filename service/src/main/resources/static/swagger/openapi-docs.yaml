@@ -34,7 +34,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/versionPathParam'
       requestBody:
-        $ref: '#/components/requestBodies/BackupRequestBody'
+        $ref: '#/components/requestBodies/BackupRestoreRequestBody'
       summary: Create a backup of all WDS data
       operationId: createBackup
       security:
@@ -568,13 +568,13 @@ components:
           schema:
             $ref: '#/components/schemas/StatusResponse'
   requestBodies:
-    BackupRequestBody:
+    BackupRestoreRequestBody:
       description: A backup request
       required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/BackupRequest'
+            $ref: '#/components/schemas/BackupRestoreRequest'
     SearchRequestBody:
       description: A paginated search request
       required: true
@@ -617,7 +617,7 @@ components:
         relatesTo:
           type: string
           description: Name of type to which this attribute relates. Only present if this is a relation attribute.
-    BackupRequest:
+    BackupRestoreRequest:
       type: object
       properties:
         requestingWorkspaceId:
@@ -633,7 +633,7 @@ components:
         - type: object
           properties:
             result:
-              $ref: '#/components/schemas/BackupResponse'
+              $ref: '#/components/schemas/BackupRestoreResponse'
     CloneJob:
       allOf:
         - $ref: '#/components/schemas/Job'
@@ -906,7 +906,7 @@ components:
           type: string
         components:
           $ref: '#/components/schemas/components'
-    BackupResponse:
+    BackupRestoreResponse:
       type: object
       properties:
         filename:

@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
+import org.databiosphere.workspacedataservice.shared.model.BackupRestoreResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

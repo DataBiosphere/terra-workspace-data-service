@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice;
 
-import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
@@ -13,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 public class InstanceInitializerConfig {
 
     @Bean
-    public InstanceInitializerBean instanceInitializerBean(InstanceDao instanceDao, BackupDao backupDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao, CloneDao cloneDao, BackupRestoreService restoreService) {
-        return new InstanceInitializerBean(instanceDao, backupDao, leoDao, wdsDao, cloneDao, restoreService);
+    public InstanceInitializerBean instanceInitializerBean(InstanceDao instanceDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao, CloneDao cloneDao, BackupRestoreService restoreService) {
+        return new InstanceInitializerBean(instanceDao, leoDao, wdsDao, cloneDao, restoreService);
     }
 }
