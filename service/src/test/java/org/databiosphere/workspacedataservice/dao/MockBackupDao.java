@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
+import org.databiosphere.workspacedataservice.shared.model.CloneTable;
+import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
@@ -15,13 +17,16 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Mock implementation of BackupRestoreDao that is in-memory instead of requiring Postgres
  */
-public class MockBackupDao <T extends JobResult> implements BackupRestoreDao<T> {
+public class MockBackupDao<T extends JobResult> implements BackupRestoreDao<T> {
 
     // backing "database" for this mock
-    private final Set<Job<T> > entries = ConcurrentHashMap.newKeySet();
+    private final Set<Job<T>> entries = ConcurrentHashMap.newKeySet();
 
-    public MockBackupDao() {
+    private CloneTable table; 
+
+    public MockBackupDao(CloneTable table) {
         super();
+        this.table = table;
     }
 
     @Override
@@ -32,9 +37,16 @@ public class MockBackupDao <T extends JobResult> implements BackupRestoreDao<T> 
     @Override
     public void createEntry(UUID trackingId, BackupRestoreRequest request) {
         Timestamp now = Timestamp.from(Instant.now());
-        var metadata = new BackupResponse("", request.requestingWorkspaceId(), request.description());
-        Job<T> backup = new Job<T>(trackingId, JobStatus.QUEUED, "", now.toLocalDateTime(), now.toLocalDateTime(), metadata);
-        entries.add(backup);
+        if(table.equals(CloneTable.BACKUP)) {
+            var metadata = new BackupResponse("", request.requestingWorkspaceId(), request.description());
+            Job<BackupResponse> backup = new Job<>(trackingId, JobStatus.QUEUED, "", now.toLocalDateTime(), now.toLocalDateTime(), metadata);
+            entries.add(backup);
+        } else {
+            var metadata = new RestoreResponse(request.requestingWorkspaceId(), request.description());
+            Job<RestoreResponse> restore = new Job<>(trackingId, JobStatus.QUEUED, "", now.toLocalDateTime(), now.toLocalDateTime(), metadata);
+            entries.add(restore);            
+        }
+
     }
 
     @Override
@@ -56,10 +68,10 @@ public class MockBackupDao <T extends JobResult> implements BackupRestoreDao<T> 
 
     @Override
     public void terminateToError(UUID trackingId, String error) {
-        var backup = getStatus(trackingId);
-        entries.remove(backup);
-        backup.setStatus(JobStatus.ERROR);
-        backup.setErrorMessage(error);
-        entries.add(backup);
+        var entry = getStatus(trackingId);
+        entries.remove(entry);
+        entry.setStatus(JobStatus.ERROR);
+        entry.setErrorMessage(error);
+        entries.add(entry);
     }
 }
