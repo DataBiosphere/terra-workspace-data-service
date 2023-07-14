@@ -50,7 +50,7 @@ dependencies {
 	implementation 'org.springframework.retry:spring-retry:1.3.4'
 	implementation 'org.aspectj:aspectjweaver:1.8.9' // required by spring-retry, not used directly by WDS
 	implementation 'org.apache.commons:commons-lang3'
-	implementation 'com.google.guava:guava:31.1-jre'
+	implementation 'com.google.guava:guava:32.1.1-jre'
 	implementation 'org.postgresql:postgresql'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.webjars:webjars-locator-core:0.52'
