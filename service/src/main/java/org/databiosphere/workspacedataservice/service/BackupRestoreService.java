@@ -169,8 +169,7 @@ public class BackupRestoreService {
 
             // rename workspace schema from source to dest
             instanceDao.alterSchema(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId));
-            // clean up
-            storage.deleteBlob(backupFileName, workspaceId, startupToken);
+
             activityLogger.saveEventForCurrentUser(user ->
                 user.restored().backup().withId(backupFileName));
             restoreDao.updateStatus(trackingId, JobStatus.SUCCEEDED);
@@ -178,6 +177,14 @@ public class BackupRestoreService {
         catch (LaunchProcessException | PSQLException | DataAccessException ex){
             LOGGER.error("process error: {}", ex.getMessage());
             restoreDao.terminateToError(trackingId, ex.getMessage());
+        } finally {
+            // clean up
+            try {
+                storage.deleteBlob(backupFileName, workspaceId, startupToken);
+            } catch (Exception e) {
+                LOGGER.warn("Error cleaning up after restore. File '{}' was not deleted from storage container: {}",
+                        backupFileName, e.getMessage(), e);
+            }
         }
         return restoreDao.getStatus(trackingId);
     }
