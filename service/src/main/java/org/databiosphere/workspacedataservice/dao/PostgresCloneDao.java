@@ -9,7 +9,6 @@ import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -25,8 +24,6 @@ import java.util.UUID;
 
 @Repository
 public class PostgresCloneDao implements CloneDao {
-    @Value("${twds.instance.workspace-id:}")
-    private String workspaceId;
     private final NamedParameterJdbcTemplate namedTemplate;
 
     /*
@@ -64,6 +61,9 @@ public class PostgresCloneDao implements CloneDao {
             LOGGER.info("Clone status is now {}.", status);
         }
         catch (Exception e){
+            // because updateCloneEntryStatus is itself annotated with @WriteTransaction, we can ignore IntelliJ warnings about
+            // self-invocation of transactions on the following line:
+            //noinspection SpringTransactionalMethodCallsInspection
             terminateCloneToError(trackingId, e.getMessage(), status.name().contains("BACKUP") ? CloneTable.BACKUP : CloneTable.RESTORE);
         }
     }
@@ -73,6 +73,9 @@ public class PostgresCloneDao implements CloneDao {
     public void terminateCloneToError(UUID trackingId, String error, CloneTable table) {
         namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET error = ? where id = ?",
                 StringUtils.abbreviate(error, 2000), trackingId);
+        // because terminateCloneToError is itself annotated with @WriteTransaction, we can ignore IntelliJ warnings about
+        // self-invocation of transactions on the following line:
+        //noinspection SpringTransactionalMethodCallsInspection
         updateCloneEntryStatus(trackingId, table.equals(CloneTable.BACKUP) ? CloneStatus.BACKUPERROR : CloneStatus.RESTOREERROR);
     }
 

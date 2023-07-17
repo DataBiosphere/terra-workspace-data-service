@@ -53,8 +53,9 @@ public class AbstractBackupRestoreDao <T extends JobResult> implements BackupRes
 
         namedTemplate.getJdbcTemplate().update(String.format("update sys_wds.%s SET error = ? where id = ?", tableName.name().toLowerCase()),
                 StringUtils.abbreviate(error, 2000), trackingId);
-        // because saveBackupError is annotated with @WriteTransaction, we can ignore IntelliJ warnings about
+        // because terminateToError is annotated with @WriteTransaction, we can ignore IntelliJ warnings about
         // self-invocation of transactions on the following line:
+        //noinspection SpringTransactionalMethodCallsInspection
         updateStatus(trackingId, JobStatus.ERROR);
     }
 

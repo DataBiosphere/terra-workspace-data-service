@@ -10,7 +10,9 @@ import java.util.List;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @SpringBootTest(properties = "spring.cache.type=NONE")
-@TestPropertySource(properties = {"twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000"})
+@TestPropertySource(properties = {"twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000",
+        "twds.pg_dump.path=/unit/test/pg_dump",
+        "twds.pg_dump.psqlPath=/unit/test/psql"})
 class BackupRestoreServiceTest {
     @Autowired
     private BackupRestoreService backupRestoreService;
@@ -19,14 +21,14 @@ class BackupRestoreServiceTest {
     void CheckBackupCommandLine() {
         List<String> commandList = backupRestoreService.generateCommandList(true);
         String command = String.join(" ", commandList);
-        assertThat(command).isEqualTo("/usr/bin/pg_dump -b -n 123e4567-e89b-12d3-a456-426614174000 -h localhost -p 5432 -U wds -d wds -v -w");
+        assertThat(command).isEqualTo("/unit/test/pg_dump -b -n 123e4567-e89b-12d3-a456-426614174000 -h localhost -p 5432 -U wds -d wds -v -w");
     }
 
     @Test
     void CheckRestoreCommandLine() {
         List<String> commandList = backupRestoreService.generateCommandList(false);
         String command = String.join(" ", commandList);
-        assertThat(command).isEqualTo("/usr/bin/psql -h localhost -p 5432 -U wds -d wds -v -w");
+        assertThat(command).isEqualTo("/unit/test/psql -h localhost -p 5432 -U wds -d wds -v -w");
     }
 
     @Test

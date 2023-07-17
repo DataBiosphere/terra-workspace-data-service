@@ -49,6 +49,7 @@ public class InstanceInitializerBean {
         if (StringUtils.isNotBlank(sourceWorkspaceId)){
             LOGGER.info("SourceWorkspaceId found, checking database");
             try {
+                //noinspection ResultOfMethodCallIgnored
                 UUID.fromString(sourceWorkspaceId);
             } catch (IllegalArgumentException e){
                     LOGGER.warn("SourceWorkspaceId could not be parsed, unable to clone DB. Provided SourceWorkspaceId: {}.", sourceWorkspaceId);
@@ -122,7 +123,7 @@ public class InstanceInitializerBean {
             }
             
             // TODO: re-evaluate running restore this way once backup becomes async. Will need to wait on it. 
-            // continue on to restore if backup has succeded. otherwise start with default instance schema.
+            // continue on to restore if backup has succeeded. otherwise start with default instance schema.
             var cloneStatus = cloneDao.getCloneStatus();
             if(cloneStatus.getResult().status().equals(CloneStatus.BACKUPSUCCEEDED)) {
                 LOGGER.info("Restore from the following path on the source workspace storage container: {}", backupFileName);
