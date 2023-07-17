@@ -19,9 +19,6 @@ public class WorkspaceManagerDao {
   private final String workspaceId;
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkspaceManagerDao.class);
 
-  // This will need to be set manually when using WorkspaceManagerDao outside of an API call. 
-  private String authToken = "";
-
   public WorkspaceManagerDao(WorkspaceManagerClientFactory workspaceManagerClientFactory, String workspaceId) {
     this.workspaceManagerClientFactory = workspaceManagerClientFactory;
     this.workspaceId = workspaceId;
@@ -31,7 +28,7 @@ public class WorkspaceManagerDao {
    * Creates a snapshot reference in workspaces manager and creates policy linkages.
    */
   public void createDataRepoSnapshotReference(SnapshotModel snapshotModel) {
-    final ReferencedGcpResourceApi resourceApi = this.workspaceManagerClientFactory.getReferencedGcpResourceApi(getAuthToken());
+    final ReferencedGcpResourceApi resourceApi = this.workspaceManagerClientFactory.getReferencedGcpResourceApi(null);
 
     try {
       String timeStamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new java.util.Date());
@@ -54,9 +51,9 @@ public class WorkspaceManagerDao {
   /**
    Retrieves the azure storage container url and sas token for a given workspace.
    */
-  public String getBlobStorageUrl(String storageWorkspaceId) {
-    final ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi(getAuthToken());
-    final ControlledAzureResourceApi azureResourceApi = this.workspaceManagerClientFactory.getAzureResourceApi(getAuthToken());
+  public String getBlobStorageUrl(String storageWorkspaceId, String authToken) {
+    final ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi(authToken);
+    final ControlledAzureResourceApi azureResourceApi = this.workspaceManagerClientFactory.getAzureResourceApi(authToken);
     int count = 0;
     int maxTries = 3;
     while(true) {
@@ -86,11 +83,4 @@ public class WorkspaceManagerDao {
     return null;
   }
 
-  public void setAuthToken(String token) {
-    authToken = token;
-  }
-
-  protected String getAuthToken() {
-    return authToken;
-  }
 }

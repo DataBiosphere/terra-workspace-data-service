@@ -37,13 +37,13 @@ public class HttpWorkspaceManagerClientFactory implements WorkspaceManagerClient
         }
 
         // grab the current user's bearer token (see BearerTokenFilter) or use parameter value
-        String token = StringUtils.isNotBlank(authToken) ? authToken : RequestContextHolder.currentRequestAttributes()
-                .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST).toString();
+        Object token = StringUtils.isNotBlank(authToken) ? authToken : RequestContextHolder.currentRequestAttributes()
+                .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
 
         // add the user's bearer token to the client
         if (!Objects.isNull(token)) {
             LOGGER.debug("setting access token for workspace manager request");
-            apiClient.setAccessToken(token);
+            apiClient.setAccessToken(token.toString());
         } else {
             LOGGER.warn("No access token found for workspace manager request.");
         }

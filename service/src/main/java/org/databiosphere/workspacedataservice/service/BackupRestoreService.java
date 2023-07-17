@@ -170,7 +170,7 @@ public class BackupRestoreService {
             // rename workspace schema from source to dest
             instanceDao.alterSchema(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId));
             // clean up
-            storage.deleteBlob(backupFileName, workspaceId);
+            storage.deleteBlob(backupFileName, workspaceId, startupToken);
             activityLogger.saveEventForCurrentUser(user ->
                 user.restored().backup().withId(backupFileName));
             restoreDao.updateStatus(trackingId, JobStatus.SUCCEEDED);

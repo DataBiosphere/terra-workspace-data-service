@@ -52,7 +52,7 @@ public class LocalFileStorage implements BackUpFileStorage {
     }
 
     @Override
-    public void deleteBlob(String blobFile, String workspaceId) {
+    public void deleteBlob(String blobFile, String workspaceId, String authToken) {
         // delete is handled in stream output for local set up
     }
 }

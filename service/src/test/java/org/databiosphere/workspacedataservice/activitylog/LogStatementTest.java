@@ -219,7 +219,7 @@ public class LogStatementTest {
 
         UUID snapshotId = UUID.randomUUID();
 
-        given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi("")).willReturn(mockReferencedGcpResourceApi);
+        given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi(null)).willReturn(mockReferencedGcpResourceApi);
         given(mockDataRepoClientFactory.getRepositoryApi()).willReturn(mockRepositoryApi);
 
         List<TableModel> tables = new ArrayList<>();

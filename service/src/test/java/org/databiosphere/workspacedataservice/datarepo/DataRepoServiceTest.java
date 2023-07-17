@@ -64,7 +64,7 @@ class DataRepoServiceTest {
     @BeforeEach
     void beforeEach() {
         given(mockDataRepoClientFactory.getRepositoryApi()).willReturn(mockRepositoryApi);
-        given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi("")).willReturn(mockReferencedGcpResourceApi);
+        given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi(null)).willReturn(mockReferencedGcpResourceApi);
         if (!instanceDao.instanceSchemaExists(INSTANCE)) {
             instanceDao.createSchema(INSTANCE);
         }
