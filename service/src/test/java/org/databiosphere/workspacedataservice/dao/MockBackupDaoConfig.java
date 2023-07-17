@@ -14,6 +14,6 @@ public class MockBackupDaoConfig {
     @Profile("mock-backup-dao")
     @Primary
     BackupRestoreDao<BackupResponse> mockBackupDao() {
-        return new MockBackupDao(CloneTable.BACKUP);
+        return new MockBackupRestoreDao(CloneTable.BACKUP);
     }
 }

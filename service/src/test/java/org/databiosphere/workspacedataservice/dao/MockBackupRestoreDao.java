@@ -17,14 +17,14 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Mock implementation of BackupRestoreDao that is in-memory instead of requiring Postgres
  */
-public class MockBackupDao<T extends JobResult> implements BackupRestoreDao<T> {
+public class MockBackupRestoreDao<T extends JobResult> implements BackupRestoreDao<T> {
 
     // backing "database" for this mock
     private final Set<Job<T>> entries = ConcurrentHashMap.newKeySet();
 
     private CloneTable table; 
 
-    public MockBackupDao(CloneTable table) {
+    public MockBackupRestoreDao(CloneTable table) {
         this.table = table;
     }
 
