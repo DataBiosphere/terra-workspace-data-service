@@ -42,6 +42,7 @@ subprojects {
             dependency 'io.swagger.core.v3:swagger-annotations:2.1.13'
             dependency 'io.swagger.codegen.v3:swagger-codegen-cli:3.0.34'
             dependency 'org.yaml:snakeyaml:2.0'
+            dependency 'io.netty:netty-handler:4.1.94.Final'
         }
     }
 

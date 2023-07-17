@@ -38,10 +38,10 @@ ext {
 
 dependencies {
 	// Azure libraries
-	implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.9'
-	implementation 'com.azure:azure-storage-blob:12.18.0'
-	implementation 'com.azure:azure-identity:1.9.1' // authentication in azure environment
-	implementation 'com.azure:azure-identity-extensions:1.1.4' // postgres password plugin
+	implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.14'
+	implementation 'com.azure:azure-storage-blob:12.23.0'
+	implementation 'com.azure:azure-identity:1.9.2' // authentication in azure environment
+	implementation 'com.azure:azure-identity-extensions:1.1.5' // postgres password plugin
 
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
