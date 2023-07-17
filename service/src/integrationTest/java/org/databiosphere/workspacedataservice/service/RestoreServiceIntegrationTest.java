@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 @ActiveProfiles({"mock-storage", "local"})
 @ContextConfiguration(name = "mockStorage")
@@ -53,7 +53,7 @@ public class RestoreServiceIntegrationTest {
 
     // this test references the file src/integrationTest/resources/backup-test.sql as its backup
     @Test
-    void testRestoreAzureWDS() throws Exception {
+    void testRestoreAzureWDS() {
         UUID sourceInstance = UUID.fromString(sourceWorkspaceId);
         UUID destInstance = UUID.fromString(workspaceId);
 
@@ -64,7 +64,7 @@ public class RestoreServiceIntegrationTest {
 
         // perform the restore
         var response = backupRestoreService.restoreAzureWDS("v0.2", "backup.sql", UUID.randomUUID(), "");
-        assertTrue(response.getStatus() == JobStatus.SUCCEEDED);
+        assertSame(JobStatus.SUCCEEDED, response.getStatus());
 
         // after restore, confirm destination instance exists but source does not
         List<UUID> instancesAfter = instanceDao.listInstanceSchemas();

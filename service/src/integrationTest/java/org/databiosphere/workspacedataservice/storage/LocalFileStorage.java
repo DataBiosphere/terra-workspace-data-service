@@ -9,6 +9,7 @@ import java.util.Objects;
 public class LocalFileStorage implements BackUpFileStorage {
     public LocalFileStorage() {}
 
+    @Override
     public void streamOutputToBlobStorage(InputStream fromStream, String blobName, String workspaceId) {
         File targetFile;
         try {
@@ -28,6 +29,7 @@ public class LocalFileStorage implements BackUpFileStorage {
         } finally {
             try {
                 // clean up the temp file
+                //noinspection ResultOfMethodCallIgnored
                 targetFile.delete();
             } catch (Exception e) {
                 // could not clean up the temp file; don't fail the test due to this.
@@ -35,6 +37,7 @@ public class LocalFileStorage implements BackUpFileStorage {
         }
     }
 
+    @Override
     public void streamInputFromBlobStorage(OutputStream toStream, String blobName, String workspaceId, String authToken) {
         try(InputStream inStream = LocalFileStorage.class.getResourceAsStream("/WDS-integrationTest-LocalFileStorage-input.sql")) {
             try(BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(toStream, StandardCharsets.UTF_8))) {
@@ -48,7 +51,8 @@ public class LocalFileStorage implements BackUpFileStorage {
         }
     }
 
-    public void DeleteBlob(String blobFile, String workspaceId) {
+    @Override
+    public void deleteBlob(String blobFile, String workspaceId) {
         // delete is handled in stream output for local set up
     }
 }

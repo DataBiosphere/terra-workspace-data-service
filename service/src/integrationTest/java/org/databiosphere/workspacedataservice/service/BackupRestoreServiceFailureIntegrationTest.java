@@ -16,7 +16,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 
 @ActiveProfiles({"mock-storage", "local"})
 @ContextConfiguration(name = "mockStorage")
@@ -38,7 +39,7 @@ public class BackupRestoreServiceFailureIntegrationTest {
     void testRestoreAzureWDSErrorHandling() {
         Job<RestoreResponse> response = backupRestoreService.restoreAzureWDS("v0.2", "backup.sql", UUID.randomUUID(), "");
         // will fail because twds.pg_dump.host is blank
-        assertTrue(response.getStatus() == JobStatus.ERROR);
+        assertSame(JobStatus.ERROR, response.getStatus());
         assertFalse(response.getErrorMessage().isBlank());
     }
 

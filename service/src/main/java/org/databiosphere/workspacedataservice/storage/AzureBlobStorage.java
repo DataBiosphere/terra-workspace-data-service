@@ -65,7 +65,7 @@ public class AzureBlobStorage implements BackUpFileStorage {
         }
     }
 
-    public BlobContainerClient constructBlockBlobClient(String workspaceId) {
+    private BlobContainerClient constructBlockBlobClient(String workspaceId) {
         // get workspace blob storage endpoint and token
         var blobstorageDetails = workspaceManagerDao.getBlobStorageUrl(workspaceId);
 
@@ -85,7 +85,8 @@ public class AzureBlobStorage implements BackUpFileStorage {
         }
     }
 
-    public void DeleteBlob(String blobFile, String workspaceId) {
+    @Override
+    public void deleteBlob(String blobFile, String workspaceId) {
         BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId);
         try {
             var blobClient = blobContainerClient.getBlobClient(blobFile);
