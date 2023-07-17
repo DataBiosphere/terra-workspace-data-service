@@ -143,6 +143,7 @@ public class BackupRestoreService {
 
     public Job<RestoreResponse> restoreAzureWDS(String version, String backupFileName, UUID trackingId, String startupToken) {
         validateVersion(version);
+        boolean doCleanup = false;
         try {
             LOGGER.info("Starting restore. ");
             // create an entry to track progress of this restore
@@ -157,6 +158,8 @@ public class BackupRestoreService {
             localProcessLauncher.launchProcess(commandList, envVars);
 
             LOGGER.info("Grabbing data from the backup file. ");
+            // if we've reached this point, trigger cleanup of the backup file when the restore attempt is done
+            doCleanup = true;
             // grab blob from storage
             storage.streamInputFromBlobStorage(localProcessLauncher.getOutputStream(), backupFileName, workspaceId, startupToken);
 
@@ -179,11 +182,13 @@ public class BackupRestoreService {
             restoreDao.terminateToError(trackingId, ex.getMessage());
         } finally {
             // clean up
-            try {
-                storage.deleteBlob(backupFileName, workspaceId, startupToken);
-            } catch (Exception e) {
-                LOGGER.warn("Error cleaning up after restore. File '{}' was not deleted from storage container: {}",
-                        backupFileName, e.getMessage(), e);
+            if (doCleanup) {
+                try {
+                    storage.deleteBlob(backupFileName, workspaceId, startupToken);
+                } catch (Exception e) {
+                    LOGGER.warn("Error cleaning up after restore. File '{}' was not deleted from storage container: {}",
+                            backupFileName, e.getMessage(), e);
+                }
             }
         }
         return restoreDao.getStatus(trackingId);
