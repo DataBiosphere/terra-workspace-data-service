@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice;
 
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedata.client.ApiException;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
@@ -12,6 +13,7 @@ import org.databiosphere.workspacedataservice.shared.model.CloneTable;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
+import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -206,8 +208,22 @@ public class InstanceInitializerBean {
                 cloneDao.terminateCloneToError(trackingId, backupResponse.getErrorMessage(), CloneTable.BACKUP);
                 return null;
             }
+        } catch (WorkspaceDataServiceException wdsE) {
+            if (wdsE.getCause() != null &&
+                    wdsE.getCause() instanceof ApiException apiException &&
+                    apiException.getCode() == 404) {
+                LOGGER.error("Remote source WDS in workspace {} does not support cloning", sourceWorkspaceId);
+                cloneDao.terminateCloneToError(trackingId,
+                        "The data tables in the workspace being cloned do not support cloning. " +
+                                "Contact the workspace owner to upgrade the version of data tables in that workspace.",
+                        CloneTable.BACKUP);
+            } else {
+                LOGGER.error("An error occurred during clone mode - backup not complete: {}", wdsE.getMessage());
+                cloneDao.terminateCloneToError(trackingId, wdsE.getMessage(), CloneTable.BACKUP);
+            }
+            return null;
         } catch (Exception e) {
-            LOGGER.error("An error occurred during clone mode - backup not complete.");
+            LOGGER.error("An error occurred during clone mode - backup not complete: {}", e.getMessage());
             cloneDao.terminateCloneToError(trackingId, e.getMessage(), CloneTable.BACKUP);
             return null;
         }
