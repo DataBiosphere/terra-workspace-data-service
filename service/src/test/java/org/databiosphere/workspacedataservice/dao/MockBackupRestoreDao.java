@@ -22,7 +22,7 @@ public class MockBackupRestoreDao<T extends JobResult> implements BackupRestoreD
     // backing "database" for this mock
     private final Set<Job<T>> entries = ConcurrentHashMap.newKeySet();
 
-    private CloneTable table; 
+    private final CloneTable table;
 
     public MockBackupRestoreDao(CloneTable table) {
         this.table = table;
