@@ -4,11 +4,11 @@ import bio.terra.common.db.WriteTransaction;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
+import org.databiosphere.workspacedataservice.shared.model.CloneTable;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -24,8 +24,6 @@ import java.util.UUID;
 
 @Repository
 public class PostgresCloneDao implements CloneDao {
-    @Value("${twds.instance.workspace-id:}")
-    private String workspaceId;
     private final NamedParameterJdbcTemplate namedTemplate;
 
     /*
@@ -55,24 +53,39 @@ public class PostgresCloneDao implements CloneDao {
 
     @Override
     @WriteTransaction
-    public void updateCloneEntryStatus(UUID trackingId, CloneStatus status) {
+    public void updateCloneEntryStatus(UUID trackingId, CloneStatus cloneStatus) {
         try {
-            var jobStatus = status.equals(CloneStatus.BACKUPSUCCEEDED) ? JobStatus.SUCCEEDED.name() : JobStatus.ERROR.name();
+            // determine the overall job status based on the "clonestatus" sub-status
+            JobStatus jobStatus = switch (cloneStatus) {
+                case RESTORESUCCEEDED:
+                    yield JobStatus.SUCCEEDED;
+                case BACKUPERROR, RESTOREERROR, UNKNOWN:
+                    yield JobStatus.ERROR;
+                default:
+                    yield JobStatus.RUNNING;
+            };
+
             namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET clonestatus = ?, status = ?, updatedtime = ? where id = ?",
-                    status.name(), jobStatus, Timestamp.from(Instant.now()), trackingId);
-            LOGGER.info("Clone status is now {}.", status);
+                    cloneStatus.name(), jobStatus.name(), Timestamp.from(Instant.now()), trackingId);
+            LOGGER.info("Clone status is now {}.", cloneStatus);
         }
         catch (Exception e){
-            terminateCloneToError(trackingId, e.getMessage());
+            // because updateCloneEntryStatus is itself annotated with @WriteTransaction, we can ignore IntelliJ warnings about
+            // self-invocation of transactions on the following line:
+            //noinspection SpringTransactionalMethodCallsInspection
+            terminateCloneToError(trackingId, e.getMessage(), cloneStatus.name().contains("BACKUP") ? CloneTable.BACKUP : CloneTable.RESTORE);
         }
     }
 
     @Override
     @WriteTransaction
-    public void terminateCloneToError(UUID trackingId, String error) {
+    public void terminateCloneToError(UUID trackingId, String error, CloneTable table) {
         namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET error = ? where id = ?",
                 StringUtils.abbreviate(error, 2000), trackingId);
-        updateCloneEntryStatus(trackingId, CloneStatus.BACKUPERROR);
+        // because terminateCloneToError is itself annotated with @WriteTransaction, we can ignore IntelliJ warnings about
+        // self-invocation of transactions on the following line:
+        //noinspection SpringTransactionalMethodCallsInspection
+        updateCloneEntryStatus(trackingId, table.equals(CloneTable.BACKUP) ? CloneStatus.BACKUPERROR : CloneStatus.RESTOREERROR);
     }
 
     /*

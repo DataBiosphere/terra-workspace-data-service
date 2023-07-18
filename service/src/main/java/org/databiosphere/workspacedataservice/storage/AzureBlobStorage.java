@@ -43,7 +43,7 @@ public class AzureBlobStorage implements BackUpFileStorage {
     @Override
     public void streamOutputToBlobStorage(InputStream fromStream, String blobName, String workspaceId) {
         LOGGER.info("Creating blob storage client. ");
-        BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId);
+        BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId, null);
         LOGGER.info("About to write to blob storage. ");
         // https://learn.microsoft.com/en-us/java/api/overview/azure/storage-blob-readme?view=azure-java-stable#upload-a-blob-via-an-outputstream
         try (BlobOutputStream blobOS = blobContainerClient.getBlobClient(blobName).getBlockBlobClient().getBlobOutputStream()) {
@@ -59,8 +59,8 @@ public class AzureBlobStorage implements BackUpFileStorage {
     }
 
     @Override
-    public void streamInputFromBlobStorage(OutputStream toStream, String blobName, String workspaceId) {
-        BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId);
+    public void streamInputFromBlobStorage(OutputStream toStream, String blobName, String workspaceId, String authToken) {
+        BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId, authToken);
         try (toStream) {
             blobContainerClient.getBlobClient(blobName).downloadStream(toStream);
         } catch (IOException ioEx) {
@@ -68,9 +68,9 @@ public class AzureBlobStorage implements BackUpFileStorage {
         }
     }
 
-    public BlobContainerClient constructBlockBlobClient(String workspaceId) {
+    private BlobContainerClient constructBlockBlobClient(String workspaceId, String authToken) {
         // get workspace blob storage endpoint and token
-        var blobstorageDetails = workspaceManagerDao.getBlobStorageUrl(workspaceId);
+        var blobstorageDetails = workspaceManagerDao.getBlobStorageUrl(workspaceId, authToken);
 
         // the url we get from WSM already contains the token in it, so no need to specify sasToken separately
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder().endpoint(blobstorageDetails).buildClient();
@@ -84,6 +84,19 @@ public class AzureBlobStorage implements BackUpFileStorage {
         catch (BlobStorageException e){
             // if the default workspace container doesn't exist, something went horribly wrong
             LOGGER.error("Default storage container missing for workspace id {}", workspaceId);
+            throw(e);
+        }
+    }
+
+    @Override
+    public void deleteBlob(String blobFile, String workspaceId, String authToken) {
+        BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId, authToken);
+        try {
+            var blobClient = blobContainerClient.getBlobClient(blobFile);
+            blobClient.delete();
+        }
+        catch (BlobStorageException e){
+            LOGGER.error("Failed to delete file with name {}. ", blobFile);
             throw(e);
         }
     }

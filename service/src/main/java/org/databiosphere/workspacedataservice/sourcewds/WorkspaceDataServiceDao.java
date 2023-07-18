@@ -3,7 +3,7 @@ package org.databiosphere.workspacedataservice.sourcewds;
 
 import org.databiosphere.workspacedata.client.ApiException;
 import org.databiosphere.workspacedata.model.BackupJob;
-import org.databiosphere.workspacedata.model.BackupRequest;
+import org.databiosphere.workspacedata.model.BackupRestoreRequest;
 
 import java.util.UUID;
 
@@ -26,7 +26,7 @@ public class WorkspaceDataServiceDao {
   public BackupJob triggerBackup(String token, UUID requesterWorkspaceId) {
     try {
       var backupClient = this.workspaceDataServiceClientFactory.getBackupClient(token, workspaceDataServiceUrl);
-      BackupRequest body = new BackupRequest();
+      BackupRestoreRequest body = new BackupRestoreRequest();
       body.setRequestingWorkspaceId(requesterWorkspaceId);
       return backupClient.createBackup(body,"v0.2");
     } catch (ApiException e) {

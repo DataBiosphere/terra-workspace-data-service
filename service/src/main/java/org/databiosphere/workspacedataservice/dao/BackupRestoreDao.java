@@ -1,0 +1,17 @@
+package org.databiosphere.workspacedataservice.dao;
+
+import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
+import org.databiosphere.workspacedataservice.shared.model.job.Job;
+import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
+import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
+
+
+import java.util.UUID;
+
+public interface BackupRestoreDao <T extends JobResult> {
+    Job<T> getStatus(UUID trackingId);
+    void createEntry(UUID trackingId, BackupRestoreRequest BackupRestoreRequest);
+    void updateStatus(UUID trackingId, JobStatus status);
+    void terminateToError(UUID trackingId, String error);
+    void updateFilename(UUID trackingId, String filename);
+}

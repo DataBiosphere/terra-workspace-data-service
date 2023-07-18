@@ -72,7 +72,7 @@ class DataRepoControllerMockMvcTest {
     @BeforeEach
     void beforeEach()  throws Exception {
         given(mockDataRepoClientFactory.getRepositoryApi()).willReturn(mockRepositoryApi);
-        given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi()).willReturn(mockReferencedGcpResourceApi);
+        given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi(null)).willReturn(mockReferencedGcpResourceApi);
         instanceId = UUID.randomUUID();
         mockMvc.perform(post("/instances/{v}/{instanceid}",
                 versionId, instanceId).content("")).andExpect(status().isCreated());

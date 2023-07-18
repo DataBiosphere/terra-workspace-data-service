@@ -3,13 +3,13 @@ package org.databiosphere.workspacedataservice.dao;
 import bio.terra.common.db.WriteTransaction;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
+import org.databiosphere.workspacedataservice.shared.model.CloneTable;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
-import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.UUID;
@@ -30,42 +30,43 @@ public class MockCloneDao implements CloneDao {
 
     @Override
     public void createCloneEntry(UUID trackingId, UUID sourceWorkspaceId) {
-        Timestamp now = Timestamp.from(Instant.now());
+        LocalDateTime now = Timestamp.from(Instant.now()).toLocalDateTime();
         var cloneEntry = new CloneResponse(sourceWorkspaceId, CloneStatus.BACKUPQUEUED);
-        Job<CloneResponse> jobEntry = new Job<>(trackingId, JobStatus.QUEUED, "", now.toLocalDateTime(), now.toLocalDateTime(), cloneEntry);
+        Job<CloneResponse> jobEntry = new Job<>(trackingId, JobStatus.QUEUED, "", now, now, cloneEntry);
         clone.add(jobEntry);
     }
 
     @Override
     public void updateCloneEntryStatus(UUID trackingId, CloneStatus status) {
-        try {
-            var cloneEntry = clone.stream().filter(entry -> entry.getJobId().equals(trackingId)).findFirst().orElse(null);
+        var cloneEntry = findCloneEntry(trackingId);
+        if (cloneEntry != null) {
             clone.remove(cloneEntry);
             cloneEntry.setResult(new CloneResponse(cloneEntry.getResult().sourceWorkspaceId(), status));
             cloneEntry.setStatus(JobStatus.SUCCEEDED);
-            clone.add(cloneEntry);
-        }
-        catch(Exception e) {
-            var cloneEntry = clone.stream().filter(entry -> entry.getJobId().equals(trackingId)).findFirst().orElse(null);
-            clone.remove(cloneEntry);
-            cloneEntry.setStatus(JobStatus.ERROR);
             clone.add(cloneEntry);
         }
     }
 
     @Override
     @WriteTransaction
-    public void terminateCloneToError(UUID trackingId, String error) {
-        var cloneEntry = clone.stream().filter(entry -> entry.getJobId().equals(trackingId)).findFirst().orElse(null);
-        clone.remove(cloneEntry);
-        cloneEntry.setErrorMessage(error);
-        clone.add(cloneEntry);
-        updateCloneEntryStatus(trackingId, CloneStatus.BACKUPERROR);
+    public void terminateCloneToError(UUID trackingId, String error, CloneTable table) {
+        var cloneEntry = findCloneEntry(trackingId);
+        if (cloneEntry != null) {
+            clone.remove(cloneEntry);
+            cloneEntry.setErrorMessage(error);
+            clone.add(cloneEntry);
+            updateCloneEntryStatus(trackingId, table.equals(CloneTable.BACKUP) ? CloneStatus.BACKUPERROR : CloneStatus.RESTOREERROR);
+        }
     }
 
     @Override
     public Job<CloneResponse> getCloneStatus() {
-        var cloneEntry = clone.stream().max(Comparator.comparing(entry -> entry.getUpdated())).orElse(null);
-        return cloneEntry;
+        return clone.stream().max(Comparator.comparing(Job::getUpdated)).orElse(null);
     }
+
+    private Job<CloneResponse> findCloneEntry(UUID trackingId) {
+        return clone.stream().filter(entry -> entry.getJobId().equals(trackingId)).findFirst().orElse(null);
+    }
+
+
 }

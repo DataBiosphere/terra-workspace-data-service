@@ -28,7 +28,7 @@ public class WorkspaceManagerDao {
    * Creates a snapshot reference in workspaces manager and creates policy linkages.
    */
   public void createDataRepoSnapshotReference(SnapshotModel snapshotModel) {
-    final ReferencedGcpResourceApi resourceApi = this.workspaceManagerClientFactory.getReferencedGcpResourceApi();
+    final ReferencedGcpResourceApi resourceApi = this.workspaceManagerClientFactory.getReferencedGcpResourceApi(null);
 
     try {
       String timeStamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new java.util.Date());
@@ -51,9 +51,9 @@ public class WorkspaceManagerDao {
   /**
    Retrieves the azure storage container url and sas token for a given workspace.
    */
-  public String getBlobStorageUrl(String storageWorkspaceId) {
-    final ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi();
-    final ControlledAzureResourceApi azureResourceApi = this.workspaceManagerClientFactory.getAzureResourceApi();
+  public String getBlobStorageUrl(String storageWorkspaceId, String authToken) {
+    final ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi(authToken);
+    final ControlledAzureResourceApi azureResourceApi = this.workspaceManagerClientFactory.getAzureResourceApi(authToken);
     int count = 0;
     int maxTries = 3;
     while(true) {
@@ -82,4 +82,5 @@ public class WorkspaceManagerDao {
     }
     return null;
   }
+
 }

@@ -1,14 +1,21 @@
 package org.databiosphere.workspacedataservice;
 
 import org.apache.commons.lang3.StringUtils;
-import org.databiosphere.workspacedataservice.dao.BackupDao;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
+import org.databiosphere.workspacedataservice.service.BackupRestoreService;
+import org.databiosphere.workspacedataservice.service.model.exception.CloningException;
+import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
+import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
+import org.databiosphere.workspacedataservice.shared.model.CloneTable;
+import org.databiosphere.workspacedataservice.shared.model.job.Job;
+import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.dao.DataAccessException;
 
 import java.util.UUID;
@@ -16,10 +23,11 @@ import java.util.UUID;
 public class InstanceInitializerBean {
 
     private final InstanceDao instanceDao;
-    private final BackupDao backupDao;
     private final LeonardoDao leoDao;
     private final WorkspaceDataServiceDao wdsDao;
     private final CloneDao cloneDao;
+
+    private final BackupRestoreService restoreService;
 
     @Value("${twds.instance.workspace-id}")
     private String workspaceId;
@@ -32,19 +40,58 @@ public class InstanceInitializerBean {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceInitializerBean.class);
 
-    public InstanceInitializerBean(InstanceDao instanceDao, BackupDao backupDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao, CloneDao cloneDao){
+    /**
+     * Constructor. Called by {@link InstanceInitializerConfig}.
+     * @see InstanceInitializerConfig
+     *
+     * @param instanceDao InstanceDao
+     * @param leoDao LeonardoDao
+     * @param wdsDao WorkspaceDataServiceDao
+     * @param cloneDao CloneDao
+     * @param restoreService BackupRestoreService
+     */
+    public InstanceInitializerBean(InstanceDao instanceDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao, CloneDao cloneDao, BackupRestoreService restoreService){
         this.instanceDao = instanceDao;
-        this.backupDao = backupDao;
         this.leoDao = leoDao;
         this.wdsDao = wdsDao;
         this.cloneDao = cloneDao;
+        this.restoreService = restoreService;
     }
 
-    public boolean isInCloneMode(String sourceWorkspaceId) {
-        if (StringUtils.isNotBlank(sourceWorkspaceId)){
+    /**
+     * Entry point into this bean, called at WDS startup by {@link InstanceInitializer#onApplicationEvent(ContextRefreshedEvent)}.
+     * @see InstanceInitializer
+     */
+    public void initializeInstance() {
+        LOGGER.info("Default workspace id loaded as {}.", workspaceId);
+        boolean isInCloneMode = isInCloneMode(sourceWorkspaceId);
+        LOGGER.info("isInCloneMode={}.", isInCloneMode);
+        if (isInCloneMode) {
+            LOGGER.info("Source workspace id loaded as {}.", sourceWorkspaceId);
+            boolean cloneSuccess = initCloneMode();
+            if (cloneSuccess) {
+                LOGGER.info("Cloning complete.");
+            } else {
+                initializeDefaultInstance();
+            }
+        } else {
+            initializeDefaultInstance();
+        }
+    }
+
+    /**
+     * Determine if this WDS is starting as a clone of some other WDS. If a valid {@code SOURCE_WORKSPACE_ID}
+     * env var is provided to this WDS, it will start in clone mode.
+     *
+     * @param sourceWorkspaceId value of {@code SOURCE_WORKSPACE_ID}; provided as an argument to assist with unit tests.
+     * @return whether this WDS is a clone.
+     */
+    protected boolean isInCloneMode(String sourceWorkspaceId) {
+        if (StringUtils.isNotBlank(sourceWorkspaceId)) {
+            UUID sourceWorkspaceUuid;
             LOGGER.info("SourceWorkspaceId found, checking database");
             try {
-                UUID.fromString(sourceWorkspaceId);
+                sourceWorkspaceUuid = UUID.fromString(sourceWorkspaceId);
             } catch (IllegalArgumentException e){
                     LOGGER.warn("SourceWorkspaceId could not be parsed, unable to clone DB. Provided SourceWorkspaceId: {}.", sourceWorkspaceId);
                     return false;
@@ -56,11 +103,16 @@ public class InstanceInitializerBean {
             }
 
             try {
-                // TODO at this stage of cloning work (where only backup is getting generated), just checking if an instance schema already exists is sufficient
-                // when the restore operation is added, it would be important to check if any record of restore state is present
-                // it is also possible to check if backup was initiated and completed (since if it did, we dont need to request it again)
-                // and can just kick off the restore
-                return !instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
+                // is a clone operation already running? This can happen when WDS is running with multiple replicas,
+                // and another replica started first and has initiated the clone. It can also happen in a corner case
+                // where this replica restarted during the clone operation.
+                boolean cloneAlreadyRunning = cloneDao.cloneExistsForWorkspace(sourceWorkspaceUuid);
+                // does the default pg schema already exist for this workspace? This should not happen,
+                // but we want to protect against overwriting it.
+                boolean instanceAlreadyExists = instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
+                LOGGER.warn("isInCloneMode(): cloneAlreadyRunning={}, instanceAlreadyExists={}", cloneAlreadyRunning, instanceAlreadyExists);
+                // TODO handle the case where a clone already ran, but failed; should we retry?
+                return !cloneAlreadyRunning && !instanceAlreadyExists;
             } catch (IllegalArgumentException e) {
                 LOGGER.warn("WorkspaceId could not be parsed, unable to clone DB. Provided default WorkspaceId: {}.", workspaceId);
                 return false;
@@ -68,7 +120,6 @@ public class InstanceInitializerBean {
         }
         LOGGER.info("No SourceWorkspaceId found, initializing default schema.");
         return false;
-
     }
 
     /*
@@ -78,68 +129,113 @@ public class InstanceInitializerBean {
     starting WDS was initiated via a clone operation and will contain the WorkspaceId of the original workspace where the cloning
     was triggered.
     */
-    public void initCloneMode(){
+    private boolean initCloneMode() {
         LOGGER.info("Starting in clone mode...");
+        UUID trackingId = UUID.randomUUID();
 
-        /* Commenting out to prevent cloning from generating files in storage before restore is implemented.
         try {
-            // first get source wds url based on source workspace id and the provided access token
+            // First, create an entry in the clone table to mark cloning has started
+            LOGGER.info("Creating entry to track cloning process.");
+            cloneDao.createCloneEntry(trackingId, UUID.fromString(sourceWorkspaceId));
+
+            // Get the remote (source) WDS url from Leo, based on the source workspace id env var.
+            // This call runs using the "startup token" provided by Leo.
+            // Set the remote (source) WDS url on the WDS dao.
             var sourceWdsEndpoint = leoDao.getWdsEndpointUrl(startupToken);
-
             LOGGER.info("Retrieved source wds endpoint url {}", sourceWdsEndpoint);
-
-            // make the call to source wds to trigger back up, to do that set the source WDS dao endpoint
-            // url to the url retrieved from Leo
             wdsDao.setWorkspaceDataServiceUrl(sourceWdsEndpoint);
 
-            // this fileName will be used for the restore
-            var backupFileName = "";
-            // check if the current workspace has already sent a request for backup
-            // if it did, no need to do it again
-            // TODO can also check the status and decide if backup should be tried again
-            if (!cloneDao.cloneExistsForWorkspace(UUID.fromString(sourceWorkspaceId))) {
-                LOGGER.info("No backup exists, will initiate one.");
+            // request a backup from the remote (source) WDS
+            var backupFileName = requestRemoteBackup(trackingId);
 
-                // TODO since the backup api is not async, this will return once the backup finishes
-                var backupResponse = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
-                var trackingId = UUID.fromString(backupResponse.getJobId());
-                LOGGER.info("Create clone entry in WDS to track cloning process.");
-                cloneDao.createCloneEntry(trackingId, UUID.fromString(sourceWorkspaceId));
+            // Now that the remote backup has run, check the current clone status
+            LOGGER.info("Re-checking clone job status after backup request");
+            var cloneStatus = currentCloneStatus(trackingId);
 
-                LOGGER.info("Check on backup status in source workspace with Job Id {}.", backupResponse.getJobId());
-                var backupStatusResponse = wdsDao.checkBackupStatus(startupToken, UUID.fromString(backupResponse.getJobId()));
-                if (backupStatusResponse.getStatus().equals(Job.StatusEnum.SUCCEEDED)) {
-                    backupFileName = backupStatusResponse.getResult().getFilename();
-                    cloneDao.updateCloneEntryStatus(trackingId, CloneStatus.BACKUPSUCCEEDED);
-                }
-                else {
-                    LOGGER.error("An error occurred during clone mode - backup not complete.");
-                    cloneDao.terminateCloneToError(trackingId, backupStatusResponse.getErrorMessage());
-                }
+            // if backup did not succeed, we cannot continue.
+            if (!cloneStatus.getResult().status().equals(CloneStatus.BACKUPSUCCEEDED) || backupFileName == null) {
+                LOGGER.error("Backup not successful, cannot restore.");
+                return false;
             }
 
-            //TODO do the restore
-            LOGGER.info("Restore from the following path on the source workspace storage container: {}", backupFileName);
+            // backup succeeded; now attempt to restore
+            restoreFromRemoteBackup(backupFileName, cloneStatus.getJobId());
+
+            // after the restore attempt, check the current clone status one more time
+            // and return the result
+            LOGGER.info("Re-checking clone job status after restore request");
+            var finalCloneStatus = currentCloneStatus(trackingId);
+            return finalCloneStatus.getStatus().equals(JobStatus.SUCCEEDED);
+
         }
-        catch(Exception e) {
-            LOGGER.error("An error occurred during clone mode. Will start with empty default instance schema. Error: {}", e.toString());
+        catch (Exception e) {
+            LOGGER.error("An error occurred during clone mode. Error: {}", e.toString());
+            try {
+                cloneDao.terminateCloneToError(trackingId, "Backup not successful, cannot restore.", CloneTable.RESTORE);
+            } catch (Exception inner) {
+                LOGGER.error("Furthermore, an error occurred while updating the clone job's status. Error: {}", inner.toString());
+            }
+            return false;
         }
-        */
     }
 
-    public void initializeInstance() {
-        LOGGER.info("Default workspace id loaded as {}.", workspaceId);
-        if (isInCloneMode(sourceWorkspaceId)) {
-            LOGGER.info("Source workspace id loaded as {}.", sourceWorkspaceId);
-            initCloneMode();
+    private Job<CloneResponse> currentCloneStatus(UUID trackingId) {
+        var cloneStatus = cloneDao.getCloneStatus();
+        if (cloneStatus == null) {
+            throw new CloningException("Unexpected error: clone status was null.");
         }
-
-        //TODO Wrap this in an else once restore for cloning is implemented (currently only backup is being kicked off)
-        initializeDefaultInstance();
+        if (!trackingId.equals(cloneStatus.getJobId())) {
+            throw new CloningException("Unexpected error: clone status job id did not match.");
+        }
+        return cloneStatus;
     }
 
-    public void initializeDefaultInstance() {
+    private String requestRemoteBackup(UUID trackingId) {
+        try {
+            LOGGER.info("Requesting a backup file from the remote source WDS in workspace {}", sourceWorkspaceId);
+            var backupResponse = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
 
+            // TODO when the wdsDao.triggerBackup is async, we will need a second call here to poll for/check its status
+            // note that the Job class on the next line is from the generated WDS client:
+            if (backupResponse.getStatus().equals(org.databiosphere.workspacedata.model.Job.StatusEnum.SUCCEEDED)) {
+                var backupFileName = backupResponse.getResult().getFilename();
+                cloneDao.updateCloneEntryStatus(trackingId, CloneStatus.BACKUPSUCCEEDED);
+                return backupFileName;
+            } else {
+                LOGGER.error("An error occurred during clone mode - backup not complete.");
+                cloneDao.terminateCloneToError(trackingId, backupResponse.getErrorMessage(), CloneTable.BACKUP);
+                return null;
+            }
+        } catch (Exception e) {
+            LOGGER.error("An error occurred during clone mode - backup not complete.");
+            cloneDao.terminateCloneToError(trackingId, e.getMessage(), CloneTable.BACKUP);
+            return null;
+        }
+    }
+
+    /**
+     * Given the path to a backup file, restore that backup file into this WDS.
+     *
+     * @param backupFileName backup file to restore
+     * @param cloneJobId clone job to update as this restore operation proceeds
+     */
+    private void restoreFromRemoteBackup(String backupFileName, UUID cloneJobId) {
+        LOGGER.info("Restore from the following path on the source workspace storage container: {}", backupFileName);
+        cloneDao.updateCloneEntryStatus(cloneJobId, CloneStatus.RESTOREQUEUED);
+        var restoreResponse = restoreService.restoreAzureWDS("v0.2", backupFileName, cloneJobId, startupToken);
+        if(!restoreResponse.getStatus().equals(JobStatus.SUCCEEDED)) {
+            LOGGER.error("Something went wrong with restore: {}. Starting with empty default instance schema.", restoreResponse.getErrorMessage());
+            cloneDao.terminateCloneToError(cloneJobId, restoreResponse.getErrorMessage(), CloneTable.RESTORE);
+        } else {
+            LOGGER.info("Restore Successful");
+            cloneDao.updateCloneEntryStatus(cloneJobId, CloneStatus.RESTORESUCCEEDED);
+        }
+    }
+
+    /*
+        Create the default pg schema for this WDS. The pg schema name is the workspace id.
+     */
+    private void initializeDefaultInstance() {
         try {
             UUID instanceId = UUID.fromString(workspaceId);
 

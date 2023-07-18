@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
-import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
+import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
@@ -27,10 +27,10 @@ public class CloningController {
 
     @PostMapping("/backup/{version}")
     public ResponseEntity<Job<BackupResponse>> createBackup(@PathVariable("version") String version,
-                                                               @RequestBody BackupRequest backupRequest) {
+                                                               @RequestBody BackupRestoreRequest BackupRestoreRequest) {
         UUID trackingId = UUID.randomUUID();
         // TODO: make async
-        Job<BackupResponse> backupJob = backupRestoreService.backupAzureWDS(version, trackingId, backupRequest);
+        Job<BackupResponse> backupJob = backupRestoreService.backupAzureWDS(version, trackingId, BackupRestoreRequest);
         return new ResponseEntity<>(backupJob, HttpStatus.OK);
     }
 

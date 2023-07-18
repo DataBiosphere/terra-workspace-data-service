@@ -1,11 +1,14 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.databiosphere.workspacedataservice.shared.model.BackupRequest;
+import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
+import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
+import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
@@ -14,9 +17,12 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 
 @ActiveProfiles({"mock-storage", "local"})
 @ContextConfiguration(name = "mockStorage")
+@DirtiesContext
 @SpringBootTest
 @TestPropertySource(properties = {
         "twds.pg_dump.useAzureIdentity=false",
@@ -33,15 +39,16 @@ public class BackupRestoreServiceFailureIntegrationTest {
 
     @Test
     void testRestoreAzureWDSErrorHandling() {
-        var response = backupRestoreService.restoreAzureWDS("v0.2");
+        Job<RestoreResponse> response = backupRestoreService.restoreAzureWDS("v0.2", "backup.sql", UUID.randomUUID(), "");
         // will fail because twds.pg_dump.host is blank
-        assertFalse(response);
+        assertSame(JobStatus.ERROR, response.getStatus());
+        assertFalse(response.getErrorMessage().isBlank());
     }
 
     @Test
     void testBackupAzureWDS() {
         var trackingId = UUID.randomUUID();
-        backupRestoreService.backupAzureWDS("v0.2", trackingId, new BackupRequest(UUID.fromString(sourceWorkspaceId), null));
+        backupRestoreService.backupAzureWDS("v0.2", trackingId, new BackupRestoreRequest(UUID.fromString(sourceWorkspaceId), null));
         var response = backupRestoreService.checkBackupStatus(trackingId);
         // will fail because twds.pg_dump.host is blank
         assertEquals(JobStatus.ERROR, response.getStatus());

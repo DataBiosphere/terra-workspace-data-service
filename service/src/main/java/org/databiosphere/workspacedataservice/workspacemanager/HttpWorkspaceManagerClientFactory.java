@@ -21,13 +21,12 @@ public class HttpWorkspaceManagerClientFactory implements WorkspaceManagerClient
     private final Client commonHttpClient;
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpWorkspaceManagerClientFactory.class);
 
-
     public HttpWorkspaceManagerClientFactory(String workspaceManagerUrl) {
         this.workspaceManagerUrl = workspaceManagerUrl;
         this.commonHttpClient = new ApiClient().getHttpClient();
     }
 
-    private ApiClient getApiClient() {
+    private ApiClient getApiClient(String authToken) {
         // create a new data repo client
         ApiClient apiClient = new ApiClient();
         apiClient.setHttpClient(commonHttpClient);
@@ -37,8 +36,8 @@ public class HttpWorkspaceManagerClientFactory implements WorkspaceManagerClient
             apiClient.setBasePath(workspaceManagerUrl);
         }
 
-        // grab the current user's bearer token (see BearerTokenFilter)
-        Object token = RequestContextHolder.currentRequestAttributes()
+        // grab the current user's bearer token (see BearerTokenFilter) or use parameter value
+        Object token = StringUtils.isNotBlank(authToken) ? authToken : RequestContextHolder.currentRequestAttributes()
                 .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
 
         // add the user's bearer token to the client
@@ -53,15 +52,15 @@ public class HttpWorkspaceManagerClientFactory implements WorkspaceManagerClient
         return apiClient;
     }
 
-    public ReferencedGcpResourceApi getReferencedGcpResourceApi() {
-        return new ReferencedGcpResourceApi(getApiClient());
+    public ReferencedGcpResourceApi getReferencedGcpResourceApi(String authToken) {
+        return new ReferencedGcpResourceApi(getApiClient(authToken));
     }
 
-    public ResourceApi getResourceApi() {
-        return new ResourceApi(getApiClient());
+    public ResourceApi getResourceApi(String authToken) {
+        return new ResourceApi(getApiClient(authToken));
     }
 
-    public ControlledAzureResourceApi getAzureResourceApi() {
-        return new ControlledAzureResourceApi(getApiClient());
+    public ControlledAzureResourceApi getAzureResourceApi(String authToken) {
+        return new ControlledAzureResourceApi(getApiClient(authToken));
     }
 }

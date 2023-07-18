@@ -1,17 +1,20 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+@DirtiesContext
 @SpringBootTest(properties = "spring.cache.type=NONE")
-@TestPropertySource(properties = {"twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000"})
+@TestPropertySource(properties = {"twds.instance.workspace-id=f7c83b8d-53f3-473e-b9b4-2663d13e2752",
+        "twds.pg_dump.path=/unit/test/pg_dump",
+        "twds.pg_dump.psqlPath=/unit/test/psql"})
 class BackupRestoreServiceTest {
     @Autowired
     private BackupRestoreService backupRestoreService;
@@ -20,14 +23,14 @@ class BackupRestoreServiceTest {
     void CheckBackupCommandLine() {
         List<String> commandList = backupRestoreService.generateCommandList(true);
         String command = String.join(" ", commandList);
-        assertThat(command).isEqualTo("/usr/bin/pg_dump -h localhost -p 5432 -U wds -d wds -v -w");
+        assertThat(command).isEqualTo("/unit/test/pg_dump -b -n f7c83b8d-53f3-473e-b9b4-2663d13e2752 -h localhost -p 5432 -U wds -d wds -v -w");
     }
 
     @Test
     void CheckRestoreCommandLine() {
         List<String> commandList = backupRestoreService.generateCommandList(false);
         String command = String.join(" ", commandList);
-        assertThat(command).isEqualTo("/usr/bin/psql -h localhost -p 5432 -U wds -d wds -v -w");
+        assertThat(command).isEqualTo("/unit/test/psql -h localhost -p 5432 -U wds -d wds -v -w");
     }
 
     @Test
