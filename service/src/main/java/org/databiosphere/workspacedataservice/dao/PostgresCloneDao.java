@@ -53,18 +53,27 @@ public class PostgresCloneDao implements CloneDao {
 
     @Override
     @WriteTransaction
-    public void updateCloneEntryStatus(UUID trackingId, CloneStatus status) {
+    public void updateCloneEntryStatus(UUID trackingId, CloneStatus cloneStatus) {
         try {
-            var jobStatus = status.equals(CloneStatus.BACKUPSUCCEEDED) ? JobStatus.SUCCEEDED.name() : JobStatus.ERROR.name();
+            // determine the overall job status based on the "clonestatus" sub-status
+            JobStatus jobStatus = switch (cloneStatus) {
+                case RESTORESUCCEEDED:
+                    yield JobStatus.SUCCEEDED;
+                case BACKUPERROR, RESTOREERROR, UNKNOWN:
+                    yield JobStatus.ERROR;
+                default:
+                    yield JobStatus.RUNNING;
+            };
+
             namedTemplate.getJdbcTemplate().update("update sys_wds.clone SET clonestatus = ?, status = ?, updatedtime = ? where id = ?",
-                    status.name(), jobStatus, Timestamp.from(Instant.now()), trackingId);
-            LOGGER.info("Clone status is now {}.", status);
+                    cloneStatus.name(), jobStatus.name(), Timestamp.from(Instant.now()), trackingId);
+            LOGGER.info("Clone status is now {}.", cloneStatus);
         }
         catch (Exception e){
             // because updateCloneEntryStatus is itself annotated with @WriteTransaction, we can ignore IntelliJ warnings about
             // self-invocation of transactions on the following line:
             //noinspection SpringTransactionalMethodCallsInspection
-            terminateCloneToError(trackingId, e.getMessage(), status.name().contains("BACKUP") ? CloneTable.BACKUP : CloneTable.RESTORE);
+            terminateCloneToError(trackingId, e.getMessage(), cloneStatus.name().contains("BACKUP") ? CloneTable.BACKUP : CloneTable.RESTORE);
         }
     }
 
