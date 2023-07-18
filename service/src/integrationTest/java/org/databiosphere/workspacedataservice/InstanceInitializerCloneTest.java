@@ -10,6 +10,7 @@ import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceClientFactory;
@@ -36,10 +37,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-@ActiveProfiles({"mock-instance-dao", "mock-backup-dao", "mock-storage", "mock-restore-dao", "local", "mock-sam"})
+// "local" profile prevents InstanceInitializerBean from running at Spring startup;
+// that way, we can run it when we want to inside our tests.
+@ActiveProfiles({"mock-storage", "local", "mock-sam"})
 @TestPropertySource(properties = {
         "twds.instance.workspace-id=5a9b583c-17ee-4c88-a14c-0edbf31175db",
-        "twds.instance.source-workspace-id=debc8737-8ff0-40c6-852b-3d4cdcdd2b74",
+        // source id must match value in WDS-integrationTest-LocalFileStorage-input.sql
+        "twds.instance.source-workspace-id=123e4567-e89b-12d3-a456-426614174001",
         "twds.pg_dump.useAzureIdentity=false"})
 @DirtiesContext
 @SpringBootTest
@@ -117,6 +121,10 @@ class InstanceInitializerCloneTest {
         assertThat(recordDao.getAllRecordTypes(workspaceUuid)).isEmpty();
     }
 
+    /*
+     * Test a successful clone operation, using Mockito mocks for Leo, WSM, and WDS clients,
+     * plus our custom mocks for blob storage and Sam.
+     */
     @Test
     void cloneSuccess() throws ApiException {
         // set up mocks:
@@ -148,18 +156,17 @@ class InstanceInitializerCloneTest {
         assertSame(JobStatus.SUCCEEDED, cloneStatus.getStatus());
         assertSame(CloneStatus.RESTORESUCCEEDED, cloneStatus.getResult().status());
 
-        // default instance should exist, with (what???) in it
+        // default instance should exist, with a single table named "test" in it
+        // the "test" table is defined in WDS-integrationTest-LocalFileStorage-input.sql.
         UUID workspaceUuid = UUID.fromString(workspaceId);
         List<UUID> actualInstances = instanceDao.listInstanceSchemas();
         assertEquals(List.of(workspaceUuid), actualInstances);
-
-
-//        assertThat(recordDao.getAllRecordTypes(workspaceUuid)).isEmpty();
-
+        List<RecordType> actualTypes = recordDao.getAllRecordTypes(workspaceUuid);
+        assertEquals(List.of(RecordType.valueOf("test")), actualTypes);
     }
 
     // TODO: if a clone entry already exists, initializeInstance won't do anything
-
-    // TODO: successful clone operation
+    // TODO: test if backup succeeds but restore fails
+    // TODO: what other coverage?
 
 }
