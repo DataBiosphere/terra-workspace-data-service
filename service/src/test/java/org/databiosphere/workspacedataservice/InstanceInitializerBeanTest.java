@@ -27,7 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-@ActiveProfiles({"mock-instance-dao", "mock-backup-dao", "mock-restore-dao", "mock-clone-dao", "local,", "mock-sam"})
+@ActiveProfiles({"mock-instance-dao", "mock-backup-dao", "mock-restore-dao", "mock-clone-dao", "local", "mock-sam"})
 @TestPropertySource(properties = {"twds.instance.workspace-id=90e1b179-9f83-4a6f-a8c2-db083df4cd03"})
 @DirtiesContext
 @SpringBootTest(classes =
