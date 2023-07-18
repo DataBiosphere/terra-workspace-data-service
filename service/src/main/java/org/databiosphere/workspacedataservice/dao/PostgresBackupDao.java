@@ -47,10 +47,10 @@ public class PostgresBackupDao extends AbstractBackupRestoreDao<BackupResponse> 
 
     @Override
     @WriteTransaction
-    public void createEntry(UUID trackingId, BackupRestoreRequest BackupRestoreRequest) {
+    public void createEntry(UUID trackingId, BackupRestoreRequest backupRestoreRequest) {
         Timestamp now = Timestamp.from(Instant.now());
         namedTemplate.getJdbcTemplate().update("insert into sys_wds.backup(id, status, createdtime, updatedtime, requester, description) " +
-                "values (?,?,?,?,?,?)", trackingId, JobStatus.QUEUED.name(), now, now, BackupRestoreRequest.requestingWorkspaceId(), BackupRestoreRequest.description());
+                "values (?,?,?,?,?,?)", trackingId, JobStatus.QUEUED.name(), now, now, backupRestoreRequest.requestingWorkspaceId(), backupRestoreRequest.description());
         LOGGER.info("Backup job {} is now {}", trackingId, JobStatus.QUEUED);
     }
 
