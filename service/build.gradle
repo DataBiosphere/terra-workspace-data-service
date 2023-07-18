@@ -138,11 +138,14 @@ testing {
         integrationTest(JvmTestSuite) {
             dependencies {
 				implementation project(':service')
+				implementation project(':client')
 				implementation 'org.springframework.boot:spring-boot-starter-test'
+				implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 				implementation 'org.liquibase:liquibase-core:4.21.1'
 				implementation "org.glassfish.jersey.core:jersey-client:$jersey_version"
 				implementation "org.glassfish.jersey.core:jersey-common:$jersey_version"
 				implementation "org.glassfish.jersey.inject:jersey-hk2:$jersey_version"
+
             }
         }
     }

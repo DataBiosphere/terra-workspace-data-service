@@ -2,6 +2,8 @@ package org.databiosphere.workspacedataservice;
 
 import org.databiosphere.workspacedata.api.CloningApi;
 import org.databiosphere.workspacedata.client.ApiException;
+import org.databiosphere.workspacedata.model.BackupJob;
+import org.databiosphere.workspacedata.model.BackupResponse;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
@@ -11,6 +13,7 @@ import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceClientFactory;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -33,38 +36,38 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-@ActiveProfiles({"mock-instance-dao", "mock-backup-dao", "mock-restore-dao", "local", "mock-sam"})
+@ActiveProfiles({"mock-instance-dao", "mock-backup-dao", "mock-storage", "mock-restore-dao", "local", "mock-sam"})
 @TestPropertySource(properties = {
         "twds.instance.workspace-id=5a9b583c-17ee-4c88-a14c-0edbf31175db",
-        "twds.instance.source-workspace-id=debc8737-8ff0-40c6-852b-3d4cdcdd2b74"})
+        "twds.instance.source-workspace-id=debc8737-8ff0-40c6-852b-3d4cdcdd2b74",
+        "twds.pg_dump.useAzureIdentity=false"})
 @DirtiesContext
 @SpringBootTest
 class InstanceInitializerCloneTest {
 
+    // standard beans
     @Autowired
     InstanceInitializerBean instanceInitializerBean;
-
     @Autowired
     InstanceDao instanceDao;
-
     @Autowired
     RecordDao recordDao;
-
     @Autowired
     CloneDao cloneDao;
-
     @Autowired
     NamedParameterJdbcTemplate namedTemplate;
 
+    // mock beans
     @MockBean
     WorkspaceDataServiceClientFactory workspaceDataServiceClientFactory;
-
     @MockBean
     LeonardoDao mockLeonardoDao;
+    @MockBean
+    WorkspaceManagerDao workspaceManagerDao;
 
+    // values
     @Value("${twds.instance.workspace-id}")
     String workspaceId;
-
     @Value("${twds.instance.source-workspace-id}")
     String sourceWorkspaceId;
 
@@ -113,5 +116,50 @@ class InstanceInitializerCloneTest {
         assertTrue(instanceDao.instanceSchemaExists(workspaceUuid));
         assertThat(recordDao.getAllRecordTypes(workspaceUuid)).isEmpty();
     }
+
+    @Test
+    void cloneSuccess() throws ApiException {
+        // set up mocks:
+        // leonardo dao returns a fake url; the url doesn't matter for this test
+        given(mockLeonardoDao.getWdsEndpointUrl(any()))
+                .willReturn("https://unit.test:7777");
+        // workspace manager dao returns a fake SAS token; it doesn't matter for this test
+        given(workspaceManagerDao.getBlobStorageUrl(any(), any()))
+                .willReturn("https://sas.fake.unit.test:8888/");
+        // source workspace returns a successful BackupJob from /backup/{v}
+        BackupResponse sourceBackupResponse = new BackupResponse();
+        sourceBackupResponse.setFilename("/fake/filename/for/unit/test");
+        BackupJob sourceBackupJob = new BackupJob();
+        sourceBackupJob.setStatus(org.databiosphere.workspacedata.model.Job.StatusEnum.SUCCEEDED);
+        sourceBackupJob.setResult(sourceBackupResponse);
+
+        CloningApi mockCloningApi = Mockito.mock(CloningApi.class);
+        given(mockCloningApi.createBackup(any(), any()))
+                .willReturn(sourceBackupJob);
+        // and the wdsClientFactory uses the mock cloning API
+        given(workspaceDataServiceClientFactory.getBackupClient(any(), any()))
+                .willReturn(mockCloningApi);
+
+        // attempt to clone
+        instanceInitializerBean.initializeInstance();
+
+        // clone job should have succeeded
+        Job<CloneResponse> cloneStatus = cloneDao.getCloneStatus();
+        assertSame(JobStatus.SUCCEEDED, cloneStatus.getStatus());
+        assertSame(CloneStatus.RESTORESUCCEEDED, cloneStatus.getResult().status());
+
+        // default instance should exist, with (what???) in it
+        UUID workspaceUuid = UUID.fromString(workspaceId);
+        List<UUID> actualInstances = instanceDao.listInstanceSchemas();
+        assertEquals(List.of(workspaceUuid), actualInstances);
+
+
+//        assertThat(recordDao.getAllRecordTypes(workspaceUuid)).isEmpty();
+
+    }
+
+    // TODO: if a clone entry already exists, initializeInstance won't do anything
+
+    // TODO: successful clone operation
 
 }

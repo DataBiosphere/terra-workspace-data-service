@@ -4,6 +4,8 @@ package org.databiosphere.workspacedataservice.sourcewds;
 import org.databiosphere.workspacedata.client.ApiException;
 import org.databiosphere.workspacedata.model.BackupJob;
 import org.databiosphere.workspacedata.model.BackupRestoreRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
@@ -12,6 +14,8 @@ public class WorkspaceDataServiceDao {
   private final WorkspaceDataServiceClientFactory workspaceDataServiceClientFactory;
 
   private String workspaceDataServiceUrl;
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(WorkspaceDataServiceDao.class);
 
   public WorkspaceDataServiceDao(WorkspaceDataServiceClientFactory workspaceDataServiceClientFactory) {
     this.workspaceDataServiceClientFactory = workspaceDataServiceClientFactory;
@@ -30,6 +34,7 @@ public class WorkspaceDataServiceDao {
       body.setRequestingWorkspaceId(requesterWorkspaceId);
       return backupClient.createBackup(body,"v0.2");
     } catch (ApiException e) {
+      LOGGER.warn("Error from remote WDS: {}", e.getMessage());
       throw new WorkspaceDataServiceException(e);
     }
   }
