@@ -64,4 +64,8 @@ public class MockInstanceDao implements InstanceDao {
         instances.remove(sourceWorkspaceId);
         instances.add(workspaceId);
     }
+
+    public void dropInstanceFromSyswds(UUID instanceId) {
+        // doesnt really apply in the concept of mock instance dao since there is no sys-wds
+    }
 }

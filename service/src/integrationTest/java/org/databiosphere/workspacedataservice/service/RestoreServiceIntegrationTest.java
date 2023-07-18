@@ -68,6 +68,8 @@ public class RestoreServiceIntegrationTest {
         var response = backupRestoreService.restoreAzureWDS("v0.2", "backup.sql", UUID.randomUUID(), "");
         assertSame(JobStatus.SUCCEEDED, response.getStatus());
 
+        instanceDao.dropInstanceFromSyswds(sourceInstance);
+
         // after restore, confirm destination instance exists but source does not
         List<UUID> instancesAfter = instanceDao.listInstanceSchemas();
         assertThat(instancesAfter).contains(destInstance);

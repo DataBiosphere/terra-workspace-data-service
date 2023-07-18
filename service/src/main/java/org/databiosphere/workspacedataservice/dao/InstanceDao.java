@@ -13,4 +13,5 @@ public interface InstanceDao {
     void dropSchema(UUID instanceId);
 
     void alterSchema(UUID sourceWorkspaceId, UUID workspaceId);
+    void dropInstanceFromSyswds(UUID instanceId);
 }

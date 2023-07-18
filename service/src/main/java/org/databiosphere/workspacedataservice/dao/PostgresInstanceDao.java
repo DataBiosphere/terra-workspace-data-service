@@ -63,4 +63,8 @@ public class PostgresInstanceDao implements InstanceDao {
         namedTemplate.getJdbcTemplate().update("alter schema " + quote(sourceWorkspaceId.toString()) + " rename to " + quote(workspaceId.toString()));
         namedTemplate.getJdbcTemplate().update("insert into sys_wds.instance(id) values (?)", workspaceId);
     }
+
+    public void dropInstanceFromSyswds(UUID instanceId) {
+        namedTemplate.getJdbcTemplate().update("delete from sys_wds.instance where id = ?", instanceId);
+    }
 }
