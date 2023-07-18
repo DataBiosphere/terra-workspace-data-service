@@ -145,7 +145,6 @@ testing {
 				implementation "org.glassfish.jersey.core:jersey-client:$jersey_version"
 				implementation "org.glassfish.jersey.core:jersey-common:$jersey_version"
 				implementation "org.glassfish.jersey.inject:jersey-hk2:$jersey_version"
-
             }
         }
     }
