@@ -1,13 +1,15 @@
 package org.databiosphere.workspacedataservice;
 
 import org.apache.commons.lang3.StringUtils;
-import org.databiosphere.workspacedata.model.Job;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
+import org.databiosphere.workspacedataservice.service.model.exception.CloningException;
+import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
+import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
 import org.slf4j.Logger;
@@ -147,8 +149,8 @@ public class InstanceInitializerBean {
             var backupFileName = requestRemoteBackup(trackingId);
 
             // Now that the remote backup has run, check the current clone status
-            var cloneStatus = cloneDao.getCloneStatus();
-            trackingId = cloneStatus.getJobId();
+            LOGGER.info("Re-checking clone job status after backup request");
+            var cloneStatus = currentCloneStatus(trackingId);
 
             // if backup did not succeed, we cannot continue.
             if (!cloneStatus.getResult().status().equals(CloneStatus.BACKUPSUCCEEDED) || backupFileName == null) {
@@ -161,21 +163,31 @@ public class InstanceInitializerBean {
 
             // after the restore attempt, check the current clone status one more time
             // and return the result
-            var finalCloneStatus = cloneDao.getCloneStatus();
+            LOGGER.info("Re-checking clone job status after restore request");
+            var finalCloneStatus = currentCloneStatus(trackingId);
             return finalCloneStatus.getStatus().equals(JobStatus.SUCCEEDED);
 
         }
         catch (Exception e) {
             LOGGER.error("An error occurred during clone mode. Error: {}", e.toString());
             try {
-                if (trackingId != null) {
-                    cloneDao.terminateCloneToError(trackingId, "Backup not successful, cannot restore.", CloneTable.RESTORE);
-                }
+                cloneDao.terminateCloneToError(trackingId, "Backup not successful, cannot restore.", CloneTable.RESTORE);
             } catch (Exception inner) {
                 LOGGER.error("Furthermore, an error occurred while updating the clone job's status. Error: {}", inner.toString());
             }
             return false;
         }
+    }
+
+    private Job<CloneResponse> currentCloneStatus(UUID trackingId) {
+        var cloneStatus = cloneDao.getCloneStatus();
+        if (cloneStatus == null) {
+            throw new CloningException("Unexpected error: clone status was null.");
+        }
+        if (!trackingId.equals(cloneStatus.getJobId())) {
+            throw new CloningException("Unexpected error: clone status job id did not match.");
+        }
+        return cloneStatus;
     }
 
     private String requestRemoteBackup(UUID trackingId) {
@@ -184,7 +196,8 @@ public class InstanceInitializerBean {
             var backupResponse = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
 
             // TODO when the wdsDao.triggerBackup is async, we will need a second call here to poll for/check its status
-            if (backupResponse.getStatus().equals(Job.StatusEnum.SUCCEEDED)) {
+            // note that the Job class on the next line is from the generated WDS client:
+            if (backupResponse.getStatus().equals(org.databiosphere.workspacedata.model.Job.StatusEnum.SUCCEEDED)) {
                 var backupFileName = backupResponse.getResult().getFilename();
                 cloneDao.updateCloneEntryStatus(trackingId, CloneStatus.BACKUPSUCCEEDED);
                 return backupFileName;
