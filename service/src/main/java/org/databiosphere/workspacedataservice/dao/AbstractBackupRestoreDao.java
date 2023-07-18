@@ -30,7 +30,7 @@ public class AbstractBackupRestoreDao <T extends JobResult> implements BackupRes
         this.tableName = tableName;
     }
 
-    protected static final Logger LOGGER = LoggerFactory.getLogger(PostgresBackupDao.class);
+    protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractBackupRestoreDao.class);
 
 
     public Job<T> getStatus(UUID trackingId) {
