@@ -61,6 +61,6 @@ public class PostgresInstanceDao implements InstanceDao {
     @SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
     public void alterSchema(UUID sourceWorkspaceId, UUID workspaceId) {
         namedTemplate.getJdbcTemplate().update("alter schema " + quote(sourceWorkspaceId.toString()) + " rename to " + quote(workspaceId.toString()));
-        namedTemplate.getJdbcTemplate().update("update sys_wds.instance set id = ? where id = ?", workspaceId, sourceWorkspaceId);
+        namedTemplate.getJdbcTemplate().update("insert into sys_wds.instance(id) values (?)", workspaceId);
     }
 }
