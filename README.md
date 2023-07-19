@@ -54,7 +54,12 @@ Importing snapshots from the Terra Data Repo also requires the Workspace Manager
 ```
 export WORKSPACE_MANAGER_URL=https://workspace.dsde-dev.broadinstitute.org/
 ```
+##### LEONARDO_URL
 
+Starting WDS in clone mode (your WDS is attempting to clone some other WDS) requires contacting Leo. Set a Leo env var such as:
+```
+export LEONARDO_URL=https://leonardo.dsde-dev.broadinstitute.org/
+```
 ##### WORKSPACE_ID
 
 WDS requires a valid workspace id to check permissions in Sam and to import snapshots from the Terra Daa Repo.
