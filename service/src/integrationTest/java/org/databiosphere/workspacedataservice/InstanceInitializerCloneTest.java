@@ -43,7 +43,7 @@ import static org.mockito.BDDMockito.given;
 @TestPropertySource(properties = {
         "twds.instance.workspace-id=5a9b583c-17ee-4c88-a14c-0edbf31175db",
         // source id must match value in WDS-integrationTest-LocalFileStorage-input.sql
-        "twds.instance.source-workspace-id=123e4567-e89b-12d3-a456-426614174001",
+        "twds.instance.source-workspace-id=10000000-0000-0000-0000-000000000111",
         "twds.pg_dump.useAzureIdentity=false"})
 @DirtiesContext
 @SpringBootTest
@@ -82,6 +82,8 @@ class InstanceInitializerCloneTest {
         allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
         // clean up any clone entries
         namedTemplate.getJdbcTemplate().update("delete from sys_wds.clone");
+        // TODO: also drop any orphaned pg schemas that don't have an entry in the sys_wds.instances table.
+        // this can happen when restores fail.
     }
 
     /*
@@ -156,13 +158,13 @@ class InstanceInitializerCloneTest {
         assertSame(JobStatus.SUCCEEDED, cloneStatus.getStatus());
         assertSame(CloneStatus.RESTORESUCCEEDED, cloneStatus.getResult().status());
 
-        // default instance should exist, with a single table named "test" in it
-        // the "test" table is defined in WDS-integrationTest-LocalFileStorage-input.sql.
+        // default instance should exist, with a single table named "thing" in it
+        // the "thing" table is defined in WDS-integrationTest-LocalFileStorage-input.sql.
         UUID workspaceUuid = UUID.fromString(workspaceId);
         List<UUID> actualInstances = instanceDao.listInstanceSchemas();
         assertEquals(List.of(workspaceUuid), actualInstances);
         List<RecordType> actualTypes = recordDao.getAllRecordTypes(workspaceUuid);
-        assertEquals(List.of(RecordType.valueOf("test")), actualTypes);
+        assertEquals(List.of(RecordType.valueOf("thing")), actualTypes);
     }
 
     // TODO: if a clone entry already exists, initializeInstance won't do anything

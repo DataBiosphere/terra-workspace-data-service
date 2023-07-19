@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 @ActiveProfiles({"mock-storage", "local"})
@@ -27,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 @TestPropertySource(
         properties = {
                 "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000",
-                "twds.instance.source-workspace-id=123e4567-e89b-12d3-a456-426614174001",
+                "twds.instance.source-workspace-id=10000000-0000-0000-0000-000000000111",
                 "twds.pg_dump.useAzureIdentity=false"
 })
 public class RestoreServiceIntegrationTest {
@@ -43,39 +44,38 @@ public class RestoreServiceIntegrationTest {
     @Value("${twds.instance.workspace-id:}")
     private String workspaceId;
 
-    @Value("${twds.instance.source-workspace-id:}")
-    private String sourceWorkspaceId;
-
     @BeforeEach
     void beforeEach() {
         // clean up any instances left in the db
         List<UUID> allInstances = instanceDao.listInstanceSchemas();
         allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
+        // TODO: also drop any orphaned pg schemas that don't have an entry in the sys_wds.instances table.
+        // this can happen when restores fail.
     }
 
     // this test references the file src/integrationTest/resources/backup-test.sql as its backup
     @Test
     void testRestoreAzureWDS() {
-        UUID sourceInstance = UUID.fromString(sourceWorkspaceId);
         UUID destInstance = UUID.fromString(workspaceId);
 
         // confirm neither source nor destination instance should exist in our list of schemas to start
         List<UUID> instancesBefore = instanceDao.listInstanceSchemas();
-        assertThat(instancesBefore).doesNotContain(destInstance);
-        assertThat(instancesBefore).doesNotContain(sourceInstance);
+        assertThat(instancesBefore).isEmpty();
 
         // perform the restore
         var response = backupRestoreService.restoreAzureWDS("v0.2", "backup.sql", UUID.randomUUID(), "");
         assertSame(JobStatus.SUCCEEDED, response.getStatus());
 
-        // after restore, confirm destination instance exists but source does not
-        List<UUID> instancesAfter = instanceDao.listInstanceSchemas();
-        assertThat(instancesAfter).contains(destInstance);
-        assertThat(instancesAfter).doesNotContain(sourceInstance);
+        // After restore, we should have one instance, the destination instance.
+        // The source instance should not exist in the db.
+        List<UUID> expectedInstances = List.of(destInstance);
+        List<UUID> actualInstances = instanceDao.listInstanceSchemas();
+        assertEquals(expectedInstances, actualInstances);
 
-        // after restore, target instance should have one table named "test"
-        List<RecordType> tables = recordDao.getAllRecordTypes(destInstance);
-        assertThat(tables.size()).isEqualTo(1);
-        assertThat(tables).contains(RecordType.valueOf("test"));
+        // after restore, destination instance should have one table named "thing"
+        // this matches the contents of WDS-integrationTest-LocalFileStorage-input.sql
+        List<RecordType> expectedTables = List.of(RecordType.valueOf("thing"));
+        List<RecordType> actualTables = recordDao.getAllRecordTypes(destInstance);
+        assertEquals(expectedTables, actualTables);
     }
 }
