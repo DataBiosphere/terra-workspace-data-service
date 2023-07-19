@@ -112,7 +112,7 @@ public class InstanceInitializerBean {
                 // does the default pg schema already exist for this workspace? This should not happen,
                 // but we want to protect against overwriting it.
                 boolean instanceAlreadyExists = instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
-                LOGGER.warn("isInCloneMode(): cloneAlreadyRunning={}, instanceAlreadyExists={}", cloneAlreadyRunning, instanceAlreadyExists);
+                LOGGER.info("isInCloneMode(): cloneAlreadyRunning={}, instanceAlreadyExists={}", cloneAlreadyRunning, instanceAlreadyExists);
                 // TODO handle the case where a clone already ran, but failed; should we retry?
                 return !cloneAlreadyRunning && !instanceAlreadyExists;
             } catch (IllegalArgumentException e) {
@@ -195,6 +195,7 @@ public class InstanceInitializerBean {
     private String requestRemoteBackup(UUID trackingId) {
         try {
             LOGGER.info("Requesting a backup file from the remote source WDS in workspace {}", sourceWorkspaceId);
+            cloneDao.updateCloneEntryStatus(trackingId, CloneStatus.BACKUPQUEUED);
             var backupResponse = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
 
             // TODO when the wdsDao.triggerBackup is async, we will need a second call here to poll for/check its status

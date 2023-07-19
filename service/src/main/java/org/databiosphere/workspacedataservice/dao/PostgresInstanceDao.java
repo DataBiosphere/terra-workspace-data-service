@@ -59,8 +59,13 @@ public class PostgresInstanceDao implements InstanceDao {
     @Override
     @WriteTransaction
     @SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
-    public void alterSchema(UUID sourceWorkspaceId, UUID workspaceId) {
-        namedTemplate.getJdbcTemplate().update("alter schema " + quote(sourceWorkspaceId.toString()) + " rename to " + quote(workspaceId.toString()));
-        namedTemplate.getJdbcTemplate().update("update sys_wds.instance set id = ? where id = ?", workspaceId, sourceWorkspaceId);
+    public void alterSchema(UUID oldSchemaId, UUID newSchemaId) {
+        // rename the pg schema from old to new
+        namedTemplate.getJdbcTemplate().update("alter schema " + quote(oldSchemaId.toString()) + " rename to " + quote(newSchemaId.toString()));
+        // rename any rows in sys_wds.instance from old to new
+        namedTemplate.getJdbcTemplate().update("update sys_wds.instance set id = ? where id = ?", newSchemaId, oldSchemaId);
+        // ensure new exists in sys_wds.instance. When this alterSchema() method is called after restoring from a pg_dump,
+        // the oldSchema doesn't exist, so is not renamed in the previous statement.
+        namedTemplate.getJdbcTemplate().update("insert into sys_wds.instance(id) values (?) on conflict(id) do nothing", newSchemaId);
     }
 }
