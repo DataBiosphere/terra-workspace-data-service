@@ -59,37 +59,16 @@ public class LocalProcessLauncher {
         }
     }
 
-    /**
-     * Method to stream the child process' output to a string.
-     *
-     * @param fromStream specifies which stream will be read from
-     */
-    private String getOutputForProcessFromStream(InputStream fromStream) {
-        try (BufferedReader bufferedReader =
-                     new BufferedReader(new InputStreamReader(fromStream, StandardCharsets.UTF_8))) {
-
-            String line;
-            StringBuilder processOutput = new StringBuilder();
-            while ((line = bufferedReader.readLine()) != null) {
-                processOutput.append(line).append(System.lineSeparator());
-            }
-
-            return processOutput.toString().trim();
-        } catch (IOException ioEx) {
-            throw new LaunchProcessException("Error streaming output of child process", ioEx);
-        }
-    }
-
     /** Stream standard out/err from the child process to the CLI console.
      *
      *  @param type specifies which process stream to get data from
      * */
-    public String getOutputForProcess(Output type) {
+    public InputStream getOutputForProcess(Output type) {
         if (type == Output.ERROR) {
-            return getOutputForProcessFromStream(process.getErrorStream());
+            return process.getErrorStream();
         }
 
-        return getOutputForProcessFromStream(process.getInputStream());
+        return process.getInputStream();
     }
 
     /** Block until the child process terminates, then return its exit code. */

@@ -24,6 +24,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -247,12 +249,24 @@ public class BackupRestoreService {
         return "wdsservice/cloning/backup/" + workspaceId + "-" + timestamp + ".sql";
     }
 
+
+
     private String checkForError(LocalProcessLauncher localProcessLauncher) {
-        String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
+        // materialize only the first 1024 bytes of the error stream to ensure we don't DoS ourselves
+        int errorLimit = 1024;
+
         int exitCode = localProcessLauncher.waitForTerminate();
-        if (exitCode != 0 && StringUtils.isNotBlank(error)) {
-            LOGGER.error("process error: {}", error);
-            return error;
+        if (exitCode != 0) {
+            InputStream errorStream = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
+            try {
+                String error = new String(errorStream.readNBytes(errorLimit)).trim();
+                LOGGER.error("process error: {}", error);
+                return error;
+            } catch (IOException e) {
+                LOGGER.warn("process failed with exit code {}, but encountered an exception reading the error output: {}",
+                        exitCode, e.getMessage());
+                return "Unknown error";
+            }
         }
         return "";
     }
