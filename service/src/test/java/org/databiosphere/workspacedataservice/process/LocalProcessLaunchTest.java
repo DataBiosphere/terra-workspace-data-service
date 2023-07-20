@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.process;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +31,7 @@ class LocalProcessLaunchTest {
     }
 
     @Test
-    void runSimpleCommandWithEnvs() {
+    void runSimpleCommandWithEnvs() throws IOException {
         List<String> processCommand = new ArrayList<>();
         Map<String, String> envVars = new HashMap<>();
         envVars.put("TEST_VARIABLE", "Hello World");
@@ -43,8 +44,12 @@ class LocalProcessLaunchTest {
         localProcessLauncher.launchProcess(processCommand, envVars);
 
         // stream the output to stdout/err
-        String output = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.OUT);
-        String error = localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR);
+        String output = new String(
+                localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.OUT)
+                        .readAllBytes()).trim();
+        String error = new String(
+                localProcessLauncher.getOutputForProcess(LocalProcessLauncher.Output.ERROR)
+                        .readAllBytes()).trim();
 
         // block until the child process exits
         int exitCode = localProcessLauncher.waitForTerminate();
