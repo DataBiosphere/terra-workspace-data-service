@@ -1,11 +1,15 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
+import java.util.List;
+
 public class SearchRequest {
 
 	private int limit = 10;
 	private int offset = 0;
 	private SortDirection sort = SortDirection.ASC;
 	private String sortAttribute = null;
+
+	private List<SearchColumn> searchColumnList;
 
 	public SearchRequest(int limit, int offset, SortDirection sort) {
 		this.limit = limit;
@@ -18,6 +22,14 @@ public class SearchRequest {
 		this.offset = offset;
 		this.sort = sort;
 		this.sortAttribute = sortAttribute;
+	}
+
+	public List<SearchColumn> getSearchColumnList() {
+		return searchColumnList;
+	}
+
+	public void setSearchColumnList(List<SearchColumn> searchColumnList) {
+		this.searchColumnList = searchColumnList;
 	}
 
 	public SearchRequest() {

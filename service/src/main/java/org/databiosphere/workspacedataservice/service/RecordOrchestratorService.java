@@ -149,10 +149,13 @@ public class RecordOrchestratorService { // TODO give me a better name
         if (searchRequest.getOffset() > totalRecords) {
             return new RecordQueryResponse(searchRequest, Collections.emptyList(), totalRecords);
         }
+
+        // TODO: validations for searchColumnList
+
         LOGGER.info("queryForEntities: {}", recordType.getName());
         List<Record> records = recordDao.queryForRecords(recordType, searchRequest.getLimit(),
             searchRequest.getOffset(), searchRequest.getSort().name().toLowerCase(),
-            searchRequest.getSortAttribute(), instanceId);
+            searchRequest.getSortAttribute(), searchRequest.getSearchColumnList(), instanceId);
         List<RecordResponse> recordList = records.stream().map(
                 r -> new RecordResponse(r.getId(), r.getRecordType(), r.getAttributes()))
             .toList();

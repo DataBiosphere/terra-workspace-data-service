@@ -707,6 +707,18 @@ components:
         recordsModified:
           type: integer
 
+    SearchColumn:
+      type: object
+      required:
+        - column
+      properties:
+        column:
+          type: string
+        find:
+          type: string
+        replace:
+          type: string
+
     SearchRequest:
       type: object
       properties:
@@ -718,6 +730,11 @@ components:
           $ref: '#/components/schemas/SearchSortDirection'
         sortAttribute:
           type: string
+        searchColumnList:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchColumn'
+
     RecordRequest:
       type: object
       required:

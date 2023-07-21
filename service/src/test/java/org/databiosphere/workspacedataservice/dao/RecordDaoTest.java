@@ -175,7 +175,7 @@ class RecordDaoTest {
 		Record testRecord = new Record(recordId, funkyPk, RecordAttributes.empty());
 		recordDao.createRecordType(instanceId, Map.of("attr1", DataTypeMapping.STRING), funkyPk, new RelationCollection(Collections.emptySet(),Collections.emptySet()), sample_id);
 		recordDao.batchUpsert(instanceId, funkyPk, Collections.singletonList(testRecord), Collections.emptyMap(), sample_id);
-		List<Record> queryRes = recordDao.queryForRecords(funkyPk, 10, 0, "ASC", null, instanceId);
+		List<Record> queryRes = recordDao.queryForRecords(funkyPk, 10, 0, "ASC", null, null, instanceId);
 		assertEquals(1, queryRes.size());
 		assertTrue(recordDao.recordExists(instanceId, funkyPk, recordId));
 		assertTrue(recordDao.getSingleRecord(instanceId, funkyPk, recordId).isPresent());
