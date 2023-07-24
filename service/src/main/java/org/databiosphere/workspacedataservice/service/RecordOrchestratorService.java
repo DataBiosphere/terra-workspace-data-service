@@ -10,6 +10,7 @@ import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.shared.model.ColumnValue;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -268,4 +269,12 @@ public class RecordOrchestratorService { // TODO give me a better name
         // TODO: figure out what to return for primary keys
         return new RecordTypeSchema(recordType, attrSchema, recordCount, recordDao.getPrimaryKeyColumn(recordType, instanceId));
     }
+
+
+    // ===== get distinct values for a column
+    public List<ColumnValue> getColumnValues(UUID instanceId, RecordType recordType, String columnName, int limit) {
+        return recordDao.getColumnValues(instanceId, recordType, columnName, limit);
+    }
+
+
 }

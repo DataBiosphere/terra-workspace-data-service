@@ -15,6 +15,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.BatchDelet
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.AttributeComparator;
+import org.databiosphere.workspacedataservice.shared.model.ColumnValue;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
@@ -62,6 +63,7 @@ import java.util.stream.Stream;
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.*;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
+import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.COLUMN;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.RECORD_TYPE;
 
 @Repository
@@ -805,6 +807,31 @@ public class RecordDao {
 						Map.of(INSTANCE_ID, instanceId.toString(), "recordType", recordType.getName())),
 				Boolean.class));
 	}
+
+	// ===== get distinct values for a column
+	public List<ColumnValue> getColumnValues(UUID instanceId, RecordType recordType, String columnName, int limit) {
+//		MapSqlParameterSource params = new MapSqlParameterSource(INSTANCE_ID, instanceId.toString());
+//		params.addValue("tableName", recordType.getName());
+
+		String sql = "select distinct " + SqlUtils.validateSqlString(columnName, COLUMN) + " as value, " +
+				"count(1) as count " +
+				"from " + getQualifiedTableName(recordType, instanceId) +
+				"group by value " +
+				"order by count desc " +
+				"limit " + limit;
+
+		return namedTemplate.getJdbcTemplate().query(sql, new ColumnValueRowMapper());
+	}
+
+	private static class ColumnValueRowMapper implements RowMapper<ColumnValue> {
+		public ColumnValueRowMapper(){}
+
+		@Override
+		public ColumnValue mapRow(ResultSet rs, int rowNum) throws SQLException{
+			return new ColumnValue(rs.getString("value"), rs.getInt("count"));
+		}
+	}
+
 
 
 }

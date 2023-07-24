@@ -5,6 +5,7 @@ import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
+import org.databiosphere.workspacedataservice.shared.model.ColumnValue;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
@@ -163,5 +164,18 @@ public class RecordController {
 			@RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey, InputStream is) {
 		int recordsModified = recordOrchestratorService.streamingWrite(instanceId, version, recordType, primaryKey, is);
 		return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
+	}
+
+	@GetMapping("/{instanceid}/types/{v}/{type}/column/{column}")
+	public ResponseEntity<List<ColumnValue>> columnValues(@PathVariable("instanceid") UUID instanceId,
+														  @PathVariable("v") String version,
+														  @PathVariable("type") RecordType recordType,
+														  @PathVariable("column") String column,
+														  @RequestParam(value = "limit", defaultValue = "10", required = false) int limit
+	) {
+		// TODO: specify limit
+		// TODO: validation that recordtype exists, instance exists, column exists
+		var columnValues = recordOrchestratorService.getColumnValues(instanceId, recordType, column, limit);
+		return new ResponseEntity<>(columnValues, HttpStatus.OK);
 	}
 }

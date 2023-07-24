@@ -438,6 +438,35 @@ paths:
           description: Success
         409:
           description: at least one of the records to be deleted is a relation target
+  /{instanceid}/types/{v}/{type}/column/{column}:
+    get:
+      summary: Describe column of type
+      description: |
+        Returns the distinct values for a given column
+      operationId: describeColumn
+      tags:
+        - Schema
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+        - $ref: '#/components/parameters/columnPathParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ColumnValue'
+        404:
+          description: Record type not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /{instanceid}/types/{v}:
     get:
       summary: Describe all record types
@@ -495,6 +524,21 @@ components:
       required: true
       schema:
         type: string
+    columnPathParam:
+      name: column
+      in: path
+      description: Column name
+      required: true
+      schema:
+        type: string
+    limitQueryParam:
+      name: limit
+      in: query
+      description: number of rows to return
+      required: false
+      schema:
+        type: integer
+        default: 10
     recordIdPathParam:
       name: id
       in: path
@@ -675,6 +719,19 @@ components:
           type: string
         recordsModified:
           type: integer
+
+    ColumnValue:
+      required:
+        - value
+        - count
+      type: object
+      properties:
+        value:
+          type: string
+          description: Value of column
+        count:
+          type: integer
+          description: Number of records with this value
     Job:
       type: object
       required:

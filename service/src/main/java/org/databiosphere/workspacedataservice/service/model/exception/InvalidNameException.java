@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 public class InvalidNameException extends RuntimeException {
 
 	public enum NameType {
-		ATTRIBUTE("Attribute"), RECORD_TYPE("Record Type");
+		ATTRIBUTE("Attribute"), RECORD_TYPE("Record Type"), COLUMN("Column");
 
 		private final String name;
 
