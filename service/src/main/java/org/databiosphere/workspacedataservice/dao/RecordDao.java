@@ -817,7 +817,7 @@ public class RecordDao {
 				"count(1) as count " +
 				"from " + getQualifiedTableName(recordType, instanceId) +
 				"group by value " +
-				"order by count desc " +
+				"order by count desc, value asc " +
 				"limit " + limit;
 
 		return namedTemplate.getJdbcTemplate().query(sql, new ColumnValueRowMapper());
