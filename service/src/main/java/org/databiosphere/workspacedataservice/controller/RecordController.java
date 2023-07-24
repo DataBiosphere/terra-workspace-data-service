@@ -173,8 +173,8 @@ public class RecordController {
 														  @PathVariable("column") String column,
 														  @RequestParam(value = "limit", defaultValue = "10", required = false) int limit
 	) {
-		// TODO: specify limit
 		// TODO: validation that recordtype exists, instance exists, column exists
+		// TODO: implement long-tail first, to find outliers?
 		var columnValues = recordOrchestratorService.getColumnValues(instanceId, recordType, column, limit);
 		return new ResponseEntity<>(columnValues, HttpStatus.OK);
 	}
