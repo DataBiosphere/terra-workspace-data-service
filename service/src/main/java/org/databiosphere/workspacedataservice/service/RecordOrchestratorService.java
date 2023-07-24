@@ -27,6 +27,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -209,9 +210,21 @@ public class RecordOrchestratorService { // TODO give me a better name
     public List<RecordTypeSchema> describeAllRecordTypes(UUID instanceId, String version) {
         validateVersion(version);
         instanceService.validateInstance(instanceId);
-        List<RecordType> allRecordTypes = recordDao.getAllRecordTypes(instanceId);
-        return allRecordTypes.stream()
-            .map(recordType -> getSchemaDescription(instanceId, recordType)).toList();
+
+        List<RecordType> allTables = recordDao.getAllRecordTypes(instanceId);
+        List<RecordTypeSchema> tableSchemas = allTables.stream()
+                .map(recordType -> getSchemaDescription(instanceId, recordType)).toList();
+
+        List<RecordType> allViews = recordDao.getAllViewTypes(instanceId);
+        List<RecordTypeSchema> viewSchemas = allViews.stream()
+                .map(recordType -> getViewDescription(instanceId, recordType)).toList();
+
+        List<RecordTypeSchema> tablesAndViews = new ArrayList<>();
+        tablesAndViews.addAll(tableSchemas);
+        tablesAndViews.addAll(viewSchemas);
+        // TODO: sort??
+
+        return tablesAndViews;
     }
 
     public int streamingWrite(UUID instanceId, String version, RecordType recordType,
@@ -228,7 +241,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     }
 
     private void checkRecordTypeExists(UUID instanceId, RecordType recordType) {
-        if (!recordDao.recordTypeExists(instanceId, recordType)) {
+        if (!recordDao.recordTypeExists(instanceId, recordType) && !recordDao.viewExists(instanceId, recordType)) {
             throw new MissingObjectException("Record type");
         }
     }
@@ -243,6 +256,16 @@ public class RecordOrchestratorService { // TODO give me a better name
             .map(entry -> new AttributeSchema(entry.getKey(), entry.getValue().toString(), relations.get(entry.getKey())))
             .toList();
         int recordCount = recordDao.countRecords(instanceId, recordType);
+        return new RecordTypeSchema(recordType, attrSchema, recordCount, recordDao.getPrimaryKeyColumn(recordType, instanceId));
+    }
+
+    private RecordTypeSchema getViewDescription(UUID instanceId, RecordType recordType) {
+        Map<String, DataTypeMapping> schema = recordDao.getExistingViewSchema(instanceId, recordType);
+        List<AttributeSchema> attrSchema = schema.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                .map(entry -> new AttributeSchema(entry.getKey(), entry.getValue().toString(), null))
+                .toList();
+        int recordCount = recordDao.countRecords(instanceId, recordType);
+        // TODO: figure out what to return for primary keys
         return new RecordTypeSchema(recordType, attrSchema, recordCount, recordDao.getPrimaryKeyColumn(recordType, instanceId));
     }
 }

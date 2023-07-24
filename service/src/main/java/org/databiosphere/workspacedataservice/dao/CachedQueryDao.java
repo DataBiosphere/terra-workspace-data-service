@@ -4,6 +4,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -35,10 +36,22 @@ public class CachedQueryDao {
         LOGGER.warn("Calling the db to retrieve primary key for {}.{}", instanceId, recordType.getName());
         MapSqlParameterSource params = new MapSqlParameterSource("recordType", recordType.getName());
         params.addValue("instanceId", instanceId.toString());
-        return namedTemplate.queryForObject("select kcu.column_name FROM information_schema.table_constraints tc " +
-                        "JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema " +
-                        "JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema " +
-                        "WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = :instanceId AND tc.table_name = :recordType",
-                params, String.class);
+
+        String pk = null;
+
+        try {
+            pk = namedTemplate.queryForObject("select kcu.column_name FROM information_schema.table_constraints tc " +
+                            "JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema " +
+                            "JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema " +
+                            "WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = :instanceId AND tc.table_name = :recordType",
+                    params, String.class);
+        } catch (DataAccessException e) {
+            LOGGER.warn("getPrimaryKeyColumn didn't find a pk; is '{}' a view?", recordType.getName());
+            pk = namedTemplate.queryForObject("select vcu.column_name FROM INFORMATION_SCHEMA.view_column_usage vcu " +
+                            "WHERE vcu.view_schema = :instanceId AND vcu.view_name = :recordType " +
+                            "limit 1",
+                    params, String.class);
+        }
+        return pk;
     }
 }

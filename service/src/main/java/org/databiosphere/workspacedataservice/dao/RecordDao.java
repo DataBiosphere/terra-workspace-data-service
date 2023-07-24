@@ -724,8 +724,12 @@ public class RecordDao {
 	}
 
 	public List<RecordType> getAllRecordTypes(UUID instanceId) {
-		return namedTemplate.queryForList(
-				"select tablename from pg_tables WHERE schemaname = :workspaceSchema and tablename not like 'sys_%' order by tablename",
+		String sql = "select tablename from pg_tables " +
+				"WHERE schemaname = :workspaceSchema " +
+				"and tablename not like 'sys_%' " +
+				"order by tablename ";
+
+		return namedTemplate.queryForList(sql,
 				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), RecordType.class);
 	}
 
@@ -753,4 +757,54 @@ public class RecordDao {
 			throw e;
 		}
 	}
+
+	/* TODO for views:
+		recordTypeExists
+		createRecordType
+		getQualifiedTableName
+		getAllAttributeNames
+		+ getExistingTableSchema
+		getTableSchema
+		getExistingTableSchemaLessPrimaryKey
+		getColumnDefs
+		getPrimaryKey
+		getSchemaWithRowId
+		checkForMissingTable
+		+ getAllRecordTypes
+	 */
+
+	public List<RecordType> getAllViewTypes(UUID instanceId) {
+		String sql = "select viewname from pg_views as tablename " +
+				"WHERE schemaname = :workspaceSchema " +
+				"and viewname not like 'sys_%' " +
+				"order by tablename ";
+
+		return namedTemplate.queryForList(sql,
+				new MapSqlParameterSource("workspaceSchema", instanceId.toString()), RecordType.class);
+	}
+
+	public Map<String, DataTypeMapping> getExistingViewSchema(UUID instanceId, RecordType recordType) {
+		MapSqlParameterSource params = new MapSqlParameterSource(INSTANCE_ID, instanceId.toString());
+		params.addValue("tableName", recordType.getName());
+
+		String sql = "select c.column_name, coalesce(c.domain_name, c.udt_name::regtype::varchar) as data_type " +
+				"from INFORMATION_SCHEMA.COLUMNS c, INFORMATION_SCHEMA.view_column_usage vcu " +
+				"where vcu.table_catalog = c.table_catalog " +
+				"and vcu.table_schema = c.table_schema " +
+				"and vcu.table_name = c.table_name " +
+				"and vcu.column_name = c.column_name " +
+				"and " +
+				"vcu.view_schema = :instanceId and vcu.view_name = :tableName";
+		return getTableSchema(sql, params);
+	}
+
+	public boolean viewExists(UUID instanceId, RecordType recordType) {
+		return Boolean.TRUE.equals(namedTemplate.queryForObject(
+				"select exists(select from pg_views where schemaname = :instanceId AND viewname  = :recordType)",
+				new MapSqlParameterSource(
+						Map.of(INSTANCE_ID, instanceId.toString(), "recordType", recordType.getName())),
+				Boolean.class));
+	}
+
+
 }
