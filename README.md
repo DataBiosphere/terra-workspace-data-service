@@ -62,7 +62,7 @@ export LEONARDO_URL=https://leonardo.dsde-dev.broadinstitute.org/
 ```
 ##### WORKSPACE_ID
 
-WDS requires a valid workspace id to check permissions in Sam and to import snapshots from the Terra Daa Repo.
+WDS requires a valid workspace id to check permissions in Sam and to import snapshots from the Terra Data Repo.
 This is controlled by a `WORKSPACE_ID` environment variable. You should set this to the UUID
 of a workspace you own, e.g.
 ```
