@@ -1,12 +1,12 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import org.databiosphere.workspacedataservice.dao.OpenSearchDao;
-import org.databiosphere.workspacedataservice.retry.RetryableApi;
-import org.databiosphere.workspacedataservice.service.InstanceService;
-import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
+import org.databiosphere.workspacedataservice.service.OpenSearchService;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
+import org.databiosphere.workspacedataservice.shared.model.TsvUploadResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,26 +18,31 @@ import java.util.UUID;
 @RestController
 public class SearchController {
 
-	private final InstanceService instanceService;
-	private final RecordOrchestratorService recordOrchestratorService;
+	private final OpenSearchService openSearchService;
 
-	private final OpenSearchDao openSearchDao;
-
-	public SearchController(InstanceService instanceService, RecordOrchestratorService recordOrchestratorService, OpenSearchDao openSearchDao) {
-		this.instanceService = instanceService;
-		this.recordOrchestratorService = recordOrchestratorService;
-		this.openSearchDao = openSearchDao;
+	public SearchController(OpenSearchService openSearchService) {
+		this.openSearchService = openSearchService;
 	}
 
-	@PostMapping("/{instanceid}/opensearch/{version}/{recordType}")
-	@RetryableApi
+	@PostMapping("/{instanceid}/opensearch/{version}/search/{recordType}")
 	public RecordQueryResponse search(@PathVariable("instanceid") UUID instanceId,
 			@PathVariable("recordType") RecordType recordType,
 			@PathVariable("version") String version,
 			@RequestBody(required = false) SearchRequest searchRequest) {
 
-		int theCount = Long.valueOf(openSearchDao.count()).intValue();
+		// TODO!!
+		int theCount = openSearchService.count();
 		return new RecordQueryResponse(searchRequest, List.of(), theCount);
+	}
+
+	@PostMapping("/{instanceid}/opensearch/{version}/index/{recordType}")
+	public ResponseEntity<TsvUploadResponse>  reindex(@PathVariable("instanceid") UUID instanceId,
+									  @PathVariable("recordType") RecordType recordType,
+									  @PathVariable("version") String version) {
+
+		TsvUploadResponse bulkResponse = openSearchService.reindex(instanceId, recordType);
+
+		return new ResponseEntity<>(bulkResponse, HttpStatus.OK);
 	}
 
 }

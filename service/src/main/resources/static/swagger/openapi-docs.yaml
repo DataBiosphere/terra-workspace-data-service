@@ -14,6 +14,8 @@ servers:
   - url: ../
     description: Relative to the current swagger page
 tags:
+  - name: OpenSearch
+    description: OpenSearch hackathon demo APIs
   - name: Cloning
     description: Cloning APIs including Backup and Restore
   - name: Records
@@ -27,6 +29,61 @@ tags:
   - name: Snapshots
     description: Snapshot APIs
 paths:
+  /{instanceid}/opensearch/{v}/search/{type}:
+    post:
+      summary: Query records via OpenSearch
+      description: Paginated list of records matching the criteria supplied in the request body
+      operationId: queryOpenSearch
+      tags:
+        - OpenSearch
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+      requestBody:
+        $ref: '#/components/requestBodies/SearchRequestBody'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordQueryResponse'
+        404:
+          description: Record type not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /{instanceid}/opensearch/{v}/index/{type}:
+    post:
+      summary: Reindex record type
+      description: |
+        Deletes all records of this type from OpenSearch,
+        then reindexes all records of this type into OpenSearch
+      operationId: reindexRecordType
+      tags:
+        - OpenSearch
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TsvUploadResponse'
+        404:
+          description: Record type not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
+
   /backup/{v}:
     post:
       tags:
@@ -209,32 +266,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         400:
           description: Bad request
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /{instanceid}/opensearch/{v}/{type}:
-    post:
-      summary: Query records via OpenSearch
-      description: Paginated list of records matching the criteria supplied in the request body
-      operationId: queryOpenSearch
-      tags:
-        - Records
-      parameters:
-        - $ref: '#/components/parameters/instanceIdPathParam'
-        - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/recordTypePathParam'
-      requestBody:
-        $ref: '#/components/requestBodies/SearchRequestBody'
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RecordQueryResponse'
-        404:
-          description: Record type not found
           content:
             'application/json':
               schema:
