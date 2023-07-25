@@ -5,17 +5,23 @@ import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.OpenSearchDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
+import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.databiosphere.workspacedataservice.shared.model.SortDirection;
 import org.databiosphere.workspacedataservice.shared.model.TsvUploadResponse;
 import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
+import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -47,11 +53,38 @@ public class OpenSearchService {
         return Long.valueOf(countLong).intValue();
     }
 
+    public RecordQueryResponse queryForRecords(UUID instanceId, RecordType recordType, String version,
+                                               SearchRequest searchRequest) {
+
+        SearchResponse<Object> searchResponse = openSearchDao.search(instanceId, recordType, searchRequest);
+
+        HitsMetadata<Object> hitsMetadata = searchResponse.hits();
+
+        // TODO: super inefficient to query for each record;
+        // should add a new "query for all ids" method to recordDao.
+
+        List<RecordResponse> records = hitsMetadata.hits().stream().map(x -> {
+            Optional<Record> recordOptional = recordDao.getSingleRecord(instanceId, recordType, x.id());
+            if (recordOptional.isEmpty()) {
+                throw new RuntimeException("OpenSearch returned id " + x.id() + " but Postgres did not have " +
+                        "that record. Record type: " + recordType.getName());
+            }
+            Record rec = recordOptional.get();
+            return new RecordResponse(rec.getId(), rec.getRecordType(), rec.getAttributes());
+        }).toList();
+
+        return new RecordQueryResponse(searchRequest, records,
+                Long.valueOf(searchResponse.hits().total().value()).intValue());
+    }
+
     public TsvUploadResponse reindex(UUID instanceId, RecordType recordType) {
-        // TODO: create OpenSearch index if it does not exist
+        // create OpenSearch index if it does not exist
         logger.info("creating index {}", instanceId);
 
         openSearchDao.createIndex(instanceId, false); // will noop if already exists
+
+        // delete all records of this type
+        openSearchDao.deleteRecordType(instanceId, recordType);
 
         // TODO: delete type mappings if exist
         // TODO: create type mappings for record type

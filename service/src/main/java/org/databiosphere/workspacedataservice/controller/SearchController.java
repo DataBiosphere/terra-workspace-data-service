@@ -30,9 +30,8 @@ public class SearchController {
 			@PathVariable("version") String version,
 			@RequestBody(required = false) SearchRequest searchRequest) {
 
-		// TODO!!
-		int theCount = openSearchService.count();
-		return new RecordQueryResponse(searchRequest, List.of(), theCount);
+
+		return openSearchService.queryForRecords(instanceId, recordType, version, searchRequest);
 	}
 
 	@PostMapping("/{instanceid}/opensearch/{version}/index/{recordType}")
