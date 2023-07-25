@@ -78,6 +78,8 @@ public class OpenSearchService {
     }
 
     public TsvUploadResponse reindex(UUID instanceId, RecordType recordType) {
+        // TODO: in a production-ready implementation, this should check permissions in Sam
+
         // create OpenSearch index if it does not exist
         logger.info("creating index {}", instanceId);
 
@@ -86,6 +88,8 @@ public class OpenSearchService {
         // delete all records of this type
         openSearchDao.deleteRecordType(instanceId, recordType);
 
+
+        // TODO: how to handle same column in different record types?
         // TODO: delete type mappings if exist
         // TODO: create type mappings for record type
         // without creating explicit mappings, OpenSearch will infer mappings.
@@ -127,6 +131,13 @@ public class OpenSearchService {
             aggregateResponseBuilder.items(aggErrorItems);
         }
 
+        // TODO: can we skip the refresh.waitfor in each batch, and instead
+        // issue one RefreshRequest after all batches? Does that make it faster?
+//        RefreshRequest refreshRequest = new RefreshRequest.Builder()
+//                .index(instanceId.toString())
+//                        .build();
+//        openSearchClient.indices().refresh(refreshRequest);
+
         BulkResponse aggResponse = aggregateResponseBuilder.build();
 
         String statusMessage = "Took: " + aggResponse.took() + "; error count: " + aggResponse.items().size();
@@ -134,6 +145,11 @@ public class OpenSearchService {
         logger.info("reindex complete. " + statusMessage);
 
         return new TsvUploadResponse(numRecords, statusMessage);
+    }
+
+    public boolean deleteIndex(UUID instanceId) {
+        // TODO: in a production-ready implementation, this should check permissions in Sam
+        return openSearchDao.deleteIndex(instanceId);
     }
 
 }

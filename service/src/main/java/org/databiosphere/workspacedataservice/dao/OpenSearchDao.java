@@ -31,7 +31,10 @@ import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
+import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
+import org.opensearch.client.opensearch.indices.DeleteIndexResponse;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
+import org.opensearch.client.opensearch.indices.RefreshRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -46,6 +49,10 @@ import java.util.stream.Collectors;
 public class OpenSearchDao {
 
     public final String FIELD_RECORDTYPE = "sys_recordtype";
+
+    // slash is illegal to contain in a recordtype name, so it's safe to use as a delimiter between record type
+    // and attribute name
+    public final String NAME_DELIMITER = "!";
 
     OpenSearchClient openSearchClient;
 
@@ -179,6 +186,15 @@ public class OpenSearchDao {
         });
     }
 
+    public boolean deleteIndex(UUID instanceId) {
+        DeleteIndexRequest deleteIndexRequest = new DeleteIndexRequest.Builder()
+                .index(instanceId.toString())
+                .build();
+        DeleteIndexResponse deleteIndexResponse = executeRequest(() ->
+                openSearchClient.indices().delete(deleteIndexRequest));
+        return deleteIndexResponse.acknowledged();
+    }
+
     private Query recordTypeQuery(RecordType recordType) {
         TermQuery termQuery = new TermQuery.Builder()
                 .field(FIELD_RECORDTYPE)
@@ -193,7 +209,8 @@ public class OpenSearchDao {
     private BulkOperation asBulkOperation(Record record, UUID instanceId, RecordType recordType) {
         Map<String, Object> sourceMap = record.getAttributes()
                 .attributeSet().stream().collect(
-                        Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                        Collectors.toMap(x -> recordType.getName() + NAME_DELIMITER + x.getKey(),
+                                Map.Entry::getValue));
 
         sourceMap.put(FIELD_RECORDTYPE, recordType.getName());
 

@@ -29,6 +29,30 @@ tags:
   - name: Snapshots
     description: Snapshot APIs
 paths:
+  /{instanceid}/opensearch/{v}:
+    delete:
+      summary: Delete an OpenSearch index
+      description: |
+        Delete the index with the given UUID.
+        This deletes all data in that index.
+        The reindex API will re-create the index.
+      operationId: deleteOpenSearchIndex
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - OpenSearch
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+      responses:
+        200:
+          description: Success
+        404:
+          description: Not Found - instance does not exist.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /{instanceid}/opensearch/{v}/search/{type}:
     post:
       summary: Query records via OpenSearch
