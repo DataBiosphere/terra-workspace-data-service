@@ -213,6 +213,32 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /{instanceid}/opensearch/{v}/{type}:
+    post:
+      summary: Query records via OpenSearch
+      description: Paginated list of records matching the criteria supplied in the request body
+      operationId: queryOpenSearch
+      tags:
+        - Records
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+      requestBody:
+        $ref: '#/components/requestBodies/SearchRequestBody'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordQueryResponse'
+        404:
+          description: Record type not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /{instanceid}/search/{v}/{type}:
     post:
       summary: Query records
