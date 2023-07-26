@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.xml.builders.BooleanQueryBuilder;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -17,7 +18,9 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.WaitForActiveShardOptions;
 import org.opensearch.client.opensearch._types.WaitForActiveShards;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
+import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
 import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 import org.opensearch.client.opensearch.cluster.HealthResponse;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -132,28 +135,61 @@ public class OpenSearchDao {
 
     public SearchResponse<Object> search(UUID instanceId, RecordType recordType,
                                                SearchRequest searchRequest) {
-        // sorting
-        SortOrder sortOrder = searchRequest.getSort().equals(SortDirection.DESC) ? SortOrder.Desc : SortOrder.Asc;
-        FieldSort fieldSort = new FieldSort.Builder()
-                .field(searchRequest.getSortAttribute())
-                .order(sortOrder)
-                .build();
-        SortOptions sortOptions = new SortOptions.Builder()
-                .field(fieldSort)
-                .build();
 
-        // filter to supplied record type
-        Query recordTypeQuery = recordTypeQuery(recordType);
+        // request == the full payload sent to opensearch
+        // query == the part of the payload that concerns filtering/subsetting
 
-        org.opensearch.client.opensearch.core.SearchRequest openSearchRequest = new org.opensearch.client.opensearch.core.SearchRequest
-                        .Builder()
+        // final request to use; following code will add to this
+        org.opensearch.client.opensearch.core.SearchRequest.Builder openSearchRequestBuilder = new org.opensearch.client.opensearch.core.SearchRequest
+                .Builder()
                 .index(instanceId.toString())
-                // .sort(sortOptions) // TODO: sorting requires mappings
                 .from(searchRequest.getOffset())
-                .size(searchRequest.getLimit())
-                .query(recordTypeQuery)
+                .size(searchRequest.getLimit());
+
+        // final query to use inside the final request; following code will add to this
+        BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
+
+        // filter for the supplied record type; add to the final query
+        Query recordTypeQuery = recordTypeQuery(recordType);
+        boolQueryBuilder.must(recordTypeQuery);
+
+        // sorting; add to the final request
+        if (searchRequest.getSort() != null && StringUtils.isNotBlank(searchRequest.getSortAttribute())) {
+            // TODO: validate that sort order exists in the index?
+            SortOrder sortOrder = searchRequest.getSort().equals(SortDirection.DESC) ? SortOrder.Desc : SortOrder.Asc;
+            FieldSort fieldSort = new FieldSort.Builder()
+                    .field(asOpenSearchFieldName(searchRequest.getSortAttribute(), recordType))
+                    .order(sortOrder)
+                    .build();
+            SortOptions sortOptions = new SortOptions.Builder()
+                    .field(fieldSort)
+                    .build();
+            openSearchRequestBuilder.sort(sortOptions);
+        }
+
+        // global search term; add to the final query
+        if (StringUtils.isNotBlank(searchRequest.getFilter())) {
+//            String parsedFilter = StringUtils.join(
+//                    searchRequest.getFilter().split(" "),
+//                    " " + searchRequest.getFilterOperator() + " "
+//            );
+
+            String parsedFilter = searchRequest.getFilter();
+
+            QueryStringQuery queryStringQuery = new QueryStringQuery.Builder()
+                    .query(parsedFilter)
+                    .build();
+            boolQueryBuilder.must(queryStringQuery._toQuery());
+        }
+
+        // add the final query to the final request
+        openSearchRequestBuilder.query(boolQueryBuilder.build()._toQuery());
+
+        // build the final request
+        org.opensearch.client.opensearch.core.SearchRequest openSearchRequest = openSearchRequestBuilder
                 .build();
 
+        // execute the request
         SearchResponse<Object> searchResponse = executeRequest(() ->
                 openSearchClient.search(openSearchRequest, Object.class));
 
@@ -209,7 +245,7 @@ public class OpenSearchDao {
     private BulkOperation asBulkOperation(Record record, UUID instanceId, RecordType recordType) {
         Map<String, Object> sourceMap = record.getAttributes()
                 .attributeSet().stream().collect(
-                        Collectors.toMap(x -> recordType.getName() + NAME_DELIMITER + x.getKey(),
+                        Collectors.toMap(x -> asOpenSearchFieldName(x.getKey(), recordType),
                                 Map.Entry::getValue));
 
         sourceMap.put(FIELD_RECORDTYPE, recordType.getName());
@@ -222,6 +258,10 @@ public class OpenSearchDao {
 
         return new BulkOperation.Builder()
                 .index(indexOperation).build();
+    }
+
+    private String asOpenSearchFieldName(String attributeName, RecordType recordType) {
+        return recordType.getName() + NAME_DELIMITER + attributeName;
     }
 
     private <T> T executeRequest (OpenSearchFunction<T> fn) {

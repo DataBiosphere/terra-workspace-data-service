@@ -9,6 +9,10 @@ public class SearchRequest {
 	private SortDirection sort = SortDirection.ASC;
 	private String sortAttribute = null;
 
+	private String filter = null; // global search filter
+
+	private String filterOperator = "AND"; // global search operator
+
 	private List<SearchColumn> searchColumnList;
 
 	public SearchRequest(int limit, int offset, SortDirection sort) {
@@ -22,6 +26,31 @@ public class SearchRequest {
 		this.offset = offset;
 		this.sort = sort;
 		this.sortAttribute = sortAttribute;
+	}
+
+	public String getFilter() {
+		return filter;
+	}
+
+	public void setFilter(String filter) {
+		this.filter = filter;
+	}
+
+	public String getFilterOperator() {
+		return filterOperator;
+	}
+
+	public void setFilterOperator(String filterOperator) {
+		this.filterOperator = filterOperator;
+	}
+
+	public SearchRequest(int limit, int offset, SortDirection sort, String sortAttribute, String filter, String filterOperator) {
+		this.limit = limit;
+		this.offset = offset;
+		this.sort = sort;
+		this.sortAttribute = sortAttribute;
+		this.filter = filter;
+		this.filterOperator = filterOperator;
 	}
 
 	public List<SearchColumn> getSearchColumnList() {

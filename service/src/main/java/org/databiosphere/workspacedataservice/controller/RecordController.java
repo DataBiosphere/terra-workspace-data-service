@@ -1,7 +1,9 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.retry.RetryableApi;
 import org.databiosphere.workspacedataservice.service.InstanceService;
+import org.databiosphere.workspacedataservice.service.OpenSearchService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
@@ -40,9 +42,13 @@ public class RecordController {
 	private final InstanceService instanceService;
 	private final RecordOrchestratorService recordOrchestratorService;
 
-	public RecordController(InstanceService instanceService, RecordOrchestratorService recordOrchestratorService) {
+	private final OpenSearchService openSearchService;
+
+	public RecordController(InstanceService instanceService, RecordOrchestratorService recordOrchestratorService,
+							OpenSearchService openSearchService) {
 		this.instanceService = instanceService;
 		this.recordOrchestratorService = recordOrchestratorService;
+		this.openSearchService = openSearchService;
 	}
 
 	@PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
@@ -90,6 +96,10 @@ public class RecordController {
 			@PathVariable("recordType") RecordType recordType,
 			@PathVariable("version") String version,
 			@RequestBody(required = false) SearchRequest searchRequest) {
+		// if the user specified a global search filter, use OpenSearch; else, use Postgres directly
+		if (StringUtils.isNotBlank(searchRequest.getFilter())) {
+			return openSearchService.queryForRecords(instanceId, recordType, version, searchRequest);
+		}
 		return recordOrchestratorService.queryForRecords(instanceId, recordType, version, searchRequest);
 	}
 
