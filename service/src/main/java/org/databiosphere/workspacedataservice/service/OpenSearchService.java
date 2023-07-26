@@ -115,7 +115,7 @@ public class OpenSearchService {
             // to improve efficiency
             List<Record> recordBatch = recordDao.queryForRecords(recordType, batchSize,
                     offset, SortDirection.ASC.name().toLowerCase(),
-                    pk, instanceId);
+                    pk, List.of(), instanceId);
 
             // push to OpenSearch
             BulkResponse bulkResponse = openSearchDao.indexRecords(instanceId, recordType, recordBatch);
