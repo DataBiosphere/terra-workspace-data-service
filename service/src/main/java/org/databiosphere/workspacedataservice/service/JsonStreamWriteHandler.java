@@ -27,8 +27,7 @@ public class JsonStreamWriteHandler implements StreamingWriteHandler {
 
 	public JsonStreamWriteHandler(InputStream inputStream, ObjectMapper objectMapper) throws IOException {
 		this.inputStream = inputStream;
-		JsonFactory factory = new JsonFactory(objectMapper.copy());
-		parser = factory.createParser(inputStream);
+		parser = objectMapper.copy().tokenStreamFactory().createParser(inputStream);
 		if (parser.nextToken() != JsonToken.START_ARRAY) {
 			throw new IllegalArgumentException("Expected content to be an array");
 		}
@@ -75,5 +74,9 @@ public class JsonStreamWriteHandler implements StreamingWriteHandler {
 		inputStream.close();
 	}
 
+	// Exposed (as protected, not public) to assist with unit tests.
+	protected JsonParser getParser() {
+		return this.parser;
+	}
 
 }
