@@ -38,6 +38,7 @@ import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexResponse;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
+import org.opensearch.client.opensearch.indices.RefreshResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -105,14 +106,16 @@ public class OpenSearchDao {
                 openSearchClient.indices().create(createIndexRequest).acknowledged());
     }
 
-    public BulkResponse indexRecords(UUID instanceId, RecordType recordType, List<Record> recordList) {
+    public BulkResponse indexRecords(UUID instanceId, RecordType recordType, List<Record> recordList, boolean refresh) {
+
+        Refresh refreshMode = refresh ? Refresh.WaitFor : Refresh.False;
 
         List<BulkOperation> bulkOperations = recordList.stream()
                 .map(x -> asBulkOperation(x, instanceId, recordType)).toList();
 
         // TODO: move away from WaitFor for better performance but eventual consistency
         BulkRequest bulkRequest = new BulkRequest.Builder()
-                .refresh(Refresh.WaitFor)
+                .refresh(refreshMode)
                 .operations(bulkOperations)
                         .build();
 
@@ -131,6 +134,14 @@ public class OpenSearchDao {
         }
 
         return bulkResponse;
+    }
+
+    public void refresh(UUID instanceId) {
+        RefreshRequest refreshRequest = new RefreshRequest.Builder()
+            .index(instanceId.toString())
+            .build();
+        executeRequest(() ->
+                openSearchClient.indices().refresh(refreshRequest));
     }
 
     public SearchResponse<Object> search(UUID instanceId, RecordType recordType,

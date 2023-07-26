@@ -108,7 +108,7 @@ public class OpenSearchService {
         List<BulkResponseItem> aggErrorItems = new ArrayList<BulkResponseItem>();
 
         // batch-iterate through Postgres records
-        int batchSize = 500; // should be in config, not hardcoded?
+        int batchSize = 1000; // should be in config, not hardcoded?
         for (int offset = 0; offset <= numRecords; offset += batchSize) {
             logger.info("querying db for records with offset {} and limit {}", offset, batchSize);
             // call recordDao directly instead of calling recordOrchestratorService
@@ -118,7 +118,7 @@ public class OpenSearchService {
                     pk, List.of(), instanceId);
 
             // push to OpenSearch
-            BulkResponse bulkResponse = openSearchDao.indexRecords(instanceId, recordType, recordBatch);
+            BulkResponse bulkResponse = openSearchDao.indexRecords(instanceId, recordType, recordBatch, false);
 
             if (bulkResponse.errors()) {
                 anyError = true;
@@ -131,12 +131,9 @@ public class OpenSearchService {
             aggregateResponseBuilder.items(aggErrorItems);
         }
 
-        // TODO: can we skip the refresh.waitfor in each batch, and instead
-        // issue one RefreshRequest after all batches? Does that make it faster?
-//        RefreshRequest refreshRequest = new RefreshRequest.Builder()
-//                .index(instanceId.toString())
-//                        .build();
-//        openSearchClient.indices().refresh(refreshRequest);
+        // now that all the batches have been written to OpenSearch,
+        // wait for the index to refresh
+        openSearchDao.refresh(instanceId);
 
         BulkResponse aggResponse = aggregateResponseBuilder.build();
 
