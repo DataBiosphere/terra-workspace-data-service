@@ -85,6 +85,8 @@ public class OpenSearchService {
 
         openSearchDao.createIndex(instanceId, false); // will noop if already exists
 
+        // TODO: need to wait here until the index is created/ready
+
         // delete all records of this type
         openSearchDao.deleteRecordType(instanceId, recordType);
 

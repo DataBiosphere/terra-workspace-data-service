@@ -43,6 +43,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -255,7 +258,18 @@ public class OpenSearchDao {
 
     private BulkOperation asBulkOperation(Record record, UUID instanceId, RecordType recordType) {
         Map<String, Object> sourceMap = record.getAttributes()
-                .attributeSet().stream().collect(
+                .attributeSet().stream()
+                .filter(x -> x.getValue() != null) // filter non-null
+                .map(x -> {
+                    if (x.getValue() instanceof LocalDate ldate) {
+                        return new AbstractMap.SimpleEntry<String, Object>(x.getKey(), ldate.toString());
+                    } else if (x.getValue() instanceof LocalDateTime ldatetime) {
+                        return new AbstractMap.SimpleEntry<String, Object>(x.getKey(), ldatetime.toString());
+                    } else {
+                        return x;
+                    }
+                })
+                .collect(
                         Collectors.toMap(x -> asOpenSearchFieldName(x.getKey(), recordType),
                                 Map.Entry::getValue));
 
