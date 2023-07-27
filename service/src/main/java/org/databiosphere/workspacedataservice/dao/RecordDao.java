@@ -188,7 +188,7 @@ public class RecordDao {
 			// find-in-column
 			List<String> clauses = searchColumnList.stream().map( searchColumn -> {
 				params.addValue(searchColumn.column(), searchColumn.find());
-				return searchColumn.column() + " = :" + searchColumn.column();
+				return searchColumn.column() + "::text = :" + searchColumn.column();
 			}).toList();
 			whereClause = " where " + StringUtils.join(clauses, " and ");
 		}
