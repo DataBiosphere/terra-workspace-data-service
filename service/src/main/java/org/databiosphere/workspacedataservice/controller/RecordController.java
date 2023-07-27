@@ -192,7 +192,7 @@ public class RecordController {
 														  @PathVariable("v") String version,
 														  @PathVariable("type") RecordType recordType,
 														  @PathVariable("column") String column,
-														  @RequestParam(value = "limit", defaultValue = "10", required = false) int limit
+														  @RequestParam(value = "limit", defaultValue = "25", required = false) int limit
 	) {
 		// TODO: validation that recordtype exists, instance exists, column exists
 		// TODO: implement long-tail first, to find outliers?
