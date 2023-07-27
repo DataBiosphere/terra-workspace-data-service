@@ -155,7 +155,7 @@ public class RecordOrchestratorService { // TODO give me a better name
         // TODO: validations for searchColumnList
 
         LOGGER.info("queryForEntities: {}", recordType.getName());
-        List<Record> records = recordDao.queryForRecords(recordType, searchRequest.getLimit(),
+        List<Record> records = recordDao.queryForRecords(searchRequest, recordType, searchRequest.getLimit(),
             searchRequest.getOffset(), searchRequest.getSort().name().toLowerCase(),
             searchRequest.getSortAttribute(), searchRequest.getSearchColumnList(), instanceId);
         List<RecordResponse> recordList = records.stream().map(

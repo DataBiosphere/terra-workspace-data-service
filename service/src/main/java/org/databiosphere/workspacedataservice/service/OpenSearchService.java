@@ -115,7 +115,7 @@ public class OpenSearchService {
             logger.info("querying db for records with offset {} and limit {}", offset, batchSize);
             // call recordDao directly instead of calling recordOrchestratorService
             // to improve efficiency
-            List<Record> recordBatch = recordDao.queryForRecords(recordType, batchSize,
+            List<Record> recordBatch = recordDao.queryForRecords(new SearchRequest(), recordType, batchSize,
                     offset, SortDirection.ASC.name().toLowerCase(),
                     pk, List.of(), instanceId);
 

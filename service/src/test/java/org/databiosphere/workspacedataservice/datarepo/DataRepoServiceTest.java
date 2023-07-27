@@ -10,6 +10,7 @@ import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.DataRepoService;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerClientFactory;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
@@ -90,7 +91,7 @@ class DataRepoServiceTest {
         dataRepoService.importSnapshot(INSTANCE, snapshotId);
 
         assertTrue(recordDao.recordTypeExists(INSTANCE, RecordType.valueOf(DataRepoService.TDRIMPORT_TABLE)));
-        List<org.databiosphere.workspacedataservice.shared.model.Record> result = recordDao.queryForRecords(RecordType.valueOf(DataRepoService.TDRIMPORT_TABLE),3,0,"asc",null, null, INSTANCE);
+        List<org.databiosphere.workspacedataservice.shared.model.Record> result = recordDao.queryForRecords(new SearchRequest(), RecordType.valueOf(DataRepoService.TDRIMPORT_TABLE),3,0,"asc",null, null, INSTANCE);
         for (int i = 0; i < 3; i++){
             Record rec = result.get(i);
             assertEquals("table"+(i+1), rec.getId());

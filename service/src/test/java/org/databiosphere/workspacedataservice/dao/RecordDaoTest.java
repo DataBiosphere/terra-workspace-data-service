@@ -11,6 +11,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.InvalidRel
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -175,7 +176,7 @@ class RecordDaoTest {
 		Record testRecord = new Record(recordId, funkyPk, RecordAttributes.empty());
 		recordDao.createRecordType(instanceId, Map.of("attr1", DataTypeMapping.STRING), funkyPk, new RelationCollection(Collections.emptySet(),Collections.emptySet()), sample_id);
 		recordDao.batchUpsert(instanceId, funkyPk, Collections.singletonList(testRecord), Collections.emptyMap(), sample_id);
-		List<Record> queryRes = recordDao.queryForRecords(funkyPk, 10, 0, "ASC", null, null, instanceId);
+		List<Record> queryRes = recordDao.queryForRecords(new SearchRequest(), funkyPk, 10, 0, "ASC", null, null, instanceId);
 		assertEquals(1, queryRes.size());
 		assertTrue(recordDao.recordExists(instanceId, funkyPk, recordId));
 		assertTrue(recordDao.getSingleRecord(instanceId, funkyPk, recordId).isPresent());

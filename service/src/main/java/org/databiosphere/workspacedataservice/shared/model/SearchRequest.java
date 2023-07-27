@@ -11,7 +11,7 @@ public class SearchRequest {
 
 	private String filter = null; // global search filter
 
-	private String filterOperator = "AND"; // global search operator
+	private String filterOperator = "AND"; // global search operator; should be an enum
 
 	private List<SearchColumn> searchColumnList;
 

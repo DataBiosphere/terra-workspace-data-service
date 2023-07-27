@@ -21,6 +21,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchColumn;
+import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.jetbrains.annotations.NotNull;
 import org.postgresql.jdbc.PgArray;
 import org.slf4j.Logger;
@@ -170,25 +171,30 @@ public class RecordDao {
 	}
 
 	@SuppressWarnings("squid:S2077")
-	public List<Record> queryForRecords(RecordType recordType, int pageSize, int offset, String sortDirection,
+	public List<Record> queryForRecords(SearchRequest searchRequest, RecordType recordType, int pageSize, int offset, String sortDirection,
 										String sortAttribute, List<SearchColumn> searchColumnList, UUID instanceId) {
 		LOGGER.info("queryForRecords: {}", recordType.getName());
 
-		// find-in-column
-		String findClause = "";
+		String whereClause = "";
 		MapSqlParameterSource params = new MapSqlParameterSource();
-		if (searchColumnList != null && !searchColumnList.isEmpty()) {
+
+		if (StringUtils.isNotBlank(searchRequest.getFilter()) && searchRequest.getFilter().startsWith("sql:")) {
+			// TODO: sql injection!!
+			whereClause = searchRequest.getFilter().replaceFirst("sql:", " where ");
+		} else if (searchColumnList != null && !searchColumnList.isEmpty()) {
+			// find-in-column
 			List<String> clauses = searchColumnList.stream().map( searchColumn -> {
 				params.addValue(searchColumn.column(), searchColumn.find());
 				return searchColumn.column() + " = :" + searchColumn.column();
 			}).toList();
-
-			findClause = " where " + StringUtils.join(clauses, " and ");
+			whereClause = " where " + StringUtils.join(clauses, " and ");
 		}
 
-		String sql = "select * from " + getQualifiedTableName(recordType, instanceId) + findClause + " order by "
+		String sql = "select * from " + getQualifiedTableName(recordType, instanceId) + whereClause + " order by "
 				+ (sortAttribute == null ? quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)) : quote(sortAttribute)) + " " + sortDirection + " limit "
 				+ pageSize + " offset " + offset;
+
+		LOGGER.info("final sql statement: {}", sql);
 
 		return namedTemplate.query(sql, params, new RecordRowMapper(recordType, objectMapper, instanceId));
 	}

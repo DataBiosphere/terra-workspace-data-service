@@ -864,6 +864,10 @@ components:
           $ref: '#/components/schemas/SearchOffset'
         limit:
           $ref: '#/components/schemas/SearchLimit'
+        filter:
+          type: string
+        filterOperator:
+          type: string
         sort:
           $ref: '#/components/schemas/SearchSortDirection'
         sortAttribute:
