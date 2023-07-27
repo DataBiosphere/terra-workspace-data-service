@@ -97,7 +97,7 @@ public class RecordController {
 			@PathVariable("version") String version,
 			@RequestBody(required = false) SearchRequest searchRequest) {
 		// if the user specified a global search filter, use OpenSearch; else, use Postgres directly
-		if (StringUtils.isNotBlank(searchRequest.getFilter())) {
+		if (searchRequest != null && StringUtils.isNotBlank(searchRequest.getFilter())) {
 			return openSearchService.queryForRecords(instanceId, recordType, version, searchRequest);
 		}
 		return recordOrchestratorService.queryForRecords(instanceId, recordType, version, searchRequest);
