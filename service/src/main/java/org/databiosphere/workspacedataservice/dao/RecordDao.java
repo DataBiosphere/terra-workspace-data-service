@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import bio.terra.common.db.WriteTransaction;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +13,7 @@ import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.service.model.RelationValue;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchDeleteException;
+import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.AttributeComparator;
@@ -62,6 +64,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
+import static org.databiosphere.workspacedataservice.dao.SqlUtils.validateSqlString;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.*;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.COLUMN;
@@ -197,6 +200,19 @@ public class RecordDao {
 		LOGGER.info("final sql statement: {}", sql);
 
 		return namedTemplate.query(sql, params, new RecordRowMapper(recordType, objectMapper, instanceId));
+	}
+
+
+	public void findAndReplace(UUID instanceId, RecordType recordType, SearchColumn searchColumn) {
+		MapSqlParameterSource params = new MapSqlParameterSource();
+		params.addValue("find", searchColumn.find());
+		params.addValue("replace", searchColumn.replace());
+
+		String sql = "update " + getQualifiedTableName(recordType, instanceId) +
+				" set " + validateSqlString(searchColumn.column(), COLUMN) + " = :replace" +
+				" where " + validateSqlString(searchColumn.column(), COLUMN) + " = :find";
+
+		namedTemplate.update(sql, params);
 	}
 
 	public List<String> getAllAttributeNames(UUID instanceId, RecordType recordType) {
@@ -766,7 +782,7 @@ public class RecordDao {
 		}
 	}
 
-	/* TODO for views:
+    /* TODO for views:
 		recordTypeExists
 		createRecordType
 		getQualifiedTableName

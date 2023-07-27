@@ -102,7 +102,16 @@ public class RecordController {
 				!searchRequest.getFilter().startsWith("sql:")) {
 			return openSearchService.queryForRecords(instanceId, recordType, version, searchRequest);
 		}
-		return recordOrchestratorService.queryForRecords(instanceId, recordType, version, searchRequest);
+
+		if (searchRequest.getSearchColumnList() != null
+				&& !searchRequest.getSearchColumnList().isEmpty()
+				&& StringUtils.isNotBlank(searchRequest.getSearchColumnList().get(0).column())
+				&& StringUtils.isNotBlank(searchRequest.getSearchColumnList().get(0).find())
+				&& StringUtils.isNotBlank(searchRequest.getSearchColumnList().get(0).replace())) {
+			return recordOrchestratorService.findAndReplace(instanceId, recordType, version, searchRequest);
+		} else {
+			return recordOrchestratorService.queryForRecords(instanceId, recordType, version, searchRequest);
+		}
 	}
 
 	@PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")

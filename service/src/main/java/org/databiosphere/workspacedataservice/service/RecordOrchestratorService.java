@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.service;
 
 import bio.terra.common.db.ReadTransaction;
+import bio.terra.common.db.WriteTransaction;
+import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
@@ -130,6 +132,21 @@ public class RecordOrchestratorService { // TODO give me a better name
         };
     }
 
+    @WriteTransaction
+    public RecordQueryResponse findAndReplace(UUID instanceId, RecordType recordType, String version,
+                                               SearchRequest searchRequest) {
+        // this is a replace
+        recordDao.findAndReplace(instanceId, recordType, searchRequest.getSearchColumnList().get(0));
+
+        searchRequest.setSearchColumnList(List.of());
+        searchRequest.setOffset(0);
+        searchRequest.setFilter("");
+
+        return queryForRecords(instanceId, recordType, version, searchRequest);
+    }
+
+
+    // TODO: big hammer to mark this as a write transaction solely for the case
     @ReadTransaction
     public RecordQueryResponse queryForRecords(UUID instanceId, RecordType recordType, String version,
                                                SearchRequest searchRequest) {
