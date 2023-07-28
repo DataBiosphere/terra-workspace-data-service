@@ -45,10 +45,28 @@ public class SearchController {
 		return new ResponseEntity<>(bulkResponse, HttpStatus.OK);
 	}
 
+	@DeleteMapping("/{instanceid}/opensearch/{version}/index/{recordType}")
+	public ResponseEntity<TsvUploadResponse>  unindex(@PathVariable("instanceid") UUID instanceId,
+													  @PathVariable("recordType") RecordType recordType,
+													  @PathVariable("version") String version) {
+
+		TsvUploadResponse bulkResponse = openSearchService.unindex(instanceId, recordType);
+
+		return new ResponseEntity<>(bulkResponse, HttpStatus.OK);
+	}
+
 	@DeleteMapping("/{instanceid}/opensearch/{version}")
 	public ResponseEntity<String> deleteOpenSearchIndex(@PathVariable("instanceid") UUID instanceId,
 												 @PathVariable("version") String version) {
 		boolean ack = openSearchService.deleteIndex(instanceId);
+		HttpStatus status = ack ? HttpStatus.OK : HttpStatus.INTERNAL_SERVER_ERROR;
+		return new ResponseEntity<>(status);
+	}
+
+	@PostMapping("/{instanceid}/opensearch/{version}")
+	public ResponseEntity<String> createOpenSearchIndex(@PathVariable("instanceid") UUID instanceId,
+														@PathVariable("version") String version) {
+		boolean ack = openSearchService.createIndex(instanceId);
 		HttpStatus status = ack ? HttpStatus.OK : HttpStatus.INTERNAL_SERVER_ERROR;
 		return new ResponseEntity<>(status);
 	}

@@ -1,14 +1,11 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.queryparser.xml.builders.BooleanQueryBuilder;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
 import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.databiosphere.workspacedataservice.shared.model.SortDirection;
+import org.databiosphere.workspacedataservice.shared.model.TsvUploadResponse;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.FieldValue;
@@ -18,7 +15,6 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.WaitForActiveShardOptions;
 import org.opensearch.client.opensearch._types.WaitForActiveShards;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
-import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
 import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
@@ -27,18 +23,15 @@ import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
-import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
-import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexResponse;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
-import org.opensearch.client.opensearch.indices.RefreshResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -96,13 +89,13 @@ public class OpenSearchDao {
             return true;
         }
 
-        WaitForActiveShards waitForActiveShards = new WaitForActiveShards.Builder()
-                .option(WaitForActiveShardOptions.All)
-                .build();
+//        WaitForActiveShards waitForActiveShards = new WaitForActiveShards.Builder()
+//                .option(WaitForActiveShardOptions.All)
+//                .build();
 
         CreateIndexRequest createIndexRequest = new CreateIndexRequest.Builder()
                 .index(instanceId.toString())
-                .waitForActiveShards(waitForActiveShards)
+//                .waitForActiveShards(waitForActiveShards)
                         .build();
 
         return executeRequest(() ->
@@ -212,7 +205,7 @@ public class OpenSearchDao {
         return searchResponse;
     }
 
-    public void deleteRecordType(UUID instanceId, RecordType recordType) {
+    public DeleteByQueryResponse deleteRecordType(UUID instanceId, RecordType recordType) {
         // filter to supplied record type
         Query recordTypeQuery = recordTypeQuery(recordType);
 
@@ -234,6 +227,9 @@ public class OpenSearchDao {
         deleteByQueryResponse.failures().forEach( failure -> {
             logger.warn("delete failure for id " + failure.id() + ": " + failure.cause().reason());
         });
+
+        return deleteByQueryResponse;
+
     }
 
     public boolean deleteIndex(UUID instanceId) {

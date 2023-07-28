@@ -12,6 +12,7 @@ import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.databiosphere.workspacedataservice.shared.model.SortDirection;
 import org.databiosphere.workspacedataservice.shared.model.TsvUploadResponse;
 import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
@@ -75,6 +76,20 @@ public class OpenSearchService {
 
         return new RecordQueryResponse(searchRequest, records,
                 Long.valueOf(searchResponse.hits().total().value()).intValue());
+    }
+
+    public TsvUploadResponse unindex(UUID instanceId, RecordType recordType) {
+        // TODO: in a production-ready implementation, this should check permissions in Sam
+        // delete all records of this type
+        DeleteByQueryResponse deleteByQueryResponse = openSearchDao.deleteRecordType(instanceId, recordType);
+
+
+        String statusMessage = "Took: " + deleteByQueryResponse.took() + "; " +
+                "error count: " + deleteByQueryResponse.failures().size();
+
+        logger.info("unindex complete. " + statusMessage);
+
+        return new TsvUploadResponse(deleteByQueryResponse.deleted().intValue(), statusMessage);
     }
 
     public TsvUploadResponse reindex(UUID instanceId, RecordType recordType) {
@@ -149,6 +164,11 @@ public class OpenSearchService {
     public boolean deleteIndex(UUID instanceId) {
         // TODO: in a production-ready implementation, this should check permissions in Sam
         return openSearchDao.deleteIndex(instanceId);
+    }
+
+    public boolean createIndex(UUID instanceId) {
+        // TODO: in a production-ready implementation, this should check permissions in Sam
+        return openSearchDao.createIndex(instanceId, true);
     }
 
 }

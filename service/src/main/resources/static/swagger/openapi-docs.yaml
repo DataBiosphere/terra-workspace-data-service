@@ -30,6 +30,26 @@ tags:
     description: Snapshot APIs
 paths:
   /{instanceid}/opensearch/{v}:
+    post:
+      summary: Create an OpenSearch index
+      description: Create an index with the given UUID.
+      operationId: createOpenSearchIndex
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - OpenSearch
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+      responses:
+        201:
+          description: Success
+        409:
+          description: Conflict - index already exists.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       summary: Delete an OpenSearch index
       description: |
@@ -105,7 +125,30 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+    delete:
+      summary: Delete record type from OpenSearch
+      description: |
+        Deletes all records of this type from OpenSearch
+      operationId: unindexRecordType
+      tags:
+        - OpenSearch
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TsvUploadResponse'
+        404:
+          description: Record type not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 
   /backup/{v}:
