@@ -976,8 +976,6 @@ components:
           $ref: '#/components/schemas/component'
         mainDb:
           $ref: '#/components/schemas/dbValidationcomponent'
-        streamingDs:
-          $ref: '#/components/schemas/dbValidationcomponent'
     component:
       type: object
       properties:

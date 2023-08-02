@@ -23,7 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import org.postgresql.jdbc.PgArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -36,7 +36,9 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.server.ResponseStatusException;
 
+import javax.sql.DataSource;
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -53,13 +55,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
-import static org.databiosphere.workspacedataservice.service.model.ReservedNames.*;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.PRIMARY_KEY_COLUMN_CACHE;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.RECORD_TYPE;
 
@@ -70,7 +78,7 @@ public class RecordDao {
 	private static final String RECORD_ID_PARAM = "recordId";
 	private final NamedParameterJdbcTemplate namedTemplate;
 
-	private final NamedParameterJdbcTemplate templateForStreaming;
+	private final DataSource mainDb;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RecordDao.class);
 
@@ -79,10 +87,13 @@ public class RecordDao {
 	private final ObjectMapper objectMapper;
 	private final CachedQueryDao cachedQueryDao;
 
-	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
-					 @Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf, ObjectMapper objectMapper, CachedQueryDao cachedQueryDao) {
+	@Value("${twds.streaming.fetch.size:5000}")
+	int fetchSize;
+
+	public RecordDao(DataSource mainDb, NamedParameterJdbcTemplate namedTemplate,
+					 DataTypeInferer inf, ObjectMapper objectMapper, CachedQueryDao cachedQueryDao) {
+		this.mainDb = mainDb;
 		this.namedTemplate = namedTemplate;
-		this.templateForStreaming = templateForStreaming;
 		this.inferer = inf;
 		this.objectMapper = objectMapper;
 		this.cachedQueryDao = cachedQueryDao;
@@ -360,10 +371,78 @@ public class RecordDao {
 		}
 	}
 
+
 	public Stream<Record> streamAllRecordsForType(UUID instanceId, RecordType recordType) {
-		return templateForStreaming.getJdbcTemplate().queryForStream(
-				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)),
-				new RecordRowMapper(recordType, objectMapper, instanceId));
+		// return a Stream of all records of a given type.
+		// this implementation MUST stream, to avoid materializing large result sets and
+		// therefore risking OOMs, timeouts, and performance problems.
+
+		// create the SQL and initialize variables we'll use within try/catch
+		String sql = "select * from " + getQualifiedTableName(recordType, instanceId) +
+				" order by " + quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId));
+		UncheckedCloseable closeable = null;
+		Connection connection = null;
+
+		// create the RowMapper. RowMappers are used by Spring for JdbcTemplate queries.
+		// we don't use JdbcTemplate within this method, but since we need to accomplish the
+		// same tasks, we use a RowMapper for standardization.
+		RecordRowMapper rrm = new RecordRowMapper(recordType, objectMapper, instanceId);
+
+		// we will stream rows from Postgres to JDBC - or more accurately, we will query
+		// Postgres in batches by using a cursor. This requires some configuration, per
+		// https://jdbc.postgresql.org/documentation/query/#getting-results-based-on-a-cursor
+		// 		- the connection must have autocommit=off
+		//		- the statement must use forward-only fetching (which is the default)
+		//		- the statement must have a positive fetch size
+		try {
+			// get a connection to the db and set the connection as closeable.
+			connection = mainDb.getConnection();
+			closeable = UncheckedCloseable.wrap(connection);
+
+			// generate the SQL statement, and add the statement to our closeable.
+			PreparedStatement statement = connection.prepareStatement(sql);
+			closeable = closeable.nest(statement);
+
+			// configure autocommit, fetch direction, fetch size.
+			// Hikari will reset the autocommit value on this connection when returning it to the pool
+			connection.setAutoCommit(false);
+			statement.setFetchDirection(ResultSet.FETCH_FORWARD); // the default; set here for clarity
+			statement.setFetchSize(fetchSize);
+
+			// set up the result set, and add the result set to our closeable.
+			// Under the covers, this will actually execute multiple
+			// Postgres queries, retrieving `fetchSize` rows each time.
+			ResultSet resultSet = statement.executeQuery();
+			closeable = closeable.nest(resultSet);
+
+			// transform the ResultSet to a Stream<Record>, using the RowMapper.
+			// handle exceptions and close our closeable at the appropriate time.
+			return StreamSupport.stream(new Spliterators.AbstractSpliterator<Record>(
+					Long.MAX_VALUE, Spliterator.ORDERED) {
+				@Override
+				public boolean tryAdvance(Consumer<? super Record> action) {
+					int i = 0; // track row index for use in RowMapper
+					try {
+						if (!resultSet.next()) return false;
+						Record record = rrm.mapRow(resultSet, i++);
+						action.accept(record);
+						return true;
+					} catch (SQLException ex) {
+						throw new RuntimeException(ex);
+					}
+				}
+			}, false).onClose(closeable);
+		} catch (SQLException sqlException) {
+			if (closeable != null)
+				try {
+					closeable.close();
+				} catch (Exception ex) {
+					sqlException.addSuppressed(ex);
+				}
+			throw new RuntimeException(sqlException);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public String getFkSql(Set<Relation> relations, UUID instanceId) {
@@ -733,6 +812,35 @@ public class RecordDao {
 				checkForTableRelation(sqlEx);
 			}
 			throw e;
+		}
+	}
+
+	/**
+	 * Wrapper for JDBC Connection, Statement, ResultSet that
+	 * allows for checked exceptions to be caught and rethrown
+	 * as unchecked. In turn this allows the ResultSet to easily
+	 * be translated to a Stream while still allowing objects
+	 * to be properly closed.
+	 */
+	interface UncheckedCloseable extends Runnable, AutoCloseable {
+		default void run() {
+			try {
+				close();
+			} catch (Exception ex) {
+				throw new RuntimeException(ex);
+			}
+		}
+
+		static UncheckedCloseable wrap(AutoCloseable c) {
+			return c::close;
+		}
+
+		default UncheckedCloseable nest(AutoCloseable c) {
+			return () -> {
+				try (UncheckedCloseable c1 = this) {
+					c.close();
+				}
+			};
 		}
 	}
 }
