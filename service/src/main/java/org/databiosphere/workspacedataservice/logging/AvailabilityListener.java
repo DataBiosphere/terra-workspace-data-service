@@ -19,7 +19,7 @@ public class AvailabilityListener {
                 logger.error("LivenessState: {}", event.getState());
                 break;
             case CORRECT:
-                logger.debug("LivenessState: {}", event.getState());
+                logger.info("LivenessState: {}", event.getState());
                 break;
             default:
                 logger.error("LivenessState {} is not a known state", event.getState());
@@ -33,7 +33,7 @@ public class AvailabilityListener {
                 logger.error("ReadinessState: {}", event.getState());
                 break;
             case ACCEPTING_TRAFFIC:
-                logger.debug("ReadinessState: {}", event.getState());
+                logger.info("ReadinessState: {}", event.getState());
                 break;
             default:
                 logger.error("ReadinessState {} is not a known state", event.getState());
