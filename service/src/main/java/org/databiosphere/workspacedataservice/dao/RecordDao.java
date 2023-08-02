@@ -372,6 +372,7 @@ public class RecordDao {
 	}
 
 
+	@SuppressWarnings("squid:S2077") // sql statement has been manually reviewed
 	public Stream<Record> streamAllRecordsForType(UUID instanceId, RecordType recordType) {
 		// return a Stream of all records of a given type.
 		// this implementation MUST stream, to avoid materializing large result sets and
