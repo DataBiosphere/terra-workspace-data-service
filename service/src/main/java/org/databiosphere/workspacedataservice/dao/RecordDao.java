@@ -394,8 +394,7 @@ public class RecordDao {
 		// 		- the connection must have autocommit=off
 		//		- the statement must use forward-only fetching (which is the default)
 		//		- the statement must have a positive fetch size
-		JdbcCursorItemReaderBuilder<Record> builder = new JdbcCursorItemReaderBuilder<>();
-		JdbcCursorItemReader<Record> itemReader = builder
+		JdbcCursorItemReader<Record> itemReader = new JdbcCursorItemReaderBuilder<Record>()
 				.dataSource(mainDb)
 				.connectionAutoCommit(false)
 				.fetchSize(fetchSize)
