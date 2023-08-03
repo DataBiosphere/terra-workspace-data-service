@@ -28,25 +28,4 @@ public class DataSourceConfig {
         return new NamedParameterJdbcTemplate(mainDb());
     }
 
-    @Bean
-    @Qualifier("streamingDs")
-    @ConfigurationProperties("streaming.query")
-    public DataSource streamingDs() {
-        DataSource ds = DataSourceBuilder.create().build();
-        HikariDataSource hikariDataSource = (HikariDataSource) ds;
-        // https://jdbc.postgresql.org/documentation/query/#getting-results-based-on-a-cursor
-        hikariDataSource.setAutoCommit(false);
-        return hikariDataSource;
-    }
-
-    @Bean
-    @Qualifier("streamingDs")
-    public NamedParameterJdbcTemplate templateForStreaming(@Qualifier("streamingDs") DataSource ds,
-                                                           @Value("${twds.streaming.fetch.size:5000}") int fetchSize) {
-        NamedParameterJdbcTemplate jdbcTemplate = new NamedParameterJdbcTemplate(ds);
-        // https://jdbc.postgresql.org/documentation/query/#getting-results-based-on-a-cursor
-        jdbcTemplate.getJdbcTemplate().setFetchSize(fetchSize);
-        return jdbcTemplate;
-    }
-
 }

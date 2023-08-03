@@ -16,7 +16,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -58,10 +57,6 @@ class RecordDaoTest {
 
 	@Autowired
 	NamedParameterJdbcTemplate namedTemplate;
-
-	@Autowired
-	@Qualifier("streamingDs")
-	NamedParameterJdbcTemplate templateForStreaming;
 
 	@Autowired
 	DataTypeInferer dataTypeInferer;

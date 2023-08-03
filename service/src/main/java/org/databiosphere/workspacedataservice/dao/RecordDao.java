@@ -23,7 +23,10 @@ import org.jetbrains.annotations.NotNull;
 import org.postgresql.jdbc.PgArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.batch.item.ExecutionContext;
+import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -36,6 +39,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.server.ResponseStatusException;
 
+import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -53,13 +57,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
-import static org.databiosphere.workspacedataservice.service.model.ReservedNames.*;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.PRIMARY_KEY_COLUMN_CACHE;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.RECORD_TYPE;
 
@@ -70,7 +80,7 @@ public class RecordDao {
 	private static final String RECORD_ID_PARAM = "recordId";
 	private final NamedParameterJdbcTemplate namedTemplate;
 
-	private final NamedParameterJdbcTemplate templateForStreaming;
+	private final DataSource mainDb;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RecordDao.class);
 
@@ -79,10 +89,13 @@ public class RecordDao {
 	private final ObjectMapper objectMapper;
 	private final CachedQueryDao cachedQueryDao;
 
-	public RecordDao(NamedParameterJdbcTemplate namedTemplate,
-					 @Qualifier("streamingDs") NamedParameterJdbcTemplate templateForStreaming, DataTypeInferer inf, ObjectMapper objectMapper, CachedQueryDao cachedQueryDao) {
+	@Value("${twds.streaming.fetch.size:5000}")
+	int fetchSize;
+
+	public RecordDao(DataSource mainDb, NamedParameterJdbcTemplate namedTemplate,
+					 DataTypeInferer inf, ObjectMapper objectMapper, CachedQueryDao cachedQueryDao) {
+		this.mainDb = mainDb;
 		this.namedTemplate = namedTemplate;
-		this.templateForStreaming = templateForStreaming;
 		this.inferer = inf;
 		this.objectMapper = objectMapper;
 		this.cachedQueryDao = cachedQueryDao;
@@ -360,10 +373,65 @@ public class RecordDao {
 		}
 	}
 
+	@SuppressWarnings("squid:S2077") // sql statement has been manually reviewed
 	public Stream<Record> streamAllRecordsForType(UUID instanceId, RecordType recordType) {
-		return templateForStreaming.getJdbcTemplate().queryForStream(
-				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by " + quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)),
-				new RecordRowMapper(recordType, objectMapper, instanceId));
+		// create the SQL for the query
+		String sql = "select * from " + getQualifiedTableName(recordType, instanceId) +
+				" order by " + quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId));
+
+		// create the RowMapper, to translate JDBC rows to Record objects
+		RecordRowMapper rrm = new RecordRowMapper(recordType, objectMapper, instanceId);
+
+		// Spring Batch convenience to get a db connection, set autocommit=false on that connection,
+		// prepare a SQL statement and set the fetch size on that statement, set a RowMapper,
+		// and return all of this encapsulated in a Spring Batch ItemReader.
+		// the ItemReader will manage the underlying Postgres db cursor and ultimately
+		// make multiple queries to the db, returning `fetchSize` rows each time.
+		// Hikari will reset the autocommit value on this connection when returning it to the pool.
+		//
+		// Per https://jdbc.postgresql.org/documentation/query/#getting-results-based-on-a-cursor,
+		// requirements for streaming are:
+		// 		- the connection must have autocommit=off
+		//		- the statement must use forward-only fetching (which is the default)
+		//		- the statement must have a positive fetch size
+		JdbcCursorItemReader<Record> itemReader = new JdbcCursorItemReaderBuilder<Record>()
+				.dataSource(mainDb)
+				.connectionAutoCommit(false)
+				.fetchSize(fetchSize)
+				.sql(sql)
+				.rowMapper(rrm)
+				.name(instanceId + "_" + recordType.getName()) // name is required but not important
+				.build();
+
+		// open the ItemReader
+		itemReader.open(new ExecutionContext());
+
+		// Spliterator implementation that wraps the ItemReader:
+		// in essence, each call to Spliterator.tryAdvance() maps
+		// to a call to ItemReader.read().
+		// This Spliterator is the necessary stepping stone between ItemReader and Stream.
+		Spliterators.AbstractSpliterator<Record> spliterator = new Spliterators.AbstractSpliterator<>(
+				Long.MAX_VALUE, Spliterator.ORDERED) {
+			@Override
+			public boolean tryAdvance(Consumer<? super Record> action) {
+				try {
+					Record item = itemReader.read();
+					if (item == null) {
+						return false;
+					}
+					action.accept(item);
+					return true;
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			}
+		};
+
+		// map the ItemReader to a Stream, via StreamSupport
+		// ensure the ItemReader closes when the stream closes
+		return StreamSupport
+				.stream(spliterator, false)
+				.onClose(itemReader::close);
 	}
 
 	public String getFkSql(Set<Relation> relations, UUID instanceId) {
