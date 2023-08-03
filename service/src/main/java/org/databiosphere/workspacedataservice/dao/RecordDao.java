@@ -23,6 +23,9 @@ import org.jetbrains.annotations.NotNull;
 import org.postgresql.jdbc.PgArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.item.ExecutionContext;
+import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.dao.DataAccessException;
@@ -38,7 +41,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import javax.sql.DataSource;
 import java.math.BigDecimal;
-import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -371,79 +373,66 @@ public class RecordDao {
 		}
 	}
 
-
 	@SuppressWarnings("squid:S2077") // sql statement has been manually reviewed
 	public Stream<Record> streamAllRecordsForType(UUID instanceId, RecordType recordType) {
-		// return a Stream of all records of a given type.
-		// this implementation MUST stream, to avoid materializing large result sets and
-		// therefore risking OOMs, timeouts, and performance problems.
-
-		// create the SQL and initialize variables we'll use within try/catch
+		// create the SQL for the query
 		String sql = "select * from " + getQualifiedTableName(recordType, instanceId) +
 				" order by " + quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId));
-		UncheckedCloseable closeable = null;
-		Connection connection = null;
 
-		// create the RowMapper. RowMappers are used by Spring for JdbcTemplate queries.
-		// we don't use JdbcTemplate within this method, but since we need to accomplish the
-		// same tasks, we use a RowMapper for standardization.
+		// create the RowMapper, to translate JDBC rows to Record objects
 		RecordRowMapper rrm = new RecordRowMapper(recordType, objectMapper, instanceId);
 
-		// we will stream rows from Postgres to JDBC - or more accurately, we will query
-		// Postgres in batches by using a cursor. This requires some configuration, per
-		// https://jdbc.postgresql.org/documentation/query/#getting-results-based-on-a-cursor
+		// Spring Batch convenience to get a db connection, set autocommit=false on that connection,
+		// prepare a SQL statement and set the fetch size on that statement, set a RowMapper,
+		// and return all of this encapsulated in a Spring Batch ItemReader.
+		// the ItemReader will manage the underlying Postgres db cursor and ultimately
+		// make multiple queries to the db, returning `fetchSize` rows each time.
+		// Hikari will reset the autocommit value on this connection when returning it to the pool.
+		//
+		// Per https://jdbc.postgresql.org/documentation/query/#getting-results-based-on-a-cursor,
+		// requirements for streaming are:
 		// 		- the connection must have autocommit=off
 		//		- the statement must use forward-only fetching (which is the default)
 		//		- the statement must have a positive fetch size
-		try {
-			// get a connection to the db and set the connection as closeable.
-			connection = mainDb.getConnection();
-			closeable = UncheckedCloseable.wrap(connection);
+		JdbcCursorItemReaderBuilder<Record> builder = new JdbcCursorItemReaderBuilder<>();
+		JdbcCursorItemReader<Record> itemReader = builder
+				.dataSource(mainDb)
+				.connectionAutoCommit(false)
+				.fetchSize(fetchSize)
+				.sql(sql)
+				.rowMapper(rrm)
+				.name(instanceId + "_" + recordType.getName()) // name is required but not important
+				.build();
 
-			// generate the SQL statement, and add the statement to our closeable.
-			PreparedStatement statement = connection.prepareStatement(sql);
-			closeable = closeable.nest(statement);
+		// open the ItemReader
+		itemReader.open(new ExecutionContext());
 
-			// configure autocommit, fetch direction, fetch size.
-			// Hikari will reset the autocommit value on this connection when returning it to the pool
-			connection.setAutoCommit(false);
-			statement.setFetchDirection(ResultSet.FETCH_FORWARD); // the default; set here for clarity
-			statement.setFetchSize(fetchSize);
-
-			// set up the result set, and add the result set to our closeable.
-			// Under the covers, this will actually execute multiple
-			// Postgres queries, retrieving `fetchSize` rows each time.
-			ResultSet resultSet = statement.executeQuery();
-			closeable = closeable.nest(resultSet);
-
-			// transform the ResultSet to a Stream<Record>, using the RowMapper.
-			// handle exceptions and close our closeable at the appropriate time.
-			return StreamSupport.stream(new Spliterators.AbstractSpliterator<Record>(
-					Long.MAX_VALUE, Spliterator.ORDERED) {
-				@Override
-				public boolean tryAdvance(Consumer<? super Record> action) {
-					int i = 0; // track row index for use in RowMapper
-					try {
-						if (!resultSet.next()) return false;
-						Record record = rrm.mapRow(resultSet, i++);
-						action.accept(record);
-						return true;
-					} catch (SQLException ex) {
-						throw new RuntimeException(ex);
-					}
-				}
-			}, false).onClose(closeable);
-		} catch (SQLException sqlException) {
-			if (closeable != null)
+		// Spliterator implementation that wraps the ItemReader:
+		// in essence, each call to Spliterator.tryAdvance() maps
+		// to a call to ItemReader.read().
+		// This Spliterator is the necessary stepping stone between ItemReader and Stream.
+		Spliterators.AbstractSpliterator<Record> spliterator = new Spliterators.AbstractSpliterator<>(
+				Long.MAX_VALUE, Spliterator.ORDERED) {
+			@Override
+			public boolean tryAdvance(Consumer<? super Record> action) {
 				try {
-					closeable.close();
-				} catch (Exception ex) {
-					sqlException.addSuppressed(ex);
+					Record item = itemReader.read();
+					if (item == null) {
+						return false;
+					}
+					action.accept(item);
+					return true;
+				} catch (Exception e) {
+					throw new RuntimeException(e);
 				}
-			throw new RuntimeException(sqlException);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+			}
+		};
+
+		// map the ItemReader to a Stream, via StreamSupport
+		// ensure the ItemReader closes when the stream closes
+		return StreamSupport
+				.stream(spliterator, false)
+				.onClose(itemReader::close);
 	}
 
 	public String getFkSql(Set<Relation> relations, UUID instanceId) {
@@ -816,32 +805,4 @@ public class RecordDao {
 		}
 	}
 
-	/**
-	 * Wrapper for JDBC Connection, Statement, ResultSet that
-	 * allows for checked exceptions to be caught and rethrown
-	 * as unchecked. In turn this allows the ResultSet to easily
-	 * be translated to a Stream while still allowing objects
-	 * to be properly closed.
-	 */
-	interface UncheckedCloseable extends Runnable, AutoCloseable {
-		default void run() {
-			try {
-				close();
-			} catch (Exception ex) {
-				throw new RuntimeException(ex);
-			}
-		}
-
-		static UncheckedCloseable wrap(AutoCloseable c) {
-			return c::close;
-		}
-
-		default UncheckedCloseable nest(AutoCloseable c) {
-			return () -> {
-				try (UncheckedCloseable c1 = this) {
-					c.close();
-				}
-			};
-		}
-	}
 }
