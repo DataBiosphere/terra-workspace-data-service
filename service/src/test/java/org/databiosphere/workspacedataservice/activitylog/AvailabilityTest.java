@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @AutoConfigureMockMvc
 @SpringBootTest
-public class AvailabilityTest {
+class AvailabilityTest {
 
     @Autowired
     private MockMvc mvc;
@@ -30,7 +30,7 @@ public class AvailabilityTest {
 
     //Reference: https://www.baeldung.com/spring-liveness-readiness-probes
     @Test
-    public void readinessState() throws Exception {
+    void readinessState() throws Exception {
         assertThat(applicationAvailability.getReadinessState()).isEqualTo(ReadinessState.ACCEPTING_TRAFFIC);
         ResultActions readinessResult = mvc.perform(get("/status/readiness"));
         readinessResult.andExpect(status().isOk())
@@ -44,7 +44,7 @@ public class AvailabilityTest {
     }
 
     @Test
-    public void livenessState() throws Exception {
+    void livenessState() throws Exception {
         assertThat(applicationAvailability.getLivenessState()).isEqualTo(LivenessState.CORRECT);
         ResultActions result = mvc.perform(get("/status/liveness"));
         result.andExpect(status().isOk())
