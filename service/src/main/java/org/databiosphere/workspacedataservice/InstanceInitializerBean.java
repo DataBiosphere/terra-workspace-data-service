@@ -200,7 +200,7 @@ public class InstanceInitializerBean {
 
             // TODO when the wdsDao.triggerBackup is async, we will need a second call here to poll for/check its status
             // note that the Job class on the next line is from the generated WDS client:
-            if (backupResponse.getStatus().equals(org.databiosphere.workspacedata.model.Job.StatusEnum.SUCCEEDED)) {
+            if (backupResponse.getStatus().equals(org.databiosphere.workspacedata.model.BackupJob.StatusEnum.SUCCEEDED)) {
                 var backupFileName = backupResponse.getResult().getFilename();
                 cloneDao.updateCloneEntryStatus(trackingId, CloneStatus.BACKUPSUCCEEDED);
                 return backupFileName;
