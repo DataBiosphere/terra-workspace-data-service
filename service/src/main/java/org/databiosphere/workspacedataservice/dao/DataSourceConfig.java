@@ -17,15 +17,15 @@ public class DataSourceConfig {
 
     @Bean
     @Primary
-    @ConfigurationProperties("spring.datasource")
+    @ConfigurationProperties("spring.datasource.hikari")
     public DataSource mainDb() {
         return DataSourceBuilder.create().build();
     }
 
     @Bean
     @Primary
-    public NamedParameterJdbcTemplate namedParameterJdbcTemplate() {
-        return new NamedParameterJdbcTemplate(mainDb());
+    public NamedParameterJdbcTemplate namedParameterJdbcTemplate(DataSource dataSource) {
+        return new NamedParameterJdbcTemplate(dataSource);
     }
 
 }
