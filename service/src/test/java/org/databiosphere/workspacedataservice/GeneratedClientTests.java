@@ -5,7 +5,6 @@ import org.databiosphere.workspacedata.api.RecordsApi;
 import org.databiosphere.workspacedata.api.SchemaApi;
 import org.databiosphere.workspacedata.client.ApiClient;
 import org.databiosphere.workspacedata.client.ApiException;
-import org.databiosphere.workspacedata.model.RecordAttributes;
 import org.databiosphere.workspacedata.model.RecordQueryResponse;
 import org.databiosphere.workspacedata.model.RecordRequest;
 import org.databiosphere.workspacedata.model.RecordResponse;
@@ -24,7 +23,9 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.io.File;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -77,7 +78,7 @@ class GeneratedClientTests {
         String recordId = "id1";
         String entityType = "FOO";
         String attributeName = "attr1";
-        RecordAttributes recordAttributes = new RecordAttributes();
+        Map<String, Object> recordAttributes = new HashMap<>();
         recordAttributes.put(attributeName, "Hello");
         recordsApi.createOrReplaceRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId, "row_id");
         RecordResponse record = recordsApi.getRecord(instanceId.toString(), version, entityType, recordId);
@@ -106,7 +107,7 @@ class GeneratedClientTests {
     }
 
     private void createRecord(RecordsApi recordsApi, String recordId, String recordType) throws ApiException {
-        recordsApi.createOrReplaceRecord(new RecordRequest().attributes(new RecordAttributes()),
+        recordsApi.createOrReplaceRecord(new RecordRequest().attributes(Map.of()),
                 instanceId.toString(), version, recordType, recordId, null);
     }
 
@@ -129,7 +130,7 @@ class GeneratedClientTests {
         String recordId = "id1";
         String entityType = "FOO";
         String attributeName = "attr1";
-        RecordAttributes recordAttributes = new RecordAttributes();
+        Map<String, Object> recordAttributes = new HashMap<>();
         recordAttributes.put(attributeName, "Hello");
         recordsApi.createOrReplaceRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId, null);
         recordAttributes.put(attributeName, "Goodbye");

@@ -4,7 +4,7 @@ plugins {
 	id 'maven-publish'
 
 	id 'com.jfrog.artifactory' version '4.32.0'
-	id 'org.hidetake.swagger.generator'
+	id 'org.openapi.generator'
 }
 
 repositories {
