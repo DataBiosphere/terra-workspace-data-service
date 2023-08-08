@@ -69,6 +69,7 @@ dependencies {
 	implementation 'com.squareup.okhttp3:okhttp:4.11.0' // required by Sam client
 	implementation "bio.terra:datarepo-client:1.476.0-SNAPSHOT"
 	implementation "bio.terra:workspace-manager-client:0.254.717-SNAPSHOT"
+	implementation "bio.terra:java-pfb-library:0.5.0"
 	implementation project(path: ':client')
 
 	// hk2 is required to use WSM client, but not correctly exposed by the client
