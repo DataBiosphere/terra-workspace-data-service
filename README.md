@@ -72,7 +72,7 @@ export WORKSPACE_ID=123e4567-e89b-12d3-a456-426614174000
 ## Running
 To just build the code, from the root directory run
 ```bash
-./gradlew build
+./gradlew build --exclude-task test
 ```
 To run the application, first a postgres database must be running:
 ```bash
