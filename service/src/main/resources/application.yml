@@ -1,0 +1,127 @@
+# These values are used more than once, so we'll set them here with appropriate defaults
+env:
+  wds:
+    db:
+      host: ${WDS_DB_HOST:localhost}
+      port: ${WDS_DB_PORT:5432}
+      name: ${WDS_DB_NAME:wds}
+      password: ${WDS_DB_PASSWORD:wds}
+      user: ${WDS_DB_USER:wds}
+      # When running on Azure in k8s with workload identity set ADDITIONAL_JDBC_URL_PARAMS to
+      # sslmode=require&authenticationPluginClassName=com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticationPlugin
+      additionalUrlParams: ${ADDITIONAL_JDBC_URL_PARAMS:}
+
+management:
+  endpoint:
+    info:
+      enabled: true
+    health:
+      enabled: true
+      show-details: ALWAYS
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState,db
+  endpoints:
+    enabled-by-default: false
+    web:
+      exposure.include: info,health
+      base-path: /
+      path-mapping:
+        info: version
+        health: status
+  # additional keys to expose in the actuator info endpoint:
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    chart-version: ${HELM_CHART:unknown}
+    image: ${WDS_IMAGE:unknown}
+
+spring:
+  cache:
+    jcache:
+      config: classpath:ehcache.xml
+
+  datasource:
+    hikari:
+      jdbc-url: jdbc:postgresql://${env.wds.db.host}:${env.wds.db.port}/${env.wds.db.name}?reWriteBatchedInserts=true&${env.wds.db.additionalUrlParams}
+      username: ${env.wds.db.user}
+      password: ${env.wds.db.password}
+      maximum-pool-size: 7
+      minimum-idle: 7
+  servlet:
+    multipart.max-request-size: 5GB
+    multipart.max-file-size: 5GB
+  sql:
+    init:
+      # Ensure data.sql is NOT run on startup
+      mode: never
+  # Run Liquibase instead
+  liquibase:
+    change-log: classpath:liquibase/changelog.yaml
+#   # activate the "local" profile to turn on CORS response headers,
+#   # which may be necessary for local development.
+#   profiles:
+#     active: local
+
+# set hikari logging to DEBUG or even TRACE to troubleshoot connection pool issues
+logging:
+  level:
+    com.zaxxer.hikari.HikariConfig: INFO
+    com.zaxxer.hikari: INFO
+
+server:
+  error:
+    include-stacktrace: never
+    include-message: always
+
+twds:
+  write.batch.size: 5000
+  streaming.fetch.size: 5000
+  instance:
+    # Workspace Id for launching instance
+    workspace-id: ${WORKSPACE_ID:}
+    source-workspace-id: ${SOURCE_WORKSPACE_ID:}
+  # short-lived credentials to use during cloning
+  startup-token: ${STARTUP_TOKEN:}
+  dump-properties: ${DUMP_PROPERTIES:false}
+
+  pg_dump:
+    path: ${PGDUMP_PATH:/usr/bin/pg_dump}
+    psqlPath: ${PSQL_PATH:/usr/bin/psql}
+    port: ${env.wds.db.port}
+    user: ${env.wds.db.user}
+    dbName: ${env.wds.db.name}
+    password: ${env.wds.db.password}
+    host: ${env.wds.db.host}
+    # When running on Azure in k8s with workload identity set PGDUMP_USE_AZURE_IDENTITY to true
+    useAzureIdentity: ${PGDUMP_USE_AZURE_IDENTITY:true}
+
+sentry:
+  dsn: https://e59ecdd940784bd2922f25a0f3197ffd@o54426.ingest.sentry.io/4504299946835968
+  samurl: ${SAM_URL:}
+  mrg: ${LZ_MRG:}
+  releasename: ${RELEASE_NAME:}
+  dump-properties: ${DUMP_PROPERTIES:false}
+
+sam:
+  retry:
+    maxAttempts: 5
+    backoff:
+      delay: 500
+      multiplier: 1.5
+
+api:
+  retry:
+    maxAttempts: 10
+    backoff:
+      delay: 150
+      multiplier: 1.5
+
+datarepourl: ${DATA_REPO_URL:}
+workspacemanagerurl: ${WORKSPACE_MANAGER_URL:}
+leoUrl: ${LEONARDO_URL:}

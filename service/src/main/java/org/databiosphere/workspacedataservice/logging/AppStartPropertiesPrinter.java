@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 public class AppStartPropertiesPrinter {
     private static final Logger LOGGER = LoggerFactory.getLogger(AppStartPropertiesPrinter.class);
     private final Environment environment;
-    private static final String PROPERTIES_FILENAME = "application.properties";
+    private static final String PROPERTIES_FILENAME = "application.yml";
 
     @Value("${twds.dump-properties}")
     private boolean dumpProperties;

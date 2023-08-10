@@ -17,7 +17,6 @@ import java.util.stream.Stream;
 
 @Configuration
 @PropertySource("classpath:git.properties")
-@PropertySource("classpath:application.properties")
 public class SentryInitializer  {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SentryInitializer.class);
 
