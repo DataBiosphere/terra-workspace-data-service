@@ -33,6 +33,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.UUID;
 
+import static org.databiosphere.workspacedataservice.sam.HttpSamClientFactory.USE_BEARER_TOKEN_IF_PRESENT;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -81,7 +82,7 @@ class InstanceServiceSamExceptionTest {
         instanceService = new InstanceService(instanceDao, samDao, activityLogger);
 
         // return the mock ResourcesApi from the mock SamClientFactory
-        given(mockSamClientFactory.getResourcesApi(null))
+        given(mockSamClientFactory.getResourcesApi(USE_BEARER_TOKEN_IF_PRESENT))
                 .willReturn(mockResourcesApi);
     }
 

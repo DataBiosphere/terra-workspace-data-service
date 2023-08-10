@@ -12,11 +12,9 @@ import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.databiosphere.workspacedataservice.sam.*;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.SamServerException;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Map;
 import java.util.UUID;
@@ -28,14 +26,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class SamPactTest {
 
     static final String dummyResourceId = "92276398-fbe4-414a-9304-e7dcf18ac80e";
-
-    @BeforeAll
-    static void setup() {
-        //Without this setup, the HttpClient throws a "No thread-bound request found" error
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        // Set the mock request as the current request context
-        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
-    }
 
     @Pact(consumer = "wds-consumer", provider = "sam-provider")
     public RequestResponsePact statusApiPact(PactDslWithProvider builder) {

@@ -19,6 +19,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.util.UUID;
 
+import static org.databiosphere.workspacedataservice.sam.HttpSamClientFactory.USE_BEARER_TOKEN_IF_PRESENT;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,7 +52,7 @@ class RecordOrchestratorSamTest {
         if (!instanceDao.instanceSchemaExists(INSTANCE)) {
             instanceDao.createSchema(INSTANCE);
         }
-        given(mockSamClientFactory.getResourcesApi(null))
+        given(mockSamClientFactory.getResourcesApi(USE_BEARER_TOKEN_IF_PRESENT))
                 .willReturn(mockResourcesApi);
 
         // clear call history for the mock

@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.context.request.RequestContextHolder;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
 import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
@@ -21,6 +22,8 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
  * ResourcesApi from that client. ResourcesApi is the part of the Sam client used by WDS.
  */
 public class HttpSamClientFactory implements SamClientFactory {
+
+    public static final String USE_BEARER_TOKEN_IF_PRESENT = null;
 
     private final String samUrl;
     private final OkHttpClient commonHttpClient;
@@ -45,28 +48,40 @@ public class HttpSamClientFactory implements SamClientFactory {
         if (StringUtils.isNotBlank(samUrl)) {
             apiClient.setBasePath(samUrl);
         }
-        if (accessToken == null){
-            // grab the current user's bearer token (see BearerTokenFilter)
-            Object token = RequestContextHolder.currentRequestAttributes()
-                    .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
-            // add the user's bearer token to the client
-            if (!Objects.isNull(token)) {
-                LOGGER.debug("setting access token for Sam request");
-                apiClient.setAccessToken(token.toString());
-            } else {
-                LOGGER.warn("No access token found for Sam request.");
-            }
-        } else {
-            apiClient.setAccessToken(accessToken);
 
-        }
+        // set the provided access token if present, otherwise fall
+        // back on the token in the current request context
+        Optional.ofNullable(accessToken)
+                .or(HttpSamClientFactory::getCurrentUserBearerToken)
+                .ifPresent(apiClient::setAccessToken);
+
         // return the client
         return apiClient;
+    }
+
+    private static Optional<String> getCurrentUserBearerToken() {
+        if (Objects.isNull(RequestContextHolder.getRequestAttributes())) {
+            LOGGER.warn("No request context available to check access token for Sam request.");
+            return Optional.empty();
+        }
+
+        // grab the current user's bearer token (see BearerTokenFilter)
+        Object token = RequestContextHolder.currentRequestAttributes()
+                .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
+
+        if (Objects.isNull(token)) {
+            LOGGER.warn("No access token found for Sam request.");
+            return Optional.empty();
+        }
+
+        // add the user's bearer token to the client
+        return Optional.of(token.toString());
     }
 
     /**
      * Get a ResourcesApi Sam client, initialized with the url to Sam and the current user's
      * access token, if any
+     *
      * @return the usable Sam client
      */
     public ResourcesApi getResourcesApi(String token) {
@@ -79,10 +94,11 @@ public class HttpSamClientFactory implements SamClientFactory {
     /**
      * Get a StatusApi Sam client, initialized with the url to Sam and the current user's
      * access token, if any
+     *
      * @return the usable Sam client
      */
     public StatusApi getStatusApi() {
-        ApiClient apiClient = getApiClient(null);
+        ApiClient apiClient = getApiClient(USE_BEARER_TOKEN_IF_PRESENT);
         StatusApi statusApi = new StatusApi();
         statusApi.setApiClient(apiClient);
         return statusApi;

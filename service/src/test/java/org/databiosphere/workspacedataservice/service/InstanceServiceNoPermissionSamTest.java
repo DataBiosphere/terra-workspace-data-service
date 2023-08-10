@@ -23,6 +23,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.util.List;
 import java.util.UUID;
 
+import static org.databiosphere.workspacedataservice.sam.HttpSamClientFactory.USE_BEARER_TOKEN_IF_PRESENT;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -56,7 +57,7 @@ class InstanceServiceNoPermissionSamTest {
     void testCreateInstanceNoPermission() throws ApiException {
 
         // return the mock ResourcesApi from the mock SamClientFactory
-        given(mockSamClientFactory.getResourcesApi(null))
+        given(mockSamClientFactory.getResourcesApi(USE_BEARER_TOKEN_IF_PRESENT))
                 .willReturn(mockResourcesApi);
 
         // Call to check permissions in Sam does not throw an exception, but returns false -
@@ -77,7 +78,7 @@ class InstanceServiceNoPermissionSamTest {
     void testDeleteInstanceNoPermission() throws ApiException {
 
         // return the mock ResourcesApi from the mock SamClientFactory
-        given(mockSamClientFactory.getResourcesApi(null))
+        given(mockSamClientFactory.getResourcesApi(USE_BEARER_TOKEN_IF_PRESENT))
                 .willReturn(mockResourcesApi);
 
         // Call to check permissions in Sam does not throw an exception, but returns false -
