@@ -62,7 +62,7 @@ export LEONARDO_URL=https://leonardo.dsde-dev.broadinstitute.org/
 ```
 ##### WORKSPACE_ID
 
-WDS requires a valid workspace id to check permissions in Sam and to import snapshots from the Terra Daa Repo.
+WDS requires a valid workspace id to check permissions in Sam and to import snapshots from the Terra Data Repo.
 This is controlled by a `WORKSPACE_ID` environment variable. You should set this to the UUID
 of a workspace you own, e.g.
 ```
@@ -72,7 +72,7 @@ export WORKSPACE_ID=123e4567-e89b-12d3-a456-426614174000
 ## Running
 To just build the code, from the root directory run
 ```bash
-./gradlew build
+./gradlew build --exclude-task test
 ```
 To run the application, first a postgres database must be running:
 ```bash
