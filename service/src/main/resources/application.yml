@@ -58,7 +58,6 @@ spring:
     multipart.max-file-size: 5GB
   sql:
     init:
-      # Ensure data.sql is NOT run on startup
       mode: never
   # Run Liquibase instead
   liquibase:
