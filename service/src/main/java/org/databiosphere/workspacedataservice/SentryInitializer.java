@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice;
 
 import io.sentry.Sentry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -13,8 +15,8 @@ import java.util.regex.Pattern;
 
 @Configuration
 @PropertySource("classpath:git.properties")
-@PropertySource("classpath:application.properties")
 public class SentryInitializer  {
+	private static final Logger LOGGER = LoggerFactory.getLogger(SentryInitializer.class);
 
 	@Value("${sentry.dsn}")
 	String dsn;
@@ -42,6 +44,7 @@ public class SentryInitializer  {
 	@Bean
 	public SmartInitializingSingleton initialize() {
 		String env = urlToEnv(samurl);
+
 		return () ->
         Sentry.init(options -> {
 				options.setEnvironment(env);
@@ -52,7 +55,6 @@ public class SentryInitializer  {
 				options.setTag("mrg", mrg);
 			});
 	}
-
 
 	/**
 	 * Extracts an environment (e.g. "dev" or "prod") from a Sam url.
