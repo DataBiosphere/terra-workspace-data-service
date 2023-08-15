@@ -65,7 +65,7 @@ dependencies {
 
 	// Terra libraries
 	implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-08b6588'
-	implementation group: 'org.broadinstitute.dsde.workbench', name: 'leonardo-client_2.11', version: '1.3.5-1be4da6-SNAP'
+	implementation group: 'org.broadinstitute.dsde.workbench', name: 'leonardo-client_2.13', version: '1.3.6-8740f99-SNAP'
 	implementation 'com.squareup.okhttp3:okhttp:4.11.0' // required by Sam client
 	implementation "bio.terra:datarepo-client:1.476.0-SNAPSHOT"
 	implementation "bio.terra:workspace-manager-client:0.254.717-SNAPSHOT"

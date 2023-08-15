@@ -3,7 +3,7 @@ package org.databiosphere.workspacedataservice.leonardo;
 import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
 import org.broadinstitute.dsde.workbench.client.leonardo.ApiClient;
-import org.broadinstitute.dsde.workbench.client.leonardo.api.AppsV2Api;
+import org.broadinstitute.dsde.workbench.client.leonardo.api.AppsApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -57,7 +57,7 @@ public class HttpLeonardoClientFactory implements LeonardoClientFactory {
         return apiClient;
     }
 
-    public AppsV2Api getAppsV2Api(String token) {
-        return new AppsV2Api(getApiClient(token));
+    public AppsApi getAppsV2Api(String token) {
+        return new AppsApi(getApiClient(token));
     }
 }

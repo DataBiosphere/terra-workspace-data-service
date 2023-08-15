@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.leonardo;
 
 import org.broadinstitute.dsde.workbench.client.leonardo.ApiException;
-import org.broadinstitute.dsde.workbench.client.leonardo.api.AppsV2Api;
+import org.broadinstitute.dsde.workbench.client.leonardo.api.AppsApi;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.AppStatus;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.AppType;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.AuditInfo;
@@ -34,7 +34,7 @@ class LeonardoDaoTest {
     @MockBean
     LeonardoClientFactory leonardoClientFactory;
 
-    final AppsV2Api mockAppsApi = mock(AppsV2Api.class);
+    final AppsApi mockAppsApi = mock(AppsApi.class);
 
     @BeforeEach
     void beforeEach() {
