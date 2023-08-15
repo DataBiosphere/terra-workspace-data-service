@@ -87,7 +87,6 @@ twds:
     source-workspace-id: ${SOURCE_WORKSPACE_ID:}
   # short-lived credentials to use during cloning
   startup-token: ${STARTUP_TOKEN:}
-  dump-properties: ${DUMP_PROPERTIES:false}
 
   pg_dump:
     path: ${PGDUMP_PATH:/usr/bin/pg_dump}
@@ -105,7 +104,6 @@ sentry:
   samurl: ${SAM_URL:}
   mrg: ${LZ_MRG:}
   releasename: ${RELEASE_NAME:}
-  dump-properties: ${DUMP_PROPERTIES:false}
 
 sam:
   retry:
