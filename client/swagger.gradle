@@ -1,8 +1,3 @@
-import java.util.regex.Matcher
-
-ext {
-}
-
 dependencies {
 	//Need to include libraries for generated code to work
 	api 'com.google.code.gson:gson:2.9.1'
@@ -15,7 +10,7 @@ dependencies {
 }
 
 openApiGenerate {
-	inputSpec = "$rootDir//service/src/main/resources/static/swagger/openapi-docs.yaml".toString()
+	inputSpec = "$rootDir/service/src/main/resources/static/swagger/openapi-docs.yaml".toString()
 	outputDir = "$buildDir/generated".toString()
 	generatorName = 'java'
 	library = 'okhttp-gson' // the default
