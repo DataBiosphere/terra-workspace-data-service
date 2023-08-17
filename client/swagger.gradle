@@ -4,9 +4,13 @@ dependencies {
 	api 'io.gsonfire:gson-fire:1.8.5'
 	api 'com.squareup.okhttp3:okhttp:4.10.0'
 	api 'com.squareup.okhttp3:logging-interceptor:4.10.0'
+}
 
-	implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
-	implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
+// use javax or jakarta based on the ext.useJakartaEe value
+if (project.hasProperty("jakarta") && "true".equalsIgnoreCase(project.getProperty("jakarta"))) {
+	apply from: "dependencies-jakarta.gradle"
+} else {
+	apply from: "dependencies-javax.gradle"
 }
 
 openApiGenerate {
@@ -17,7 +21,7 @@ openApiGenerate {
 	configOptions = [
 			// useRuntimeException: "true", // TODO: should we add this? It's a change, but a good one?
 			disallowAdditionalPropertiesIfNotPresent: "false",
-			useJakartaEe: "true", // for compatibility with Spring Boot 3
+			useJakartaEe: "${useJakartaEe}", // for compatibility with Spring Boot 2 or 3
 			prependFormOrBodyParameters: "true", // orders arguments in the Java client same as previous swagger-codegen
 	]
 	invokerPackage = "${artifactGroup}.client".toString()

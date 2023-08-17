@@ -12,5 +12,18 @@ repositories {
 	mavenCentral()
 }
 
+ext {
+	useJakartaEe = "false"
+	libraryName = "workspacedataservice-client-okhttp-javax"
+}
+
+if (project.hasProperty("jakarta") && "true".equalsIgnoreCase(project.getProperty("jakarta"))) {
+	ext.useJakartaEe = project.getProperty("jakarta")
+	ext.libraryName = "workspacedataservice-client-okhttp-jakarta"
+}
+
+logger.warn("***** building library ${libraryName}")
+logger.warn("***** specify -Pjakarta=(true|false) to control which library this task creates")
+
 apply from: 'artifactory.gradle'
 apply from: 'swagger.gradle'
