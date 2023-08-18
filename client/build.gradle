@@ -13,13 +13,17 @@ repositories {
 }
 
 ext {
-	useJakartaEe = "false"
-	libraryName = "workspacedataservice-client-okhttp-javax"
+	// these will be overridden by dependencies-jakarta.gradle or dependencies-javax.gradle
+	useJakartaEe = ""
+	libraryName = ""
 }
 
+// default to javax, since WDS is currently on Spring Boot 2. -Pjakarta=true overrides
+// the default and creates a Jakarta-based client.
 if (project.hasProperty("jakarta") && "true".equalsIgnoreCase(project.getProperty("jakarta"))) {
-	ext.useJakartaEe = project.getProperty("jakarta")
-	ext.libraryName = "workspacedataservice-client-okhttp-jakarta"
+	apply from: "dependencies-jakarta.gradle"
+} else {
+	apply from: "dependencies-javax.gradle"
 }
 
 logger.warn("***** building library ${libraryName}")

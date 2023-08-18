@@ -6,13 +6,6 @@ dependencies {
 	api 'com.squareup.okhttp3:logging-interceptor:4.10.0'
 }
 
-// use javax or jakarta based on the ext.useJakartaEe value
-if (project.hasProperty("jakarta") && "true".equalsIgnoreCase(project.getProperty("jakarta"))) {
-	apply from: "dependencies-jakarta.gradle"
-} else {
-	apply from: "dependencies-javax.gradle"
-}
-
 openApiGenerate {
 	inputSpec = "$rootDir/service/src/main/resources/static/swagger/openapi-docs.yaml".toString()
 	outputDir = "$buildDir/generated".toString()
