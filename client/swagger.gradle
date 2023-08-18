@@ -18,16 +18,19 @@ openApiGenerate {
 	outputDir = "$buildDir/generated".toString()
 	generatorName = 'java'
 	library = 'okhttp-gson' // the default
-	configOptions = [
-			// useRuntimeException: "true", // TODO: should we add this? It's a change, but a good one?
+	configOptions.set([
 			disallowAdditionalPropertiesIfNotPresent: "false",
 			useJakartaEe: "${useJakartaEe}", // for compatibility with Spring Boot 2 or 3
 			prependFormOrBodyParameters: "true", // orders arguments in the Java client same as previous swagger-codegen
-	]
+	])
+	// see:
+	// - https://github.com/OpenAPITools/openapi-generator/issues/15072
+	// - https://github.com/OpenAPITools/openapi-generator/issues/10848
+	// - https://github.com/OpenAPITools/openapi-generator/issues/8156
+	generateAliasAsModel = false // true to create RecordAttributes instead of Map<String, Object>
 	invokerPackage = "${artifactGroup}.client".toString()
 	modelPackage = "${artifactGroup}.model".toString()
 	apiPackage = "${artifactGroup}.api".toString()
-//	ignoreFileOverride = '${projectDir}/.swagger-codegen-ignore' // TODO: delete the ignore file if we're not using it
 	// we may want to generate tests or doc later ...
 	generateModelTests = false
 	generateModelDocumentation = false
