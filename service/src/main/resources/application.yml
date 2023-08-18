@@ -58,8 +58,9 @@ spring:
     multipart.max-file-size: 5GB
   sql:
     init:
+      # Disable having spring-boot from automatically creating the schema for the embedded datasource
       mode: never
-  # Run Liquibase instead
+  # ... and run Liquibase instead
   liquibase:
     change-log: classpath:liquibase/changelog.yaml
 #   # activate the "local" profile to turn on CORS response headers,
