@@ -2,5 +2,7 @@
 # Sam client underneath that dao. In order for SamConfig to create the HttpSamDao,
 # we need a valid workspace id.
 # This is the example uuid from https://en.wikipedia.org/wiki/Universally_unique_identifier
-twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000
+twds:
+  instance:
+    workspace-id: 123e4567-e89b-12d3-a456-426614174000
 
