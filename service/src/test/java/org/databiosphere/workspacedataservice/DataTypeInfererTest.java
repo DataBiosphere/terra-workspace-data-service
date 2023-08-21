@@ -175,6 +175,26 @@ class DataTypeInfererTest {
 		assertThat(relation.relationRecordType()).isEqualTo(RecordType.valueOf("thing"));
 	}
 
+	@Test
+	void allowNullMultivalueRelations() {
+		List<Record> records = List.of(
+				new Record("1", RecordType.valueOf("thing"),
+						RecordAttributes.empty().
+								putAttribute("rel", null).
+								putAttribute("str", "hello")),
+				new Record("2", RecordType.valueOf("thing"),
+						RecordAttributes.empty().
+								putAttribute("rel", List.of(createRelationString(RecordType.valueOf("thing"), "1"))).
+								putAttribute("str", "world")));
+		Map<String, DataTypeMapping> schema = inferer.inferTypes(records);
+
+		Set<Relation> relationArrays = inferer.findRelations(records, schema).relationArrays();
+		assertThat(relationArrays).hasSize(1);
+		Relation relation = relationArrays.stream().collect(onlyElement());
+		assertThat(relation.relationColName()).isEqualTo("rel");
+		assertThat(relation.relationRecordType()).isEqualTo(RecordType.valueOf("thing"));
+	}
+
 	private static RecordAttributes getSomeAttrs() {
 		return new RecordAttributes(
 			ofEntries(
