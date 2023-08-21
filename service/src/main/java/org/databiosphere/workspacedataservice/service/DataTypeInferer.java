@@ -24,7 +24,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_DATE;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_DATE_TIME;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_RELATION;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_STRING;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.BOOLEAN;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.DATE;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.DATE_TIME;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.EMPTY_ARRAY;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.FILE;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.JSON;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.NULL;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.NUMBER;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.RELATION;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.STRING;
 
 public class DataTypeInferer {
 
