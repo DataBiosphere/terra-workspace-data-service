@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -270,7 +271,8 @@ public class DataTypeInferer {
 			// find all scalar attributes for this record whose names are in relationAttributes
 			// and convert them to Relations, then save to the "relations" Set
 			Set<Relation> relationsForThisRecord = rec.attributeSet().stream()
-					.filter( entry -> relationAttributes.contains(entry.getKey()))
+					.filter(entry -> relationAttributes.contains(entry.getKey()))
+					.filter(entry -> Objects.nonNull(entry.getValue()))
 					.map(entry -> new Relation(entry.getKey(), RelationUtils.getTypeValue(entry.getValue())))
 					.collect(Collectors.toSet());
 			relations.addAll(relationsForThisRecord);

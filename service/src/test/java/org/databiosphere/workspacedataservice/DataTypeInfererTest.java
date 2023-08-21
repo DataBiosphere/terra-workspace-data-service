@@ -4,8 +4,8 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.DataTypeInfererConfig;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
-import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -16,11 +16,12 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import static com.google.common.collect.MoreCollectors.onlyElement;
 import static java.util.Collections.emptyList;
 import static java.util.Map.entry;
 import static java.util.Map.ofEntries;
@@ -153,26 +154,46 @@ class DataTypeInfererTest {
 		assertThat(inferer.inferType("[11, 99, -3.14, 09]")).isEqualTo(DataTypeMapping.STRING);
 	}
 
-	private static RecordAttributes getSomeAttrs() {
-		return new RecordAttributes(
-				ofEntries(
-						entry("int_val", new BigDecimal("4747")),
-						entry("string_val", "Abracadabra Open Sesame"),
-						entry("json_val", "{\"list\": [\"a\", \"b\"]}"),
-						entry("date_val", "2001-11-03"),
-						entry("date_time_val", "2001-11-03T10:00:00"),
-						entry("number_or_string", "47"),
-						entry("array_of_string", List.of("red", "yellow")),
-						entry("relation", createRelationString(RecordType.valueOf("testRecordType"), "testRecordId")),
-						entry("rel_arr", List.of(
-								createRelationString(RecordType.valueOf("testRecordType"), "testRecordId"),
-								createRelationString(RecordType.valueOf("testRecordType"), "testRecordId2"),
-								createRelationString(RecordType.valueOf("testRecordType"), "testRecordId3"))),
-						entry("file_val", "https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.cram?param=foo"),
-						entry("array_of_file", List.of(
-								"https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/notebook.ipynb",
-								"drs://jade.datarepo-dev.broadinstitute.org/v1_9545e956-aa6a-4b84-a037-d0ed164c1890"))
-				));
+	// Test for [AJ-1143]: TSV fails to upload if it has nulls in a relation column
+	@Test
+	void allowNullRelations() {
+		List<Record> records = List.of(
+				new Record("1", RecordType.valueOf("thing"),
+						RecordAttributes.empty().
+								putAttribute("rel", null).
+								putAttribute("str", "hello")),
+				new Record("1", RecordType.valueOf("thing"),
+						RecordAttributes.empty().
+								putAttribute("rel", createRelationString(RecordType.valueOf("thing"), "1")).
+								putAttribute("str", "world")));
+		Map<String, DataTypeMapping> schema = inferer.inferTypes(records);
+
+		Set<Relation> relations = inferer.findRelations(records, schema).relations();
+		assertThat(relations).hasSize(1);
+		Relation relation = relations.stream().collect(onlyElement());
+		assertThat(relation.relationColName()).isEqualTo("rel");
+		assertThat(relation.relationRecordType()).isEqualTo(RecordType.valueOf("thing"));
 	}
 
+	private static RecordAttributes getSomeAttrs() {
+		return new RecordAttributes(
+			ofEntries(
+				entry("int_val", new BigDecimal("4747")),
+				entry("string_val", "Abracadabra Open Sesame"),
+				entry("json_val", "{\"list\": [\"a\", \"b\"]}"),
+				entry("date_val", "2001-11-03"),
+				entry("date_time_val", "2001-11-03T10:00:00"),
+				entry("number_or_string", "47"),
+				entry("array_of_string", List.of("red", "yellow")),
+				entry("relation", createRelationString(RecordType.valueOf("testRecordType"), "testRecordId")),
+				entry("rel_arr", List.of(
+						createRelationString(RecordType.valueOf("testRecordType"), "testRecordId"),
+						createRelationString(RecordType.valueOf("testRecordType"), "testRecordId2"),
+						createRelationString(RecordType.valueOf("testRecordType"), "testRecordId3"))),
+				entry("file_val", "https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.cram?param=foo"),
+				entry("array_of_file", List.of(
+						"https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/notebook.ipynb",
+						"drs://jade.datarepo-dev.broadinstitute.org/v1_9545e956-aa6a-4b84-a037-d0ed164c1890"))
+			));
+	}
 }
