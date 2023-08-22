@@ -4,8 +4,8 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.DataTypeInfererConfig;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
-import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -16,12 +16,17 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import static com.google.common.collect.MoreCollectors.onlyElement;
+import static java.util.Collections.emptyList;
+import static java.util.Map.entry;
+import static java.util.Map.ofEntries;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.databiosphere.workspacedataservice.service.RelationUtils.createRelationString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DirtiesContext
@@ -102,16 +107,29 @@ class DataTypeInfererTest {
 				.isEqualTo(DataTypeMapping.DATE_TIME);
 		assertThat(inferer.inferType("2020-01-01T00:10:00"))
 				.isEqualTo(DataTypeMapping.DATE_TIME);
-		assertThat(inferer.inferType("https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/my%20file.pdf")).isEqualTo(DataTypeMapping.FILE);
+		assertThat(inferer.inferType("https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/my%20file.pdf"))
+				.isEqualTo(DataTypeMapping.FILE);
 		assertThat(inferer.inferType("12345")).isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.inferType("12345A")).isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.inferType(List.of("Hello!"))).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
 		assertThat(inferer.inferType(List.of(new BigInteger("12345")))).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
 		assertThat(inferer.inferType(List.of(true, false, true))).isEqualTo(DataTypeMapping.ARRAY_OF_BOOLEAN);
-		assertThat(inferer.inferType(List.of(new BigDecimal("11.1"), new BigDecimal("12"), new BigDecimal("14")))).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
-		assertThat(inferer.inferType(List.of(RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId"), RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId2"), RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId3")))).isEqualTo(DataTypeMapping.ARRAY_OF_RELATION);
-		assertThat(inferer.inferType(List.of(RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId"), "not a relation string", RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId3")))).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
-		assertThat(inferer.inferType(RelationUtils.createRelationString(RecordType.valueOf("testType"),"recordId3"))).isEqualTo(DataTypeMapping.RELATION);
+		assertThat(inferer.inferType(List.of(
+				new BigDecimal("11.1"),
+				new BigDecimal("12"),
+				new BigDecimal("14")))).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
+		assertThat(inferer.inferType(List.of(
+				createRelationString(RecordType.valueOf("testType"), "recordId"),
+				createRelationString(RecordType.valueOf("testType"), "recordId2"),
+				createRelationString(RecordType.valueOf("testType"), "recordId3"))))
+				.isEqualTo(DataTypeMapping.ARRAY_OF_RELATION);
+		assertThat(inferer.inferType(List.of(
+				createRelationString(RecordType.valueOf("testType"), "recordId"), "not a relation string",
+				createRelationString(RecordType.valueOf("testType"), "recordId3"))))
+				.isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
+		assertThat(inferer.inferType(
+				createRelationString(RecordType.valueOf("testType"), "recordId3")))
+				.isEqualTo(DataTypeMapping.RELATION);
 	}
 
 	@Test
@@ -120,31 +138,82 @@ class DataTypeInfererTest {
 		assertThat(inferer.inferType(List.of("11", "99"))).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
 		assertThat(inferer.inferType(List.of("11", new BigDecimal("99"), "foo"))).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
 		assertThat(inferer.inferType("")).isEqualTo(DataTypeMapping.STRING);
-		assertThat(inferer.inferType(List.of(new BigInteger("11"), new BigInteger("99"), new BigDecimal("-3.14")))).isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
-		assertThat(inferer.inferType(List.of(new BigInteger("11"), new BigInteger("99"), new BigDecimal("-3.14"), "09"))).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
-		assertThat(inferer.inferType(Collections.emptyList())).isEqualTo(DataTypeMapping.EMPTY_ARRAY);
+		assertThat(inferer.inferType(List.of(
+				new BigInteger("11"),
+				new BigInteger("99"),
+				new BigDecimal("-3.14"))))
+				.isEqualTo(DataTypeMapping.ARRAY_OF_NUMBER);
+		assertThat(inferer.inferType(List.of(
+				new BigInteger("11"),
+				new BigInteger("99"),
+				new BigDecimal("-3.14"), "09")))
+				.isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
+		assertThat(inferer.inferType(emptyList())).isEqualTo(DataTypeMapping.EMPTY_ARRAY);
 		assertThat(inferer.inferType("[11, 99, -3.14, 09]")).isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.inferType("[a]")).isEqualTo(DataTypeMapping.STRING);
 		assertThat(inferer.inferType("[11, 99, -3.14, 09]")).isEqualTo(DataTypeMapping.STRING);
 	}
 
-	private static RecordAttributes getSomeAttrs() {
-		return new RecordAttributes(
-				Map.ofEntries(
-						Map.entry("int_val", new BigDecimal("4747")),
-						Map.entry("string_val", "Abracadabra Open Sesame"),
-						Map.entry("json_val", "{\"list\": [\"a\", \"b\"]}"),
-						Map.entry("date_val", "2001-11-03"),
-						Map.entry("date_time_val", "2001-11-03T10:00:00"),
-						Map.entry("number_or_string", "47"),
-						Map.entry("array_of_string", List.of("red", "yellow")),
-						Map.entry("relation", RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId")),
-						Map.entry("rel_arr", List.of(RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId"),
-								RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId2"),
-								RelationUtils.createRelationString(RecordType.valueOf("testRecordType"), "testRecordId3"))),
-						Map.entry("file_val", "https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.cram?param=foo"),
-						Map.entry("array_of_file", List.of("https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/notebook.ipynb","drs://jade.datarepo-dev.broadinstitute.org/v1_9545e956-aa6a-4b84-a037-d0ed164c1890"))
-				));
+	// Test for [AJ-1143]: TSV fails to upload if it has nulls in a relation column
+	@Test
+	void allowNullRelations() {
+		List<Record> records = List.of(
+				new Record("1", RecordType.valueOf("thing"),
+						RecordAttributes.empty().
+								putAttribute("rel", null).
+								putAttribute("str", "hello")),
+				new Record("1", RecordType.valueOf("thing"),
+						RecordAttributes.empty().
+								putAttribute("rel", createRelationString(RecordType.valueOf("thing"), "1")).
+								putAttribute("str", "world")));
+		Map<String, DataTypeMapping> schema = inferer.inferTypes(records);
+
+		Set<Relation> relations = inferer.findRelations(records, schema).relations();
+		assertThat(relations).hasSize(1);
+		Relation relation = relations.stream().collect(onlyElement());
+		assertThat(relation.relationColName()).isEqualTo("rel");
+		assertThat(relation.relationRecordType()).isEqualTo(RecordType.valueOf("thing"));
 	}
 
+	@Test
+	void allowNullMultivalueRelations() {
+		List<Record> records = List.of(
+				new Record("1", RecordType.valueOf("thing"),
+						RecordAttributes.empty().
+								putAttribute("rel", null).
+								putAttribute("str", "hello")),
+				new Record("2", RecordType.valueOf("thing"),
+						RecordAttributes.empty().
+								putAttribute("rel", List.of(createRelationString(RecordType.valueOf("thing"), "1"))).
+								putAttribute("str", "world")));
+		Map<String, DataTypeMapping> schema = inferer.inferTypes(records);
+
+		Set<Relation> relationArrays = inferer.findRelations(records, schema).relationArrays();
+		assertThat(relationArrays).hasSize(1);
+		Relation relation = relationArrays.stream().collect(onlyElement());
+		assertThat(relation.relationColName()).isEqualTo("rel");
+		assertThat(relation.relationRecordType()).isEqualTo(RecordType.valueOf("thing"));
+	}
+
+	private static RecordAttributes getSomeAttrs() {
+		return new RecordAttributes(
+			ofEntries(
+				entry("int_val", new BigDecimal("4747")),
+				entry("string_val", "Abracadabra Open Sesame"),
+				entry("json_val", "{\"list\": [\"a\", \"b\"]}"),
+				entry("date_val", "2001-11-03"),
+				entry("date_time_val", "2001-11-03T10:00:00"),
+				entry("number_or_string", "47"),
+				entry("array_of_string", List.of("red", "yellow")),
+				entry("relation", createRelationString(RecordType.valueOf("testRecordType"), "testRecordId")),
+				entry("rel_arr", List.of(
+						createRelationString(RecordType.valueOf("testRecordType"), "testRecordId"),
+						createRelationString(RecordType.valueOf("testRecordType"), "testRecordId2"),
+						createRelationString(RecordType.valueOf("testRecordType"), "testRecordId3"))),
+				entry("file_val", "https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.cram?param=foo"),
+				entry("array_of_file", List.of(
+						"https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/notebook.ipynb",
+						"drs://jade.datarepo-dev.broadinstitute.org/v1_9545e956-aa6a-4b84-a037-d0ed164c1890"))
+			));
+	}
 }
