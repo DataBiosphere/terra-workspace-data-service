@@ -3,11 +3,13 @@ package org.databiosphere.workspacedataservice.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.mu.util.stream.BiStream;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
@@ -21,10 +23,26 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
+import static java.util.stream.Collectors.toSet;
+import static org.databiosphere.workspacedataservice.service.RelationUtils.getTypeValueForArray;
+import static org.databiosphere.workspacedataservice.service.RelationUtils.getTypeValueForList;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_DATE;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_DATE_TIME;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_RELATION;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_STRING;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.BOOLEAN;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.DATE;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.DATE_TIME;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.EMPTY_ARRAY;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.FILE;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.JSON;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.NULL;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.NUMBER;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.RELATION;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.STRING;
 
 public class DataTypeInferer {
 
@@ -246,8 +264,11 @@ public class DataTypeInferer {
 	 * @return Set of Relation for all referencing attributes
 	 */
 	public RelationCollection findRelations(List<Record> records, Map<String, DataTypeMapping> schema) {
-		List<String> relationAttributes = schema.entrySet().stream().filter(attr -> attr.getValue() == RELATION).map(Map.Entry::getKey).toList();
-		List<String> relationArrayAttributes = schema.entrySet().stream().filter(attr -> attr.getValue() == ARRAY_OF_RELATION).map(Map.Entry::getKey).toList();
+		List<String> relationAttributes = BiStream.from(schema)
+				.filterValues(mapping -> mapping == RELATION).keys().toList();
+		List<String> relationArrayAttributes = BiStream.from(schema)
+				.filterValues(mapping -> mapping == ARRAY_OF_RELATION).keys().toList();
+
 		Set<Relation> relations = new HashSet<>();
 		Set<Relation> relationArrays = new HashSet<>();
 		if (relationAttributes.isEmpty() && relationArrayAttributes.isEmpty()) {
@@ -256,27 +277,31 @@ public class DataTypeInferer {
 		for (Record rec : records) {
 			// find all scalar attributes for this record whose names are in relationAttributes
 			// and convert them to Relations, then save to the "relations" Set
-			Set<Relation> relationsForThisRecord = rec.attributeSet().stream()
-					.filter( entry -> relationAttributes.contains(entry.getKey()))
-					.map(entry -> new Relation(entry.getKey(), RelationUtils.getTypeValue(entry.getValue())))
-					.collect(Collectors.toSet());
+			Set<Relation> relationsForThisRecord = BiStream.from(rec.attributeSet())
+					.filterKeys(relationAttributes::contains)
+					.filterValues(Objects::nonNull)
+					.mapValues(RelationUtils::getTypeValue)
+					.mapToObj(Relation::new).collect(toSet());
 			relations.addAll(relationsForThisRecord);
 
 			// find all array attributes for this record whose names are in relationArrayAttributes
 			// and convert them to Relations, then save to the "relationArrays" Set
-			Set<Relation> relationArraysForThisRecord = rec.attributeSet().stream()
-					.filter( entry -> relationArrayAttributes.contains(entry.getKey()))
-					.map(entry -> {
-						if (entry.getValue() instanceof List<?> listVal) { //from a json source,
-							return new Relation(entry.getKey(), RelationUtils.getTypeValueForList(listVal));
-						} else { //from a tsv source
-							return new Relation(entry.getKey(), RelationUtils.getTypeValueForArray(getArrayOfType(entry.getValue().toString(), String[].class)));
-						}
-					})
-					.collect(Collectors.toSet());
+			Set<Relation> relationArraysForThisRecord = BiStream.from(rec.attributeSet())
+					.filterKeys(relationArrayAttributes::contains)
+					.filterValues(Objects::nonNull)
+					.mapValues(this::getMultiValueType)
+					.mapToObj(Relation::new).collect(toSet());
 			relationArrays.addAll(relationArraysForThisRecord);
 		}
 		return new RelationCollection(relations, relationArrays);
+	}
+
+	private RecordType getMultiValueType(Object value) {
+		if (value instanceof List<?> listVal) { // from a json source
+			return getTypeValueForList(listVal);
+		} else { // from a tsv source
+			return getTypeValueForArray(getArrayOfType(value.toString(), String[].class));
+		}
 	}
 
 	private boolean isFileType(String possibleFile){

@@ -61,6 +61,7 @@ dependencies {
 	implementation 'org.ehcache:ehcache:3.10.8'
 	implementation 'org.hashids:hashids:1.0.3'
 	implementation 'javax.ws.rs:javax.ws.rs-api:2.1.1'
+	implementation 'com.google.mug:mug:6.6'
 
 	// Terra libraries
 	implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-08b6588'
