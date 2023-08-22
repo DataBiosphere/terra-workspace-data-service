@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.mu.util.stream.BiStream;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
@@ -26,7 +27,6 @@ import java.util.Objects;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
-import static org.databiosphere.workspacedataservice.service.RelationUtils.getTypeValue;
 import static org.databiosphere.workspacedataservice.service.RelationUtils.getTypeValueForArray;
 import static org.databiosphere.workspacedataservice.service.RelationUtils.getTypeValueForList;
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_DATE;
@@ -264,8 +264,11 @@ public class DataTypeInferer {
 	 * @return Set of Relation for all referencing attributes
 	 */
 	public RelationCollection findRelations(List<Record> records, Map<String, DataTypeMapping> schema) {
-		List<String> relationAttributes = schema.entrySet().stream().filter(attr -> attr.getValue() == RELATION).map(Map.Entry::getKey).toList();
-		List<String> relationArrayAttributes = schema.entrySet().stream().filter(attr -> attr.getValue() == ARRAY_OF_RELATION).map(Map.Entry::getKey).toList();
+		List<String> relationAttributes = BiStream.from(schema)
+				.filterValues(mapping -> mapping == RELATION).keys().toList();
+		List<String> relationArrayAttributes = BiStream.from(schema)
+				.filterValues(mapping -> mapping == ARRAY_OF_RELATION).keys().toList();
+
 		Set<Relation> relations = new HashSet<>();
 		Set<Relation> relationArrays = new HashSet<>();
 		if (relationAttributes.isEmpty() && relationArrayAttributes.isEmpty()) {
@@ -274,18 +277,20 @@ public class DataTypeInferer {
 		for (Record rec : records) {
 			// find all scalar attributes for this record whose names are in relationAttributes
 			// and convert them to Relations, then save to the "relations" Set
-			Set<Relation> relationsForThisRecord = rec.attributeSet().stream()
-					.filter(entry -> relationAttributes.contains(entry.getKey()) && Objects.nonNull(entry.getValue()))
-					.map(entry -> new Relation(entry.getKey(), getTypeValue(entry.getValue())))
-					.collect(toSet());
+			Set<Relation> relationsForThisRecord = BiStream.from(rec.attributeSet())
+					.filterKeys(relationAttributes::contains)
+					.filterValues(Objects::nonNull)
+					.mapValues(RelationUtils::getTypeValue)
+					.mapToObj(Relation::new).collect(toSet());
 			relations.addAll(relationsForThisRecord);
 
 			// find all array attributes for this record whose names are in relationArrayAttributes
 			// and convert them to Relations, then save to the "relationArrays" Set
-			Set<Relation> relationArraysForThisRecord = rec.attributeSet().stream()
-					.filter(entry -> relationArrayAttributes.contains(entry.getKey()) && Objects.nonNull(entry.getValue()))
-					.map(entry -> new Relation(entry.getKey(), getMultiValueType(entry.getValue())))
-					.collect(toSet());
+			Set<Relation> relationArraysForThisRecord = BiStream.from(rec.attributeSet())
+					.filterKeys(relationArrayAttributes::contains)
+					.filterValues(Objects::nonNull)
+					.mapValues(this::getMultiValueType)
+					.mapToObj(Relation::new).collect(toSet());
 			relationArrays.addAll(relationArraysForThisRecord);
 		}
 		return new RelationCollection(relations, relationArrays);
