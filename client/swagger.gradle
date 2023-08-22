@@ -1,16 +1,8 @@
-dependencies {
-	//Need to include libraries for generated code to work
-	api 'com.google.code.gson:gson:2.9.1'
-	api 'io.gsonfire:gson-fire:1.8.5'
-	api 'com.squareup.okhttp3:okhttp:4.10.0'
-	api 'com.squareup.okhttp3:logging-interceptor:4.10.0'
-}
-
 openApiGenerate {
 	inputSpec = "$rootDir/service/src/main/resources/static/swagger/openapi-docs.yaml".toString()
 	outputDir = "$buildDir/generated".toString()
 	generatorName = 'java'
-	library = 'okhttp-gson' // the default
+	library = 'native'
 	httpUserAgent = "wds-client/${project.version.toString().replace('-SNAPSHOT', '')}/java"
 	configOptions.set([
 			disallowAdditionalPropertiesIfNotPresent: "false",

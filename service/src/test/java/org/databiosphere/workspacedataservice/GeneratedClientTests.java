@@ -45,7 +45,9 @@ class GeneratedClientTests {
     @BeforeEach
     void init() throws ApiException {
         apiClient = new ApiClient();
-        apiClient.setBasePath("http://localhost:" + port);
+        apiClient.setScheme("http");
+        apiClient.setHost("localhost");
+        apiClient.setPort(port);
         createNewInstance(instanceId);
     }
 
@@ -141,8 +143,7 @@ class GeneratedClientTests {
 
     @Test
     void checkStatus() throws ApiException {
-        GeneralWdsInformationApi statusApi = new GeneralWdsInformationApi();
-        statusApi.setApiClient(apiClient);
+        GeneralWdsInformationApi statusApi = new GeneralWdsInformationApi(apiClient);
         StatusResponse response = statusApi.statusGet();
         assertThat(response.getStatus().equals("UP"));
     }

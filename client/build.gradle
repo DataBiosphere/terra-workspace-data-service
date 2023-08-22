@@ -21,9 +21,9 @@ ext {
 // default to javax, since WDS is currently on Spring Boot 2. -Pjakarta=true overrides
 // the default and creates a Jakarta-based client.
 if (project.hasProperty("jakarta") && "true".equalsIgnoreCase(project.getProperty("jakarta"))) {
-	apply from: "dependencies-jakarta.gradle"
+	apply from: "dependencies-native-jakarta.gradle"
 } else {
-	apply from: "dependencies-javax.gradle"
+	apply from: "dependencies-native-javax.gradle"
 }
 
 logger.warn("***** building library ${libraryName}")
