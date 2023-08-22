@@ -11,7 +11,7 @@ openApiGenerate {
 	outputDir = "$buildDir/generated".toString()
 	generatorName = 'java'
 	library = 'okhttp-gson' // the default
-  httpUserAgent = "wds-client/${project.version.toString().replace('-SNAPSHOT', '')}/java"
+	httpUserAgent = "wds-client/${project.version.toString().replace('-SNAPSHOT', '')}/java"
 	configOptions.set([
 			disallowAdditionalPropertiesIfNotPresent: "false",
 			useJakartaEe: "${useJakartaEe}", // for compatibility with Spring Boot 2 or 3
