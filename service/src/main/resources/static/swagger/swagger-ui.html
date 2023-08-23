@@ -45,9 +45,13 @@
           cleanupPlugin
         ],
         layout: 'StandaloneLayout',
-        defaultModelsExpandDepth: -1, // hide the huge list of schemas under the routes
+        displayOperationId: true,       // show generated-client method names for each endpoint
+        defaultModelsExpandDepth: -1,   // hide the huge list of schemas under the routes
         defaultModelRendering: 'model', // schema has the descriptions, unlike the example value
-        defaultModelExpandDepth: 2, // affects the schema shown for a request or response
+        defaultModelExpandDepth: 2,     // affects the schema shown for a request or response
+        displayRequestDuration: true,   // show timing
+        docExpansion: 'none',           // start with sections collapsed
+        filter: true,                   // show tag filter bar
       })
       // End Swagger UI call region
 
