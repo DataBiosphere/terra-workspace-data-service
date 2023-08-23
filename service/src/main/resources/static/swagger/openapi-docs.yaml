@@ -11,8 +11,7 @@ info:
     name: BSD
     url: https://opensource.org/licenses/BSD-3-Clause
 servers:
-  - url: ../
-    description: Relative to the current swagger page
+  - url: /
 tags:
   - name: Cloning
     description: Cloning APIs including Backup and Restore
