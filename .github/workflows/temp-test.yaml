@@ -1,0 +1,43 @@
+name: token-testing
+
+on:
+  push:
+    branches:
+      - aj-1287-test
+
+env:
+  BEE_NAME: 'aj1287temptesting'
+  TOKEN: '${{ secrets.BROADBOT_TOKEN }}' # github token for access to kick off a job in the private repo
+
+jobs:
+  create-bee-workflow:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+
+      - name: dispatch to terra-github-workflows
+        uses: broadinstitute/workflow-dispatch@v3
+        with:
+          workflow: bee-create
+          repo: broadinstitute/terra-github-workflows
+          ref: refs/heads/main
+          token: ${{ env.TOKEN }}
+          inputs: '{
+            "bee-name": "${{ env.BEE_NAME }}",
+            "bee-template-name": "aj1287temptesting",
+            "version-template": "dev"
+          }'
+
+  destroy-bee-workflow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: dispatch to terra-github-workflows
+        uses: broadinstitute/workflow-dispatch@v3
+        with:
+          workflow: bee-destroy
+          repo: broadinstitute/terra-github-workflows
+          ref: refs/heads/main
+          token: ${{ env.TOKEN }}
+          inputs: '{ "bee-name": "${{ env.BEE_NAME }}" }'
