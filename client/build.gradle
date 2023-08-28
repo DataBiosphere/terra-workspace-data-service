@@ -26,8 +26,5 @@ if (project.hasProperty("jakarta") && "true".equalsIgnoreCase(project.getPropert
 	apply from: "dependencies-javax.gradle"
 }
 
-logger.warn("***** building library ${libraryName}")
-logger.warn("***** specify -Pjakarta=(true|false) to control which library this task creates")
-
 apply from: 'artifactory.gradle'
 apply from: 'swagger.gradle'

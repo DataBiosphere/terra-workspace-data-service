@@ -73,11 +73,16 @@ tasks.register('patchSources', Copy) {
 
 // control task order: openApiGenerate -> backUpSources -> patchSources
 tasks.register('fixOpenApiGenerate') {
+	doFirst {
+		logger.lifecycle("")
+		logger.lifecycle("WDS is building library ${libraryName}")
+		logger.lifecycle("specify -Pjakarta=(true|false) to control which library this task creates")
+	}
 	dependsOn 'openApiGenerate'
 	dependsOn 'backUpSources'
 	dependsOn 'patchSources'
-	tasks.findByName('backUpSources').mustRunAfter 'openApiGenerate'
-	tasks.findByName('patchSources').mustRunAfter 'backUpSources'
+	tasks.getByName('backUpSources').mustRunAfter 'openApiGenerate'
+	tasks.getByName('patchSources').mustRunAfter 'backUpSources'
 }
 
 idea.module.generatedSourceDirs = [file("${openApiGenerate.outputDir.get()}/src/main")]
