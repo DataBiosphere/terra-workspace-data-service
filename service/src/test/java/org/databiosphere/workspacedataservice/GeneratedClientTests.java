@@ -24,9 +24,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.io.File;
 import java.net.URISyntaxException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -79,7 +77,7 @@ class GeneratedClientTests {
         String recordId = "id1";
         String entityType = "FOO";
         String attributeName = "attr1";
-        org.databiosphere.workspacedata.model.RecordAttributes recordAttributes = new org.databiosphere.workspacedata.model.RecordAttributes();
+        RecordAttributes recordAttributes = new org.databiosphere.workspacedata.model.RecordAttributes();
         recordAttributes.put(attributeName, "Hello");
         recordsApi.createOrReplaceRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId, "row_id");
         RecordResponse record = recordsApi.getRecord(instanceId.toString(), version, entityType, recordId);
