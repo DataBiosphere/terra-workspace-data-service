@@ -5,6 +5,7 @@ import org.databiosphere.workspacedata.api.RecordsApi;
 import org.databiosphere.workspacedata.api.SchemaApi;
 import org.databiosphere.workspacedata.client.ApiClient;
 import org.databiosphere.workspacedata.client.ApiException;
+import org.databiosphere.workspacedata.model.RecordAttributes;
 import org.databiosphere.workspacedata.model.RecordQueryResponse;
 import org.databiosphere.workspacedata.model.RecordRequest;
 import org.databiosphere.workspacedata.model.RecordResponse;
@@ -78,7 +79,7 @@ class GeneratedClientTests {
         String recordId = "id1";
         String entityType = "FOO";
         String attributeName = "attr1";
-        Map<String, Object> recordAttributes = new HashMap<>();
+        org.databiosphere.workspacedata.model.RecordAttributes recordAttributes = new org.databiosphere.workspacedata.model.RecordAttributes();
         recordAttributes.put(attributeName, "Hello");
         recordsApi.createOrReplaceRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId, "row_id");
         RecordResponse record = recordsApi.getRecord(instanceId.toString(), version, entityType, recordId);
@@ -107,7 +108,7 @@ class GeneratedClientTests {
     }
 
     private void createRecord(RecordsApi recordsApi, String recordId, String recordType) throws ApiException {
-        recordsApi.createOrReplaceRecord(new RecordRequest().attributes(Map.of()),
+        recordsApi.createOrReplaceRecord(new RecordRequest().attributes(new RecordAttributes()),
                 instanceId.toString(), version, recordType, recordId, null);
     }
 
@@ -130,7 +131,7 @@ class GeneratedClientTests {
         String recordId = "id1";
         String entityType = "FOO";
         String attributeName = "attr1";
-        Map<String, Object> recordAttributes = new HashMap<>();
+        RecordAttributes recordAttributes = new RecordAttributes();
         recordAttributes.put(attributeName, "Hello");
         recordsApi.createOrReplaceRecord(new RecordRequest().attributes(recordAttributes), instanceId.toString(), version, entityType, recordId, null);
         recordAttributes.put(attributeName, "Goodbye");
