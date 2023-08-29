@@ -190,10 +190,12 @@ class WdsTests(TestCase):
         search_request = { "offset": 0, "limit": 10, "sort": "DESC", "sortAttribute": "NumberTest3"}
         
         recordsRetrieved = self.records_client.query_records(self.current_workspaceId, self.version, self.testType2_complex, search_request)    
+        self.assertEqual("DESC", recordsRetrieved.search_request.sort)
         record_updated = adjust_record_to_wds(records[0], "testKey_complex", self.testId1_complex)
         self.assertTrue(record_updated == recordsRetrieved.records[0].attributes)
 
-        recordsRetrieved = self.records_client.query_records(self.current_workspaceId, self.version, self.testType2_relation, search_request)    
+        recordsRetrieved = self.records_client.query_records(self.current_workspaceId, self.version, self.testType2_relation, search_request)
+        self.assertEqual("DESC", recordsRetrieved.search_request.sort)
         record_updated = adjust_record_to_wds(records[1], None, self.testId1_relation)
         self.assertTrue(record_updated == recordsRetrieved.records[0].attributes)
         
