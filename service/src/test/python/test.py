@@ -187,7 +187,7 @@ class WdsTests(TestCase):
     # create 2 record sets, query the records back, then check record types
     def test_relation_record_creation_queryall_and_delete(self):
         records = self.generate_two_records(self.testType2_complex, self.testId1_complex, self.testType2_relation, self.testId1_relation, "testKey_complex")
-        search_request = { "offset": 0, "limit": 10};
+        search_request = { "offset": 0, "limit": 10, "sort": "asc", "sortAttribute": "testKey_complex"}
         
         recordsRetrieved = self.records_client.query_records(self.current_workspaceId, self.version, self.testType2_complex, search_request)    
         record_updated = adjust_record_to_wds(records[0], "testKey_complex", self.testId1_complex)
