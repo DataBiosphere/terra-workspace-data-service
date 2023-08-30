@@ -44,6 +44,9 @@ jobs:
             "firecloud-qa@broad-dsde-qa.iam.gserviceaccount.com" }
   run-e2e-test-job:
     runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     needs:
       - create-bee-workflow
       - attach-landing-zone-to-bee-workflow
