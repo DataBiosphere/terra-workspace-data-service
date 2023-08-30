@@ -13,8 +13,8 @@ jobs:
   create-bee-workflow:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      id-token: write
+      contents: 'read'
+      id-token: 'write'
     steps:
       - name: dispatch to terra-github-workflows
         uses: broadinstitute/workflow-dispatch@v3
