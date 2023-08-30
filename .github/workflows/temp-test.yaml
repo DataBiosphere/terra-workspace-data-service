@@ -1,39 +1,35 @@
 name: token-testing
-
-on:
+'on':
   push:
     branches:
       - aj-1287-test
-
 env:
-  BEE_NAME: 'aj1287temptesting'
-  TOKEN: '${{ secrets.BROADBOT_TOKEN }}' # github token for access to kick off a job in the private repo
-  RUN_NAME_SUFFIX: '${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
-
+  BEE_NAME: aj1287temptesting
+  TOKEN: '${{ secrets.BROADBOT_TOKEN }}'
+  RUN_NAME_SUFFIX: >-
+    ${{ github.event.repository.name }}-${{ github.run_id }}-${{
+    github.run_attempt }}
 jobs:
   create-bee-workflow:
     runs-on: ubuntu-latest
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: read
+      id-token: write
     steps:
-
       - name: dispatch to terra-github-workflows
         uses: broadinstitute/workflow-dispatch@v3
         with:
           workflow: bee-create
           repo: broadinstitute/terra-github-workflows
           ref: refs/heads/main
-          token: ${{ env.TOKEN }}
-          inputs: '{
-            "bee-name": "${{ env.BEE_NAME }}",
-            "bee-template-name": "aj1287temptesting",
-            "version-template": "dev"
-          }'
-
+          token: '${{ env.TOKEN }}'
+          inputs: >-
+            { "bee-name": "${{ env.BEE_NAME }}", "bee-template-name":
+            "aj1287temptesting", "version-template": "dev" }
   attach-landing-zone-to-bee-workflow:
     runs-on: ubuntu-latest
-    needs: [create-bee-workflow]
+    needs:
+      - create-bee-workflow
     steps:
       - name: dispatch to terra-github-workflows
         uses: broadinstitute/workflow-dispatch@v3
@@ -41,34 +37,32 @@ jobs:
           workflow: attach-landing-zone-to-bee.yaml
           repo: broadinstitute/terra-github-workflows
           ref: refs/heads/iv-az-e2e-1
-          token: ${{ env.TOKEN }}
-          inputs: '{
-            "run-name": "attach-landing-zone-to-bee-${{ env.RUN_NAME_SUFFIX }}",
-            "bee-name": "${{ env.BEE_NAME }}",
-            "billing-project": "tmp-billing-project-aj1287",
-            "billing-project-creator": "hermione.owner@quality.firecloud.org",
-            "service-account": "firecloud-qa@broad-dsde-qa.iam.gserviceaccount.com"
-          }'
-
+          token: '${{ env.TOKEN }}'
+          inputs: >-
+            { "run-name": "attach-landing-zone-to-bee-${{ env.RUN_NAME_SUFFIX
+            }}", "bee-name": "${{ env.BEE_NAME }}", "billing-project":
+            "tmp-billing-project-aj1287", "billing-project-creator":
+            "hermione.owner@quality.firecloud.org", "service-account":
+            "firecloud-qa@broad-dsde-qa.iam.gserviceaccount.com" }
     delete-billing-project-v2-from-bee-workflow:
-    runs-on: ubuntu-latest
-    needs: [attach-landing-zone-to-bee-workflow]
-    steps:
-      - name: dispatch to terra-github-workflows
-        uses: broadinstitute/workflow-dispatch@v3
-        with:
-          workflow: .github/workflows/delete-billing-project-v2-from-bee.yaml
-          repo: broadinstitute/terra-github-workflows
-          ref: refs/heads/iv-az-e2e-1
-          token: ${{ env.TOKEN }}
-          inputs: '{
-            "run-name": "delete-billing-project-v2-from-bee-${{ env.RUN_NAME_SUFFIX }}",
-            "bee-name": "${{ env.BEE_NAME }}",
-            "billing-project": "tmp-billing-project-aj1287",
-            "billing-project-creator": "hermione.owner@quality.firecloud.org",
-            "service-account": "firecloud-qa@broad-dsde-qa.iam.gserviceaccount.com"
-          }'
-
+      runs-on: ubuntu-latest
+      needs:
+        - attach-landing-zone-to-bee-workflow
+      steps:
+        - name: dispatch to terra-github-workflows
+          uses: broadinstitute/workflow-dispatch@v3
+          with:
+            workflow: .github/workflows/delete-billing-project-v2-from-bee.yaml
+            repo: broadinstitute/terra-github-workflows
+            ref: refs/heads/iv-az-e2e-1
+            token: '${{ env.TOKEN }}'
+            inputs: >-
+              { "run-name": "delete-billing-project-v2-from-bee-${{
+              env.RUN_NAME_SUFFIX }}", "bee-name": "${{ env.BEE_NAME }}",
+              "billing-project": "tmp-billing-project-aj1287",
+              "billing-project-creator": "hermione.owner@quality.firecloud.org",
+              "service-account":
+              "firecloud-qa@broad-dsde-qa.iam.gserviceaccount.com" }
   destroy-bee-workflow:
     runs-on: ubuntu-latest
     steps:
@@ -78,5 +72,5 @@ jobs:
           workflow: bee-destroy
           repo: broadinstitute/terra-github-workflows
           ref: refs/heads/main
-          token: ${{ env.TOKEN }}
+          token: '${{ env.TOKEN }}'
           inputs: '{ "bee-name": "${{ env.BEE_NAME }}" }'
