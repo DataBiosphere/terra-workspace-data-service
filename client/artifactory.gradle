@@ -19,7 +19,7 @@ java {
 publishing {
 	publications {
 		wdsClient(MavenPublication) {
-			artifactId = 'workspacedataservice-client'
+			artifactId = "${libraryName}"
 			from components.java
 			versionMapping {
 				usage('java-runtime') {
