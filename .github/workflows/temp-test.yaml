@@ -51,6 +51,7 @@ jobs:
       - create-bee-workflow
       - attach-landing-zone-to-bee-workflow
     steps:
+      - uses: 'actions/checkout@v3'
       - name: Generate OAuth2 2.0 access token for billing project creator
         id: owner_auth
         uses: google-github-actions/auth@v1
