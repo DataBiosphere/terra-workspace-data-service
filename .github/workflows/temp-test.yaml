@@ -4,7 +4,7 @@ name: token-testing
     branches:
       - aj-1287-test
 env:
-  BEE_NAME: aj1287temptesting
+  BEE_NAME: aj1287testing
   TOKEN: '${{ secrets.BROADBOT_TOKEN }}'
   RUN_NAME_SUFFIX: >-
     ${{ github.event.repository.name }}-${{ github.run_id }}-${{
