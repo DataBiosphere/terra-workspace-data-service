@@ -4,7 +4,7 @@ name: token-testing
     branches:
       - aj-1287-test
 env:
-  BEE_NAME: '${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt}}-dev'
+  BEE_NAME: 'wds-${{ github.run_id }}-${{ github.run_attempt}}-dev'
   TOKEN: '${{ secrets.BROADBOT_TOKEN }}'
   RUN_NAME_SUFFIX: >-
     ${{ github.event.repository.name }}-${{ github.run_id }}-${{
