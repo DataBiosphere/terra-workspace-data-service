@@ -58,7 +58,7 @@ jobs:
       - name: dispatch to terra-github-workflows
         uses: broadinstitute/workflow-dispatch@v3
         with:
-          workflow: attach-landing-zone-to-bee.yaml
+          workflow: attach-billing-project-to-landing-zone.yaml
           repo: broadinstitute/terra-github-workflows
           ref: refs/heads/iv-az-e2e-1
           token: '${{ env.TOKEN }}'
