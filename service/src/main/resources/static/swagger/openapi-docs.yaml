@@ -627,6 +627,7 @@ components:
           type: string
           description: User-friendly description to associate with this backup. Optional.
     BackupJob:
+      x-all-of-name: BackupJob
       allOf:
         - $ref: '#/components/schemas/Job'
         - type: object
@@ -634,6 +635,7 @@ components:
             result:
               $ref: '#/components/schemas/BackupResponse'
     CloneJob:
+      x-all-of-name: CloneJob
       allOf:
         - $ref: '#/components/schemas/Job'
         - type: object
