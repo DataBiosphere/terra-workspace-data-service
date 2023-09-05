@@ -79,7 +79,6 @@ dependencies {
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 	runtimeOnly 'org.webjars.npm:swagger-ui-dist:4.12.0'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
 	testImplementation project(':client')
