@@ -1,4 +1,4 @@
-name: token-testing
+name: run e2e tests
 'on':
   push:
     branches:
@@ -60,7 +60,7 @@ jobs:
         with:
           workflow: attach-billing-project-to-landing-zone.yaml
           repo: broadinstitute/terra-github-workflows
-          ref: refs/heads/iv-az-e2e-1
+          ref: refs/heads/main
           token: '${{ env.TOKEN }}'
           inputs: >-
             { "bee-name": "${{ env.BEE_NAME }}", "billing-project": "${{
