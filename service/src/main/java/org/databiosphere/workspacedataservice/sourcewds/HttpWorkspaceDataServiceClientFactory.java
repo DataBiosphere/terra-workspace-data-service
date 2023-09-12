@@ -48,7 +48,7 @@ public class HttpWorkspaceDataServiceClientFactory implements WorkspaceDataServi
             }
         }
         else {
-            apiClient.setAccessToken(token);
+            apiClient.setBearerToken(token);
         }
 
         return apiClient;
