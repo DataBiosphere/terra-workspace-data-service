@@ -52,7 +52,7 @@ public class PostgresInstanceDao implements InstanceDao {
     @WriteTransaction
     @SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
     public void dropSchema(UUID instanceId) {
-        namedTemplate.getJdbcTemplate().update("drop schema " + quote(instanceId.toString()) + " cascade");
+        namedTemplate.getJdbcTemplate().update("drop schema if exists " + quote(instanceId.toString()) + " cascade");
         namedTemplate.getJdbcTemplate().update("delete from sys_wds.instance where id = ?", instanceId);
     }
 

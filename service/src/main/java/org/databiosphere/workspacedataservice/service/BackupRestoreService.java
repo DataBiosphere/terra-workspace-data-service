@@ -178,6 +178,10 @@ public class BackupRestoreService {
                 If we insert rows here, we don't need the additional insert check in alterSchema.
              */
 
+            // drop schema with dest uuid if exists. this can happen if a replica sees clone mode's initiated and skips to default schema 
+            // creation, but cloning hasn't gotten to this part of restore yet.
+            instanceDao.dropSchema(UUID.fromString(workspaceId));
+
             // rename workspace schema from source to dest
             instanceDao.alterSchema(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId));
 
