@@ -78,4 +78,20 @@ public class RestoreServiceIntegrationTest {
         List<RecordType> actualTables = recordDao.getAllRecordTypes(destInstance);
         assertEquals(expectedTables, actualTables);
     }
+
+    @Test
+    void testRestoreWithDuplicateDestId() {
+        UUID destInstance = UUID.fromString(workspaceId);
+
+        // confirm neither source nor destination instance should exist in our list of schemas to start
+        List<UUID> instancesBefore = instanceDao.listInstanceSchemas();
+        assertThat(instancesBefore).isEmpty();
+
+        // now add the destination workspaceid to simulate a replica adding it first
+        instanceDao.createSchema(destInstance);
+
+        // perform the restore, confirm that it succeeds
+        var response = backupRestoreService.restoreAzureWDS("v0.2", "backup.sql", UUID.randomUUID(), "");
+        assertSame(JobStatus.SUCCEEDED, response.getStatus());
+    }
 }
