@@ -70,7 +70,8 @@ class RecordDaoCacheTest {
                 .thenReturn("sys_name");
     }
 
-    @Test
+    // David An 2023-09-15: disable this test. See CachedQueryDao for commentary.
+    // @Test
     void verifyCaching(){
         RecordType rt = RecordType.valueOf("foo");
         RecordType rtBar = RecordType.valueOf("bar");
