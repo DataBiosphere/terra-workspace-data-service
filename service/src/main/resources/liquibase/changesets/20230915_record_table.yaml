@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20230426_syswds_schema
+      author: yuliadub
+      changes:
+        - createTable:
+            schemaName: sys_wds
+            tableName: record
+            columns:
+              - column:
+                  name: id
+                  type: string
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: updatedtime
+                  type: datetime
+              - column:
+                  name: instance
+                  type: uuid

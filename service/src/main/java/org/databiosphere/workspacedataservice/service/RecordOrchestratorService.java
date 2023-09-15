@@ -27,6 +27,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -97,6 +98,13 @@ public class RecordOrchestratorService { // TODO give me a better name
         checkRecordTypeExists(instanceId, recordType);
         Record result = recordDao.getSingleRecord(instanceId, recordType, recordId).orElseThrow(() -> new MissingObjectException("Record"));
         return new RecordResponse(recordId, recordType, result.getAttributes());
+    }
+
+    @ReadTransaction
+    public Timestamp getRecordsLastUpdatedTime(UUID instanceId, String version) {
+        validateVersion(version);
+        instanceService.validateInstance(instanceId);
+        return recordDao.allRecordsLastUpdateTime(instanceId);
     }
 
     // N.B. transaction annotated in batchWriteService.batchWriteTsvStream

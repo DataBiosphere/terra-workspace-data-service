@@ -29,6 +29,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -61,6 +62,14 @@ public class RecordController {
 			@PathVariable("recordId") String recordId) {
 		RecordResponse response = recordOrchestratorService.getSingleRecord(instanceId, version, recordType, recordId);
 		return new ResponseEntity<>(response, HttpStatus.OK);
+	}
+
+	@GetMapping("/{instanceId}/records/{version}")
+	@RetryableApi
+	public ResponseEntity<Timestamp> getLastUpdatedTime(@PathVariable("instanceId") UUID instanceId,
+														@PathVariable("version") String version) {
+		var updateTime = recordOrchestratorService.getRecordsLastUpdatedTime(instanceId, version);
+		return new ResponseEntity<>(updateTime, HttpStatus.OK);
 	}
 
 	@PostMapping( "/{instanceId}/tsv/{version}/{recordType}")
