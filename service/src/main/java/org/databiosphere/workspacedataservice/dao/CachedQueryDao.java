@@ -1,16 +1,11 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
-
-import static org.databiosphere.workspacedataservice.service.model.ReservedNames.PRIMARY_KEY_COLUMN_CACHE;
 
 /**
  * In order for @Cacheable to function properly callers need to be outside the class where
@@ -22,17 +17,24 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 @Repository
 public class CachedQueryDao {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CachedQueryDao.class);
-
     private final NamedParameterJdbcTemplate namedTemplate;
 
     public CachedQueryDao(NamedParameterJdbcTemplate namedTemplate) {
         this.namedTemplate = namedTemplate;
     }
 
-    @Cacheable(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
+    /*
+        David An 2023-09-15: turning off caching for this method. This cache can return erroneous results in a
+        multi-replica/horizontally-scaled environment. If one WDS replica deletes and recreates a table and uses
+        a different primary key, another WDS replica would continue to respond with an out-of-date cache.
+
+        We expect to turn this cache back on at some point, so I am leaving the "CachedQueryDao" class name
+        and the @Cacheable annotation in place but commented out.
+     */
+    // @Cacheable(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
     public String getPrimaryKeyColumn(RecordType recordType, UUID instanceId){
-        LOGGER.warn("Calling the db to retrieve primary key for {}.{}", instanceId, recordType.getName());
+        // David An 2023-09-15: this log line is only relevant if the cache is enabled. Also comment it out for now.
+        // LOGGER.warn("Calling the db to retrieve primary key for {}.{}", instanceId, recordType.getName());
         MapSqlParameterSource params = new MapSqlParameterSource("recordType", recordType.getName());
         params.addValue("instanceId", instanceId.toString());
         return namedTemplate.queryForObject("select kcu.column_name FROM information_schema.table_constraints tc " +
