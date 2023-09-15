@@ -1,4 +1,4 @@
- openapi: 3.0.3
+openapi: 3.0.3
 
 info:
   title: Workspace Data Service
@@ -212,7 +212,7 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-    /{instanceid}/records/{v}/:
+  /{instanceid}/records/{v}/:
     get:
       summary: Get a timestamp on when records were last updated.
       operationId: getLastUpdatedTime
