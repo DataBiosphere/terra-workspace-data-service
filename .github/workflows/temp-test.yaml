@@ -73,7 +73,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: broadinstitute/dsp-reusable-workflows/.github/workflows/run-e2e-tests.yaml@aj-1287-attempt-workflow
+    uses: broadinstitute/dsp-reusable-workflows/.github/workflows/run-e2e-tests.yaml@aj-1287-attempt-workflow-call
     with:
       billing-project-name: '${{ needs.params-gen.outputs.project-name }}'
       bee-name: '${{ needs.params-gen.outputs.bee-name }}'
