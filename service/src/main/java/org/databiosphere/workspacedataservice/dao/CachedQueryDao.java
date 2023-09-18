@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import bio.terra.common.db.ReadTransaction;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -31,6 +32,7 @@ public class CachedQueryDao {
         If/when we re-enable caching for primary key values, this method will need a @Cacheable annotation. The
         cache should be keyed to the instanceId plus the recordType name.
      */
+    @ReadTransaction
     public String getPrimaryKeyColumn(RecordType recordType, UUID instanceId) {
         // AJ-1242: If/when we re-enable caching for primary key values, we may want a log statement here to
         // show when we are reading directly from the db vs. reading from cache.
