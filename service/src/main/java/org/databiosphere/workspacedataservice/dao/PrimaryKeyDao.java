@@ -9,11 +9,17 @@ import org.springframework.stereotype.Repository;
 import java.util.UUID;
 
 /**
+ * DAO to look up the name of the primary key for a given WDS RecordType. Users specify the PK
+ * for each of their tables so WDS often needs to dynamically look it up.
+ * <p>
+ * A benefit of keeping this DAO separate from RecordDao is that at some point in the future,
+ * we could re-enable caching for the getPrimaryKeyColumn method to eliminate lots of Postgres queries.
+ * <p>
  * In order for @Cacheable to function properly callers need to be outside the class where
  * the @Cacheable method is specified.
  * <a href="https://stackoverflow.com/questions/16899604/spring-cache-cacheable-not-working-while-calling-from-another-method-of-the-s">https://stackoverflow.com/questions/16899604/spring-cache-cacheable-not-working-while-calling-from-another-method-of-the-s</a>
- * Many getPrimaryKeyColumn calls are in RecordDao thus that method can't belong to that class and still work properly with caching,
- * so it's been moved here.  Any future db methods that should be cached that are invoked from RecordDao can be added here as well.
+ * Many getPrimaryKeyColumn calls are in RecordDao thus that method can't belong to that class and still work properly with caching.
+ * Any future db methods that should be cached that are invoked from RecordDao can be added here as well.
  */
 @Repository
 public class PrimaryKeyDao {
