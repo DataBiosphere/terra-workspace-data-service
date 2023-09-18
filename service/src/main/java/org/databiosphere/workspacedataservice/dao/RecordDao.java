@@ -778,11 +778,7 @@ public class RecordDao {
 				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
 	}
 
-	/**
-	 * In order for @CacheEvict to function properly, it needs to be invoked outside
-	 * of this class.  Callers keep that in mind :)
-	 */
-	@CacheEvict(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
+	// AJ-1242: if/when we re-enable caching for primary key values, this method should gain a @CacheEvict annotation
 	public void deleteRecordType(UUID instanceId, RecordType recordType) {
 		List<Relation> relationArrayCols = getRelationArrayCols(instanceId, recordType);
 		for (Relation rel : relationArrayCols){

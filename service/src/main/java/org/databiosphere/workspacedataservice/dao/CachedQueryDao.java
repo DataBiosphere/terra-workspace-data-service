@@ -24,17 +24,17 @@ public class CachedQueryDao {
     }
 
     /*
-        David An 2023-09-15: turning off caching for this method. This cache can return erroneous results in a
+        AJ-1242: turning off caching for this method. This cache can return erroneous results in a
         multi-replica/horizontally-scaled environment. If one WDS replica deletes and recreates a table and uses
         a different primary key, another WDS replica would continue to respond with an out-of-date cache.
 
-        We expect to turn this cache back on at some point, so I am leaving the "CachedQueryDao" class name
-        and the @Cacheable annotation in place but commented out.
+        If/when we re-enable caching for primary key values, this method will need a @Cacheable annotation. The
+        cache should be keyed to the instanceId plus the recordType name.
      */
-    // @Cacheable(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
     public String getPrimaryKeyColumn(RecordType recordType, UUID instanceId) {
-        // David An 2023-09-15: this log line is only relevant if the cache is enabled. Also comment it out for now.
-        // LOGGER.warn("Calling the db to retrieve primary key for {}.{}", instanceId, recordType.getName());
+        // AJ-1242: If/when we re-enable caching for primary key values, we may want a log statement here to
+        // show when we are reading directly from the db vs. reading from cache.
+
         MapSqlParameterSource params = new MapSqlParameterSource("qTableName", SqlUtils.getQualifiedTableName(recordType, instanceId));
 
         // see https://wiki.postgresql.org/wiki/Retrieve_primary_key_columns for this query
