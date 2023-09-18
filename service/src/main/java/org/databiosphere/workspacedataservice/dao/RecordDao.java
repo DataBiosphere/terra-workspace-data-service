@@ -111,7 +111,7 @@ public class RecordDao {
 	}
 
 	public Timestamp allRecordsLastUpdateTime(UUID instanceId) {
-		return namedTemplate.getJdbcTemplate().queryForObject("select max(updatedtime)( from sys_wds.record", Timestamp.class);
+		return namedTemplate.getJdbcTemplate().queryForObject("select max(updatedtime) from sys_wds.record where instance = '" + instanceId + "'", Timestamp.class);
 	}
 
 	@SuppressWarnings("squid:S2077")
