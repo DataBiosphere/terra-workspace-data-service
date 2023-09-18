@@ -16,11 +16,11 @@ import java.util.UUID;
  * so it's been moved here.  Any future db methods that should be cached that are invoked from RecordDao can be added here as well.
  */
 @Repository
-public class CachedQueryDao {
+public class PrimaryKeyDao {
 
     private final NamedParameterJdbcTemplate namedTemplate;
 
-    public CachedQueryDao(NamedParameterJdbcTemplate namedTemplate) {
+    public PrimaryKeyDao(NamedParameterJdbcTemplate namedTemplate) {
         this.namedTemplate = namedTemplate;
     }
 
