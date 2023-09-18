@@ -121,7 +121,6 @@ public class RecordDao {
 		tableInfo = Maps.filterKeys(tableInfo, k -> !k.equals(recordTypePrimaryKey));
 		String columnDefs = genColumnDefs(tableInfo, recordTypePrimaryKey);
 		try {
-			LOGGER.info("ABOUT TO INSERT RECORD");
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedTableName(recordType, instanceId)
 					+ "( " + columnDefs + (!relations.relations().isEmpty() ? ", " + getFkSql(relations.relations(), instanceId) : "") + ")");
 			namedTemplate.getJdbcTemplate().update("insert into sys_wds.record(id, updatedtime, instance) values (?,?,?)", recordType.getName(), Timestamp.from(Instant.now()), instanceId);
