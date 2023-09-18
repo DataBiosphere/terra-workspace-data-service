@@ -11,7 +11,7 @@ import java.util.UUID;
  * In order for @Cacheable to function properly callers need to be outside the class where
  * the @Cacheable method is specified.
  * <a href="https://stackoverflow.com/questions/16899604/spring-cache-cacheable-not-working-while-calling-from-another-method-of-the-s">https://stackoverflow.com/questions/16899604/spring-cache-cacheable-not-working-while-calling-from-another-method-of-the-s</a>
- * Many getPrimaryKeyColumn calls are in RecordDao thus that method can't belong to that class and still work properly with caching
+ * Many getPrimaryKeyColumn calls are in RecordDao thus that method can't belong to that class and still work properly with caching,
  * so it's been moved here.  Any future db methods that should be cached that are invoked from RecordDao can be added here as well.
  */
 @Repository
@@ -32,15 +32,20 @@ public class CachedQueryDao {
         and the @Cacheable annotation in place but commented out.
      */
     // @Cacheable(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
-    public String getPrimaryKeyColumn(RecordType recordType, UUID instanceId){
+    public String getPrimaryKeyColumn(RecordType recordType, UUID instanceId) {
         // David An 2023-09-15: this log line is only relevant if the cache is enabled. Also comment it out for now.
         // LOGGER.warn("Calling the db to retrieve primary key for {}.{}", instanceId, recordType.getName());
-        MapSqlParameterSource params = new MapSqlParameterSource("recordType", recordType.getName());
-        params.addValue("instanceId", instanceId.toString());
-        return namedTemplate.queryForObject("select kcu.column_name FROM information_schema.table_constraints tc " +
-                        "JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema " +
-                        "JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema " +
-                        "WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = :instanceId AND tc.table_name = :recordType",
+        MapSqlParameterSource params = new MapSqlParameterSource("qTableName", SqlUtils.getQualifiedTableName(recordType, instanceId));
+
+        // see https://wiki.postgresql.org/wiki/Retrieve_primary_key_columns for this query
+        // for commentary, see also:
+        // https://stackoverflow.com/questions/1214576/how-do-i-get-the-primary-keys-of-a-table-from-postgres-via-plpgsql
+        return namedTemplate.queryForObject("""
+                      SELECT a.attname
+                      FROM   pg_index i
+                      JOIN   pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+                      WHERE  i.indrelid = :qTableName::regclass
+                      AND    i.indisprimary;""",
                 params, String.class);
     }
 }

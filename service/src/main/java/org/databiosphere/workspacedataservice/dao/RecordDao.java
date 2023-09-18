@@ -66,12 +66,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static org.databiosphere.workspacedataservice.dao.SqlUtils.getQualifiedTableName;
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.PRIMARY_KEY_COLUMN_CACHE;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
-import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.RECORD_TYPE;
 
 @Repository
 public class RecordDao {
@@ -171,12 +171,6 @@ public class RecordDao {
 			}
 			throw e;
 		}
-	}
-
-	private String getQualifiedTableName(RecordType recordType, UUID instanceId) {
-		// N.B. recordType is sql-validated in its constructor, so we don't need it here
-		return quote(instanceId.toString()) + "."
-				+ quote(SqlUtils.validateSqlString(recordType.getName(), RECORD_TYPE));
 	}
 
 	@SuppressWarnings("squid:S2077")
