@@ -4,12 +4,26 @@ plugins {
 	id 'maven-publish'
 
 	id 'com.jfrog.artifactory' version '4.32.0'
-	id 'org.hidetake.swagger.generator'
+	id 'org.openapi.generator'
 }
 
 repositories {
 	maven { url 'https://broadinstitute.jfrog.io/artifactory/maven-central' }
 	mavenCentral()
+}
+
+ext {
+	// these will be overridden by dependencies-jakarta.gradle or dependencies-javax.gradle
+	useJakartaEe = ""
+	libraryName = ""
+}
+
+// default to javax, since WDS is currently on Spring Boot 2. -Pjakarta=true overrides
+// the default and creates a Jakarta-based client.
+if (project.hasProperty("jakarta") && "true".equalsIgnoreCase(project.getProperty("jakarta"))) {
+	apply from: "dependencies-jakarta.gradle"
+} else {
+	apply from: "dependencies-javax.gradle"
 }
 
 apply from: 'artifactory.gradle'

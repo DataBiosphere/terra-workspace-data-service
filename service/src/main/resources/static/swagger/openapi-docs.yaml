@@ -627,6 +627,7 @@ components:
           type: string
           description: User-friendly description to associate with this backup. Optional.
     BackupJob:
+      x-all-of-name: BackupJob
       allOf:
         - $ref: '#/components/schemas/Job'
         - type: object
@@ -634,6 +635,7 @@ components:
             result:
               $ref: '#/components/schemas/BackupResponse'
     CloneJob:
+      x-all-of-name: CloneJob
       allOf:
         - $ref: '#/components/schemas/Job'
         - type: object
@@ -756,14 +758,6 @@ components:
           "arrayRelation": ["terra-wds:/target-type/target-id-1", "terra-wds:/target-type/target-id-2"],
           "arrayFile": ["drs://drs.example.org/file_id_1", "https://account_name.blob.core.windows.net/container-2/blob2"]
         }
-    RecordAttributeDefinition:
-      required:
-        - name
-      type: object
-      properties:
-        name:
-          type: string
-          description: Attribute name
     RecordId:
       type: string
       description: Record id
@@ -861,8 +855,8 @@ components:
       description: Search behavior for multiple filter terms
     SearchSortDirection:
       type: string
-      enum: [asc, desc]
-      default: asc
+      enum: [ASC, DESC]
+      default: ASC
       description: |
         Sort direction (descending or ascending)
     SearchTerms:

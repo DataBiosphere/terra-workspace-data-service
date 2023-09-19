@@ -140,7 +140,7 @@ class InstanceInitializerCloneTest {
         BackupResponse sourceBackupResponse = new BackupResponse();
         sourceBackupResponse.setFilename("/fake/filename/for/unit/test");
         BackupJob sourceBackupJob = new BackupJob();
-        sourceBackupJob.setStatus(org.databiosphere.workspacedata.model.Job.StatusEnum.SUCCEEDED);
+        sourceBackupJob.setStatus(BackupJob.StatusEnum.SUCCEEDED);
         sourceBackupJob.setResult(sourceBackupResponse);
 
         CloningApi mockCloningApi = Mockito.mock(CloningApi.class);
