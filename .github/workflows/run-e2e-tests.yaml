@@ -1,8 +1,11 @@
 name: run e2e tests
 'on':
   push:
-    branches:
-      - aj-1287-test
+    # branches:
+    #   - aj-1287-test
+  # schedule: #TODO choose times and uncomment
+  #   # run twice a day at 10:00 and 22:00 UTC every day of the week
+  #   - cron: "0 10/12 * * *"
   workflow_dispatch:
 env:
   BEE_NAME: 'wds-${{ github.run_id }}-${{ github.run_attempt}}-dev'
@@ -74,9 +77,11 @@ jobs:
       contents: read
       id-token: write
     uses: broadinstitute/dsp-reusable-workflows/.github/workflows/run-e2e-tests.yaml@aj-1287-attempt-workflow-call
+    # uses: broadinstitute/dsp-reusable-workflows/.github/workflows/run-e2e-tests.yaml #todo: use main once merged
     with:
       billing-project-name: '${{ needs.params-gen.outputs.project-name }}'
       bee-name: '${{ needs.params-gen.outputs.bee-name }}'
+      # branch: main #todo i think we can just take out this line actually since default is main
       branch: aj-1287-attempt-workflow-call
   destroy-bee-workflow:
     runs-on: ubuntu-latest
