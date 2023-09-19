@@ -4,6 +4,7 @@ databaseChangeLog:
       author: adinas
       changes:
         - createTable:
+            schemaName: sys_wds
             tableName: int_lock
             columns:
               - column:
@@ -28,3 +29,4 @@ databaseChangeLog:
             columnNames: lock_key, region
             constraintName: int_lock_pk
             tableName: int_lock
+            schemaName: sys_wds

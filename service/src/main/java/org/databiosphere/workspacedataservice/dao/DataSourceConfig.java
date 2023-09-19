@@ -33,7 +33,9 @@ public class DataSourceConfig {
 
     @Bean
     public DefaultLockRepository DefaultLockRepository(DataSource dataSource){
-        return new DefaultLockRepository(dataSource);
+        DefaultLockRepository defaultLockRepository = new DefaultLockRepository(dataSource);
+        defaultLockRepository.setPrefix("sys_wds.INT_");
+        return defaultLockRepository;
     }
     
     @Bean
