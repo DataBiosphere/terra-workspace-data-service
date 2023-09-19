@@ -14,18 +14,26 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.integration.jdbc.lock.JdbcLockRegistry;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.TimeUnit;
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ActiveProfiles({"mock-instance-dao", "mock-backup-dao", "mock-restore-dao", "mock-clone-dao", "local", "mock-sam"})
 @TestPropertySource(properties = {"twds.instance.workspace-id=90e1b179-9f83-4a6f-a8c2-db083df4cd03"})
@@ -51,6 +59,8 @@ class InstanceInitializerBeanTest {
     InstanceInitializerBean instanceInitializerBean;
     @SpyBean
     InstanceDao instanceDao;
+    @MockBean
+    JdbcLockRegistry registry;
 
     @Value("${twds.instance.workspace-id}")
     String workspaceId;
@@ -59,10 +69,14 @@ class InstanceInitializerBeanTest {
     final UUID instanceID = UUID.fromString("90e1b179-9f83-4a6f-a8c2-db083df4cd03");
 
     @BeforeEach
-    void beforeEach() {
+    void beforeEach () throws InterruptedException {
         // clean up any instances left in the db
         List<UUID> allInstances = instanceDao.listInstanceSchemas();
         allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
+        Lock lock = mock(Lock.class);
+        when(lock.tryLock(1, TimeUnit.SECONDS)).thenReturn(true);
+        doNothing().when(lock).unlock();
+        when(registry.obtain(anyString())).thenReturn(lock);
     }
 
 
