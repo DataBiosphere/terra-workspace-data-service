@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20230919_lock_table
+      author: adinas
+      changes:
+        - createTable:
+            tableName: int_lock
+            columns:
+              - column:
+                  name: lock_key
+                  type: char(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: region
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: client_id
+                  type: char(36)
+              - column:
+                  name: created_date
+                  type: datetime
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            columnNames: lock_key, region
+            constraintName: int_lock_pk
+            tableName: int_lock

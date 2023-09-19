@@ -19,8 +19,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.dao.DataAccessException;
+import org.springframework.integration.support.locks.LockRegistry;
 
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 public class InstanceInitializerBean {
 
@@ -28,6 +31,7 @@ public class InstanceInitializerBean {
     private final LeonardoDao leoDao;
     private final WorkspaceDataServiceDao wdsDao;
     private final CloneDao cloneDao;
+    private final LockRegistry lockRegistry;
 
     private final BackupRestoreService restoreService;
 
@@ -52,12 +56,13 @@ public class InstanceInitializerBean {
      * @param cloneDao CloneDao
      * @param restoreService BackupRestoreService
      */
-    public InstanceInitializerBean(InstanceDao instanceDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao, CloneDao cloneDao, BackupRestoreService restoreService){
+    public InstanceInitializerBean(InstanceDao instanceDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao, CloneDao cloneDao, BackupRestoreService restoreService, LockRegistry lockRegistry){
         this.instanceDao = instanceDao;
         this.leoDao = leoDao;
         this.wdsDao = wdsDao;
         this.cloneDao = cloneDao;
         this.restoreService = restoreService;
+        this.lockRegistry = lockRegistry;
     }
 
     /**
@@ -68,16 +73,25 @@ public class InstanceInitializerBean {
         LOGGER.info("Default workspace id loaded as {}.", workspaceId);
         boolean isInCloneMode = isInCloneMode(sourceWorkspaceId);
         LOGGER.info("isInCloneMode={}.", isInCloneMode);
-        if (isInCloneMode) {
-            LOGGER.info("Source workspace id loaded as {}.", sourceWorkspaceId);
-            boolean cloneSuccess = initCloneMode();
-            if (cloneSuccess) {
-                LOGGER.info("Cloning complete.");
-            } else {
+        Lock lock = lockRegistry.obtain(sourceWorkspaceId);
+        try {
+            // Make sure it's safe to start cloning (in case another replica is trying to clone)
+            boolean lockAquired = lock.tryLock(1, TimeUnit.SECONDS);
+            if (isInCloneMode && lockAquired) {
+                LOGGER.info("Source workspace id loaded as {}.", sourceWorkspaceId);
+                boolean cloneSuccess = initCloneMode();
+                if (cloneSuccess) {
+                    LOGGER.info("Cloning complete.");
+                } else {
+                    initializeDefaultInstance();
+                }
+            } else if (lockAquired) {
                 initializeDefaultInstance();
             }
-        } else {
-            initializeDefaultInstance();
+        } catch (Exception e) {
+            LOGGER.error("Error with aquiring cloning Lock: {}", e.getMessage());
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -133,8 +147,7 @@ public class InstanceInitializerBean {
     */
     private boolean initCloneMode() {
         LOGGER.info("Starting in clone mode...");
-        UUID trackingId = UUID.randomUUID();
-
+        UUID trackingId = UUID.randomUUID();       
         try {
             // First, create an entry in the clone table to mark cloning has started
             LOGGER.info("Creating entry to track cloning process.");
@@ -163,12 +176,11 @@ public class InstanceInitializerBean {
             // backup succeeded; now attempt to restore
             restoreFromRemoteBackup(backupFileName, cloneStatus.getJobId());
 
-            // after the restore attempt, check the current clone status one more time
-            // and return the result
+            // after the restore attempt, check the current clone status one more time,
+            // unlock, and return the result
             LOGGER.info("Re-checking clone job status after restore request");
             var finalCloneStatus = currentCloneStatus(trackingId);
             return finalCloneStatus.getStatus().equals(JobStatus.SUCCEEDED);
-
         }
         catch (Exception e) {
             LOGGER.error("An error occurred during clone mode. Error: {}", e.toString());
@@ -255,18 +267,19 @@ public class InstanceInitializerBean {
     private void initializeDefaultInstance() {
         try {
             UUID instanceId = UUID.fromString(workspaceId);
-
             if (!instanceDao.instanceSchemaExists(instanceId)) {
                 instanceDao.createSchema(instanceId);
                 LOGGER.info("Creating default schema id succeeded for workspaceId {}.", workspaceId);
             } else {
-                LOGGER.debug("Default schema for workspaceId {} already exists; skipping creation.", workspaceId);
+                LOGGER.debug("Default schema for workspaceId {} already exists or is in progress; skipping creation.", workspaceId);
             }
 
         } catch (IllegalArgumentException e) {
             LOGGER.warn("Workspace id could not be parsed, a default schema won't be created. Provided id: {}.", workspaceId);
         } catch (DataAccessException e) {
             LOGGER.error("Failed to create default schema id for workspaceId {}.", workspaceId);
+        } catch (Exception e) {
+            LOGGER.error("Failed to create default schema id for workspaceId {}. {}", workspaceId, e.getMessage());
         }
     }
 }
