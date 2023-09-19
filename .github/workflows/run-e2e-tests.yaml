@@ -99,16 +99,9 @@ jobs:
           wait-for-completion: false
           token: '${{ env.TOKEN }}'
           inputs: '{ "bee-name": "${{ env.BEE_NAME }}" }'
-  notify-slack-on-failure:
-      runs-on: ubuntu-latest
-      needs: [init-github-context, params-gen, create-bee-workflow, attach-landing-zone-to-bee-workflow, run-e2e-test-job, destroy-bee-workflow] # Want to notify regardless of which step fails
-      if: ${{ failure() }}
-      steps:
-        - name: Notify slack
-          uses: slackapi/slack-github-action@v1.23.0
-          with:
-            # Channel is for #dsp-analysis-journeys-alerts
-            channel-id: 'C031KGQUVB4'
-            slack-message: "Azure E2E Tests FAILED, branch: ${{ needs.init-github-context.outputs.branch }}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          env:
-            SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+  report-workflow:
+    uses: broadinstitute/sherlock/.github/workflows/client-report-workflow.yaml@main
+    with:
+      notify-slack-channels-upon-workflow-failure: "#dsp-analysis-journeys-alerts"
+    permissions:
+      id-token: write
