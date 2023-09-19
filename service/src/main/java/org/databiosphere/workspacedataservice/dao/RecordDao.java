@@ -265,13 +265,8 @@ public class RecordDao {
 				.update("alter table " + getQualifiedTableName(recordType, instanceId) + " alter column "
 						+ quote(SqlUtils.validateSqlString(columnName, ATTRIBUTE)) + " TYPE "
 						+ newColType.getPostgresType());
-		try {
-			namedTemplate.getJdbcTemplate().update("update sys_wds.record SET updatedtime = ? where id = ?",
-					Timestamp.from(Instant.now()), recordType.getName());
-		}
-		catch(Exception e) {
-			namedTemplate.getJdbcTemplate().update("insert into sys_wds.record(id, updatedtime, instance) values (?,?,?)", recordType.getName(), Timestamp.from(Instant.now()), instanceId);
-		}
+		namedTemplate.getJdbcTemplate().update("update sys_wds.record SET updatedtime = ? where id = ?",
+				Timestamp.from(Instant.now()), recordType.getName());
 	}
 
 	private String genColumnDefs(Map<String, DataTypeMapping> tableInfo, String primaryKeyCol) {
