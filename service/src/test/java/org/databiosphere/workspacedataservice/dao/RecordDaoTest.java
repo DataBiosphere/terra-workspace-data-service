@@ -65,7 +65,7 @@ class RecordDaoTest {
 	ObjectMapper objectMapper;
 
 	@Autowired
-	CachedQueryDao cachedQueryDao;
+	PrimaryKeyDao primaryKeyDao;
 
 	@Value("${twds.instance.workspace-id}")
 	String workspaceId;
