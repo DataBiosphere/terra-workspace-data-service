@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -35,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class RecordOrchestratorServiceTest {
 
     @Autowired private InstanceDao instanceDao;
+    @Autowired private RecordDao recordDao;
     @Autowired private RecordOrchestratorService recordOrchestratorService;
 
     private static final UUID INSTANCE = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
@@ -53,6 +55,7 @@ class RecordOrchestratorServiceTest {
 
     @AfterEach
     void cleanUp() {
+        recordDao.deleteRecordType(INSTANCE, TEST_TYPE);
         instanceDao.dropSchema(INSTANCE);
     }
 
