@@ -27,7 +27,6 @@ import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -67,12 +66,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static org.databiosphere.workspacedataservice.dao.SqlUtils.getQualifiedTableName;
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
-import static org.databiosphere.workspacedataservice.service.model.ReservedNames.PRIMARY_KEY_COLUMN_CACHE;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
-import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.RECORD_TYPE;
 
 @Repository
 public class RecordDao {
@@ -88,18 +86,18 @@ public class RecordDao {
 	private final DataTypeInferer inferer;
 
 	private final ObjectMapper objectMapper;
-	private final CachedQueryDao cachedQueryDao;
+	private final PrimaryKeyDao primaryKeyDao;
 
 	@Value("${twds.streaming.fetch.size:5000}")
 	int fetchSize;
 
 	public RecordDao(DataSource mainDb, NamedParameterJdbcTemplate namedTemplate,
-					 DataTypeInferer inf, ObjectMapper objectMapper, CachedQueryDao cachedQueryDao) {
+					 DataTypeInferer inf, ObjectMapper objectMapper, PrimaryKeyDao primaryKeyDao) {
 		this.mainDb = mainDb;
 		this.namedTemplate = namedTemplate;
 		this.inferer = inf;
 		this.objectMapper = objectMapper;
-		this.cachedQueryDao = cachedQueryDao;
+		this.primaryKeyDao = primaryKeyDao;
 	}
 
 	public boolean recordTypeExists(UUID instanceId, RecordType recordType) {
@@ -181,19 +179,13 @@ public class RecordDao {
 		}
 	}
 
-	private String getQualifiedTableName(RecordType recordType, UUID instanceId) {
-		// N.B. recordType is sql-validated in its constructor, so we don't need it here
-		return quote(instanceId.toString()) + "."
-				+ quote(SqlUtils.validateSqlString(recordType.getName(), RECORD_TYPE));
-	}
-
 	@SuppressWarnings("squid:S2077")
 	public List<Record> queryForRecords(RecordType recordType, int pageSize, int offset, String sortDirection,
 			String sortAttribute, UUID instanceId) {
 		LOGGER.info("queryForRecords: {}", recordType.getName());
 		return namedTemplate.getJdbcTemplate().query(
 				"select * from " + getQualifiedTableName(recordType, instanceId) + " order by "
-						+ (sortAttribute == null ? quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)) : quote(sortAttribute)) + " " + sortDirection + " limit "
+						+ (sortAttribute == null ? quote(primaryKeyDao.getPrimaryKeyColumn(recordType, instanceId)) : quote(sortAttribute)) + " " + sortDirection + " limit "
 						+ pageSize + " offset " + offset,
 				new RecordRowMapper(recordType, objectMapper, instanceId));
 	}
@@ -203,7 +195,7 @@ public class RecordDao {
 		params.addValue("tableName", recordType.getName());
 		List<String> attributeNames = namedTemplate.queryForList("select column_name from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
 				+ "and table_name = :tableName", params, String.class);
-		attributeNames.sort(new AttributeComparator(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)));
+		attributeNames.sort(new AttributeComparator(primaryKeyDao.getPrimaryKeyColumn(recordType, instanceId)));
 		return attributeNames;
 	}
 
@@ -229,7 +221,7 @@ public class RecordDao {
 	public Map<String, DataTypeMapping> getExistingTableSchemaLessPrimaryKey(UUID instanceId, RecordType recordType) {
 		MapSqlParameterSource params = new MapSqlParameterSource(INSTANCE_ID, instanceId.toString());
 		params.addValue("tableName", recordType.getName());
-		params.addValue("primaryKey", cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId));
+		params.addValue("primaryKey", primaryKeyDao.getPrimaryKeyColumn(recordType, instanceId));
 		String sql = "select column_name, coalesce(domain_name, udt_name::regtype::varchar) as data_type from INFORMATION_SCHEMA.COLUMNS where table_schema = :instanceId "
 				+ "and table_name = :tableName and column_name != :primaryKey";
 		return getTableSchema(sql, params);
@@ -331,7 +323,7 @@ public class RecordDao {
 
 	public void batchUpsert(UUID instanceId, RecordType recordType, List<Record> records,
 							Map<String, DataTypeMapping> schema){
-		batchUpsert(instanceId, recordType, records, schema, cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId));
+		batchUpsert(instanceId, recordType, records, schema, primaryKeyDao.getPrimaryKeyColumn(recordType, instanceId));
 	}
 
 
@@ -343,7 +335,7 @@ public class RecordDao {
 	}
 
 	public boolean deleteSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
-		String recordTypePrimaryKey = cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId);
+		String recordTypePrimaryKey = primaryKeyDao.getPrimaryKeyColumn(recordType, instanceId);
 		try {
 			var result = namedTemplate.update("delete from " + getQualifiedTableName(recordType, instanceId) + " where "
 					+ quote(recordTypePrimaryKey) + " = :recordId", new MapSqlParameterSource(RECORD_ID_PARAM, recordId)) == 1;
@@ -406,7 +398,7 @@ public class RecordDao {
 	public Stream<Record> streamAllRecordsForType(UUID instanceId, RecordType recordType) {
 		// create the SQL for the query
 		String sql = "select * from " + getQualifiedTableName(recordType, instanceId) +
-				" order by " + quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId));
+				" order by " + quote(primaryKeyDao.getPrimaryKeyColumn(recordType, instanceId));
 
 		// create the RowMapper, to translate JDBC rows to Record objects
 		RecordRowMapper rrm = new RecordRowMapper(recordType, objectMapper, instanceId);
@@ -472,7 +464,7 @@ public class RecordDao {
 	public String getFkSql(Relation r, UUID instanceId, boolean cascade) {
 		return "constraint " + quote("fk_" + SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE))
 						+ " foreign key (" + quote(SqlUtils.validateSqlString(r.relationColName(), ATTRIBUTE))
-						+ ") references " + getQualifiedTableName(r.relationRecordType(), instanceId) + "(" + quote(cachedQueryDao.getPrimaryKeyColumn(r.relationRecordType(), instanceId))
+						+ ") references " + getQualifiedTableName(r.relationRecordType(), instanceId) + "(" + quote(primaryKeyDao.getPrimaryKeyColumn(r.relationRecordType(), instanceId))
 						+ ")" + (cascade ? " on delete cascade" : "");
 	}
 	public String getFkSqlForJoin(Relation fromRelation, Relation toRelation, UUID instanceId) {
@@ -649,7 +641,7 @@ public class RecordDao {
 		List<String> recordIds = records.stream().map(Record::getId).toList();
 		try {
 			int[] rowCounts = namedTemplate.getJdbcTemplate().batchUpdate(
-					"delete from" + getQualifiedTableName(recordType, instanceId) + " where " + quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)) + " = ?",
+					"delete from" + getQualifiedTableName(recordType, instanceId) + " where " + quote(primaryKeyDao.getPrimaryKeyColumn(recordType, instanceId)) + " = ?",
 					new BatchPreparedStatementSetter() {
 						@Override
 						public void setValues(@NotNull PreparedStatement ps, int i) throws SQLException {
@@ -696,7 +688,7 @@ public class RecordDao {
 			this.recordType = recordType;
 			this.objectMapper = objectMapper;
 			this.schema = RecordDao.this.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
-			this.primaryKeyColumn = cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId);
+			this.primaryKeyColumn = primaryKeyDao.getPrimaryKeyColumn(recordType, instanceId);
 			this.referenceColToTable = RecordDao.this.getRelationColumnsByName(RecordDao.this.getRelationCols(instanceId, recordType));
 		}
 
@@ -784,7 +776,7 @@ public class RecordDao {
 	public Optional<Record> getSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
 		try {
 			return Optional.ofNullable(namedTemplate.queryForObject(
-					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId))
+					"select * from " + getQualifiedTableName(recordType, instanceId) + " where " + quote(primaryKeyDao.getPrimaryKeyColumn(recordType, instanceId))
 							+ " = :recordId",
 					new MapSqlParameterSource(RECORD_ID_PARAM, recordId), new RecordRowMapper(recordType,objectMapper, instanceId)));
 		} catch (EmptyResultDataAccessException e) {
@@ -793,14 +785,14 @@ public class RecordDao {
 	}
 
 	public String getPrimaryKeyColumn(RecordType type, UUID instanceId){
-		return cachedQueryDao.getPrimaryKeyColumn(type, instanceId);
+		return primaryKeyDao.getPrimaryKeyColumn(type, instanceId);
 	}
 
 	public boolean recordExists(UUID instanceId, RecordType recordType, String recordId) {
 		return Boolean.TRUE
 				.equals(namedTemplate.queryForObject(
 						"select exists(select * from " + getQualifiedTableName(recordType, instanceId) + " where "
-								+ quote(cachedQueryDao.getPrimaryKeyColumn(recordType, instanceId)) + " = :recordId)",
+								+ quote(primaryKeyDao.getPrimaryKeyColumn(recordType, instanceId)) + " = :recordId)",
 						new MapSqlParameterSource(RECORD_ID_PARAM, recordId), Boolean.class));
 	}
 
@@ -815,11 +807,7 @@ public class RecordDao {
 				.collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
 	}
 
-	/**
-	 * In order for @CacheEvict to function properly, it needs to be invoked outside
-	 * of this class.  Callers keep that in mind :)
-	 */
-	@CacheEvict(value = PRIMARY_KEY_COLUMN_CACHE, key = "{ #recordType.name, #instanceId.toString()}")
+	// AJ-1242: if/when we re-enable caching for primary key values, this method should gain a @CacheEvict annotation
 	public void deleteRecordType(UUID instanceId, RecordType recordType) {
 		List<Relation> relationArrayCols = getRelationArrayCols(instanceId, recordType);
 		for (Relation rel : relationArrayCols){

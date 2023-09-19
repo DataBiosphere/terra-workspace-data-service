@@ -2,8 +2,12 @@ package org.databiosphere.workspacedataservice.dao;
 
 import org.databiosphere.workspacedataservice.service.model.ReservedNames;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
+import java.util.UUID;
 import java.util.regex.Pattern;
+
+import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.RECORD_TYPE;
 
 /**
  * A collection of methods useful for working with SQL.
@@ -29,5 +33,11 @@ public class SqlUtils {
 	public static String quote(String toQuote) {
 		return "\"" + toQuote + "\"";
 	}
+
+    public static String getQualifiedTableName(RecordType recordType, UUID instanceId) {
+        // N.B. recordType is sql-validated in its constructor, so we don't need it here
+        return quote(instanceId.toString()) + "."
+                + quote(SqlUtils.validateSqlString(recordType.getName(), RECORD_TYPE));
+    }
 
 }
