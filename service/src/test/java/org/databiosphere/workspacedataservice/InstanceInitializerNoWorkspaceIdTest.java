@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice;
 
 import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.*;
+import org.databiosphere.workspacedataservice.distributed.MockSuccessfulDistributedLock;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoConfig;
 import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
 import org.databiosphere.workspacedataservice.sam.SamConfig;
@@ -38,7 +39,8 @@ import static org.mockito.Mockito.verify;
                 WorkspaceManagerConfig.class,
                 ActivityLoggerConfig.class,
                 SamConfig.class,
-                MockSamClientFactoryConfig.class
+                MockSamClientFactoryConfig.class,
+                MockSuccessfulDistributedLock.class
         })
 class InstanceInitializerNoWorkspaceIdTest {
 
