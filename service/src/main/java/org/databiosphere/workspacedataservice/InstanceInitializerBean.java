@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedata.client.ApiException;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.distributed.DistributedLock;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.service.model.exception.CloningException;
@@ -32,6 +33,7 @@ public class InstanceInitializerBean {
     private final WorkspaceDataServiceDao wdsDao;
     private final CloneDao cloneDao;
     private final LockRegistry lockRegistry;
+    private final DistributedLock lock;
 
     private final BackupRestoreService restoreService;
 
@@ -56,13 +58,15 @@ public class InstanceInitializerBean {
      * @param cloneDao CloneDao
      * @param restoreService BackupRestoreService
      */
-    public InstanceInitializerBean(InstanceDao instanceDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao, CloneDao cloneDao, BackupRestoreService restoreService, LockRegistry lockRegistry){
+    public InstanceInitializerBean(InstanceDao instanceDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao, CloneDao cloneDao, BackupRestoreService restoreService, LockRegistry lockRegistry, DistributedLock lock){
         this.instanceDao = instanceDao;
         this.leoDao = leoDao;
         this.wdsDao = wdsDao;
         this.cloneDao = cloneDao;
         this.restoreService = restoreService;
         this.lockRegistry = lockRegistry;
+        this.lock = lock;
+        lock.obtainLock(lockRegistry, sourceWorkspaceId);
     }
 
     /**
@@ -73,10 +77,9 @@ public class InstanceInitializerBean {
         LOGGER.info("Default workspace id loaded as {}.", workspaceId);
         boolean isInCloneMode = isInCloneMode(sourceWorkspaceId);
         LOGGER.info("isInCloneMode={}.", isInCloneMode);
-        Lock lock = lockRegistry.obtain(sourceWorkspaceId);
         try {
             // Make sure it's safe to start cloning (in case another replica is trying to clone)
-            boolean lockAquired = lock.tryLock(1, TimeUnit.SECONDS);
+            boolean lockAquired = lock.tryLock();
             if (isInCloneMode && lockAquired) {
                 LOGGER.info("Source workspace id loaded as {}.", sourceWorkspaceId);
                 boolean cloneSuccess = initCloneMode();
@@ -88,8 +91,8 @@ public class InstanceInitializerBean {
             } else if (lockAquired) {
                 initializeDefaultInstance();
             }
-        } catch (Exception e) {
-            LOGGER.error("Error with aquiring cloning Lock: {}", e.getMessage());
+        } catch (InterruptedException e) {
+            LOGGER.error("Error with aquiring cloning/schema initialization Lock: {}", e.getMessage());
         } finally {
             lock.unlock();
         }
@@ -176,8 +179,8 @@ public class InstanceInitializerBean {
             // backup succeeded; now attempt to restore
             restoreFromRemoteBackup(backupFileName, cloneStatus.getJobId());
 
-            // after the restore attempt, check the current clone status one more time,
-            // unlock, and return the result
+            // after the restore attempt, check the current clone status one more time
+            // and return the result
             LOGGER.info("Re-checking clone job status after restore request");
             var finalCloneStatus = currentCloneStatus(trackingId);
             return finalCloneStatus.getStatus().equals(JobStatus.SUCCEEDED);
@@ -278,8 +281,6 @@ public class InstanceInitializerBean {
             LOGGER.warn("Workspace id could not be parsed, a default schema won't be created. Provided id: {}.", workspaceId);
         } catch (DataAccessException e) {
             LOGGER.error("Failed to create default schema id for workspaceId {}.", workspaceId);
-        } catch (Exception e) {
-            LOGGER.error("Failed to create default schema id for workspaceId {}. {}", workspaceId, e.getMessage());
         }
     }
 }
