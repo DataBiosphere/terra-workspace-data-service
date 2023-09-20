@@ -81,6 +81,7 @@ class RecordDaoTest {
 
 	@AfterEach
 	void cleanUp(){
+		recordDao.deleteRecordFromSys(instanceId);
 		instanceDao.dropSchema(instanceId);
 	}
 

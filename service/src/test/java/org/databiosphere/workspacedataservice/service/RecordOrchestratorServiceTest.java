@@ -55,10 +55,7 @@ class RecordOrchestratorServiceTest {
 
     @AfterEach
     void cleanUp() {
-        if(recordDao.recordExists(INSTANCE, TEST_TYPE, RECORD_ID)) {
-            recordDao.deleteRecordType(INSTANCE, TEST_TYPE);
-        }
-
+        recordDao.deleteRecordFromSys(INSTANCE);
         instanceDao.dropSchema(INSTANCE);
     }
 

@@ -166,7 +166,7 @@ public class RecordDao {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedJoinTableName(instanceId, tableName, referringRecordType) +
 					"( " + columnDefs + ", " + getFkSqlForJoin(new Relation(fromCol, referringRecordType), new Relation(toCol, referencedRecordType), instanceId) + ")");
 			namedTemplate.getJdbcTemplate().update("update sys_wds.record SET updatedtime = ? where id = ?",
-					referencedRecordType.getName(), Timestamp.from(Instant.now()));
+					Timestamp.from(Instant.now()), referencedRecordType.getName());
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingTable(sqlEx);
@@ -242,7 +242,7 @@ public class RecordDao {
 									? " references " + getQualifiedTableName(referencedType, instanceId)
 									: ""));
 			namedTemplate.getJdbcTemplate().update("update sys_wds.record SET updatedtime = ? where id = ?",
-					recordType.getName(), Timestamp.from(Instant.now()));
+					Timestamp.from(Instant.now()), recordType.getName());
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingTable(sqlEx);
@@ -811,7 +811,7 @@ public class RecordDao {
 		try {
 			namedTemplate.getJdbcTemplate().update("drop table " + getQualifiedTableName(recordType, instanceId));
 
-			namedTemplate.getJdbcTemplate().update("delete from sys_wds.record where id = ?", recordType.getName());
+			namedTemplate.getJdbcTemplate().update("delete from sys_wds.record where id = ? and instance = ?", recordType.getName(), instanceId);
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForTableRelation(sqlEx);
@@ -819,4 +819,8 @@ public class RecordDao {
 			throw e;
 		}
 	}
+
+    public void deleteRecordFromSys(UUID instanceId) {
+        namedTemplate.getJdbcTemplate().update("delete from sys_wds.record where instance = ?", instanceId);
+    }
 }

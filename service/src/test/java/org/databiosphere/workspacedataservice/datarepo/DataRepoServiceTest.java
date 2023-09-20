@@ -71,6 +71,7 @@ class DataRepoServiceTest {
     }
     @AfterEach
     void afterEach() {
+        recordDao.deleteRecordFromSys(INSTANCE);
         if (instanceDao.instanceSchemaExists(INSTANCE)) {
             instanceDao.dropSchema(INSTANCE);
         }
@@ -98,5 +99,4 @@ class DataRepoServiceTest {
             assertNotNull(rec.getAttributeValue(DataRepoService.TDRIMPORT_IMPORT_TIME));
         }
     }
-
 }
