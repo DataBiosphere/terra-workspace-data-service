@@ -8,7 +8,6 @@ import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.integration.support.locks.LockRegistry;
 
 @Configuration
 public class InstanceInitializerConfig {
@@ -16,7 +15,7 @@ public class InstanceInitializerConfig {
     @Bean
     public InstanceInitializerBean instanceInitializerBean(InstanceDao instanceDao, LeonardoDao leoDao,
                                                            WorkspaceDataServiceDao wdsDao, CloneDao cloneDao,
-                                                           BackupRestoreService restoreService, LockRegistry lockRegistry, DistributedLock lock) {
-        return new InstanceInitializerBean(instanceDao, leoDao, wdsDao, cloneDao, restoreService, lockRegistry, lock);
+                                                           BackupRestoreService restoreService, DistributedLock lock) {
+        return new InstanceInitializerBean(instanceDao, leoDao, wdsDao, cloneDao, restoreService, lock);
     }
 }

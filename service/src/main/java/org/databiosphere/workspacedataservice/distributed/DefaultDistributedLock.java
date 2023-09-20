@@ -8,14 +8,17 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class DefaultDistributedLock implements DistributedLock {
-    
+
+    private final LockRegistry lockRegistry;
     private Lock lock;
 
     // A wrapper around a Lock for easier testing.
-    public DefaultDistributedLock() {}
+    public DefaultDistributedLock(LockRegistry lockRegistry) {
+        this.lockRegistry = lockRegistry;
+    }
 
     @Override
-    public void obtainLock(LockRegistry lockRegistry, String lockId) {
+    public void obtainLock(String lockId) {
         lock = lockRegistry.obtain(lockId);
     }
 

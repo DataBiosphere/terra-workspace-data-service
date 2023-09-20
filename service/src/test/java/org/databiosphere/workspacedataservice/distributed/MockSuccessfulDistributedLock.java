@@ -8,7 +8,7 @@ public class MockSuccessfulDistributedLock implements DistributedLock {
     public MockSuccessfulDistributedLock() {}
 
     @Override
-    public void obtainLock(LockRegistry lockRegistry, String lockId) {}
+    public void obtainLock(String lockId) {}
 
     @Override
     public Boolean tryLock() {

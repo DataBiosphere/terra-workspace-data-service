@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.dao.DataAccessException;
-import org.springframework.integration.support.locks.LockRegistry;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +31,6 @@ public class InstanceInitializerBean {
     private final LeonardoDao leoDao;
     private final WorkspaceDataServiceDao wdsDao;
     private final CloneDao cloneDao;
-    private final LockRegistry lockRegistry;
     private final DistributedLock lock;
 
     private final BackupRestoreService restoreService;
@@ -58,15 +56,13 @@ public class InstanceInitializerBean {
      * @param cloneDao CloneDao
      * @param restoreService BackupRestoreService
      */
-    public InstanceInitializerBean(InstanceDao instanceDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao, CloneDao cloneDao, BackupRestoreService restoreService, LockRegistry lockRegistry, DistributedLock lock){
+    public InstanceInitializerBean(InstanceDao instanceDao, LeonardoDao leoDao, WorkspaceDataServiceDao wdsDao, CloneDao cloneDao, BackupRestoreService restoreService, DistributedLock lock){
         this.instanceDao = instanceDao;
         this.leoDao = leoDao;
         this.wdsDao = wdsDao;
         this.cloneDao = cloneDao;
         this.restoreService = restoreService;
-        this.lockRegistry = lockRegistry;
         this.lock = lock;
-        lock.obtainLock(lockRegistry, sourceWorkspaceId);
     }
 
     /**
@@ -79,6 +75,7 @@ public class InstanceInitializerBean {
         LOGGER.info("isInCloneMode={}.", isInCloneMode);
         try {
             // Make sure it's safe to start cloning (in case another replica is trying to clone)
+            lock.obtainLock(sourceWorkspaceId);
             boolean lockAquired = lock.tryLock();
             if (isInCloneMode && lockAquired) {
                 LOGGER.info("Source workspace id loaded as {}.", sourceWorkspaceId);
