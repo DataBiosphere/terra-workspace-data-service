@@ -88,7 +88,7 @@ jobs:
     needs:
       - run-e2e-test-job
       - init-github-context
-    if: '${{ needs.init-github-context.outputs.delete-bee && always() }}'
+    # if: '${{ needs.init-github-context.outputs.delete-bee && always() }}'
     steps:
       - name: dispatch to terra-github-workflows
         uses: broadinstitute/workflow-dispatch@v3
