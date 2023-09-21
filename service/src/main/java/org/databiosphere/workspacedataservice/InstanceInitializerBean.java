@@ -93,8 +93,6 @@ public class InstanceInitializerBean {
       } else if (lockAquired) {
         initializeDefaultInstance();
       }
-    } catch (InterruptedException e) {
-      LOGGER.error("Error with aquiring cloning/schema initialization Lock: {}", e.getMessage());
     } finally {
       lock.unlock();
     }
