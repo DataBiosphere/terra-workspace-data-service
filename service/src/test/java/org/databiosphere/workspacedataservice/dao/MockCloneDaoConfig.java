@@ -7,10 +7,10 @@ import org.springframework.context.annotation.Profile;
 
 @Configuration
 public class MockCloneDaoConfig {
-    @Bean
-    @Profile("mock-clone-dao")
-    @Primary
-    CloneDao mockCloneDao() {
-        return new MockCloneDao();
-    }
+  @Bean
+  @Profile("mock-clone-dao")
+  @Primary
+  CloneDao mockCloneDao() {
+    return new MockCloneDao();
+  }
 }

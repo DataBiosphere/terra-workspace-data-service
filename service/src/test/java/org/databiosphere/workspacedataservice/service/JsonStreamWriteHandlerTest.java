@@ -1,7 +1,14 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -9,39 +16,29 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @DirtiesContext
-@SpringBootTest(classes = { JsonConfig.class })
+@SpringBootTest(classes = {JsonConfig.class})
 public class JsonStreamWriteHandlerTest {
 
-    @Autowired
-    ObjectMapper objectMapper; // as defined in JsonConfig
+  @Autowired ObjectMapper objectMapper; // as defined in JsonConfig
 
-    private static Stream<Arguments> parserFeatures() {
-        return Arrays.stream(JsonParser.Feature.values()).map(Arguments::of);
-    }
+  private static Stream<Arguments> parserFeatures() {
+    return Arrays.stream(JsonParser.Feature.values()).map(Arguments::of);
+  }
 
-    // test that JsonStreamWriteHandler has the same JsonParser features enabled
-    // as the main ObjectMapper from JsonConfig
-    @ParameterizedTest(name = "JsonParser feature {0} should be same in ObjectMapper and JsonParser")
-    @MethodSource("parserFeatures")
-    void parserConfig(JsonParser.Feature feature) throws IOException {
-        // fake json input needs to start with "[", or creating the JsonStreamWriteHandler will fail
-        String streamContents = "[]";
-        InputStream is = new ByteArrayInputStream(streamContents.getBytes());
+  // test that JsonStreamWriteHandler has the same JsonParser features enabled
+  // as the main ObjectMapper from JsonConfig
+  @ParameterizedTest(name = "JsonParser feature {0} should be same in ObjectMapper and JsonParser")
+  @MethodSource("parserFeatures")
+  void parserConfig(JsonParser.Feature feature) throws IOException {
+    // fake json input needs to start with "[", or creating the JsonStreamWriteHandler will fail
+    String streamContents = "[]";
+    InputStream is = new ByteArrayInputStream(streamContents.getBytes());
 
-        JsonStreamWriteHandler handler = new JsonStreamWriteHandler(is, objectMapper);
+    JsonStreamWriteHandler handler = new JsonStreamWriteHandler(is, objectMapper);
 
-        boolean expected = objectMapper.isEnabled(feature);
-        boolean actual = handler.getParser().isEnabled(feature);
-        assertEquals(expected, actual, "for feature " + feature.name());
-    }
-
+    boolean expected = objectMapper.isEnabled(feature);
+    boolean actual = handler.getParser().isEnabled(feature);
+    assertEquals(expected, actual, "for feature " + feature.name());
+  }
 }

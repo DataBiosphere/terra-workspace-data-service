@@ -1,70 +1,71 @@
 package org.databiosphere.workspacedataservice.service;
 
 import com.google.common.base.Preconditions;
+import java.util.Arrays;
+import java.util.List;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.Arrays;
-import java.util.List;
-
 public class RelationUtils {
 
-	public static final String RELATION_IDENTIFIER = "terra-wds";
-	
-	public static RecordType getTypeValue(Object obj) {
-		return RecordType.valueOf(splitRelationIdentifier(obj)[0]);
-	}
+  public static final String RELATION_IDENTIFIER = "terra-wds";
 
-	public static RecordType getTypeValueForList(List<?> listVal) {
-		if (listVal.stream().map(RelationUtils::getTypeValue).distinct().count() > 1){
-			throw new InvalidRelationException("All relations in an array must relate to the same table");
-		}
-		return getTypeValue(listVal.get(0));
-	}
+  public static RecordType getTypeValue(Object obj) {
+    return RecordType.valueOf(splitRelationIdentifier(obj)[0]);
+  }
 
-	public static RecordType getTypeValueForArray(String[] arr) {
-		return getTypeValueForList(Arrays.asList(arr));
-	}
+  public static RecordType getTypeValueForList(List<?> listVal) {
+    if (listVal.stream().map(RelationUtils::getTypeValue).distinct().count() > 1) {
+      throw new InvalidRelationException("All relations in an array must relate to the same table");
+    }
+    return getTypeValue(listVal.get(0));
+  }
 
-	private static String[] splitRelationIdentifier(Object obj) {
-		String errorMessage = "Expected " + RELATION_IDENTIFIER + "<recordType>/<recordId>";
-		Preconditions.checkNotNull(obj, errorMessage);
-		Preconditions.checkArgument(obj instanceof String, errorMessage);
-		String ref = (String) obj;
+  public static RecordType getTypeValueForArray(String[] arr) {
+    return getTypeValueForList(Arrays.asList(arr));
+  }
 
-		// parse the string as a uri
-		UriComponents uric = UriComponentsBuilder.fromUriString(ref).build();
+  private static String[] splitRelationIdentifier(Object obj) {
+    String errorMessage = "Expected " + RELATION_IDENTIFIER + "<recordType>/<recordId>";
+    Preconditions.checkNotNull(obj, errorMessage);
+    Preconditions.checkArgument(obj instanceof String, errorMessage);
+    String ref = (String) obj;
 
-		// uri scheme should be "terra-wds"
-		Preconditions.checkArgument(RELATION_IDENTIFIER.equals(uric.getScheme()), errorMessage);
+    // parse the string as a uri
+    UriComponents uric = UriComponentsBuilder.fromUriString(ref).build();
 
-		// record type is the first segment of the uri path;
-		// record id is the second segment of the uri path
-		List<String> pathSegments = uric.getPathSegments();
-		Preconditions.checkArgument(pathSegments.size() == 2, errorMessage);
+    // uri scheme should be "terra-wds"
+    Preconditions.checkArgument(RELATION_IDENTIFIER.equals(uric.getScheme()), errorMessage);
 
-		return pathSegments.toArray(new String[0]);
-	}
+    // record type is the first segment of the uri path;
+    // record id is the second segment of the uri path
+    List<String> pathSegments = uric.getPathSegments();
+    Preconditions.checkArgument(pathSegments.size() == 2, errorMessage);
 
-	public static String getRelationValue(Object obj) {
-		return splitRelationIdentifier(obj)[1];
-	}
+    return pathSegments.toArray(new String[0]);
+  }
 
-	/**
-	 * Determines whether attribute value matches this expectation
-	 *
-	 * @param obj
-	 *            - attribute value to check
-	 * @return true if attribute begins with the REFERENCE_IDENTIFIER
-	 */
-	public static boolean isRelationValue(Object obj) {
-		return obj != null && obj.toString().startsWith(RELATION_IDENTIFIER);
-	}
+  public static String getRelationValue(Object obj) {
+    return splitRelationIdentifier(obj)[1];
+  }
 
-	public static String createRelationString(RecordType targetRecordType, String recordId) {
-		return UriComponentsBuilder.newInstance().scheme(RELATION_IDENTIFIER)
-				.pathSegment(targetRecordType.getName(), recordId).build().toUriString();
-	}
+  /**
+   * Determines whether attribute value matches this expectation
+   *
+   * @param obj - attribute value to check
+   * @return true if attribute begins with the REFERENCE_IDENTIFIER
+   */
+  public static boolean isRelationValue(Object obj) {
+    return obj != null && obj.toString().startsWith(RELATION_IDENTIFIER);
+  }
+
+  public static String createRelationString(RecordType targetRecordType, String recordId) {
+    return UriComponentsBuilder.newInstance()
+        .scheme(RELATION_IDENTIFIER)
+        .pathSegment(targetRecordType.getName(), recordId)
+        .build()
+        .toUriString();
+  }
 }

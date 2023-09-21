@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(code = HttpStatus.BAD_REQUEST)
 public class InvalidTsvException extends IllegalArgumentException {
 
-	public InvalidTsvException(String message) {
-		super(message);
-	}
+  public InvalidTsvException(String message) {
+    super(message);
+  }
 }
