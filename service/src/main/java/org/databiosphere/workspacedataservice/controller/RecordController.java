@@ -71,13 +71,13 @@ public class RecordController {
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
-	@GetMapping("/{instanceId}/records/{version}")
-	@RetryableApi
-	public ResponseEntity<Timestamp> getLastUpdatedTime(@PathVariable("instanceId") UUID instanceId,
-                                                      @PathVariable("version") String version) {
-		var updateTime = recordOrchestratorService.getRecordsLastUpdatedTime(instanceId, version);
-		return new ResponseEntity<>(updateTime, HttpStatus.OK);
-	}
+  @GetMapping("/{instanceId}/records/{version}")
+  @RetryableApi
+  public ResponseEntity<Timestamp> getLastUpdatedTime(
+      @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {
+    var updateTime = recordOrchestratorService.getRecordsLastUpdatedTime(instanceId, version);
+    return new ResponseEntity<>(updateTime, HttpStatus.OK);
+  }
 
   @PostMapping("/{instanceId}/tsv/{version}/{recordType}")
   public ResponseEntity<TsvUploadResponse> tsvUpload(

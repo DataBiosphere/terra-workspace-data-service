@@ -57,7 +57,9 @@ public class PostgresInstanceDao implements InstanceDao {
         .getJdbcTemplate()
         .update("drop schema " + quote(instanceId.toString()) + " cascade");
     namedTemplate.getJdbcTemplate().update("delete from sys_wds.instance where id = ?", instanceId);
-    namedTemplate.getJdbcTemplate().update("delete from sys_wds.record where instance = ?", instanceId);
+    namedTemplate
+        .getJdbcTemplate()
+        .update("delete from sys_wds.record where instance = ?", instanceId);
   }
 
   @Override

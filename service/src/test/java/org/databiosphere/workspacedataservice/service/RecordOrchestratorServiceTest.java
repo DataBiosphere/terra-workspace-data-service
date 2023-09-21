@@ -33,9 +33,9 @@ import org.springframework.web.server.ResponseStatusException;
 @DirtiesContext
 @SpringBootTest
 class RecordOrchestratorServiceTest {
-    @Autowired private InstanceDao instanceDao;
-    @Autowired private RecordDao recordDao;
-    @Autowired private RecordOrchestratorService recordOrchestratorService;
+  @Autowired private InstanceDao instanceDao;
+  @Autowired private RecordDao recordDao;
+  @Autowired private RecordOrchestratorService recordOrchestratorService;
 
   private static final UUID INSTANCE = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
   private static final RecordType TEST_TYPE = RecordType.valueOf("test");

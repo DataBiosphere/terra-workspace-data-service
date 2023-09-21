@@ -175,8 +175,8 @@ public class RecordOrchestratorService { // TODO give me a better name
     }
     if (searchRequest.getSortAttribute() != null
         && !recordDao
-        .getExistingTableSchemaLessPrimaryKey(instanceId, recordType)
-        .containsKey(searchRequest.getSortAttribute())) {
+            .getExistingTableSchemaLessPrimaryKey(instanceId, recordType)
+            .containsKey(searchRequest.getSortAttribute())) {
       throw new MissingObjectException("Requested sort attribute");
     }
     int totalRecords = recordDao.countRecords(instanceId, recordType);
