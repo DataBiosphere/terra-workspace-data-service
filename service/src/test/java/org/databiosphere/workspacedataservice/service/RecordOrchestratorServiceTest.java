@@ -55,7 +55,6 @@ class RecordOrchestratorServiceTest {
 
     @AfterEach
     void cleanUp() {
-        recordDao.deleteRecordFromSys(INSTANCE);
         instanceDao.dropSchema(INSTANCE);
     }
 

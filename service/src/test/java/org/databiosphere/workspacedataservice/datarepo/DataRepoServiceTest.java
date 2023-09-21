@@ -71,7 +71,6 @@ class DataRepoServiceTest {
     }
     @AfterEach
     void afterEach() {
-        recordDao.deleteRecordFromSys(INSTANCE);
         if (instanceDao.instanceSchemaExists(INSTANCE)) {
             instanceDao.dropSchema(INSTANCE);
         }
