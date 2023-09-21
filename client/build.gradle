@@ -5,6 +5,7 @@ plugins {
 
 	id 'com.jfrog.artifactory' version '4.32.0'
 	id 'org.openapi.generator'
+	id 'com.diffplug.spotless' version '6.21.0'
 }
 
 repositories {
@@ -28,3 +29,32 @@ if (project.hasProperty("jakarta") && "true".equalsIgnoreCase(project.getPropert
 
 apply from: 'artifactory.gradle'
 apply from: 'swagger.gradle'
+
+boolean isCiServer = System.getenv().containsKey("CI") && System.getenv().get("CI").toBoolean()
+
+// kill switch for spotless, intended for one-off contingencies only, like when
+// making changes which necessarily can't be formatted by spotless, like the initial
+// commit of its config
+boolean spotlessEnabled = false
+
+spotless {
+  java {
+    targetExclude "${buildDir}/**"
+    targetExclude "**/swagger-code/**"
+    targetExclude "**/generated/**"
+    googleJavaFormat()
+    toggleOffOn() // allow spotless:off & spotless:on to protect code from formatting
+  }
+}
+spotlessJavaCheck.onlyIf( { spotlessEnabled } )
+
+// Run spotless check when running in github actions, otherwise run spotless apply.
+compileJava {
+  if (spotlessEnabled) {
+    if (isCiServer) {
+      dependsOn(spotlessCheck)
+    } else {
+      dependsOn(spotlessApply)
+    }
+  }
+}
