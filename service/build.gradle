@@ -3,6 +3,7 @@ plugins {
 	id 'com.google.cloud.tools.jib'
 	id 'org.sonarqube'
 	id 'com.gorylenko.gradle-git-properties'
+	id 'com.diffplug.spotless' version '6.21.0'
 	id 'jacoco'
 	id "au.com.dius.pact" version "4.6.1"
 	id 'jvm-test-suite'
@@ -92,6 +93,34 @@ dependencies {
 			because("CVE-2023-3635")
 		}
 	}
+}
+
+boolean isCiServer = System.getenv().containsKey("CI") && System.getenv().get("CI").toBoolean()
+
+// kill switch for spotless, intended for one-off contingencies only, like when
+// making changes which necessarily can't be formatted by spotless, like the initial
+// commit of its config
+boolean spotlessEnabled = true
+
+spotless {
+  java {
+    targetExclude "${buildDir}/**"
+    targetExclude "**/swagger-code/**"
+    googleJavaFormat()
+    toggleOffOn() // allow spotless:off & spotless:on to protect code from formatting
+  }
+}
+spotlessJavaCheck.onlyIf( { spotlessEnabled } )
+
+// Run spotless check when running in github actions, otherwise run spotless apply.
+compileJava {
+  if (spotlessEnabled) {
+    if (isCiServer) {
+        dependsOn(spotlessCheck)
+    } else {
+        dependsOn(spotlessApply)
+    }
+  }
 }
 
 sonarqube {

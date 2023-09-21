@@ -1,5 +1,11 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.databiosphere.workspacedataservice.retry.RetryableApi;
 import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
@@ -27,150 +33,179 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.sql.Timestamp;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
 @RestController
 public class RecordController {
 
-	private final InstanceService instanceService;
-	private final RecordOrchestratorService recordOrchestratorService;
+  private final InstanceService instanceService;
+  private final RecordOrchestratorService recordOrchestratorService;
 
-	public RecordController(InstanceService instanceService, RecordOrchestratorService recordOrchestratorService) {
-		this.instanceService = instanceService;
-		this.recordOrchestratorService = recordOrchestratorService;
-	}
+  public RecordController(
+      InstanceService instanceService, RecordOrchestratorService recordOrchestratorService) {
+    this.instanceService = instanceService;
+    this.recordOrchestratorService = recordOrchestratorService;
+  }
 
-	@PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
-	@RetryableApi
-	public ResponseEntity<RecordResponse> updateSingleRecord(@PathVariable("instanceId") UUID instanceId,
-			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			@PathVariable("recordId") String recordId, @RequestBody RecordRequest recordRequest) {
-		RecordResponse response = recordOrchestratorService
-			.updateSingleRecord(instanceId, version, recordType, recordId, recordRequest);
-		return new ResponseEntity<>(response, HttpStatus.OK);
-	}
+  @PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
+  @RetryableApi
+  public ResponseEntity<RecordResponse> updateSingleRecord(
+      @PathVariable("instanceId") UUID instanceId,
+      @PathVariable("version") String version,
+      @PathVariable("recordType") RecordType recordType,
+      @PathVariable("recordId") String recordId,
+      @RequestBody RecordRequest recordRequest) {
+    RecordResponse response =
+        recordOrchestratorService.updateSingleRecord(
+            instanceId, version, recordType, recordId, recordRequest);
+    return new ResponseEntity<>(response, HttpStatus.OK);
+  }
 
-	@GetMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
-	@RetryableApi
-	public ResponseEntity<RecordResponse> getSingleRecord(@PathVariable("instanceId") UUID instanceId,
-			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			@PathVariable("recordId") String recordId) {
-		RecordResponse response = recordOrchestratorService.getSingleRecord(instanceId, version, recordType, recordId);
-		return new ResponseEntity<>(response, HttpStatus.OK);
-	}
+  @GetMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
+  @RetryableApi
+  public ResponseEntity<RecordResponse> getSingleRecord(
+      @PathVariable("instanceId") UUID instanceId,
+      @PathVariable("version") String version,
+      @PathVariable("recordType") RecordType recordType,
+      @PathVariable("recordId") String recordId) {
+    RecordResponse response =
+        recordOrchestratorService.getSingleRecord(instanceId, version, recordType, recordId);
+    return new ResponseEntity<>(response, HttpStatus.OK);
+  }
 
 	@GetMapping("/{instanceId}/records/{version}")
 	@RetryableApi
 	public ResponseEntity<Timestamp> getLastUpdatedTime(@PathVariable("instanceId") UUID instanceId,
-														@PathVariable("version") String version) {
+                                                      @PathVariable("version") String version) {
 		var updateTime = recordOrchestratorService.getRecordsLastUpdatedTime(instanceId, version);
 		return new ResponseEntity<>(updateTime, HttpStatus.OK);
 	}
 
-	@PostMapping( "/{instanceId}/tsv/{version}/{recordType}")
-	public ResponseEntity<TsvUploadResponse> tsvUpload(@PathVariable("instanceId") UUID instanceId,
-			   @PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			   @RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey,
-               @RequestParam("records") MultipartFile records) throws IOException {
-		int recordsModified = recordOrchestratorService.tsvUpload(instanceId, version, recordType, primaryKey, records);
-		return new ResponseEntity<>(new TsvUploadResponse(recordsModified, "Updated " + recordType.toString()),
-				HttpStatus.OK);
-	}
+  @PostMapping("/{instanceId}/tsv/{version}/{recordType}")
+  public ResponseEntity<TsvUploadResponse> tsvUpload(
+      @PathVariable("instanceId") UUID instanceId,
+      @PathVariable("version") String version,
+      @PathVariable("recordType") RecordType recordType,
+      @RequestParam(name = "primaryKey", required = false) Optional<String> primaryKey,
+      @RequestParam("records") MultipartFile records)
+      throws IOException {
+    int recordsModified =
+        recordOrchestratorService.tsvUpload(instanceId, version, recordType, primaryKey, records);
+    return new ResponseEntity<>(
+        new TsvUploadResponse(recordsModified, "Updated " + recordType.toString()), HttpStatus.OK);
+  }
 
-	@GetMapping("/{instanceId}/tsv/{version}/{recordType}")
-	public ResponseEntity<StreamingResponseBody> streamAllEntities(@PathVariable("instanceId") UUID instanceId,
-			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType) {
-		StreamingResponseBody responseBody =
-			recordOrchestratorService.streamAllEntities(instanceId, version, recordType);
-		return ResponseEntity.status(HttpStatus.OK).contentType(new MediaType("text", "tab-separated-values"))
-				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + recordType.getName() + ".tsv")
-				.body(responseBody);
-	}
+  @GetMapping("/{instanceId}/tsv/{version}/{recordType}")
+  public ResponseEntity<StreamingResponseBody> streamAllEntities(
+      @PathVariable("instanceId") UUID instanceId,
+      @PathVariable("version") String version,
+      @PathVariable("recordType") RecordType recordType) {
+    StreamingResponseBody responseBody =
+        recordOrchestratorService.streamAllEntities(instanceId, version, recordType);
+    return ResponseEntity.status(HttpStatus.OK)
+        .contentType(new MediaType("text", "tab-separated-values"))
+        .header(
+            HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + recordType.getName() + ".tsv")
+        .body(responseBody);
+  }
 
-	@PostMapping("/{instanceid}/search/{version}/{recordType}")
-	@RetryableApi
-	public RecordQueryResponse queryForRecords(@PathVariable("instanceid") UUID instanceId,
-			@PathVariable("recordType") RecordType recordType,
-			@PathVariable("version") String version,
-			@RequestBody(required = false) SearchRequest searchRequest) {
-		return recordOrchestratorService.queryForRecords(instanceId, recordType, version, searchRequest);
-	}
+  @PostMapping("/{instanceid}/search/{version}/{recordType}")
+  @RetryableApi
+  public RecordQueryResponse queryForRecords(
+      @PathVariable("instanceid") UUID instanceId,
+      @PathVariable("recordType") RecordType recordType,
+      @PathVariable("version") String version,
+      @RequestBody(required = false) SearchRequest searchRequest) {
+    return recordOrchestratorService.queryForRecords(
+        instanceId, recordType, version, searchRequest);
+  }
 
-	@PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
-	@RetryableApi
-	public ResponseEntity<RecordResponse> upsertSingleRecord(@PathVariable("instanceId") UUID instanceId,
-			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			@PathVariable("recordId") String recordId, @RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey,
-			 @RequestBody RecordRequest recordRequest) {
-			return recordOrchestratorService.upsertSingleRecord(instanceId, version, recordType, recordId, primaryKey,
-				recordRequest);
-	}
+  @PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
+  @RetryableApi
+  public ResponseEntity<RecordResponse> upsertSingleRecord(
+      @PathVariable("instanceId") UUID instanceId,
+      @PathVariable("version") String version,
+      @PathVariable("recordType") RecordType recordType,
+      @PathVariable("recordId") String recordId,
+      @RequestParam(name = "primaryKey", required = false) Optional<String> primaryKey,
+      @RequestBody RecordRequest recordRequest) {
+    return recordOrchestratorService.upsertSingleRecord(
+        instanceId, version, recordType, recordId, primaryKey, recordRequest);
+  }
 
-	@GetMapping("/instances/{version}")
-	@RetryableApi
-	public ResponseEntity<List<UUID>> listInstances(@PathVariable("version") String version) {
-		List<UUID> schemaList = instanceService.listInstances(version);
-		return new ResponseEntity<>(schemaList, HttpStatus.OK);
-	}
+  @GetMapping("/instances/{version}")
+  @RetryableApi
+  public ResponseEntity<List<UUID>> listInstances(@PathVariable("version") String version) {
+    List<UUID> schemaList = instanceService.listInstances(version);
+    return new ResponseEntity<>(schemaList, HttpStatus.OK);
+  }
 
-	@PostMapping("/instances/{version}/{instanceId}")
-	public ResponseEntity<String> createInstance(@PathVariable("instanceId") UUID instanceId,
-			@PathVariable("version") String version) {
-		instanceService.createInstance(instanceId, version);
-		return new ResponseEntity<>(HttpStatus.CREATED);
-	}
+  @PostMapping("/instances/{version}/{instanceId}")
+  public ResponseEntity<String> createInstance(
+      @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {
+    instanceService.createInstance(instanceId, version);
+    return new ResponseEntity<>(HttpStatus.CREATED);
+  }
 
-	@DeleteMapping("/instances/{version}/{instanceId}")
-	public ResponseEntity<String> deleteInstance(@PathVariable("instanceId") UUID instanceId,
-												 @PathVariable("version") String version) {
-		instanceService.deleteInstance(instanceId, version);
-		return new ResponseEntity<>(HttpStatus.OK);
-	}
+  @DeleteMapping("/instances/{version}/{instanceId}")
+  public ResponseEntity<String> deleteInstance(
+      @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {
+    instanceService.deleteInstance(instanceId, version);
+    return new ResponseEntity<>(HttpStatus.OK);
+  }
 
-	@DeleteMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
-	@RetryableApi
-	public ResponseEntity<Void> deleteSingleRecord(@PathVariable("instanceId") UUID instanceId,
-			@PathVariable("version") String version, @PathVariable("recordType") RecordType recordType,
-			@PathVariable("recordId") String recordId) {
-		boolean recordFound = recordOrchestratorService.deleteSingleRecord(instanceId, version, recordType, recordId);
-		return recordFound ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
-	}
+  @DeleteMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
+  @RetryableApi
+  public ResponseEntity<Void> deleteSingleRecord(
+      @PathVariable("instanceId") UUID instanceId,
+      @PathVariable("version") String version,
+      @PathVariable("recordType") RecordType recordType,
+      @PathVariable("recordId") String recordId) {
+    boolean recordFound =
+        recordOrchestratorService.deleteSingleRecord(instanceId, version, recordType, recordId);
+    return recordFound
+        ? new ResponseEntity<>(HttpStatus.NO_CONTENT)
+        : new ResponseEntity<>(HttpStatus.NOT_FOUND);
+  }
 
-	@DeleteMapping("/{instanceId}/types/{v}/{type}")
-	@RetryableApi
-	public ResponseEntity<Void> deleteRecordType(@PathVariable("instanceId") UUID instanceId,
-			@PathVariable("v") String version, @PathVariable("type") RecordType recordType) {
-		recordOrchestratorService.deleteRecordType(instanceId, version, recordType);
-		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-	}
+  @DeleteMapping("/{instanceId}/types/{v}/{type}")
+  @RetryableApi
+  public ResponseEntity<Void> deleteRecordType(
+      @PathVariable("instanceId") UUID instanceId,
+      @PathVariable("v") String version,
+      @PathVariable("type") RecordType recordType) {
+    recordOrchestratorService.deleteRecordType(instanceId, version, recordType);
+    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+  }
 
-	@GetMapping("/{instanceId}/types/{v}/{type}")
-	@RetryableApi
-	public ResponseEntity<RecordTypeSchema> describeRecordType(@PathVariable("instanceId") UUID instanceId,
-															   @PathVariable("v") String version, @PathVariable("type") RecordType recordType) {
-		RecordTypeSchema result = recordOrchestratorService.describeRecordType(instanceId, version, recordType);
-		return new ResponseEntity<>(result, HttpStatus.OK);
-	}
+  @GetMapping("/{instanceId}/types/{v}/{type}")
+  @RetryableApi
+  public ResponseEntity<RecordTypeSchema> describeRecordType(
+      @PathVariable("instanceId") UUID instanceId,
+      @PathVariable("v") String version,
+      @PathVariable("type") RecordType recordType) {
+    RecordTypeSchema result =
+        recordOrchestratorService.describeRecordType(instanceId, version, recordType);
+    return new ResponseEntity<>(result, HttpStatus.OK);
+  }
 
-	@GetMapping("/{instanceId}/types/{v}")
-	@RetryableApi
-	public ResponseEntity<List<RecordTypeSchema>> describeAllRecordTypes(@PathVariable("instanceId") UUID instanceId,
-			@PathVariable("v") String version) {
-		List<RecordTypeSchema> result = recordOrchestratorService.describeAllRecordTypes(instanceId, version);
-		return new ResponseEntity<>(result, HttpStatus.OK);
-	}
+  @GetMapping("/{instanceId}/types/{v}")
+  @RetryableApi
+  public ResponseEntity<List<RecordTypeSchema>> describeAllRecordTypes(
+      @PathVariable("instanceId") UUID instanceId, @PathVariable("v") String version) {
+    List<RecordTypeSchema> result =
+        recordOrchestratorService.describeAllRecordTypes(instanceId, version);
+    return new ResponseEntity<>(result, HttpStatus.OK);
+  }
 
-	@PostMapping("/{instanceid}/batch/{v}/{type}")
-	// N.B. transaction annotated in batchWriteService.batchWriteJsonStream
-	public ResponseEntity<BatchResponse> streamingWrite(@PathVariable("instanceid") UUID instanceId,
-			@PathVariable("v") String version, @PathVariable("type") RecordType recordType,
-			@RequestParam(name= "primaryKey", required = false) Optional<String> primaryKey, InputStream is) {
-		int recordsModified = recordOrchestratorService.streamingWrite(instanceId, version, recordType, primaryKey, is);
-		return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
-	}
+  @PostMapping("/{instanceid}/batch/{v}/{type}")
+  // N.B. transaction annotated in batchWriteService.batchWriteJsonStream
+  public ResponseEntity<BatchResponse> streamingWrite(
+      @PathVariable("instanceid") UUID instanceId,
+      @PathVariable("v") String version,
+      @PathVariable("type") RecordType recordType,
+      @RequestParam(name = "primaryKey", required = false) Optional<String> primaryKey,
+      InputStream is) {
+    int recordsModified =
+        recordOrchestratorService.streamingWrite(instanceId, version, recordType, primaryKey, is);
+    return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
+  }
 }

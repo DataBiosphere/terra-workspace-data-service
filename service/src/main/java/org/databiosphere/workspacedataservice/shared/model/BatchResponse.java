@@ -1,5 +1,3 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
-public record BatchResponse(int recordsModified, String message) {
-
-}
+public record BatchResponse(int recordsModified, String message) {}

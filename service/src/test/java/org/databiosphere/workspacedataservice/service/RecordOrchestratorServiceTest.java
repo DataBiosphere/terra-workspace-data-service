@@ -1,5 +1,13 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
+import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
@@ -21,187 +29,182 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
-import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-@ActiveProfiles(profiles = { "mock-sam" })
+@ActiveProfiles(profiles = {"mock-sam"})
 @DirtiesContext
 @SpringBootTest
 class RecordOrchestratorServiceTest {
-
     @Autowired private InstanceDao instanceDao;
     @Autowired private RecordDao recordDao;
     @Autowired private RecordOrchestratorService recordOrchestratorService;
 
-    private static final UUID INSTANCE = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
-    private static final RecordType TEST_TYPE = RecordType.valueOf("test");
+  private static final UUID INSTANCE = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+  private static final RecordType TEST_TYPE = RecordType.valueOf("test");
 
-    private static final String RECORD_ID = "aNewRecord";
-    private static final String TEST_KEY = "test_key";
-    private static final String TEST_VAL = "val";
+  private static final String RECORD_ID = "aNewRecord";
+  private static final String TEST_KEY = "test_key";
+  private static final String TEST_VAL = "val";
 
-    @BeforeEach
-    void setUp() {
-        if (!instanceDao.instanceSchemaExists(INSTANCE)) {
-            instanceDao.createSchema(INSTANCE);
-        }
+  @BeforeEach
+  void setUp() {
+    if (!instanceDao.instanceSchemaExists(INSTANCE)) {
+      instanceDao.createSchema(INSTANCE);
     }
+  }
 
-    @AfterEach
-    void cleanUp() {
-        instanceDao.dropSchema(INSTANCE);
-    }
+  @AfterEach
+  void cleanUp() {
+    instanceDao.dropSchema(INSTANCE);
+  }
 
-    @Test
-    void updateSingleRecord() {
-        String newVal = "val2";
+  @Test
+  void updateSingleRecord() {
+    String newVal = "val2";
 
-        testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+    testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
 
-        // Overwrite the value for the only attribute on the record
-        RecordRequest updateRequest = new RecordRequest(RecordAttributes.empty().putAttribute(TEST_KEY, newVal));
+    // Overwrite the value for the only attribute on the record
+    RecordRequest updateRequest =
+        new RecordRequest(RecordAttributes.empty().putAttribute(TEST_KEY, newVal));
 
-        RecordResponse resp =
-            recordOrchestratorService.updateSingleRecord(INSTANCE, VERSION, TEST_TYPE, RECORD_ID, updateRequest);
+    RecordResponse resp =
+        recordOrchestratorService.updateSingleRecord(
+            INSTANCE, VERSION, TEST_TYPE, RECORD_ID, updateRequest);
 
-        assertEquals(RECORD_ID, resp.recordId());
+    assertEquals(RECORD_ID, resp.recordId());
 
-        // Check that we now get the new val for the attribute
-        testGetRecord(RECORD_ID, TEST_KEY, newVal);
-    }
+    // Check that we now get the new val for the attribute
+    testGetRecord(RECORD_ID, TEST_KEY, newVal);
+  }
 
-    @Test
-    void queryForRecords() {
-        String secondRecord = "r2";
-        String secondVal = "v2";
-        String thirdRecord = "r3";
-        String thirdVal = "v3";
+  @Test
+  void queryForRecords() {
+    String secondRecord = "r2";
+    String secondVal = "v2";
+    String thirdRecord = "r3";
+    String thirdVal = "v3";
 
-        testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
-        testCreateRecord(secondRecord, TEST_KEY, secondVal);
-        testCreateRecord(thirdRecord, TEST_KEY, thirdVal);
+    testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+    testCreateRecord(secondRecord, TEST_KEY, secondVal);
+    testCreateRecord(thirdRecord, TEST_KEY, thirdVal);
 
-        RecordQueryResponse resp = recordOrchestratorService.queryForRecords(
-            INSTANCE,
-            TEST_TYPE,
-            VERSION,
-            new SearchRequest()
-        );
+    RecordQueryResponse resp =
+        recordOrchestratorService.queryForRecords(
+            INSTANCE, TEST_TYPE, VERSION, new SearchRequest());
 
-        testContainsRecord(RECORD_ID, TEST_KEY, TEST_VAL, resp.records());
-        testContainsRecord(secondRecord, TEST_KEY, secondVal, resp.records());
-        testContainsRecord(thirdRecord, TEST_KEY, thirdVal, resp.records());
-        assertEquals(3, resp.totalRecords());
-    }
+    testContainsRecord(RECORD_ID, TEST_KEY, TEST_VAL, resp.records());
+    testContainsRecord(secondRecord, TEST_KEY, secondVal, resp.records());
+    testContainsRecord(thirdRecord, TEST_KEY, thirdVal, resp.records());
+    assertEquals(3, resp.totalRecords());
+  }
 
-    @Test
-    void upsertSingleRecord() {
-        testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+  @Test
+  void upsertSingleRecord() {
+    testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
 
-        testGetRecord(RECORD_ID, TEST_KEY, TEST_VAL);
-    }
+    testGetRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+  }
 
-    @Test
-    void deleteSingleRecord() {
-        testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+  @Test
+  void deleteSingleRecord() {
+    testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
 
-        recordOrchestratorService.deleteSingleRecord(INSTANCE, VERSION, TEST_TYPE, RECORD_ID);
+    recordOrchestratorService.deleteSingleRecord(INSTANCE, VERSION, TEST_TYPE, RECORD_ID);
 
-        assertThrows(MissingObjectException.class, () -> testGetRecord(RECORD_ID, TEST_KEY, TEST_VAL),
-            "getRecord should have thrown an error");
-    }
+    assertThrows(
+        MissingObjectException.class,
+        () -> testGetRecord(RECORD_ID, TEST_KEY, TEST_VAL),
+        "getRecord should have thrown an error");
+  }
 
-    @Test
-    void deleteRecordType() {
-        testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+  @Test
+  void deleteRecordType() {
+    testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
 
-        recordOrchestratorService.deleteRecordType(INSTANCE, VERSION, TEST_TYPE);
+    recordOrchestratorService.deleteRecordType(INSTANCE, VERSION, TEST_TYPE);
 
-        assertThrows(MissingObjectException.class,
-            () -> recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE),
-            "describeRecordType should have thrown an error");
-    }
+    assertThrows(
+        MissingObjectException.class,
+        () -> recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE),
+        "describeRecordType should have thrown an error");
+  }
 
-    @Test
-    void describeRecordType() {
-        testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
-        testCreateRecord("second", TEST_KEY, "another");
-        testCreateRecord("third", TEST_KEY, "a third");
+  @Test
+  void describeRecordType() {
+    testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+    testCreateRecord("second", TEST_KEY, "another");
+    testCreateRecord("third", TEST_KEY, "a third");
 
-        RecordTypeSchema schema = recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE);
+    RecordTypeSchema schema =
+        recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE);
 
-        assertEquals(TEST_TYPE, schema.name());
-        assertEquals(3, schema.count());
-    }
+    assertEquals(TEST_TYPE, schema.name());
+    assertEquals(3, schema.count());
+  }
 
-    @Test
-    void describeAllRecordTypes() {
-        testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
-        testCreateRecord("second", TEST_KEY, "another");
-        testCreateRecord("third", TEST_KEY, "a third");
+  @Test
+  void describeAllRecordTypes() {
+    testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+    testCreateRecord("second", TEST_KEY, "another");
+    testCreateRecord("third", TEST_KEY, "a third");
 
-        RecordType typeTwo = RecordType.valueOf("typeTwo");
-        testCreateRecord("fourth", TEST_KEY, "a fourth", typeTwo);
+    RecordType typeTwo = RecordType.valueOf("typeTwo");
+    testCreateRecord("fourth", TEST_KEY, "a fourth", typeTwo);
 
-        List<RecordTypeSchema> schemas = recordOrchestratorService.describeAllRecordTypes(INSTANCE, VERSION);
+    List<RecordTypeSchema> schemas =
+        recordOrchestratorService.describeAllRecordTypes(INSTANCE, VERSION);
 
-        assert(
-            schemas.stream().anyMatch(schema -> schema.name().equals(TEST_TYPE) && schema.count() == 3)
-        );
-        assert(
-            schemas.stream().anyMatch(schema -> schema.name().equals(typeTwo) && schema.count() == 1)
-        );
-        assertEquals(2, schemas.size());
-    }
+    assert (schemas.stream()
+        .anyMatch(schema -> schema.name().equals(TEST_TYPE) && schema.count() == 3));
+    assert (schemas.stream()
+        .anyMatch(schema -> schema.name().equals(typeTwo) && schema.count() == 1));
+    assertEquals(2, schemas.size());
+  }
 
-    @Test
-    void testValidateVersion() {
-        validateVersion(VERSION);
+  @Test
+  void testValidateVersion() {
+    validateVersion(VERSION);
 
-        ResponseStatusException e =
-            assertThrows(ResponseStatusException.class, () -> validateVersion("invalidVersion"),
-                "validateVersion should have thrown an error");
-        assert(e.getStatus().equals(HttpStatus.BAD_REQUEST));
-    }
+    ResponseStatusException e =
+        assertThrows(
+            ResponseStatusException.class,
+            () -> validateVersion("invalidVersion"),
+            "validateVersion should have thrown an error");
+    assert (e.getStatus().equals(HttpStatus.BAD_REQUEST));
+  }
 
-    private void testCreateRecord(String newRecordId, String testKey, String testVal) {
-        testCreateRecord(newRecordId, testKey, testVal, TEST_TYPE);
-    }
+  private void testCreateRecord(String newRecordId, String testKey, String testVal) {
+    testCreateRecord(newRecordId, testKey, testVal, TEST_TYPE);
+  }
 
-    private void testCreateRecord(String newRecordId, String testKey, String testVal, RecordType newRecordType) {
-        RecordRequest recordRequest =  new RecordRequest(RecordAttributes.empty().putAttribute(testKey, testVal));
+  private void testCreateRecord(
+      String newRecordId, String testKey, String testVal, RecordType newRecordType) {
+    RecordRequest recordRequest =
+        new RecordRequest(RecordAttributes.empty().putAttribute(testKey, testVal));
 
-        ResponseEntity<RecordResponse> response = recordOrchestratorService.upsertSingleRecord(
-            INSTANCE,
-            VERSION,
-            newRecordType,
-            newRecordId,
-            Optional.empty(),
-            recordRequest
-        );
+    ResponseEntity<RecordResponse> response =
+        recordOrchestratorService.upsertSingleRecord(
+            INSTANCE, VERSION, newRecordType, newRecordId, Optional.empty(), recordRequest);
 
-        assertEquals(newRecordId, response.getBody().recordId());
-    }
+    assertEquals(newRecordId, response.getBody().recordId());
+  }
 
-    private void testGetRecord(String newRecordId, String testKey, String testVal) {
-        RecordResponse recordResponse = recordOrchestratorService.getSingleRecord(
-            INSTANCE, VERSION, TEST_TYPE, newRecordId
-        );
-        assertEquals(testVal, recordResponse.recordAttributes().getAttributeValue(testKey));
-    }
+  private void testGetRecord(String newRecordId, String testKey, String testVal) {
+    RecordResponse recordResponse =
+        recordOrchestratorService.getSingleRecord(INSTANCE, VERSION, TEST_TYPE, newRecordId);
+    assertEquals(testVal, recordResponse.recordAttributes().getAttributeValue(testKey));
+  }
 
-    private void testContainsRecord(String recordId, String testKey, String testVal, List<RecordResponse> respList) {
-        boolean found = respList.stream()
-            .anyMatch(recordResponse ->
-                          recordResponse.recordId().equals(recordId) &&
-                              recordResponse.recordAttributes().getAttributeValue(testKey).equals(testVal)
-            );
-        assert(found);
-    }
+  private void testContainsRecord(
+      String recordId, String testKey, String testVal, List<RecordResponse> respList) {
+    boolean found =
+        respList.stream()
+            .anyMatch(
+                recordResponse ->
+                    recordResponse.recordId().equals(recordId)
+                        && recordResponse
+                            .recordAttributes()
+                            .getAttributeValue(testKey)
+                            .equals(testVal));
+    assert (found);
+  }
 }
