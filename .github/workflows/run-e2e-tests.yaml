@@ -78,7 +78,7 @@ jobs:
     with:
       billing-project-name: '${{ needs.params-gen.outputs.project-name }}'
       bee-name: '${{ needs.params-gen.outputs.bee-name }}'
-      # branch: main #todo i think we can just take out this line actually since default is main
+      branch: main
   destroy-bee-workflow:
     runs-on: ubuntu-latest
     needs:
