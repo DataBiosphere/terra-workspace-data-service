@@ -35,7 +35,7 @@ boolean isCiServer = System.getenv().containsKey("CI") && System.getenv().get("C
 // kill switch for spotless, intended for one-off contingencies only, like when
 // making changes which necessarily can't be formatted by spotless, like the initial
 // commit of its config
-boolean spotlessEnabled = false
+boolean spotlessEnabled = true
 
 spotless {
   java {

@@ -9,20 +9,19 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class DataRepoConfig {
 
-        @Value("${datarepourl:}")
-        private String dataRepoUrl;
+  @Value("${datarepourl:}")
+  private String dataRepoUrl;
 
-        private static final Logger LOGGER = LoggerFactory.getLogger(DataRepoConfig.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DataRepoConfig.class);
 
-        @Bean
-        public DataRepoClientFactory getDataRepoClientFactory() {
-            LOGGER.info("Using data repo base url: '{}'", dataRepoUrl);
-            return new HttpDataRepoClientFactory(dataRepoUrl);
-        }
+  @Bean
+  public DataRepoClientFactory getDataRepoClientFactory() {
+    LOGGER.info("Using data repo base url: '{}'", dataRepoUrl);
+    return new HttpDataRepoClientFactory(dataRepoUrl);
+  }
 
-        @Bean
-        public DataRepoDao dataRepoDao(DataRepoClientFactory dataRepoClientFactory) {
-                return new DataRepoDao(dataRepoClientFactory);
-        }
-
+  @Bean
+  public DataRepoDao dataRepoDao(DataRepoClientFactory dataRepoClientFactory) {
+    return new DataRepoDao(dataRepoClientFactory);
+  }
 }

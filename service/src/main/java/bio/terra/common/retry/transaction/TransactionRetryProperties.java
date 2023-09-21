@@ -1,14 +1,13 @@
 package bio.terra.common.retry.transaction;
 
+import java.time.Duration;
+import java.util.List;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.classify.BinaryExceptionClassifier;
 import org.springframework.dao.RecoverableDataAccessException;
 import org.springframework.dao.TransientDataAccessException;
 import org.springframework.transaction.CannotCreateTransactionException;
-
-import java.time.Duration;
-import java.util.List;
 
 /**
  * Configuration settings for how database transactions are retried. There are 2 classes of retries,

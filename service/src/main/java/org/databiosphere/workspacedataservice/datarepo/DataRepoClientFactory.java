@@ -4,6 +4,5 @@ import bio.terra.datarepo.api.RepositoryApi;
 
 public interface DataRepoClientFactory {
 
-    RepositoryApi getRepositoryApi();
-
+  RepositoryApi getRepositoryApi();
 }

@@ -3,62 +3,52 @@ package org.databiosphere.workspacedataservice.sam;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 
 /**
- * Interface for SamDao, allowing various dao implementations.
- * Currently, the only implementation is HttpSamDao.
+ * Interface for SamDao, allowing various dao implementations. Currently, the only implementation is
+ * HttpSamDao.
  */
 public interface SamDao {
 
-    /**
-     * Sam resource type name for Workspaces
-     */
-    String RESOURCE_NAME_WORKSPACE = "workspace";
+  /** Sam resource type name for Workspaces */
+  String RESOURCE_NAME_WORKSPACE = "workspace";
 
-    /**
-     * Sam action name for write permission
-     */
-    String ACTION_WRITE = "write";
-    /**
-     * Sam action name for delete permission
-     */
-    String ACTION_DELETE = "delete";
+  /** Sam action name for write permission */
+  String ACTION_WRITE = "write";
 
-    /**
-     * Check if the current user has permission to create a "wds-instance" resource in Sam
-     *
-     * @return true if the user has permission
-     */
-    boolean hasCreateInstancePermission();
+  /** Sam action name for delete permission */
+  String ACTION_DELETE = "delete";
 
-    boolean hasCreateInstancePermission(String token);
+  /**
+   * Check if the current user has permission to create a "wds-instance" resource in Sam
+   *
+   * @return true if the user has permission
+   */
+  boolean hasCreateInstancePermission();
 
-    /**
-     * Check if the current user has permission to delete a "wds-instance" resource from Sam
-     *
-     * @return true if the user has permission
-     */
-    boolean hasDeleteInstancePermission();
+  boolean hasCreateInstancePermission(String token);
 
-    boolean hasDeleteInstancePermission(String token);
+  /**
+   * Check if the current user has permission to delete a "wds-instance" resource from Sam
+   *
+   * @return true if the user has permission
+   */
+  boolean hasDeleteInstancePermission();
 
-    /**
-     * Check if the current user has permission to write to a "wds-instance" resource from Sam
-     *
-     * @return true if the user has permission
-     */
-    boolean hasWriteInstancePermission();
+  boolean hasDeleteInstancePermission(String token);
 
-    boolean hasWriteInstancePermission(String token);
+  /**
+   * Check if the current user has permission to write to a "wds-instance" resource from Sam
+   *
+   * @return true if the user has permission
+   */
+  boolean hasWriteInstancePermission();
 
-    String getUserId(String token);
+  boolean hasWriteInstancePermission(String token);
 
-    /**
-     * Gets the up/down system status of Sam.
-     */
-    Boolean getSystemStatusOk();
+  String getUserId(String token);
 
-    /**
-     * Gets the System Status of Sam.
-     */
-    SystemStatus getSystemStatus();
+  /** Gets the up/down system status of Sam. */
+  Boolean getSystemStatusOk();
 
+  /** Gets the System Status of Sam. */
+  SystemStatus getSystemStatus();
 }

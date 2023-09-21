@@ -4,13 +4,13 @@ import java.util.List;
 import java.util.UUID;
 
 public interface InstanceDao {
-    boolean instanceSchemaExists(UUID instanceId);
+  boolean instanceSchemaExists(UUID instanceId);
 
-    List<UUID> listInstanceSchemas();
+  List<UUID> listInstanceSchemas();
 
-    void createSchema(UUID instanceId);
+  void createSchema(UUID instanceId);
 
-    void dropSchema(UUID instanceId);
+  void dropSchema(UUID instanceId);
 
-    void alterSchema(UUID sourceWorkspaceId, UUID workspaceId);
+  void alterSchema(UUID sourceWorkspaceId, UUID workspaceId);
 }

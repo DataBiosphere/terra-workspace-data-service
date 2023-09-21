@@ -1,8 +1,7 @@
 package org.databiosphere.workspacedataservice.service.model;
 
+import java.util.List;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
-import java.util.List;
-
-public record RecordTypeSchema(RecordType name, List<AttributeSchema> attributes, int count, String primaryKey) {
-}
+public record RecordTypeSchema(
+    RecordType name, List<AttributeSchema> attributes, int count, String primaryKey) {}

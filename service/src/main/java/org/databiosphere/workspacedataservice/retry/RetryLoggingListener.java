@@ -10,11 +10,15 @@ import org.springframework.stereotype.Component;
 @Component("retryLoggingListener")
 public class RetryLoggingListener extends RetryListenerSupport {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Override
-    public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
-        logger.warn("Retryable method {} threw {}th exception {}",
-                context.getAttribute("context.name"), context.getRetryCount(), throwable.toString());
-    }
+  @Override
+  public <T, E extends Throwable> void onError(
+      RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
+    logger.warn(
+        "Retryable method {} threw {}th exception {}",
+        context.getAttribute("context.name"),
+        context.getRetryCount(),
+        throwable.toString());
+  }
 }

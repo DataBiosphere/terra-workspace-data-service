@@ -6,7 +6,7 @@ import org.webjars.NotFoundException;
 
 @ResponseStatus(code = HttpStatus.NOT_FOUND)
 public class MissingObjectException extends NotFoundException {
-	public MissingObjectException(String objectType) {
-		super(objectType + " does not exist");
-	}
+  public MissingObjectException(String objectType) {
+    super(objectType + " does not exist");
+  }
 }
