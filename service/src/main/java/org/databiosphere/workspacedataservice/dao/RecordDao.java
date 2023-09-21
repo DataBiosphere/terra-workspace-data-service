@@ -109,7 +109,7 @@ public class RecordDao {
 	}
 
 	public Timestamp allRecordsLastUpdateTime(UUID instanceId) {
-		return namedTemplate.getJdbcTemplate().queryForObject("select max(updatedtime) from sys_wds.record where instance = '" + instanceId + "'", Timestamp.class);
+		return namedTemplate.queryForObject("select max(updatedtime) from sys_wds.record where instance = :instanceId",  new MapSqlParameterSource("instanceId", instanceId), Timestamp.class);
 	}
 
 	@SuppressWarnings("squid:S2077")
@@ -165,8 +165,7 @@ public class RecordDao {
 		try {
 			namedTemplate.getJdbcTemplate().update("create table " + getQualifiedJoinTableName(instanceId, tableName, referringRecordType) +
 					"( " + columnDefs + ", " + getFkSqlForJoin(new Relation(fromCol, referringRecordType), new Relation(toCol, referencedRecordType), instanceId) + ")");
-			namedTemplate.getJdbcTemplate().update("update sys_wds.record SET updatedtime = ? where id = ?",
-					Timestamp.from(Instant.now()), referencedRecordType.getName());
+			recordUpdatedTime(referringRecordType);
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingTable(sqlEx);
@@ -241,8 +240,7 @@ public class RecordDao {
 							+ (referencedType != null
 									? " references " + getQualifiedTableName(referencedType, instanceId)
 									: ""));
-			namedTemplate.getJdbcTemplate().update("update sys_wds.record SET updatedtime = ? where id = ?",
-					Timestamp.from(Instant.now()), recordType.getName());
+			recordUpdatedTime(recordType);
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingTable(sqlEx);
@@ -257,8 +255,7 @@ public class RecordDao {
 				.update("alter table " + getQualifiedTableName(recordType, instanceId) + " alter column "
 						+ quote(SqlUtils.validateSqlString(columnName, ATTRIBUTE)) + " TYPE "
 						+ newColType.getPostgresType());
-		namedTemplate.getJdbcTemplate().update("update sys_wds.record SET updatedtime = ? where id = ?",
-				Timestamp.from(Instant.now()), recordType.getName());
+		recordUpdatedTime(recordType);
 	}
 
 	private String genColumnDefs(Map<String, DataTypeMapping> tableInfo, String primaryKeyCol) {
@@ -285,8 +282,7 @@ public class RecordDao {
 		try {
 			namedTemplate.getJdbcTemplate().batchUpdate(genInsertStatement(instanceId, recordType, schemaAsList, primaryKeyColumn),
 					getInsertBatchArgs(records, schemaAsList, primaryKeyColumn));
-			namedTemplate.getJdbcTemplate().update("update sys_wds.record SET updatedtime = ? where id = ?",
-					Timestamp.from(Instant.now()), recordType.getName());
+			recordUpdatedTime(recordType);
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingRecord(sqlEx);
@@ -299,8 +295,7 @@ public class RecordDao {
 		try {
 			namedTemplate.getJdbcTemplate().batchUpdate(genJoinInsertStatement(instanceId, column, recordType),
 					getJoinInsertBatchArgs(relations));
-			namedTemplate.getJdbcTemplate().update("update sys_wds.record SET updatedtime = ? where id = ?",
-					Timestamp.from(Instant.now()), recordType.getName());
+			recordUpdatedTime(recordType);
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingRecord(sqlEx);
@@ -312,8 +307,7 @@ public class RecordDao {
 	public void removeFromJoin(UUID instanceId, Relation column, RecordType fromType, List<String> recordIds){
 		namedTemplate.update("delete from " + getQualifiedJoinTableName(instanceId, column.relationColName(), fromType) + " where "
 					+ quote(getFromColumnName(fromType)) + "in (:recordIds)", new MapSqlParameterSource("recordIds", recordIds));
-		namedTemplate.getJdbcTemplate().update("update sys_wds.record SET updatedtime = ? where id = ?",
-				Timestamp.from(Instant.now()), fromType.getName());
+		recordUpdatedTime(fromType);
 	}
 
 	public void batchUpsert(UUID instanceId, RecordType recordType, List<Record> records,
@@ -334,8 +328,7 @@ public class RecordDao {
 		try {
 			var result = namedTemplate.update("delete from " + getQualifiedTableName(recordType, instanceId) + " where "
 					+ quote(recordTypePrimaryKey) + " = :recordId", new MapSqlParameterSource(RECORD_ID_PARAM, recordId)) == 1;
-			namedTemplate.getJdbcTemplate().update("update sys_wds.record SET updatedtime = ? where id = ?",
-					Timestamp.from(Instant.now()), recordType.getName());
+			recordUpdatedTime(recordType);
 			return result;
 
 		} catch (DataIntegrityViolationException e) {
@@ -353,8 +346,7 @@ public class RecordDao {
 					+ quote(relationColName) + ") " + "references "
 					+ getQualifiedTableName(referencedRecordType, instanceId);
 			namedTemplate.getJdbcTemplate().execute(addFk);
-			namedTemplate.getJdbcTemplate().update("update sys_wds.record SET updatedtime = ? where id = ?",
-					Timestamp.from(Instant.now()), recordType.getName());
+			recordUpdatedTime(recordType);
 		} catch (DataAccessException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForMissingTable(sqlEx);
@@ -657,8 +649,7 @@ public class RecordDao {
 			if (!recordErrors.isEmpty()) {
 				throw new BatchDeleteException(recordErrors);
 			}
-			namedTemplate.getJdbcTemplate().update("update sys_wds.record SET updatedtime = ? where id = ?",
-					Timestamp.from(Instant.now()), recordType.getName());
+			recordUpdatedTime(recordType);
 		} catch (DataIntegrityViolationException e) {
 			if (e.getRootCause()instanceof SQLException sqlEx) {
 				checkForTableRelation(sqlEx);
@@ -818,6 +809,11 @@ public class RecordDao {
 			}
 			throw e;
 		}
+	}
+
+	public void recordUpdatedTime(RecordType recordType) {
+		namedTemplate.getJdbcTemplate().update("update sys_wds.record SET updatedtime = ? where id = ?",
+				Timestamp.from(Instant.now()), recordType.getName());
 	}
 
     public void deleteRecordFromSys(UUID instanceId) {
