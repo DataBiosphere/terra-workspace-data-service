@@ -16,6 +16,11 @@ Intellij:
 VSCode:
 1. VSCode will work out of the box and is configured by [.vscode/settings.json](.vscode/settings.json).  The formatter will run automatically whenever you save a file.
 
+## (Optional) Install pre-commit hooks
+1. [scripts/git-hooks/pre-commit] has been provided to help ensure all submitted changes are formatted correctly.  To install all hooks in [scripts/git-hooks], run:
+```bash
+git config core.hooksPath scripts/git-hooks
+```
 ## Before You Open a Pull Request
 
 You most likely want to do your work on a feature branch based on develop. There is no explicit naming convention; we usually use some combination of the JIRA issue number and something alluding to the work we're doing.
