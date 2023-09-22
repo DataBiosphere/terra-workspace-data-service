@@ -1,6 +1,5 @@
 name: run e2e tests
 'on':
-  push:
   schedule:
     # run twice a day at 10:00 and 22:00 UTC every day of the week
     - cron: "0 10/12 * * *"
