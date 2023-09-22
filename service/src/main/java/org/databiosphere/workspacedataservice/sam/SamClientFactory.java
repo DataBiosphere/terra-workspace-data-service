@@ -5,15 +5,15 @@ import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.UsersApi;
 
 /**
- * interface for SamClientFactory, allowing various implementations:
- * - HttpSamClientFactory, which generates an ApiClient and ResourcesApi from the Sam client library;
- * - MockSamClientFactory, which generates a mock ResourcesApi for unit testing or local development
+ * interface for SamClientFactory, allowing various implementations: - HttpSamClientFactory, which
+ * generates an ApiClient and ResourcesApi from the Sam client library; - MockSamClientFactory,
+ * which generates a mock ResourcesApi for unit testing or local development
  */
 public interface SamClientFactory {
 
-    ResourcesApi getResourcesApi(String token);
-    StatusApi getStatusApi();
-    UsersApi getUsersApi(String token);
+  ResourcesApi getResourcesApi(String token);
 
+  StatusApi getStatusApi();
 
+  UsersApi getUsersApi(String token);
 }

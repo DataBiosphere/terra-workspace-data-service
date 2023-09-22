@@ -7,9 +7,12 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(code = HttpStatus.BAD_REQUEST)
 public class NewPrimaryKeyException extends RuntimeException {
 
-
-	public NewPrimaryKeyException(String oldPk, RecordType recordType) {
-		super("The primary key for " + recordType + " is already set to " + oldPk
-				+ " if you wish to change it you'll need to create a new record type.");
-	}
+  public NewPrimaryKeyException(String oldPk, RecordType recordType) {
+    super(
+        "The primary key for "
+            + recordType
+            + " is already set to "
+            + oldPk
+            + " if you wish to change it you'll need to create a new record type.");
+  }
 }

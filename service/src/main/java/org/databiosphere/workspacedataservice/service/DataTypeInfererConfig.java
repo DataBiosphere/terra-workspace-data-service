@@ -6,8 +6,8 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class DataTypeInfererConfig {
-    @Bean
-    public DataTypeInferer inferer(ObjectMapper mapper){
-        return new DataTypeInferer(mapper);
-    }
+  @Bean
+  public DataTypeInferer inferer(ObjectMapper mapper) {
+    return new DataTypeInferer(mapper);
+  }
 }

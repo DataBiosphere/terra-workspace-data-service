@@ -1,5 +1,12 @@
 package org.databiosphere.workspacedataservice;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import java.util.List;
+import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.*;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoConfig;
@@ -19,112 +26,111 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
-import java.util.List;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
-@ActiveProfiles({"mock-instance-dao", "mock-backup-dao", "mock-restore-dao", "mock-clone-dao", "local", "mock-sam"})
-@TestPropertySource(properties = {"twds.instance.workspace-id=90e1b179-9f83-4a6f-a8c2-db083df4cd03"})
+@ActiveProfiles({
+  "mock-instance-dao",
+  "mock-backup-dao",
+  "mock-restore-dao",
+  "mock-clone-dao",
+  "local",
+  "mock-sam"
+})
+@TestPropertySource(
+    properties = {"twds.instance.workspace-id=90e1b179-9f83-4a6f-a8c2-db083df4cd03"})
 @DirtiesContext
-@SpringBootTest(classes =
-        {       InstanceInitializerConfig.class,
-                MockInstanceDaoConfig.class,
-                MockRestoreDaoConfig.class,
-                MockBackupDaoConfig.class,
-                LeonardoConfig.class,
-                WorkspaceDataServiceConfig.class,
-                MockCloneDaoConfig.class,
-                BackupRestoreService.class,
-                AzureBlobStorage.class,
-                WorkspaceManagerConfig.class,
-                ActivityLoggerConfig.class,
-                SamConfig.class,
-                MockSamClientFactoryConfig.class
-        })
+@SpringBootTest(
+    classes = {
+      InstanceInitializerConfig.class,
+      MockInstanceDaoConfig.class,
+      MockRestoreDaoConfig.class,
+      MockBackupDaoConfig.class,
+      LeonardoConfig.class,
+      WorkspaceDataServiceConfig.class,
+      MockCloneDaoConfig.class,
+      BackupRestoreService.class,
+      AzureBlobStorage.class,
+      WorkspaceManagerConfig.class,
+      ActivityLoggerConfig.class,
+      SamConfig.class,
+      MockSamClientFactoryConfig.class
+    })
 class InstanceInitializerBeanTest {
 
-    @Autowired
-    InstanceInitializerBean instanceInitializerBean;
-    @SpyBean
-    InstanceDao instanceDao;
+  @Autowired InstanceInitializerBean instanceInitializerBean;
+  @SpyBean InstanceDao instanceDao;
 
-    @Value("${twds.instance.workspace-id}")
-    String workspaceId;
+  @Value("${twds.instance.workspace-id}")
+  String workspaceId;
 
-    //randomly generated UUID
-    final UUID instanceID = UUID.fromString("90e1b179-9f83-4a6f-a8c2-db083df4cd03");
+  // randomly generated UUID
+  final UUID instanceID = UUID.fromString("90e1b179-9f83-4a6f-a8c2-db083df4cd03");
 
-    @BeforeEach
-    void beforeEach() {
-        // clean up any instances left in the db
-        List<UUID> allInstances = instanceDao.listInstanceSchemas();
-        allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
-    }
+  @BeforeEach
+  void beforeEach() {
+    // clean up any instances left in the db
+    List<UUID> allInstances = instanceDao.listInstanceSchemas();
+    allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
+  }
 
+  @Test
+  void testHappyPath() {
+    // instance does not exist
+    assertFalse(instanceDao.instanceSchemaExists(instanceID));
+    assertDoesNotThrow(() -> instanceInitializerBean.initializeInstance());
+    assert (instanceDao.instanceSchemaExists(instanceID));
+  }
 
-    @Test
-    void testHappyPath() {
-        // instance does not exist
-        assertFalse(instanceDao.instanceSchemaExists(instanceID));
-        assertDoesNotThrow(() -> instanceInitializerBean.initializeInstance());
-        assert(instanceDao.instanceSchemaExists(instanceID));
-    }
+  @Test
+  void testSchemaAlreadyExists() {
+    // instance does not exist
+    assertFalse(instanceDao.instanceSchemaExists(instanceID));
+    // create the instance outside the initializer
+    instanceDao.createSchema(instanceID);
+    assertTrue(instanceDao.instanceSchemaExists(instanceID));
+    // now run the initializer
+    instanceInitializerBean.initializeInstance();
+    // verify that method to create instance was NOT called again. We expect one call from the setup
+    // above.
+    verify(instanceDao, times(1)).createSchema(any());
+    assertTrue(instanceDao.instanceSchemaExists(instanceID));
+  }
 
-    @Test
-    void testSchemaAlreadyExists() {
-        // instance does not exist
-        assertFalse(instanceDao.instanceSchemaExists(instanceID));
-        // create the instance outside the initializer
-        instanceDao.createSchema(instanceID);
-        assertTrue(instanceDao.instanceSchemaExists(instanceID));
-        // now run the initializer
-        instanceInitializerBean.initializeInstance();
-        //verify that method to create instance was NOT called again. We expect one call from the setup above.
-        verify(instanceDao, times(1)).createSchema(any());
-        assertTrue(instanceDao.instanceSchemaExists(instanceID));
-    }
+  @Test
+  void sourceWorkspaceIDNotProvided() {
+    boolean cloneMode = instanceInitializerBean.isInCloneMode(null);
+    assertFalse(cloneMode);
+  }
 
-    @Test
-    void sourceWorkspaceIDNotProvided() {
-        boolean cloneMode = instanceInitializerBean.isInCloneMode(null);
-        assertFalse(cloneMode);
-    }
+  @Test
+  void blankSourceWorkspaceID() {
+    boolean cloneMode = instanceInitializerBean.isInCloneMode("");
+    assertFalse(cloneMode);
 
-    @Test
-    void blankSourceWorkspaceID() {
-        boolean cloneMode = instanceInitializerBean.isInCloneMode("");
-        assertFalse(cloneMode);
+    cloneMode = instanceInitializerBean.isInCloneMode(" ");
+    assertFalse(cloneMode);
+  }
 
-        cloneMode = instanceInitializerBean.isInCloneMode(" ");
-        assertFalse(cloneMode);
-    }
+  @Test
+  void sourceWorkspaceSchemaExists() {
+    instanceDao.createSchema(instanceID);
+    boolean cloneMode = instanceInitializerBean.isInCloneMode(UUID.randomUUID().toString());
+    assertFalse(cloneMode);
+  }
 
-    @Test
-    void sourceWorkspaceSchemaExists() {
-        instanceDao.createSchema(instanceID);
-        boolean cloneMode = instanceInitializerBean.isInCloneMode(UUID.randomUUID().toString());
-        assertFalse(cloneMode);
-    }
+  @Test
+  void sourceWorkspaceIDCorrect() {
+    boolean cloneMode = instanceInitializerBean.isInCloneMode(UUID.randomUUID().toString());
+    assert (cloneMode);
+  }
 
-    @Test
-    void sourceWorkspaceIDCorrect() {
-        boolean cloneMode = instanceInitializerBean.isInCloneMode(UUID.randomUUID().toString());
-        assert(cloneMode);
-    }
+  @Test
+  void sourceWorkspaceIDInvalid() {
+    boolean cloneMode = instanceInitializerBean.isInCloneMode("invalidUUID");
+    assertFalse(cloneMode);
+  }
 
-    @Test
-    void sourceWorkspaceIDInvalid() {
-        boolean cloneMode = instanceInitializerBean.isInCloneMode("invalidUUID");
-        assertFalse(cloneMode);
-    }
-
-    @Test
-    void sourceAndCurrentWorkspaceIdsMatch() {
-        boolean cloneMode = instanceInitializerBean.isInCloneMode(workspaceId);
-        assertFalse(cloneMode);
-    }
+  @Test
+  void sourceAndCurrentWorkspaceIdsMatch() {
+    boolean cloneMode = instanceInitializerBean.isInCloneMode(workspaceId);
+    assertFalse(cloneMode);
+  }
 }

@@ -1,15 +1,14 @@
 package bio.terra.common.db;
 
 import com.google.common.base.Preconditions;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.RecoverableDataAccessException;
 import org.springframework.dao.TransientDataAccessException;
-
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 /** Utilities to execute database operations with retry support. */
 public final class DatabaseRetryUtils {
