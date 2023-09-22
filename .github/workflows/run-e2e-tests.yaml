@@ -1,9 +1,9 @@
 name: run e2e tests
 'on':
   push:
-  # schedule: #TODO choose times and uncomment
-  #   # run twice a day at 10:00 and 22:00 UTC every day of the week
-  #   - cron: "0 10/12 * * *"
+  schedule:
+    # run twice a day at 10:00 and 22:00 UTC every day of the week
+    - cron: "0 10/12 * * *"
   workflow_dispatch:
 env:
   BEE_NAME: 'wds-${{ github.run_id }}-${{ github.run_attempt}}-dev'
@@ -84,8 +84,7 @@ jobs:
     needs:
       - run-e2e-test-job
       - init-github-context
-    # if: '${{ needs.init-github-context.outputs.delete-bee && always() }}'
-    if: false
+    if: '${{ needs.init-github-context.outputs.delete-bee && always() }}'
     steps:
       - name: dispatch to terra-github-workflows
         uses: broadinstitute/workflow-dispatch@v3
