@@ -31,6 +31,7 @@ public class DataSourceConfig {
   public DefaultLockRepository defaultLockRepository(DataSource dataSource) {
     DefaultLockRepository defaultLockRepository = new DefaultLockRepository(dataSource);
     defaultLockRepository.setPrefix("sys_wds.INT_");
+    defaultLockRepository.setTimeToLive(10 * 60 * 1000); // 10 minutes
     return defaultLockRepository;
   }
 
