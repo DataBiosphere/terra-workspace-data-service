@@ -320,4 +320,5 @@ public class InstanceInitializerBean {
         lock.unlock();
       }
     }
+  }
 }

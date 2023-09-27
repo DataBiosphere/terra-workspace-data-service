@@ -1,5 +1,12 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
+
+import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
@@ -17,83 +24,77 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.util.UUID;
-
-import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.BDDMockito.given;
-
 @DirtiesContext
-@SpringBootTest(properties = {"sam.retry.maxAttempts=2",
-        "sam.retry.backoff.delay=10"}) // aggressive retry settings so unit test doesn't run too long)
-@ActiveProfiles(profiles = { "mock-sam", "mock-instance-dao" })
+@SpringBootTest(
+    properties = {
+      "sam.retry.maxAttempts=2",
+      "sam.retry.backoff.delay=10"
+    }) // aggressive retry settings so unit test doesn't run too long)
+@ActiveProfiles(profiles = {"mock-sam", "mock-instance-dao"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordOrchestratorSamTest {
 
-    @Autowired
-    private InstanceDao instanceDao;
-    @Autowired
-    private RecordOrchestratorService recordOrchestratorService;
-    // mock for the SamClientFactory; since this is a Spring bean we can use @MockBean
-    @MockBean
-    SamClientFactory mockSamClientFactory;
+  @Autowired private InstanceDao instanceDao;
+  @Autowired private RecordOrchestratorService recordOrchestratorService;
+  // mock for the SamClientFactory; since this is a Spring bean we can use @MockBean
+  @MockBean SamClientFactory mockSamClientFactory;
 
-    // mock for the ResourcesApi class inside the Sam client; since this is not a Spring bean we have to mock it manually
-    final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
+  // mock for the ResourcesApi class inside the Sam client; since this is not a Spring bean we have
+  // to mock it manually
+  final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
+  private static final UUID INSTANCE = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
 
-    private static final UUID INSTANCE = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
-
-    @BeforeEach
-    void setUp() {
-        if (!instanceDao.instanceSchemaExists(INSTANCE)) {
-            instanceDao.createSchema(INSTANCE);
-        }
-        given(mockSamClientFactory.getResourcesApi(null))
-                .willReturn(mockResourcesApi);
-
-        // clear call history for the mock
-        Mockito.reset(mockResourcesApi);
+  @BeforeEach
+  void setUp() {
+    if (!instanceDao.instanceSchemaExists(INSTANCE)) {
+      instanceDao.createSchema(INSTANCE);
     }
+    given(mockSamClientFactory.getResourcesApi(null)).willReturn(mockResourcesApi);
 
-    @AfterEach
-    void cleanUp() {
-        instanceDao.dropSchema(INSTANCE);
-    }
+    // clear call history for the mock
+    Mockito.reset(mockResourcesApi);
+  }
 
-    @Test
-    void testValidateAndPermissionNoPermission() throws ApiException {
+  @AfterEach
+  void cleanUp() {
+    instanceDao.dropSchema(INSTANCE);
+  }
 
-        // Call to check permissions in Sam does not throw an exception, but returns false -
-        // i.e. the current user does not have permission
-        given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
-                .willReturn(false);
+  @Test
+  void testValidateAndPermissionNoPermission() throws ApiException {
 
-        assertThrows(AuthorizationException.class,
-                () -> recordOrchestratorService.validateAndPermissions(INSTANCE, VERSION),
-                "validateAndPermissions should throw if caller does not have write permission in Sam"
-        );
-    }
+    // Call to check permissions in Sam does not throw an exception, but returns false -
+    // i.e. the current user does not have permission
+    given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
+        .willReturn(false);
 
-    @Test
-    void testValidateAndPermissionWithPermission() throws ApiException {
+    assertThrows(
+        AuthorizationException.class,
+        () -> recordOrchestratorService.validateAndPermissions(INSTANCE, VERSION),
+        "validateAndPermissions should throw if caller does not have write permission in Sam");
+  }
 
-        given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
-                .willReturn(true);
+  @Test
+  void testValidateAndPermissionWithPermission() throws ApiException {
 
-        assertDoesNotThrow(() -> recordOrchestratorService.validateAndPermissions(INSTANCE, VERSION),
-                "validateAndPermissions should not throw if caller has write permission in Sam"
-        );
-    }
+    given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
+        .willReturn(true);
 
-    @Test
-    void testValidateAndPermissionWhenException() throws ApiException {
-        given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
-                .willThrow(new ApiException(0, "intentional failure for unit test")); // 0 indicates a failed connection
-        assertThrows(SamException.class,
-                () -> recordOrchestratorService.validateAndPermissions(INSTANCE, VERSION),
-                "validateAndPermissions should throw if caller does not have write permission in Sam");
-    }
+    assertDoesNotThrow(
+        () -> recordOrchestratorService.validateAndPermissions(INSTANCE, VERSION),
+        "validateAndPermissions should not throw if caller has write permission in Sam");
+  }
+
+  @Test
+  void testValidateAndPermissionWhenException() throws ApiException {
+    given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
+        .willThrow(
+            new ApiException(
+                0, "intentional failure for unit test")); // 0 indicates a failed connection
+    assertThrows(
+        SamException.class,
+        () -> recordOrchestratorService.validateAndPermissions(INSTANCE, VERSION),
+        "validateAndPermissions should throw if caller does not have write permission in Sam");
+  }
 }

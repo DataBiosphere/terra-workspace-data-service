@@ -7,9 +7,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ActivityLoggerConfig {
 
-    @Bean
-    public ActivityLogger getActivityLogger(SamDao samDao) {
-        return new ActivityLogger(samDao);
-    }
-
+  @Bean
+  public ActivityLogger getActivityLogger(SamDao samDao) {
+    return new ActivityLogger(samDao);
+  }
 }

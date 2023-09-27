@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.dao;
 
-
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
 import org.springframework.context.annotation.Bean;
@@ -10,10 +9,10 @@ import org.springframework.context.annotation.Profile;
 
 @Configuration
 public class MockBackupDaoConfig {
-    @Bean
-    @Profile("mock-backup-dao")
-    @Primary
-    BackupRestoreDao<BackupResponse> mockBackupDao() {
-        return new MockBackupRestoreDao<>(CloneTable.BACKUP);
-    }
+  @Bean
+  @Profile("mock-backup-dao")
+  @Primary
+  BackupRestoreDao<BackupResponse> mockBackupDao() {
+    return new MockBackupRestoreDao<>(CloneTable.BACKUP);
+  }
 }

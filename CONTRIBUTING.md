@@ -16,6 +16,18 @@ Intellij:
 VSCode:
 1. VSCode will work out of the box and is configured by [.vscode/settings.json](.vscode/settings.json).  The formatter will run automatically whenever you save a file.
 
+## (Optional) Install pre-commit hooks
+1. [scripts/git-hooks/pre-commit] has been provided to help ensure all submitted changes are formatted correctly.  To install all hooks in [scripts/git-hooks], run:
+```bash
+git config core.hooksPath scripts/git-hooks
+```
+
+## Ignoring code formatting changes from `git blame`
+The style guide formatting changes can make it difficult to use `git blame` to find the original author of a line of code after https://github.com/DataBiosphere/terra-workspace-data-service/commit/c795c46f2ce4bf30fce829979bcfc40ec12eef0c.  To ignore these (and any other similarly obfuscating) changes, run the following command to add the appropriate commits to the blame ignore list:
+```bash
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+
 ## Before You Open a Pull Request
 
 You most likely want to do your work on a feature branch based on develop. There is no explicit naming convention; we usually use some combination of the JIRA issue number and something alluding to the work we're doing.

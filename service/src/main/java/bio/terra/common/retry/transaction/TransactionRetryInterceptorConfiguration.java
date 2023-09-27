@@ -1,6 +1,7 @@
 package bio.terra.common.retry.transaction;
 
 import bio.terra.common.retry.CompositeBackOffPolicy;
+import java.util.LinkedHashMap;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.databiosphere.workspacedataservice.retry.RetryLoggingListener;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -17,8 +18,6 @@ import org.springframework.retry.policy.CompositeRetryPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
-import java.util.LinkedHashMap;
-
 @Configuration
 @EnableConfigurationProperties(TransactionRetryProperties.class)
 public class TransactionRetryInterceptorConfiguration {
@@ -33,7 +32,8 @@ public class TransactionRetryInterceptorConfiguration {
     RetryPolicy retryPolicy = createTransactionRetryPolicy(config);
     BackOffPolicy backOffPolicy = createTransactionBackOffPolicy(config);
 
-    RetryTemplate retryTemplate = RetryTemplate.builder()
+    RetryTemplate retryTemplate =
+        RetryTemplate.builder()
             .customBackoff(backOffPolicy)
             .customPolicy(retryPolicy)
             .withListener(new RetryLoggingListener())

@@ -67,7 +67,7 @@ class InstanceInitializerBeanTest {
   final UUID instanceID = UUID.fromString("90e1b179-9f83-4a6f-a8c2-db083df4cd03");
 
   @BeforeEach
-  void beforeEach() throws InterruptedException {
+  void beforeEach() {
     // clean up any instances left in the db
     List<UUID> allInstances = instanceDao.listInstanceSchemas();
     allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
