@@ -77,24 +77,18 @@ public class InstanceInitializerBean {
   public void initializeInstance() {
     LOGGER.info("Default workspace id loaded as {}.", workspaceId);
     boolean isInCloneMode = isInCloneMode(sourceWorkspaceId);
+    lock.obtainLock(sourceWorkspaceId);
     LOGGER.info("isInCloneMode={}.", isInCloneMode);
-    try {
-      // Make sure it's safe to start cloning (in case another replica is trying to clone)
-      lock.obtainLock(sourceWorkspaceId);
-      boolean lockAquired = lock.tryLock();
-      if (isInCloneMode && lockAquired) {
-        LOGGER.info("Source workspace id loaded as {}.", sourceWorkspaceId);
-        boolean cloneSuccess = initCloneMode();
-        if (cloneSuccess) {
-          LOGGER.info("Cloning complete.");
-        } else {
-          initializeDefaultInstance();
-        }
-      } else if (lockAquired) {
+    if (isInCloneMode) {
+      LOGGER.info("Source workspace id loaded as {}.", sourceWorkspaceId);
+      boolean cloneSuccess = initCloneMode();
+      if (cloneSuccess) {
+        LOGGER.info("Cloning complete.");
+      } else {
         initializeDefaultInstance();
       }
-    } finally {
-      lock.unlock();
+    } else {
+      initializeDefaultInstance();
     }
   }
 
@@ -163,6 +157,11 @@ public class InstanceInitializerBean {
     LOGGER.info("Starting in clone mode...");
     UUID trackingId = UUID.randomUUID();
     try {
+      // Make sure it's safe to start cloning (in case another replica is trying to clone)
+      boolean lockAquired = lock.tryLock();
+      if(!lockAquired) {
+        return false;
+      }
       // First, create an entry in the clone table to mark cloning has started
       LOGGER.info("Creating entry to track cloning process.");
       cloneDao.createCloneEntry(trackingId, UUID.fromString(sourceWorkspaceId));
@@ -207,6 +206,8 @@ public class InstanceInitializerBean {
             inner.toString());
       }
       return false;
+    } finally {
+      lock.unlock();
     }
   }
 
@@ -296,23 +297,27 @@ public class InstanceInitializerBean {
      Create the default pg schema for this WDS. The pg schema name is the workspace id.
   */
   private void initializeDefaultInstance() {
-    try {
-      UUID instanceId = UUID.fromString(workspaceId);
-      if (!instanceDao.instanceSchemaExists(instanceId)) {
-        instanceDao.createSchema(instanceId);
-        LOGGER.info("Creating default schema id succeeded for workspaceId {}.", workspaceId);
-      } else {
-        LOGGER.debug(
-            "Default schema for workspaceId {} already exists or is in progress; skipping creation.",
-            workspaceId);
-      }
+      try {
+        // Don't create schema if in the middle of cloning
+        boolean lockAquired = lock.tryLock();
+        UUID instanceId = UUID.fromString(workspaceId);
+        if (!instanceDao.instanceSchemaExists(instanceId) && lockAquired) {
+          instanceDao.createSchema(instanceId);
+          LOGGER.info("Creating default schema id succeeded for workspaceId {}.", workspaceId);
+        } else {
+          LOGGER.debug(
+              "Default schema for workspaceId {} already exists or is in progress; skipping creation.",
+              workspaceId);
+        }
 
-    } catch (IllegalArgumentException e) {
-      LOGGER.warn(
-          "Workspace id could not be parsed, a default schema won't be created. Provided id: {}.",
-          workspaceId);
-    } catch (DataAccessException e) {
-      LOGGER.error("Failed to create default schema id for workspaceId {}.", workspaceId);
+      } catch (IllegalArgumentException e) {
+        LOGGER.warn(
+            "Workspace id could not be parsed, a default schema won't be created. Provided id: {}.",
+            workspaceId);
+      } catch (DataAccessException e) {
+        LOGGER.error("Failed to create default schema id for workspaceId {}.", workspaceId);
+      } finally {
+        lock.unlock();
+      }
     }
-  }
 }
