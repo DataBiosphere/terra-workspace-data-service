@@ -159,7 +159,7 @@ public class InstanceInitializerBean {
     try {
       // Make sure it's safe to start cloning (in case another replica is trying to clone)
       boolean lockAquired = lock.tryLock();
-      if(!lockAquired) {
+      if (!lockAquired) {
         return false;
       }
       // First, create an entry in the clone table to mark cloning has started
@@ -297,28 +297,27 @@ public class InstanceInitializerBean {
      Create the default pg schema for this WDS. The pg schema name is the workspace id.
   */
   private void initializeDefaultInstance() {
-      try {
-        // Don't create schema if in the middle of cloning
-        boolean lockAquired = lock.tryLock();
-        UUID instanceId = UUID.fromString(workspaceId);
-        if (!instanceDao.instanceSchemaExists(instanceId) && lockAquired) {
-          instanceDao.createSchema(instanceId);
-          LOGGER.info("Creating default schema id succeeded for workspaceId {}.", workspaceId);
-        } else {
-          LOGGER.debug(
-              "Default schema for workspaceId {} already exists or is in progress; skipping creation.",
-              workspaceId);
-        }
-
-      } catch (IllegalArgumentException e) {
-        LOGGER.warn(
-            "Workspace id could not be parsed, a default schema won't be created. Provided id: {}.",
+    try {
+      // Don't create schema if in the middle of cloning
+      boolean lockAquired = lock.tryLock();
+      UUID instanceId = UUID.fromString(workspaceId);
+      if (!instanceDao.instanceSchemaExists(instanceId) && lockAquired) {
+        instanceDao.createSchema(instanceId);
+        LOGGER.info("Creating default schema id succeeded for workspaceId {}.", workspaceId);
+      } else {
+        LOGGER.debug(
+            "Default schema for workspaceId {} already exists or is in progress; skipping creation.",
             workspaceId);
-      } catch (DataAccessException e) {
-        LOGGER.error("Failed to create default schema id for workspaceId {}.", workspaceId);
-      } finally {
-        lock.unlock();
       }
+
+    } catch (IllegalArgumentException e) {
+      LOGGER.warn(
+          "Workspace id could not be parsed, a default schema won't be created. Provided id: {}.",
+          workspaceId);
+    } catch (DataAccessException e) {
+      LOGGER.error("Failed to create default schema id for workspaceId {}.", workspaceId);
+    } finally {
+      lock.unlock();
     }
   }
 }
