@@ -30,7 +30,8 @@ public class HttpSamClientFactory implements SamClientFactory {
 
   public HttpSamClientFactory(String samUrl) {
     this.samUrl = samUrl;
-    // IntelliJ has a false-positive error on the following line; see https://youtrack.jetbrains.com/issue/KTIJ-26434
+    // IntelliJ has a false-positive error on the following line; see
+    // https://youtrack.jetbrains.com/issue/KTIJ-26434
     this.commonHttpClient =
         new ApiClient().getHttpClient().newBuilder().protocols(List.of(Protocol.HTTP_1_1)).build();
     // TODO: add tracing interceptor for distributed tracing to Sam.

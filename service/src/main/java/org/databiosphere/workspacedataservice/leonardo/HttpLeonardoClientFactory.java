@@ -22,7 +22,8 @@ public class HttpLeonardoClientFactory implements LeonardoClientFactory {
 
   public HttpLeonardoClientFactory(String leoUrl) {
     this.leoEndpointUrl = leoUrl;
-    // IntelliJ has a false-positive error on the following line; see https://youtrack.jetbrains.com/issue/KTIJ-26434
+    // IntelliJ has a false-positive error on the following line; see
+    // https://youtrack.jetbrains.com/issue/KTIJ-26434
     this.commonHttpClient =
         new ApiClient().getHttpClient().newBuilder().protocols(List.of(Protocol.HTTP_1_1)).build();
   }

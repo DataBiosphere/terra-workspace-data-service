@@ -20,7 +20,8 @@ public class HttpWorkspaceDataServiceClientFactory implements WorkspaceDataServi
       LoggerFactory.getLogger(HttpWorkspaceDataServiceClientFactory.class);
 
   public HttpWorkspaceDataServiceClientFactory() {
-    // IntelliJ has a false-positive error on the following line; see https://youtrack.jetbrains.com/issue/KTIJ-26434
+    // IntelliJ has a false-positive error on the following line; see
+    // https://youtrack.jetbrains.com/issue/KTIJ-26434
     this.commonHttpClient =
         new ApiClient().getHttpClient().newBuilder().protocols(List.of(Protocol.HTTP_1_1)).build();
     ;
