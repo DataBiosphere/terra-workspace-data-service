@@ -3,8 +3,10 @@ package org.databiosphere.workspacedataservice.leonardo;
 import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
 import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
+import java.util.List;
 import java.util.Objects;
 import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
 import org.apache.commons.lang3.StringUtils;
 import org.broadinstitute.dsde.workbench.client.leonardo.ApiClient;
 import org.broadinstitute.dsde.workbench.client.leonardo.api.AppsApi;
@@ -20,7 +22,10 @@ public class HttpLeonardoClientFactory implements LeonardoClientFactory {
 
   public HttpLeonardoClientFactory(String leoUrl) {
     this.leoEndpointUrl = leoUrl;
-    this.commonHttpClient = new ApiClient().getHttpClient().newBuilder().build();
+    // IntelliJ has a false-positive error on the following line; see
+    // https://youtrack.jetbrains.com/issue/KTIJ-26434
+    this.commonHttpClient =
+        new ApiClient().getHttpClient().newBuilder().protocols(List.of(Protocol.HTTP_1_1)).build();
   }
 
   private ApiClient getApiClient(String token) {
