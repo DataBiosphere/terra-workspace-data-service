@@ -3,8 +3,10 @@ package org.databiosphere.workspacedataservice.sourcewds;
 import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
 import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
+import java.util.List;
 import java.util.Objects;
 import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedata.api.CloningApi;
 import org.databiosphere.workspacedata.client.ApiClient;
@@ -18,7 +20,9 @@ public class HttpWorkspaceDataServiceClientFactory implements WorkspaceDataServi
       LoggerFactory.getLogger(HttpWorkspaceDataServiceClientFactory.class);
 
   public HttpWorkspaceDataServiceClientFactory() {
-    this.commonHttpClient = new ApiClient().getHttpClient().newBuilder().build();
+    // IntelliJ has a false-positive error on the following line; see https://youtrack.jetbrains.com/issue/KTIJ-26434
+    this.commonHttpClient =
+        new ApiClient().getHttpClient().newBuilder().protocols(List.of(Protocol.HTTP_1_1)).build();
     ;
   }
 
