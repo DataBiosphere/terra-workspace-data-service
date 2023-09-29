@@ -102,7 +102,16 @@ public class InstanceInitializerBean {
    */
   protected boolean isInCloneMode(String sourceWorkspaceId) {
     if (StringUtils.isNotBlank(sourceWorkspaceId)) {
+      UUID sourceWorkspaceUuid;
       LOGGER.info("SourceWorkspaceId found, checking database");
+      try {
+        sourceWorkspaceUuid = UUID.fromString(sourceWorkspaceId);
+      } catch (IllegalArgumentException e) {
+        LOGGER.warn(
+            "SourceWorkspaceId could not be parsed, unable to clone DB. Provided SourceWorkspaceId: {}.",
+            sourceWorkspaceId);
+        return false;
+      }
 
       if (sourceWorkspaceId.equals(workspaceId)) {
         LOGGER.warn("SourceWorkspaceId and current WorkspaceId can't be the same.");
@@ -191,11 +200,6 @@ public class InstanceInitializerBean {
       LOGGER.info("Re-checking clone job status after restore request");
       var finalCloneStatus = currentCloneStatus(trackingId);
       return finalCloneStatus.getStatus().equals(JobStatus.SUCCEEDED);
-    } catch (IllegalArgumentException e) {
-      LOGGER.warn(
-          "SourceWorkspaceId could not be parsed, unable to clone DB. Provided SourceWorkspaceId: {}.",
-          sourceWorkspaceId);
-      return false;
     } catch (Exception e) {
       LOGGER.error("An error occurred during clone mode. Error: {}", e.toString());
       try {
