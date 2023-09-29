@@ -5,7 +5,7 @@ databaseChangeLog:
       changes:
         - createTable:
             schemaName: sys_wds
-            tableName: record
+            tableName: record_metadata
             columns:
               - column:
                   name: id

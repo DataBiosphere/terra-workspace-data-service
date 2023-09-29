@@ -114,7 +114,7 @@ public class RecordDao {
 
   public Timestamp allRecordsLastUpdateTime(UUID instanceId) {
     return namedTemplate.queryForObject(
-        "select max(updatedtime) from sys_wds.record where instance = :instanceId",
+        "select max(updatedtime) from sys_wds.record_metadata where instance = :instanceId",
         new MapSqlParameterSource("instanceId", instanceId),
         Timestamp.class);
   }
@@ -145,7 +145,7 @@ public class RecordDao {
       namedTemplate
           .getJdbcTemplate()
           .update(
-              "insert into sys_wds.record(id, updatedtime, instance) values (?,?,?)",
+              "insert into sys_wds.record_metadata(id, updatedtime, instance) values (?,?,?)",
               recordType.getName(),
               Timestamp.from(Instant.now()),
               instanceId);
@@ -1040,12 +1040,7 @@ public class RecordDao {
           .getJdbcTemplate()
           .update("drop table " + getQualifiedTableName(recordType, instanceId));
 
-      namedTemplate
-          .getJdbcTemplate()
-          .update(
-              "delete from sys_wds.record where id = ? and instance = ?",
-              recordType.getName(),
-              instanceId);
+      recordUpdatedTime(recordType);
     } catch (DataAccessException e) {
       if (e.getRootCause() instanceof SQLException sqlEx) {
         checkForTableRelation(sqlEx);
@@ -1058,14 +1053,8 @@ public class RecordDao {
     namedTemplate
         .getJdbcTemplate()
         .update(
-            "update sys_wds.record SET updatedtime = ? where id = ?",
+            "update sys_wds.record_metadata SET updatedtime = ? where id = ?",
             Timestamp.from(Instant.now()),
             recordType.getName());
-  }
-
-  public void deleteRecordFromSys(UUID instanceId) {
-    namedTemplate
-        .getJdbcTemplate()
-        .update("delete from sys_wds.record where instance = ?", instanceId);
   }
 }
