@@ -26,6 +26,11 @@ tags:
   - name: Snapshots
     description: Snapshot APIs
 paths:
+  # Paths should be grouped by their tag, following the order of tags listed above.
+  # Within each tag group, paths should be listed alphabetically.
+
+  ##############################
+  # Cloning APIs
   /backup/{v}:
     post:
       tags:
@@ -80,24 +85,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CloneJob'
-  /status:
-    get:
-      summary: Gets health status for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#health for details)
-      operationId: statusGet
+
+  ##############################
+  # Records APIs
+  /{instanceid}/batch/{v}/{type}:
+    post:
+      summary: Batch write records
+      description: Perform a batch of upsert / delete operations on multiple records
+      operationId: batchWriteRecords
+      security:
+        - bearerAuth: [ ]
       tags:
-        - General WDS Information
+        - Records
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+        - $ref: '#/components/parameters/recordTypePrimaryKey'
+      requestBody:
+        $ref: '#/components/requestBodies/BatchRequestBody'
       responses:
         200:
-          $ref: '#/components/responses/StatusResponseBody'
-  /version:
-    get:
-      summary: Gets related git and build version info for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#info for details)
-      operationId: versionGet
-      tags:
-        - General WDS Information
-      responses:
-        200:
-          $ref: '#/components/responses/VersionResponseBody'
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
   /{instanceid}/records/{v}/{type}/{id}:
     get:
       summary: Get record
@@ -308,29 +321,9 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /{instanceid}/batch/{v}/{type}:
-    post:
-      summary: Batch write records
-      description: Perform a batch of upsert / delete operations on multiple records
-      operationId: batchWriteRecords
-      security:
-        - bearerAuth: [ ]
-      tags:
-        - Records
-      parameters:
-        - $ref: '#/components/parameters/instanceIdPathParam'
-        - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/recordTypePathParam'
-        - $ref: '#/components/parameters/recordTypePrimaryKey'
-      requestBody:
-        $ref: '#/components/requestBodies/BatchRequestBody'
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BatchResponse'
+
+  ##############################
+  # Instances APIs
   /instances/{v}:
     get:
       summary: List instances
@@ -350,7 +343,6 @@ paths:
                 items:
                   type: string
                   format: uuid
-
   /instances/{v}/{instanceid}:
     post:
       summary: Create an instance
@@ -391,6 +383,35 @@ paths:
           description: Success
         404:
           description: Not Found - instance does not exist.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  ##############################
+  # Schema APIs
+  /{instanceid}/types/{v}:
+    get:
+      summary: Describe all record types
+      description: |
+        Returns the schema definition for all types in this instance.
+      operationId: describeAllRecordTypes
+      tags:
+        - Schema
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecordTypeSchema'
+        404:
+          description: Instance not found
           content:
             'application/json':
               schema:
@@ -437,32 +458,30 @@ paths:
           description: Success
         409:
           description: at least one of the records to be deleted is a relation target
-  /{instanceid}/types/{v}:
+
+  ##############################
+  # General WDS Information APIs
+  /status:
     get:
-      summary: Describe all record types
-      description: |
-        Returns the schema definition for all types in this instance.
-      operationId: describeAllRecordTypes
+      summary: Gets health status for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#health for details)
+      operationId: statusGet
       tags:
-        - Schema
-      parameters:
-        - $ref: '#/components/parameters/instanceIdPathParam'
-        - $ref: '#/components/parameters/versionPathParam'
+        - General WDS Information
       responses:
         200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/RecordTypeSchema'
-        404:
-          description: Instance not found
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          $ref: '#/components/responses/StatusResponseBody'
+  /version:
+    get:
+      summary: Gets related git and build version info for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#info for details)
+      operationId: versionGet
+      tags:
+        - General WDS Information
+      responses:
+        200:
+          $ref: '#/components/responses/VersionResponseBody'
+
+  ##############################
+  # Snapshots APIs
   /{instanceid}/snapshots/{v}/{snapshotid}:
     post:
       summary: Import a snapshot from Terra Data Repo
@@ -480,6 +499,7 @@ paths:
           description: Success
         403:
           description: Forbidden
+
 components:
   securitySchemes:
     bearerAuth:
