@@ -576,18 +576,19 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/RecordResponse'
-    VersionResponseBody:
-      description: Version Info
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/VersionResponse'
     StatusResponseBody:
       description: Status Info
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/StatusResponse'
+    VersionResponseBody:
+      description: Version Info
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/VersionResponse'
+
   requestBodies:
     BackupRestoreRequestBody:
       description: A backup request
