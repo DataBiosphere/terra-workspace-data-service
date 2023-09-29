@@ -597,20 +597,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/BackupRestoreRequest'
-    SearchRequestBody:
-      description: A paginated search request
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/SearchRequest'
-    RecordRequestBody:
-      description: A record's attributes to upload
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/RecordRequest'
     BatchRequestBody:
       description: A list of batch operations to perform on records
       required: true
@@ -620,6 +606,21 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/BatchOperation'
+    RecordRequestBody:
+      description: A record's attributes to upload
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RecordRequest'
+    SearchRequestBody:
+      description: A paginated search request
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SearchRequest'
+
   schemas:
     AttributeSchema:
       type: object
