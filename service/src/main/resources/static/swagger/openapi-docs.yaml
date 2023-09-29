@@ -502,6 +502,7 @@ paths:
           description: Forbidden
 
 components:
+  # within each group, components should be listed alphabetically.
   securitySchemes:
     bearerAuth:
       type: http
@@ -512,6 +513,13 @@ components:
       name: attribute
       in: path
       description: Attribute name
+      required: true
+      schema:
+        type: string
+    instanceIdPathParam:
+      name: instanceid
+      in: path
+      description: WDS instance id; by convention equal to workspace id
       required: true
       schema:
         type: string
@@ -536,21 +544,6 @@ components:
       required: false
       schema:
         type: string
-    instanceIdPathParam:
-      name: instanceid
-      in: path
-      description: WDS instance id; by convention equal to workspace id
-      required: true
-      schema:
-        type: string
-    versionPathParam:
-      name: v
-      in: path
-      description: API version
-      required: true
-      schema:
-        type: string
-        default: v0.2
     snapshotIdPathParam:
       name: snapshotid
       in: path
@@ -567,6 +560,14 @@ components:
       schema:
         type: string
         format: uuid
+    versionPathParam:
+      name: v
+      in: path
+      description: API version
+      required: true
+      schema:
+        type: string
+        default: v0.2
 
   responses:
     RecordResponseBody:
