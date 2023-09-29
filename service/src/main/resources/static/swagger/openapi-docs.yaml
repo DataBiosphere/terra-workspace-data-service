@@ -622,6 +622,13 @@ components:
             $ref: '#/components/schemas/SearchRequest'
 
   schemas:
+    app:
+      type: object
+      properties:
+        chart-version:
+          type: string
+        image:
+          type: string
     AttributeSchema:
       type: object
       required:
@@ -640,6 +647,27 @@ components:
         relatesTo:
           type: string
           description: Name of type to which this attribute relates. Only present if this is a relation attribute.
+    BackupJob:
+      x-all-of-name: BackupJob
+      allOf:
+        - $ref: '#/components/schemas/Job'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/BackupResponse'
+    BackupResponse:
+      type: object
+      properties:
+        filename:
+          type: string
+          description: backup location
+        requester:
+          type: string
+          format: uuid
+          description: workspace which initiated the backup
+        description:
+          type: string
+          description: description of this backup
     BackupRestoreRequest:
       type: object
       properties:
@@ -650,14 +678,6 @@ components:
         description:
           type: string
           description: User-friendly description to associate with this backup. Optional.
-    BackupJob:
-      x-all-of-name: BackupJob
-      allOf:
-        - $ref: '#/components/schemas/Job'
-        - type: object
-          properties:
-            result:
-              $ref: '#/components/schemas/BackupResponse'
     BatchOperation:
       type: object
       required:
@@ -692,6 +712,20 @@ components:
           type: string
         recordsModified:
           type: integer
+    build:
+      type: object
+      properties:
+        artifact:
+          type: string
+        name:
+          type: string
+        time:
+          type: string
+          format: date-time
+        version:
+          type: string
+        group:
+          type: string
     CloneJob:
       x-all-of-name: CloneJob
       allOf:
@@ -700,132 +734,81 @@ components:
           properties:
             result:
               $ref: '#/components/schemas/CloneResponse'
-    Job:
-      type: object
-      required:
-        - jobId
-        - status
-        - created
-        - updated
-      properties:
-        jobId:
-          type: string
-        status:
-          type: string
-          enum: [ QUEUED, RUNNING, SUCCEEDED, ERROR, CANCELLED, UNKNOWN ]
-        created:
-          type: string
-        updated:
-          type: string
-        errorMessage:
-          type: string
-        exception:
-          type: string
-    TsvUploadResponse:
-      type: object
-      required:
-        - message
-        - recordsModified
-      properties:
-        message:
-          type: string
-        recordsModified:
-          type: integer
-
-    SearchRequest:
+    CloneResponse:
       type: object
       properties:
-        offset:
-          $ref: '#/components/schemas/SearchOffset'
-        limit:
-          $ref: '#/components/schemas/SearchLimit'
-        sort:
-          $ref: '#/components/schemas/SearchSortDirection'
-        sortAttribute:
+        sourceworkspaceid:
           type: string
-    RecordRequest:
-      type: object
-      required:
-        - attributes
-      properties:
-        attributes:
-          $ref: '#/components/schemas/RecordAttributes'
-    RecordResponse:
-      required:
-        - id
-        - type
-        - attributes
+          format: uuid
+          description: workspace which initiated the clone
+        clonestatus:
+          type: string
+          description: description of this clone status
+    commit:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/RecordId'
-        type:
-          $ref: '#/components/schemas/RecordType'
-        attributes:
-          $ref: '#/components/schemas/RecordAttributes'
-    RecordAttributes:
-      type: object
-      additionalProperties: true
-      description: KVPs of record attributes, valid characters for attribute names are limited to letters, numbers, spaces, dashes, and underscores.
-      example: |
-        {
-          "stringAttr": "string",
-          "numericAttr": 123,
-          "booleanAttr": true,
-          "relationAttr": "terra-wds:/target-type/target-id",
-          "fileAttr": "https://account_name.blob.core.windows.net/container-1/blob1",
-          "arrayString": ["green", "red"],
-          "arrayBoolean": [true, false],
-          "arrayNumber": [12821.112, 0.12121211, 11],
-          "arrayDate": ["2022-11-03"],
-          "arrayDateTime": ["2022-11-03T04:36:20"],
-          "arrayRelation": ["terra-wds:/target-type/target-id-1", "terra-wds:/target-type/target-id-2"],
-          "arrayFile": ["drs://drs.example.org/file_id_1", "https://account_name.blob.core.windows.net/container-2/blob2"]
-        }
-    RecordId:
-      type: string
-      description: Record id
-    RecordQueryResponse:
-      required:
-        - searchRequest
-        - records
-        - totalRecords
+          type: string
+        time:
+          type: string
+          format: date-time
+    component:
       type: object
       properties:
-        searchRequest:
-          $ref: '#/components/schemas/SearchRequest'
-        totalRecords:
-          type: integer
-          description: number of records in the record type
-        records:
-          type: array
-          items:
-            $ref: '#/components/schemas/RecordResponse'
-          description: list of records found
-    RecordType:
-      type: string
-      description: Record type
-    RecordTypeSchema:
-      required:
-        - name
-        - attributes
-        - count
-        - primaryKey
+        status:
+          type: string
+        details:
+          type: string
+    components:
       type: object
       properties:
-        name:
+        db:
+          $ref: '#/components/schemas/dbComponent'
+        diskSpace:
+          $ref: '#/components/schemas/diskSpaceComponent'
+        ping:
+          $ref: '#/components/schemas/component'
+        mainDb:
+          $ref: '#/components/schemas/dbValidationcomponent'
+    dbComponent:
+      type: object
+      properties:
+        status:
           type: string
-          description: Record type name, valid characters for record type names are limited to letters, numbers, spaces, dashes, and underscores.
-        attributes:
-          type: array
-          items:
-            $ref: '#/components/schemas/AttributeSchema'
-        count:
-          type: integer
-          description: Number of records of this type
-        primaryKey:
+        components:
+          $ref: '#/components/schemas/component'
+    dbValidationcomponent:
+      type: object
+      properties:
+        status:
           type: string
-          description: Attribute name that contains the value to uniquely identify each record, defined as a primary key column in the underlying table.
+        components:
+          $ref: '#/components/schemas/dbValidationcomponentDetails'
+    dbValidationcomponentDetails:
+      type: object
+      properties:
+        database:
+          type: string
+        validationQuery:
+          type: string
+    diskSpaceComponent:
+      type: object
+      properties:
+        status:
+          type: string
+        details:
+          $ref: '#/components/schemas/diskSpaceComponentDetails'
+    diskSpaceComponentDetails:
+      type: object
+      properties:
+        total:
+          type: string
+        free:
+          type: number
+        threshold:
+          type: number
+        exists:
+          type: boolean
     ErrorResponse:
       required:
         - status
@@ -851,6 +834,118 @@ components:
           type: string
           description: time of error
       description: ""
+    git:
+      type: object
+      properties:
+        branch:
+          type: string
+        commit:
+          $ref: '#/components/schemas/commit'
+    Job:
+      type: object
+      required:
+        - jobId
+        - status
+        - created
+        - updated
+      properties:
+        jobId:
+          type: string
+        status:
+          type: string
+          enum: [ QUEUED, RUNNING, SUCCEEDED, ERROR, CANCELLED, UNKNOWN ]
+        created:
+          type: string
+        updated:
+          type: string
+        errorMessage:
+          type: string
+        exception:
+          type: string
+    RecordAttributes:
+      type: object
+      additionalProperties: true
+      description: KVPs of record attributes, valid characters for attribute names are limited to letters, numbers, spaces, dashes, and underscores.
+      example: |
+        {
+          "stringAttr": "string",
+          "numericAttr": 123,
+          "booleanAttr": true,
+          "relationAttr": "terra-wds:/target-type/target-id",
+          "fileAttr": "https://account_name.blob.core.windows.net/container-1/blob1",
+          "arrayString": ["green", "red"],
+          "arrayBoolean": [true, false],
+          "arrayNumber": [12821.112, 0.12121211, 11],
+          "arrayDate": ["2022-11-03"],
+          "arrayDateTime": ["2022-11-03T04:36:20"],
+          "arrayRelation": ["terra-wds:/target-type/target-id-1", "terra-wds:/target-type/target-id-2"],
+          "arrayFile": ["drs://drs.example.org/file_id_1", "https://account_name.blob.core.windows.net/container-2/blob2"]
+        }
+
+    RecordId:
+      type: string
+      description: Record id
+    RecordQueryResponse:
+      required:
+        - searchRequest
+        - records
+        - totalRecords
+      type: object
+      properties:
+        searchRequest:
+          $ref: '#/components/schemas/SearchRequest'
+        totalRecords:
+          type: integer
+          description: number of records in the record type
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecordResponse'
+          description: list of records found
+    RecordRequest:
+      type: object
+      required:
+        - attributes
+      properties:
+        attributes:
+          $ref: '#/components/schemas/RecordAttributes'
+    RecordResponse:
+      required:
+        - id
+        - type
+        - attributes
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/RecordId'
+        type:
+          $ref: '#/components/schemas/RecordType'
+        attributes:
+          $ref: '#/components/schemas/RecordAttributes'
+    RecordType:
+      type: string
+      description: Record type
+    RecordTypeSchema:
+      required:
+        - name
+        - attributes
+        - count
+        - primaryKey
+      type: object
+      properties:
+        name:
+          type: string
+          description: Record type name, valid characters for record type names are limited to letters, numbers, spaces, dashes, and underscores.
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttributeSchema'
+        count:
+          type: integer
+          description: Number of records of this type
+        primaryKey:
+          type: string
+          description: Attribute name that contains the value to uniquely identify each record, defined as a primary key column in the underlying table.
     RequestBodySearch:
       required:
         - terms
@@ -877,6 +972,17 @@ components:
       type: string
       enum: [ and, or ]
       description: Search behavior for multiple filter terms
+    SearchRequest:
+      type: object
+      properties:
+        offset:
+          $ref: '#/components/schemas/SearchOffset'
+        limit:
+          $ref: '#/components/schemas/SearchLimit'
+        sort:
+          $ref: '#/components/schemas/SearchSortDirection'
+        sortAttribute:
+          type: string
     SearchSortDirection:
       type: string
       enum: [ ASC, DESC ]
@@ -907,6 +1013,23 @@ components:
           type: integer
           description: line number
       description: ""
+    StatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        components:
+          $ref: '#/components/schemas/components'
+    TsvUploadResponse:
+      type: object
+      required:
+        - message
+        - recordsModified
+      properties:
+        message:
+          type: string
+        recordsModified:
+          type: integer
     VersionResponse:
       type: object
       properties:
@@ -916,126 +1039,4 @@ components:
           $ref: '#/components/schemas/git'
         build:
           $ref: '#/components/schemas/build'
-    StatusResponse:
-      type: object
-      properties:
-        status:
-          type: string
-        components:
-          $ref: '#/components/schemas/components'
-    BackupResponse:
-      type: object
-      properties:
-        filename:
-          type: string
-          description: backup location
-        requester:
-          type: string
-          format: uuid
-          description: workspace which initiated the backup
-        description:
-          type: string
-          description: description of this backup
-    CloneResponse:
-      type: object
-      properties:
-        sourceworkspaceid:
-          type: string
-          format: uuid
-          description: workspace which initiated the clone
-        clonestatus:
-          type: string
-          description: description of this clone status
-    build:
-      type: object
-      properties:
-        artifact:
-          type: string
-        name:
-          type: string
-        time:
-          type: string
-          format: date-time
-        version:
-          type: string
-        group:
-          type: string
-    app:
-      type: object
-      properties:
-        chart-version:
-          type: string
-        image:
-          type: string
-    git:
-      type: object
-      properties:
-        branch:
-          type: string
-        commit:
-          $ref: '#/components/schemas/commit'
-    commit:
-      type: object
-      properties:
-        id:
-          type: string
-        time:
-          type: string
-          format: date-time
-    components:
-      type: object
-      properties:
-        db:
-          $ref: '#/components/schemas/dbComponent'
-        diskSpace:
-          $ref: '#/components/schemas/diskSpaceComponent'
-        ping:
-          $ref: '#/components/schemas/component'
-        mainDb:
-          $ref: '#/components/schemas/dbValidationcomponent'
-    component:
-      type: object
-      properties:
-        status:
-          type: string
-        details:
-          type: string
-    dbComponent:
-      type: object
-      properties:
-        status:
-          type: string
-        components:
-          $ref: '#/components/schemas/component'
-    diskSpaceComponent:
-      type: object
-      properties:
-        status:
-          type: string
-        details:
-          $ref: '#/components/schemas/diskSpaceComponentDetails'
-    diskSpaceComponentDetails:
-      type: object
-      properties:
-        total:
-          type: string
-        free:
-          type: number
-        threshold:
-          type: number
-        exists:
-          type: boolean
-    dbValidationcomponent:
-      type: object
-      properties:
-        status:
-          type: string
-        components:
-          $ref: '#/components/schemas/dbValidationcomponentDetails'
-    dbValidationcomponentDetails:
-      type: object
-      properties:
-        database:
-          type: string
-        validationQuery:
-          type: string
+
