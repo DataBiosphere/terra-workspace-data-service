@@ -102,16 +102,7 @@ public class InstanceInitializerBean {
    */
   protected boolean isInCloneMode(String sourceWorkspaceId) {
     if (StringUtils.isNotBlank(sourceWorkspaceId)) {
-      UUID sourceWorkspaceUuid;
       LOGGER.info("SourceWorkspaceId found, checking database");
-      try {
-        sourceWorkspaceUuid = UUID.fromString(sourceWorkspaceId);
-      } catch (IllegalArgumentException e) {
-        LOGGER.warn(
-            "SourceWorkspaceId could not be parsed, unable to clone DB. Provided SourceWorkspaceId: {}.",
-            sourceWorkspaceId);
-        return false;
-      }
 
       if (sourceWorkspaceId.equals(workspaceId)) {
         LOGGER.warn("SourceWorkspaceId and current WorkspaceId can't be the same.");
@@ -160,6 +151,7 @@ public class InstanceInitializerBean {
       // multiple replicas and another replica started first and has initiated the clone.
       // It can also happen in a corner case where this replica restarted during the clone
       // operation.
+      UUID sourceWorkspaceUuid = UUID.fromString(sourceWorkspaceId);
       boolean cloneAlreadyRunning = cloneDao.cloneExistsForWorkspace(sourceWorkspaceUuid);
       if (cloneAlreadyRunning) {
         LOGGER.info("Clone already running, terminating initCloneMode");
@@ -168,7 +160,7 @@ public class InstanceInitializerBean {
 
       // First, create an entry in the clone table to mark cloning has started
       LOGGER.info("Creating entry to track cloning process.");
-      cloneDao.createCloneEntry(trackingId, UUID.fromString(sourceWorkspaceId));
+      cloneDao.createCloneEntry(trackingId, sourceWorkspaceUuid);
 
       // Get the remote (source) WDS url from Leo, based on the source workspace id env var.
       // This call runs using the "startup token" provided by Leo.
@@ -199,6 +191,11 @@ public class InstanceInitializerBean {
       LOGGER.info("Re-checking clone job status after restore request");
       var finalCloneStatus = currentCloneStatus(trackingId);
       return finalCloneStatus.getStatus().equals(JobStatus.SUCCEEDED);
+    } catch (IllegalArgumentException e) {
+      LOGGER.warn(
+          "SourceWorkspaceId could not be parsed, unable to clone DB. Provided SourceWorkspaceId: {}.",
+          sourceWorkspaceId);
+      return false;
     } catch (Exception e) {
       LOGGER.error("An error occurred during clone mode. Error: {}", e.toString());
       try {
