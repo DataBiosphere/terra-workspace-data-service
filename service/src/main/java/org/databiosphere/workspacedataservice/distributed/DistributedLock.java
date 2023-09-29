@@ -1,9 +1,11 @@
 package org.databiosphere.workspacedataservice.distributed;
 
+import java.util.concurrent.locks.Lock;
+
 public interface DistributedLock {
-  void obtainLock(String lockId);
+  Lock obtainLock(String lockId);
 
-  Boolean tryLock();
+  Boolean tryLock(Lock lock);
 
-  void unlock();
+  void unlock(Lock lock);
 }

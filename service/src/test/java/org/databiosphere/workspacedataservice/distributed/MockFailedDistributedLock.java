@@ -6,13 +6,13 @@ public class MockFailedDistributedLock implements DistributedLock {
   public MockFailedDistributedLock() {}
 
   @Override
-  public void obtainLock(String lockId) {}
+  public Lock obtainLock(String lockId) {}
 
   @Override
-  public Boolean tryLock() {
+  public Boolean tryLock(Lock lock) {
     return false;
   }
 
   @Override
-  public void unlock() {}
+  public void unlock(Lock lock) {}
 }

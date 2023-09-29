@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 public class DefaultDistributedLock implements DistributedLock {
 
   private final LockRegistry lockRegistry;
-  private Lock lock;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDistributedLock.class);
 
@@ -21,12 +20,12 @@ public class DefaultDistributedLock implements DistributedLock {
   }
 
   @Override
-  public void obtainLock(String lockId) {
-    lock = lockRegistry.obtain(lockId);
+  public Lock obtainLock(String lockId) {
+    return lockRegistry.obtain(lockId);
   }
 
   @Override
-  public Boolean tryLock() {
+  public Boolean tryLock(Lock lock) {
     if (lock == null) {
       return false;
     }
@@ -39,7 +38,7 @@ public class DefaultDistributedLock implements DistributedLock {
   }
 
   @Override
-  public void unlock() {
+  public void unlock(Lock lock) {
     if (lock == null) {
       return;
     }

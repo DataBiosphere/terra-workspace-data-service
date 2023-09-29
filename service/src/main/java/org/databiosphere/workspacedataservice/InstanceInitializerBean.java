@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice;
 
 import java.util.UUID;
+import java.util.concurrent.locks.Lock;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedata.client.ApiException;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
@@ -77,7 +78,6 @@ public class InstanceInitializerBean {
   public void initializeInstance() {
     LOGGER.info("Default workspace id loaded as {}.", workspaceId);
     boolean isInCloneMode = isInCloneMode(sourceWorkspaceId);
-    lock.obtainLock(sourceWorkspaceId);
     LOGGER.info("isInCloneMode={}.", isInCloneMode);
     if (isInCloneMode) {
       LOGGER.info("Source workspace id loaded as {}.", sourceWorkspaceId);
@@ -119,22 +119,13 @@ public class InstanceInitializerBean {
       }
 
       try {
-        // is a clone operation already running? This can happen when WDS is running with multiple
-        // replicas,
-        // and another replica started first and has initiated the clone. It can also happen in a
-        // corner case
-        // where this replica restarted during the clone operation.
-        boolean cloneAlreadyRunning = cloneDao.cloneExistsForWorkspace(sourceWorkspaceUuid);
-        // does the default pg schema already exist for this workspace? This should not happen,
-        // but we want to protect against overwriting it.
+        // does the default pg schema already exist for this workspace? This could happen if
+        // one replica's cloning and the other is not. We want to protect against overwriting it.
         boolean instanceAlreadyExists =
             instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
-        LOGGER.info(
-            "isInCloneMode(): cloneAlreadyRunning={}, instanceAlreadyExists={}",
-            cloneAlreadyRunning,
-            instanceAlreadyExists);
+        LOGGER.info("isInCloneMode(): instanceAlreadyExists={}", instanceAlreadyExists);
         // TODO handle the case where a clone already ran, but failed; should we retry?
-        return !cloneAlreadyRunning && !instanceAlreadyExists;
+        return !instanceAlreadyExists;
       } catch (IllegalArgumentException e) {
         LOGGER.warn(
             "WorkspaceId could not be parsed, unable to clone DB. Provided default WorkspaceId: {}.",
@@ -156,12 +147,25 @@ public class InstanceInitializerBean {
   private boolean initCloneMode() {
     LOGGER.info("Starting in clone mode...");
     UUID trackingId = UUID.randomUUID();
+    Lock sourceLock = lock.obtainLock(sourceWorkspaceId);
     try {
       // Make sure it's safe to start cloning (in case another replica is trying to clone)
-      boolean lockAquired = lock.tryLock();
+      boolean lockAquired = lock.tryLock(sourceLock);
       if (!lockAquired) {
+        LOGGER.info("Failed to acquire lock in initCloneMode");
         return false;
       }
+
+      // is a clone operation already running? This can happen when WDS is running with
+      // multiple replicas and another replica started first and has initiated the clone.
+      // It can also happen in a corner case where this replica restarted during the clone
+      // operation.
+      boolean cloneAlreadyRunning = cloneDao.cloneExistsForWorkspace(sourceWorkspaceUuid);
+      if (cloneAlreadyRunning) {
+        LOGGER.info("Clone already running, terminating initCloneMode");
+        return false;
+      }
+
       // First, create an entry in the clone table to mark cloning has started
       LOGGER.info("Creating entry to track cloning process.");
       cloneDao.createCloneEntry(trackingId, UUID.fromString(sourceWorkspaceId));
@@ -207,7 +211,7 @@ public class InstanceInitializerBean {
       }
       return false;
     } finally {
-      lock.unlock();
+      lock.unlock(sourceLock);
     }
   }
 
@@ -297,9 +301,10 @@ public class InstanceInitializerBean {
      Create the default pg schema for this WDS. The pg schema name is the workspace id.
   */
   private void initializeDefaultInstance() {
+    Lock sourceLock = lock.obtainLock(sourceWorkspaceId);
     try {
       // Don't create schema if in the middle of cloning
-      boolean lockAquired = lock.tryLock();
+      boolean lockAquired = lock.tryLock(sourceLock);
       UUID instanceId = UUID.fromString(workspaceId);
       if (!instanceDao.instanceSchemaExists(instanceId) && lockAquired) {
         instanceDao.createSchema(instanceId);
@@ -317,7 +322,7 @@ public class InstanceInitializerBean {
     } catch (DataAccessException e) {
       LOGGER.error("Failed to create default schema id for workspaceId {}.", workspaceId);
     } finally {
-      lock.unlock();
+      lock.unlock(sourceLock);
     }
   }
 }
