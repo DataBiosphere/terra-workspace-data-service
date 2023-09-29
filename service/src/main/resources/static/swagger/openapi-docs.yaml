@@ -10,8 +10,10 @@ info:
   license:
     name: BSD
     url: https://opensource.org/licenses/BSD-3-Clause
+
 servers:
   - url: /
+
 tags:
   # Tags should be listed in the order they should appear in the UI
   - name: Cloning
@@ -26,12 +28,14 @@ tags:
     description: Information regarding versioning, health, info, etc. for WDS
   - name: Snapshots
     description: Snapshot APIs
+
 paths:
   # Paths should be grouped by their tag, following the order of tags listed above.
   # Within each tag group, paths should be listed alphabetically.
 
   ##############################
   # Cloning APIs
+  ##############################
   /backup/{v}:
     post:
       tags:
@@ -89,6 +93,7 @@ paths:
 
   ##############################
   # Records APIs
+  ##############################
   /{instanceid}/batch/{v}/{type}:
     post:
       summary: Batch write records
@@ -325,6 +330,7 @@ paths:
 
   ##############################
   # Instances APIs
+  ##############################
   /instances/{v}:
     get:
       summary: List instances
@@ -391,6 +397,7 @@ paths:
 
   ##############################
   # Schema APIs
+  ##############################
   /{instanceid}/types/{v}:
     get:
       summary: Describe all record types
@@ -462,6 +469,7 @@ paths:
 
   ##############################
   # General WDS Information APIs
+  ##############################
   /status:
     get:
       summary: Gets health status for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#health for details)
@@ -483,6 +491,7 @@ paths:
 
   ##############################
   # Snapshots APIs
+  ##############################
   /{instanceid}/snapshots/{v}/{snapshotid}:
     post:
       summary: Import a snapshot from Terra Data Repo
