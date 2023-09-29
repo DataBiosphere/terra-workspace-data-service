@@ -33,6 +33,7 @@ public class DefaultDistributedLock implements DistributedLock {
       return lock.tryLock(1, TimeUnit.SECONDS);
     } catch (InterruptedException e) {
       LOGGER.error("Error with aquiring cloning/schema initialization Lock: {}", e.getMessage());
+      lock.unlock();
       Thread.currentThread().interrupt();
       return false;
     }

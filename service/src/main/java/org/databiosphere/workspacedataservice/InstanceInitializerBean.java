@@ -102,10 +102,9 @@ public class InstanceInitializerBean {
    */
   protected boolean isInCloneMode(String sourceWorkspaceId) {
     if (StringUtils.isNotBlank(sourceWorkspaceId)) {
-      UUID sourceWorkspaceUuid;
       LOGGER.info("SourceWorkspaceId found, checking database");
       try {
-        sourceWorkspaceUuid = UUID.fromString(sourceWorkspaceId);
+        UUID.fromString(sourceWorkspaceId);
       } catch (IllegalArgumentException e) {
         LOGGER.warn(
             "SourceWorkspaceId could not be parsed, unable to clone DB. Provided SourceWorkspaceId: {}.",
