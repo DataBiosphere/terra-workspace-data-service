@@ -609,7 +609,7 @@ components:
           description: name of this attribute.
         datatype:
           type: string
-          enum: [BOOLEAN, NUMBER, DATE, DATE_TIME, STRING, JSON, RELATION, FILE, ARRAY_OF_BOOLEAN, ARRAY_OF_STRING, ARRAY_OF_NUMBER, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_RELATION, ARRAY_OF_FILE]
+          enum: [ BOOLEAN, NUMBER, DATE, DATE_TIME, STRING, JSON, RELATION, FILE, ARRAY_OF_BOOLEAN, ARRAY_OF_STRING, ARRAY_OF_NUMBER, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_RELATION, ARRAY_OF_FILE ]
           description: |
             Datatype of this attribute. The enum of datatypes is in flux and will change. Please
             comment at https://docs.google.com/document/d/1d352ZoN5kEYWPjy0NqqWGxdf7HEu5VEdrLmiAv7dMmQ/edit#heading=h.naxag0augkgf.
@@ -650,7 +650,7 @@ components:
       properties:
         operation:
           type: string
-          enum: [upsert, delete]
+          enum: [ upsert, delete ]
         record:
           $ref: '#/components/schemas/BatchRecordRequest'
     BatchRecordRequest:
@@ -851,11 +851,11 @@ components:
       description: Pagination offset
     SearchOperator:
       type: string
-      enum: [and, or]
+      enum: [ and, or ]
       description: Search behavior for multiple filter terms
     SearchSortDirection:
       type: string
-      enum: [ASC, DESC]
+      enum: [ ASC, DESC ]
       default: ASC
       description: |
         Sort direction (descending or ascending)
