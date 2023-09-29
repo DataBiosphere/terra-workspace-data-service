@@ -658,14 +658,6 @@ components:
           properties:
             result:
               $ref: '#/components/schemas/BackupResponse'
-    CloneJob:
-      x-all-of-name: CloneJob
-      allOf:
-        - $ref: '#/components/schemas/Job'
-        - type: object
-          properties:
-            result:
-              $ref: '#/components/schemas/CloneResponse'
     BatchOperation:
       type: object
       required:
@@ -700,6 +692,14 @@ components:
           type: string
         recordsModified:
           type: integer
+    CloneJob:
+      x-all-of-name: CloneJob
+      allOf:
+        - $ref: '#/components/schemas/Job'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/CloneResponse'
     Job:
       type: object
       required:
