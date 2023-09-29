@@ -20,6 +20,8 @@ tags:
     description: Cloning APIs including Backup and Restore
   - name: Records
     description: Record APIs
+  - name: Import
+    description: Import APIs
   - name: Instances
     description: Instance APIs
   - name: Schema
@@ -329,6 +331,24 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   ##############################
+  # Import APIs
+  ##############################
+  /{instanceid}/import/v1:
+    post:
+      summary: Import from a file
+      description: Imports records from the specified URL.
+      operationId: importV1
+      tags:
+        - Import
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+      requestBody:
+        $ref: '#/components/requestBodies/ImportRequestBody'
+      responses:
+        202:
+          description: Import accepted.
+
+  ##############################
   # Instances APIs
   ##############################
   /instances/{v}:
@@ -494,7 +514,11 @@ paths:
   ##############################
   /{instanceid}/snapshots/{v}/{snapshotid}:
     post:
+      deprecated: true
       summary: Import a snapshot from Terra Data Repo
+      description: |
+        This API will be removed on or after Jan 1 2024.
+        Use the POST /{instanceid}/import/v1 API instead.
       operationId: importSnapshot
       security:
         - bearerAuth: [ ]
@@ -615,6 +639,15 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/BatchOperation'
+    ImportRequestBody:
+      description: A request to import records from a file
+      required: true
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/ImportRequest'
     RecordRequestBody:
       description: A record's attributes to upload
       required: true
@@ -850,6 +883,24 @@ components:
           type: string
         commit:
           $ref: '#/components/schemas/commit'
+    ImportRequest:
+      type: object
+      required:
+        - type
+        - url
+      properties:
+        type:
+          type: string
+          enum: [ PFB, TDRMANIFEST ]
+          description: format of file to import
+        url:
+          type: string
+          format: uri
+          description: url from which to import
+        options:
+          type: object
+          additionalProperties: true
+          description: key-value pairs to configure this import. Options vary based on the import file type.
     Job:
       type: object
       required:
