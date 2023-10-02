@@ -1,0 +1,105 @@
+name: run e2e tests
+'on':
+  schedule:
+    # run twice a day at 10:00 and 22:00 UTC every day of the week
+    - cron: "0 10/12 * * 1-5"
+  workflow_dispatch:
+env:
+  BEE_NAME: 'wds-${{ github.run_id }}-${{ github.run_attempt}}-dev'
+  TOKEN: '${{ secrets.BROADBOT_TOKEN }}'
+  RUN_NAME_SUFFIX: ${{ github.event.repository.name }}-${{ github.run_id }}-${{github.run_attempt }}
+jobs:
+  init-github-context:
+    runs-on: ubuntu-latest
+    outputs:
+      branch: '${{ steps.extract-inputs.outputs.branch }}'
+      delete-bee: '${{ steps.extract-inputs.outputs.delete-bee }}'
+    steps:
+      - name: Get inputs or use defaults
+        id: extract-inputs
+        run: >
+          echo "branch=${{ inputs.branch || 'develop' }}" >> "$GITHUB_OUTPUT"
+          echo "delete-bee=${{ inputs.delete-bee || false }}" >> "$GITHUB_OUTPUT"
+  params-gen:
+    runs-on: ubuntu-latest
+    outputs:
+      project-name: '${{ steps.gen.outputs.project_name }}'
+      bee-name: '${{ env.BEE_NAME }}'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Generate a random billing project name
+        id: gen
+        run: |
+          project_name=$(echo "tmp-billing-project-$(uuidgen)" | cut -c -30)
+          echo "project_name=${project_name}" >> $GITHUB_OUTPUT
+  create-bee-workflow:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: dispatch to terra-github-workflows
+        uses: broadinstitute/workflow-dispatch@v3
+        with:
+          workflow: bee-create
+          repo: broadinstitute/terra-github-workflows
+          ref: refs/heads/main
+          token: '${{ env.TOKEN }}'
+          inputs: >-
+            { 
+            "bee-name": "${{ env.BEE_NAME }}", 
+            "bee-template-name":
+            "rawls-e2e-azure-tests", 
+            "version-template": "dev" 
+            }
+  attach-landing-zone-to-bee-workflow:
+    runs-on: ubuntu-latest
+    needs: [init-github-context, create-bee-workflow, params-gen]
+    steps:
+      - name: dispatch to terra-github-workflows
+        uses: broadinstitute/workflow-dispatch@v3
+        with:
+          workflow: attach-billing-project-to-landing-zone.yaml
+          repo: broadinstitute/terra-github-workflows
+          ref: refs/heads/main
+          token: '${{ env.TOKEN }}'
+          inputs: >-
+            { 
+            "bee-name": "${{ env.BEE_NAME }}", 
+            "billing-project": "${{needs.params-gen.outputs.project-name }}", 
+            "service-account": "firecloud-qa@broad-dsde-qa.iam.gserviceaccount.com" 
+            }
+  run-e2e-test-job:
+    needs:
+      - attach-landing-zone-to-bee-workflow
+      - params-gen
+    permissions:
+      contents: read
+      id-token: write
+    uses: broadinstitute/dsp-reusable-workflows/.github/workflows/run-e2e-tests.yaml@main
+    with:
+      billing-project-name: '${{ needs.params-gen.outputs.project-name }}'
+      bee-name: '${{ needs.params-gen.outputs.bee-name }}'
+      branch: main
+  destroy-bee-workflow:
+    runs-on: ubuntu-latest
+    needs:
+      - run-e2e-test-job
+      - init-github-context
+    if: '${{ needs.init-github-context.outputs.delete-bee && always() }}'
+    steps:
+      - name: dispatch to terra-github-workflows
+        uses: broadinstitute/workflow-dispatch@v3
+        with:
+          workflow: bee-destroy
+          repo: broadinstitute/terra-github-workflows
+          ref: refs/heads/main
+          wait-for-completion: false
+          token: '${{ env.TOKEN }}'
+          inputs: '{ "bee-name": "${{ env.BEE_NAME }}" }'
+  report-workflow:
+    uses: broadinstitute/sherlock/.github/workflows/client-report-workflow.yaml@main
+    with:
+      notify-slack-channels-upon-workflow-failure: "#dsp-analysis-journeys-alerts"
+    permissions:
+      id-token: write

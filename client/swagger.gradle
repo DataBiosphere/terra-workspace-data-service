@@ -6,6 +6,10 @@ dependencies {
 	api 'com.squareup.okhttp3:logging-interceptor:4.10.0'
 }
 
+openApiValidate {
+    inputSpec = "$rootDir/service/src/main/resources/static/swagger/openapi-docs.yaml".toString()
+}
+
 openApiGenerate {
 	inputSpec = "$rootDir/service/src/main/resources/static/swagger/openapi-docs.yaml".toString()
 	outputDir = "$buildDir/generated".toString()
@@ -71,7 +75,8 @@ tasks.register('patchSources', Copy) {
 	}
 }
 
-// control task order: openApiGenerate -> backUpSources -> patchSources
+// control task order: openApiValidate -> openApiGenerate -> backUpSources -> patchSources
+tasks.getByName('openApiGenerate').dependsOn 'openApiValidate'
 tasks.register('fixOpenApiGenerate') {
 	doFirst {
 		logger.lifecycle("")
