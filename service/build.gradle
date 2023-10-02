@@ -137,11 +137,12 @@ spotless {
 }
 spotlessJavaCheck.onlyIf( { spotlessEnabled } )
 
-// Don't run spotless on generated code
+// Don't run spotless on generated code, but generate code before compiling
 generateApiInterfaces.mustRunAfter(spotlessJava)
+compileJava.dependsOn(generateApiInterfaces)
+processResources.dependsOn(generateApiInterfaces)
 
 // Run spotless check when running in github actions, otherwise run spotless apply.
-// Run generateApiInterfaces after spotless; then compile.
 compileJava {
   if (spotlessEnabled) {
     if (isCiServer) {
@@ -150,7 +151,6 @@ compileJava {
         dependsOn(spotlessApply)
     }
   }
-  dependsOn(generateApiInterfaces)
 }
 
 sonarqube {
