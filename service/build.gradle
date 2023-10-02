@@ -107,7 +107,7 @@ tasks.register('generateApiInterfaces', GenerateTask) {
 	library = "spring-boot"
 	inputSpec = "$rootDir/service/src/main/resources/static/swagger/openapi-docs.yaml"
 	outputDir = "$rootDir/service"
-	cleanupOutput = false // set to true to delete the output directory before regenerating
+	cleanupOutput = false // else would delete the /service directory
 	apiPackage = "org.databiosphere.workspacedataservice.generated.api"
 	modelPackage = "org.databiosphere.workspacedataservice.generated.model"
 	apiFilesConstrainedTo.set(["Import"]) // seems to respect the tag value instead of the filename
@@ -143,7 +143,6 @@ spotlessJava.dependsOn(generateApiInterfaces)
 compileJava.dependsOn(generateApiInterfaces)
 processResources.dependsOn(generateApiInterfaces)
 processTestResources.dependsOn(generateApiInterfaces)
-processIntegrationTestResources.dependsOn(generateApiInterfaces)
 
 // Run spotless check when running in github actions, otherwise run spotless apply.
 compileJava {
