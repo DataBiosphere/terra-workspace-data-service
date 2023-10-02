@@ -301,12 +301,10 @@ public class InstanceInitializerBean {
      Create the default pg schema for this WDS. The pg schema name is the workspace id.
   */
   private void initializeDefaultInstance() {
-    Lock sourceLock = lock.obtainLock(sourceWorkspaceId);
     try {
       // Don't create schema if in the middle of cloning
-      boolean lockAquired = lock.tryLock(sourceLock);
       UUID instanceId = UUID.fromString(workspaceId);
-      if (!instanceDao.instanceSchemaExists(instanceId) && lockAquired) {
+      if (!instanceDao.instanceSchemaExists(instanceId)) {
         instanceDao.createSchema(instanceId);
         LOGGER.info("Creating default schema id succeeded for workspaceId {}.", workspaceId);
       } else {
@@ -321,8 +319,6 @@ public class InstanceInitializerBean {
           workspaceId);
     } catch (DataAccessException e) {
       LOGGER.error("Failed to create default schema id for workspaceId {}.", workspaceId);
-    } finally {
-      lock.unlock(sourceLock);
     }
   }
 }
