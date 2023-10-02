@@ -212,7 +212,7 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /{instanceid}/records/{v}/:
+  /{instanceid}/records/{v}/lastUpdated:
     get:
       summary: Get a timestamp on when records were last updated.
       operationId: getLastUpdatedTime

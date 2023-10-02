@@ -71,7 +71,7 @@ public class RecordController {
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
-  @GetMapping("/{instanceId}/records/{version}")
+  @GetMapping("/{instanceId}/records/{version}/lastUpdated")
   @RetryableApi
   public ResponseEntity<Timestamp> getLastUpdatedTime(
       @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {
