@@ -38,7 +38,7 @@ class DataRepoDaoTest {
   private static final UUID INSTANCE = UUID.fromString("111e9999-e89b-12d3-a456-426614174000");
 
   @BeforeEach
-  void beforeEach() {
+  void setUp() {
     given(mockDataRepoClientFactory.getRepositoryApi()).willReturn(mockRepositoryApi);
     if (!instanceDao.instanceSchemaExists(INSTANCE)) {
       instanceDao.createSchema(INSTANCE);
@@ -46,7 +46,7 @@ class DataRepoDaoTest {
   }
 
   @AfterEach
-  void afterEach() {
+  void tearDown() {
     if (instanceDao.instanceSchemaExists(INSTANCE)) {
       instanceDao.dropSchema(INSTANCE);
     }

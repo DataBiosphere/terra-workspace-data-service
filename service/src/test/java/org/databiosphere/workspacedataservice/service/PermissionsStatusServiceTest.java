@@ -43,7 +43,7 @@ class PermissionsStatusServiceTest {
   final Health.Builder mockHealthBuilder = Mockito.mock(Health.Builder.class);
 
   @BeforeEach
-  void beforeEach() {
+  void setUp() {
     // return the mock StatusApi from the mock SamClientFactory
     given(mockSamClientFactory.getStatusApi()).willReturn(mockStatusApi);
     Mockito.clearInvocations(mockStatusApi);

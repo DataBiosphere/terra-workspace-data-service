@@ -59,7 +59,7 @@ class DataRepoServiceTest {
   private static final UUID INSTANCE = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
 
   @BeforeEach
-  void beforeEach() {
+  void setUp() {
     given(mockDataRepoClientFactory.getRepositoryApi()).willReturn(mockRepositoryApi);
     given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi(null))
         .willReturn(mockReferencedGcpResourceApi);
@@ -69,7 +69,7 @@ class DataRepoServiceTest {
   }
 
   @AfterEach
-  void afterEach() {
+  void tearDown() {
     if (instanceDao.instanceSchemaExists(INSTANCE)) {
       instanceDao.dropSchema(INSTANCE);
     }

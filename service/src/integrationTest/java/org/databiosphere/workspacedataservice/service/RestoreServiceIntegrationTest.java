@@ -10,7 +10,7 @@ import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,8 +40,8 @@ public class RestoreServiceIntegrationTest {
   @Value("${twds.instance.workspace-id:}")
   private String workspaceId;
 
-  @BeforeEach
-  void beforeEach() {
+  @AfterEach
+  void tearDown() {
     // clean up any instances left in the db
     List<UUID> allInstances = instanceDao.listInstanceSchemas();
     allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));

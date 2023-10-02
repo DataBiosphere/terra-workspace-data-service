@@ -48,7 +48,7 @@ class InstanceServiceNoPermissionSamTest {
   final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
   @BeforeEach
-  void beforeEach() {
+  void setUp() {
     instanceService = new InstanceService(instanceDao, samDao, activityLogger);
   }
 

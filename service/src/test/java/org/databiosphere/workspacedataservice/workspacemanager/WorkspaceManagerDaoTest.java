@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.workspacemanager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -49,7 +50,7 @@ class WorkspaceManagerDaoTest {
       Mockito.mock(ControlledAzureResourceApi.class);
 
   @BeforeEach
-  void beforeEach() {
+  void setUp() {
     given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi(null))
         .willReturn(mockReferencedGcpResourceApi);
     given(mockWorkspaceManagerClientFactory.getResourceApi(null)).willReturn(mockResourceApi);
@@ -101,7 +102,7 @@ class WorkspaceManagerDaoTest {
     var resourceUUID =
         buildResourceListObjectAndCallExtraction(
             workspaceId, "sc-" + UUID.randomUUID(), ResourceType.AZURE_STORAGE_CONTAINER);
-    assertEquals(null, resourceUUID);
+    assertNull(resourceUUID);
   }
 
   UUID buildResourceListObjectAndCallExtraction(UUID workspaceId, String name, ResourceType type) {

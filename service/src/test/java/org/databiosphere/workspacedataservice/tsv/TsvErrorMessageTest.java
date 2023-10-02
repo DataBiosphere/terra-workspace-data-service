@@ -33,18 +33,18 @@ public class TsvErrorMessageTest {
   @Autowired InstanceService instanceService;
   @Autowired RecordOrchestratorService recordOrchestratorService;
 
-  private static UUID instanceId;
+  private UUID instanceId;
 
   private static final String VERSION = "v0.2";
 
   @BeforeEach
-  void beforeEach() {
+  void setUp() {
     instanceId = UUID.randomUUID();
     instanceService.createInstance(instanceId, VERSION);
   }
 
   @AfterEach
-  void afterEach() {
+  void tearDown() {
     List<UUID> allInstances = instanceService.listInstances(VERSION);
     for (UUID id : allInstances) {
       instanceService.deleteInstance(id, VERSION);

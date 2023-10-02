@@ -33,15 +33,15 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ConcurrentDataTypeChangesTest {
   @Autowired private TestRestTemplate restTemplate;
-  private static HttpHeaders headers;
-  private static UUID instanceId;
+  private HttpHeaders headers;
+  private UUID instanceId;
 
   private static final String recordId = "concurrent-changes";
   private static final RecordType recordType = RecordType.valueOf("concurrency");
   private static final String versionId = "v0.2";
 
   @BeforeEach
-  void beforeEach() {
+  void setUp() {
     headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     instanceId = UUID.randomUUID();
@@ -57,7 +57,7 @@ class ConcurrentDataTypeChangesTest {
   }
 
   @AfterEach
-  void afterEach() {
+  void tearDown() {
     ResponseEntity<String> response =
         restTemplate.exchange(
             "/instances/{v}/{instanceid}",

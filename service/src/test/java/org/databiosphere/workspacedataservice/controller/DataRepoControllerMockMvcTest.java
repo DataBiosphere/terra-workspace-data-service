@@ -58,12 +58,12 @@ class DataRepoControllerMockMvcTest {
   final ReferencedGcpResourceApi mockReferencedGcpResourceApi =
       Mockito.mock(ReferencedGcpResourceApi.class);
 
-  private static UUID instanceId;
+  private UUID instanceId;
 
   private static final String versionId = "v0.2";
 
   @BeforeEach
-  void beforeEach() throws Exception {
+  void setUp() throws Exception {
     given(mockDataRepoClientFactory.getRepositoryApi()).willReturn(mockRepositoryApi);
     given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi(null))
         .willReturn(mockReferencedGcpResourceApi);
@@ -74,7 +74,7 @@ class DataRepoControllerMockMvcTest {
   }
 
   @AfterEach
-  void afterEach() {
+  void tearDown() {
     try {
       mockMvc
           .perform(delete("/instances/{v}/{instanceid}", versionId, instanceId).content(""))
