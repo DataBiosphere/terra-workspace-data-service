@@ -143,6 +143,7 @@ spotlessJava.dependsOn(generateApiInterfaces)
 compileJava.dependsOn(generateApiInterfaces)
 processResources.dependsOn(generateApiInterfaces)
 processTestResources.dependsOn(generateApiInterfaces)
+processIntegrationTestResources.dependsOn(generateApiInterfaces)
 
 // Run spotless check when running in github actions, otherwise run spotless apply.
 compileJava {
