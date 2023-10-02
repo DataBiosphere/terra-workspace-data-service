@@ -333,7 +333,7 @@ paths:
   ##############################
   # Import APIs
   ##############################
-  /{instanceid}/import/v1:
+  /{instanceUuid}/import/v1:
     post:
       summary: Import from a file
       description: Imports records from the specified URL.
@@ -341,7 +341,7 @@ paths:
       tags:
         - Import
       parameters:
-        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/instanceUuidPathParam'
       requestBody:
         $ref: '#/components/requestBodies/ImportRequestBody'
       responses:
@@ -556,6 +556,14 @@ components:
       required: true
       schema:
         type: string
+    instanceUuidPathParam:
+      name: instanceUuid
+      in: path
+      description: WDS instance id; by convention equal to workspace id
+      required: true
+      schema:
+        type: string
+        format: uuid
     recordIdPathParam:
       name: id
       in: path

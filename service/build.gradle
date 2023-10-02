@@ -1,8 +1,11 @@
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
 plugins {
 	id 'org.springframework.boot'
 	id 'com.google.cloud.tools.jib'
 	id 'org.sonarqube'
 	id 'com.gorylenko.gradle-git-properties'
+	id 'org.openapi.generator'
 	id 'com.diffplug.spotless' version '6.21.0'
 	id 'jacoco'
 	id "au.com.dius.pact" version "4.6.1"
@@ -64,6 +67,10 @@ dependencies {
 	implementation 'javax.ws.rs:javax.ws.rs-api:2.1.1'
 	implementation 'com.google.mug:mug:6.6'
 
+	// required by openapi-generated models and api interfaces
+	implementation 'javax.validation:validation-api'
+	implementation 'io.swagger.core.v3:swagger-annotations:2.2.16'
+
 	// Terra libraries
 	implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-08b6588'
 	implementation group: 'org.broadinstitute.dsde.workbench', name: 'leonardo-client_2.13', version: '1.3.6-22ee00b'
@@ -95,6 +102,24 @@ dependencies {
 	}
 }
 
+tasks.register('generateApiInterfaces', GenerateTask) {
+	generatorName = "spring"
+	library = "spring-boot"
+	inputSpec = "$rootDir/service/src/main/resources/static/swagger/openapi-docs.yaml"
+	outputDir = "$rootDir/service"
+	cleanupOutput = false // set to true to delete the output directory before regenerating
+	apiPackage = "org.databiosphere.workspacedataservice.generated.api"
+	modelPackage = "org.databiosphere.workspacedataservice.generated.model"
+	apiFilesConstrainedTo.set(["Import"]) // seems to respect the tag value instead of the filename
+	modelFilesConstrainedTo.set(["ImportRequest"])
+	supportingFilesConstrainedTo.set(["ApiUtil.java"])
+	configOptions.set([
+		interfaceOnly: "true", // Java interfaces only; no controllers or implementation classes
+		useTags      : "true" // use the OpenAPI tag to classify apis, not the first segment of the api path
+	])
+}
+
+
 boolean isCiServer = System.getenv().containsKey("CI") && System.getenv().get("CI").toBoolean()
 
 // kill switch for spotless, intended for one-off contingencies only, like when
@@ -112,7 +137,11 @@ spotless {
 }
 spotlessJavaCheck.onlyIf( { spotlessEnabled } )
 
+// Don't run spotless on generated code
+generateApiInterfaces.mustRunAfter(spotlessJava)
+
 // Run spotless check when running in github actions, otherwise run spotless apply.
+// Run generateApiInterfaces after spotless; then compile.
 compileJava {
   if (spotlessEnabled) {
     if (isCiServer) {
@@ -121,6 +150,7 @@ compileJava {
         dependsOn(spotlessApply)
     }
   }
+  dependsOn(generateApiInterfaces)
 }
 
 sonarqube {
