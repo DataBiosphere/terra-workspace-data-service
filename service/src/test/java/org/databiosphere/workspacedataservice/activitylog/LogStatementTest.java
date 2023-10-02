@@ -65,7 +65,7 @@ public class LogStatementTest {
   final RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
 
   @AfterEach
-  void afterEach() {
+  void tearDown() {
     List<UUID> allInstances = instanceService.listInstances(VERSION);
     for (UUID id : allInstances) {
       instanceService.deleteInstance(id, VERSION);

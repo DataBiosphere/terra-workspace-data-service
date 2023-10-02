@@ -56,7 +56,7 @@ class InstanceServiceSamTest {
   String parentWorkspaceId;
 
   @BeforeEach
-  void beforeEach() throws ApiException {
+  void setUp() throws ApiException {
     instanceService = new InstanceService(instanceDao, samDao, activityLogger);
 
     // return the mock ResourcesApi from the mock SamClientFactory

@@ -80,7 +80,7 @@ class InstanceServiceSamExceptionTest {
   String containingWorkspaceId;
 
   @BeforeEach
-  void beforeEach() {
+  void setUp() {
     instanceService = new InstanceService(instanceDao, samDao, activityLogger);
 
     // return the mock ResourcesApi from the mock SamClientFactory
@@ -88,7 +88,7 @@ class InstanceServiceSamExceptionTest {
   }
 
   @AfterEach
-  void afterEach() {
+  void tearDown() {
     // clean up any instances left in the db
     List<UUID> allInstances = instanceDao.listInstanceSchemas();
     allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));

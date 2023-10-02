@@ -57,7 +57,7 @@ class RecordOrchestratorSamTest {
   }
 
   @AfterEach
-  void cleanUp() {
+  void tearDown() {
     instanceDao.dropSchema(INSTANCE);
   }
 

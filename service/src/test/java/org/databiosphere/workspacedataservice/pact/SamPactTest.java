@@ -28,8 +28,8 @@ class SamPactTest {
 
   static final String dummyResourceId = "92276398-fbe4-414a-9304-e7dcf18ac80e";
 
-  @BeforeAll
-  static void setup() {
+  @BeforeEach
+  void setUp() {
     // Without this setup, the HttpClient throws a "No thread-bound request found" error
     MockHttpServletRequest request = new MockHttpServletRequest();
     // Set the mock request as the current request context

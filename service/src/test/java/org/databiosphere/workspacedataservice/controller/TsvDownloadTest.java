@@ -69,7 +69,7 @@ class TsvDownloadTest {
   }
 
   @AfterEach
-  void afterEach() {
+  void tearDown() {
     recordController.deleteInstance(instanceId, version);
   }
 

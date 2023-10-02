@@ -35,7 +35,7 @@ class LeonardoDaoTest {
   final AppsApi mockAppsApi = mock(AppsApi.class);
 
   @BeforeEach
-  void beforeEach() {
+  void setUp() {
     given(leonardoClientFactory.getAppsV2Api(any())).willReturn(mockAppsApi);
   }
 
