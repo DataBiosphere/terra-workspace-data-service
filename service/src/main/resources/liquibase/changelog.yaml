@@ -18,5 +18,5 @@ databaseChangeLog:
       file: changesets/20230714_restore_table.yaml
       relativeToChangelogFile: true
   - include:
-      file: changesets/20230915_record_table.yaml
+      file: changesets/20230915_record_metadata_table.yaml
       relativeToChangelogFile: true
