@@ -10,9 +10,12 @@ info:
   license:
     name: BSD
     url: https://opensource.org/licenses/BSD-3-Clause
+
 servers:
   - url: /
+
 tags:
+  # Tags should be listed in the order they should appear in the UI
   - name: Cloning
     description: Cloning APIs including Backup and Restore
   - name: Records
@@ -25,7 +28,14 @@ tags:
     description: Information regarding versioning, health, info, etc. for WDS
   - name: Snapshots
     description: Snapshot APIs
+
 paths:
+  # Paths should be grouped by their tag, following the order of tags listed above.
+  # Within each tag group, paths should be listed alphabetically.
+
+  ##############################
+  # Cloning APIs
+  ##############################
   /backup/{v}:
     post:
       tags:
@@ -80,24 +90,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CloneJob'
-  /status:
-    get:
-      summary: Gets health status for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#health for details)
-      operationId: statusGet
+
+  ##############################
+  # Records APIs
+  ##############################
+  /{instanceid}/batch/{v}/{type}:
+    post:
+      summary: Batch write records
+      description: Perform a batch of upsert / delete operations on multiple records
+      operationId: batchWriteRecords
+      security:
+        - bearerAuth: [ ]
       tags:
-        - General WDS Information
+        - Records
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+        - $ref: '#/components/parameters/recordTypePrimaryKey'
+      requestBody:
+        $ref: '#/components/requestBodies/BatchRequestBody'
       responses:
         200:
-          $ref: '#/components/responses/StatusResponseBody'
-  /version:
-    get:
-      summary: Gets related git and build version info for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#info for details)
-      operationId: versionGet
-      tags:
-        - General WDS Information
-      responses:
-        200:
-          $ref: '#/components/responses/VersionResponseBody'
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
   /{instanceid}/records/{v}/{type}/{id}:
     get:
       summary: Get record
@@ -331,29 +350,10 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /{instanceid}/batch/{v}/{type}:
-    post:
-      summary: Batch write records
-      description: Perform a batch of upsert / delete operations on multiple records
-      operationId: batchWriteRecords
-      security:
-        - bearerAuth: [ ]
-      tags:
-        - Records
-      parameters:
-        - $ref: '#/components/parameters/instanceIdPathParam'
-        - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/recordTypePathParam'
-        - $ref: '#/components/parameters/recordTypePrimaryKey'
-      requestBody:
-        $ref: '#/components/requestBodies/BatchRequestBody'
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BatchResponse'
+
+  ##############################
+  # Instances APIs
+  ##############################
   /instances/{v}:
     get:
       summary: List instances
@@ -373,7 +373,6 @@ paths:
                 items:
                   type: string
                   format: uuid
-
   /instances/{v}/{instanceid}:
     post:
       summary: Create an instance
@@ -414,6 +413,36 @@ paths:
           description: Success
         404:
           description: Not Found - instance does not exist.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  ##############################
+  # Schema APIs
+  ##############################
+  /{instanceid}/types/{v}:
+    get:
+      summary: Describe all record types
+      description: |
+        Returns the schema definition for all types in this instance.
+      operationId: describeAllRecordTypes
+      tags:
+        - Schema
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecordTypeSchema'
+        404:
+          description: Instance not found
           content:
             'application/json':
               schema:
@@ -460,32 +489,32 @@ paths:
           description: Success
         409:
           description: at least one of the records to be deleted is a relation target
-  /{instanceid}/types/{v}:
+
+  ##############################
+  # General WDS Information APIs
+  ##############################
+  /status:
     get:
-      summary: Describe all record types
-      description: |
-        Returns the schema definition for all types in this instance.
-      operationId: describeAllRecordTypes
+      summary: Gets health status for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#health for details)
+      operationId: statusGet
       tags:
-        - Schema
-      parameters:
-        - $ref: '#/components/parameters/instanceIdPathParam'
-        - $ref: '#/components/parameters/versionPathParam'
+        - General WDS Information
       responses:
         200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/RecordTypeSchema'
-        404:
-          description: Instance not found
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          $ref: '#/components/responses/StatusResponseBody'
+  /version:
+    get:
+      summary: Gets related git and build version info for WDS -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#info for details)
+      operationId: versionGet
+      tags:
+        - General WDS Information
+      responses:
+        200:
+          $ref: '#/components/responses/VersionResponseBody'
+
+  ##############################
+  # Snapshots APIs
+  ##############################
   /{instanceid}/snapshots/{v}/{snapshotid}:
     post:
       summary: Import a snapshot from Terra Data Repo
@@ -503,7 +532,9 @@ paths:
           description: Success
         403:
           description: Forbidden
+
 components:
+  # within each group, components should be listed alphabetically.
   securitySchemes:
     bearerAuth:
       type: http
@@ -514,6 +545,13 @@ components:
       name: attribute
       in: path
       description: Attribute name
+      required: true
+      schema:
+        type: string
+    instanceIdPathParam:
+      name: instanceid
+      in: path
+      description: WDS instance id; by convention equal to workspace id
       required: true
       schema:
         type: string
@@ -538,21 +576,6 @@ components:
       required: false
       schema:
         type: string
-    instanceIdPathParam:
-      name: instanceid
-      in: path
-      description: WDS instance id; by convention equal to workspace id
-      required: true
-      schema:
-        type: string
-    versionPathParam:
-      name: v
-      in: path
-      description: API version
-      required: true
-      schema:
-        type: string
-        default: v0.2
     snapshotIdPathParam:
       name: snapshotid
       in: path
@@ -569,6 +592,14 @@ components:
       schema:
         type: string
         format: uuid
+    versionPathParam:
+      name: v
+      in: path
+      description: API version
+      required: true
+      schema:
+        type: string
+        default: v0.2
 
   responses:
     RecordResponseBody:
@@ -577,18 +608,19 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/RecordResponse'
-    VersionResponseBody:
-      description: Version Info
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/VersionResponse'
     StatusResponseBody:
       description: Status Info
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/StatusResponse'
+    VersionResponseBody:
+      description: Version Info
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/VersionResponse'
+
   requestBodies:
     BackupRestoreRequestBody:
       description: A backup request
@@ -597,20 +629,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/BackupRestoreRequest'
-    SearchRequestBody:
-      description: A paginated search request
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/SearchRequest'
-    RecordRequestBody:
-      description: A record's attributes to upload
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/RecordRequest'
     BatchRequestBody:
       description: A list of batch operations to perform on records
       required: true
@@ -620,7 +638,29 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/BatchOperation'
+    RecordRequestBody:
+      description: A record's attributes to upload
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RecordRequest'
+    SearchRequestBody:
+      description: A paginated search request
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SearchRequest'
+
   schemas:
+    app:
+      type: object
+      properties:
+        chart-version:
+          type: string
+        image:
+          type: string
     AttributeSchema:
       type: object
       required:
@@ -632,13 +672,34 @@ components:
           description: name of this attribute.
         datatype:
           type: string
-          enum: [BOOLEAN, NUMBER, DATE, DATE_TIME, STRING, JSON, RELATION, FILE, ARRAY_OF_BOOLEAN, ARRAY_OF_STRING, ARRAY_OF_NUMBER, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_RELATION, ARRAY_OF_FILE]
+          enum: [ BOOLEAN, NUMBER, DATE, DATE_TIME, STRING, JSON, RELATION, FILE, ARRAY_OF_BOOLEAN, ARRAY_OF_STRING, ARRAY_OF_NUMBER, ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, ARRAY_OF_RELATION, ARRAY_OF_FILE ]
           description: |
             Datatype of this attribute. The enum of datatypes is in flux and will change. Please
             comment at https://docs.google.com/document/d/1d352ZoN5kEYWPjy0NqqWGxdf7HEu5VEdrLmiAv7dMmQ/edit#heading=h.naxag0augkgf.
         relatesTo:
           type: string
           description: Name of type to which this attribute relates. Only present if this is a relation attribute.
+    BackupJob:
+      x-all-of-name: BackupJob
+      allOf:
+        - $ref: '#/components/schemas/Job'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/BackupResponse'
+    BackupResponse:
+      type: object
+      properties:
+        filename:
+          type: string
+          description: backup location
+        requester:
+          type: string
+          format: uuid
+          description: workspace which initiated the backup
+        description:
+          type: string
+          description: description of this backup
     BackupRestoreRequest:
       type: object
       properties:
@@ -649,22 +710,6 @@ components:
         description:
           type: string
           description: User-friendly description to associate with this backup. Optional.
-    BackupJob:
-      x-all-of-name: BackupJob
-      allOf:
-        - $ref: '#/components/schemas/Job'
-        - type: object
-          properties:
-            result:
-              $ref: '#/components/schemas/BackupResponse'
-    CloneJob:
-      x-all-of-name: CloneJob
-      allOf:
-        - $ref: '#/components/schemas/Job'
-        - type: object
-          properties:
-            result:
-              $ref: '#/components/schemas/CloneResponse'
     BatchOperation:
       type: object
       required:
@@ -673,7 +718,7 @@ components:
       properties:
         operation:
           type: string
-          enum: [upsert, delete]
+          enum: [ upsert, delete ]
         record:
           $ref: '#/components/schemas/BatchRecordRequest'
     BatchRecordRequest:
@@ -699,132 +744,103 @@ components:
           type: string
         recordsModified:
           type: integer
-    Job:
-      type: object
-      required:
-        - jobId
-        - status
-        - created
-        - updated
-      properties:
-        jobId:
-          type: string
-        status:
-          type: string
-          enum: [ QUEUED, RUNNING, SUCCEEDED, ERROR, CANCELLED, UNKNOWN ]
-        created:
-          type: string
-        updated:
-          type: string
-        errorMessage:
-          type: string
-        exception:
-          type: string
-    TsvUploadResponse:
-      type: object
-      required:
-        - message
-        - recordsModified
-      properties:
-        message:
-          type: string
-        recordsModified:
-          type: integer
-
-    SearchRequest:
+    build:
       type: object
       properties:
-        offset:
-          $ref: '#/components/schemas/SearchOffset'
-        limit:
-          $ref: '#/components/schemas/SearchLimit'
-        sort:
-          $ref: '#/components/schemas/SearchSortDirection'
-        sortAttribute:
+        artifact:
           type: string
-    RecordRequest:
+        name:
+          type: string
+        time:
+          type: string
+          format: date-time
+        version:
+          type: string
+        group:
+          type: string
+    CloneJob:
+      x-all-of-name: CloneJob
+      allOf:
+        - $ref: '#/components/schemas/Job'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/CloneResponse'
+    CloneResponse:
       type: object
-      required:
-        - attributes
       properties:
-        attributes:
-          $ref: '#/components/schemas/RecordAttributes'
-    RecordResponse:
-      required:
-        - id
-        - type
-        - attributes
+        sourceworkspaceid:
+          type: string
+          format: uuid
+          description: workspace which initiated the clone
+        clonestatus:
+          type: string
+          description: description of this clone status
+    commit:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/RecordId'
-        type:
-          $ref: '#/components/schemas/RecordType'
-        attributes:
-          $ref: '#/components/schemas/RecordAttributes'
-    RecordAttributes:
-      type: object
-      additionalProperties: true
-      description: KVPs of record attributes, valid characters for attribute names are limited to letters, numbers, spaces, dashes, and underscores.
-      example: |
-        {
-          "stringAttr": "string",
-          "numericAttr": 123,
-          "booleanAttr": true,
-          "relationAttr": "terra-wds:/target-type/target-id",
-          "fileAttr": "https://account_name.blob.core.windows.net/container-1/blob1",
-          "arrayString": ["green", "red"],
-          "arrayBoolean": [true, false],
-          "arrayNumber": [12821.112, 0.12121211, 11],
-          "arrayDate": ["2022-11-03"],
-          "arrayDateTime": ["2022-11-03T04:36:20"],
-          "arrayRelation": ["terra-wds:/target-type/target-id-1", "terra-wds:/target-type/target-id-2"],
-          "arrayFile": ["drs://drs.example.org/file_id_1", "https://account_name.blob.core.windows.net/container-2/blob2"]
-        }
-    RecordId:
-      type: string
-      description: Record id
-    RecordQueryResponse:
-      required:
-        - searchRequest
-        - records
-        - totalRecords
+          type: string
+        time:
+          type: string
+          format: date-time
+    component:
       type: object
       properties:
-        searchRequest:
-          $ref: '#/components/schemas/SearchRequest'
-        totalRecords:
-          type: integer
-          description: number of records in the record type
-        records:
-          type: array
-          items:
-            $ref: '#/components/schemas/RecordResponse'
-          description: list of records found
-    RecordType:
-      type: string
-      description: Record type
-    RecordTypeSchema:
-      required:
-        - name
-        - attributes
-        - count
-        - primaryKey
+        status:
+          type: string
+        details:
+          type: string
+    components:
       type: object
       properties:
-        name:
+        db:
+          $ref: '#/components/schemas/dbComponent'
+        diskSpace:
+          $ref: '#/components/schemas/diskSpaceComponent'
+        ping:
+          $ref: '#/components/schemas/component'
+        mainDb:
+          $ref: '#/components/schemas/dbValidationcomponent'
+    dbComponent:
+      type: object
+      properties:
+        status:
           type: string
-          description: Record type name, valid characters for record type names are limited to letters, numbers, spaces, dashes, and underscores.
-        attributes:
-          type: array
-          items:
-            $ref: '#/components/schemas/AttributeSchema'
-        count:
-          type: integer
-          description: Number of records of this type
-        primaryKey:
+        components:
+          $ref: '#/components/schemas/component'
+    dbValidationcomponent:
+      type: object
+      properties:
+        status:
           type: string
-          description: Attribute name that contains the value to uniquely identify each record, defined as a primary key column in the underlying table.
+        components:
+          $ref: '#/components/schemas/dbValidationcomponentDetails'
+    dbValidationcomponentDetails:
+      type: object
+      properties:
+        database:
+          type: string
+        validationQuery:
+          type: string
+    diskSpaceComponent:
+      type: object
+      properties:
+        status:
+          type: string
+        details:
+          $ref: '#/components/schemas/diskSpaceComponentDetails'
+    diskSpaceComponentDetails:
+      type: object
+      properties:
+        total:
+          type: string
+        free:
+          type: number
+        threshold:
+          type: number
+        exists:
+          type: boolean
     ErrorResponse:
       required:
         - status
@@ -850,6 +866,118 @@ components:
           type: string
           description: time of error
       description: ""
+    git:
+      type: object
+      properties:
+        branch:
+          type: string
+        commit:
+          $ref: '#/components/schemas/commit'
+    Job:
+      type: object
+      required:
+        - jobId
+        - status
+        - created
+        - updated
+      properties:
+        jobId:
+          type: string
+        status:
+          type: string
+          enum: [ QUEUED, RUNNING, SUCCEEDED, ERROR, CANCELLED, UNKNOWN ]
+        created:
+          type: string
+        updated:
+          type: string
+        errorMessage:
+          type: string
+        exception:
+          type: string
+    RecordAttributes:
+      type: object
+      additionalProperties: true
+      description: KVPs of record attributes, valid characters for attribute names are limited to letters, numbers, spaces, dashes, and underscores.
+      example: |
+        {
+          "stringAttr": "string",
+          "numericAttr": 123,
+          "booleanAttr": true,
+          "relationAttr": "terra-wds:/target-type/target-id",
+          "fileAttr": "https://account_name.blob.core.windows.net/container-1/blob1",
+          "arrayString": ["green", "red"],
+          "arrayBoolean": [true, false],
+          "arrayNumber": [12821.112, 0.12121211, 11],
+          "arrayDate": ["2022-11-03"],
+          "arrayDateTime": ["2022-11-03T04:36:20"],
+          "arrayRelation": ["terra-wds:/target-type/target-id-1", "terra-wds:/target-type/target-id-2"],
+          "arrayFile": ["drs://drs.example.org/file_id_1", "https://account_name.blob.core.windows.net/container-2/blob2"]
+        }
+
+    RecordId:
+      type: string
+      description: Record id
+    RecordQueryResponse:
+      required:
+        - searchRequest
+        - records
+        - totalRecords
+      type: object
+      properties:
+        searchRequest:
+          $ref: '#/components/schemas/SearchRequest'
+        totalRecords:
+          type: integer
+          description: number of records in the record type
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecordResponse'
+          description: list of records found
+    RecordRequest:
+      type: object
+      required:
+        - attributes
+      properties:
+        attributes:
+          $ref: '#/components/schemas/RecordAttributes'
+    RecordResponse:
+      required:
+        - id
+        - type
+        - attributes
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/RecordId'
+        type:
+          $ref: '#/components/schemas/RecordType'
+        attributes:
+          $ref: '#/components/schemas/RecordAttributes'
+    RecordType:
+      type: string
+      description: Record type
+    RecordTypeSchema:
+      required:
+        - name
+        - attributes
+        - count
+        - primaryKey
+      type: object
+      properties:
+        name:
+          type: string
+          description: Record type name, valid characters for record type names are limited to letters, numbers, spaces, dashes, and underscores.
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttributeSchema'
+        count:
+          type: integer
+          description: Number of records of this type
+        primaryKey:
+          type: string
+          description: Attribute name that contains the value to uniquely identify each record, defined as a primary key column in the underlying table.
     RequestBodySearch:
       required:
         - terms
@@ -874,11 +1002,22 @@ components:
       description: Pagination offset
     SearchOperator:
       type: string
-      enum: [and, or]
+      enum: [ and, or ]
       description: Search behavior for multiple filter terms
+    SearchRequest:
+      type: object
+      properties:
+        offset:
+          $ref: '#/components/schemas/SearchOffset'
+        limit:
+          $ref: '#/components/schemas/SearchLimit'
+        sort:
+          $ref: '#/components/schemas/SearchSortDirection'
+        sortAttribute:
+          type: string
     SearchSortDirection:
       type: string
-      enum: [ASC, DESC]
+      enum: [ ASC, DESC ]
       default: ASC
       description: |
         Sort direction (descending or ascending)
@@ -906,6 +1045,23 @@ components:
           type: integer
           description: line number
       description: ""
+    StatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        components:
+          $ref: '#/components/schemas/components'
+    TsvUploadResponse:
+      type: object
+      required:
+        - message
+        - recordsModified
+      properties:
+        message:
+          type: string
+        recordsModified:
+          type: integer
     VersionResponse:
       type: object
       properties:
@@ -915,126 +1071,4 @@ components:
           $ref: '#/components/schemas/git'
         build:
           $ref: '#/components/schemas/build'
-    StatusResponse:
-      type: object
-      properties:
-        status:
-          type: string
-        components:
-          $ref: '#/components/schemas/components'
-    BackupResponse:
-      type: object
-      properties:
-        filename:
-          type: string
-          description: backup location
-        requester:
-          type: string
-          format: uuid
-          description: workspace which initiated the backup
-        description:
-          type: string
-          description: description of this backup
-    CloneResponse:
-      type: object
-      properties:
-        sourceworkspaceid:
-          type: string
-          format: uuid
-          description: workspace which initiated the clone
-        clonestatus:
-          type: string
-          description: description of this clone status
-    build:
-      type: object
-      properties:
-        artifact:
-          type: string
-        name:
-          type: string
-        time:
-          type: string
-          format: date-time
-        version:
-          type: string
-        group:
-          type: string
-    app:
-      type: object
-      properties:
-        chart-version:
-          type: string
-        image:
-          type: string
-    git:
-      type: object
-      properties:
-        branch:
-          type: string
-        commit:
-          $ref: '#/components/schemas/commit'
-    commit:
-      type: object
-      properties:
-        id:
-          type: string
-        time:
-          type: string
-          format: date-time
-    components:
-      type: object
-      properties:
-        db:
-          $ref: '#/components/schemas/dbComponent'
-        diskSpace:
-          $ref: '#/components/schemas/diskSpaceComponent'
-        ping:
-          $ref: '#/components/schemas/component'
-        mainDb:
-          $ref: '#/components/schemas/dbValidationcomponent'
-    component:
-      type: object
-      properties:
-        status:
-          type: string
-        details:
-          type: string
-    dbComponent:
-      type: object
-      properties:
-        status:
-          type: string
-        components:
-          $ref: '#/components/schemas/component'
-    diskSpaceComponent:
-      type: object
-      properties:
-        status:
-          type: string
-        details:
-          $ref: '#/components/schemas/diskSpaceComponentDetails'
-    diskSpaceComponentDetails:
-      type: object
-      properties:
-        total:
-          type: string
-        free:
-          type: number
-        threshold:
-          type: number
-        exists:
-          type: boolean
-    dbValidationcomponent:
-      type: object
-      properties:
-        status:
-          type: string
-        components:
-          $ref: '#/components/schemas/dbValidationcomponentDetails'
-    dbValidationcomponentDetails:
-      type: object
-      properties:
-        database:
-          type: string
-        validationQuery:
-          type: string
+
