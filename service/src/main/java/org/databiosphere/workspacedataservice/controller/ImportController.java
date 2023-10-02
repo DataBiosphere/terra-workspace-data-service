@@ -13,6 +13,8 @@ public class ImportController implements ImportApi {
   @Override
   public ResponseEntity<Void> importV1(UUID instanceUuid, ImportRequest importRequest) {
     // TODO: implementation for imports
+    // return TOO_EARLY here as a proof-of-concept that we can override the implementation
+    // in ImportApi (which returns NOT_IMPLEMENTED)
     return new ResponseEntity<>(HttpStatus.TOO_EARLY);
   }
 }
