@@ -141,8 +141,9 @@ spotlessJavaCheck.onlyIf( { spotlessEnabled } )
 // multiple gradle tasks need generateApiInterfaces to run before they do
 spotlessJava.dependsOn(generateApiInterfaces)
 compileJava.dependsOn(generateApiInterfaces)
-processResources.dependsOn(generateApiInterfaces)
-processTestResources.dependsOn(generateApiInterfaces)
+tasks.withType(ProcessResources).configureEach {
+  it.dependsOn(generateApiInterfaces)
+}
 
 // Run spotless check when running in github actions, otherwise run spotless apply.
 compileJava {
