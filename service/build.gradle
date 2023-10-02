@@ -131,14 +131,15 @@ spotless {
   java {
     targetExclude "${buildDir}/**"
     targetExclude "**/swagger-code/**"
+    targetExclude "**/generated/**"
     googleJavaFormat()
     toggleOffOn() // allow spotless:off & spotless:on to protect code from formatting
   }
 }
 spotlessJavaCheck.onlyIf( { spotlessEnabled } )
 
-// Don't run spotless on generated code, but generate code before compiling
-generateApiInterfaces.mustRunAfter(spotlessJava)
+// multiple gradle tasks need generateApiInterfaces to run before they do
+spotlessJava.dependsOn(generateApiInterfaces)
 compileJava.dependsOn(generateApiInterfaces)
 processResources.dependsOn(generateApiInterfaces)
 processTestResources.dependsOn(generateApiInterfaces)
