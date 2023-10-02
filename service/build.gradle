@@ -141,6 +141,7 @@ spotlessJavaCheck.onlyIf( { spotlessEnabled } )
 generateApiInterfaces.mustRunAfter(spotlessJava)
 compileJava.dependsOn(generateApiInterfaces)
 processResources.dependsOn(generateApiInterfaces)
+processTestResources.dependsOn(generateApiInterfaces)
 
 // Run spotless check when running in github actions, otherwise run spotless apply.
 compileJava {
