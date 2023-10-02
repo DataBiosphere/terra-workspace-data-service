@@ -1,9 +1,19 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -161,6 +171,20 @@ class RecordDaoTest {
     // nonexistent record should be null
     Optional<Record> none = recordDao.getSingleRecord(instanceId, recordType, "noRecord");
     assertEquals(none, Optional.empty());
+  }
+
+  @Test
+  @Transactional
+  void testGetLastUpdateTime() {
+    // add record
+    String recordId = "testRecord";
+    Record testRecord = new Record(recordId, recordType, RecordAttributes.empty());
+    var currentTime = Timestamp.from(Instant.now());
+    recordDao.batchUpsert(
+        instanceId, recordType, Collections.singletonList(testRecord), new HashMap<>());
+    var recordUpdatedTime = recordDao.allRecordsLastUpdateTime(instanceId);
+    assertNotNull(recordUpdatedTime);
+    assertTrue(Math.abs(currentTime.getTime() - recordUpdatedTime.getTime()) < 100L);
   }
 
   @Test
