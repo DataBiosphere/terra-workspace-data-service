@@ -653,9 +653,7 @@ components:
       content:
         application/json:
           schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/ImportRequest'
+            $ref: '#/components/schemas/ImportRequest'
     RecordRequestBody:
       description: A record's attributes to upload
       required: true
