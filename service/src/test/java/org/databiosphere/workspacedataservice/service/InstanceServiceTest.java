@@ -14,6 +14,7 @@ import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
 import org.databiosphere.workspacedataservice.sam.SamConfig;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +43,10 @@ class InstanceServiceTest {
   @BeforeEach
   void setUp() {
     instanceService = new InstanceService(instanceDao, samDao, activityLogger);
+  }
+
+  @AfterEach
+  void tearDown() {
     // Delete all instances
     instanceDao.listInstanceSchemas().forEach(instance -> instanceDao.dropSchema(instance));
   }

@@ -44,7 +44,7 @@ public class ActivityEventBuilderTest {
   final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
   @BeforeEach
-  void beforeEach() {
+  void setUp() {
     given(mockSamClientFactory.getUsersApi(any())).willReturn(mockUsersApi);
     given(mockSamClientFactory.getResourcesApi(any())).willReturn(mockResourcesApi);
   }

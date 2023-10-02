@@ -16,7 +16,7 @@ import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceConfig;
 import org.databiosphere.workspacedataservice.storage.AzureBlobStorage;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerConfig;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -64,8 +64,8 @@ class InstanceInitializerBeanTest {
   // randomly generated UUID
   final UUID instanceID = UUID.fromString("90e1b179-9f83-4a6f-a8c2-db083df4cd03");
 
-  @BeforeEach
-  void beforeEach() {
+  @AfterEach
+  void tearDown() {
     // clean up any instances left in the db
     List<UUID> allInstances = instanceDao.listInstanceSchemas();
     allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));

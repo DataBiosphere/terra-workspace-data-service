@@ -37,12 +37,12 @@ class TsvInputFormatsTest {
   @Autowired private MockMvc mockMvc;
   @Autowired RecordDao recordDao;
 
-  private static UUID instanceId;
+  private UUID instanceId;
 
   private static final String versionId = "v0.2";
 
   @BeforeEach
-  void beforeEach() throws Exception {
+  void setUp() throws Exception {
     instanceId = UUID.randomUUID();
     mockMvc
         .perform(post("/instances/{v}/{instanceid}", versionId, instanceId).content(""))
@@ -50,7 +50,7 @@ class TsvInputFormatsTest {
   }
 
   @AfterEach
-  void afterEach() {
+  void tearDown() {
     try {
       mockMvc
           .perform(delete("/instances/{v}/{instanceid}", versionId, instanceId).content(""))

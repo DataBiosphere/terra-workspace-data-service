@@ -30,7 +30,7 @@ class TransactionRetryTest {
   @Autowired TransactionRetryTestBean transactionRetryTestBean;
 
   @BeforeEach
-  public void beforeEach() {
+  public void setUp() {
     transactionRetryTestBean.resetCount();
   }
 
