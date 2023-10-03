@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice;
 
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedata.client.ApiException;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
@@ -20,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.dao.DataAccessException;
+import org.springframework.integration.support.locks.LockRegistry;
 
 public class InstanceInitializerBean {
 
@@ -27,6 +30,7 @@ public class InstanceInitializerBean {
   private final LeonardoDao leoDao;
   private final WorkspaceDataServiceDao wdsDao;
   private final CloneDao cloneDao;
+  private final LockRegistry lockRegistry;
 
   private final BackupRestoreService restoreService;
 
@@ -56,12 +60,14 @@ public class InstanceInitializerBean {
       LeonardoDao leoDao,
       WorkspaceDataServiceDao wdsDao,
       CloneDao cloneDao,
-      BackupRestoreService restoreService) {
+      BackupRestoreService restoreService,
+      LockRegistry lockRegistry) {
     this.instanceDao = instanceDao;
     this.leoDao = leoDao;
     this.wdsDao = wdsDao;
     this.cloneDao = cloneDao;
     this.restoreService = restoreService;
+    this.lockRegistry = lockRegistry;
   }
 
   /**
@@ -97,10 +103,9 @@ public class InstanceInitializerBean {
    */
   protected boolean isInCloneMode(String sourceWorkspaceId) {
     if (StringUtils.isNotBlank(sourceWorkspaceId)) {
-      UUID sourceWorkspaceUuid;
       LOGGER.info("SourceWorkspaceId found, checking database");
       try {
-        sourceWorkspaceUuid = UUID.fromString(sourceWorkspaceId);
+        UUID.fromString(sourceWorkspaceId);
       } catch (IllegalArgumentException e) {
         LOGGER.warn(
             "SourceWorkspaceId could not be parsed, unable to clone DB. Provided SourceWorkspaceId: {}.",
@@ -114,22 +119,13 @@ public class InstanceInitializerBean {
       }
 
       try {
-        // is a clone operation already running? This can happen when WDS is running with multiple
-        // replicas,
-        // and another replica started first and has initiated the clone. It can also happen in a
-        // corner case
-        // where this replica restarted during the clone operation.
-        boolean cloneAlreadyRunning = cloneDao.cloneExistsForWorkspace(sourceWorkspaceUuid);
         // does the default pg schema already exist for this workspace? This should not happen,
         // but we want to protect against overwriting it.
         boolean instanceAlreadyExists =
             instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
-        LOGGER.info(
-            "isInCloneMode(): cloneAlreadyRunning={}, instanceAlreadyExists={}",
-            cloneAlreadyRunning,
-            instanceAlreadyExists);
+        LOGGER.info("isInCloneMode(): instanceAlreadyExists={}", instanceAlreadyExists);
         // TODO handle the case where a clone already ran, but failed; should we retry?
-        return !cloneAlreadyRunning && !instanceAlreadyExists;
+        return !instanceAlreadyExists;
       } catch (IllegalArgumentException e) {
         LOGGER.warn(
             "WorkspaceId could not be parsed, unable to clone DB. Provided default WorkspaceId: {}.",
@@ -151,8 +147,26 @@ public class InstanceInitializerBean {
   private boolean initCloneMode() {
     LOGGER.info("Starting in clone mode...");
     UUID trackingId = UUID.randomUUID();
-
+    Lock lock = lockRegistry.obtain(sourceWorkspaceId);
     try {
+      // Make sure it's safe to start cloning (in case another replica is trying to clone)
+      boolean lockAquired = lock.tryLock(1, TimeUnit.SECONDS);
+      if (!lockAquired) {
+        LOGGER.info("Failed to acquire lock in initCloneMode");
+        return false;
+      }
+
+      // is a clone operation already running? This can happen when WDS is running with
+      // multiple replicas and another replica started first and has initiated the clone.
+      // It can also happen in a corner case where this replica restarted during the clone
+      // operation.
+      UUID sourceWorkspaceUuid = UUID.fromString(sourceWorkspaceId);
+      boolean cloneAlreadyRunning = cloneDao.cloneExistsForWorkspace(sourceWorkspaceUuid);
+      if (cloneAlreadyRunning) {
+        LOGGER.info("Clone already running, terminating initCloneMode");
+        return false;
+      }
+
       // First, create an entry in the clone table to mark cloning has started
       LOGGER.info("Creating entry to track cloning process.");
       cloneDao.createCloneEntry(trackingId, UUID.fromString(sourceWorkspaceId));
@@ -198,6 +212,8 @@ public class InstanceInitializerBean {
             inner.toString());
       }
       return false;
+    } finally {
+      lock.unlock();
     }
   }
 
