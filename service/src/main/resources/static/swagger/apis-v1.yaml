@@ -56,6 +56,24 @@ paths:
       responses:
         202:
           description: Import accepted.
+  /{instanceUuid}/import/v1/{jobId}:
+    get:
+      summary: Get status of an import job.
+      operationId: importStatusV1
+      tags:
+        - Import
+      parameters:
+        - $ref: '#/components/parameters/instanceUuidPathParam'
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Import job completed.
+        202:
+          description: Import job still running.
 
 components:
   # within each group, components should be listed alphabetically.
