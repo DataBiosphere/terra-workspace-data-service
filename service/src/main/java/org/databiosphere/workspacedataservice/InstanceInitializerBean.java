@@ -201,6 +201,10 @@ public class InstanceInitializerBean {
       var finalCloneStatus = currentCloneStatus(trackingId);
       return finalCloneStatus.getStatus().equals(JobStatus.SUCCEEDED);
 
+    } catch (InterruptedException e) {
+      LOGGER.error("Error with aquiring cloning/schema initialization Lock: {}", e.getMessage());
+      Thread.currentThread().interrupt();
+      return false;
     } catch (Exception e) {
       LOGGER.error("An error occurred during clone mode. Error: {}", e.toString());
       try {
