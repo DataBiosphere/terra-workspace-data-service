@@ -110,10 +110,10 @@ tasks.register('generateApiInterfaces', GenerateTask) {
     inputSpec = "$rootDir/service/src/main/resources/static/swagger/apis-v1.yaml"
     outputDir = "$rootDir/service"
     cleanupOutput = false // else would delete the /service directory
-    apiPackage = "org.databiosphere.workspacedataservice.generated.api"
+    apiPackage = "org.databiosphere.workspacedataservice.generated"
     // apiNameSuffix does not work; see https://github.com/OpenAPITools/openapi-generator/issues/8822
     // apiNameSuffix = "Server" // disambiguate from classes in the generated client
-    modelPackage = "org.databiosphere.workspacedataservice.generated.model"
+    modelPackage = "org.databiosphere.workspacedataservice.generated"
     modelNameSuffix = "ServerModel"   // disambiguate from classes in the generated client
     apiFilesConstrainedTo.set([""])   // empty string means generate all apis
     modelFilesConstrainedTo.set([""]) // empty string means generate all models
