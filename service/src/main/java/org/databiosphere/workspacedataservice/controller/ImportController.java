@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.controller;
 
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.ImportApi;
+import org.databiosphere.workspacedataservice.generated.ImportJobStatusServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -10,7 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class ImportController implements ImportApi {
 
   @Override
-  public ResponseEntity<Void> importV1(UUID instanceUuid, ImportRequestServerModel importRequest) {
+  public ResponseEntity<ImportJobStatusServerModel> importV1(
+      UUID instanceUuid, ImportRequestServerModel importRequest) {
     // TODO: validate instance
     // TODO: validate user has write permission on instance
     // TODO: validate importRequest, e.g. does it contain a valid URL
@@ -21,7 +23,8 @@ public class ImportController implements ImportApi {
   }
 
   @Override
-  public ResponseEntity<Void> importStatusV1(UUID instanceUuid, String jobId) {
+  public ResponseEntity<ImportJobStatusServerModel> importStatusV1(
+      UUID instanceUuid, String jobId) {
     // TODO: validate instance (this only requires read permission, no permission checks required)
     // TODO: validate jobId is non-empty
     // TODO: retrieve jobId from the job store

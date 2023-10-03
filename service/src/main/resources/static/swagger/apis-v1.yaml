@@ -56,6 +56,10 @@ paths:
       responses:
         202:
           description: Import accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJobStatus'
   /{instanceUuid}/import/v1/{jobId}:
     get:
       summary: Get status of an import job.
@@ -72,8 +76,16 @@ paths:
       responses:
         200:
           description: Import job completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJobStatus'
         202:
           description: Import job still running.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJobStatus'
 
 components:
   # within each group, components should be listed alphabetically.
@@ -95,3 +107,29 @@ components:
         type: string
         format: uuid
 
+  schemas:
+    ImportJobStatus:
+      type: object
+      required:
+        - jobId
+        - status
+        - created
+        - updated
+        - result
+      properties:
+        jobId:
+          type: string
+        status:
+          type: string
+          enum: [ QUEUED, RUNNING, SUCCEEDED, FAILED, UNKNOWN ]
+        created:
+          type: string
+          format: date-time
+        updated:
+          type: string
+          format: date-time
+        errorMessage:
+          type: string
+        result:
+          type: object
+          additionalProperties: true
