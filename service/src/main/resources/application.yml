@@ -63,6 +63,34 @@ spring:
   # ... and run Liquibase instead
   liquibase:
     change-log: classpath:liquibase/changelog.yaml
+
+  quartz:
+    job-store-type: jdbc
+    jdbc:
+      initialize-schema: never # Quartz schema is created via Liquibase
+    # we may want to turn this on:
+    wait-for-jobs-to-complete-on-shutdown: false
+    properties:
+      org.quartz:
+        jobStore:
+          driverDelegateClass: org.quartz.impl.jdbcjobstore.PostgreSQLDelegate
+          # support multiple horizontal WDS replicas all using the same quartz tables
+          isClustered: true
+          # Set the frequency (in milliseconds) at which this instance “checks-in”* with the other instances of the cluster.
+          # Affects the quickness of detecting failed instances
+          # default is 15000; we are more tolerant to slow failures
+          clusterCheckinInterval: 60000
+          # look for Quartz tables in the sys_wds schema. This requires the tables to be created by
+          # Liquibase and customized to be inside sys_wds; Quartz does not support creating the
+          # tables in a custom schema on its own. See:
+          # https://stackoverflow.com/questions/69396173/spring-boot-quartz-schema-other-than-public-doesnt-work
+          tablePrefix: sys_wds.qrtz_
+        scheduler:
+          # instanceId is used to coordinate clustering
+          instanceId: AUTO
+          # don't bother checking for updates to the quartz library
+          skipUpdateCheck: true
+
 #   # activate the "local" profile to turn on CORS response headers,
 #   # which may be necessary for local development.
 #   profiles:
@@ -78,6 +106,7 @@ server:
   error:
     include-stacktrace: never
     include-message: always
+  port: 8080
 
 twds:
   write.batch.size: 5000

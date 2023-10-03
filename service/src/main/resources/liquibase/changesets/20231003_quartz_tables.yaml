@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20231003_quartz_tables
+      author: davidan
+      changes:
+        - sqlFile:
+            dbms: 'postgresql'
+            splitStatements: true
+            path: 20231003_quartz_tables.sql
+            relativeToChangelogFile: true
+            stripComments: true
