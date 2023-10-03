@@ -1,0 +1,79 @@
+# This file contains only the v1 WDS APIs.
+# Our server-stub generator can target this file and this file only, to avoid generating
+# v0.2 stubs we aren't using.externalDocs:
+#
+# The APIs and models in this file **must** also be included, via $ref, in openapi-docs.yaml
+# to present both the v0.2 and v1 APIs to the swagger-ui.
+
+openapi: 3.0.3
+
+info:
+  title: Workspace Data Service
+  version: v1
+
+tags:
+  # Tags should be listed in the order they should appear in the UI
+  - name: Import
+    description: Import APIs
+
+paths:
+  ##############################
+  # Import APIs
+  ##############################
+  /{instanceUuid}/import/v1:
+    post:
+      summary: Import from a file
+      description: Imports records from the specified URL.
+      operationId: importV1
+      tags:
+        - Import
+      parameters:
+        - $ref: '#/components/parameters/instanceUuidPathParam'
+      requestBody:
+        description: A request to import records from a file
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              title: ImportRequest
+              required:
+                - type
+                - url
+              properties:
+                type:
+                  type: string
+                  enum: [ PFB, TDRMANIFEST ]
+                  description: format of file to import
+                url:
+                  type: string
+                  format: uri
+                  description: url from which to import
+                options:
+                  type: object
+                  additionalProperties: true
+                  description: key-value pairs to configure this import. Options vary based on the import file type.
+      responses:
+        202:
+          description: Import accepted.
+
+components:
+  # within each group, components should be listed alphabetically.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  parameters:
+    # instanceUuidPathParam is very close to duplicating instanceIdPathParam from v0.2,
+    # but this one specifies format: uuid, which creates Java UUID objects in generated
+    # code instead of a String.
+    instanceUuidPathParam:
+      name: instanceUuid
+      in: path
+      description: WDS instance id; by convention equal to workspace id
+      required: true
+      schema:
+        type: string
+        format: uuid
+
