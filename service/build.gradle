@@ -117,7 +117,7 @@ tasks.register('generateApiInterfaces', GenerateTask) {
     modelNameSuffix = "ServerModel"   // disambiguate from classes in the generated client
     apiFilesConstrainedTo.set([""])   // empty string means generate all apis
     modelFilesConstrainedTo.set([""]) // empty string means generate all models
-    supportingFilesConstrainedTo.set(["ApiUtil.java"])
+    supportingFilesConstrainedTo.set([]) // empty array means generate none
     configOptions.set([
         interfaceOnly: "true", // Java interfaces only; no controllers or implementation classes
         useTags      : "true" // use the OpenAPI tag to classify apis, not the first segment of the api path
