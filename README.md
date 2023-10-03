@@ -257,10 +257,8 @@ their implementations are hand-coded.
 APIs at `v1` or later use code generation. To create or update an API, you must:
 
 1. Define the API using OpenAPI syntax
-   at `service/src/main/resources/static/swagger/openapi-docs.yaml`
-2. Update the `generateApiInterfaces` Gradle task in `service/build.gradle` as necessary.
-  1. Add your APIs to `apiFilesConstrainedTo`
-  2. Add your API's models to `modelFilesConstrainedTo`
+   at `service/src/main/resources/static/swagger/apis-v1.yaml`
+2. Include the API, via `$ref:`, in `service/src/main/resources/static/swagger/openapi-docs.yaml`
 3. Run the `generateApiInterfaces` Gradle task
 4. Note the new/updated Java interfaces and models under the `o.d.w.generated` package
 5. Create or update a controller class that implements the new Java interface
