@@ -20,6 +20,8 @@ tags:
     description: Cloning APIs including Backup and Restore
   - name: Records
     description: Record APIs
+  - name: Import
+    description: Import APIs
   - name: Instances
     description: Instance APIs
   - name: Schema
@@ -329,6 +331,13 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   ##############################
+  # Import APIs
+  ##############################
+  /{instanceUuid}/import/v1:
+    # OpenApi requires "/" to be replaced with "~1" in the path being referenced
+    $ref: 'apis-v1.yaml#/paths/~1{instanceUuid}~1import~1v1'
+
+  ##############################
   # Instances APIs
   ##############################
   /instances/{v}:
@@ -494,7 +503,11 @@ paths:
   ##############################
   /{instanceid}/snapshots/{v}/{snapshotid}:
     post:
+      deprecated: true
       summary: Import a snapshot from Terra Data Repo
+      description: |
+        This API will be removed on or after Jan 1 2024.
+        Use the POST /{instanceid}/import/v1 API instead.
       operationId: importSnapshot
       security:
         - bearerAuth: [ ]
@@ -532,6 +545,14 @@ components:
       required: true
       schema:
         type: string
+    instanceUuidPathParam:
+      name: instanceUuid
+      in: path
+      description: WDS instance id; by convention equal to workspace id
+      required: true
+      schema:
+        type: string
+        format: uuid
     recordIdPathParam:
       name: id
       in: path

@@ -1,99 +1,129 @@
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
 plugins {
-	id 'org.springframework.boot'
-	id 'com.google.cloud.tools.jib'
-	id 'org.sonarqube'
-	id 'com.gorylenko.gradle-git-properties'
-	id 'com.diffplug.spotless' version '6.21.0'
-	id 'jacoco'
-	id "au.com.dius.pact" version "4.6.1"
-	id 'jvm-test-suite'
+    id 'org.springframework.boot'
+    id 'com.google.cloud.tools.jib'
+    id 'org.sonarqube'
+    id 'com.gorylenko.gradle-git-properties'
+    id 'org.openapi.generator'
+    id 'com.diffplug.spotless' version '6.21.0'
+    id 'jacoco'
+    id "au.com.dius.pact" version "4.6.1"
+    id 'jvm-test-suite'
 }
 
 springBoot {
-	buildInfo()
+    buildInfo()
 }
 
 repositories {
-	maven { url 'https://broadinstitute.jfrog.io/artifactory/maven-central' }
-	mavenCentral()
-	maven { url 'https://broadinstitute.jfrog.io/artifactory/libs-snapshot' }
-	maven { url 'https://broadinstitute.jfrog.io/artifactory/libs-release' }
+    maven { url 'https://broadinstitute.jfrog.io/artifactory/maven-central' }
+    mavenCentral()
+    maven { url 'https://broadinstitute.jfrog.io/artifactory/libs-snapshot' }
+    maven { url 'https://broadinstitute.jfrog.io/artifactory/libs-release' }
 }
 
 jib {
-	from {
-		// see https://github.com/broadinstitute/dsp-appsec-blessed-images/tree/main/jre
-		image = "us.gcr.io/broad-dsp-gcr-public/debian/wds-debian-pg-dump:latest"
-	}
+    from {
+        // see https://github.com/broadinstitute/dsp-appsec-blessed-images/tree/main/jre
+        image = "us.gcr.io/broad-dsp-gcr-public/debian/wds-debian-pg-dump:latest"
+    }
 
-	container {
-		mainClass = 'org.databiosphere.workspacedataservice.WorkspaceDataServiceApplication'
-		creationTime = "USE_CURRENT_TIMESTAMP"
-	}
+    container {
+        mainClass = 'org.databiosphere.workspacedataservice.WorkspaceDataServiceApplication'
+        creationTime = "USE_CURRENT_TIMESTAMP"
+    }
 }
 
 ext {
-	jersey_version = "2.36"
+    jersey_version = "2.36"
 }
 
 dependencies {
-	// Azure libraries
-	implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.14'
-	implementation 'com.azure:azure-storage-blob:12.23.0'
-	implementation 'com.azure:azure-identity:1.9.2' // authentication in azure environment
-	implementation 'com.azure:azure-identity-extensions:1.1.5' // postgres password plugin
+    // Azure libraries
+    implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.14'
+    implementation 'com.azure:azure-storage-blob:12.23.0'
+    implementation 'com.azure:azure-identity:1.9.2' // authentication in azure environment
+    implementation 'com.azure:azure-identity-extensions:1.1.5' // postgres password plugin
 
-	implementation 'org.springframework.boot:spring-boot-starter'
-	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-cache'
-	implementation 'org.springframework.boot:spring-boot-starter-batch'
-	implementation 'org.springframework.retry:spring-retry:1.3.4'
-	implementation 'org.aspectj:aspectjweaver:1.8.9' // required by spring-retry, not used directly by WDS
-	implementation 'org.apache.commons:commons-lang3'
-	implementation 'com.google.guava:guava:32.1.1-jre'
-	implementation 'org.postgresql:postgresql'
-	implementation 'org.springframework.boot:spring-boot-starter-actuator'
-	implementation 'org.webjars:webjars-locator-core:0.52'
-	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.13.5'
-	implementation 'io.sentry:sentry-logback:6.12.1'
-	implementation 'org.liquibase:liquibase-core:4.21.1'
-	implementation 'javax.cache:cache-api'
-	implementation 'org.ehcache:ehcache:3.10.8'
-	implementation 'org.hashids:hashids:1.0.3'
-	implementation 'javax.ws.rs:javax.ws.rs-api:2.1.1'
-	implementation 'com.google.mug:mug:6.6'
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+    implementation 'org.springframework.retry:spring-retry:1.3.4'
+    implementation 'org.aspectj:aspectjweaver:1.8.9'
+    // required by spring-retry, not used directly by WDS
+    implementation 'org.apache.commons:commons-lang3'
+    implementation 'com.google.guava:guava:32.1.1-jre'
+    implementation 'org.postgresql:postgresql'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.webjars:webjars-locator-core:0.52'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.13.5'
+    implementation 'io.sentry:sentry-logback:6.12.1'
+    implementation 'org.liquibase:liquibase-core:4.21.1'
+    implementation 'javax.cache:cache-api'
+    implementation 'org.ehcache:ehcache:3.10.8'
+    implementation 'org.hashids:hashids:1.0.3'
+    implementation 'javax.ws.rs:javax.ws.rs-api:2.1.1'
+    implementation 'com.google.mug:mug:6.6'
 
-	// Terra libraries
-	implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-08b6588'
-	implementation group: 'org.broadinstitute.dsde.workbench', name: 'leonardo-client_2.13', version: '1.3.6-22ee00b'
-	implementation 'com.squareup.okhttp3:okhttp:4.11.0' // required by Sam client
-	implementation "bio.terra:datarepo-client:1.476.0-SNAPSHOT"
-	implementation "bio.terra:workspace-manager-client:0.254.717-SNAPSHOT"
-	implementation "bio.terra:java-pfb-library:0.5.0"
-	implementation project(path: ':client')
+    // required by openapi-generated models and api interfaces
+    implementation 'javax.validation:validation-api'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.16'
 
-	// hk2 is required to use WSM client, but not correctly exposed by the client
-	implementation "org.glassfish.jersey.inject:jersey-hk2:$jersey_version"
-	implementation "org.glassfish.jersey.core:jersey-client:$jersey_version"
-	implementation "org.glassfish.jersey.core:jersey-common:$jersey_version"
+    // Terra libraries
+    implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-08b6588'
+    implementation group: 'org.broadinstitute.dsde.workbench', name: 'leonardo-client_2.13', version: '1.3.6-22ee00b'
+    implementation 'com.squareup.okhttp3:okhttp:4.11.0' // required by Sam client
+    implementation "bio.terra:datarepo-client:1.476.0-SNAPSHOT"
+    implementation "bio.terra:workspace-manager-client:0.254.717-SNAPSHOT"
+    implementation "bio.terra:java-pfb-library:0.5.0"
+    implementation project(path: ':client')
+
+    // hk2 is required to use WSM client, but not correctly exposed by the client
+    implementation "org.glassfish.jersey.inject:jersey-hk2:$jersey_version"
+    implementation "org.glassfish.jersey.core:jersey-client:$jersey_version"
+    implementation "org.glassfish.jersey.core:jersey-common:$jersey_version"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-	runtimeOnly 'org.webjars.npm:swagger-ui-dist:4.12.0'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
-	testImplementation project(':client')
-	testImplementation 'au.com.dius.pact.consumer:junit5:4.6.1'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:4.12.0'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
+    testImplementation project(':client')
+    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.1'
 
-	constraints {
-		implementation('org.json:json:20230227') {
-			because("CVE-2022-45688")
-		}
-		implementation('com.squareup.okio:okio:3.4.0') {
-			because("CVE-2023-3635")
-		}
-	}
+    constraints {
+        implementation('org.json:json:20230227') {
+            because("CVE-2022-45688")
+        }
+        implementation('com.squareup.okio:okio:3.4.0') {
+            because("CVE-2023-3635")
+        }
+    }
 }
+
+// generate server stubs, for WDS's v1 APIs only
+tasks.register('generateApiInterfaces', GenerateTask) {
+    generatorName = "spring"
+    library = "spring-boot"
+    inputSpec = "$rootDir/service/src/main/resources/static/swagger/apis-v1.yaml"
+    outputDir = "$rootDir/service"
+    cleanupOutput = false // else would delete the /service directory
+    apiPackage = "org.databiosphere.workspacedataservice.generated"
+    // apiNameSuffix does not work; see https://github.com/OpenAPITools/openapi-generator/issues/8822
+    // apiNameSuffix = "Server" // disambiguate from classes in the generated client
+    modelPackage = "org.databiosphere.workspacedataservice.generated"
+    modelNameSuffix = "ServerModel"   // disambiguate from classes in the generated client
+    apiFilesConstrainedTo.set([""])   // empty string means generate all apis
+    modelFilesConstrainedTo.set([""]) // empty string means generate all models
+    supportingFilesConstrainedTo.set([]) // empty array means generate none
+    configOptions.set([
+        interfaceOnly: "true", // Java interfaces only; no controllers or implementation classes
+        useTags      : "true" // use the OpenAPI tag to classify apis, not the first segment of the api path
+    ])
+}
+
 
 boolean isCiServer = System.getenv().containsKey("CI") && System.getenv().get("CI").toBoolean()
 
@@ -103,88 +133,96 @@ boolean isCiServer = System.getenv().containsKey("CI") && System.getenv().get("C
 boolean spotlessEnabled = true
 
 spotless {
-  java {
-    targetExclude "${buildDir}/**"
-    targetExclude "**/swagger-code/**"
-    googleJavaFormat()
-    toggleOffOn() // allow spotless:off & spotless:on to protect code from formatting
-  }
+    java {
+        targetExclude "${buildDir}/**"
+        targetExclude "**/swagger-code/**"
+        targetExclude "**/generated/**"
+        googleJavaFormat()
+        toggleOffOn() // allow spotless:off & spotless:on to protect code from formatting
+    }
 }
-spotlessJavaCheck.onlyIf( { spotlessEnabled } )
+spotlessJavaCheck.onlyIf({ spotlessEnabled })
+
+// multiple gradle tasks need generateApiInterfaces to run before they do
+spotlessJava.dependsOn(generateApiInterfaces)
+compileJava.dependsOn(generateApiInterfaces)
+tasks.withType(ProcessResources).configureEach {
+    it.dependsOn(generateApiInterfaces)
+}
 
 // Run spotless check when running in github actions, otherwise run spotless apply.
 compileJava {
-  if (spotlessEnabled) {
-    if (isCiServer) {
-        dependsOn(spotlessCheck)
-    } else {
-        dependsOn(spotlessApply)
+    if (spotlessEnabled) {
+        if (isCiServer) {
+            dependsOn(spotlessCheck)
+        } else {
+            dependsOn(spotlessApply)
+        }
     }
-  }
 }
 
 sonarqube {
-	properties {
-		property "sonar.projectName", "terra-workspace-data-service"
-		property "sonar.projectKey", "DataBiosphere_workspace-data-service"
-		property "sonar.organization", "broad-databiosphere"
-		property "sonar.host.url", "https://sonarcloud.io"
-	}
+    properties {
+        property "sonar.projectName", "terra-workspace-data-service"
+        property "sonar.projectKey", "DataBiosphere_workspace-data-service"
+        property "sonar.organization", "broad-databiosphere"
+        property "sonar.host.url", "https://sonarcloud.io"
+    }
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
-	testLogging {
-		events = ["passed", "failed", "skipped", "started"]
-		exceptionFormat = "full"
-		// should command-line test output show stdout/stderr?
-		showStandardStreams = false
-	}
+    useJUnitPlatform()
+    testLogging {
+        events = ["passed", "failed", "skipped", "started"]
+        exceptionFormat = "full"
+        // should command-line test output show stdout/stderr?
+        showStandardStreams = false
+    }
 }
 
 jacocoTestReport {
-	reports {
-		// sonarqube requires XML coverage output to upload coverage data
-		xml.required = true
-	}
+    reports {
+        // sonarqube requires XML coverage output to upload coverage data
+        xml.required = true
+    }
 }
 
 test {
-	systemProperties['pact.rootDir'] = "$buildDir/pacts"
-	systemProperties['pact.provider.version'] = "$project.version"
+    systemProperties['pact.rootDir'] = "$buildDir/pacts"
+    systemProperties['pact.provider.version'] = "$project.version"
 }
 
 tasks.register("pactTests", Test) {
-	useJUnitPlatform {
-		includeTags "pact-test"
-	}
-	testLogging {
-		showStandardStreams = true
-	}
+    useJUnitPlatform {
+        includeTags "pact-test"
+    }
+    testLogging {
+        showStandardStreams = true
+    }
 }
 
 testing {
     suites {
         integrationTest(JvmTestSuite) {
             dependencies {
-				implementation project(':service')
-				implementation project(':client')
-				implementation 'org.springframework.boot:spring-boot-starter-test'
-				implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-				implementation 'org.liquibase:liquibase-core:4.21.1'
-				implementation "org.glassfish.jersey.core:jersey-client:$jersey_version"
-				implementation "org.glassfish.jersey.core:jersey-common:$jersey_version"
-				implementation "org.glassfish.jersey.inject:jersey-hk2:$jersey_version"
+                implementation project(':service')
+                implementation project(':client')
+                implementation 'org.springframework.boot:spring-boot-starter-test'
+                implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+                implementation 'org.liquibase:liquibase-core:4.21.1'
+                implementation "org.glassfish.jersey.core:jersey-client:$jersey_version"
+                implementation "org.glassfish.jersey.core:jersey-common:$jersey_version"
+                implementation "org.glassfish.jersey.inject:jersey-hk2:$jersey_version"
             }
         }
     }
 }
 
 tasks.named('integrationTest') {
-	testLogging {
-		events = ["passed", "failed", "skipped", "started"]
-		exceptionFormat = "full"
-		// should command-line test output show stdout/stderr?
-		showStandardStreams = false
-	}
+    testLogging {
+        events = ["passed", "failed", "skipped", "started"]
+        exceptionFormat = "full"
+        // should command-line test output show stdout/stderr?
+        showStandardStreams = false
+    }
 }

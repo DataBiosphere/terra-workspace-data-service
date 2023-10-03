@@ -46,3 +46,5 @@ config/
 gha-creds-*.json
 
 service/backup.sql
+/service/.openapi-generator/
+/service/src/main/java/org/databiosphere/workspacedataservice/generated/
