@@ -142,13 +142,7 @@ public class RecordDao {
                       ? ", " + getFkSql(relations.relations(), instanceId)
                       : "")
                   + ")");
-      namedTemplate
-          .getJdbcTemplate()
-          .update(
-              "insert into sys_wds.record_metadata(id, updatedtime, instance) values (?,?,?)",
-              recordType.getName(),
-              Timestamp.from(Instant.now()),
-              instanceId);
+      createRecordMetadata(recordType, instanceId);
       for (Relation relationArray : relations.relationArrays()) {
         createRelationJoinTable(
             instanceId,
@@ -329,7 +323,6 @@ public class RecordDao {
                   + (referencedType != null
                       ? " references " + getQualifiedTableName(referencedType, instanceId)
                       : ""));
-      recordUpdatedTime(recordType);
     } catch (DataAccessException e) {
       if (e.getRootCause() instanceof SQLException sqlEx) {
         checkForMissingTable(sqlEx);
@@ -350,7 +343,6 @@ public class RecordDao {
                 + quote(SqlUtils.validateSqlString(columnName, ATTRIBUTE))
                 + " TYPE "
                 + newColType.getPostgresType());
-    recordUpdatedTime(recordType);
   }
 
   private String genColumnDefs(Map<String, DataTypeMapping> tableInfo, String primaryKeyCol) {
@@ -390,7 +382,6 @@ public class RecordDao {
           .batchUpdate(
               genInsertStatement(instanceId, recordType, schemaAsList, primaryKeyColumn),
               getInsertBatchArgs(records, schemaAsList, primaryKeyColumn));
-      recordUpdatedTime(recordType);
     } catch (DataAccessException e) {
       if (e.getRootCause() instanceof SQLException sqlEx) {
         checkForMissingRecord(sqlEx);
@@ -407,7 +398,6 @@ public class RecordDao {
           .batchUpdate(
               genJoinInsertStatement(instanceId, column, recordType),
               getJoinInsertBatchArgs(relations));
-      recordUpdatedTime(recordType);
     } catch (DataAccessException e) {
       if (e.getRootCause() instanceof SQLException sqlEx) {
         checkForMissingRecord(sqlEx);
@@ -425,7 +415,6 @@ public class RecordDao {
             + quote(getFromColumnName(fromType))
             + "in (:recordIds)",
         new MapSqlParameterSource("recordIds", recordIds));
-    recordUpdatedTime(fromType);
   }
 
   public void batchUpsert(
@@ -465,7 +454,6 @@ public class RecordDao {
                       + " = :recordId",
                   new MapSqlParameterSource(RECORD_ID_PARAM, recordId))
               == 1;
-      recordUpdatedTime(recordType);
       return result;
 
     } catch (DataIntegrityViolationException e) {
@@ -491,7 +479,6 @@ public class RecordDao {
               + "references "
               + getQualifiedTableName(referencedRecordType, instanceId);
       namedTemplate.getJdbcTemplate().execute(addFk);
-      recordUpdatedTime(recordType);
     } catch (DataAccessException e) {
       if (e.getRootCause() instanceof SQLException sqlEx) {
         checkForMissingTable(sqlEx);
@@ -862,7 +849,6 @@ public class RecordDao {
       if (!recordErrors.isEmpty()) {
         throw new BatchDeleteException(recordErrors);
       }
-      recordUpdatedTime(recordType);
     } catch (DataIntegrityViolationException e) {
       if (e.getRootCause() instanceof SQLException sqlEx) {
         checkForTableRelation(sqlEx);
@@ -1039,8 +1025,6 @@ public class RecordDao {
       namedTemplate
           .getJdbcTemplate()
           .update("drop table " + getQualifiedTableName(recordType, instanceId));
-
-      recordUpdatedTime(recordType);
     } catch (DataAccessException e) {
       if (e.getRootCause() instanceof SQLException sqlEx) {
         checkForTableRelation(sqlEx);
@@ -1049,6 +1033,15 @@ public class RecordDao {
     }
   }
 
+  public void createRecordMetadata(RecordType recordType, UUID instanceId) {
+    namedTemplate
+        .getJdbcTemplate()
+        .update(
+            "insert into sys_wds.record_metadata(id, updatedtime, instance) values (?,?,?)",
+            recordType.getName(),
+            Timestamp.from(Instant.now()),
+            instanceId);
+  }
   public void recordUpdatedTime(RecordType recordType) {
     namedTemplate
         .getJdbcTemplate()

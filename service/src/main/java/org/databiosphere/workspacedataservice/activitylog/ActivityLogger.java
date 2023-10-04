@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.activitylog;
 
 import java.util.Arrays;
+import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +16,10 @@ public class ActivityLogger {
 
   private final SamDao samDao;
 
-  public ActivityLogger(SamDao samDao) {
+  private final RecordDao recordDao;
+
+  public ActivityLogger(SamDao samDao, RecordDao recordDao) {
+    this.recordDao = recordDao;
     this.samDao = samDao;
   }
 
@@ -63,6 +67,15 @@ public class ActivityLogger {
         sb.append(" with id(s) %s".formatted(Arrays.toString(event.ids())));
       }
       LOGGER.info(sb.toString());
+
+      if(event.thing().getName() == ActivityModels.Thing.RECORD.getName() && event.action().getName() != ActivityModels.Action.CREATE.getName()) {
+        recordDao.recordUpdatedTime(event.recordType());
+      }
+      else if(event.thing().getName() == ActivityModels.Thing.RECORD.getName() && event.action().getName() == ActivityModels.Action.CREATE.getName()) {
+        recordDao.recordUpdatedTime(event.recordType());
+      }
+
+
     }
   }
 }
