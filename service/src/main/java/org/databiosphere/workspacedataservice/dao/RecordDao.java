@@ -208,7 +208,6 @@ public class RecordDao {
                       new Relation(toCol, referencedRecordType),
                       instanceId)
                   + ")");
-      recordUpdatedTime(referringRecordType);
     } catch (DataAccessException e) {
       if (e.getRootCause() instanceof SQLException sqlEx) {
         checkForMissingTable(sqlEx);
@@ -445,8 +444,7 @@ public class RecordDao {
   public boolean deleteSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
     String recordTypePrimaryKey = primaryKeyDao.getPrimaryKeyColumn(recordType, instanceId);
     try {
-      var result =
-          namedTemplate.update(
+      return namedTemplate.update(
                   "delete from "
                       + getQualifiedTableName(recordType, instanceId)
                       + " where "
@@ -454,8 +452,6 @@ public class RecordDao {
                       + " = :recordId",
                   new MapSqlParameterSource(RECORD_ID_PARAM, recordId))
               == 1;
-      return result;
-
     } catch (DataIntegrityViolationException e) {
       if (e.getRootCause() instanceof SQLException sqlEx) {
         checkForTableRelation(sqlEx);
