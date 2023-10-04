@@ -2,6 +2,8 @@ package org.databiosphere.workspacedataservice.shared.model.job;
 
 /** The various states a Job can move through. */
 public enum JobStatus {
+  CREATED, // for Quartz jobs, indicates job is in the WDS table(s) but not yet in the Quartz
+  // table(s)
   QUEUED, // job has been created but not yet started
   RUNNING, // job has started
   SUCCEEDED, // job completed as expected

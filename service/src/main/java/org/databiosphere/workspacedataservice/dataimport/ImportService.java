@@ -6,7 +6,10 @@ import static org.quartz.impl.matchers.EverythingMatcher.allJobs;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.databiosphere.workspacedataservice.dao.ImportDao;
+import org.databiosphere.workspacedataservice.generated.ImportJobStatusServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.hashids.Hashids;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
@@ -16,6 +19,7 @@ import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -77,9 +81,17 @@ public class ImportService {
     }
 
     // with the job and its trigger successfully saved to Quartz, update the job status to QUEUED
-    importDao.updateStatus(jobKey.getName(), ImportStatus.QUEUED);
+    importDao.updateStatus(jobKey.getName(), JobStatus.QUEUED);
 
     // return the jobId for this job
     return jobKey.getName();
+  }
+
+  public ImportJobStatusServerModel getJob(String jobId) {
+    try {
+      return importDao.getImport(jobId);
+    } catch (EmptyResultDataAccessException notFound) {
+      throw new MissingObjectException("Import job");
+    }
   }
 }

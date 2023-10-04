@@ -42,8 +42,17 @@ public class ImportController implements ImportApi {
       UUID instanceUuid, String jobId) {
     // TODO: validate instance (this only requires read permission, no permission checks required)
     // TODO: validate jobId is non-empty
-    // TODO: retrieve jobId from the job store
-    // TODO: return job status, 200 if job is completed and 202 if job is still running
-    return ImportApi.super.importStatusV1(instanceUuid, jobId);
+
+    // retrieve jobId from the job store
+    ImportJobStatusServerModel importJob = importService.getJob(jobId);
+
+    // return job status, 200 if job is completed and 202 if job is still running
+    HttpStatus responseCode = HttpStatus.ACCEPTED;
+    if (importJob.getStatus() == ImportJobStatusServerModel.StatusEnum.SUCCEEDED
+        || importJob.getStatus() == ImportJobStatusServerModel.StatusEnum.ERROR) {
+      responseCode = HttpStatus.OK;
+    }
+
+    return new ResponseEntity<>(importJob, responseCode);
   }
 }

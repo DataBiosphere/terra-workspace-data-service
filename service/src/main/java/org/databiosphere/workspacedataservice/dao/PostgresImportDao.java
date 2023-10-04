@@ -3,10 +3,16 @@ package org.databiosphere.workspacedataservice.dao;
 import bio.terra.common.db.WriteTransaction;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.databiosphere.workspacedataservice.dataimport.ImportStatus;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.ZoneOffset;
+import org.databiosphere.workspacedataservice.generated.ImportJobStatusServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -49,17 +55,41 @@ public class PostgresImportDao implements ImportDao {
                 + "values (?, ?, ?, ?, ?::jsonb)",
             jobId,
             importJob.getType().getValue(),
-            ImportStatus.CREATED.getName(),
+            JobStatus.CREATED.name(),
             importJob.getUrl().toString(),
             optionsJsonb);
   }
 
   @Override
   @WriteTransaction
-  public void updateStatus(String jobId, ImportStatus status) {
+  public void updateStatus(String jobId, JobStatus status) {
     // update this import job with a new status
     namedTemplate
         .getJdbcTemplate()
-        .update("update sys_wds.import set status = ? where id = ?", status.getName(), jobId);
+        .update("update sys_wds.import set status = ? where id = ?", status.name(), jobId);
+  }
+
+  @Override
+  public ImportJobStatusServerModel getImport(String jobId) {
+    return namedTemplate.queryForObject(
+        "select id, type, status, url, created, updated, "
+            + "options, result, error, stacktrace "
+            + "from sys_wds.import "
+            + "where id = :jobId",
+        new MapSqlParameterSource("jobId", jobId),
+        new AsyncJobRowMapper());
+  }
+
+  // rowmapper for retrieving SampleJobResponse objects from the db
+  private static class AsyncJobRowMapper implements RowMapper<ImportJobStatusServerModel> {
+    @Override
+    public ImportJobStatusServerModel mapRow(ResultSet rs, int rowNum) throws SQLException {
+      ImportJobStatusServerModel job = new ImportJobStatusServerModel();
+      job.setJobId(rs.getString("id"));
+      job.setStatus(ImportJobStatusServerModel.StatusEnum.fromValue(rs.getString("status")));
+      job.setCreated(rs.getTimestamp("created").toLocalDateTime().atOffset(ZoneOffset.UTC));
+      job.setUpdated(rs.getTimestamp("updated").toLocalDateTime().atOffset(ZoneOffset.UTC));
+      return job;
+    }
   }
 }

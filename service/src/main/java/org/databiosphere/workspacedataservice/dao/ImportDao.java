@@ -1,15 +1,18 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import org.databiosphere.workspacedataservice.dataimport.ImportStatus;
+import org.databiosphere.workspacedataservice.generated.ImportJobStatusServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 
 /** Interface for DAOs that read/write data import requests */
 public interface ImportDao {
 
   void createImport(String jobId, ImportRequestServerModel importJob);
 
-  void updateStatus(String jobId, ImportStatus status);
+  void updateStatus(String jobId, JobStatus status);
 
-  // TODO: get/describe an import job
+  // TODO: should this return the auto-generated model or something else?
+  ImportJobStatusServerModel getImport(String jobId);
+
   // TODO: save an errorMessage and stacktrace for an import job that hit a problem
 }
