@@ -1,0 +1,124 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20231004_import_schema
+      author: davidan
+      changes:
+        # create the 'import' table, with default of now() for `created` and `updated` cols
+        - createTable:
+            schemaName: sys_wds
+            tableName: import
+            columns:
+              - column:
+                  name: id
+                  type: varchar(36)
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: type
+                  type: varchar(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: url
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created
+                  type: timestamp
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated
+                  type: timestamp
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: options
+                  type: jsonb
+                  constraints:
+                    nullable: true
+              - column:
+                  name: result
+                  type: jsonb
+                  constraints:
+                    nullable: true
+              - column:
+                  name: error
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: stacktrace
+                  type: text
+                  constraints:
+                    nullable: true
+        # create the "set updated timestamp to now()" function to be used in a trigger
+        # note that the liquibase `createFunction` change type requires a pro license,
+        # so we use the `sql` changeset here
+        - sql:
+            dbms: 'postgresql'
+            splitStatements: false
+            sql: >
+              create function sys_wds.import_updated_to_now()
+              returns trigger as $$
+              BEGIN
+                NEW.updated = now();
+                return NEW;
+              END;
+              $$ language 'plpgsql';
+            rollback: drop function if exists sys_wds.import_updated_to_now;
+        # create a trigger on the `import` table to set `updated` col to now() on updates
+        # note that the liquibase `createTrigger` change type requires a pro license,
+        # so we use the `sql` changeset here
+        - sql:
+            dbms: 'postgresql'
+            sql: >
+              create trigger import_updated
+              before update on sys_wds.import
+              for each row
+              execute procedure sys_wds.import_updated_to_now();
+            rollback: drop trigger if exists import_updated on sys_wds.import;
+        # next 4 changes: create indexes for the `import` table on type, status, created, updated
+        - createIndex:
+            indexName: idx_type
+            schemaName: sys_wds
+            tableName: import
+            unique: false
+            columns:
+              - column:
+                  name: type
+        - createIndex:
+            indexName: idx_status
+            schemaName: sys_wds
+            tableName: import
+            unique: false
+            columns:
+              - column:
+                  name: status
+        - createIndex:
+            indexName: idx_created
+            schemaName: sys_wds
+            tableName: import
+            unique: false
+            columns:
+              - column:
+                  name: created
+                  descending: true
+        - createIndex:
+            indexName: idx_updated
+            schemaName: sys_wds
+            tableName: import
+            unique: false
+            columns:
+              - column:
+                  name: updated
+                  descending: true
+
