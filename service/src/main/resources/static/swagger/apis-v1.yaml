@@ -121,7 +121,7 @@ components:
           type: string
         status:
           type: string
-          enum: [ QUEUED, RUNNING, SUCCEEDED, FAILED, UNKNOWN ]
+          enum: [ CREATED, QUEUED, RUNNING, SUCCEEDED, FAILED, UNKNOWN ]
         created:
           type: string
           format: date-time
