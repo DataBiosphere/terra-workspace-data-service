@@ -445,13 +445,13 @@ public class RecordDao {
     String recordTypePrimaryKey = primaryKeyDao.getPrimaryKeyColumn(recordType, instanceId);
     try {
       return namedTemplate.update(
-            "delete from "
-                + getQualifiedTableName(recordType, instanceId)
-                + " where "
-                + quote(recordTypePrimaryKey)
-                + " = :recordId",
-            new MapSqlParameterSource(RECORD_ID_PARAM, recordId))
-        == 1;
+              "delete from "
+                  + getQualifiedTableName(recordType, instanceId)
+                  + " where "
+                  + quote(recordTypePrimaryKey)
+                  + " = :recordId",
+              new MapSqlParameterSource(RECORD_ID_PARAM, recordId))
+          == 1;
     } catch (DataIntegrityViolationException e) {
       if (e.getRootCause() instanceof SQLException sqlEx) {
         checkForTableRelation(sqlEx);
