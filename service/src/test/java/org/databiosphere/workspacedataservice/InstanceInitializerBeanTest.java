@@ -2,11 +2,15 @@ package org.databiosphere.workspacedataservice;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.locks.Lock;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.*;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoConfig;
@@ -17,11 +21,14 @@ import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceConf
 import org.databiosphere.workspacedataservice.storage.AzureBlobStorage;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerConfig;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.integration.jdbc.lock.JdbcLockRegistry;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -56,6 +63,7 @@ import org.springframework.test.context.TestPropertySource;
 class InstanceInitializerBeanTest {
 
   @Autowired InstanceInitializerBean instanceInitializerBean;
+  @MockBean JdbcLockRegistry registry;
   @SpyBean InstanceDao instanceDao;
 
   @Value("${twds.instance.workspace-id}")
@@ -63,6 +71,16 @@ class InstanceInitializerBeanTest {
 
   // randomly generated UUID
   final UUID instanceID = UUID.fromString("90e1b179-9f83-4a6f-a8c2-db083df4cd03");
+
+  Lock mockLock = mock(Lock.class);
+
+  // JdbcLockRegistry registry = mock(JdbcLockRegistry.class);
+
+  @BeforeEach
+  void setUp() {
+    when(mockLock.tryLock()).thenReturn(true);
+    when(registry.obtain(anyString())).thenReturn(mockLock);
+  }
 
   @AfterEach
   void tearDown() {
