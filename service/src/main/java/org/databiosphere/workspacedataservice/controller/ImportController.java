@@ -1,14 +1,23 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.dataimport.ImportService;
 import org.databiosphere.workspacedataservice.generated.ImportApi;
 import org.databiosphere.workspacedataservice.generated.ImportJobStatusServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
+/** Controller for import-related APIs */
 @RestController
 public class ImportController implements ImportApi {
+
+  private final ImportService importService;
+
+  public ImportController(ImportService importService) {
+    this.importService = importService;
+  }
 
   @Override
   public ResponseEntity<ImportJobStatusServerModel> importV1(
@@ -16,10 +25,16 @@ public class ImportController implements ImportApi {
     // TODO: validate instance
     // TODO: validate user has write permission on instance
     // TODO: validate importRequest, e.g. does it contain a valid URL
-    // TODO: generate jobId
-    // TODO: persist import job to Quartz
-    // TODO: return jobId to caller, noting the job is Accepted
-    return ImportApi.super.importV1(instanceUuid, importRequest);
+
+    // save this import request to the WDS db and queue up its async execution in Quartz
+    String jobId = importService.queueJob(importRequest);
+
+    // Return the jobId to the caller
+    // TODO: fill out the remainder of the ImportJobStatusServerModel object
+    ImportJobStatusServerModel jobStatus = new ImportJobStatusServerModel();
+    jobStatus.setJobId(jobId);
+
+    return new ResponseEntity<>(jobStatus, HttpStatus.ACCEPTED);
   }
 
   @Override
