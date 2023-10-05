@@ -120,8 +120,9 @@ tasks.register('generateApiInterfaces', GenerateTask) {
     modelFilesConstrainedTo.set([""]) // empty string means generate all models
     supportingFilesConstrainedTo.set([]) // empty array means generate none
     configOptions.set([
-        interfaceOnly: "true", // Java interfaces only; no controllers or implementation classes
-        useTags      : "true" // use the OpenAPI tag to classify apis, not the first segment of the api path
+        interfaceOnly          : "true", // Java interfaces only; no controllers or implementation classes
+        useTags                : "true", // use the OpenAPI tag to classify apis, not the first segment of the api path
+        hideGenerationTimestamp: "true" // omit timestamp from generated code, so we can track it via git
     ])
 }
 
