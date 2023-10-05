@@ -93,6 +93,7 @@ public class PostgresImportDao implements ImportDao {
       job.setStatus(ImportJobStatusServerModel.StatusEnum.fromValue(rs.getString("status")));
       job.setCreated(rs.getTimestamp("created").toLocalDateTime().atOffset(ZoneOffset.UTC));
       job.setUpdated(rs.getTimestamp("updated").toLocalDateTime().atOffset(ZoneOffset.UTC));
+      // TODO: include missing fields - errorMessage, url, result, etc.
       return job;
     }
   }
