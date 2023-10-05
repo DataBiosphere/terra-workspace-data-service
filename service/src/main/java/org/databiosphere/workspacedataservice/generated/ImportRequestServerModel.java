@@ -24,7 +24,7 @@ import javax.annotation.Generated;
  */
 
 @JsonTypeName("ImportRequest")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2023-10-05T15:39:06.900914-04:00[America/New_York]")
 public class ImportRequestServerModel {
 
   /**
