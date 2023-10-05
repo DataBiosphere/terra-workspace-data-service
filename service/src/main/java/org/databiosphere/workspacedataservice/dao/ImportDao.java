@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import org.databiosphere.workspacedataservice.generated.ImportJobStatusServerModel;
+import org.databiosphere.workspacedataservice.dataimport.ImportStatusResponse;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 
@@ -12,7 +12,7 @@ public interface ImportDao {
   void updateStatus(String jobId, JobStatus status);
 
   // TODO: should this return the auto-generated model or something else?
-  ImportJobStatusServerModel getImport(String jobId);
+  ImportStatusResponse getImport(String jobId);
 
   // TODO: save an errorMessage and stacktrace for an import job that hit a problem
 }

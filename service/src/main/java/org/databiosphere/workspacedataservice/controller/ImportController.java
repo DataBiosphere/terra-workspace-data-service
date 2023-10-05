@@ -1,10 +1,11 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.dataimport.ImportService;
+import org.databiosphere.workspacedataservice.dataimport.ImportStatusResponse;
 import org.databiosphere.workspacedataservice.generated.ImportApi;
 import org.databiosphere.workspacedataservice.generated.ImportJobStatusServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.service.ImportService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,12 +28,7 @@ public class ImportController implements ImportApi {
     // TODO: validate importRequest, e.g. does it contain a valid URL
 
     // save this import request to the WDS db and queue up its async execution in Quartz
-    String jobId = importService.queueJob(importRequest);
-
-    // Return the jobId to the caller
-    // TODO: fill out the remainder of the ImportJobStatusServerModel object
-    ImportJobStatusServerModel jobStatus = new ImportJobStatusServerModel();
-    jobStatus.setJobId(jobId);
+    ImportStatusResponse jobStatus = importService.queueJob(importRequest);
 
     return new ResponseEntity<>(jobStatus, HttpStatus.ACCEPTED);
   }
@@ -44,7 +40,7 @@ public class ImportController implements ImportApi {
     // TODO: validate jobId is non-empty
 
     // retrieve jobId from the job store
-    ImportJobStatusServerModel importJob = importService.getJob(jobId);
+    ImportStatusResponse importJob = importService.getJob(jobId);
 
     // return job status, 200 if job is completed and 202 if job is still running
     HttpStatus responseCode = HttpStatus.ACCEPTED;

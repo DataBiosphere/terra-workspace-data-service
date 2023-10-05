@@ -31,6 +31,7 @@ public class ImportQuartzJob implements Job {
     long sleepMillis = ThreadLocalRandom.current().nextLong(5000, 15000);
     try {
       Thread.sleep(sleepMillis);
+      // the business logic for this job has completed; mark it as successful
       importDao.updateStatus(context.getJobDetail().getKey().getName(), JobStatus.SUCCEEDED);
     } catch (InterruptedException e) {
       throw new JobExecutionException(e);

@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.dataimport;
+package org.databiosphere.workspacedataservice.service;
 
 import static org.quartz.TriggerBuilder.newTrigger;
 import static org.quartz.impl.matchers.EverythingMatcher.allJobs;
@@ -6,7 +6,9 @@ import static org.quartz.impl.matchers.EverythingMatcher.allJobs;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.databiosphere.workspacedataservice.dao.ImportDao;
-import org.databiosphere.workspacedataservice.generated.ImportJobStatusServerModel;
+import org.databiosphere.workspacedataservice.dataimport.ImportListener;
+import org.databiosphere.workspacedataservice.dataimport.ImportQuartzJob;
+import org.databiosphere.workspacedataservice.dataimport.ImportStatusResponse;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -54,7 +56,7 @@ public class ImportService {
    * @param importRequest the import to be saved
    * @return unique id representing the request
    */
-  public String queueJob(ImportRequestServerModel importRequest) {
+  public ImportStatusResponse queueJob(ImportRequestServerModel importRequest) {
     JobKey jobKey = generateJobKey(importRequest.getType().getValue());
     logger.info("attempting to queue job with id " + jobKey + " ...");
 
@@ -84,10 +86,10 @@ public class ImportService {
     importDao.updateStatus(jobKey.getName(), JobStatus.QUEUED);
 
     // return the jobId for this job
-    return jobKey.getName();
+    return getJob(jobKey.getName());
   }
 
-  public ImportJobStatusServerModel getJob(String jobId) {
+  public ImportStatusResponse getJob(String jobId) {
     try {
       return importDao.getImport(jobId);
     } catch (EmptyResultDataAccessException notFound) {

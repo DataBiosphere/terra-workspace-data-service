@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.ZoneOffset;
+import org.databiosphere.workspacedataservice.dataimport.ImportStatusResponse;
 import org.databiosphere.workspacedataservice.generated.ImportJobStatusServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -70,7 +71,7 @@ public class PostgresImportDao implements ImportDao {
   }
 
   @Override
-  public ImportJobStatusServerModel getImport(String jobId) {
+  public ImportStatusResponse getImport(String jobId) {
     return namedTemplate.queryForObject(
         "select id, type, status, url, created, updated, "
             + "options, result, error, stacktrace "
@@ -81,10 +82,10 @@ public class PostgresImportDao implements ImportDao {
   }
 
   // rowmapper for retrieving SampleJobResponse objects from the db
-  private static class AsyncJobRowMapper implements RowMapper<ImportJobStatusServerModel> {
+  private static class AsyncJobRowMapper implements RowMapper<ImportStatusResponse> {
     @Override
-    public ImportJobStatusServerModel mapRow(ResultSet rs, int rowNum) throws SQLException {
-      ImportJobStatusServerModel job = new ImportJobStatusServerModel();
+    public ImportStatusResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
+      ImportStatusResponse job = new ImportStatusResponse();
       job.setJobId(rs.getString("id"));
       job.setStatus(ImportJobStatusServerModel.StatusEnum.fromValue(rs.getString("status")));
       job.setCreated(rs.getTimestamp("created").toLocalDateTime().atOffset(ZoneOffset.UTC));
