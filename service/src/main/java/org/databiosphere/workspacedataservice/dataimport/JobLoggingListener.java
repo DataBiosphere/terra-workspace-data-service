@@ -9,13 +9,13 @@ import org.springframework.stereotype.Component;
 
 /** Provides additional logging for Quartz jobs */
 @Component
-public class ImportListener implements JobListener {
+public class JobLoggingListener implements JobListener {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   @Override
   public String getName() {
-    return ImportListener.class.getSimpleName();
+    return JobLoggingListener.class.getSimpleName();
   }
 
   @Override

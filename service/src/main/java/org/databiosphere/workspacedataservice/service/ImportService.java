@@ -6,9 +6,9 @@ import static org.quartz.impl.matchers.EverythingMatcher.allJobs;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.databiosphere.workspacedataservice.dao.JobDao;
-import org.databiosphere.workspacedataservice.dataimport.ImportListener;
 import org.databiosphere.workspacedataservice.dataimport.ImportQuartzJob;
 import org.databiosphere.workspacedataservice.dataimport.ImportStatusResponse;
+import org.databiosphere.workspacedataservice.dataimport.JobLoggingListener;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -36,9 +36,9 @@ public class ImportService {
   public ImportService(Scheduler scheduler, JobDao jobDao) {
     this.scheduler = scheduler;
     this.jobDao = jobDao;
-    // register the ImportListener which provides additional logging.
+    // register the JobLoggingListener which provides additional logging.
     try {
-      this.scheduler.getListenerManager().addJobListener(new ImportListener(), allJobs());
+      this.scheduler.getListenerManager().addJobListener(new JobLoggingListener(), allJobs());
     } catch (SchedulerException e) {
       logger.error("error registering listener: " + e.getMessage(), e);
     }
@@ -71,7 +71,7 @@ public class ImportService {
 
     // persist a record of this job into the WDS db
     // this automatically sets the job status to CREATED
-    jobDao.createImport(jobKey.getName(), importRequest);
+    jobDao.createJob(jobKey.getName(), importRequest);
 
     // tell Quartz to run the job: run only once, start immediately
     Trigger trigger = newTrigger().forJob(jobKey).startNow().build();
@@ -91,7 +91,7 @@ public class ImportService {
 
   public ImportStatusResponse getJob(String jobId) {
     try {
-      return jobDao.getImport(jobId);
+      return jobDao.getJob(jobId);
     } catch (EmptyResultDataAccessException notFound) {
       throw new MissingObjectException("Import job");
     }

@@ -18,7 +18,7 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-/** Read/write data import requests via the sys_wds.import Postgres table */
+/** Read/write jobs via the sys_wds.job Postgres table */
 @Repository
 public class PostgresJobDao implements JobDao {
 
@@ -33,7 +33,7 @@ public class PostgresJobDao implements JobDao {
 
   @Override
   @WriteTransaction
-  public void createImport(String jobId, ImportRequestServerModel importJob) {
+  public void createJob(String jobId, ImportRequestServerModel importJob) {
 
     // save the import options KVPs as a jsonb packet, being resilient to nulls
     String optionsJsonb = null;
@@ -74,7 +74,7 @@ public class PostgresJobDao implements JobDao {
 
   @Override
   @ReadTransaction
-  public ImportStatusResponse getImport(String jobId) {
+  public ImportStatusResponse getJob(String jobId) {
     return namedTemplate.queryForObject(
         "select id, type, status, url, created, updated, "
             + "options, result, error, stacktrace "

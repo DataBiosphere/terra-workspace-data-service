@@ -4,14 +4,14 @@ import org.databiosphere.workspacedataservice.dataimport.ImportStatusResponse;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 
-/** Interface for DAOs that read/write data import requests */
+/** Interface for DAOs that read/write jobs */
 public interface JobDao {
 
-  void createImport(String jobId, ImportRequestServerModel importJob);
+  void createJob(String jobId, ImportRequestServerModel importJob);
 
   void updateStatus(String jobId, JobStatus status);
 
-  ImportStatusResponse getImport(String jobId);
+  ImportStatusResponse getJob(String jobId);
 
   // TODO: save an errorMessage and stacktrace for an import job that hit a problem
 }
