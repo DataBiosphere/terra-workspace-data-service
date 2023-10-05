@@ -122,7 +122,7 @@ tasks.register('generateApiInterfaces', GenerateTask) {
     configOptions.set([
         interfaceOnly          : "true", // Java interfaces only; no controllers or implementation classes
         useTags                : "true", // use the OpenAPI tag to classify apis, not the first segment of the api path
-        hideGenerationTimestamp: "true" // omit timestamp from generated code, so we can track it via git
+        hideGenerationTimestamp: "false" // omit timestamp from generated code, so we can track it via git
     ])
 }
 
