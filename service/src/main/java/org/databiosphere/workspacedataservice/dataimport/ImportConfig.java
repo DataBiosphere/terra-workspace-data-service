@@ -1,8 +1,8 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.databiosphere.workspacedataservice.dao.ImportDao;
-import org.databiosphere.workspacedataservice.dao.PostgresImportDao;
+import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dao.PostgresJobDao;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -12,7 +12,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 public class ImportConfig {
 
   @Bean
-  public ImportDao importDao(NamedParameterJdbcTemplate namedTemplate, ObjectMapper mapper) {
-    return new PostgresImportDao(namedTemplate, mapper);
+  public JobDao importDao(NamedParameterJdbcTemplate namedTemplate, ObjectMapper mapper) {
+    return new PostgresJobDao(namedTemplate, mapper);
   }
 }

@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import java.util.concurrent.ThreadLocalRandom;
-import org.databiosphere.workspacedataservice.dao.ImportDao;
+import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -17,16 +17,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class ImportQuartzJob implements Job {
 
-  private final ImportDao importDao;
+  private final JobDao jobDao;
 
-  public ImportQuartzJob(ImportDao importDao) {
-    this.importDao = importDao;
+  public ImportQuartzJob(JobDao jobDao) {
+    this.jobDao = jobDao;
   }
 
   @Override
   public void execute(JobExecutionContext context) throws JobExecutionException {
     // as the first step when this kicks off, set status to running
-    importDao.updateStatus(context.getJobDetail().getKey().getName(), JobStatus.RUNNING);
+    jobDao.updateStatus(context.getJobDetail().getKey().getName(), JobStatus.RUNNING);
 
     // TODO: implement the actual data-import business logic! Or delegate to other
     // classes that do that.
@@ -36,7 +36,7 @@ public class ImportQuartzJob implements Job {
     try {
       Thread.sleep(sleepMillis);
       // the business logic for this job has completed; mark it as successful
-      importDao.updateStatus(context.getJobDetail().getKey().getName(), JobStatus.SUCCEEDED);
+      jobDao.updateStatus(context.getJobDetail().getKey().getName(), JobStatus.SUCCEEDED);
     } catch (InterruptedException e) {
       // ensure the thread is actually interrupted
       Thread.currentThread().interrupt();

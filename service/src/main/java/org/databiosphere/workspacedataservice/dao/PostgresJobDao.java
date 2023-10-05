@@ -20,13 +20,13 @@ import org.springframework.stereotype.Repository;
 
 /** Read/write data import requests via the sys_wds.import Postgres table */
 @Repository
-public class PostgresImportDao implements ImportDao {
+public class PostgresJobDao implements JobDao {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private final NamedParameterJdbcTemplate namedTemplate;
   private final ObjectMapper mapper;
 
-  public PostgresImportDao(NamedParameterJdbcTemplate namedTemplate, ObjectMapper mapper) {
+  public PostgresJobDao(NamedParameterJdbcTemplate namedTemplate, ObjectMapper mapper) {
     this.namedTemplate = namedTemplate;
     this.mapper = mapper;
   }

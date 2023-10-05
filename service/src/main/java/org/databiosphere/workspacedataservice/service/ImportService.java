@@ -5,7 +5,7 @@ import static org.quartz.impl.matchers.EverythingMatcher.allJobs;
 
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-import org.databiosphere.workspacedataservice.dao.ImportDao;
+import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportListener;
 import org.databiosphere.workspacedataservice.dataimport.ImportQuartzJob;
 import org.databiosphere.workspacedataservice.dataimport.ImportStatusResponse;
@@ -29,13 +29,13 @@ public class ImportService {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private final Scheduler scheduler; // the quartz scheduler
-  private final ImportDao importDao;
+  private final JobDao jobDao;
 
   private final Hashids hashids = new Hashids(UUID.randomUUID().toString(), 8);
 
-  public ImportService(Scheduler scheduler, ImportDao importDao) {
+  public ImportService(Scheduler scheduler, JobDao jobDao) {
     this.scheduler = scheduler;
-    this.importDao = importDao;
+    this.jobDao = jobDao;
     // register the ImportListener which provides additional logging.
     try {
       this.scheduler.getListenerManager().addJobListener(new ImportListener(), allJobs());
@@ -71,7 +71,7 @@ public class ImportService {
 
     // persist a record of this job into the WDS db
     // this automatically sets the job status to CREATED
-    importDao.createImport(jobKey.getName(), importRequest);
+    jobDao.createImport(jobKey.getName(), importRequest);
 
     // tell Quartz to run the job: run only once, start immediately
     Trigger trigger = newTrigger().forJob(jobKey).startNow().build();
@@ -83,7 +83,7 @@ public class ImportService {
     }
 
     // with the job and its trigger successfully saved to Quartz, update the job status to QUEUED
-    importDao.updateStatus(jobKey.getName(), JobStatus.QUEUED);
+    jobDao.updateStatus(jobKey.getName(), JobStatus.QUEUED);
 
     // return the jobId for this job
     return getJob(jobKey.getName());
@@ -91,7 +91,7 @@ public class ImportService {
 
   public ImportStatusResponse getJob(String jobId) {
     try {
-      return importDao.getImport(jobId);
+      return jobDao.getImport(jobId);
     } catch (EmptyResultDataAccessException notFound) {
       throw new MissingObjectException("Import job");
     }

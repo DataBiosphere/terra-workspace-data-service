@@ -1,12 +1,12 @@
 databaseChangeLog:
   - changeSet:
-      id: 20231004_import_schema
+      id: 20231004_job_table
       author: davidan
       changes:
-        # create the 'import' table, with default of now() for `created` and `updated` cols
+        # create the 'job' table, with default of now() for `created` and `updated` cols
         - createTable:
             schemaName: sys_wds
-            tableName: import
+            tableName: job
             columns:
               - column:
                   name: id
@@ -24,11 +24,6 @@ databaseChangeLog:
                   constraints:
                     nullable: false
               - column:
-                  name: url
-                  type: text
-                  constraints:
-                    nullable: false
-              - column:
                   name: created
                   type: timestamp
                   defaultValueComputed: NOW()
@@ -41,7 +36,7 @@ databaseChangeLog:
                   constraints:
                     nullable: false
               - column:
-                  name: options
+                  name: input
                   type: jsonb
                   constraints:
                     nullable: true
@@ -67,30 +62,30 @@ databaseChangeLog:
             dbms: 'postgresql'
             splitStatements: false
             sql: >
-              create function sys_wds.import_updated_to_now()
+              create function sys_wds.job_updated_to_now()
               returns trigger as $$
               BEGIN
                 NEW.updated = now();
                 return NEW;
               END;
               $$ language 'plpgsql';
-            rollback: drop function if exists sys_wds.import_updated_to_now;
-        # create a trigger on the `import` table to set `updated` col to now() on updates
+            rollback: drop function if exists sys_wds.job_updated_to_now;
+        # create a trigger on the `job` table to set `updated` col to now() on updates
         # note that the liquibase `createTrigger` change type requires a pro license,
         # so we use the `sql` changeset here
         - sql:
             dbms: 'postgresql'
             sql: >
-              create trigger import_updated
-              before update on sys_wds.import
+              create trigger job_updated
+              before update on sys_wds.job
               for each row
-              execute procedure sys_wds.import_updated_to_now();
-            rollback: drop trigger if exists import_updated on sys_wds.import;
-        # next 4 changes: create indexes for the `import` table on type, status, created, updated
+              execute procedure sys_wds.job_updated_to_now();
+            rollback: drop trigger if exists job_updated on sys_wds.job;
+        # next 4 changes: create indexes for the `job` table on type, status, created, updated
         - createIndex:
             indexName: idx_type
             schemaName: sys_wds
-            tableName: import
+            tableName: job
             unique: false
             columns:
               - column:
@@ -98,7 +93,7 @@ databaseChangeLog:
         - createIndex:
             indexName: idx_status
             schemaName: sys_wds
-            tableName: import
+            tableName: job
             unique: false
             columns:
               - column:
@@ -106,7 +101,7 @@ databaseChangeLog:
         - createIndex:
             indexName: idx_created
             schemaName: sys_wds
-            tableName: import
+            tableName: job
             unique: false
             columns:
               - column:
@@ -115,7 +110,7 @@ databaseChangeLog:
         - createIndex:
             indexName: idx_updated
             schemaName: sys_wds
-            tableName: import
+            tableName: job
             unique: false
             columns:
               - column:

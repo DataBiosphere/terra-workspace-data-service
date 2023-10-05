@@ -5,7 +5,7 @@ import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 
 /** Interface for DAOs that read/write data import requests */
-public interface ImportDao {
+public interface JobDao {
 
   void createImport(String jobId, ImportRequestServerModel importJob);
 
