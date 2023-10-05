@@ -31,12 +31,15 @@ public class ImportQuartzJob implements Job {
     // TODO: implement the actual data-import business logic! Or delegate to other
     // classes that do that.
 
+    @SuppressWarnings("java:S2245") // RNG here is fine if it's insecure
     long sleepMillis = ThreadLocalRandom.current().nextLong(5000, 15000);
     try {
       Thread.sleep(sleepMillis);
       // the business logic for this job has completed; mark it as successful
       importDao.updateStatus(context.getJobDetail().getKey().getName(), JobStatus.SUCCEEDED);
     } catch (InterruptedException e) {
+      // ensure the thread is actually interrupted
+      Thread.currentThread().interrupt();
       throw new JobExecutionException(e);
     }
   }

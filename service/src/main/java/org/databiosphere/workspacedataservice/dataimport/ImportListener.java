@@ -20,16 +20,16 @@ public class ImportListener implements JobListener {
 
   @Override
   public void jobToBeExecuted(JobExecutionContext context) {
-    logger.info("jobToBeExecuted: " + context.getJobDetail().getKey());
+    logger.info("jobToBeExecuted: {}", context.getJobDetail().getKey());
   }
 
   @Override
   public void jobExecutionVetoed(JobExecutionContext context) {
-    logger.info("jobExecutionVetoed: " + context.getJobDetail().getKey());
+    logger.info("jobExecutionVetoed: {}", context.getJobDetail().getKey());
   }
 
   @Override
   public void jobWasExecuted(JobExecutionContext context, JobExecutionException jobException) {
-    logger.info("jobWasExecuted: " + context.getJobDetail().getKey());
+    logger.info("jobWasExecuted: {}", context.getJobDetail().getKey());
   }
 }

@@ -58,7 +58,7 @@ public class ImportService {
    */
   public ImportStatusResponse queueJob(ImportRequestServerModel importRequest) {
     JobKey jobKey = generateJobKey(importRequest.getType().getValue());
-    logger.info("attempting to queue job with id " + jobKey + " ...");
+    logger.info("attempting to queue job with id {} ...", jobKey);
 
     // what to run
     JobDetail jobDetail =
