@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import java.util.UUID;
 import org.databiosphere.workspacedataservice.dataimport.ImportStatusResponse;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -11,7 +12,7 @@ public interface JobDao {
 
   void updateStatus(String jobId, JobStatus status);
 
-  ImportStatusResponse getJob(String jobId);
+  ImportStatusResponse getJob(UUID jobId);
 
   // TODO: save an errorMessage and stacktrace for an import job that hit a problem
 }

@@ -5,7 +5,6 @@
  */
 package org.databiosphere.workspacedataservice.generated;
 
-import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.JobStatusServerModel;
 import java.util.UUID;
 import io.swagger.v3.oas.annotations.ExternalDocumentation;
@@ -36,41 +35,42 @@ import javax.annotation.Generated;
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2023-10-05T16:58:02.946728-04:00[America/New_York]")
 @Validated
-@Tag(name = "Import", description = "Import APIs")
-public interface ImportApi {
+@Tag(name = "Job", description = "Job APIs")
+public interface JobApi {
 
     default Optional<NativeWebRequest> getRequest() {
         return Optional.empty();
     }
 
     /**
-     * POST /{instanceUuid}/import/v1 : Import from a file
-     * Imports records from the specified URL.
+     * GET /{instanceUuid}/job/v1/{jobId} : Get status of a long-running job.
      *
      * @param instanceUuid WDS instance id; by convention equal to workspace id (required)
-     * @param importRequestServerModel A request to import records from a file (required)
-     * @return Import accepted. (status code 202)
+     * @param jobId  (required)
+     * @return Job completed. (status code 200)
+     *         or Job still running. (status code 202)
      */
     @Operation(
-        operationId = "importV1",
-        summary = "Import from a file",
-        description = "Imports records from the specified URL.",
-        tags = { "Import" },
+        operationId = "jobStatusV1",
+        summary = "Get status of a long-running job.",
+        tags = { "Job" },
         responses = {
-            @ApiResponse(responseCode = "202", description = "Import accepted.", content = {
+            @ApiResponse(responseCode = "200", description = "Job completed.", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = JobStatusServerModel.class))
+            }),
+            @ApiResponse(responseCode = "202", description = "Job still running.", content = {
                 @Content(mediaType = "application/json", schema = @Schema(implementation = JobStatusServerModel.class))
             })
         }
     )
     @RequestMapping(
-        method = RequestMethod.POST,
-        value = "/{instanceUuid}/import/v1",
-        produces = { "application/json" },
-        consumes = { "application/json" }
+        method = RequestMethod.GET,
+        value = "/{instanceUuid}/job/v1/{jobId}",
+        produces = { "application/json" }
     )
-    default ResponseEntity<JobStatusServerModel> importV1(
+    default ResponseEntity<JobStatusServerModel> jobStatusV1(
         @Parameter(name = "instanceUuid", description = "WDS instance id; by convention equal to workspace id", required = true, in = ParameterIn.PATH) @PathVariable("instanceUuid") UUID instanceUuid,
-        @Parameter(name = "ImportRequestServerModel", description = "A request to import records from a file", required = true) @Valid @RequestBody ImportRequestServerModel importRequestServerModel
+        @Parameter(name = "jobId", description = "", required = true, in = ParameterIn.PATH) @PathVariable("jobId") UUID jobId
     ) {
         return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
 

@@ -4,7 +4,6 @@ import static org.quartz.TriggerBuilder.newTrigger;
 import static org.quartz.impl.matchers.EverythingMatcher.allJobs;
 
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportQuartzJob;
 import org.databiosphere.workspacedataservice.dataimport.ImportStatusResponse;
@@ -46,7 +45,7 @@ public class ImportService {
 
   // create a randomized job id
   private JobKey generateJobKey(String groupName) {
-    String jobId = hashids.encode(ThreadLocalRandom.current().nextLong(0, Integer.MAX_VALUE));
+    String jobId = UUID.randomUUID().toString();
     return new JobKey(jobId, groupName);
   }
 
@@ -86,10 +85,10 @@ public class ImportService {
     jobDao.updateStatus(jobKey.getName(), JobStatus.QUEUED);
 
     // return the jobId for this job
-    return getJob(jobKey.getName());
+    return getJob(UUID.fromString(jobKey.getName()));
   }
 
-  public ImportStatusResponse getJob(String jobId) {
+  public ImportStatusResponse getJob(UUID jobId) {
     try {
       return jobDao.getJob(jobId);
     } catch (EmptyResultDataAccessException notFound) {

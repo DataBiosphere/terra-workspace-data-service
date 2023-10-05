@@ -7,9 +7,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.ZoneOffset;
+import java.util.UUID;
 import org.databiosphere.workspacedataservice.dataimport.ImportStatusResponse;
-import org.databiosphere.workspacedataservice.generated.ImportJobStatusServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.JobStatusServerModel;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,12 +54,10 @@ public class PostgresJobDao implements JobDao {
     namedTemplate
         .getJdbcTemplate()
         .update(
-            "insert into sys_wds.import(id, type, status, url, options) "
-                + "values (?, ?, ?, ?, ?::jsonb)",
+            "insert into sys_wds.job(id, type, status, input) " + "values (?, ?, ?, ?::jsonb)",
             jobId,
             importJob.getType().getValue(),
             JobStatus.CREATED.name(),
-            importJob.getUrl().toString(),
             optionsJsonb);
   }
 
@@ -69,18 +68,18 @@ public class PostgresJobDao implements JobDao {
     // note that the table's trigger will automatically update the `updated` column's value
     namedTemplate
         .getJdbcTemplate()
-        .update("update sys_wds.import set status = ? where id = ?", status.name(), jobId);
+        .update("update sys_wds.job set status = ? where id = ?", status.name(), jobId);
   }
 
   @Override
   @ReadTransaction
-  public ImportStatusResponse getJob(String jobId) {
+  public ImportStatusResponse getJob(UUID jobId) {
     return namedTemplate.queryForObject(
-        "select id, type, status, url, created, updated, "
-            + "options, result, error, stacktrace "
-            + "from sys_wds.import "
+        "select id, type, status, created, updated, "
+            + "input, result, error, stacktrace "
+            + "from sys_wds.job "
             + "where id = :jobId",
-        new MapSqlParameterSource("jobId", jobId),
+        new MapSqlParameterSource("jobId", jobId.toString()),
         new AsyncJobRowMapper());
   }
 
@@ -89,8 +88,8 @@ public class PostgresJobDao implements JobDao {
     @Override
     public ImportStatusResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
       ImportStatusResponse job = new ImportStatusResponse();
-      job.setJobId(rs.getString("id"));
-      job.setStatus(ImportJobStatusServerModel.StatusEnum.fromValue(rs.getString("status")));
+      job.setJobId(UUID.fromString(rs.getString("id")));
+      job.setStatus(JobStatusServerModel.StatusEnum.fromValue(rs.getString("status")));
       job.setCreated(rs.getTimestamp("created").toLocalDateTime().atOffset(ZoneOffset.UTC));
       job.setUpdated(rs.getTimestamp("updated").toLocalDateTime().atOffset(ZoneOffset.UTC));
       // TODO: include missing fields - errorMessage, url, result, etc.
