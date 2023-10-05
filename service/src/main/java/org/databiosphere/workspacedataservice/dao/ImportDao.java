@@ -11,7 +11,6 @@ public interface ImportDao {
 
   void updateStatus(String jobId, JobStatus status);
 
-  // TODO: should this return the auto-generated model or something else?
   ImportStatusResponse getImport(String jobId);
 
   // TODO: save an errorMessage and stacktrace for an import job that hit a problem

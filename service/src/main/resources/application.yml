@@ -78,15 +78,15 @@ spring:
           isClustered: true
           # Set the frequency (in milliseconds) at which this instance “checks-in”* with the other instances of the cluster.
           # Affects the quickness of detecting failed instances
-          # default is 15000; we are more tolerant to slow failures
-          clusterCheckinInterval: 60000
+          # default is 15000; we may want to change this later
+          # clusterCheckinInterval: 15000
           # look for Quartz tables in the sys_wds schema. This requires the tables to be created by
           # Liquibase and customized to be inside sys_wds; Quartz does not support creating the
           # tables in a custom schema on its own. See:
           # https://stackoverflow.com/questions/69396173/spring-boot-quartz-schema-other-than-public-doesnt-work
           tablePrefix: sys_wds.qrtz_
         scheduler:
-          # instanceId is used to coordinate clustering
+          # instanceId is used to coordinate clustering. "AUTO" creates a unique name.
           instanceId: AUTO
           # don't bother checking for updates to the quartz library
           skipUpdateCheck: true

@@ -28,6 +28,9 @@ public class ImportQuartzJob implements Job {
     // as the first step when this kicks off, set status to running
     importDao.updateStatus(context.getJobDetail().getKey().getName(), JobStatus.RUNNING);
 
+    // TODO: implement the actual data-import business logic! Or delegate to other
+    // classes that do that.
+
     long sleepMillis = ThreadLocalRandom.current().nextLong(5000, 15000);
     try {
       Thread.sleep(sleepMillis);

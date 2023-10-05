@@ -2,6 +2,7 @@
 -- and then modified by David An to:
 --     * not drop tables before creating tables
 --     * create tables within the sys_wds schema instead of the public schema
+--     * separate out the CREATE and DROP statements to allow Liquibase rollback
 
 
 

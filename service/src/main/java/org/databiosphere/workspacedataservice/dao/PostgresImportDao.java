@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import bio.terra.common.db.ReadTransaction;
 import bio.terra.common.db.WriteTransaction;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,12 +66,14 @@ public class PostgresImportDao implements ImportDao {
   @WriteTransaction
   public void updateStatus(String jobId, JobStatus status) {
     // update this import job with a new status
+    // note that the table's trigger will automatically update the `updated` column's value
     namedTemplate
         .getJdbcTemplate()
         .update("update sys_wds.import set status = ? where id = ?", status.name(), jobId);
   }
 
   @Override
+  @ReadTransaction
   public ImportStatusResponse getImport(String jobId) {
     return namedTemplate.queryForObject(
         "select id, type, status, url, created, updated, "
