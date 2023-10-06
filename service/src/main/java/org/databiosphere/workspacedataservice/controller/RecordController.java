@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.controller;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.StatusCode;
@@ -16,6 +17,7 @@ import org.databiosphere.workspacedataservice.retry.RetryableApi;
 import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -54,6 +56,8 @@ public class RecordController {
 
   private static final AttributeKey<String> ATTR_N = AttributeKey.stringKey("http.record");
   private static final AttributeKey<Long> ATTR_RESULT = AttributeKey.longKey("http.result");
+  private static final AttributeKey<Boolean> ATTR_VALID_N =
+      AttributeKey.booleanKey("record.getSingleRecord");
 
   public RecordController(
       InstanceService instanceService,
@@ -68,7 +72,7 @@ public class RecordController {
     recordApiInvocations =
         meter
             .counterBuilder("record.invocations")
-            .setDescription("Measures the number of times the record api is invoked.")
+            .setDescription("Measures the number of times the getSingleRecord api is invoked.")
             .build();
   }
 
@@ -102,8 +106,11 @@ public class RecordController {
       RecordResponse response =
           recordOrchestratorService.getSingleRecord(instanceId, version, recordType, recordId);
       span.setAttribute(ATTR_RESULT, HttpStatus.OK.value());
-      return new ResponseEntity<>(response, HttpStatus.OK response);
-    } catch (Exception e) {
+      recordApiInvocations.add(1, Attributes.of(ATTR_VALID_N, true));
+      
+      return new ResponseEntity<>(response, HttpStatus.OK);
+    } catch (MissingObjectException e) {
+      recordApiInvocations.add(1, Attributes.of(ATTR_VALID_N, false));
       span.recordException(e).setStatus(StatusCode.ERROR, e.getMessage());
       throw e;
     } finally {
