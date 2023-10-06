@@ -20,3 +20,6 @@ databaseChangeLog:
   - include:
       file: changesets/20231003_lock_table.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/20231003_quartz_tables.yaml
+      relativeToChangelogFile: true
