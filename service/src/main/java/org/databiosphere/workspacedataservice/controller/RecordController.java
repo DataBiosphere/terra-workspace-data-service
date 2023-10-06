@@ -1,5 +1,12 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.propagation.TextMapPropagator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -30,6 +37,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.Controller;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 @RestController
@@ -38,10 +46,30 @@ public class RecordController {
   private final InstanceService instanceService;
   private final RecordOrchestratorService recordOrchestratorService;
 
+  private final OpenTelemetry openTelemetry;
+  private final Tracer tracer;
+  private final TextMapPropagator textMapPropagator;
+
+  private final LongCounter recordApiInvocations;
+
+  private static final AttributeKey<String> ATTR_N = AttributeKey.stringKey("http.record");
+  private static final AttributeKey<Long> ATTR_RESULT = AttributeKey.longKey("http.result");
+
   public RecordController(
-      InstanceService instanceService, RecordOrchestratorService recordOrchestratorService) {
+      InstanceService instanceService,
+      RecordOrchestratorService recordOrchestratorService,
+      OpenTelemetry openTelemetry) {
     this.instanceService = instanceService;
     this.recordOrchestratorService = recordOrchestratorService;
+    this.openTelemetry = openTelemetry;
+    this.tracer = openTelemetry.getTracer(Controller.class.getName());
+    this.textMapPropagator = openTelemetry.getPropagators().getTextMapPropagator();
+    Meter meter = openTelemetry.getMeter(Controller.class.getName());
+    recordApiInvocations =
+        meter
+            .counterBuilder("record.invocations")
+            .setDescription("Measures the number of times the record api is invoked.")
+            .build();
   }
 
   @PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
@@ -65,9 +93,23 @@ public class RecordController {
       @PathVariable("version") String version,
       @PathVariable("recordType") RecordType recordType,
       @PathVariable("recordId") String recordId) {
-    RecordResponse response =
-        recordOrchestratorService.getSingleRecord(instanceId, version, recordType, recordId);
-    return new ResponseEntity<>(response, HttpStatus.OK);
+    var span =
+        tracer
+            .spanBuilder("RecordController")
+            .setAttribute(ATTR_N, recordType.getName())
+            .startSpan();
+    try (var scope = span.makeCurrent()) {
+      RecordResponse response =
+          recordOrchestratorService.getSingleRecord(instanceId, version, recordType, recordId);
+      span.setAttribute(ATTR_RESULT, HttpStatus.OK.value());
+      return new ResponseEntity<>(response, HttpStatus.OK response);
+    } catch (Exception e) {
+      span.recordException(e).setStatus(StatusCode.ERROR, e.getMessage());
+      throw e;
+    } finally {
+      // End the span
+      span.end();
+    }
   }
 
   @PostMapping("/{instanceId}/tsv/{version}/{recordType}")
