@@ -60,10 +60,13 @@ public class ImportService {
     logger.info("attempting to queue job with id {} ...", jobKey);
 
     // what to run
+    // TODO: save a real, valid pet token
+    // TODO: make the map key "token" into a constant
     JobDetail jobDetail =
         JobBuilder.newJob()
             .ofType(ImportQuartzJob.class)
             .withIdentity(jobKey)
+            .usingJobData("token", "proof-of-concept-token")
             .storeDurably(false) // delete from the quartz table after the job finishes
             .withDescription("Import from " + importRequest.getUrl().toString())
             .build();

@@ -6,6 +6,8 @@ import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
 public class ImportQuartzJob implements Job {
 
   private final JobDao jobDao;
+  private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   public ImportQuartzJob(JobDao jobDao) {
     this.jobDao = jobDao;
@@ -27,6 +30,10 @@ public class ImportQuartzJob implements Job {
   public void execute(JobExecutionContext context) throws JobExecutionException {
     // as the first step when this kicks off, set status to running
     jobDao.updateStatus(context.getJobDetail().getKey().getName(), JobStatus.RUNNING);
+
+    // retrieve the token from job data, so we can execute as the user
+    String token = context.getJobDetail().getJobDataMap().getString("token");
+    logger.info("executing async job with token '{}'", token);
 
     // TODO: implement the actual data-import business logic! Or delegate to other
     // classes that do that.
