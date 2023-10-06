@@ -1,6 +1,6 @@
 -- this SQL copied from the Quartz library at org/quartz/impl/jdbcjobstore/tables_postgres.sql
 -- and then modified by David An to:
---     * not drop tables before creating tables
+--     * split the DROP and CREATE statements into two separate files
 --     * create tables within the sys_wds schema instead of the public schema
 --     * separate out the CREATE and DROP statements to allow Liquibase rollback
 
@@ -11,17 +11,8 @@
 -- In your Quartz properties file, you'll need to set
 -- org.quartz.jobStore.driverDelegateClass = org.quartz.impl.jdbcjobstore.PostgreSQLDelegate
 
--- DROP TABLE IF EXISTS QRTZ_FIRED_TRIGGERS;
--- DROP TABLE IF EXISTS QRTZ_PAUSED_TRIGGER_GRPS;
--- DROP TABLE IF EXISTS QRTZ_SCHEDULER_STATE;
--- DROP TABLE IF EXISTS QRTZ_LOCKS;
--- DROP TABLE IF EXISTS QRTZ_SIMPLE_TRIGGERS;
--- DROP TABLE IF EXISTS QRTZ_CRON_TRIGGERS;
--- DROP TABLE IF EXISTS QRTZ_SIMPROP_TRIGGERS;
--- DROP TABLE IF EXISTS QRTZ_BLOB_TRIGGERS;
--- DROP TABLE IF EXISTS QRTZ_TRIGGERS;
--- DROP TABLE IF EXISTS QRTZ_JOB_DETAILS;
--- DROP TABLE IF EXISTS QRTZ_CALENDARS;
+-- DROP TABLE statements exist here in the original Quartz file; they have been
+-- moved to 20231003_quartz_tables_rollback.sql.
 
 CREATE TABLE sys_wds.QRTZ_JOB_DETAILS
 (

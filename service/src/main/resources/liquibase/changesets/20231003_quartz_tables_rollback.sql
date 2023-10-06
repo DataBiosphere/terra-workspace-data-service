@@ -1,6 +1,6 @@
 -- this SQL copied from the Quartz library at org/quartz/impl/jdbcjobstore/tables_postgres.sql
 -- and then modified by David An to:
---     * not drop tables before creating tables
+--     * split the DROP and CREATE statements into two separate files
 --     * create tables within the sys_wds schema instead of the public schema
 --     * separate out the CREATE and DROP statements to allow Liquibase rollback
 
@@ -23,5 +23,7 @@ DROP TABLE IF EXISTS sys_wds.QRTZ_TRIGGERS;
 DROP TABLE IF EXISTS sys_wds.QRTZ_JOB_DETAILS;
 DROP TABLE IF EXISTS sys_wds.QRTZ_CALENDARS;
 
+-- CREATE TABLE statements exist here in the original Quartz file; they
+-- exist in 20231003_quartz_tables.sql.
 
 COMMIT;
