@@ -78,63 +78,71 @@ public class InstanceInitializerBean {
    */
   public void initializeInstance() {
     LOGGER.info("Default workspace id loaded as {}.", workspaceId);
-    boolean isInCloneMode = isInCloneMode(sourceWorkspaceId);
-    LOGGER.info("isInCloneMode={}.", isInCloneMode);
-    if (isInCloneMode) {
+    // Enter clone mode if sourceWorkspaceId is specified
+    if (StringUtils.isNotBlank(sourceWorkspaceId)) {
       LOGGER.info("Source workspace id loaded as {}.", sourceWorkspaceId);
-      boolean cloneSuccess = initCloneMode();
-      if (cloneSuccess) {
-        LOGGER.info("Cloning complete.");
+      boolean cloneExitSuccessfuly = initCloneMode();
+      if (cloneExitSuccessfuly) {
+        LOGGER.info("Exited cloning.");
       } else {
+        LOGGER.info("Cloning failed, initializing default schema.");
         initializeDefaultInstance();
       }
     } else {
+      LOGGER.info("No SourceWorkspaceId found, initializing default schema.");
       initializeDefaultInstance();
     }
   }
 
   /**
-   * Determine if this WDS is starting as a clone of some other WDS. If a valid {@code
-   * SOURCE_WORKSPACE_ID} env var is provided to this WDS, it will start in clone mode.
+   * Determine whether we're in the midst of a clone already or if a clone has completed.
    *
    * @param sourceWorkspaceId value of {@code SOURCE_WORKSPACE_ID}; provided as an argument to
    *     assist with unit tests.
-   * @return whether this WDS is a clone.
+   * @return true if we should not proceed with cloning.
    */
-  protected boolean isInCloneMode(String sourceWorkspaceId) {
-    if (StringUtils.isNotBlank(sourceWorkspaceId)) {
-      LOGGER.info("SourceWorkspaceId found, checking database");
-      try {
-        UUID.fromString(sourceWorkspaceId);
-      } catch (IllegalArgumentException e) {
-        LOGGER.warn(
-            "SourceWorkspaceId could not be parsed, unable to clone DB. Provided SourceWorkspaceId: {}.",
-            sourceWorkspaceId);
-        return false;
-      }
+  protected boolean cloningStartedOrCompleted(UUID sourceWorkspaceId) {
+    LOGGER.info("Checking database for cloning and existing instances");
+    // is a clone operation already running? This can happen when WDS is running with multiple
+    // replicas,
+    // and another replica started first and has initiated the clone. It can also happen in a
+    // corner case
+    // where this replica restarted during the clone operation.
+    boolean cloneAlreadyRunning = cloneDao.cloneExistsForWorkspace(sourceWorkspaceId);
+    // does the default pg schema already exist for this workspace? This should not happen,
+    // but we want to protect against overwriting it.
+    boolean instanceAlreadyExists = instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
+    LOGGER.info(
+        "isInCloneMode(): cloneAlreadyRunning={}, instanceAlreadyExists={}",
+        cloneAlreadyRunning,
+        instanceAlreadyExists);
+    // TODO handle the case where a clone already ran, but failed; should we retry?
+    return cloneAlreadyRunning || instanceAlreadyExists;
+  }
 
-      if (sourceWorkspaceId.equals(workspaceId)) {
-        LOGGER.warn("SourceWorkspaceId and current WorkspaceId can't be the same.");
-        return false;
-      }
-
-      try {
-        // does the default pg schema already exist for this workspace? This should not happen,
-        // but we want to protect against overwriting it.
-        boolean instanceAlreadyExists =
-            instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
-        LOGGER.info("isInCloneMode(): instanceAlreadyExists={}", instanceAlreadyExists);
-        // TODO handle the case where a clone already ran, but failed; should we retry?
-        return !instanceAlreadyExists;
-      } catch (IllegalArgumentException e) {
-        LOGGER.warn(
-            "WorkspaceId could not be parsed, unable to clone DB. Provided default WorkspaceId: {}.",
-            workspaceId);
-        return false;
-      }
+  /**
+   * Determine if the arguments needed for cloning (in this case, a valid {@code
+   * SOURCE_WORKSPACE_ID} env var) allow us to proceed with cloning.
+   *
+   * @param sourceWorkspaceId value of {@code SOURCE_WORKSPACE_ID}; provided as an argument to
+   *     assist with unit tests.
+   * @return whether {@code SOURCE_WORKSPACE_ID} is valid.
+   */
+  protected boolean cloningArgumentsSafe(String sourceWorkspaceId) {
+    try {
+      UUID.fromString(sourceWorkspaceId);
+    } catch (IllegalArgumentException e) {
+      LOGGER.warn(
+          "SourceWorkspaceId could not be parsed, unable to clone DB. Provided SourceWorkspaceId: {}.",
+          sourceWorkspaceId);
+      return false;
     }
-    LOGGER.info("No SourceWorkspaceId found, initializing default schema.");
-    return false;
+
+    if (sourceWorkspaceId.equals(workspaceId)) {
+      LOGGER.warn("SourceWorkspaceId and current WorkspaceId can't be the same.");
+      return false;
+    }
+    return true;
   }
 
   /*
@@ -142,29 +150,28 @@ public class InstanceInitializerBean {
   a newly created (destination) workspace. WDS at start up will always have a current WorkspaceId, which in the
   context of cloning will effectively be the destination. The SourceWorkspaceId will only be populated if the currently
   starting WDS was initiated via a clone operation and will contain the WorkspaceId of the original workspace where the cloning
-  was triggered.
+  was triggered. initCloneMode() returns false only if we want to initialize a default schema.
   */
   private boolean initCloneMode() {
     LOGGER.info("Starting in clone mode...");
     UUID trackingId = UUID.randomUUID();
     Lock lock = lockRegistry.obtain(sourceWorkspaceId);
+    // Check if we have a clone safe sourceWorkspaceId. Create default schema if not
+    if (!cloningArgumentsSafe(sourceWorkspaceId)) {
+      return false;
+    }
+
     try {
       // Make sure it's safe to start cloning (in case another replica is trying to clone)
       boolean lockAquired = lock.tryLock(1, TimeUnit.SECONDS);
       if (!lockAquired) {
-        LOGGER.info("Failed to acquire lock in initCloneMode");
-        return false;
+        LOGGER.info("Failed to acquire lock in initCloneMode. Exiting clone mode.");
+        return true;
       }
 
-      // is a clone operation already running? This can happen when WDS is running with
-      // multiple replicas and another replica started first and has initiated the clone.
-      // It can also happen in a corner case where this replica restarted during the clone
-      // operation.
-      UUID sourceWorkspaceUuid = UUID.fromString(sourceWorkspaceId);
-      boolean cloneAlreadyRunning = cloneDao.cloneExistsForWorkspace(sourceWorkspaceUuid);
-      if (cloneAlreadyRunning) {
-        LOGGER.info("Clone already running, terminating initCloneMode");
-        return false;
+      // If another replica has started or completed cloning, exit safely
+      if (cloningStartedOrCompleted(UUID.fromString(sourceWorkspaceId))) {
+        return true;
       }
 
       // First, create an entry in the clone table to mark cloning has started
@@ -205,7 +212,7 @@ public class InstanceInitializerBean {
       LOGGER.error("An error occurred during clone mode. Error: {}", e.toString());
       // handle the interrupt if lock was interrupted
       if (e instanceof InterruptedException) {
-        LOGGER.error("Error with acquiring cloning/schema initialization Lock: {}", e.getMessage());
+        LOGGER.error("Error with acquiring cloning Lock: {}", e.getMessage());
         Thread.currentThread().interrupt();
       }
       try {
