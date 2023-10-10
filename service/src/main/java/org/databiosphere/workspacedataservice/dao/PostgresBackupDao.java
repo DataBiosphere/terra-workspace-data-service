@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import static org.databiosphere.workspacedataservice.shared.model.job.JobType.SYNCBACKUP;
+
 import bio.terra.common.db.WriteTransaction;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -18,8 +20,6 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
-
-import static org.databiosphere.workspacedataservice.shared.model.job.JobType.SYNCBACKUP;
 
 @Repository
 public class PostgresBackupDao extends AbstractBackupRestoreDao<BackupResponse> {
