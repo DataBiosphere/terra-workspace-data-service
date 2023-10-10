@@ -14,6 +14,8 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -241,6 +243,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       Optional<String> primaryKey,
       RecordRequest recordRequest) {
     // may make sense to create this at the class level vs each method
+    var startTime = Timestamp.from(Instant.now());
     var span =
         tracer
             .spanBuilder("RecordController-upsertSingleRecord")
@@ -266,8 +269,16 @@ public class RecordOrchestratorService { // TODO give me a better name
       // this will keep track of number of operations that were successful
       recordApiInvocations.add(1, Attributes.of(ATTR_VALID_N, true));
 
-      // add duration of api
-      // histogram.record(10.2, Attributes.builder().put("key", "value").build());
+      var endTime = Timestamp.from(Instant.now());
+      // add duration of api (in this example calculated manually)
+      // I spent a significant amount of time trying to figure out how to not do this manually
+      // what I learned is:
+      // span by default has a start and end time, but end time is not recorded until span is closed
+      // from what I can tell there is no easy way to get span start or end directly in code
+      // if it was, then I would not need to have a timer tracking how long something takes
+      histogram.record(
+          endTime.getTime() - startTime.getTime(),
+          Attributes.builder().put("ATTR_APICALL", "upsertSingleRecord").build());
 
       if (response.getStatusCode() == HttpStatus.CREATED) {
         activityLogger.saveEventForCurrentUser(
