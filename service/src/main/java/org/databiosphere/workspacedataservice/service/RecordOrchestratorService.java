@@ -62,6 +62,7 @@ public class RecordOrchestratorService { // TODO give me a better name
 
   private final TsvSupport tsvSupport;
 
+  // all Otel stuff
   private final OpenTelemetry openTelemetry;
   private final Tracer tracer;
   private final TextMapPropagator textMapPropagator;
@@ -69,7 +70,6 @@ public class RecordOrchestratorService { // TODO give me a better name
   private final LongCounter recordApiInvocations;
 
   private final DoubleHistogram histogram;
-
   private static final AttributeKey<String> ATTR_N = AttributeKey.stringKey("http.recordTypeName");
   private static final AttributeKey<String> ATTR_RESULT = AttributeKey.stringKey("http.result");
   private static final AttributeKey<String> ATTR_APICALL = AttributeKey.stringKey("http.apicall");
@@ -258,9 +258,12 @@ public class RecordOrchestratorService { // TODO give me a better name
               instanceId, recordType, recordId, primaryKey, recordRequest);
 
       // Set a span attribute to capture information about successful requests
+      // here we have access to actual status code
+      // this will help track actual status code response from the method
       span.setAttribute(ATTR_RESULT, response.getStatusCode().toString());
 
       // Counter to increment when a valid input is recorded
+      // this will keep track of number of operations that were successful
       recordApiInvocations.add(1, Attributes.of(ATTR_VALID_N, true));
 
       // add duration of api
@@ -276,16 +279,23 @@ public class RecordOrchestratorService { // TODO give me a better name
 
       return response;
     } catch (NewPrimaryKeyException e) {
-
       // Set a span attribute to capture information about error requests
       // currently the error response code does get captured but it is deep somewhere in the code
+      // for example in this case the response error code is defined in the specific exception file
+      // it may be possible to grab that exception value vs hardcoding it here
+      // we would only do this if we wanted to capture specific http status vs just success/fail
       span.setAttribute(ATTR_RESULT, HttpStatus.BAD_REQUEST.toString());
+      // Counter to increment when an invalid input is recorded
+      recordApiInvocations.add(1, Attributes.of(ATTR_VALID_N, false));
+      // the error otel event will not be captured
+      span.recordException(e).setStatus(StatusCode.ERROR, e.getMessage());
       throw e;
     } catch (Exception e) {
-      LOGGER.info(
-          "HELLLLLLLLLLLLLLLLLLLOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOo"
-              + e.toString());
       // Record the exception and set the span status
+      // althought currently it is a bit more tricky - since spring can set a response
+      // based on a type of exception and if we do not capture this specific exception in the catch
+      // here the error otel event will not be captured
+      // but say if we hit an unhandled error, then it would
       span.recordException(e).setStatus(StatusCode.ERROR, e.getMessage());
 
       // Counter to increment when an invalid input is recorded
@@ -296,7 +306,9 @@ public class RecordOrchestratorService { // TODO give me a better name
       // End the span
       span.end();
 
-      // histogram.record(span.getSpanContext().);
+      // if one could figure out how to get start and end of span, metric for how long api takes
+      // can be captured here
+      // histogram.record(...)
     }
   }
 

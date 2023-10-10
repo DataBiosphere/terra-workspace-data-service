@@ -8,9 +8,10 @@ import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.context.propagation.TextMapPropagator;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,6 +27,8 @@ import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.databiosphere.workspacedataservice.shared.model.TsvUploadResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -45,23 +48,32 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 @RestController
 public class RecordController {
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(RecordOrchestratorService.class);
   private final InstanceService instanceService;
   private final RecordOrchestratorService recordOrchestratorService;
 
+  // all otel stuff
+  // depending on what we want to track, we will have less or more of such
+  // at a minimum each class that tracks Otel stuff will need the client passed in
   private final OpenTelemetry openTelemetry;
-  private final Tracer tracer;
-  private final TextMapPropagator textMapPropagator;
 
+  // we will always need a tracer
+  private final Tracer tracer;
+
+  // this is for a specific metric that tracks how often something happens
+  // i.e. how many times a given api call is made
   private final LongCounter recordApiInvocations;
 
+  // this is for a specific metric that in this case will track how long it takes for
+  // an api call to complete. Historgram format allows for specifics graphs to be made
+  // in whatever system is used downstream
   private final DoubleHistogram histogram;
 
+  // attributes that will be used inside the otel logs and metrics
   private static final AttributeKey<String> ATTR_N = AttributeKey.stringKey("http.recordTypeName");
   private static final AttributeKey<String> ATTR_RESULT = AttributeKey.stringKey("http.result");
   private static final AttributeKey<Boolean> ATTR_VALID_N =
       AttributeKey.booleanKey("record.getSingleRecord");
-
   private static final AttributeKey<String> ATTR_APICALL = AttributeKey.stringKey("http.apicall");
 
   public RecordController(
@@ -72,7 +84,8 @@ public class RecordController {
     this.recordOrchestratorService = recordOrchestratorService;
     this.openTelemetry = openTelemetry;
     this.tracer = openTelemetry.getTracer(Controller.class.getName());
-    this.textMapPropagator = openTelemetry.getPropagators().getTextMapPropagator();
+
+    // these are specific to metrics (different from spans/traces)
     Meter meter = openTelemetry.getMeter(Controller.class.getName());
     recordApiInvocations =
         meter
@@ -109,15 +122,21 @@ public class RecordController {
       @PathVariable("version") String version,
       @PathVariable("recordType") RecordType recordType,
       @PathVariable("recordId") String recordId) {
-    // may make more sense to create this in the controller class vs in each api
+    // define span for this scope using main tracer
+    var startTime = Timestamp.from(Instant.now());
     var span =
         tracer
-            .spanBuilder("RecordController")
+            // set span scope (tracer has been scoped to this class)
+            .spanBuilder("getSingleRecord")
+            // alternatively you can also set a span attribute to capture which api call this is
+            // likely there is a better way to capture this not in a string that repeats a few times
+            .setAttribute(ATTR_APICALL, "getSingleRecord")
+            // set an attribute for the name of the record
             .setAttribute(ATTR_N, recordType.getName())
+            // other attributes that we could set could be: instance Id, version, etc
             .startSpan();
-    // Set a span attribute to capture which api call this is
-    span.setAttribute(ATTR_APICALL, "upsertSingleRecord");
 
+    // basic events can also be added if desired
     span.addEvent("getSingleRecord is called. ");
 
     try (var scope = span.makeCurrent()) {
@@ -129,16 +148,30 @@ public class RecordController {
       // Counter to increment when a valid input is recorded
       recordApiInvocations.add(1, Attributes.of(ATTR_VALID_N, true));
 
-      // add duration of api
-      histogram.record(10.2, Attributes.builder().put("key", "value").build());
-
       // Set a span attribute to capture information about successful requests
-      // response status code not available here :/
+      // response status code not available here since it is being set somewhere downstream :/
+      // this captures number of successful calls
       span.setAttribute(ATTR_RESULT, HttpStatus.OK.toString());
 
+      var endTime = Timestamp.from(Instant.now());
+      // add duration of api (in this example calculated manually)
+      // I spent a significant amount of time trying to figure out how to not do this manually
+      // what I learned is:
+      // span by default has a start and end time, but end time is not recorded until span is closed
+      // from what I can tell there is no easy way to get span start or end directly in code
+      // if it was, then I would not need to have a timer tracking how long something takes
+      histogram.record(
+          endTime.getTime() - startTime.getTime(),
+          Attributes.builder().put("ATTR_APICALL", "getSingleRecord").build());
       return new ResponseEntity<>(response, HttpStatus.OK);
     } catch (MissingObjectException e) {
       // Record the exception and set the span status
+      // this captures number of error calls
+      // althought currently it is a bit more tricky - since spring can set a response
+      // based on a type of exception and if we do not capture this specific exception in the catch
+      // here the error otel event will not be captured
+      // we would only do this if we wanted to capture specific http status vs just success/fail
+      span.setAttribute(ATTR_RESULT, HttpStatus.BAD_REQUEST.toString());
       span.recordException(e).setStatus(StatusCode.ERROR, e.getMessage());
       // Counter to increment when an invalid input is recorded
       recordApiInvocations.add(1, Attributes.of(ATTR_VALID_N, false));
@@ -149,7 +182,9 @@ public class RecordController {
       // End the span
       span.end();
 
-      // histogram.record(span.getSpanContext().);
+      // if one could figure out how to get start and end of span, metric for how long api takes
+      // can be captured here
+      // histogram.record(...)
     }
   }
 
