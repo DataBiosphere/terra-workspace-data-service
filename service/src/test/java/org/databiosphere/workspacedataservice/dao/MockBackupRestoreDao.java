@@ -9,6 +9,7 @@ import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
 import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
+import org.databiosphere.workspacedataservice.shared.model.job.EmptyJobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -17,7 +18,7 @@ import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 public class MockBackupRestoreDao<T extends JobResult> implements BackupRestoreDao<T> {
 
   // backing "database" for this mock
-  private final Set<Job<T>> entries = ConcurrentHashMap.newKeySet();
+  private final Set<Job<EmptyJobInput, T>> entries = ConcurrentHashMap.newKeySet();
 
   private final CloneTable table;
 
@@ -26,7 +27,7 @@ public class MockBackupRestoreDao<T extends JobResult> implements BackupRestoreD
   }
 
   @Override
-  public Job<T> getStatus(UUID trackingId) {
+  public Job<EmptyJobInput, T> getStatus(UUID trackingId) {
     return entries.stream()
         .filter(backupInList -> backupInList.getJobId() == trackingId)
         .findFirst()
@@ -38,26 +39,28 @@ public class MockBackupRestoreDao<T extends JobResult> implements BackupRestoreD
     Timestamp now = Timestamp.from(Instant.now());
     if (table.equals(CloneTable.BACKUP)) {
       var metadata = new BackupResponse("", request.requestingWorkspaceId(), request.description());
-      Job<BackupResponse> backup =
+      Job<EmptyJobInput, BackupResponse> backup =
           new Job<>(
               trackingId,
               JobStatus.QUEUED,
               "",
               now.toLocalDateTime(),
               now.toLocalDateTime(),
+              new EmptyJobInput(),
               metadata);
-      entries.add((Job<T>) backup);
+      entries.add((Job<EmptyJobInput, T>) backup);
     } else {
       var metadata = new RestoreResponse(request.requestingWorkspaceId(), request.description());
-      Job<RestoreResponse> restore =
+      Job<EmptyJobInput, RestoreResponse> restore =
           new Job<>(
               trackingId,
               JobStatus.QUEUED,
               "",
               now.toLocalDateTime(),
               now.toLocalDateTime(),
+              new EmptyJobInput(),
               metadata);
-      entries.add((Job<T>) restore);
+      entries.add((Job<EmptyJobInput, T>) restore);
     }
   }
 

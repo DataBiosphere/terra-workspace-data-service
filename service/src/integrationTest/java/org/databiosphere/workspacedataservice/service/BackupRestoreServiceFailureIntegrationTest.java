@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
+import org.databiosphere.workspacedataservice.shared.model.job.EmptyJobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,7 @@ public class BackupRestoreServiceFailureIntegrationTest {
 
   @Test
   void testRestoreAzureWDSErrorHandling() {
-    Job<RestoreResponse> response =
+    Job<EmptyJobInput, RestoreResponse> response =
         backupRestoreService.restoreAzureWDS("v0.2", "backup.sql", UUID.randomUUID(), "");
     // will fail because twds.pg_dump.host is blank
     assertSame(JobStatus.ERROR, response.getStatus());

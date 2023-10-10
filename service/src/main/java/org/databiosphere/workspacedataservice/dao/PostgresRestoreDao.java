@@ -11,6 +11,7 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
 import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
+import org.databiosphere.workspacedataservice.shared.model.job.EmptyJobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.springframework.jdbc.core.RowMapper;
@@ -30,9 +31,9 @@ public class PostgresRestoreDao extends AbstractBackupRestoreDao<RestoreResponse
   }
 
   @Override
-  public Job<RestoreResponse> getStatus(UUID trackingId) {
+  public Job<EmptyJobInput, RestoreResponse> getStatus(UUID trackingId) {
     MapSqlParameterSource params = new MapSqlParameterSource("trackingId", trackingId);
-    List<Job<RestoreResponse>> responses =
+    List<Job<EmptyJobInput, RestoreResponse>> responses =
         namedTemplate.query(
             "select id, status, error, createdtime, updatedtime, requester, description from sys_wds.restore WHERE id = :trackingId",
             params,
@@ -66,9 +67,11 @@ public class PostgresRestoreDao extends AbstractBackupRestoreDao<RestoreResponse
   }
 
   // rowmapper for retrieving Job<RestoreResponse> objects from the db
-  private static class RestoreJobRowMapper implements RowMapper<Job<RestoreResponse>> {
+  private static class RestoreJobRowMapper
+      implements RowMapper<Job<EmptyJobInput, RestoreResponse>> {
     @Override
-    public Job<RestoreResponse> mapRow(ResultSet rs, int rowNum) throws SQLException {
+    public Job<EmptyJobInput, RestoreResponse> mapRow(ResultSet rs, int rowNum)
+        throws SQLException {
       String description = rs.getString("description");
       UUID requester = rs.getObject("requester", UUID.class);
       RestoreResponse restoreResponse = new RestoreResponse(requester, description);
@@ -89,7 +92,8 @@ public class PostgresRestoreDao extends AbstractBackupRestoreDao<RestoreResponse
       LocalDateTime created = rs.getTimestamp("createdtime").toLocalDateTime();
       LocalDateTime updated = rs.getTimestamp("updatedtime").toLocalDateTime();
 
-      return new Job<>(jobId, status, errorMessage, created, updated, restoreResponse);
+      return new Job<>(
+          jobId, status, errorMessage, created, updated, new EmptyJobInput(), restoreResponse);
     }
   }
 }

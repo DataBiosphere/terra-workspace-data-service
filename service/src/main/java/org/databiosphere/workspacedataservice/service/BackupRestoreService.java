@@ -20,6 +20,7 @@ import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
+import org.databiosphere.workspacedataservice.shared.model.job.EmptyJobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.storage.BackUpFileStorage;
@@ -86,7 +87,7 @@ public class BackupRestoreService {
     this.activityLogger = activityLogger;
   }
 
-  public Job<BackupResponse> checkBackupStatus(UUID trackingId) {
+  public Job<EmptyJobInput, BackupResponse> checkBackupStatus(UUID trackingId) {
     var backupJob = backupDao.getStatus(trackingId);
 
     if (backupJob == null) {
@@ -96,11 +97,11 @@ public class BackupRestoreService {
     return backupJob;
   }
 
-  public Job<CloneResponse> checkCloneStatus() {
+  public Job<EmptyJobInput, CloneResponse> checkCloneStatus() {
     return cloneDao.getCloneStatus();
   }
 
-  public Job<BackupResponse> backupAzureWDS(
+  public Job<EmptyJobInput, BackupResponse> backupAzureWDS(
       String version, UUID trackingId, BackupRestoreRequest backupRestoreRequest) {
     try {
       validateVersion(version);
@@ -146,7 +147,7 @@ public class BackupRestoreService {
     return backupDao.getStatus(trackingId);
   }
 
-  public Job<RestoreResponse> restoreAzureWDS(
+  public Job<EmptyJobInput, RestoreResponse> restoreAzureWDS(
       String version, String backupFileName, UUID trackingId, String startupToken) {
     validateVersion(version);
     boolean doCleanup = false;

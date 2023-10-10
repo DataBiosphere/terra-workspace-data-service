@@ -9,16 +9,18 @@ import java.util.UUID;
  * before completing. Different jobs can specify different JobResult implementations to satisfy
  * their own response payloads.
  *
- * @param <T> the response payload for this job.
+ * @param <T> the input arguments for this job.
+ * @param <U> the response payload for this job.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class Job<T extends JobResult> {
+public class Job<T extends JobInput, U extends JobResult> {
 
   private UUID jobId;
   private JobStatus status;
   private String errorMessage;
   private LocalDateTime created, updated;
-  private T result;
+  private final T input;
+  private U result;
 
   public Job(
       UUID jobId,
@@ -26,12 +28,14 @@ public class Job<T extends JobResult> {
       String errorMessage,
       LocalDateTime created,
       LocalDateTime updated,
-      T result) {
+      T input,
+      U result) {
     this.jobId = jobId;
     this.status = status;
     this.errorMessage = errorMessage;
     this.created = created;
     this.updated = updated;
+    this.input = input;
     this.result = result;
   }
 
@@ -77,11 +81,15 @@ public class Job<T extends JobResult> {
     this.updated = updated;
   }
 
-  public T getResult() {
+  public T getInput() {
+    return input;
+  }
+
+  public U getResult() {
     return result;
   }
 
-  public void setResult(T result) {
+  public void setResult(U result) {
     this.result = result;
   }
 }

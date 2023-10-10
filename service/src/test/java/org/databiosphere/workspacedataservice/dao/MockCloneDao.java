@@ -11,12 +11,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
+import org.databiosphere.workspacedataservice.shared.model.job.EmptyJobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 
 /** Mock implementation of CloneDao that is in-memory instead of requiring Postgres */
 public class MockCloneDao implements CloneDao {
-  private final Set<Job<CloneResponse>> clone = ConcurrentHashMap.newKeySet();
+  private final Set<Job<EmptyJobInput, CloneResponse>> clone = ConcurrentHashMap.newKeySet();
 
   public MockCloneDao() {
     super();
@@ -32,7 +33,8 @@ public class MockCloneDao implements CloneDao {
   public void createCloneEntry(UUID trackingId, UUID sourceWorkspaceId) {
     LocalDateTime now = Timestamp.from(Instant.now()).toLocalDateTime();
     var cloneEntry = new CloneResponse(sourceWorkspaceId, CloneStatus.BACKUPQUEUED);
-    Job<CloneResponse> jobEntry = new Job<>(trackingId, JobStatus.QUEUED, "", now, now, cloneEntry);
+    Job<EmptyJobInput, CloneResponse> jobEntry =
+        new Job<>(trackingId, JobStatus.QUEUED, "", now, now, new EmptyJobInput(), cloneEntry);
     clone.add(jobEntry);
   }
 
@@ -62,11 +64,11 @@ public class MockCloneDao implements CloneDao {
   }
 
   @Override
-  public Job<CloneResponse> getCloneStatus() {
+  public Job<EmptyJobInput, CloneResponse> getCloneStatus() {
     return clone.stream().max(Comparator.comparing(Job::getUpdated)).orElse(null);
   }
 
-  private Job<CloneResponse> findCloneEntry(UUID trackingId) {
+  private Job<EmptyJobInput, CloneResponse> findCloneEntry(UUID trackingId) {
     return clone.stream()
         .filter(entry -> entry.getJobId().equals(trackingId))
         .findFirst()

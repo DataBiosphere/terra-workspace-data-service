@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
+import org.databiosphere.workspacedataservice.shared.model.job.EmptyJobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.slf4j.Logger;
@@ -121,8 +122,8 @@ public class PostgresCloneDao implements CloneDao {
     that the following workspace was not created from a clone.
   */
   @Override
-  public Job<CloneResponse> getCloneStatus() {
-    List<Job<CloneResponse>> responses =
+  public Job<EmptyJobInput, CloneResponse> getCloneStatus() {
+    List<Job<EmptyJobInput, CloneResponse>> responses =
         namedTemplate.query(
             "select id, status, error, createdtime, updatedtime, sourceworkspaceid, clonestatus from sys_wds.clone",
             new PostgresCloneDao.CloneJobRowMapper());
@@ -137,9 +138,9 @@ public class PostgresCloneDao implements CloneDao {
   }
 
   // rowmapper for retrieving Job<CloneResponse> objects from the db
-  private static class CloneJobRowMapper implements RowMapper<Job<CloneResponse>> {
+  private static class CloneJobRowMapper implements RowMapper<Job<EmptyJobInput, CloneResponse>> {
     @Override
-    public Job<CloneResponse> mapRow(ResultSet rs, int rowNum) throws SQLException {
+    public Job<EmptyJobInput, CloneResponse> mapRow(ResultSet rs, int rowNum) throws SQLException {
       UUID sourceWorkspaceId = rs.getObject("sourceworkspaceid", UUID.class);
       CloneStatus cloneStatus = CloneStatus.UNKNOWN;
       String cloneStatusString = rs.getString("clonestatus");
@@ -170,7 +171,8 @@ public class PostgresCloneDao implements CloneDao {
       LocalDateTime created = rs.getTimestamp("createdtime").toLocalDateTime();
       LocalDateTime updated = rs.getTimestamp("updatedtime").toLocalDateTime();
 
-      return new Job<>(jobId, status, errorMessage, created, updated, cloneResponse);
+      return new Job<>(
+          jobId, status, errorMessage, created, updated, new EmptyJobInput(), cloneResponse);
     }
   }
 }

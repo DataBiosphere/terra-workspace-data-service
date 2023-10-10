@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
+import org.databiosphere.workspacedataservice.shared.model.job.EmptyJobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -31,7 +32,7 @@ public class AbstractBackupRestoreDao<T extends JobResult> implements BackupRest
 
   protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractBackupRestoreDao.class);
 
-  public Job<T> getStatus(UUID trackingId) {
+  public Job<EmptyJobInput, T> getStatus(UUID trackingId) {
     return null;
   }
 

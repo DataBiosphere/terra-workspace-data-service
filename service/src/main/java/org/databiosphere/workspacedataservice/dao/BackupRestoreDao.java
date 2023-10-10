@@ -2,12 +2,13 @@ package org.databiosphere.workspacedataservice.dao;
 
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
+import org.databiosphere.workspacedataservice.shared.model.job.EmptyJobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 
 public interface BackupRestoreDao<T extends JobResult> {
-  Job<T> getStatus(UUID trackingId);
+  Job<EmptyJobInput, T> getStatus(UUID trackingId);
 
   void createEntry(UUID trackingId, BackupRestoreRequest BackupRestoreRequest);
 

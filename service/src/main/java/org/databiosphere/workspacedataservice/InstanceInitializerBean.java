@@ -13,6 +13,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.CloningExc
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
+import org.databiosphere.workspacedataservice.shared.model.job.EmptyJobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
@@ -222,7 +223,7 @@ public class InstanceInitializerBean {
     }
   }
 
-  private Job<CloneResponse> currentCloneStatus(UUID trackingId) {
+  private Job<EmptyJobInput, CloneResponse> currentCloneStatus(UUID trackingId) {
     var cloneStatus = cloneDao.getCloneStatus();
     if (cloneStatus == null) {
       throw new CloningException("Unexpected error: clone status was null.");
