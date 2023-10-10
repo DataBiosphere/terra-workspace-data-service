@@ -48,7 +48,6 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 @RestController
 public class RecordController {
-  private static final Logger LOGGER = LoggerFactory.getLogger(RecordOrchestratorService.class);
   private final InstanceService instanceService;
   private final RecordOrchestratorService recordOrchestratorService;
 
