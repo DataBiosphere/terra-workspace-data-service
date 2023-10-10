@@ -16,6 +16,7 @@ import java.util.UUID;
 public class Job<T extends JobInput, U extends JobResult> {
 
   private final UUID jobId;
+  private final JobType jobType;
   private JobStatus status;
   private String errorMessage;
   private LocalDateTime created, updated;
@@ -24,6 +25,7 @@ public class Job<T extends JobInput, U extends JobResult> {
 
   public Job(
       UUID jobId,
+      JobType jobType,
       JobStatus status,
       String errorMessage,
       LocalDateTime created,
@@ -31,6 +33,7 @@ public class Job<T extends JobInput, U extends JobResult> {
       T input,
       U result) {
     this.jobId = jobId;
+    this.jobType = jobType;
     this.status = status;
     this.errorMessage = errorMessage;
     this.created = created;
@@ -51,6 +54,10 @@ public class Job<T extends JobInput, U extends JobResult> {
 
   public UUID getJobId() {
     return jobId;
+  }
+
+  public JobType getJobType() {
+    return jobType;
   }
 
   public String getErrorMessage() {

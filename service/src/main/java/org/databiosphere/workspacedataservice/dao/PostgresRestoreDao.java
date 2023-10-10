@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import static org.databiosphere.workspacedataservice.shared.model.job.JobType.SYNCRESTORE;
+
 import bio.terra.common.db.WriteTransaction;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -93,7 +95,14 @@ public class PostgresRestoreDao extends AbstractBackupRestoreDao<RestoreResponse
       LocalDateTime updated = rs.getTimestamp("updatedtime").toLocalDateTime();
 
       return new Job<>(
-          jobId, status, errorMessage, created, updated, new EmptyJobInput(), restoreResponse);
+          jobId,
+          SYNCRESTORE,
+          status,
+          errorMessage,
+          created,
+          updated,
+          new EmptyJobInput(),
+          restoreResponse);
     }
   }
 }

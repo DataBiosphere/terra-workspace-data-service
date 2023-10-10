@@ -19,6 +19,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import static org.databiosphere.workspacedataservice.shared.model.job.JobType.SYNCBACKUP;
+
 @Repository
 public class PostgresBackupDao extends AbstractBackupRestoreDao<BackupResponse> {
 
@@ -92,7 +94,14 @@ public class PostgresBackupDao extends AbstractBackupRestoreDao<BackupResponse> 
       LocalDateTime updated = rs.getTimestamp("updatedtime").toLocalDateTime();
 
       return new Job<>(
-          jobId, status, errorMessage, created, updated, new EmptyJobInput(), backupResponse);
+          jobId,
+          SYNCBACKUP,
+          status,
+          errorMessage,
+          created,
+          updated,
+          new EmptyJobInput(),
+          backupResponse);
     }
   }
 }

@@ -1,5 +1,8 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import static org.databiosphere.workspacedataservice.shared.model.job.JobType.SYNCBACKUP;
+import static org.databiosphere.workspacedataservice.shared.model.job.JobType.SYNCRESTORE;
+
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Set;
@@ -42,6 +45,7 @@ public class MockBackupRestoreDao<T extends JobResult> implements BackupRestoreD
       Job<EmptyJobInput, BackupResponse> backup =
           new Job<>(
               trackingId,
+              SYNCBACKUP,
               JobStatus.QUEUED,
               "",
               now.toLocalDateTime(),
@@ -54,6 +58,7 @@ public class MockBackupRestoreDao<T extends JobResult> implements BackupRestoreD
       Job<EmptyJobInput, RestoreResponse> restore =
           new Job<>(
               trackingId,
+              SYNCRESTORE,
               JobStatus.QUEUED,
               "",
               now.toLocalDateTime(),
