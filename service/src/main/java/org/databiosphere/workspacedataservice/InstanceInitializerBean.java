@@ -86,7 +86,7 @@ public class InstanceInitializerBean {
           workspaceId);
       // Initialize default schema if initCloneMode() returns false.
       if (initCloneMode()) {
-        LOGGER.info("Exited cloning.");
+        LOGGER.info("Cloning complete.");
         return;
       }
       LOGGER.info("Cloning failed, falling back to initialize default schema.");
@@ -165,7 +165,9 @@ public class InstanceInitializerBean {
       // If there's a clone entry and no default schema, another replica errored before completing.
       // If there's a clone entry and a default schema there's nothing for us to do here.
       if (cloningStarted(UUID.fromString(sourceWorkspaceId))) {
-        return instanceDao.instanceSchemaExists(UUID.fromString(workspaceId)) ? true : false;
+        boolean instanceExists =  instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
+        LOGGER.info("Previous clone entry found. Instance schema exists: {}.", instanceExists);
+        return instanceExists;
       }
 
       // First, create an entry in the clone table to mark cloning has started
