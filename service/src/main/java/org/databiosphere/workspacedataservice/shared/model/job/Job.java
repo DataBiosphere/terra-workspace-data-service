@@ -15,7 +15,7 @@ import java.util.UUID;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Job<T extends JobInput, U extends JobResult> {
 
-  private UUID jobId;
+  private final UUID jobId;
   private JobStatus status;
   private String errorMessage;
   private LocalDateTime created, updated;
@@ -51,10 +51,6 @@ public class Job<T extends JobInput, U extends JobResult> {
 
   public UUID getJobId() {
     return jobId;
-  }
-
-  public void setJobId(UUID jobId) {
-    this.jobId = jobId;
   }
 
   public String getErrorMessage() {
