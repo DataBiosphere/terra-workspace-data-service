@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.controller;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.DoubleHistogram;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.StatusCode;
@@ -54,10 +55,14 @@ public class RecordController {
 
   private final LongCounter recordApiInvocations;
 
-  private static final AttributeKey<String> ATTR_N = AttributeKey.stringKey("http.record");
-  private static final AttributeKey<Long> ATTR_RESULT = AttributeKey.longKey("http.result");
+  private final DoubleHistogram histogram;
+
+  private static final AttributeKey<String> ATTR_N = AttributeKey.stringKey("http.recordTypeName");
+  private static final AttributeKey<String> ATTR_RESULT = AttributeKey.stringKey("http.result");
   private static final AttributeKey<Boolean> ATTR_VALID_N =
       AttributeKey.booleanKey("record.getSingleRecord");
+
+  private static final AttributeKey<String> ATTR_APICALL = AttributeKey.stringKey("http.apicall");
 
   public RecordController(
       InstanceService instanceService,
@@ -73,6 +78,13 @@ public class RecordController {
         meter
             .counterBuilder("record.invocations")
             .setDescription("Measures the number of times the getSingleRecord api is invoked.")
+            .build();
+
+    histogram =
+        meter
+            .histogramBuilder("record.requestTime")
+            .setDescription("Measures how long a given records request takes. ")
+            .setUnit("ms")
             .build();
   }
 
@@ -97,25 +109,47 @@ public class RecordController {
       @PathVariable("version") String version,
       @PathVariable("recordType") RecordType recordType,
       @PathVariable("recordId") String recordId) {
+    // may make more sense to create this in the controller class vs in each api
     var span =
         tracer
             .spanBuilder("RecordController")
             .setAttribute(ATTR_N, recordType.getName())
             .startSpan();
+    // Set a span attribute to capture which api call this is
+    span.setAttribute(ATTR_APICALL, "upsertSingleRecord");
+
+    span.addEvent("getSingleRecord is called. ");
+
     try (var scope = span.makeCurrent()) {
+      // in here to experiment with how duration is being recorded
+      Thread.sleep(5000);
       RecordResponse response =
           recordOrchestratorService.getSingleRecord(instanceId, version, recordType, recordId);
-      span.setAttribute(ATTR_RESULT, HttpStatus.OK.value());
+
+      // Counter to increment when a valid input is recorded
       recordApiInvocations.add(1, Attributes.of(ATTR_VALID_N, true));
-      
+
+      // add duration of api
+      histogram.record(10.2, Attributes.builder().put("key", "value").build());
+
+      // Set a span attribute to capture information about successful requests
+      // response status code not available here :/
+      span.setAttribute(ATTR_RESULT, HttpStatus.OK.toString());
+
       return new ResponseEntity<>(response, HttpStatus.OK);
     } catch (MissingObjectException e) {
-      recordApiInvocations.add(1, Attributes.of(ATTR_VALID_N, false));
+      // Record the exception and set the span status
       span.recordException(e).setStatus(StatusCode.ERROR, e.getMessage());
+      // Counter to increment when an invalid input is recorded
+      recordApiInvocations.add(1, Attributes.of(ATTR_VALID_N, false));
       throw e;
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
     } finally {
       // End the span
       span.end();
+
+      // histogram.record(span.getSpanContext().);
     }
   }
 
