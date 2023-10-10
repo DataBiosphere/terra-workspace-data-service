@@ -19,6 +19,7 @@ public class Job<T extends JobInput, U extends JobResult> {
   private final JobType jobType;
   private JobStatus status;
   private String errorMessage;
+  private StackTraceElement[] stackTrace;
   private LocalDateTime created, updated;
   private final T input;
   private U result;
@@ -66,6 +67,14 @@ public class Job<T extends JobInput, U extends JobResult> {
 
   public void setErrorMessage(String errorMessage) {
     this.errorMessage = errorMessage;
+  }
+
+  public StackTraceElement[] getStackTrace() {
+    return stackTrace;
+  }
+
+  public void setStackTrace(StackTraceElement[] stackTrace) {
+    this.stackTrace = stackTrace;
   }
 
   public LocalDateTime getCreated() {
