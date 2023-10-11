@@ -22,6 +22,8 @@ tags:
     description: Record APIs
   - name: Import
     description: Import APIs
+  - name: Job
+    description: Job APIs
   - name: Instances
     description: Instance APIs
   - name: Schema
@@ -336,6 +338,12 @@ paths:
   /{instanceUuid}/import/v1:
     # OpenApi requires "/" to be replaced with "~1" in the path being referenced
     $ref: 'apis-v1.yaml#/paths/~1{instanceUuid}~1import~1v1'
+
+  ##############################
+  # Job APIs
+  ##############################
+  /{instanceUuid}/job/v1/{jobId}:
+    $ref: 'apis-v1.yaml#/paths/~1{instanceUuid}~1job~1v1~1{jobId}'
 
   ##############################
   # Instances APIs
@@ -878,27 +886,7 @@ components:
         commit:
           $ref: '#/components/schemas/commit'
     Job:
-      type: object
-      required:
-        - jobId
-        - jobType
-        - status
-        - created
-        - updated
-      properties:
-        jobId:
-          type: string
-        jobType:
-          type: string
-        status:
-          type: string
-          enum: [ QUEUED, RUNNING, SUCCEEDED, ERROR, CANCELLED, UNKNOWN ]
-        created:
-          type: string
-        updated:
-          type: string
-        errorMessage:
-          type: string
+      $ref: 'apis-v1.yaml#/components/schemas/Job'
     RecordAttributes:
       type: object
       additionalProperties: true
