@@ -127,8 +127,7 @@ public class InstanceInitializerBean {
         UUID.fromString(sourceWorkspaceId);
       } catch (IllegalArgumentException e) {
         LOGGER.warn(
-            "SourceWorkspaceId could not be parsed, unable to clone DB. Provided SourceWorkspaceId: {}.",
-            sourceWorkspaceId);
+            "SourceWorkspaceId {} could not be parsed, unable to clone DB.", sourceWorkspaceId);
         return false;
       }
 
@@ -138,7 +137,7 @@ public class InstanceInitializerBean {
       }
       return true;
     }
-    LOGGER.info("No SourceWorkspaceId found, initializing default schema.");
+    LOGGER.info("No SourceWorkspaceId found, unable to proceed with cloning.");
     return false;
   }
 
@@ -165,7 +164,7 @@ public class InstanceInitializerBean {
       // If there's a clone entry and no default schema, another replica errored before completing.
       // If there's a clone entry and a default schema there's nothing for us to do here.
       if (cloningStarted(UUID.fromString(sourceWorkspaceId))) {
-        boolean instanceExists =  instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
+        boolean instanceExists = instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
         LOGGER.info("Previous clone entry found. Instance schema exists: {}.", instanceExists);
         return instanceExists;
       }
@@ -303,7 +302,6 @@ public class InstanceInitializerBean {
           cloneJobId, restoreResponse.getErrorMessage(), CloneTable.RESTORE);
     } else {
       LOGGER.info("Restore Successful");
-      LOGGER.info("Cloning Complete");
       cloneDao.updateCloneEntryStatus(cloneJobId, CloneStatus.RESTORESUCCEEDED);
     }
   }
@@ -325,8 +323,7 @@ public class InstanceInitializerBean {
 
     } catch (IllegalArgumentException e) {
       LOGGER.warn(
-          "Workspace id could not be parsed, a default schema won't be created. Provided id: {}.",
-          workspaceId);
+          "Workspace id {} could not be parsed, a default schema won't be created.", workspaceId);
     } catch (DataAccessException e) {
       LOGGER.error("Failed to create default schema id for workspaceId {}.", workspaceId);
     }
