@@ -1,7 +1,7 @@
 sentry:
   samurl: http://localhost:9889
 
-datarepourl: https://jade.datarepo-dev.broadinstitute.org222/
+datarepourl: https://jade.datarepo-dev.broadinstitute.org/
 workspacemanagerurl: https://workspace.dsde-dev.broadinstitute.org/
 leoUrl: https://leonardo.dsde-dev.broadinstitute.org/
 
