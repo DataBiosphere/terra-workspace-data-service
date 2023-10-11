@@ -182,6 +182,14 @@ To run a single test, run
 ./gradlew test --tests '*RecordDaoTest.testGetSingleRecord'
 ```
 
+## Postgres
+
+When running the local docker postgres, you can access the shell directly:
+
+```bash
+./local-dev/run_posgres.sh shell
+```
+
 ## Swagger UI
 
 When running locally, a Swagger UI is available at http://localhost:8080/swagger/swagger-ui.html.
