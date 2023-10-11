@@ -4,6 +4,7 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.JobApi;
 import org.databiosphere.workspacedataservice.service.JobService;
+import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,12 +23,9 @@ public class JobController implements JobApi {
   public ResponseEntity<GenericJobServerModel> jobStatusV1(UUID instanceUuid, UUID jobId) {
     GenericJobServerModel job = jobService.getJob(instanceUuid, jobId);
 
-    // return job status, 200 if job is completed and 202 if job is still running
-    HttpStatus responseCode = HttpStatus.ACCEPTED;
-    if (job.getStatus() == GenericJobServerModel.StatusEnum.SUCCEEDED
-        || job.getStatus() == GenericJobServerModel.StatusEnum.ERROR) {
-      responseCode = HttpStatus.OK;
-    }
+    // return job status, 200 if job is completed, 202 if job is still running, and 500 if
+    // we can't determine
+    HttpStatus responseCode = JobStatus.fromGeneratedModel(job.getStatus()).httpCode();
 
     return new ResponseEntity<>(job, responseCode);
   }
