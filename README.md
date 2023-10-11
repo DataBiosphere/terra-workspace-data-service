@@ -37,9 +37,22 @@ Instead use the `run_postgres.sh` script to set up a docker container running po
 
 #### Environment Variables
 
-For WDS to work properly, several environment variables are expected.
-These should be configured before running WDS.
-You may want to add them to your `~/.zshrc` or similar shell profile.
+For WDS to work properly, a spring profile needs to be set so that several environment variables are populated correctly.
+
+To run WDS locally and therefore use the local application properties, set the profile the following way: 
+
+```bash
+export spring_profiles_active=local
+```
+
+Other profiles that are available are: 
+- dev
+- prod
+- bee
+
+You are unlikely to use prod and bee when running locally, those profiles are leveraged when WDS is deployed in Terra. 
+
+If you would like to not use a profile, you can set the following enviorment variables manually. The variables that need to be set are described below. 
 
 ##### SAM_URL
 
@@ -86,7 +99,6 @@ of a workspace you own, e.g.
 
 ```
 export WORKSPACE_ID=123e4567-e89b-12d3-a456-426614174000
-```
 
 ## Running
 
@@ -109,7 +121,7 @@ environment variable WDS will use on the next startup to connect to Sam.
 ```bash
 # start the SAM mock as a docker container in detached mode
 docker run -v `pwd`/service/src/test/resources/nginx.conf:/etc/nginx/nginx.conf -p 9889:80 -d nginx:1.23.3
-export SAM_URL=http://localhost:9889
+export SAM_URL=http://localhost:9889 # this is automatically set if you set the profile to "local"
 ```
 
 To run WDS locally, you can either use the command line:
