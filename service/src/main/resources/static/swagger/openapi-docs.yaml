@@ -683,6 +683,9 @@ components:
         - $ref: '#/components/schemas/Job'
         - type: object
           properties:
+            input:
+              type: object
+              description: Input arguments; expected to be empty.
             result:
               $ref: '#/components/schemas/BackupResponse'
     BackupResponse:
@@ -762,6 +765,9 @@ components:
         - $ref: '#/components/schemas/Job'
         - type: object
           properties:
+            input:
+              type: object
+              description: Input arguments; expected to be empty.
             result:
               $ref: '#/components/schemas/CloneResponse'
     CloneResponse:
@@ -875,11 +881,14 @@ components:
       type: object
       required:
         - jobId
+        - jobType
         - status
         - created
         - updated
       properties:
         jobId:
+          type: string
+        jobType:
           type: string
         status:
           type: string
@@ -889,8 +898,6 @@ components:
         updated:
           type: string
         errorMessage:
-          type: string
-        exception:
           type: string
     RecordAttributes:
       type: object
