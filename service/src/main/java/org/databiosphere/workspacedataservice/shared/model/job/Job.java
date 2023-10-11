@@ -24,7 +24,7 @@ public class Job<T extends JobInput, U extends JobResult> {
   /** status of the job; {@link JobStatus} */
   private JobStatus status;
 
-  /** Short error message, if this job hit an exception. Designed to displayed to end users. */
+  /** Short error message, if this job hit an exception. Designed to be displayed to end users. */
   private String errorMessage;
 
   /**
