@@ -25,7 +25,7 @@ import javax.annotation.Generated;
 
 @Schema(name = "GenericJob", description = "Generic representation of a job, no opinion on inputs and result for the job. See individual APIs for more guidance on expected input and result payloads. ")
 @JsonTypeName("GenericJob")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2023-10-11T13:32:49.869913-04:00[America/New_York]")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2023-10-11T14:03:18.633855-04:00[America/New_York]")
 public class GenericJobServerModel {
 
   private UUID jobId;
