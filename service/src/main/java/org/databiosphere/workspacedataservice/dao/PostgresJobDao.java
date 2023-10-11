@@ -40,6 +40,7 @@ public class PostgresJobDao implements JobDao {
       } catch (JsonProcessingException e) {
         // for now, fail silently. If/when we have any inputs that are required,
         // this should rethrow an exception instead of swallowing it
+        // TODO: this will soon need to be a failure
         logger.error(
             "Error serializing inputs to jsonb for job {}: {}", job.getJobId(), e.getMessage());
       }
@@ -71,37 +72,54 @@ public class PostgresJobDao implements JobDao {
     return this.updateStatus(jobId, status, errorMessage, null);
   }
 
+  /**
+   * update this import job with a new status. note that the table's trigger will automatically
+   * update the `updated` column's value.
+   *
+   * @param jobId id of the job to update
+   * @param status the status to which the job will be updated
+   * @param errorMessage a short error message, if the job is in error
+   * @param stackTrace a full stack trace for debugging, if the job is in error
+   * @return the updated job
+   */
   @Override
   public GenericJobServerModel updateStatus(
       UUID jobId,
       GenericJobServerModel.StatusEnum status,
       String errorMessage,
       StackTraceElement[] stackTrace) {
-    // update this import job with a new status
-    // note that the table's trigger will automatically update the `updated` column's value
-    if (errorMessage == null && stackTrace == null) {
-      namedTemplate
-          .getJdbcTemplate()
-          .update(
-              "update sys_wds.job set status = ? where id = ?", status.name(), jobId.toString());
-    } else if (stackTrace == null) {
-      namedTemplate
-          .getJdbcTemplate()
-          .update(
-              "update sys_wds.job set status = ?, error = ? where id = ?",
-              status.name(),
-              errorMessage,
-              jobId.toString());
-    } else {
-      namedTemplate
-          .getJdbcTemplate()
-          .update(
-              "update sys_wds.job set status = ?, error = ?, stacktrace = ? where id = ?",
-              status.name(),
-              errorMessage,
-              stackTrace,
-              jobId.toString());
+
+    // start our sql statement and map of params
+    StringBuilder sb = new StringBuilder("update sys_wds.job set status = :status");
+    MapSqlParameterSource params = new MapSqlParameterSource("jobId", jobId.toString());
+    params.addValue("status", status.name());
+
+    // if an error message is supplied, also update that
+    if (errorMessage != null) {
+      params.addValue("error", errorMessage);
+      sb.append(", error = :error");
     }
+
+    // if a stack trace is supplied, also update that, making sure to serialize to jsonb
+    if (stackTrace != null) {
+      try {
+        String stackTraceJsonb = mapper.writeValueAsString(stackTrace);
+        params.addValue("stacktrace", mapper.writeValueAsString(stackTrace));
+        sb.append(", stacktrace = :stacktrace::jsonb");
+      } catch (JsonProcessingException e) {
+        logger.error(
+            "Error serializing stack trace to jsonb for job {}: {}", jobId, e.getMessage());
+        // TODO: should this be fatal?
+      }
+    }
+
+    // make sure to have a where clause!!
+    sb.append(" where id = :jobId;");
+
+    // execute the update
+    namedTemplate.getJdbcTemplate().update(sb.toString(), params);
+
+    // return the updated job
     return getJob(jobId);
   }
 
@@ -146,10 +164,7 @@ public class PostgresJobDao implements JobDao {
 
       job.errorMessage(rs.getString("error"));
 
-      // TODO:
-      // - stacktrace
-      // - input
-      // - result
+      // TODO: also return stacktrace, input, result.
       return job;
     }
   }
