@@ -20,8 +20,8 @@ import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.databiosphere.workspacedataservice.shared.model.job.EmptyJobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
+import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceClientFactory;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
@@ -105,7 +105,7 @@ class InstanceInitializerCloneTest {
     instanceInitializerBean.initializeInstance();
 
     // clone job should have errored, with friendly error message
-    Job<EmptyJobInput, CloneResponse> cloneStatus = cloneDao.getCloneStatus();
+    Job<JobInput, CloneResponse> cloneStatus = cloneDao.getCloneStatus();
     assertSame(JobStatus.ERROR, cloneStatus.getStatus());
     assertSame(CloneStatus.BACKUPERROR, cloneStatus.getResult().status());
     assertEquals(
@@ -148,7 +148,7 @@ class InstanceInitializerCloneTest {
     instanceInitializerBean.initializeInstance();
 
     // clone job should have succeeded
-    Job<EmptyJobInput, CloneResponse> cloneStatus = cloneDao.getCloneStatus();
+    Job<JobInput, CloneResponse> cloneStatus = cloneDao.getCloneStatus();
     assertSame(JobStatus.SUCCEEDED, cloneStatus.getStatus());
     assertSame(CloneStatus.RESTORESUCCEEDED, cloneStatus.getResult().status());
 

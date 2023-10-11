@@ -7,8 +7,8 @@ import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
-import org.databiosphere.workspacedataservice.shared.model.job.EmptyJobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
+import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,18 +27,18 @@ public class CloningController {
   }
 
   @PostMapping("/backup/{version}")
-  public ResponseEntity<Job<EmptyJobInput, BackupResponse>> createBackup(
+  public ResponseEntity<Job<JobInput, BackupResponse>> createBackup(
       @PathVariable("version") String version,
       @RequestBody BackupRestoreRequest BackupRestoreRequest) {
     UUID trackingId = UUID.randomUUID();
     // TODO: make async
-    Job<EmptyJobInput, BackupResponse> backupJob =
+    Job<JobInput, BackupResponse> backupJob =
         backupRestoreService.backupAzureWDS(version, trackingId, BackupRestoreRequest);
     return new ResponseEntity<>(backupJob, HttpStatus.OK);
   }
 
   @GetMapping("/backup/{version}/{trackingId}")
-  public ResponseEntity<Job<EmptyJobInput, BackupResponse>> getBackupStatus(
+  public ResponseEntity<Job<JobInput, BackupResponse>> getBackupStatus(
       @PathVariable("version") String version, @PathVariable("trackingId") UUID trackingId) {
     validateVersion(version);
     var response = backupRestoreService.checkBackupStatus(trackingId);
@@ -46,7 +46,7 @@ public class CloningController {
   }
 
   @GetMapping("/clone/{version}")
-  public ResponseEntity<Job<EmptyJobInput, CloneResponse>> getCloningStatus(
+  public ResponseEntity<Job<JobInput, CloneResponse>> getCloningStatus(
       @PathVariable("version") String version) {
     validateVersion(version);
     var response = backupRestoreService.checkCloneStatus();

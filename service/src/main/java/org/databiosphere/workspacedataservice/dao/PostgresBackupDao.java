@@ -13,8 +13,8 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
-import org.databiosphere.workspacedataservice.shared.model.job.EmptyJobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
+import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -33,9 +33,9 @@ public class PostgresBackupDao extends AbstractBackupRestoreDao<BackupResponse> 
   }
 
   @Override
-  public Job<EmptyJobInput, BackupResponse> getStatus(UUID trackingId) {
+  public Job<JobInput, BackupResponse> getStatus(UUID trackingId) {
     MapSqlParameterSource params = new MapSqlParameterSource("trackingId", trackingId);
-    List<Job<EmptyJobInput, BackupResponse>> responses =
+    List<Job<JobInput, BackupResponse>> responses =
         namedTemplate.query(
             "select id, status, error, createdtime, updatedtime, requester, filename, description from sys_wds.backup WHERE id = :trackingId",
             params,
@@ -69,9 +69,9 @@ public class PostgresBackupDao extends AbstractBackupRestoreDao<BackupResponse> 
   }
 
   // rowmapper for retrieving Job<BackupResponse> objects from the db
-  private static class BackupJobRowMapper implements RowMapper<Job<EmptyJobInput, BackupResponse>> {
+  private static class BackupJobRowMapper implements RowMapper<Job<JobInput, BackupResponse>> {
     @Override
-    public Job<EmptyJobInput, BackupResponse> mapRow(ResultSet rs, int rowNum) throws SQLException {
+    public Job<JobInput, BackupResponse> mapRow(ResultSet rs, int rowNum) throws SQLException {
       String filename = rs.getString("fileName");
       String description = rs.getString("description");
       UUID requester = rs.getObject("requester", UUID.class);
@@ -100,7 +100,7 @@ public class PostgresBackupDao extends AbstractBackupRestoreDao<BackupResponse> 
           errorMessage,
           created,
           updated,
-          new EmptyJobInput(),
+          JobInput.empty(),
           backupResponse);
     }
   }

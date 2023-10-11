@@ -14,8 +14,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
-import org.databiosphere.workspacedataservice.shared.model.job.EmptyJobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
+import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,8 +124,8 @@ public class PostgresCloneDao implements CloneDao {
     that the following workspace was not created from a clone.
   */
   @Override
-  public Job<EmptyJobInput, CloneResponse> getCloneStatus() {
-    List<Job<EmptyJobInput, CloneResponse>> responses =
+  public Job<JobInput, CloneResponse> getCloneStatus() {
+    List<Job<JobInput, CloneResponse>> responses =
         namedTemplate.query(
             "select id, status, error, createdtime, updatedtime, sourceworkspaceid, clonestatus from sys_wds.clone",
             new PostgresCloneDao.CloneJobRowMapper());
@@ -140,9 +140,9 @@ public class PostgresCloneDao implements CloneDao {
   }
 
   // rowmapper for retrieving Job<CloneResponse> objects from the db
-  private static class CloneJobRowMapper implements RowMapper<Job<EmptyJobInput, CloneResponse>> {
+  private static class CloneJobRowMapper implements RowMapper<Job<JobInput, CloneResponse>> {
     @Override
-    public Job<EmptyJobInput, CloneResponse> mapRow(ResultSet rs, int rowNum) throws SQLException {
+    public Job<JobInput, CloneResponse> mapRow(ResultSet rs, int rowNum) throws SQLException {
       UUID sourceWorkspaceId = rs.getObject("sourceworkspaceid", UUID.class);
       CloneStatus cloneStatus = CloneStatus.UNKNOWN;
       String cloneStatusString = rs.getString("clonestatus");
@@ -180,7 +180,7 @@ public class PostgresCloneDao implements CloneDao {
           errorMessage,
           created,
           updated,
-          new EmptyJobInput(),
+          JobInput.empty(),
           cloneResponse);
     }
   }
