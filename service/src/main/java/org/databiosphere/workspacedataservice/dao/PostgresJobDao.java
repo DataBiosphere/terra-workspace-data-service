@@ -8,6 +8,8 @@ import java.time.ZoneOffset;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
+import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
+import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.RowMapper;
@@ -29,7 +31,7 @@ public class PostgresJobDao implements JobDao {
   }
 
   @Override
-  public GenericJobServerModel createJob(Job<?, ?> job) {
+  public GenericJobServerModel createJob(Job<JobInput, JobResult> job) {
     // save the input arguments as a jsonb packet, being resilient to nulls
     String inputJsonb = null;
     if (job.getInput() != null) {

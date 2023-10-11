@@ -4,6 +4,8 @@ import static org.quartz.TriggerBuilder.newTrigger;
 
 import org.databiosphere.workspacedataservice.dataimport.ImportQuartzJob;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
+import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
+import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
@@ -23,7 +25,7 @@ public class QuartzSchedulerDao implements SchedulerDao {
     this.scheduler = scheduler;
   }
 
-  public void schedule(Job<?, ?> job) {
+  public void schedule(Job<JobInput, JobResult> job) {
     JobKey jobKey = new JobKey(job.getJobId().toString(), job.getJobType().name());
 
     // TODO: read JobData from the Job's inputs, instead of hardcoding it here
