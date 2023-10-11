@@ -1,0 +1,11 @@
+sentry:
+  samurl: http://localhost:9889
+
+datarepourl: https://jade.datarepo-dev.broadinstitute.org222/
+workspacemanagerurl: https://workspace.dsde-dev.broadinstitute.org/
+leoUrl: https://leonardo.dsde-dev.broadinstitute.org/
+
+twds:
+  instance:
+    # Workspace Id for launching instance
+    workspace-id: 123e4567-e89b-12d3-a456-426614174000

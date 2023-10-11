@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Generated;
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2023-10-05T15:39:06.900914-04:00[America/New_York]")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2023-10-11T15:46:55.015375076-07:00[America/Los_Angeles]")
 @Validated
 @Tag(name = "Import", description = "Import APIs")
 public interface ImportApi {

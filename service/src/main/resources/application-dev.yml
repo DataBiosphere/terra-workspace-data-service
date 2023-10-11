@@ -1,0 +1,6 @@
+sentry:
+  samurl: https://sam.dsde-dev.broadinstitute.org/
+
+datarepourl: https://jade.datarepo-dev.broadinstitute.org/
+workspacemanagerurl: https://workspace.dsde-dev.broadinstitute.org/
+leoUrl: https://leonardo.dsde-dev.broadinstitute.org/

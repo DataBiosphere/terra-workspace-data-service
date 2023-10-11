@@ -1,0 +1,8 @@
+beename: ${BEE_NAME}
+
+sentry:
+  samurl: https://sam.${beename}.broadinstitute.org/
+
+datarepourl: https://jade.${beename}.bee.envs-terra.bio
+workspacemanagerurl: https://workspace.${beename}.bee.envs-terra.bio
+leoUrl: https://leonardo.${beename}.bee.envs-terra.bio

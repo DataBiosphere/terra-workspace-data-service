@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SamConfig {
 
-  @Value("${SAM_URL:}")
+  @Value("${sentry.samurl:}")
   private String samUrl;
 
   @Value("${twds.instance.workspace-id:}")
