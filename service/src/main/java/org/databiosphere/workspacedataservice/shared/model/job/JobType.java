@@ -2,8 +2,8 @@ package org.databiosphere.workspacedataservice.shared.model.job;
 
 /** The various types of Jobs that can be executed. */
 public enum JobType {
-  DATAIMPORT, // async data import jobs
-  SYNCBACKUP, // legacy synchronous backups
-  SYNCCLONE, // legacy synchronous clones
-  SYNCRESTORE // legacy synchronous restores
+  DATA_IMPORT, // async data import jobs
+  SYNC_BACKUP, // legacy synchronous backups
+  SYNC_CLONE, // legacy synchronous clones
+  SYNC_RESTORE // legacy synchronous restores
 }

@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import static org.databiosphere.workspacedataservice.shared.model.job.JobType.SYNCCLONE;
+import static org.databiosphere.workspacedataservice.shared.model.job.JobType.SYNC_CLONE;
 
 import bio.terra.common.db.WriteTransaction;
 import java.sql.Timestamp;
@@ -37,7 +37,7 @@ public class MockCloneDao implements CloneDao {
     var cloneEntry = new CloneResponse(sourceWorkspaceId, CloneStatus.BACKUPQUEUED);
     Job<JobInput, CloneResponse> jobEntry =
         new Job<>(
-            trackingId, SYNCCLONE, JobStatus.QUEUED, "", now, now, JobInput.empty(), cloneEntry);
+            trackingId, SYNC_CLONE, JobStatus.QUEUED, "", now, now, JobInput.empty(), cloneEntry);
     clone.add(jobEntry);
   }
 

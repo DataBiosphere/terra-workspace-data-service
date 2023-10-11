@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import static org.databiosphere.workspacedataservice.shared.model.job.JobType.SYNCBACKUP;
+import static org.databiosphere.workspacedataservice.shared.model.job.JobType.SYNC_BACKUP;
 
 import bio.terra.common.db.WriteTransaction;
 import java.sql.ResultSet;
@@ -95,7 +95,7 @@ public class PostgresBackupDao extends AbstractBackupRestoreDao<BackupResponse> 
 
       return new Job<>(
           jobId,
-          SYNCBACKUP,
+          SYNC_BACKUP,
           status,
           errorMessage,
           created,

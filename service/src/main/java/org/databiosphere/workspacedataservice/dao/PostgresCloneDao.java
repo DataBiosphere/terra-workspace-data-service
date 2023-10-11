@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import static org.databiosphere.workspacedataservice.shared.model.job.JobType.SYNCCLONE;
+import static org.databiosphere.workspacedataservice.shared.model.job.JobType.SYNC_CLONE;
 
 import bio.terra.common.db.WriteTransaction;
 import java.sql.ResultSet;
@@ -175,7 +175,7 @@ public class PostgresCloneDao implements CloneDao {
 
       return new Job<>(
           jobId,
-          SYNCCLONE,
+          SYNC_CLONE,
           status,
           errorMessage,
           created,
