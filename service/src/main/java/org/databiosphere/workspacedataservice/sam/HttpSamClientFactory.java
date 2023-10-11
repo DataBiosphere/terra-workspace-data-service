@@ -9,6 +9,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
 import org.apache.commons.lang3.StringUtils;
 import org.broadinstitute.dsde.workbench.client.sam.ApiClient;
+import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.UsersApi;
@@ -96,5 +97,12 @@ public class HttpSamClientFactory implements SamClientFactory {
     UsersApi usersApi = new UsersApi();
     usersApi.setApiClient(apiClient);
     return usersApi;
+  }
+
+  public GoogleApi getGoogleApi(String token) {
+    ApiClient apiClient = getApiClient(token);
+    GoogleApi googleApi = new GoogleApi();
+    googleApi.setApiClient(apiClient);
+    return googleApi;
   }
 }
