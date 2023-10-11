@@ -111,6 +111,7 @@ twds:
 
 sentry:
   dsn: https://e59ecdd940784bd2922f25a0f3197ffd@o54426.ingest.sentry.io/4504299946835968
+  samurl: ${SAM_URL:}
   mrg: ${LZ_MRG:}
   releasename: ${RELEASE_NAME:}
 
@@ -127,3 +128,7 @@ api:
     backoff:
       delay: 150
       multiplier: 1.5
+
+datarepourl: ${DATA_REPO_URL:}
+workspacemanagerurl: ${WORKSPACE_MANAGER_URL:}
+leoUrl: ${LEONARDO_URL:}
