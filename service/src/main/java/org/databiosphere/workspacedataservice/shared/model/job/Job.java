@@ -15,13 +15,38 @@ import java.util.UUID;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Job<T extends JobInput, U extends JobResult> {
 
+  /** id for this job. */
   private final UUID jobId;
+
+  /** type of this job, e.g. PFB import vs. database backup; {@link JobType} */
   private final JobType jobType;
+
+  /** status of the job; {@link JobStatus} */
   private JobStatus status;
+
+  /** Short error message, if this job hit an exception. Designed to displayed to end users. */
   private String errorMessage;
+
+  /**
+   * Full stack trace, if this job hit an exception. Designed to be hidden from end users, but
+   * collected and stored for developer debugging. Job executors are responsible for catching
+   * exceptions and populating the stack trace into the job.
+   */
   private StackTraceElement[] stackTrace;
+
+  /** Creation time and last-updated time of this job. */
   private LocalDateTime created, updated;
+
+  /**
+   * Inputs for this job. Can use JobInput.empty() for no input arguments. Job writers can extend
+   * JobInput to create their own type-safe definitions for the arguments required by their job.
+   */
   private final T input;
+
+  /**
+   * Output of this job. Job writers can extend JobResult to create their own type-safe definitions
+   * of the expected output of their job.
+   */
   private U result;
 
   public Job(
