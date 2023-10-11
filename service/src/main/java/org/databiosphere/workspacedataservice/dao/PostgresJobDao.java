@@ -117,7 +117,7 @@ public class PostgresJobDao implements JobDao {
     sb.append(" where id = :jobId;");
 
     // execute the update
-    namedTemplate.getJdbcTemplate().update(sb.toString(), params);
+    namedTemplate.update(sb.toString(), params);
 
     // return the updated job
     return getJob(jobId);

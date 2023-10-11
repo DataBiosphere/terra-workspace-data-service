@@ -21,6 +21,6 @@ public class ImportController implements ImportApi {
   public ResponseEntity<GenericJobServerModel> importV1(
       UUID instanceUuid, ImportRequestServerModel importRequest) {
     GenericJobServerModel importJob = importService.createImport(instanceUuid, importRequest);
-    return new ResponseEntity<>(importJob, HttpStatus.CREATED);
+    return new ResponseEntity<>(importJob, HttpStatus.ACCEPTED);
   }
 }
