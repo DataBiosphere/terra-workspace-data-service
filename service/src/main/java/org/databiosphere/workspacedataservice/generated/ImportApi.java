@@ -5,6 +5,7 @@
  */
 package org.databiosphere.workspacedataservice.generated;
 
+import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import java.util.UUID;
 import io.swagger.v3.oas.annotations.ExternalDocumentation;
@@ -33,7 +34,7 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Generated;
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2023-10-11T10:58:05.173956-04:00[America/New_York]")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2023-10-11T13:32:49.869913-04:00[America/New_York]")
 @Validated
 @Tag(name = "Import", description = "Import APIs")
 public interface ImportApi {
@@ -56,15 +57,21 @@ public interface ImportApi {
         description = "Imports records from the specified URL.",
         tags = { "Import" },
         responses = {
-            @ApiResponse(responseCode = "202", description = "Import accepted.")
+            @ApiResponse(responseCode = "202", description = "Import accepted.", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = GenericJobServerModel.class))
+            })
+        },
+        security = {
+            @SecurityRequirement(name = "bearerAuth")
         }
     )
     @RequestMapping(
         method = RequestMethod.POST,
         value = "/{instanceUuid}/import/v1",
+        produces = { "application/json" },
         consumes = { "application/json" }
     )
-    default ResponseEntity<Void> importV1(
+    default ResponseEntity<GenericJobServerModel> importV1(
         @Parameter(name = "instanceUuid", description = "WDS instance id; by convention equal to workspace id", required = true, in = ParameterIn.PATH) @PathVariable("instanceUuid") UUID instanceUuid,
         @Parameter(name = "ImportRequestServerModel", description = "A request to import records from a file", required = true) @Valid @RequestBody ImportRequestServerModel importRequestServerModel
     ) {

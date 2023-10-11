@@ -68,6 +68,19 @@ public class Job<T extends JobInput, U extends JobResult> {
     this.result = result;
   }
 
+  /**
+   * Convenience for creating a new Job object, using a random UUID as jobId and defaults for job
+   * status
+   *
+   * @param jobType type of the job
+   * @param input input arguments for the job
+   * @return the job, after creation
+   */
+  public static Job<JobInput, JobResult> newJob(JobType jobType, JobInput input) {
+    LocalDateTime now = LocalDateTime.now();
+    return new Job<>(UUID.randomUUID(), jobType, JobStatus.CREATED, null, now, now, input, null);
+  }
+
   // getters and setters
 
   public JobStatus getStatus() {

@@ -52,7 +52,7 @@ databaseChangeLog:
                     nullable: true
               - column:
                   name: stacktrace
-                  type: text
+                  type: jsonb
                   constraints:
                     nullable: true
         # create the "set updated timestamp to now()" function to be used in a trigger

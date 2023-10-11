@@ -27,6 +27,8 @@ paths:
       summary: Import from a file
       description: Imports records from the specified URL.
       operationId: importV1
+      security:
+        - bearerAuth: [ ]
       tags:
         - Import
       parameters:
@@ -58,6 +60,10 @@ paths:
       responses:
         202:
           description: Import accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericJob'
 
   ##############################
   # Job APIs
@@ -117,7 +123,7 @@ components:
         Generic representation of a job, no opinion on inputs and result for the job.
         See individual APIs for more guidance on expected input and result payloads.
       allOf:
-        - $ref: '#/components/schemas/Job'
+        - $ref: '#/components/schemas/JobV1'
         - type: object
           properties:
             input:
@@ -126,7 +132,7 @@ components:
             result:
               type: object
               description: Result of this job
-    Job:
+    JobV1:
       type: object
       required:
         - jobId
@@ -137,14 +143,18 @@ components:
       properties:
         jobId:
           type: string
+          format: uuid
         jobType:
           type: string
+          enum: [ DATA_IMPORT, UNKNOWN ]
         status:
           type: string
-          enum: [ QUEUED, RUNNING, SUCCEEDED, ERROR, CANCELLED, UNKNOWN ]
+          enum: [ CREATED, QUEUED, RUNNING, SUCCEEDED, ERROR, CANCELLED, UNKNOWN ]
         created:
           type: string
+          format: date-time
         updated:
           type: string
+          format: date-time
         errorMessage:
           type: string

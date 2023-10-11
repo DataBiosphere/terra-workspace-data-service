@@ -886,7 +886,27 @@ components:
         commit:
           $ref: '#/components/schemas/commit'
     Job:
-      $ref: 'apis-v1.yaml#/components/schemas/Job'
+      type: object
+      required:
+        - jobId
+        - jobType
+        - status
+        - created
+        - updated
+      properties:
+        jobId:
+          type: string
+        jobType:
+          type: string
+        status:
+          type: string
+          enum: [ QUEUED, RUNNING, SUCCEEDED, ERROR, CANCELLED, UNKNOWN ]
+        created:
+          type: string
+        updated:
+          type: string
+        errorMessage:
+          type: string
     RecordAttributes:
       type: object
       additionalProperties: true

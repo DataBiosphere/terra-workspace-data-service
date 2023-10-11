@@ -5,7 +5,7 @@
  */
 package org.databiosphere.workspacedataservice.generated;
 
-import org.databiosphere.workspacedataservice.generated.JobServerModel;
+import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import java.util.UUID;
 import io.swagger.v3.oas.annotations.ExternalDocumentation;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Generated;
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2023-10-11T10:58:05.173956-04:00[America/New_York]")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2023-10-11T13:32:49.869913-04:00[America/New_York]")
 @Validated
 @Tag(name = "Job", description = "Job APIs")
 public interface JobApi {
@@ -56,10 +56,10 @@ public interface JobApi {
         tags = { "Job" },
         responses = {
             @ApiResponse(responseCode = "200", description = "Job completed.", content = {
-                @Content(mediaType = "application/json", schema = @Schema(implementation = JobServerModel.class))
+                @Content(mediaType = "application/json", schema = @Schema(implementation = GenericJobServerModel.class))
             }),
             @ApiResponse(responseCode = "202", description = "Job still running.", content = {
-                @Content(mediaType = "application/json", schema = @Schema(implementation = JobServerModel.class))
+                @Content(mediaType = "application/json", schema = @Schema(implementation = GenericJobServerModel.class))
             })
         }
     )
@@ -68,7 +68,7 @@ public interface JobApi {
         value = "/{instanceUuid}/job/v1/{jobId}",
         produces = { "application/json" }
     )
-    default ResponseEntity<JobServerModel> jobStatusV1(
+    default ResponseEntity<GenericJobServerModel> jobStatusV1(
         @Parameter(name = "instanceUuid", description = "WDS instance id; by convention equal to workspace id", required = true, in = ParameterIn.PATH) @PathVariable("instanceUuid") UUID instanceUuid,
         @Parameter(name = "jobId", description = "", required = true, in = ParameterIn.PATH) @PathVariable("jobId") UUID jobId
     ) {

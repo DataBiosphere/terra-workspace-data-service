@@ -20,13 +20,12 @@ import java.util.*;
 import javax.annotation.Generated;
 
 /**
- * Generic representation of a job, no opinion on inputs and result for the job. See individual APIs for more guidance on expected input and result payloads. 
+ * JobV1ServerModel
  */
 
-@Schema(name = "GenericJob", description = "Generic representation of a job, no opinion on inputs and result for the job. See individual APIs for more guidance on expected input and result payloads. ")
-@JsonTypeName("GenericJob")
+@JsonTypeName("JobV1")
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2023-10-11T13:32:49.869913-04:00[America/New_York]")
-public class GenericJobServerModel {
+public class JobV1ServerModel {
 
   private UUID jobId;
 
@@ -122,23 +121,19 @@ public class GenericJobServerModel {
 
   private String errorMessage;
 
-  private Object input;
-
-  private Object result;
-
   /**
    * Default constructor
-   * @deprecated Use {@link GenericJobServerModel#GenericJobServerModel(UUID, JobTypeEnum, StatusEnum, OffsetDateTime, OffsetDateTime)}
+   * @deprecated Use {@link JobV1ServerModel#JobV1ServerModel(UUID, JobTypeEnum, StatusEnum, OffsetDateTime, OffsetDateTime)}
    */
   @Deprecated
-  public GenericJobServerModel() {
+  public JobV1ServerModel() {
     super();
   }
 
   /**
    * Constructor with only required parameters
    */
-  public GenericJobServerModel(UUID jobId, JobTypeEnum jobType, StatusEnum status, OffsetDateTime created, OffsetDateTime updated) {
+  public JobV1ServerModel(UUID jobId, JobTypeEnum jobType, StatusEnum status, OffsetDateTime created, OffsetDateTime updated) {
     this.jobId = jobId;
     this.jobType = jobType;
     this.status = status;
@@ -146,7 +141,7 @@ public class GenericJobServerModel {
     this.updated = updated;
   }
 
-  public GenericJobServerModel jobId(UUID jobId) {
+  public JobV1ServerModel jobId(UUID jobId) {
     this.jobId = jobId;
     return this;
   }
@@ -166,7 +161,7 @@ public class GenericJobServerModel {
     this.jobId = jobId;
   }
 
-  public GenericJobServerModel jobType(JobTypeEnum jobType) {
+  public JobV1ServerModel jobType(JobTypeEnum jobType) {
     this.jobType = jobType;
     return this;
   }
@@ -186,7 +181,7 @@ public class GenericJobServerModel {
     this.jobType = jobType;
   }
 
-  public GenericJobServerModel status(StatusEnum status) {
+  public JobV1ServerModel status(StatusEnum status) {
     this.status = status;
     return this;
   }
@@ -206,7 +201,7 @@ public class GenericJobServerModel {
     this.status = status;
   }
 
-  public GenericJobServerModel created(OffsetDateTime created) {
+  public JobV1ServerModel created(OffsetDateTime created) {
     this.created = created;
     return this;
   }
@@ -226,7 +221,7 @@ public class GenericJobServerModel {
     this.created = created;
   }
 
-  public GenericJobServerModel updated(OffsetDateTime updated) {
+  public JobV1ServerModel updated(OffsetDateTime updated) {
     this.updated = updated;
     return this;
   }
@@ -246,7 +241,7 @@ public class GenericJobServerModel {
     this.updated = updated;
   }
 
-  public GenericJobServerModel errorMessage(String errorMessage) {
+  public JobV1ServerModel errorMessage(String errorMessage) {
     this.errorMessage = errorMessage;
     return this;
   }
@@ -266,46 +261,6 @@ public class GenericJobServerModel {
     this.errorMessage = errorMessage;
   }
 
-  public GenericJobServerModel input(Object input) {
-    this.input = input;
-    return this;
-  }
-
-  /**
-   * Input arguments for this job
-   * @return input
-  */
-  
-  @Schema(name = "input", description = "Input arguments for this job", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-  @JsonProperty("input")
-  public Object getInput() {
-    return input;
-  }
-
-  public void setInput(Object input) {
-    this.input = input;
-  }
-
-  public GenericJobServerModel result(Object result) {
-    this.result = result;
-    return this;
-  }
-
-  /**
-   * Result of this job
-   * @return result
-  */
-  
-  @Schema(name = "result", description = "Result of this job", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-  @JsonProperty("result")
-  public Object getResult() {
-    return result;
-  }
-
-  public void setResult(Object result) {
-    this.result = result;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -314,34 +269,30 @@ public class GenericJobServerModel {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    GenericJobServerModel genericJob = (GenericJobServerModel) o;
-    return Objects.equals(this.jobId, genericJob.jobId) &&
-        Objects.equals(this.jobType, genericJob.jobType) &&
-        Objects.equals(this.status, genericJob.status) &&
-        Objects.equals(this.created, genericJob.created) &&
-        Objects.equals(this.updated, genericJob.updated) &&
-        Objects.equals(this.errorMessage, genericJob.errorMessage) &&
-        Objects.equals(this.input, genericJob.input) &&
-        Objects.equals(this.result, genericJob.result);
+    JobV1ServerModel jobV1 = (JobV1ServerModel) o;
+    return Objects.equals(this.jobId, jobV1.jobId) &&
+        Objects.equals(this.jobType, jobV1.jobType) &&
+        Objects.equals(this.status, jobV1.status) &&
+        Objects.equals(this.created, jobV1.created) &&
+        Objects.equals(this.updated, jobV1.updated) &&
+        Objects.equals(this.errorMessage, jobV1.errorMessage);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(jobId, jobType, status, created, updated, errorMessage, input, result);
+    return Objects.hash(jobId, jobType, status, created, updated, errorMessage);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class GenericJobServerModel {\n");
+    sb.append("class JobV1ServerModel {\n");
     sb.append("    jobId: ").append(toIndentedString(jobId)).append("\n");
     sb.append("    jobType: ").append(toIndentedString(jobType)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    created: ").append(toIndentedString(created)).append("\n");
     sb.append("    updated: ").append(toIndentedString(updated)).append("\n");
     sb.append("    errorMessage: ").append(toIndentedString(errorMessage)).append("\n");
-    sb.append("    input: ").append(toIndentedString(input)).append("\n");
-    sb.append("    result: ").append(toIndentedString(result)).append("\n");
     sb.append("}");
     return sb.toString();
   }
