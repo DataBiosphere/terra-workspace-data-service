@@ -76,7 +76,8 @@ public class MisconfiguredSamDao implements SamDao {
 
   @Override
   public String getPetToken(String token) {
-    throw new RuntimeException("Sam integration failure: " + errorMessage);
+    logWarning();
+    return "n/a";
   }
 
   private void logWarning() {

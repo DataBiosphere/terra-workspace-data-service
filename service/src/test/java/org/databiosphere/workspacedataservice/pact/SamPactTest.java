@@ -155,8 +155,6 @@ class SamPactTest {
 
   @Pact(consumer = "wds-consumer", provider = "sam-provider")
   public RequestResponsePact petTokenPact(PactDslWithProvider builder) {
-    PactDslJsonBody responseBody = new PactDslJsonBody().stringType("aToken");
-
     return builder
         .given("user exists")
         .uponReceiving("a pet token request")
@@ -167,7 +165,7 @@ class SamPactTest {
                 + "  \"https://www.googleapis.com/auth/userinfo.profile\"]")
         .willRespondWith()
         .status(200)
-        .body(responseBody)
+        .body(PactDslWithProvider.stringType("aToken"))
         .toPact();
   }
 
