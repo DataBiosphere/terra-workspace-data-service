@@ -42,7 +42,7 @@ For WDS to work properly, a spring profile needs to be set so that several envir
 To run WDS locally and therefore use the local application properties, set the profile the following way: 
 
 ```bash
-export spring_profiles_active=local
+export SPRING_PROFILES_ACTIVE=local
 ```
 
 Other profiles that are available are: 
