@@ -25,13 +25,13 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: created
-                  type: timestamp
+                  type: timestamp with time zone
                   defaultValueComputed: NOW()
                   constraints:
                     nullable: false
               - column:
                   name: updated
-                  type: timestamp
+                  type: timestamp with time zone
                   defaultValueComputed: NOW()
                   constraints:
                     nullable: false

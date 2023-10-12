@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
@@ -45,8 +46,9 @@ public class JobControllerMockMvcTest {
             jobId,
             GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
             GenericJobServerModel.StatusEnum.RUNNING,
-            OffsetDateTime.now(),
-            OffsetDateTime.now());
+            // set created and updated to now, but in UTC because that's how Postgres stores it
+            OffsetDateTime.now(ZoneId.of("Z")),
+            OffsetDateTime.now(ZoneId.of("Z")));
     when(jobDao.getJob(eq(jobId))).thenReturn(expected);
 
     // calling the API should result in 202 Accepted
