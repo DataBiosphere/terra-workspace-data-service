@@ -78,7 +78,7 @@ public class Job<T extends JobInput, U extends JobResult> {
    */
   public static Job<JobInput, JobResult> newJob(JobType jobType, JobInput input) {
     LocalDateTime now = LocalDateTime.now();
-    return new Job<>(UUID.randomUUID(), jobType, JobStatus.CREATED, null, now, now, input, null);
+    return new Job<>(UUID.randomUUID(), jobType, JobStatus.CREATED, /* errorMessage=*/ null, /* created=*/ now, /* updated=*/ now, input, /* result=*/ null);
   }
 
   // getters and setters
