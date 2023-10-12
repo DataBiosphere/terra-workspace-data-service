@@ -73,6 +73,7 @@ public class TdrManifestQuartzJob implements Job {
 
     UUID snapshotId = snapshotExportResponseModel.getSnapshot().getId();
     logger.info("Starting import of snapshot {} to instance {}", snapshotId, instanceId);
+    // TODO: pass token to dataRepoService, or possibly stash it on the thread
     dataRepoService.importSnapshot(instanceId, snapshotId);
     jobDao.updateStatus(jobId, GenericJobServerModel.StatusEnum.SUCCEEDED);
   }
