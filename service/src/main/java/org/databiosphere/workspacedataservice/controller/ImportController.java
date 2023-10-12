@@ -1,20 +1,26 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportApi;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.service.ImportService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class ImportController implements ImportApi {
+  private final ImportService importService;
+
+  public ImportController(ImportService importService) {
+    this.importService = importService;
+  }
 
   @Override
-  public ResponseEntity<Void> importV1(UUID instanceUuid, ImportRequestServerModel importRequest) {
-    // TODO: implementation for imports
-    // return TOO_EARLY here as a proof-of-concept that we can override the implementation
-    // in ImportApi (which returns NOT_IMPLEMENTED)
-    return new ResponseEntity<>(HttpStatus.TOO_EARLY);
+  public ResponseEntity<GenericJobServerModel> importV1(
+      UUID instanceUuid, ImportRequestServerModel importRequest) {
+    GenericJobServerModel importJob = importService.createImport(instanceUuid, importRequest);
+    return new ResponseEntity<>(importJob, HttpStatus.ACCEPTED);
   }
 }

@@ -15,6 +15,8 @@ tags:
   # Tags should be listed in the order they should appear in the UI
   - name: Import
     description: Import APIs
+  - name: Job
+    description: Job APIs
 
 paths:
   ##############################
@@ -25,6 +27,8 @@ paths:
       summary: Import from a file
       description: Imports records from the specified URL.
       operationId: importV1
+      security:
+        - bearerAuth: [ ]
       tags:
         - Import
       parameters:
@@ -56,6 +60,41 @@ paths:
       responses:
         202:
           description: Import accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericJob'
+
+  ##############################
+  # Job APIs
+  ##############################
+  /{instanceUuid}/job/v1/{jobId}:
+    get:
+      summary: Get status of a long-running job.
+      operationId: jobStatusV1
+      tags:
+        - Job
+      parameters:
+        - $ref: '#/components/parameters/instanceUuidPathParam'
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Job completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericJob'
+        202:
+          description: Job still running.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericJob'
 
 components:
   # within each group, components should be listed alphabetically.
@@ -77,3 +116,45 @@ components:
         type: string
         format: uuid
 
+  schemas:
+    GenericJob:
+      x-all-of-name: GenericJob
+      description: |
+        Generic representation of a job, no opinion on inputs and result for the job.
+        See individual APIs for more guidance on expected input and result payloads.
+      allOf:
+        - $ref: '#/components/schemas/JobV1'
+        - type: object
+          properties:
+            input:
+              type: object
+              description: Input arguments for this job
+            result:
+              type: object
+              description: Result of this job
+    JobV1:
+      type: object
+      required:
+        - jobId
+        - jobType
+        - status
+        - created
+        - updated
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        jobType:
+          type: string
+          enum: [ DATA_IMPORT, UNKNOWN ]
+        status:
+          type: string
+          enum: [ CREATED, QUEUED, RUNNING, SUCCEEDED, ERROR, CANCELLED, UNKNOWN ]
+        created:
+          type: string
+          format: date-time
+        updated:
+          type: string
+          format: date-time
+        errorMessage:
+          type: string
