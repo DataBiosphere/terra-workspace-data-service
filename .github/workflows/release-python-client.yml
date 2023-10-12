@@ -81,7 +81,10 @@ jobs:
       
       - name: Run WDS service and tests
         run: |
-            export spring_profiles_active=local
+            export SAM_URL=http://localhost:9889
+            export DATA_REPO_URL=http://localhost:9889
+            export WORKSPACE_MANAGER_URL=http://localhost:9889
+            export WORKSPACE_ID=123e4567-e89b-12d3-a456-426614174000
             ./gradlew --build-cache build -x test
             ./gradlew bootRun &
             count=20
@@ -90,7 +93,6 @@ jobs:
               sleep 1
               count=$(expr $count - 1) 
               if [ "$count" -eq "0" ]; then
-              
                 echo "WDS is not responding, exit action."
                 exit
               fi
