@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
  * will do nothing but sleep for a random time between 5 and 15 seconds
  */
 @Component
+// note this implements Quartz's `Job`, not WDS's own `Job`
 public class ImportQuartzJob implements Job {
 
   private final JobDao jobDao;
