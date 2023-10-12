@@ -8,6 +8,8 @@ import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 
 public interface JobDao {
 
+  // TODO: awkward that this API accepts `Job` but returns `GenericJobServerModel`;
+  // we should standardize on one model
   GenericJobServerModel createJob(Job<JobInput, JobResult> job);
 
   GenericJobServerModel updateStatus(UUID jobId, GenericJobServerModel.StatusEnum status);
