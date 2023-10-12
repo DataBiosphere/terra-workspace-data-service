@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.shared.model.job;
 
-import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.*;
+import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Arrays;

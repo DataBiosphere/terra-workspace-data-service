@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.*;
+import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.JobTypeEnum;
+import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.*;
+import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.JobTypeEnum;
+import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
