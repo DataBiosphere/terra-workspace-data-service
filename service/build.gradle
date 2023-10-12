@@ -120,10 +120,11 @@ tasks.register('generateApiInterfaces', GenerateTask) {
     apiFilesConstrainedTo.set([""])   // empty string means generate all apis
     modelFilesConstrainedTo.set([""]) // empty string means generate all models
     supportingFilesConstrainedTo.set([]) // empty array means generate none
+    skipOperationExample = true // example responses require the ApiUtil.java supporting file
     configOptions.set([
         interfaceOnly          : "true", // Java interfaces only; no controllers or implementation classes
         useTags                : "true", // use the OpenAPI tag to classify apis, not the first segment of the api path
-        hideGenerationTimestamp: "false" // if we need to omit timestamp from generated code, so we can track it via git
+        hideGenerationTimestamp: "true"  // hidden to prevent unnecessary diff noise on unrelated changes
     ])
 }
 
@@ -170,6 +171,8 @@ sonarqube {
         property "sonar.projectKey", "DataBiosphere_workspace-data-service"
         property "sonar.organization", "broad-databiosphere"
         property "sonar.host.url", "https://sonarcloud.io"
+        // exclude generated files from Sonar scans
+        property "sonar.exclusions", "service/src/main/java/org/databiosphere/workspacedataservice/generated/**/*"
     }
 }
 
