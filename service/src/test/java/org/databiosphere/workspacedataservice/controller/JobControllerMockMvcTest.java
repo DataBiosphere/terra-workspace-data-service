@@ -33,7 +33,7 @@ class JobControllerMockMvcTest {
   @MockBean private JobDao jobDao;
 
   @Test
-  void smokeTestCreateImport() throws Exception {
+  void smokeTestGetJob() throws Exception {
     // create the instance in the MockInstanceDao
     UUID instanceId = UUID.randomUUID();
     instanceDao.createSchema(instanceId);
