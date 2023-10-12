@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -48,7 +49,7 @@ class PostgresJobDaoTest {
 
     var params = new MapSqlParameterSource("jobId", testJob.getJobId().toString());
     params.addValue("type", jobType.name());
-    params.addValue("status", GenericJobServerModel.StatusEnum.CREATED.name());
+    params.addValue("status", StatusEnum.CREATED.name());
 
     // after creating a job, there should be exactly one row with:
     // this jobId, the specified job type, and in status = CREATED,
@@ -82,10 +83,10 @@ class PostgresJobDaoTest {
   // update status, is it properly set and the updated timestamp changes?
   @ParameterizedTest(name = "Reject job updates to status {0}")
   @EnumSource(
-      value = GenericJobServerModel.StatusEnum.class,
+      value = StatusEnum.class,
       names = {"UNKNOWN", "ERROR"},
       mode = EnumSource.Mode.INCLUDE)
-  void rejectUpdate(GenericJobServerModel.StatusEnum status) {
+  void rejectUpdate(StatusEnum status) {
     JobType jobType = JobType.DATA_IMPORT;
     GenericJobServerModel testJob = assertJobCreation(jobType);
 
@@ -96,10 +97,10 @@ class PostgresJobDaoTest {
   // update status, is it properly set and the updated timestamp changes?
   @ParameterizedTest(name = "Update a job to status {0}")
   @EnumSource(
-      value = GenericJobServerModel.StatusEnum.class,
+      value = StatusEnum.class,
       names = {"UNKNOWN", "ERROR"},
       mode = EnumSource.Mode.EXCLUDE)
-  void update(GenericJobServerModel.StatusEnum status) {
+  void update(StatusEnum status) {
     JobType jobType = JobType.DATA_IMPORT;
     GenericJobServerModel testJob = assertJobCreation(jobType);
     jobDao.updateStatus(testJob.getJobId(), status);
@@ -137,7 +138,7 @@ class PostgresJobDaoTest {
     // input should still be {}, and result, and stacktrace should still be null
     var params = new MapSqlParameterSource("jobId", testJob.getJobId().toString());
     params.addValue("type", jobType.name());
-    params.addValue("status", GenericJobServerModel.StatusEnum.ERROR.name());
+    params.addValue("status", StatusEnum.ERROR.name());
     params.addValue("error", errorMessage);
     assertDoesNotThrow(
         () ->
@@ -168,7 +169,7 @@ class PostgresJobDaoTest {
     // input should still be {}, and result should still be null
     var params = new MapSqlParameterSource("jobId", testJob.getJobId().toString());
     params.addValue("type", jobType.name());
-    params.addValue("status", GenericJobServerModel.StatusEnum.ERROR.name());
+    params.addValue("status", StatusEnum.ERROR.name());
     params.addValue("error", errorMessage);
     params.addValue("stacktrace", mapper.writeValueAsString(stackTrace));
     assertDoesNotThrow(
@@ -191,8 +192,8 @@ class PostgresJobDaoTest {
     JobType jobType = JobType.DATA_IMPORT;
     GenericJobServerModel actual = assertJobCreation(jobType);
 
-    assertEquals(GenericJobServerModel.JobTypeEnum.DATA_IMPORT, actual.getJobType());
-    assertEquals(GenericJobServerModel.StatusEnum.CREATED, actual.getStatus());
+    assertEquals(JobTypeEnum.DATA_IMPORT, actual.getJobType());
+    assertEquals(StatusEnum.CREATED, actual.getStatus());
     // TODO: as PostgresJobDao.mapRow evolves, add more assertions here
   }
 }
