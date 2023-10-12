@@ -38,7 +38,7 @@ import org.springframework.test.context.TestPropertySource;
   "mock-backup-dao",
   "mock-restore-dao",
   "mock-clone-dao",
-  "local",
+  "local-cors",
   "mock-sam"
 })
 @TestPropertySource(

@@ -15,7 +15,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
-@ActiveProfiles({"mock-storage", "local"})
+@ActiveProfiles({"mock-storage", "local-cors"})
 @ContextConfiguration(name = "mockStorage")
 @SpringBootTest
 @TestPropertySource(
