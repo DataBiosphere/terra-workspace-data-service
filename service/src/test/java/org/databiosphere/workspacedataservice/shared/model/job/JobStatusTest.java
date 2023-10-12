@@ -4,12 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class JobStatusTest {
 
@@ -27,23 +25,15 @@ class JobStatusTest {
     assertEquals(generatedNames, names);
   }
 
-  private static Stream<Arguments> provideJobStatuses() {
-    return Arrays.stream(JobStatus.values()).map(Arguments::of);
-  }
-
   @ParameterizedTest(name = "JobStatus {0} should translate to GenericJobServerModel.StatusEnum")
-  @MethodSource("provideJobStatuses")
+  @EnumSource(JobStatus.class)
   void jobStatusToGenerated(JobStatus jobStatus) {
     GenericJobServerModel.StatusEnum actual = jobStatus.toGeneratedModel();
     assertEquals(jobStatus.name(), actual.name());
   }
 
-  private static Stream<Arguments> provideStatusEnums() {
-    return Arrays.stream(GenericJobServerModel.StatusEnum.values()).map(Arguments::of);
-  }
-
   @ParameterizedTest(name = "GenericJobServerModel.StatusEnum {0} should translate to JobStatus")
-  @MethodSource("provideStatusEnums")
+  @EnumSource(GenericJobServerModel.StatusEnum.class)
   void jobStatusFromGenerated(GenericJobServerModel.StatusEnum statusEnum) {
     JobStatus actual = JobStatus.fromGeneratedModel(statusEnum);
     assertEquals(statusEnum.name(), actual.name());
