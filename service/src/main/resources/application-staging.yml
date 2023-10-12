@@ -1,4 +1,4 @@
-samurl: https://sam.dsde-dev.broadinstitute.org/
-datarepourl: https://jade.datarepo-dev.broadinstitute.org/
-workspacemanagerurl: https://workspace.dsde-dev.broadinstitute.org/
-leoUrl: https://leonardo.dsde-dev.broadinstitute.org/
+samurl: https://sam.dsde-staging.broadinstitute.org/
+datarepourl: https://data.staging.broadinstitute.org/
+workspacemanagerurl: https://workspace.dsde-staging.broadinstitute.org/
+leoUrl: https://leonardo.dsde-staging.broadinstitute.org/
