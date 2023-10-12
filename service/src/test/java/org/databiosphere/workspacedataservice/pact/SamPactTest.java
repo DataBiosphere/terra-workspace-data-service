@@ -165,7 +165,7 @@ class SamPactTest {
                 + "  \"https://www.googleapis.com/auth/userinfo.profile\"]")
         .willRespondWith()
         .status(200)
-        .body(PactDslWithProvider.stringType("aToken"))
+        .body("aToken")
         .toPact();
   }
 
