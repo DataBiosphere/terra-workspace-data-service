@@ -46,13 +46,15 @@ export spring_profiles_active=local
 ```
 
 Other profiles that are available are: 
+- alpha
+- staging
 - dev
 - prod
 - bee
 
 You are unlikely to use prod and bee when running locally, those profiles are leveraged when WDS is deployed in Terra. 
 
-If you would like to not use a profile, you can set the following enviorment variables manually. The variables that need to be set are described below. 
+If you would like to not use a profile, you can set the following environment variables manually. The variables that need to be set are described below. 
 
 ##### SAM_URL
 
