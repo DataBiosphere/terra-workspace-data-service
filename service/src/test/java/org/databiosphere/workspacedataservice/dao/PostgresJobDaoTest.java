@@ -127,7 +127,7 @@ class PostgresJobDaoTest {
 
   // update status with an error message
   @Test
-  void updateWithErrorMessage() {
+  void failWithErrorMessage() {
     JobType jobType = JobType.DATA_IMPORT;
     String errorMessage = "my unit test error message";
     GenericJobServerModel testJob = assertJobCreation(jobType);
