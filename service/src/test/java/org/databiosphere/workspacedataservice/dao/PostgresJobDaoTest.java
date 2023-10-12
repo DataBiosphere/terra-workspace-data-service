@@ -156,7 +156,7 @@ class PostgresJobDaoTest {
 
   // update status with an error message and stacktrace
   @Test
-  void updateWithErrorMessageAndStackTrace() throws JsonProcessingException {
+  void failWithErrorMessageAndStackTrace() throws JsonProcessingException {
     JobType jobType = JobType.DATA_IMPORT;
     String errorMessage = "my stack trace error message";
     StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
