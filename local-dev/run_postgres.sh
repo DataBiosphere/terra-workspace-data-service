@@ -32,12 +32,16 @@ stop() {
     exit 0
 }
 
+shell() {
+  docker exec -it $CONTAINER psql -U wds
+}
+
 CONTAINER=postgres
 COMMAND=$1
 POSTGRES_PORT=${2:-"5432"}
 
 if [ ${#@} == 0 ]; then
-    echo "Usage: $0 stop|start"
+    echo "Usage: $0 stop|start|shell"
     exit 1
 fi
 
@@ -45,6 +49,8 @@ if [ $COMMAND = "start" ]; then
     start
 elif [ $COMMAND = "stop" ]; then
     stop
+elif [ $COMMAND = "shell" ]; then
+    shell
 else
     exit 1
 fi

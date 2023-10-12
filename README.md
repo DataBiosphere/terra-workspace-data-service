@@ -102,12 +102,13 @@ To run the application, first a postgres database must be running:
 ./local-dev/run_postgres.sh start
 ```
 
-To run the application against a local SAM_URL instead of dev, you can run the following commands (
-path has to be absolute, replace with path of where your wds repo exists) to set up nginx in a
-docker container locally:
+To bypass Sam permission checks locally, you can run a fake Sam nginx backend that will allow
+everything. Run the following from WDS root folder to launch the docker container and export the
+environment variable WDS will use on the next startup to connect to Sam.
 
 ```bash
-docker run -v /{absolute path}/service/src/test/resources/nginx.conf:/etc/nginx/nginx.conf -p 9889:80 -d nginx:1.23.3
+# start the SAM mock as a docker container in detached mode
+docker run -v `pwd`/service/src/test/resources/nginx.conf:/etc/nginx/nginx.conf -p 9889:80 -d nginx:1.23.3
 export SAM_URL=http://localhost:9889
 ```
 
@@ -179,6 +180,14 @@ To run a single test, run
 
 ```bash
 ./gradlew test --tests '*RecordDaoTest.testGetSingleRecord'
+```
+
+## Postgres
+
+When running the local docker postgres, you can access the shell directly:
+
+```bash
+./local-dev/run_posgres.sh shell
 ```
 
 ## Swagger UI
