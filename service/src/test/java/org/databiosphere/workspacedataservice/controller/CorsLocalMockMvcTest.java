@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.MvcResult;
  *
  * <p>See also CorsLiveMockMvcTest for testing CORS behavior in live deployments.
  */
-@ActiveProfiles(profiles = {"local"})
+@ActiveProfiles(profiles = {"local-cors"})
 @DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
