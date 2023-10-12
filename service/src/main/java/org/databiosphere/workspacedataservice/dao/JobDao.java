@@ -12,14 +12,9 @@ public interface JobDao {
 
   GenericJobServerModel updateStatus(UUID jobId, GenericJobServerModel.StatusEnum status);
 
-  GenericJobServerModel updateStatus(
-      UUID jobId, GenericJobServerModel.StatusEnum status, String errorMessage);
+  GenericJobServerModel fail(UUID jobId, String errorMessage);
 
-  GenericJobServerModel updateStatus(
-      UUID jobId,
-      GenericJobServerModel.StatusEnum status,
-      String errorMessage,
-      StackTraceElement[] stackTrace);
+  GenericJobServerModel fail(UUID jobId, String errorMessage, StackTraceElement[] stackTrace);
 
   GenericJobServerModel getJob(UUID jobId);
 }

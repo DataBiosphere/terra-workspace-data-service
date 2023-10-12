@@ -50,7 +50,7 @@ public class ImportQuartzJob implements Job {
     } catch (InterruptedException e) {
       // ensure the thread is actually interrupted
       Thread.currentThread().interrupt();
-      jobDao.updateStatus(jobId, GenericJobServerModel.StatusEnum.ERROR, e.getMessage());
+      jobDao.fail(jobId, e.getMessage());
       throw new JobExecutionException(e);
     }
   }

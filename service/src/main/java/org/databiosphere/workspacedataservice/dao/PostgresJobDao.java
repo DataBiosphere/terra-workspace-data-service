@@ -1,7 +1,10 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.*;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.ZoneOffset;
@@ -55,39 +58,57 @@ public class PostgresJobDao implements JobDao {
             "insert into sys_wds.job(id, type, status, input) " + "values (?, ?, ?, ?::jsonb)",
             job.getJobId().toString(),
             job.getJobType().name(),
-            GenericJobServerModel.StatusEnum.CREATED.name(),
+            StatusEnum.CREATED.name(),
             inputJsonb);
 
     return getJob(job.getJobId());
   }
 
-  @Override
-  public GenericJobServerModel updateStatus(UUID jobId, GenericJobServerModel.StatusEnum status) {
-    return this.updateStatus(jobId, status, null, null);
-  }
-
-  @Override
-  public GenericJobServerModel updateStatus(
-      UUID jobId, GenericJobServerModel.StatusEnum status, String errorMessage) {
-    return this.updateStatus(jobId, status, errorMessage, null);
-  }
-
   /**
    * update this import job with a new status. note that the table's trigger will automatically
-   * update the `updated` column's value.
+   * update the `updated` column's value. Do not use this method to mark a job as failed; use one of
+   * the fail() methods instead.
    *
    * @param jobId id of the job to update
    * @param status the status to which the job will be updated
+   * @return the updated job
+   */
+  @Override
+  public GenericJobServerModel updateStatus(UUID jobId, StatusEnum status) {
+    Preconditions.checkArgument(!StatusEnum.ERROR.equals(status), "Use fail() instead");
+    Preconditions.checkArgument(
+        !StatusEnum.UNKNOWN.equals(status), "Do not set status to UNKNOWN directly");
+    return update(jobId, status, null, null);
+  }
+
+  /**
+   * Mark a job as failed, specifying a short human-readable error message.
+   *
+   * @param jobId id of the job to update
+   * @param errorMessage a short error message, if the job is in error
+   * @return the updated job
+   */
+  @Override
+  public GenericJobServerModel fail(UUID jobId, String errorMessage) {
+    return update(jobId, StatusEnum.ERROR, errorMessage, null);
+  }
+
+  /**
+   * Mark a job as failed, specifying a short human-readable error message and a stack trace.
+   *
+   * @param jobId id of the job to update
    * @param errorMessage a short error message, if the job is in error
    * @param stackTrace a full stack trace for debugging, if the job is in error
    * @return the updated job
    */
   @Override
-  public GenericJobServerModel updateStatus(
-      UUID jobId,
-      GenericJobServerModel.StatusEnum status,
-      String errorMessage,
-      StackTraceElement[] stackTrace) {
+  public GenericJobServerModel fail(
+      UUID jobId, String errorMessage, StackTraceElement[] stackTrace) {
+    return update(jobId, StatusEnum.ERROR, errorMessage, stackTrace);
+  }
+
+  private GenericJobServerModel update(
+      UUID jobId, StatusEnum status, String errorMessage, StackTraceElement[] stackTrace) {
 
     // start our sql statement and map of params
     StringBuilder sb = new StringBuilder("update sys_wds.job set status = :status");
@@ -140,18 +161,18 @@ public class PostgresJobDao implements JobDao {
     public GenericJobServerModel mapRow(ResultSet rs, int rowNum) throws SQLException {
       UUID jobId = UUID.fromString(rs.getString("id"));
 
-      GenericJobServerModel.JobTypeEnum jobType = GenericJobServerModel.JobTypeEnum.UNKNOWN;
+      JobTypeEnum jobType = JobTypeEnum.UNKNOWN;
       String jobTypeStr = rs.getString("type");
       try {
-        jobType = GenericJobServerModel.JobTypeEnum.fromValue(jobTypeStr);
+        jobType = JobTypeEnum.fromValue(jobTypeStr);
       } catch (IllegalArgumentException ill) {
         logger.warn("Unexpected JobTypeEnum found: {}", jobTypeStr);
       }
 
-      GenericJobServerModel.StatusEnum status = GenericJobServerModel.StatusEnum.UNKNOWN;
+      StatusEnum status = StatusEnum.UNKNOWN;
       String statusStr = rs.getString("status");
       try {
-        status = GenericJobServerModel.StatusEnum.fromValue(statusStr);
+        status = StatusEnum.fromValue(statusStr);
       } catch (IllegalArgumentException ill) {
         logger.warn("Unexpected StatusEnum found: {}", statusStr);
       }

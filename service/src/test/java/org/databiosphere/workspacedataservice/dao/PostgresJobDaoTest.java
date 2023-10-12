@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dao;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -79,8 +80,25 @@ class PostgresJobDaoTest {
   }
 
   // update status, is it properly set and the updated timestamp changes?
+  @ParameterizedTest(name = "Reject job updates to status {0}")
+  @EnumSource(
+      value = GenericJobServerModel.StatusEnum.class,
+      names = {"UNKNOWN", "ERROR"},
+      mode = EnumSource.Mode.INCLUDE)
+  void rejectUpdate(GenericJobServerModel.StatusEnum status) {
+    JobType jobType = JobType.DATA_IMPORT;
+    GenericJobServerModel testJob = assertJobCreation(jobType);
+
+    assertThrows(
+        IllegalArgumentException.class, () -> jobDao.updateStatus(testJob.getJobId(), status));
+  }
+
+  // update status, is it properly set and the updated timestamp changes?
   @ParameterizedTest(name = "Update a job to status {0}")
-  @EnumSource(GenericJobServerModel.StatusEnum.class)
+  @EnumSource(
+      value = GenericJobServerModel.StatusEnum.class,
+      names = {"UNKNOWN", "ERROR"},
+      mode = EnumSource.Mode.EXCLUDE)
   void update(GenericJobServerModel.StatusEnum status) {
     JobType jobType = JobType.DATA_IMPORT;
     GenericJobServerModel testJob = assertJobCreation(jobType);
@@ -111,7 +129,7 @@ class PostgresJobDaoTest {
     JobType jobType = JobType.DATA_IMPORT;
     String errorMessage = "my unit test error message";
     GenericJobServerModel testJob = assertJobCreation(jobType);
-    jobDao.updateStatus(testJob.getJobId(), GenericJobServerModel.StatusEnum.ERROR, errorMessage);
+    jobDao.fail(testJob.getJobId(), errorMessage);
 
     // after updating the job, there should be exactly one row with:
     // this jobId and type, the new status, and the new error message
@@ -142,8 +160,7 @@ class PostgresJobDaoTest {
     StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
 
     GenericJobServerModel testJob = assertJobCreation(jobType);
-    jobDao.updateStatus(
-        testJob.getJobId(), GenericJobServerModel.StatusEnum.ERROR, errorMessage, stackTrace);
+    jobDao.fail(testJob.getJobId(), errorMessage, stackTrace);
 
     // after updating the job, there should be exactly one row with:
     // this jobId and type, the new status, the new error message, and the new stack trace
