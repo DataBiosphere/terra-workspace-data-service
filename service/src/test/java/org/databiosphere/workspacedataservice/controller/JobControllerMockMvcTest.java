@@ -62,7 +62,6 @@ class JobControllerMockMvcTest {
         mapper.readValue(mvcResult.getResponse().getContentAsString(), GenericJobServerModel.class);
 
     // which is equal to the expected job
-    // TODO: this is failing due to comparisons on created/updated times, due to timezone issue
     assertEquals(expected, actual);
   }
 }
