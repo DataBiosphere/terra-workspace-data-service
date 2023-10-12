@@ -24,7 +24,7 @@ import org.springframework.test.annotation.DirtiesContext;
 @DirtiesContext
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest
-public class PostgresJobDaoTest {
+class PostgresJobDaoTest {
 
   // createJob
   // updateStatus x 3
@@ -35,7 +35,7 @@ public class PostgresJobDaoTest {
   @Autowired ObjectMapper mapper;
 
   @AfterAll
-  public void afterAll() {
+  void afterAll() {
     // cleanup: delete everything from the job table
     namedTemplate.getJdbcTemplate().update("delete from sys_wds.job;");
   }
@@ -74,14 +74,14 @@ public class PostgresJobDaoTest {
   // create a Job
   @ParameterizedTest(name = "Create a job with type {0}")
   @EnumSource(JobType.class)
-  public void createJob(JobType jobType) {
+  void createJob(JobType jobType) {
     assertJobCreation(jobType);
   }
 
   // update status, is it properly set and the updated timestamp changes?
   @ParameterizedTest(name = "Update a job to status {0}")
   @EnumSource(GenericJobServerModel.StatusEnum.class)
-  public void update(GenericJobServerModel.StatusEnum status) {
+  void update(GenericJobServerModel.StatusEnum status) {
     JobType jobType = JobType.DATA_IMPORT;
     GenericJobServerModel testJob = assertJobCreation(jobType);
     jobDao.updateStatus(testJob.getJobId(), status);
@@ -107,7 +107,7 @@ public class PostgresJobDaoTest {
 
   // update status with an error message
   @Test
-  public void updateWithErrorMessage() {
+  void updateWithErrorMessage() {
     JobType jobType = JobType.DATA_IMPORT;
     String errorMessage = "my unit test error message";
     GenericJobServerModel testJob = assertJobCreation(jobType);
@@ -136,7 +136,7 @@ public class PostgresJobDaoTest {
 
   // update status with an error message and stacktrace
   @Test
-  public void updateWithErrorMessageAndStackTrace() throws JsonProcessingException {
+  void updateWithErrorMessageAndStackTrace() throws JsonProcessingException {
     JobType jobType = JobType.DATA_IMPORT;
     String errorMessage = "my stack trace error message";
     StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
@@ -170,7 +170,7 @@ public class PostgresJobDaoTest {
 
   // TODO: get job, does it deserialize correctly?
   @Test
-  public void getJob() {
+  void getJob() {
     JobType jobType = JobType.DATA_IMPORT;
     GenericJobServerModel actual = assertJobCreation(jobType);
 

@@ -11,11 +11,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class JobStatusTest {
+class JobStatusTest {
 
   // are the hand-coded JobStatus enum and the generated GenericJobServerModel.StatusEnum the same?
   @Test
-  public void equivalentToGeneratedModel() {
+  void equivalentToGeneratedModel() {
     // String version of the JobStatus enum values
     List<String> names = Arrays.stream(JobStatus.values()).map(Enum::name).toList();
 
@@ -33,7 +33,7 @@ public class JobStatusTest {
 
   @ParameterizedTest(name = "JobStatus {0} should translate to GenericJobServerModel.StatusEnum")
   @MethodSource("provideJobStatuses")
-  public void jobStatusToGenerated(JobStatus jobStatus) {
+  void jobStatusToGenerated(JobStatus jobStatus) {
     GenericJobServerModel.StatusEnum actual = jobStatus.toGeneratedModel();
     assertEquals(jobStatus.name(), actual.name());
   }
@@ -44,7 +44,7 @@ public class JobStatusTest {
 
   @ParameterizedTest(name = "GenericJobServerModel.StatusEnum {0} should translate to JobStatus")
   @MethodSource("provideStatusEnums")
-  public void jobStatusFromGenerated(GenericJobServerModel.StatusEnum statusEnum) {
+  void jobStatusFromGenerated(GenericJobServerModel.StatusEnum statusEnum) {
     JobStatus actual = JobStatus.fromGeneratedModel(statusEnum);
     assertEquals(statusEnum.name(), actual.name());
   }

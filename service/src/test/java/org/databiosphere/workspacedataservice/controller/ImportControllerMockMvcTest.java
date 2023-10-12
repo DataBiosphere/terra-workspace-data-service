@@ -24,14 +24,14 @@ import org.springframework.test.web.servlet.MvcResult;
 @DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
-public class ImportControllerMockMvcTest {
+class ImportControllerMockMvcTest {
 
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper mapper;
   @Autowired private InstanceDao instanceDao;
 
   @Test
-  public void smokeTestCreateImport() throws Exception {
+  void smokeTestCreateImport() throws Exception {
     UUID instanceId = UUID.randomUUID();
     instanceDao.createSchema(instanceId);
     ImportRequestServerModel importRequest =

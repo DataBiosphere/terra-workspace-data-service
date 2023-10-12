@@ -104,7 +104,7 @@ public class PostgresJobDao implements JobDao {
     if (stackTrace != null) {
       try {
         String stackTraceJsonb = mapper.writeValueAsString(stackTrace);
-        params.addValue("stacktrace", mapper.writeValueAsString(stackTrace));
+        params.addValue("stacktrace", stackTraceJsonb);
         sb.append(", stacktrace = :stacktrace::jsonb");
       } catch (JsonProcessingException e) {
         logger.error(

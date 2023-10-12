@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -27,14 +26,14 @@ import org.springframework.test.web.servlet.MvcResult;
 @DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
-public class JobControllerMockMvcTest {
+class JobControllerMockMvcTest {
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper mapper;
   @Autowired private InstanceDao instanceDao;
   @MockBean private JobDao jobDao;
 
   @Test
-  public void smokeTestCreateImport() throws Exception {
+  void smokeTestCreateImport() throws Exception {
     // create the instance in the MockInstanceDao
     UUID instanceId = UUID.randomUUID();
     instanceDao.createSchema(instanceId);
@@ -49,7 +48,7 @@ public class JobControllerMockMvcTest {
             // set created and updated to now, but in UTC because that's how Postgres stores it
             OffsetDateTime.now(ZoneId.of("Z")),
             OffsetDateTime.now(ZoneId.of("Z")));
-    when(jobDao.getJob(eq(jobId))).thenReturn(expected);
+    when(jobDao.getJob(jobId)).thenReturn(expected);
 
     // calling the API should result in 202 Accepted
     MvcResult mvcResult =
