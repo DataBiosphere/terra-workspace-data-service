@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import static org.databiosphere.workspacedataservice.shared.model.job.JobType.SYNC_RESTORE;
+
 import bio.terra.common.db.WriteTransaction;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,6 +14,7 @@ import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
 import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
+import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -30,9 +33,9 @@ public class PostgresRestoreDao extends AbstractBackupRestoreDao<RestoreResponse
   }
 
   @Override
-  public Job<RestoreResponse> getStatus(UUID trackingId) {
+  public Job<JobInput, RestoreResponse> getStatus(UUID trackingId) {
     MapSqlParameterSource params = new MapSqlParameterSource("trackingId", trackingId);
-    List<Job<RestoreResponse>> responses =
+    List<Job<JobInput, RestoreResponse>> responses =
         namedTemplate.query(
             "select id, status, error, createdtime, updatedtime, requester, description from sys_wds.restore WHERE id = :trackingId",
             params,
@@ -66,9 +69,9 @@ public class PostgresRestoreDao extends AbstractBackupRestoreDao<RestoreResponse
   }
 
   // rowmapper for retrieving Job<RestoreResponse> objects from the db
-  private static class RestoreJobRowMapper implements RowMapper<Job<RestoreResponse>> {
+  private static class RestoreJobRowMapper implements RowMapper<Job<JobInput, RestoreResponse>> {
     @Override
-    public Job<RestoreResponse> mapRow(ResultSet rs, int rowNum) throws SQLException {
+    public Job<JobInput, RestoreResponse> mapRow(ResultSet rs, int rowNum) throws SQLException {
       String description = rs.getString("description");
       UUID requester = rs.getObject("requester", UUID.class);
       RestoreResponse restoreResponse = new RestoreResponse(requester, description);
@@ -89,7 +92,15 @@ public class PostgresRestoreDao extends AbstractBackupRestoreDao<RestoreResponse
       LocalDateTime created = rs.getTimestamp("createdtime").toLocalDateTime();
       LocalDateTime updated = rs.getTimestamp("updatedtime").toLocalDateTime();
 
-      return new Job<>(jobId, status, errorMessage, created, updated, restoreResponse);
+      return new Job<>(
+          jobId,
+          SYNC_RESTORE,
+          status,
+          errorMessage,
+          created,
+          updated,
+          JobInput.empty(),
+          restoreResponse);
     }
   }
 }
