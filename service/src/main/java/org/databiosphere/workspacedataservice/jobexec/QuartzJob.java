@@ -28,7 +28,7 @@ import org.quartz.JobExecutionContext;
 public abstract class QuartzJob implements Job {
 
   /** implementing classes are expected to be beans that inject a JobDao */
-  JobDao jobDao;
+  protected abstract JobDao getJobDao();
 
   @Override
   public void execute(JobExecutionContext context) throws org.quartz.JobExecutionException {
@@ -36,14 +36,14 @@ public abstract class QuartzJob implements Job {
     UUID jobId = UUID.fromString(context.getJobDetail().getKey().getName());
     try {
       // mark this job as running
-      jobDao.updateStatus(jobId, GenericJobServerModel.StatusEnum.RUNNING);
+      getJobDao().updateStatus(jobId, GenericJobServerModel.StatusEnum.RUNNING);
       // execute the specifics of this job
       executeInternal(jobId, context);
       // if we reached here, mark this job as successful
-      jobDao.updateStatus(jobId, GenericJobServerModel.StatusEnum.SUCCEEDED);
+      getJobDao().updateStatus(jobId, GenericJobServerModel.StatusEnum.SUCCEEDED);
     } catch (Exception e) {
       // on any otherwise-unhandled exception, mark the job as failed
-      jobDao.fail(jobId, e.getMessage(), e.getStackTrace());
+      getJobDao().fail(jobId, e.getMessage(), e.getStackTrace());
     }
   }
 

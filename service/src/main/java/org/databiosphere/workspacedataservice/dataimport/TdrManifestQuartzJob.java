@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TdrManifestQuartzJob extends ImportQuartzJob {
 
-  final JobDao jobDao;
+  private final JobDao jobDao;
   private final ObjectMapper mapper;
   private final DataRepoService dataRepoService;
 
@@ -29,6 +29,11 @@ public class TdrManifestQuartzJob extends ImportQuartzJob {
     this.jobDao = jobDao;
     this.mapper = mapper;
     this.dataRepoService = dataRepoService;
+  }
+
+  @Override
+  protected JobDao getJobDao() {
+    return this.jobDao;
   }
 
   @Override

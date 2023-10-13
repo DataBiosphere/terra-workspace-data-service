@@ -11,13 +11,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class PfbQuartzJob extends ImportQuartzJob {
 
-  final JobDao jobDao;
+  private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+  private final JobDao jobDao;
 
   public PfbQuartzJob(JobDao jobDao) {
     this.jobDao = jobDao;
   }
 
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
+  @Override
+  protected JobDao getJobDao() {
+    return this.jobDao;
+  }
 
   @Override
   protected void executeInternal(UUID jobId, JobExecutionContext context) {
