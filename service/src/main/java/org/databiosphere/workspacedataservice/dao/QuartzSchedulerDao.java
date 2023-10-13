@@ -25,9 +25,6 @@ public class QuartzSchedulerDao implements SchedulerDao {
   public void schedule(Schedulable schedulable) {
     JobKey jobKey = new JobKey(schedulable.getId(), schedulable.getGroup());
 
-    // TODO: read JobData from the Job's inputs, instead of hardcoding it here
-    // TODO: choose the implementing class based on the job's type, instead of hardcoding
-    // ImportQuartzJob.class
     JobDetail jobDetail =
         JobBuilder.newJob()
             .ofType(schedulable.getImplementation())
