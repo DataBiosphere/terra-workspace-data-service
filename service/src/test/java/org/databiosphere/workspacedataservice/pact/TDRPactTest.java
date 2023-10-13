@@ -44,10 +44,10 @@ class TDRPactTest {
         .pathFromProviderState(
             "/api/repository/v1/snapshots/${dummySnapshotId}",
             String.format("/api/repository/v1/snapshots/%s", dummySnapshotId))
+        .query("include=TABLES")
         .method("GET")
         .willRespondWith()
         .status(404)
-        .body("")
         .toPact();
   }
 
