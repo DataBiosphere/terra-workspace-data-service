@@ -7,6 +7,10 @@ import org.quartz.JobDataMap;
 
 public class Schedulable {
 
+  // keys for job data arguments likely to be used by all/most Schedulables
+  public static final String ARG_TOKEN = "authToken";
+  public static final String ARG_INSTANCE = "instanceId";
+
   // classifier for types of schedulable jobs; feeds into Quartz's JobKey
   private final String group;
   // id for a single schedulable job; feeds into Quartz's JobKey

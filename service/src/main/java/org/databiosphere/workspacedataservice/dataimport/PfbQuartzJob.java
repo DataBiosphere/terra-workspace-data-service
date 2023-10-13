@@ -1,19 +1,26 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
-import org.quartz.Job;
+import java.util.UUID;
+import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+/** Shell/starting point for PFB import via Quartz. */
 @Component
-public class PfbQuartzJob implements Job {
+public class PfbQuartzJob extends ImportQuartzJob {
+
+  final JobDao jobDao;
+
+  public PfbQuartzJob(JobDao jobDao) {
+    this.jobDao = jobDao;
+  }
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   @Override
-  public void execute(JobExecutionContext context) throws JobExecutionException {
+  protected void executeInternal(UUID jobId, JobExecutionContext context) {
     // TODO: implement PFB import.
     logger.info("TODO: implement PFB import.");
   }

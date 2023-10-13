@@ -1,5 +1,9 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static org.databiosphere.workspacedataservice.dataimport.ImportQuartzJob.ARG_URL;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -63,11 +67,10 @@ public class ImportService {
         importRequest.getType());
 
     // create the arguments for the schedulable job
-    // TODO: create some constants for map keys
     Map<String, Serializable> arguments = new HashMap<>();
-    arguments.put("token", "fake-pet-token");
-    arguments.put("url", importRequest.getUrl().toString());
-    arguments.put("instanceId", instanceUuid.toString());
+    arguments.put(ARG_TOKEN, "fake-pet-token");
+    arguments.put(ARG_URL, importRequest.getUrl().toString());
+    arguments.put(ARG_INSTANCE, instanceUuid.toString());
 
     // create the executable job to be scheduled
     Schedulable schedulable =
