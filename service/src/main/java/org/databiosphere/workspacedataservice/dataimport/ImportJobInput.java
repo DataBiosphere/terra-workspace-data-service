@@ -4,6 +4,7 @@ import java.net.URI;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 
+/** User-supplied input arguments for a data import job */
 public class ImportJobInput implements JobInput {
 
   private final URI uri;
