@@ -187,7 +187,7 @@ class PostgresJobDaoTest {
         "should properly update the job with an error message and a stack trace");
   }
 
-  // TODO: get job, does it deserialize correctly?
+  // TODO: AJ-1011 get job, does it deserialize correctly?
   @Test
   void getJob() {
     JobType jobType = JobType.DATA_IMPORT;
@@ -195,6 +195,6 @@ class PostgresJobDaoTest {
 
     assertEquals(JobTypeEnum.DATA_IMPORT, actual.getJobType());
     assertEquals(StatusEnum.CREATED, actual.getStatus());
-    // TODO: as PostgresJobDao.mapRow evolves, add more assertions here
+    // TODO: AJ-1011 as PostgresJobDao.mapRow evolves, add more assertions here
   }
 }

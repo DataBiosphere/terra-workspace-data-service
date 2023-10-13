@@ -27,7 +27,7 @@ public class PfbQuartzJob extends QuartzJob {
 
   @Override
   protected void executeInternal(UUID jobId, JobExecutionContext context) {
-    // TODO: implement PFB import.
+    // TODO: AJ-1227? implement PFB import.
     logger.info("TODO: implement PFB import.");
   }
 }
