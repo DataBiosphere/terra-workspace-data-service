@@ -14,7 +14,7 @@ public class Schedulable {
   // classifier for types of schedulable jobs; feeds into Quartz's JobKey
   private final String group;
   // id for a single schedulable job; feeds into Quartz's JobKey
-  private final String name;
+  private final String id;
   // for human-readable debugging
   private final String description;
   // Class to execute for this schedulable job
@@ -24,12 +24,12 @@ public class Schedulable {
 
   public Schedulable(
       String group,
-      String name,
+      String id,
       Class<? extends Job> implementation,
       String description,
       Map<String, Serializable> arguments) {
     this.group = group;
-    this.name = name;
+    this.id = id;
     this.implementation = implementation;
     this.description = description;
     this.arguments = arguments;
@@ -39,8 +39,8 @@ public class Schedulable {
     return group;
   }
 
-  public String getName() {
-    return name;
+  public String getId() {
+    return id;
   }
 
   public String getDescription() {

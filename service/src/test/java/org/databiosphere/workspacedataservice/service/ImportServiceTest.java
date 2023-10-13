@@ -38,7 +38,7 @@ class ImportServiceTest {
     expectedJobDataMap.put("foo", "bar");
     expectedJobDataMap.put("twenty-three", 23);
 
-    assertEquals(jobId.toString(), actual.getName());
+    assertEquals(jobId.toString(), actual.getId());
     assertEquals(importType.name(), actual.getGroup());
     assertEquals(expectedJobDataMap, actual.getArgumentsAsJobDataMap());
   }
