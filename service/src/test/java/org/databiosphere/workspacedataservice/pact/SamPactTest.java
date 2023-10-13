@@ -257,7 +257,7 @@ class SamPactTest {
     SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
     SamDao samDao =
         new HttpSamDao(clientFactory, new HttpSamClientSupport(), UUID.randomUUID().toString());
-    String petToken = samDao.getPetToken("userToken");
+    String petToken = samDao.getPetToken();
     assertNotNull(petToken);
   }
 }

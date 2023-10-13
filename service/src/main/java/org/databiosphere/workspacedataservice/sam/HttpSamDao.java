@@ -120,11 +120,11 @@ public class HttpSamDao implements SamDao {
     return httpSamClientSupport.withRetryAndErrorHandling(samFunction, "getSystemStatus");
   }
 
-  public String getPetToken(String token) {
+  public String getPetToken() {
     SamFunction<String> samFunction =
         () ->
             samClientFactory
-                .getGoogleApi(token)
+                .getGoogleApi(null)
                 .getArbitraryPetServiceAccountToken(
                     List.of(
                         "https://www.googleapis.com/auth/userinfo.email",

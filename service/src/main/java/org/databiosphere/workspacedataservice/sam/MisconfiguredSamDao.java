@@ -75,7 +75,7 @@ public class MisconfiguredSamDao implements SamDao {
   }
 
   @Override
-  public String getPetToken(String token) {
+  public String getPetToken() {
     logWarning();
     return "n/a";
   }

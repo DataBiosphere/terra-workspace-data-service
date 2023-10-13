@@ -53,5 +53,5 @@ public interface SamDao {
   SystemStatus getSystemStatus();
 
   /** Gets a pet token for the user * */
-  String getPetToken(String token);
+  String getPetToken();
 }
