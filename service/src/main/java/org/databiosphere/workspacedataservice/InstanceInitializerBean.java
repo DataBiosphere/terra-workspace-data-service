@@ -85,7 +85,7 @@ public class InstanceInitializerBean {
           sourceWorkspaceId,
           workspaceId);
       // Initialize default schema if initCloneMode() returns false.
-      if (initCloneMode()) {
+      if (initCloneMode(sourceWorkspaceId)) {
         LOGGER.info("Cloning complete.");
         return;
       }
@@ -148,7 +148,7 @@ public class InstanceInitializerBean {
   starting WDS was initiated via a clone operation and will contain the WorkspaceId of the original workspace where the cloning
   was triggered. This function returns false for an incomplete clone.
   */
-  private boolean initCloneMode() {
+  protected boolean initCloneMode(String sourceWorkspaceId) {
     LOGGER.info("Starting in clone mode...");
     UUID trackingId = UUID.randomUUID();
     Lock lock = lockRegistry.obtain(sourceWorkspaceId);
