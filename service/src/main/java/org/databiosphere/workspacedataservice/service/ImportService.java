@@ -1,8 +1,8 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.dataimport.ImportQuartzJob.ARG_URL;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
 import java.io.Serializable;
 import java.util.HashMap;

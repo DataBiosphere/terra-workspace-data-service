@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
 import bio.terra.datarepo.model.SnapshotExportResponseModel;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,6 +10,7 @@ import java.net.URL;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
+import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.service.DataRepoService;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
@@ -17,7 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TdrManifestQuartzJob extends ImportQuartzJob {
+public class TdrManifestQuartzJob extends QuartzJob {
 
   private final JobDao jobDao;
   private final ObjectMapper mapper;

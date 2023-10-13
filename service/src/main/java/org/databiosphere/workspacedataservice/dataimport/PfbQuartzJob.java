@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dataimport;
 
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.quartz.JobExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 /** Shell/starting point for PFB import via Quartz. */
 @Component
-public class PfbQuartzJob extends ImportQuartzJob {
+public class PfbQuartzJob extends QuartzJob {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
