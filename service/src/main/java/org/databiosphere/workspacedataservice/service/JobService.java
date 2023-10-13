@@ -3,6 +3,8 @@ package org.databiosphere.workspacedataservice.service;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,6 +22,10 @@ public class JobService {
     // validate instance exists
     instanceService.validateInstance(instanceUuid);
 
-    return jobDao.getJob(jobId);
+    try {
+      return jobDao.getJob(jobId);
+    } catch (EmptyResultDataAccessException e) {
+      throw new MissingObjectException("Job");
+    }
   }
 }
