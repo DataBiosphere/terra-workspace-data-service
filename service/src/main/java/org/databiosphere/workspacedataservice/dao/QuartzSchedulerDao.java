@@ -2,10 +2,7 @@ package org.databiosphere.workspacedataservice.dao;
 
 import static org.quartz.TriggerBuilder.newTrigger;
 
-import org.databiosphere.workspacedataservice.dataimport.ImportQuartzJob;
-import org.databiosphere.workspacedataservice.shared.model.job.Job;
-import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
-import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
+import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
@@ -25,19 +22,16 @@ public class QuartzSchedulerDao implements SchedulerDao {
     this.scheduler = scheduler;
   }
 
-  public void schedule(Job<JobInput, JobResult> job) {
-    JobKey jobKey = new JobKey(job.getJobId().toString(), job.getJobType().name());
+  public void schedule(Schedulable schedulable) {
+    JobKey jobKey = new JobKey(schedulable.getId(), schedulable.getGroup());
 
-    // TODO: read JobData from the Job's inputs, instead of hardcoding it here
-    // TODO: choose the implementing class based on the job's type, instead of hardcoding
-    // ImportQuartzJob.class
     JobDetail jobDetail =
         JobBuilder.newJob()
-            .ofType(ImportQuartzJob.class)
+            .ofType(schedulable.getImplementation())
             .withIdentity(jobKey)
-            .usingJobData("token", "proof-of-concept-token")
+            .setJobData(schedulable.getArgumentsAsJobDataMap())
             .storeDurably(false) // delete from the quartz table after the job finishes
-            .withDescription("Import for job " + job.getJobId().toString())
+            .withDescription(schedulable.getDescription())
             .build();
 
     // tell Quartz to run the job: run only once, start immediately
