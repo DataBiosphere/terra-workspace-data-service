@@ -62,7 +62,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     UUID snapshotId = snapshotExportResponseModel.getSnapshot().getId();
     logger.info("Starting import of snapshot {} to instance {}", snapshotId, instanceId);
     // perform the import via DataRepoService
-    // TODO: pass token to dataRepoService, or possibly stash it on the thread
+    // TODO: AJ-1011 pass token to dataRepoService, or possibly stash it on the thread
     dataRepoService.importSnapshot(instanceId, snapshotId);
   }
 }

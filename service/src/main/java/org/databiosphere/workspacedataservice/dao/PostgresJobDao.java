@@ -44,7 +44,7 @@ public class PostgresJobDao implements JobDao {
       } catch (JsonProcessingException e) {
         // for now, fail silently. If/when we have any inputs that are required,
         // this should rethrow an exception instead of swallowing it
-        // TODO: this will soon need to be a failure
+        // TODO: AJ-1011 this will soon need to be a failure
         logger.error(
             "Error serializing inputs to jsonb for job {}: {}", job.getJobId(), e.getMessage());
       }
@@ -131,7 +131,7 @@ public class PostgresJobDao implements JobDao {
       } catch (JsonProcessingException e) {
         logger.error(
             "Error serializing stack trace to jsonb for job {}: {}", jobId, e.getMessage());
-        // TODO: should this be fatal?
+        // TODO: AJ-1011 should this be fatal?
       }
     }
 
@@ -188,7 +188,7 @@ public class PostgresJobDao implements JobDao {
 
       job.errorMessage(rs.getString("error"));
 
-      // TODO: also return stacktrace, input, result.
+      // TODO: AJ-1011 also return stacktrace, input, result.
       return job;
     }
   }

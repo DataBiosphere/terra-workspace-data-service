@@ -8,7 +8,7 @@ import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 
 public interface JobDao {
 
-  // TODO: awkward that this API accepts `Job` but returns `GenericJobServerModel`;
+  // TODO: AJ-1011 awkward that this API accepts `Job` but returns `GenericJobServerModel`;
   // we should standardize on one model
   GenericJobServerModel createJob(Job<JobInput, JobResult> job);
 
