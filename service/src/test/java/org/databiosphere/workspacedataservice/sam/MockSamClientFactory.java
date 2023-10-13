@@ -23,6 +23,6 @@ public class MockSamClientFactory implements SamClientFactory {
 
   @Override
   public GoogleApi getGoogleApi(String token) {
-    return null;
+    return new MockSamGoogleApi();
   }
 }
