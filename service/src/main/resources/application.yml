@@ -63,6 +63,15 @@ spring:
   # ... and run Liquibase instead
   liquibase:
     change-log: classpath:liquibase/changelog.yaml
+  quartz:
+    # Quartz will persist all its information in memory. This is simple and performant and
+    # allows Quartz to use sensitive data such as auth tokens as input to jobs. However,
+    # it is not restart-safe; if WDS restarts or dies before a Quartz job completes, that
+    # job will be lost and appear to the end user as if it hung.
+    # It is also not cluster-aware; when WDS runs as a multi-replica cluster, Quartz jobs will
+    # always run on the replica where they were created.
+    job-store-type: memory
+
 #   # activate the "local" profile to turn on CORS response headers,
 #   # which may be necessary for local development.
 #   profiles:
