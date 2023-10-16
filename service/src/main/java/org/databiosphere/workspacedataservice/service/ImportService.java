@@ -73,7 +73,9 @@ public class ImportService {
 
     // create the arguments for the schedulable job
     Map<String, Serializable> arguments = new HashMap<>();
-    arguments.put(ARG_TOKEN, token);
+    if (token != null) {
+      arguments.put(ARG_TOKEN, token);
+    }
     arguments.put(ARG_URL, importRequest.getUrl().toString());
     arguments.put(ARG_INSTANCE, instanceUuid.toString());
 
