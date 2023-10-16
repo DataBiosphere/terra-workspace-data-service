@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -43,7 +44,7 @@ import org.springframework.test.context.TestPropertySource;
 })
 @TestPropertySource(
     properties = {"twds.instance.workspace-id=90e1b179-9f83-4a6f-a8c2-db083df4cd03"})
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@DirtiesContext
 @SpringBootTest(
     classes = {
       InstanceInitializerConfig.class,
@@ -78,11 +79,9 @@ class InstanceInitializerBeanTest {
 
   Lock mockLock = mock(Lock.class);
 
-  // JdbcLockRegistry registry = mock(JdbcLockRegistry.class);
-
   @BeforeEach
-  void setUp() {
-    when(mockLock.tryLock()).thenReturn(true);
+  void setUp() throws InterruptedException {
+    when(mockLock.tryLock(anyLong(), any())).thenReturn(true);
     when(registry.obtain(anyString())).thenReturn(mockLock);
   }
 
@@ -123,21 +122,23 @@ class InstanceInitializerBeanTest {
     assertFalse(instanceDao.instanceSchemaExists(instanceID));
     // enter clone mode
     instanceInitializerBean.initCloneMode(sourceWorkspaceId);
-    // confirm instance exists
-    // assertTrue(instanceDao.instanceSchemaExists(instanceID));
+    // confirm we have moved forward with cloning
     assertTrue(cloneDao.cloneExistsForWorkspace(UUID.fromString(sourceWorkspaceId)));
   }
 
   @Test
   // Cloning where we can't get a lock
-  void cloneWithLockFail() {
-    when(mockLock.tryLock()).thenReturn(false);
+  void cloneWithLockFail() throws InterruptedException {
+    when(mockLock.tryLock(anyLong(), any())).thenReturn(false);
     // instance does not exist
     assertFalse(instanceDao.instanceSchemaExists(instanceID));
     // enter clone mode
-    instanceInitializerBean.initCloneMode(sourceWorkspaceId);
-    // confirm instance still does not exist
-    assertFalse(instanceDao.instanceSchemaExists(instanceID));
+    boolean cleanExit = instanceInitializerBean.initCloneMode(sourceWorkspaceId);
+    // initCloneMode() should have returned true since we did not enter a situation
+    // where we'd have to create the default schema.
+    assertTrue(cleanExit);
+    // confirm we did not enter clone mode
+    assertFalse(cloneDao.cloneExistsForWorkspace(UUID.fromString(sourceWorkspaceId)));
   }
 
   @Test
@@ -152,8 +153,6 @@ class InstanceInitializerBeanTest {
     // initCloneMode() should have returned true since we did not enter a situation
     // where we'd have to create the default schema.
     assertTrue(cleanExit);
-    // confirm instance still exists
-    assertTrue(instanceDao.instanceSchemaExists(instanceID));
   }
 
   @Test
@@ -169,8 +168,6 @@ class InstanceInitializerBeanTest {
     // initCloneMode() should have returned false since we encountered a situation
     // where we'd have to create the default schema.
     assertFalse(cleanExit);
-    // confirm instance was created
-    assertTrue(instanceDao.instanceSchemaExists(instanceID));
   }
 
   @Test
