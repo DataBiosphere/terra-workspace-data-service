@@ -1,14 +1,12 @@
 package org.databiosphere.workspacedataservice.activitylog;
 
-import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
-import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.sam.SamDao;
+import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.context.request.RequestContextHolder;
 
 /** Builder for ActivityEvent, with many convenience functions */
 public class ActivityEventBuilder {
@@ -39,12 +37,10 @@ public class ActivityEventBuilder {
   public ActivityEventBuilder currentUser() {
     try {
       // grab the current user's bearer token (see BearerTokenFilter)
-      Object token =
-          RequestContextHolder.currentRequestAttributes()
-              .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
+      String token = TokenContextUtil.getToken();
       if (token != null) {
         // resolve the token to a user id via Sam
-        this.subject = samDao.getUserId(token.toString());
+        this.subject = samDao.getUserId(token);
       } else {
         this.subject = "anonymous";
       }
