@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.sam;
 
 import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
@@ -112,5 +113,17 @@ class TokenContextUtilTest {
                     }));
 
     assertEquals("401 UNAUTHORIZED \"unit testing!\"", authenticationException.getMessage());
+  }
+
+  @Test
+  void noOrElseSpecified() {
+    String expected = RandomStringUtils.randomAlphanumeric(10);
+    // set request attributes to empty
+    RequestContextHolder.setRequestAttributes(null);
+    // ensure job attributes are empty
+    JobContextHolder.destroy();
+    // call getToken with a null initialValue and an orElse that returns the expected value
+    String actual = TokenContextUtil.getToken((String) null);
+    assertNull(actual);
   }
 }
