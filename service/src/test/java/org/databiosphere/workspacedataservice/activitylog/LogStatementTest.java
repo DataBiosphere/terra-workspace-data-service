@@ -17,7 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.datarepo.DataRepoClientFactory;
+import org.databiosphere.workspacedataservice.datarepo.DataRepoDao;
+import org.databiosphere.workspacedataservice.datarepo.DataRepoDaoFactory;
 import org.databiosphere.workspacedataservice.service.DataRepoService;
 import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
@@ -44,7 +45,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @ActiveProfiles(profiles = {"mock-sam"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest
+@SpringBootTest(properties = {"datarepourl=http://localhost/"})
 @ExtendWith(OutputCaptureExtension.class)
 public class LogStatementTest {
 
@@ -61,7 +62,8 @@ public class LogStatementTest {
       Mockito.mock(ReferencedGcpResourceApi.class);
 
   // mocking for data repo
-  @MockBean DataRepoClientFactory mockDataRepoClientFactory;
+  @MockBean DataRepoDaoFactory mockDataRepoDaoFactory;
+  @MockBean DataRepoDao.ClientFactory mockDataRepoClientFactory;
   final RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
 
   @AfterEach
@@ -222,6 +224,8 @@ public class LogStatementTest {
 
     UUID snapshotId = UUID.randomUUID();
 
+    given(mockDataRepoDaoFactory.getDao(any()))
+        .willReturn(new DataRepoDao(mockDataRepoClientFactory));
     given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi(null))
         .willReturn(mockReferencedGcpResourceApi);
     given(mockDataRepoClientFactory.getRepositoryApi()).willReturn(mockRepositoryApi);
@@ -235,7 +239,7 @@ public class LogStatementTest {
 
     given(mockRepositoryApi.retrieveSnapshot(any(), any())).willReturn(testSnapshot);
 
-    dataRepoService.importSnapshot(instanceId, snapshotId);
+    dataRepoService.importSnapshot(instanceId, snapshotId, null);
     assertThat(output.getOut())
         .contains(
             "user anonymous linked 1 snapshot reference(s) with id(s) [%s]".formatted(snapshotId));

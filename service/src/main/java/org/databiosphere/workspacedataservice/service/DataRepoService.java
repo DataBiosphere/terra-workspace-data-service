@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.datarepo.DataRepoDao;
+import org.databiosphere.workspacedataservice.datarepo.DataRepoDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -22,7 +22,7 @@ public class DataRepoService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DataRepoService.class);
 
-  private final DataRepoDao dataRepoDao;
+  private final DataRepoDaoFactory dataRepoDaoFactory;
   private final WorkspaceManagerDao workspaceManagerDao;
   private final ActivityLogger activityLogger;
   private final RecordDao recordDao;
@@ -33,19 +33,19 @@ public class DataRepoService {
   public static final String TDRIMPORT_IMPORT_TIME = "Import Time";
 
   public DataRepoService(
-      DataRepoDao dataRepoDao,
+      DataRepoDaoFactory dataRepoDaoFactory,
       WorkspaceManagerDao workspaceManagerDao,
       ActivityLogger activityLogger,
       RecordDao recordDao) {
-    this.dataRepoDao = dataRepoDao;
+    this.dataRepoDaoFactory = dataRepoDaoFactory;
     this.workspaceManagerDao = workspaceManagerDao;
     this.activityLogger = activityLogger;
     this.recordDao = recordDao;
   }
 
-  public void importSnapshot(UUID instanceId, UUID snapshotId) {
+  public void importSnapshot(UUID instanceId, UUID snapshotId, String authToken) {
     // getSnapshot will throw exception if caller does not have access
-    SnapshotModel snapshot = dataRepoDao.getSnapshot(snapshotId);
+    SnapshotModel snapshot = dataRepoDaoFactory.getDao(authToken).getSnapshot(snapshotId);
 
     // createDataRepoSnapshotReference is required to setup policy and will throw exception if
     // policy conflicts

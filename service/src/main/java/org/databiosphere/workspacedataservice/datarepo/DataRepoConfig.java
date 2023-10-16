@@ -15,13 +15,8 @@ public class DataRepoConfig {
   private static final Logger LOGGER = LoggerFactory.getLogger(DataRepoConfig.class);
 
   @Bean
-  public DataRepoClientFactory getDataRepoClientFactory() {
+  public HttpDataRepoDaoFactory getDataRepoDaoFactory() {
     LOGGER.info("Using data repo base url: '{}'", dataRepoUrl);
-    return new HttpDataRepoClientFactory(dataRepoUrl);
-  }
-
-  @Bean
-  public DataRepoDao dataRepoDao(DataRepoClientFactory dataRepoClientFactory) {
-    return new DataRepoDao(dataRepoClientFactory);
+    return new HttpDataRepoDaoFactory(dataRepoUrl);
   }
 }

@@ -35,7 +35,8 @@ import org.springframework.test.context.TestPropertySource;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestPropertySource(
     properties = {
-      "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000"
+      "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000",
+      "datarepourl=http://localhost/"
     }) // example uuid from https://en.wikipedia.org/wiki/Universally_unique_identifier
 class DataRepoServiceTest {
 
@@ -45,7 +46,8 @@ class DataRepoServiceTest {
 
   @Autowired InstanceDao instanceDao;
 
-  @MockBean DataRepoClientFactory mockDataRepoClientFactory;
+  @MockBean DataRepoDaoFactory mockDataRepoDaoFactory;
+  @MockBean DataRepoDao.ClientFactory mockDataRepoClientFactory;
 
   @Autowired WorkspaceManagerDao workspaceManagerDao;
 
@@ -60,6 +62,8 @@ class DataRepoServiceTest {
 
   @BeforeEach
   void setUp() {
+    given(mockDataRepoDaoFactory.getDao(any()))
+        .willReturn(new DataRepoDao(mockDataRepoClientFactory));
     given(mockDataRepoClientFactory.getRepositoryApi()).willReturn(mockRepositoryApi);
     given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi(null))
         .willReturn(mockReferencedGcpResourceApi);
@@ -86,7 +90,7 @@ class DataRepoServiceTest {
         new SnapshotModel().name("test snapshot").id(snapshotId).tables(tables);
     given(mockRepositoryApi.retrieveSnapshot(any(), any())).willReturn(testSnapshot);
 
-    dataRepoService.importSnapshot(INSTANCE, snapshotId);
+    dataRepoService.importSnapshot(INSTANCE, snapshotId, null);
 
     assertTrue(
         recordDao.recordTypeExists(INSTANCE, RecordType.valueOf(DataRepoService.TDRIMPORT_TABLE)));

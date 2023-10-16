@@ -3,16 +3,14 @@ package org.databiosphere.workspacedataservice.sam;
 import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
 import java.io.IOException;
-import java.util.Objects;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
+import org.databiosphere.workspacedataservice.auth.TokenExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -30,24 +28,17 @@ public class BearerTokenFilter implements Filter {
 
   public static final String ATTRIBUTE_NAME_TOKEN = "bearer-token-attribute";
 
-  private static final String BEARER_PREFIX = "Bearer ";
+  public static final String BEARER_PREFIX = "Bearer ";
 
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
       throws IOException, ServletException {
-    if (request instanceof HttpServletRequest httpRequest) {
-      String authString = httpRequest.getHeader(HttpHeaders.AUTHORIZATION);
-      if (!Objects.isNull(authString) && authString.startsWith(BEARER_PREFIX)) {
-        String token = authString.replaceFirst(BEARER_PREFIX, "");
 
-        LOGGER.debug("found bearer token in incoming request");
-
-        RequestAttributes currentAttributes = RequestContextHolder.currentRequestAttributes();
-        currentAttributes.setAttribute(ATTRIBUTE_NAME_TOKEN, token, SCOPE_REQUEST);
-        RequestContextHolder.setRequestAttributes(currentAttributes);
-      } else {
-        LOGGER.debug("No bearer token in incoming request");
-      }
+    String token = TokenExtractor.getToken(request);
+    if (token != null) {
+      RequestAttributes currentAttributes = RequestContextHolder.currentRequestAttributes();
+      currentAttributes.setAttribute(ATTRIBUTE_NAME_TOKEN, token, SCOPE_REQUEST);
+      RequestContextHolder.setRequestAttributes(currentAttributes);
     }
 
     chain.doFilter(request, response);

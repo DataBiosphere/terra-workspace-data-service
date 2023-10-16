@@ -3,6 +3,8 @@ package org.databiosphere.workspacedataservice.controller;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 
 import java.util.UUID;
+import javax.servlet.http.HttpServletRequest;
+import org.databiosphere.workspacedataservice.auth.TokenExtractor;
 import org.databiosphere.workspacedataservice.retry.RetryableApi;
 import org.databiosphere.workspacedataservice.service.DataRepoService;
 import org.databiosphere.workspacedataservice.service.InstanceService;
@@ -28,10 +30,12 @@ public class DataRepoController {
   public ResponseEntity<Void> importSnapshot(
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("version") String version,
-      @PathVariable("snapshotId") UUID snapshotId) {
+      @PathVariable("snapshotId") UUID snapshotId,
+      HttpServletRequest request) {
     validateVersion(version);
     instanceService.validateInstance(instanceId);
-    dataRepoService.importSnapshot(instanceId, snapshotId);
+    String authToken = TokenExtractor.getToken(request);
+    dataRepoService.importSnapshot(instanceId, snapshotId, authToken);
     return new ResponseEntity<>(HttpStatus.ACCEPTED);
   }
 }

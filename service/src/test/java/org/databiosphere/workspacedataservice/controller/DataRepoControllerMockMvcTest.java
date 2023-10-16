@@ -16,8 +16,8 @@ import bio.terra.workspace.model.DataRepoSnapshotResource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.datarepo.DataRepoClientFactory;
 import org.databiosphere.workspacedataservice.datarepo.DataRepoDao;
+import org.databiosphere.workspacedataservice.datarepo.DataRepoDaoFactory;
 import org.databiosphere.workspacedataservice.service.DataRepoService;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerClientFactory;
@@ -45,14 +45,13 @@ class DataRepoControllerMockMvcTest {
 
   @Autowired private MockMvc mockMvc;
 
-  @Autowired DataRepoDao dataRepoDao;
+  @MockBean DataRepoDaoFactory dataRepoDaoFactory;
 
   @Autowired WorkspaceManagerDao workspaceManagerDao;
 
-  @MockBean DataRepoClientFactory mockDataRepoClientFactory;
-
   @MockBean WorkspaceManagerClientFactory mockWorkspaceManagerClientFactory;
 
+  final DataRepoDao.ClientFactory mockClientFactory = Mockito.mock(DataRepoDao.ClientFactory.class);
   final RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
 
   final ReferencedGcpResourceApi mockReferencedGcpResourceApi =
@@ -64,7 +63,9 @@ class DataRepoControllerMockMvcTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    given(mockDataRepoClientFactory.getRepositoryApi()).willReturn(mockRepositoryApi);
+    // given(dataRepoDaoFactory.getClientFactory(any())).willReturn(mockClientFactory);
+    given(dataRepoDaoFactory.getDao(any())).willReturn(new DataRepoDao(mockClientFactory));
+    given(mockClientFactory.getRepositoryApi()).willReturn(mockRepositoryApi);
     given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi(null))
         .willReturn(mockReferencedGcpResourceApi);
     instanceId = UUID.randomUUID();

@@ -25,21 +25,21 @@ import org.springframework.test.annotation.DirtiesContext;
 @SpringBootTest
 class DataRepoDaoTest {
 
-  @Autowired DataRepoDao dataRepoDao;
-
   @Autowired RecordDao recordDao;
 
   @Autowired InstanceDao instanceDao;
 
-  @MockBean DataRepoClientFactory mockDataRepoClientFactory;
+  @MockBean DataRepoDaoFactory mockDataRepoDaoFactory;
 
+  final DataRepoDao.ClientFactory mockClientFactory = Mockito.mock(DataRepoDao.ClientFactory.class);
   final RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
 
   private static final UUID INSTANCE = UUID.fromString("111e9999-e89b-12d3-a456-426614174000");
 
   @BeforeEach
   void setUp() {
-    given(mockDataRepoClientFactory.getRepositoryApi()).willReturn(mockRepositoryApi);
+    given(mockDataRepoDaoFactory.getDao(any())).willReturn(new DataRepoDao(mockClientFactory));
+    given(mockClientFactory.getRepositoryApi()).willReturn(mockRepositoryApi);
     if (!instanceDao.instanceSchemaExists(INSTANCE)) {
       instanceDao.createSchema(INSTANCE);
     }
@@ -57,7 +57,8 @@ class DataRepoDaoTest {
     final SnapshotModel testSnapshot =
         new SnapshotModel().name("test snapshot").id(UUID.randomUUID());
     given(mockRepositoryApi.retrieveSnapshot(any(), any())).willReturn(testSnapshot);
-    assertEquals(testSnapshot, dataRepoDao.getSnapshot(testSnapshot.getId()));
+    assertEquals(
+        testSnapshot, mockDataRepoDaoFactory.getDao(null).getSnapshot(testSnapshot.getId()));
     Mockito.clearInvocations(mockRepositoryApi);
   }
 
@@ -67,7 +68,9 @@ class DataRepoDaoTest {
     given(mockRepositoryApi.retrieveSnapshot(any(), any()))
         .willThrow(new ApiException(statusCode, "Intentional error thrown for unit test"));
     var exception =
-        assertThrows(DataRepoException.class, () -> dataRepoDao.getSnapshot(UUID.randomUUID()));
+        assertThrows(
+            DataRepoException.class,
+            () -> mockDataRepoDaoFactory.getDao(null).getSnapshot(UUID.randomUUID()));
     assertEquals(statusCode, exception.getRawStatusCode());
     Mockito.clearInvocations(mockRepositoryApi);
   }

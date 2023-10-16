@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
 import bio.terra.datarepo.model.SnapshotExportResponseModel;
@@ -62,7 +63,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
     UUID snapshotId = snapshotExportResponseModel.getSnapshot().getId();
     logger.info("Starting import of snapshot {} to instance {}", snapshotId, instanceId);
     // perform the import via DataRepoService
-    // TODO: AJ-1011 pass token to dataRepoService, or possibly stash it on the thread
-    dataRepoService.importSnapshot(instanceId, snapshotId);
+
+    // AJ-1011 pass token to dataRepoService, or possibly stash it on the thread
+    String authToken = getJobDataString(jobDataMap, ARG_TOKEN);
+    dataRepoService.importSnapshot(instanceId, snapshotId, authToken);
   }
 }
