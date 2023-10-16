@@ -34,7 +34,7 @@ public class HttpWorkspaceDataServiceClientFactory implements WorkspaceDataServi
     }
 
     // grab the current user's bearer token (see BearerTokenFilter) or use parameter value
-    String token = TokenContextUtil.getToken(authToken, () -> null);
+    String token = TokenContextUtil.getToken(authToken);
 
     // add the user's bearer token to the client
     if (token != null) {

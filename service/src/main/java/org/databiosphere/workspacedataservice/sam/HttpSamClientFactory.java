@@ -44,7 +44,7 @@ public class HttpSamClientFactory implements SamClientFactory {
     }
 
     // grab the current user's bearer token (see BearerTokenFilter) or use parameter value
-    String token = TokenContextUtil.getToken(authToken, () -> null);
+    String token = TokenContextUtil.getToken(authToken);
 
     // add the user's bearer token to the client
     if (!Objects.isNull(token)) {
