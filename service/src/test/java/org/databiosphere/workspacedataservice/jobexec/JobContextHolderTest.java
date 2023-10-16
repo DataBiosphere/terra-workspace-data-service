@@ -42,6 +42,7 @@ class JobContextHolderTest {
 
       // represents what a QuartzJob would do: set a JobContextHolder value; later get that value.
       @Override
+      @SuppressWarnings("java:S2925") // S2925 warns about Thread.sleep(), which is acceptable here
       public void run() {
         try {
           // init the JobContextHolder and set a randValue into it
@@ -58,7 +59,8 @@ class JobContextHolderTest {
           if (actualValue instanceof String strVal) {
             actualValues.add(strVal);
           } else {
-            fail("Failure in test thread; actualValue was [{}]", actualValue);
+            throw new RuntimeException(
+                "Failure in test thread; actualValue was [{%s}]".formatted(actualValue));
           }
           // clean up; don't leave values on the thread (memory leaks, interference with other
           // tests)
@@ -66,7 +68,7 @@ class JobContextHolderTest {
           // finally, tell the latch that this thread is done
           latch.countDown();
         } catch (InterruptedException e) {
-          fail("Failure in test thread: " + e.getMessage());
+          throw new RuntimeException("Failure in test thread: " + e.getMessage());
         }
       }
     }
