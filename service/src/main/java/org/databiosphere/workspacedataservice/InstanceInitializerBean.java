@@ -90,27 +90,10 @@ public class InstanceInitializerBean {
         LOGGER.info("Cloning complete.");
         return;
       }
-      LOGGER.info("Cloning failed, falling back to initialize default schema.");
+      LOGGER.info("Failed clone state, falling back to initialize default schema.");
     }
 
     initializeDefaultInstance();
-  }
-
-  /**
-   * Determine whether we've completed, failed, or are in the midst of a clone already.
-   *
-   * @param sourceWorkspaceId value of {@code SOURCE_WORKSPACE_ID}; provided as an argument to
-   *     assist with unit tests.
-   * @return true if there's a clone entry in the database.
-   */
-  protected boolean cloningStarted(UUID sourceWorkspaceId) {
-    // is a clone operation already running? This can happen when WDS is running with multiple
-    // replicas, and another replica started first and has initiated the clone. It can also happen
-    // in a corner case where this replica restarted during the clone operation.
-    boolean cloneAlreadyRunning = cloneDao.cloneExistsForWorkspace(sourceWorkspaceId);
-
-    LOGGER.info("clone entry in database: {}", cloneAlreadyRunning);
-    return cloneAlreadyRunning;
   }
 
   /**
@@ -162,9 +145,11 @@ public class InstanceInitializerBean {
       }
 
       // Acquiring the lock means other replicas have not started or have finished cloning.
+      // We can run into an existing clone operation if WDS kicks it off and has to restart,
+      // or in in a multi replica scenario where one is cloning and another is not.
       // If there's a clone entry and no default schema, another replica errored before completing.
       // If there's a clone entry and a default schema there's nothing for us to do here.
-      if (cloningStarted(UUID.fromString(sourceWorkspaceId))) {
+      if (cloneDao.cloneExistsForWorkspace((UUID.fromString(sourceWorkspaceId)))) {
         boolean instanceExists = instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
         LOGGER.info("Previous clone entry found. Instance schema exists: {}.", instanceExists);
         return instanceExists;
