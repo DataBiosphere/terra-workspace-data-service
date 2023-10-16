@@ -15,6 +15,8 @@ public class TokenContextUtil {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TokenContextUtil.class);
 
+  private TokenContextUtil() {}
+
   /**
    * Convenience for evaluating auth tokens.
    *

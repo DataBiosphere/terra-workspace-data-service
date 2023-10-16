@@ -18,6 +18,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class JobContextHolder {
   private static final ThreadLocal<Map<String, Object>> JOB_CONTEXT = new ThreadLocal<>();
 
+  private JobContextHolder() {}
+
   /** initialize this thread's usage of JobContextHolder */
   public static void init() {
     JOB_CONTEXT.set(new ConcurrentHashMap<>());
