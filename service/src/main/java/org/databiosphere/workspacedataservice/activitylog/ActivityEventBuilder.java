@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.activitylog;
 
-
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
