@@ -1,18 +1,14 @@
 package org.databiosphere.workspacedataservice.workspacemanager;
 
-import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
-import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
-
 import bio.terra.workspace.api.ControlledAzureResourceApi;
 import bio.terra.workspace.api.ReferencedGcpResourceApi;
 import bio.terra.workspace.api.ResourceApi;
 import bio.terra.workspace.client.ApiClient;
-import java.util.Objects;
 import javax.ws.rs.client.Client;
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.context.request.RequestContextHolder;
 
 public class HttpWorkspaceManagerClientFactory implements WorkspaceManagerClientFactory {
 
@@ -37,16 +33,12 @@ public class HttpWorkspaceManagerClientFactory implements WorkspaceManagerClient
     }
 
     // grab the current user's bearer token (see BearerTokenFilter) or use parameter value
-    Object token =
-        StringUtils.isNotBlank(authToken)
-            ? authToken
-            : RequestContextHolder.currentRequestAttributes()
-                .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
+    String token = TokenContextUtil.getToken(authToken, () -> null);
 
     // add the user's bearer token to the client
-    if (!Objects.isNull(token)) {
+    if (token != null) {
       LOGGER.debug("setting access token for workspace manager request");
-      apiClient.setAccessToken(token.toString());
+      apiClient.setAccessToken(token);
     } else {
       LOGGER.warn("No access token found for workspace manager request.");
     }
