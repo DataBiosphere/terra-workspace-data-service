@@ -28,6 +28,26 @@ public class TokenContextUtil {
    * <p>If the request context has no value, searches job context for a non-null String value, and
    * returns it if found.
    *
+   * <p>If not found in any of the above, return null.
+   *
+   * @param initialValue the first value to check for a non-null token
+   * @return the final value
+   */
+  public static String getToken(String initialValue) {
+    return getToken(initialValue, () -> null);
+  }
+
+  /**
+   * Convenience for evaluating auth tokens.
+   *
+   * <p>If `initialValue` is non-null, returns the initialValue as-is.
+   *
+   * <p>If `initialValue` is null, searches request context for a non-null String value, and returns
+   * it if found.
+   *
+   * <p>If the request context has no value, searches job context for a non-null String value, and
+   * returns it if found.
+   *
    * <p>If the job context has no value, returns the value of the `orElse` supplier.
    *
    * @param initialValue the first value to check for a non-null token
@@ -51,8 +71,10 @@ public class TokenContextUtil {
   public static String getToken(Supplier<String> orElse) {
     String foundToken = getToken();
     if (foundToken != null) {
+      // N.B. no logging here; this is the simplest case
       return foundToken;
     } else {
+      LOGGER.debug("Token defaulted from orElse supplier.");
       return orElse.get();
     }
   }
@@ -68,11 +90,16 @@ public class TokenContextUtil {
     // look in request context; if non-null, return it
     foundToken = tokenFromRequestContext();
     if (foundToken != null) {
+      LOGGER.debug("Token retrieved from request context.");
       return foundToken;
     }
 
     // look in job context; return whatever we found, even if null
-    return tokenFromJobContext();
+    foundToken = tokenFromJobContext();
+    if (foundToken != null) {
+      LOGGER.debug("Token retrieved from job context.");
+    }
+    return foundToken;
   }
 
   /**
@@ -86,7 +113,6 @@ public class TokenContextUtil {
     if (requestAttributes != null) {
       return maybeToken(requestAttributes.getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST));
     }
-    LOGGER.debug("No request attributes on this thread.");
     return null;
   }
 
@@ -99,10 +125,8 @@ public class TokenContextUtil {
     // do any job attributes exist?
     Map<String, Object> jobAttributes = JobContextHolder.getAttributes();
     if (jobAttributes == null) {
-      LOGGER.debug("No job attributes on this thread.");
       return null;
     }
-
     return maybeToken(jobAttributes.get(ATTRIBUTE_NAME_TOKEN));
   }
 
