@@ -82,14 +82,12 @@ public class TokenContextUtil {
    */
   private static String tokenFromRequestContext() {
     // do any request attributes exist?
-    RequestAttributes requestAttributes;
-    try {
-      requestAttributes = RequestContextHolder.currentRequestAttributes();
-    } catch (IllegalStateException e) {
-      LOGGER.debug("No request attributes on this thread.");
-      return null;
+    RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+    if (requestAttributes != null) {
+      return maybeToken(requestAttributes.getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST));
     }
-    return maybeToken(requestAttributes.getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST));
+    LOGGER.debug("No request attributes on this thread.");
+    return null;
   }
 
   /**
