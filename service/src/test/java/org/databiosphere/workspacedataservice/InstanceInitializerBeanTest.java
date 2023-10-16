@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -65,20 +66,22 @@ class InstanceInitializerBeanTest {
   @Autowired InstanceInitializerBean instanceInitializerBean;
   @MockBean JdbcLockRegistry registry;
   @SpyBean InstanceDao instanceDao;
+  @SpyBean CloneDao cloneDao;
 
   @Value("${twds.instance.workspace-id}")
   String workspaceId;
+
+  // sourceWorkspaceId when we need one
+  final String sourceWorkspaceId = UUID.randomUUID().toString();
 
   // randomly generated UUID
   final UUID instanceID = UUID.fromString("90e1b179-9f83-4a6f-a8c2-db083df4cd03");
 
   Lock mockLock = mock(Lock.class);
 
-  // JdbcLockRegistry registry = mock(JdbcLockRegistry.class);
-
   @BeforeEach
-  void setUp() {
-    when(mockLock.tryLock()).thenReturn(true);
+  void setUp() throws InterruptedException {
+    when(mockLock.tryLock(anyLong(), any())).thenReturn(true);
     when(registry.obtain(anyString())).thenReturn(mockLock);
   }
 
@@ -113,6 +116,61 @@ class InstanceInitializerBeanTest {
   }
 
   @Test
+  // Cloning where we can get a lock and complete successfully.
+  void cloneSuccessfully() {
+    // instance does not exist
+    assertFalse(instanceDao.instanceSchemaExists(instanceID));
+    // enter clone mode
+    instanceInitializerBean.initCloneMode(sourceWorkspaceId);
+    // confirm we have moved forward with cloning
+    assertTrue(cloneDao.cloneExistsForWorkspace(UUID.fromString(sourceWorkspaceId)));
+  }
+
+  @Test
+  // Cloning where we can't get a lock
+  void cloneWithLockFail() throws InterruptedException {
+    when(mockLock.tryLock(anyLong(), any())).thenReturn(false);
+    // instance does not exist
+    assertFalse(instanceDao.instanceSchemaExists(instanceID));
+    // enter clone mode
+    boolean cleanExit = instanceInitializerBean.initCloneMode(sourceWorkspaceId);
+    // initCloneMode() should have returned true since we did not enter a situation
+    // where we'd have to create the default schema.
+    assertTrue(cleanExit);
+    // confirm we did not enter clone mode
+    assertFalse(cloneDao.cloneExistsForWorkspace(UUID.fromString(sourceWorkspaceId)));
+  }
+
+  @Test
+  // Cloning where we can get lock, but entry already exists in clone table and default schema
+  // exists.
+  void cloneWithCloneTableAndInstanceExist() {
+    // start with instance and clone entry
+    instanceDao.createSchema(instanceID);
+    cloneDao.createCloneEntry(UUID.randomUUID(), UUID.fromString(sourceWorkspaceId));
+    // enter clone mode
+    boolean cleanExit = instanceInitializerBean.initCloneMode(sourceWorkspaceId);
+    // initCloneMode() should have returned true since we did not enter a situation
+    // where we'd have to create the default schema.
+    assertTrue(cleanExit);
+  }
+
+  @Test
+  // Cloning where we can get lock, but entry already exists in clone table and default schema does
+  // not exist.
+  void cloneWithCloneTableAndNoInstance() {
+    // start with clone entry
+    cloneDao.createCloneEntry(UUID.randomUUID(), UUID.fromString(sourceWorkspaceId));
+    // instance does not exist
+    assertFalse(instanceDao.instanceSchemaExists(instanceID));
+    // enter clone mode
+    boolean cleanExit = instanceInitializerBean.initCloneMode(sourceWorkspaceId);
+    // initCloneMode() should have returned false since we encountered a situation
+    // where we'd have to create the default schema.
+    assertFalse(cleanExit);
+  }
+
+  @Test
   void sourceWorkspaceIDNotProvided() {
     boolean cloneMode = instanceInitializerBean.isInCloneMode(null);
     assertFalse(cloneMode);
@@ -124,13 +182,6 @@ class InstanceInitializerBeanTest {
     assertFalse(cloneMode);
 
     cloneMode = instanceInitializerBean.isInCloneMode(" ");
-    assertFalse(cloneMode);
-  }
-
-  @Test
-  void sourceWorkspaceSchemaExists() {
-    instanceDao.createSchema(instanceID);
-    boolean cloneMode = instanceInitializerBean.isInCloneMode(UUID.randomUUID().toString());
     assertFalse(cloneMode);
   }
 
