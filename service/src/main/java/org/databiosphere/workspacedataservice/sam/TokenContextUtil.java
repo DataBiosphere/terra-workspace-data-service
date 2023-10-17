@@ -6,6 +6,7 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
 import java.util.Map;
 import java.util.function.Supplier;
 import org.databiosphere.workspacedataservice.jobexec.JobContextHolder;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.context.request.RequestAttributes;
@@ -33,8 +34,8 @@ public class TokenContextUtil {
    * @param initialValue the first value to check for a non-null token
    * @return the final value
    */
-  public static String getToken(String initialValue) {
-    return getToken(initialValue, () -> null);
+  public static BearerToken getToken(String initialValue) {
+    return getToken(new BearerToken(initialValue), () -> null);
   }
 
   /**
@@ -54,8 +55,8 @@ public class TokenContextUtil {
    * @param orElse the value to return if the token was not found otherwise
    * @return the final value
    */
-  public static String getToken(String initialValue, Supplier<String> orElse) {
-    if (initialValue != null) {
+  public static BearerToken getToken(BearerToken initialValue, Supplier<BearerToken> orElse) {
+    if (initialValue != null && initialValue.value() != null) {
       return initialValue;
     }
     return getToken(orElse);
@@ -68,8 +69,8 @@ public class TokenContextUtil {
    * @param orElse the value to return if the token was not found otherwise
    * @return the final value
    */
-  public static String getToken(Supplier<String> orElse) {
-    String foundToken = getToken();
+  public static BearerToken getToken(Supplier<BearerToken> orElse) {
+    BearerToken foundToken = getToken();
     if (foundToken != null) {
       // N.B. no logging here; this is the simplest case
       return foundToken;
@@ -85,8 +86,8 @@ public class TokenContextUtil {
    *
    * @return the token if found; null otherwise
    */
-  public static String getToken() {
-    String foundToken;
+  public static BearerToken getToken() {
+    BearerToken foundToken;
     // look in request context; if non-null, return it
     foundToken = tokenFromRequestContext();
     if (foundToken != null) {
@@ -107,7 +108,7 @@ public class TokenContextUtil {
    *
    * @return the token if found; null otherwise
    */
-  private static String tokenFromRequestContext() {
+  private static BearerToken tokenFromRequestContext() {
     // do any request attributes exist?
     RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
     if (requestAttributes != null) {
@@ -121,7 +122,7 @@ public class TokenContextUtil {
    *
    * @return the token if found; null otherwise
    */
-  private static String tokenFromJobContext() {
+  private static BearerToken tokenFromJobContext() {
     // do any job attributes exist?
     Map<String, Object> jobAttributes = JobContextHolder.getAttributes();
     if (jobAttributes == null) {
@@ -131,9 +132,12 @@ public class TokenContextUtil {
   }
 
   /** Convenience: is the input object non-null and a String? */
-  private static String maybeToken(Object obj) {
-    if (obj instanceof String strVal) {
-      return strVal;
+  private static BearerToken maybeToken(Object obj) {
+    // as of this writing, if "obj instanceof String" passes, then "BearerToken.isValid" will always
+    // pass. The check is included here for future compatibility, in case we change the isValid
+    // implementation later.
+    if (obj instanceof String strVal && BearerToken.isValid(strVal)) {
+      return new BearerToken(strVal);
     }
     return null;
   }

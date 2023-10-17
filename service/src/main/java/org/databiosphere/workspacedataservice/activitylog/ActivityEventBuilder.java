@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.activitylog;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,10 +37,10 @@ public class ActivityEventBuilder {
   public ActivityEventBuilder currentUser() {
     try {
       // grab the current user's bearer token (see BearerTokenFilter)
-      String token = TokenContextUtil.getToken();
+      BearerToken token = TokenContextUtil.getToken();
       if (token != null) {
         // resolve the token to a user id via Sam
-        this.subject = samDao.getUserId(token);
+        this.subject = samDao.getUserId(token.value());
       } else {
         this.subject = "anonymous";
       }

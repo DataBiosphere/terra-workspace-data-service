@@ -18,6 +18,7 @@ import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
@@ -69,12 +70,12 @@ public class ImportService {
 
     // get the user's token from the current request
     // TODO: this should actually get a pet token for the user, to ensure the token won't time out
-    String token = TokenContextUtil.getToken();
+    BearerToken token = TokenContextUtil.getToken();
 
     // create the arguments for the schedulable job
     Map<String, Serializable> arguments = new HashMap<>();
     if (token != null) {
-      arguments.put(ARG_TOKEN, token);
+      arguments.put(ARG_TOKEN, token.value());
     }
     arguments.put(ARG_URL, importRequest.getUrl().toString());
     arguments.put(ARG_INSTANCE, instanceUuid.toString());

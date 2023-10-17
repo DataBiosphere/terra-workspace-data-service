@@ -9,6 +9,7 @@ import org.broadinstitute.dsde.workbench.client.sam.ApiClient;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.UsersApi;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,12 +45,12 @@ public class HttpSamClientFactory implements SamClientFactory {
     }
 
     // grab the current user's bearer token (see BearerTokenFilter) or use parameter value
-    String token = TokenContextUtil.getToken(authToken);
+    BearerToken token = TokenContextUtil.getToken(authToken);
 
     // add the user's bearer token to the client
     if (!Objects.isNull(token)) {
       LOGGER.debug("setting access token for Sam request");
-      apiClient.setAccessToken(token);
+      apiClient.setAccessToken(token.value());
     } else {
       LOGGER.warn("No access token found for Sam request.");
     }

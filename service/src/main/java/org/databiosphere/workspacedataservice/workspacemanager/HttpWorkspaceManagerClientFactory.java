@@ -7,6 +7,7 @@ import bio.terra.workspace.client.ApiClient;
 import javax.ws.rs.client.Client;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,12 +34,12 @@ public class HttpWorkspaceManagerClientFactory implements WorkspaceManagerClient
     }
 
     // grab the current user's bearer token (see BearerTokenFilter) or use parameter value
-    String token = TokenContextUtil.getToken(authToken);
+    BearerToken token = TokenContextUtil.getToken(authToken);
 
     // add the user's bearer token to the client
     if (token != null) {
       LOGGER.debug("setting access token for workspace manager request");
-      apiClient.setAccessToken(token);
+      apiClient.setAccessToken(token.value());
     } else {
       LOGGER.warn("No access token found for workspace manager request.");
     }

@@ -71,7 +71,7 @@ class QuartzJobTest {
 
     @Override
     protected void executeInternal(UUID jobId, JobExecutionContext context) {
-      assertEquals(expectedToken, TokenContextUtil.getToken());
+      assertEquals(expectedToken, TokenContextUtil.getToken().value());
     }
   }
 
