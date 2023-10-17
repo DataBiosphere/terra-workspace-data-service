@@ -96,7 +96,7 @@ dependencies {
     testImplementation 'au.com.dius.pact.consumer:junit5:4.6.1'
 
     constraints {
-        implementation('org.json:json:20230227') {
+        implementation('org.json:json:20231013') {
             because("CVE-2022-45688")
         }
         implementation('com.squareup.okio:okio:3.4.0') {
