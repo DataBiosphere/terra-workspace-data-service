@@ -1,18 +1,14 @@
 package org.databiosphere.workspacedataservice.leonardo;
 
-import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
-import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
-
 import java.util.List;
-import java.util.Objects;
 import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
 import org.apache.commons.lang3.StringUtils;
 import org.broadinstitute.dsde.workbench.client.leonardo.ApiClient;
 import org.broadinstitute.dsde.workbench.client.leonardo.api.AppsApi;
+import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.context.request.RequestContextHolder;
 
 public class HttpLeonardoClientFactory implements LeonardoClientFactory {
 
@@ -28,7 +24,7 @@ public class HttpLeonardoClientFactory implements LeonardoClientFactory {
         new ApiClient().getHttpClient().newBuilder().protocols(List.of(Protocol.HTTP_1_1)).build();
   }
 
-  private ApiClient getApiClient(String token) {
+  private ApiClient getApiClient(String authToken) {
     // create a new data repo client
     ApiClient apiClient = new ApiClient();
     apiClient.setHttpClient(commonHttpClient);
@@ -38,20 +34,14 @@ public class HttpLeonardoClientFactory implements LeonardoClientFactory {
       apiClient.setBasePath(leoEndpointUrl);
     }
 
-    // grab the current user's bearer token (see BearerTokenFilter)
-    if (token.isEmpty()) {
-      Object userToken =
-          RequestContextHolder.currentRequestAttributes()
-              .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
-      // add the user's bearer token to the client
-      if (!Objects.isNull(userToken)) {
-        LOGGER.debug("setting access token for leonardo request");
-        apiClient.setAccessToken(userToken.toString());
-      } else {
-        LOGGER.warn("No access token found for leonardo request.");
-      }
-    } else {
+    // grab the current user's bearer token (see BearerTokenFilter) or use parameter value
+    String token = TokenContextUtil.getToken(authToken);
+    // add the user's bearer token to the client
+    if (token != null) {
+      LOGGER.debug("setting access token for leonardo request");
       apiClient.setAccessToken(token);
+    } else {
+      LOGGER.warn("No access token found for leonardo request.");
     }
 
     // return the client
