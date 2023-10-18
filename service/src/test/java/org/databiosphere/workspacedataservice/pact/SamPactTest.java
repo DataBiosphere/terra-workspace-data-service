@@ -160,7 +160,7 @@ class SamPactTest {
 
     return builder
         .given("user exists")
-        .uponReceiving("apet token request")
+        .uponReceiving("testing a pet token request")
         .path("/api/google/v1/user/petServiceAccount/token")
         .method("POST")
         .body(
