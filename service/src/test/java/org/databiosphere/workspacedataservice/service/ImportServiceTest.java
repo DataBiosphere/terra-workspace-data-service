@@ -68,7 +68,7 @@ class ImportServiceTest {
         Arguments.of(TypeEnum.PFB, PfbQuartzJob.class));
   }
 
-  // does createSchedulable use the correct implementation class for TDRMANIFEST?
+  // does createSchedulable use the correct implementation class for each import type?
   @ParameterizedTest(name = "for import type {0}, should use {1}")
   @MethodSource("provideImplementationClasses")
   void createSchedulableImplementationClasses(
@@ -78,7 +78,8 @@ class ImportServiceTest {
     assertEquals(expectedClass, actual.getImplementation());
   }
 
-  // this is the happy path for importService.createImport
+  // this is the happy path for importService.createImport; we should end up with a
+  // job in QUEUED status
   @ParameterizedTest(name = "for import type {0}")
   @EnumSource(ImportRequestServerModel.TypeEnum.class)
   void persistsJobAsQueued(ImportRequestServerModel.TypeEnum importType) {
@@ -101,7 +102,7 @@ class ImportServiceTest {
     assertEquals(GenericJobServerModel.StatusEnum.QUEUED, actual.getStatus());
   }
 
-  // this is the happy path for importService.createImport
+  // importService.createImport should make appropriate calls to the SchedulerDao
   @ParameterizedTest(name = "for import type {0}")
   @EnumSource(ImportRequestServerModel.TypeEnum.class)
   void addsJobToScheduler(ImportRequestServerModel.TypeEnum importType) {
@@ -132,7 +133,7 @@ class ImportServiceTest {
     // TODO: add an assertion for the pet token in the arguments, once we have pet tokens hooked up
   }
 
-  // TODO: this test is failing; we need more error-trapping in ImportService
+  // if we hit an error scheduling the job in Quartz, we should mark the job as being in ERROR
   @ParameterizedTest(name = "for import type {0}")
   @EnumSource(ImportRequestServerModel.TypeEnum.class)
   void failsJobIfSchedulingFails(ImportRequestServerModel.TypeEnum importType) {
