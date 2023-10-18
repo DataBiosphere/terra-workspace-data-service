@@ -86,7 +86,7 @@ public class ImportService {
     // schedule the job. after successfully scheduling, mark the job as queued
     schedulerDao.schedule(schedulable);
     logger.debug("Job {} scheduled", createdJob.getJobId());
-    jobDao.updateStatus(job.getJobId(), GenericJobServerModel.StatusEnum.QUEUED);
+    jobDao.queued(job.getJobId());
 
     // return the queued job
     return createdJob;
