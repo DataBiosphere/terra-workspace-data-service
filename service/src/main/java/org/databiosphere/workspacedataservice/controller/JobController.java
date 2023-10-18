@@ -20,8 +20,8 @@ public class JobController implements JobApi {
   }
 
   @Override
-  public ResponseEntity<GenericJobServerModel> jobStatusV1(UUID instanceUuid, UUID jobId) {
-    GenericJobServerModel job = jobService.getJob(instanceUuid, jobId);
+  public ResponseEntity<GenericJobServerModel> jobStatusV1(UUID jobId) {
+    GenericJobServerModel job = jobService.getJob(jobId);
 
     // return job status, 200 if job is completed, 202 if job is still running, and 500 if
     // we can't determine
