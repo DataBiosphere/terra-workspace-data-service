@@ -38,9 +38,9 @@ public class ActivityEventBuilder {
     try {
       // grab the current user's bearer token (see BearerTokenFilter)
       BearerToken token = TokenContextUtil.getToken();
-      if (token != null) {
+      if (token.nonEmpty()) {
         // resolve the token to a user id via Sam
-        this.subject = samDao.getUserId(token.value());
+        this.subject = samDao.getUserId(token.getValue());
       } else {
         this.subject = "anonymous";
       }

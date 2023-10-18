@@ -32,9 +32,9 @@ public class HttpDataRepoClientFactory implements DataRepoClientFactory {
     // grab the current user's bearer token (see BearerTokenFilter)
     BearerToken token = TokenContextUtil.getToken();
     // add the user's bearer token to the client
-    if (token != null) {
+    if (token.nonEmpty()) {
       LOGGER.debug("setting access token for data repo request");
-      apiClient.setAccessToken(token.value());
+      apiClient.setAccessToken(token.getValue());
     } else {
       LOGGER.warn("No access token found for data repo request.");
     }

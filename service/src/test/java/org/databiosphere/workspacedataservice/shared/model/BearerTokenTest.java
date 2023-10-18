@@ -8,25 +8,35 @@ import org.junit.jupiter.api.Test;
 class BearerTokenTest {
 
   @Test
-  void nullIsNotValid() {
-    assertFalse(BearerToken.isValid(null));
+  void nullIsEmpty() {
+    assertTrue(BearerToken.of(null).isEmpty());
   }
 
   // empty string will cause 401s in practice, but BearerToken is only lightweight validation
   @Test
-  void EmptyStringIsValid() {
-    assertTrue(BearerToken.isValid(""));
+  void emptyStringIsNotEmpty() {
+    assertTrue(BearerToken.of("").nonEmpty());
   }
 
   // whitespace-only string will cause 401s in practice, but BearerToken is only lightweight
   // validation
   @Test
-  void WhitespaceIsValid() {
-    assertTrue(BearerToken.isValid(" "));
+  void whitespaceIsNotEmpty() {
+    assertTrue(BearerToken.of(" ").nonEmpty());
   }
 
   @Test
-  void PopulatedStringIsValid() {
-    assertTrue(BearerToken.isValid("Hello World"));
+  void populatedStringIsNotEmpty() {
+    assertTrue(BearerToken.of("Hello World").nonEmpty());
+  }
+
+  @Test
+  void emptyConstructorIsEmpty() {
+    assertTrue(BearerToken.empty().isEmpty());
+  }
+
+  @Test
+  void emptyConstructorNonEmptyIsFalse() {
+    assertFalse(BearerToken.empty().nonEmpty());
   }
 }

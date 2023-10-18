@@ -38,9 +38,9 @@ public class HttpLeonardoClientFactory implements LeonardoClientFactory {
     // grab the current user's bearer token (see BearerTokenFilter) or use parameter value
     BearerToken token = TokenContextUtil.getToken(authToken);
     // add the user's bearer token to the client
-    if (token != null) {
+    if (token.nonEmpty()) {
       LOGGER.debug("setting access token for leonardo request");
-      apiClient.setAccessToken(token.value());
+      apiClient.setAccessToken(token.getValue());
     } else {
       LOGGER.warn("No access token found for leonardo request.");
     }

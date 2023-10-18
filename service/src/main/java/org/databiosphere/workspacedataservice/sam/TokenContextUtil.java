@@ -5,6 +5,7 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
 
 import java.util.Map;
 import java.util.function.Supplier;
+import javax.validation.constraints.NotNull;
 import org.databiosphere.workspacedataservice.jobexec.JobContextHolder;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.slf4j.Logger;
@@ -34,8 +35,9 @@ public class TokenContextUtil {
    * @param initialValue the first value to check for a non-null token
    * @return the final value
    */
+  @NotNull
   public static BearerToken getToken(String initialValue) {
-    return getToken(new BearerToken(initialValue), () -> null);
+    return getToken(BearerToken.of(initialValue), BearerToken::empty);
   }
 
   /**
@@ -55,8 +57,9 @@ public class TokenContextUtil {
    * @param orElse the value to return if the token was not found otherwise
    * @return the final value
    */
+  @NotNull
   public static BearerToken getToken(BearerToken initialValue, Supplier<BearerToken> orElse) {
-    if (initialValue != null && initialValue.value() != null) {
+    if (initialValue != null && initialValue.nonEmpty()) {
       return initialValue;
     }
     return getToken(orElse);
@@ -69,9 +72,10 @@ public class TokenContextUtil {
    * @param orElse the value to return if the token was not found otherwise
    * @return the final value
    */
+  @NotNull
   public static BearerToken getToken(Supplier<BearerToken> orElse) {
     BearerToken foundToken = getToken();
-    if (foundToken != null) {
+    if (foundToken.nonEmpty()) {
       // N.B. no logging here; this is the simplest case
       return foundToken;
     } else {
@@ -84,20 +88,21 @@ public class TokenContextUtil {
    * Look in RequestContextHolder and then JobContextHolder, in that order, for a non-null String
    * ATTRIBUTE_NAME_TOKEN
    *
-   * @return the token if found; null otherwise
+   * @return the token if found; BearerToken.empty() otherwise
    */
+  @NotNull
   public static BearerToken getToken() {
     BearerToken foundToken;
     // look in request context; if non-null, return it
     foundToken = tokenFromRequestContext();
-    if (foundToken != null) {
+    if (foundToken.nonEmpty()) {
       LOGGER.debug("Token retrieved from request context.");
       return foundToken;
     }
 
     // look in job context; return whatever we found, even if null
     foundToken = tokenFromJobContext();
-    if (foundToken != null) {
+    if (foundToken.nonEmpty()) {
       LOGGER.debug("Token retrieved from job context.");
     }
     return foundToken;
@@ -106,39 +111,42 @@ public class TokenContextUtil {
   /**
    * Look in RequestContextHolder for a non-null String ATTRIBUTE_NAME_TOKEN
    *
-   * @return the token if found; null otherwise
+   * @return the token if found; BearerToken.empty() otherwise
    */
+  @NotNull
   private static BearerToken tokenFromRequestContext() {
     // do any request attributes exist?
     RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
     if (requestAttributes != null) {
       return maybeToken(requestAttributes.getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST));
     }
-    return null;
+    return BearerToken.empty();
   }
 
   /**
    * Look in JobContextHolder for a non-null String ATTRIBUTE_NAME_TOKEN
    *
-   * @return the token if found; null otherwise
+   * @return the token if found; BearerToken.empty() otherwise
    */
+  @NotNull
   private static BearerToken tokenFromJobContext() {
     // do any job attributes exist?
     Map<String, Object> jobAttributes = JobContextHolder.getAttributes();
-    if (jobAttributes == null) {
-      return null;
+    if (jobAttributes != null) {
+      return maybeToken(jobAttributes.get(ATTRIBUTE_NAME_TOKEN));
     }
-    return maybeToken(jobAttributes.get(ATTRIBUTE_NAME_TOKEN));
+    return BearerToken.empty();
   }
 
   /** Convenience: is the input object non-null and a String? */
+  @NotNull
   private static BearerToken maybeToken(Object obj) {
     // as of this writing, if "obj instanceof String" passes, then "BearerToken.isValid" will always
     // pass. The check is included here for future compatibility, in case we change the isValid
     // implementation later.
-    if (obj instanceof String strVal && BearerToken.isValid(strVal)) {
-      return new BearerToken(strVal);
+    if (obj instanceof String strVal) {
+      return BearerToken.of(strVal);
     }
-    return null;
+    return BearerToken.empty();
   }
 }

@@ -2,8 +2,8 @@ package org.databiosphere.workspacedataservice.sam;
 
 import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
 import org.apache.commons.lang3.RandomStringUtils;
@@ -20,7 +20,7 @@ class TokenContextUtilTest {
 
   @Test
   void nonNullInitialValue() {
-    BearerToken expected = new BearerToken(RandomStringUtils.randomAlphanumeric(10));
+    BearerToken expected = BearerToken.of(RandomStringUtils.randomAlphanumeric(10));
 
     // set a dummy value into request attributes
     MockHttpServletRequest request = new MockHttpServletRequest();
@@ -35,7 +35,7 @@ class TokenContextUtilTest {
 
       // call getToken with a non-null initialValue
       BearerToken actual =
-          TokenContextUtil.getToken(expected, () -> new BearerToken("dummy orElse value"));
+          TokenContextUtil.getToken(expected, () -> BearerToken.of("dummy orElse value"));
       assertEquals(expected, actual);
     } finally {
       JobContextHolder.destroy();
@@ -44,12 +44,12 @@ class TokenContextUtilTest {
 
   @Test
   void valueInRequest() {
-    BearerToken expected = new BearerToken(RandomStringUtils.randomAlphanumeric(10));
+    BearerToken expected = BearerToken.of(RandomStringUtils.randomAlphanumeric(10));
 
     // set the expected token into request attributes
     MockHttpServletRequest request = new MockHttpServletRequest();
     RequestAttributes requestAttributes = new ServletRequestAttributes(request);
-    requestAttributes.setAttribute(ATTRIBUTE_NAME_TOKEN, expected.value(), SCOPE_REQUEST);
+    requestAttributes.setAttribute(ATTRIBUTE_NAME_TOKEN, expected.getValue(), SCOPE_REQUEST);
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
     try {
@@ -59,7 +59,7 @@ class TokenContextUtilTest {
 
       // call getToken with a null initialValue
       BearerToken actual =
-          TokenContextUtil.getToken(null, () -> new BearerToken("dummy orElse value"));
+          TokenContextUtil.getToken(null, () -> BearerToken.of("dummy orElse value"));
       assertEquals(expected, actual);
     } finally {
       JobContextHolder.destroy();
@@ -68,7 +68,7 @@ class TokenContextUtilTest {
 
   @Test
   void valueInJob() {
-    BearerToken expected = new BearerToken(RandomStringUtils.randomAlphanumeric(10));
+    BearerToken expected = BearerToken.of(RandomStringUtils.randomAlphanumeric(10));
 
     // set request attributes to empty
     RequestContextHolder.setRequestAttributes(null);
@@ -76,10 +76,10 @@ class TokenContextUtilTest {
     try {
       // set the expected token into job attributes
       JobContextHolder.init();
-      JobContextHolder.setAttribute(ATTRIBUTE_NAME_TOKEN, expected.value());
+      JobContextHolder.setAttribute(ATTRIBUTE_NAME_TOKEN, expected.getValue());
       // call getToken with a null initialValue
       BearerToken actual =
-          TokenContextUtil.getToken(null, () -> new BearerToken("dummy orElse value"));
+          TokenContextUtil.getToken(null, () -> BearerToken.of("dummy orElse value"));
       assertEquals(expected, actual);
     } finally {
       JobContextHolder.destroy();
@@ -88,7 +88,7 @@ class TokenContextUtilTest {
 
   @Test
   void callOrElse() {
-    BearerToken expected = new BearerToken(RandomStringUtils.randomAlphanumeric(10));
+    BearerToken expected = BearerToken.of(RandomStringUtils.randomAlphanumeric(10));
     // set request attributes to empty
     RequestContextHolder.setRequestAttributes(null);
     // ensure job attributes are empty
@@ -127,6 +127,6 @@ class TokenContextUtilTest {
     JobContextHolder.destroy();
     // call getToken with a null initialValue and an orElse that returns the expected value
     BearerToken actual = TokenContextUtil.getToken((String) null);
-    assertNull(actual);
+    assertTrue(actual.isEmpty());
   }
 }
