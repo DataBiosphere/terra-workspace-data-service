@@ -18,8 +18,8 @@ public class BadStreamingWriteRequestException extends IllegalArgumentException 
         // If the original exception was a JsonMappingException, forward the original message
         // describing the issue to the user.
         // Otherwise, send a generic error message.
-        (ex instanceof JsonMappingException)
-            ? ((JsonMappingException) ex).getOriginalMessage()
+        (ex instanceof JsonMappingException jsonMappingException)
+            ? jsonMappingException.getOriginalMessage()
             : "The server doesn't understand the request. Please verify you are using the proper format.");
     LOGGER.error("Error parsing request stream ", ex);
   }

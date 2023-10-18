@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
@@ -19,7 +20,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-public class BatchWriteServiceTest {
+class BatchWriteServiceTest {
 
   @Autowired private BatchWriteService batchWriteService;
   @Autowired private InstanceDao instanceDao;
@@ -44,15 +45,14 @@ public class BatchWriteServiceTest {
     String streamContents =
         "[{\"operation\": \"upsert\", \"record\": {\"id\": \"1\", \"type\": \"thing\", \"attributes\": {\"key\": \"value1\", \"key\": \"value2\"}}}]";
     InputStream is = new ByteArrayInputStream(streamContents.getBytes());
+    Optional<String> primaryKey = Optional.empty();
 
     Exception ex =
         assertThrows(
             BadStreamingWriteRequestException.class,
-            () ->
-                batchWriteService.batchWriteJsonStream(
-                    is, INSTANCE, THING_TYPE, java.util.Optional.<String>empty()));
+            () -> batchWriteService.batchWriteJsonStream(is, INSTANCE, THING_TYPE, primaryKey));
 
     String errorMessage = ex.getMessage();
-    assertEquals(errorMessage, "Duplicate field 'key'");
+    assertEquals("Duplicate field 'key'", errorMessage);
   }
 }
