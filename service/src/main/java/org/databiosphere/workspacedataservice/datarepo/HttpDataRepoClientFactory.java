@@ -5,6 +5,7 @@ import bio.terra.datarepo.client.ApiClient;
 import javax.ws.rs.client.Client;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,11 +30,11 @@ public class HttpDataRepoClientFactory implements DataRepoClientFactory {
       apiClient.setBasePath(dataRepoUrl);
     }
     // grab the current user's bearer token (see BearerTokenFilter)
-    String token = TokenContextUtil.getToken();
+    BearerToken token = TokenContextUtil.getToken();
     // add the user's bearer token to the client
-    if (token != null) {
+    if (token.nonEmpty()) {
       LOGGER.debug("setting access token for data repo request");
-      apiClient.setAccessToken(token);
+      apiClient.setAccessToken(token.getValue());
     } else {
       LOGGER.warn("No access token found for data repo request.");
     }
