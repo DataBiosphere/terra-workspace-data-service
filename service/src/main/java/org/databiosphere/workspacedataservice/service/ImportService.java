@@ -91,7 +91,7 @@ public class ImportService {
     } catch (Exception e) {
       // we ran into a problem scheduling the job after we inserted the row in WDS's tracking table.
       // since this job won't run, mark it as failed.
-      jobDao.fail(job.getJobId(), e.getMessage(), e.getStackTrace());
+      jobDao.fail(job.getJobId(), e);
       return createdJob;
     }
 
