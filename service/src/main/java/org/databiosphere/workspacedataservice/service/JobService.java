@@ -18,10 +18,7 @@ public class JobService {
     this.instanceService = instanceService;
   }
 
-  public GenericJobServerModel getJob(UUID instanceUuid, UUID jobId) {
-    // validate instance exists
-    instanceService.validateInstance(instanceUuid);
-
+  public GenericJobServerModel getJob(UUID jobId) {
     try {
       return jobDao.getJob(jobId);
     } catch (EmptyResultDataAccessException e) {

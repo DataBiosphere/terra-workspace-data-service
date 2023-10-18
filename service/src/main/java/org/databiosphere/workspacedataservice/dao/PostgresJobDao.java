@@ -66,6 +66,39 @@ public class PostgresJobDao implements JobDao {
   }
 
   /**
+   * Mark a job as QUEUED.
+   *
+   * @param jobId the job to update
+   * @return the updated job
+   */
+  @Override
+  public GenericJobServerModel queued(UUID jobId) {
+    return updateStatus(jobId, StatusEnum.QUEUED);
+  }
+
+  /**
+   * Mark a job as RUNNING.
+   *
+   * @param jobId the job to update
+   * @return the updated job
+   */
+  @Override
+  public GenericJobServerModel running(UUID jobId) {
+    return updateStatus(jobId, StatusEnum.RUNNING);
+  }
+
+  /**
+   * Mark a job as SUCCEEDED.
+   *
+   * @param jobId the job to update
+   * @return the updated job
+   */
+  @Override
+  public GenericJobServerModel succeeded(UUID jobId) {
+    return updateStatus(jobId, StatusEnum.SUCCEEDED);
+  }
+
+  /**
    * update this import job with a new status. note that the table's trigger will automatically
    * update the `updated` column's value. Do not use this method to mark a job as failed; use one of
    * the fail() methods instead.
@@ -95,17 +128,28 @@ public class PostgresJobDao implements JobDao {
   }
 
   /**
-   * Mark a job as failed, specifying a short human-readable error message and a stack trace.
+   * Mark a job as failed, specifying the Exception that caused the failure
    *
    * @param jobId id of the job to update
-   * @param errorMessage a short error message, if the job is in error
-   * @param stackTrace a full stack trace for debugging, if the job is in error
+   * @param e the exception that caused this job to fail
    * @return the updated job
    */
   @Override
-  public GenericJobServerModel fail(
-      UUID jobId, String errorMessage, StackTraceElement[] stackTrace) {
-    return update(jobId, StatusEnum.ERROR, errorMessage, stackTrace);
+  public GenericJobServerModel fail(UUID jobId, Exception e) {
+    return fail(jobId, e.getMessage(), e);
+  }
+
+  /**
+   * Mark a job as failed, specifying a short human-readable error message and the Exception that
+   * caused the failure
+   *
+   * @param jobId id of the job to update
+   * @param errorMessage a short error message, if the job is in error
+   * @return the updated job
+   */
+  @Override
+  public GenericJobServerModel fail(UUID jobId, String errorMessage, Exception e) {
+    return update(jobId, StatusEnum.ERROR, errorMessage, e.getStackTrace());
   }
 
   private GenericJobServerModel update(
@@ -147,6 +191,12 @@ public class PostgresJobDao implements JobDao {
     return getJob(jobId);
   }
 
+  /**
+   * Retrieve a job.
+   *
+   * @param jobId the job to retrieve
+   * @return the retrieved job
+   */
   @Override
   public GenericJobServerModel getJob(UUID jobId) {
     return namedTemplate.queryForObject(
