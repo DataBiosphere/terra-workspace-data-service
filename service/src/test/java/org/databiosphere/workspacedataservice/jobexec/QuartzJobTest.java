@@ -2,7 +2,7 @@ package org.databiosphere.workspacedataservice.jobexec;
 
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -71,7 +71,7 @@ class QuartzJobTest {
 
     @Override
     protected void executeInternal(UUID jobId, JobExecutionContext context) {
-      assertEquals(expectedToken, TokenContextUtil.getToken());
+      assertEquals(expectedToken, TokenContextUtil.getToken().getValue());
     }
   }
 
@@ -87,11 +87,13 @@ class QuartzJobTest {
     when(mockContext.getJobDetail()).thenReturn(jobDetail);
 
     // assert that no token exists via TokenContextUtil
-    assertNull(TokenContextUtil.getToken(), "no token should exist before running the job");
+    assertTrue(
+        TokenContextUtil.getToken().isEmpty(), "no token should exist before running the job");
     // execute the TestableQuartzJob, which asserts that the token passed properly from the
     // JobDataMap into job context and is therefore retrievable via TokenContextUtil
     new TestableQuartzJob(expectedToken).execute(mockContext);
     // assert that the token is cleaned up and no longer reachable via TokenContextUtil
-    assertNull(TokenContextUtil.getToken(), "no token should exist after running the job");
+    assertTrue(
+        TokenContextUtil.getToken().isEmpty(), "no token should exist after running the job");
   }
 }
