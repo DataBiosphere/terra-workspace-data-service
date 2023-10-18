@@ -4,6 +4,7 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -45,9 +46,9 @@ class QuartzJobTest {
     when(jobDao.createJob(any())).thenReturn(genericJobServerModel);
     when(jobDao.getJob(any())).thenReturn(genericJobServerModel);
     when(jobDao.updateStatus(any(), any())).thenReturn(genericJobServerModel);
-    when(jobDao.fail(any(), any()))
+    when(jobDao.fail(any(), any(Exception.class)))
         .thenThrow(new RuntimeException("test failed via jobDao.fail()"));
-    when(jobDao.fail(any(), any(), any()))
+    when(jobDao.fail(any(), anyString()))
         .thenThrow(new RuntimeException("test failed via jobDao.fail()"));
   }
 
