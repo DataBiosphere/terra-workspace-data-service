@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import au.com.dius.pact.consumer.MockServer;
 import au.com.dius.pact.consumer.dsl.PactDslJsonBody;
+import au.com.dius.pact.consumer.dsl.PactDslJsonRootValue;
 import au.com.dius.pact.consumer.dsl.PactDslWithProvider;
 import au.com.dius.pact.consumer.junit5.PactConsumerTestExt;
 import au.com.dius.pact.consumer.junit5.PactTestFor;
@@ -153,6 +154,24 @@ class SamPactTest {
         .toPact();
   }
 
+  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  public RequestResponsePact petTokenPact(PactDslWithProvider builder) {
+    PactDslJsonRootValue responseBody = PactDslJsonRootValue.stringType("aToken");
+
+    return builder
+        .given("user exists")
+        .uponReceiving("a pet token request")
+        .path("/api/google/v1/user/petServiceAccount/token")
+        .method("POST")
+        .body(
+            "[\"https://www.googleapis.com/auth/userinfo.email\","
+                + "  \"https://www.googleapis.com/auth/userinfo.profile\"]")
+        .willRespondWith()
+        .status(200)
+        .body(responseBody)
+        .toPact();
+  }
+
   @Test
   @PactTestFor(pactMethod = "statusApiPact", pactVersion = PactSpecVersion.V3)
   void testSamServiceStatusCheck(MockServer mockServer) {
@@ -230,5 +249,15 @@ class SamPactTest {
     SamDao samDao = new HttpSamDao(clientFactory, new HttpSamClientSupport(), dummyResourceId);
 
     assertTrue(samDao.hasWriteInstancePermission());
+  }
+
+  @Test
+  @PactTestFor(pactMethod = "petTokenPact", pactVersion = PactSpecVersion.V3)
+  void testPetToken(MockServer mockServer) {
+    SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
+    SamDao samDao =
+        new HttpSamDao(clientFactory, new HttpSamClientSupport(), UUID.randomUUID().toString());
+    String petToken = samDao.getPetToken();
+    assertNotNull(petToken);
   }
 }

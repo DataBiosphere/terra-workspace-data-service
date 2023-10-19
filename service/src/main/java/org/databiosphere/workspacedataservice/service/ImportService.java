@@ -56,6 +56,11 @@ public class ImportService {
       throw new AuthorizationException("Caller does not have permission to write to instance.");
     }
 
+    // TODO AJ-1373 use this token for import
+    String petToken = samDao.getPetToken();
+
+    // TODO: translate the ImportRequestServerModel into a Job
+    // for now, just make an example job
     logger.debug("Data import of type {} requested", importRequest.getType());
 
     ImportJobInput importJobInput = ImportJobInput.from(importRequest);
