@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.service;
 
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -130,7 +131,8 @@ class ImportServiceTest {
         "scheduled job had wrong instance argument");
     assertEquals(
         importUri.toString(), actualArguments.get(ARG_URL), "scheduled job had wrong url argument");
-    // TODO: add an assertion for the pet token in the arguments, once we have pet tokens hooked up
+    // The return value of mock sam's get pet token
+    assertEquals("arbitraryToken", actualArguments.get(ARG_TOKEN), "scheduled job had wrong token");
   }
 
   // if we hit an error scheduling the job in Quartz, we should mark the job as being in ERROR
