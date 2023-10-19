@@ -44,13 +44,11 @@ class TDRPactTest {
     return builder
         .given("snapshot doesn't exist")
         .uponReceiving("a snapshot request")
-        .pathFromProviderState(
-            "/api/repository/v1/snapshots/${dummySnapshotId}",
-            String.format("/api/repository/v1/snapshots/%s", dummySnapshotId))
+        .path("/api/repository/v1/snapshots/12345678-abc9-012d-3456-e7fab89cd01e")
         .query("include=TABLES")
         .method("GET")
         .willRespondWith()
-        //        .status(404)
+        .status(404)
         .body(
             "{\"message\": \"Snapshot not found - id: 12345678-abc9-012d-3456-e7fab89cd01e\",\"errorDetail\": []}")
         .toPact();
