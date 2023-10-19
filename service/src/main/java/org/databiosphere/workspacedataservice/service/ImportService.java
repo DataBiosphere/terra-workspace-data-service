@@ -56,6 +56,11 @@ public class ImportService {
       throw new AuthorizationException("Caller does not have permission to write to instance.");
     }
 
+    // TODO AJ-1373 use this token for import
+    String petToken = samDao.getPetToken();
+
+    // TODO: translate the ImportRequestServerModel into a Job
+    // for now, just make an example job
     logger.debug("Data import of type {} requested", importRequest.getType());
 
     ImportJobInput importJobInput = ImportJobInput.from(importRequest);
@@ -68,25 +73,34 @@ public class ImportService {
         createdJob.getJobId(),
         importRequest.getType());
 
-    // get the user's token from the current request
-    // TODO: this should actually get a pet token for the user, to ensure the token won't time out
-    BearerToken token = TokenContextUtil.getToken();
+    try {
+      // get the user's token from the current request
+      // TODO: this should actually get a pet token for the user, to ensure the token won't time out
+      BearerToken token = TokenContextUtil.getToken();
 
-    // create the arguments for the schedulable job
-    Map<String, Serializable> arguments = new HashMap<>();
-    if (token.nonEmpty()) {
-      arguments.put(ARG_TOKEN, token.getValue());
+      // create the arguments for the schedulable job
+      Map<String, Serializable> arguments = new HashMap<>();
+      if (token.nonEmpty()) {
+        arguments.put(ARG_TOKEN, token.getValue());
+      }
+      arguments.put(ARG_URL, importRequest.getUrl().toString());
+      arguments.put(ARG_INSTANCE, instanceUuid.toString());
+
+      // create the executable job to be scheduled
+      Schedulable schedulable =
+          createSchedulable(importRequest.getType(), createdJob.getJobId(), arguments);
+
+      // schedule the job. after successfully scheduling, mark the job as queued
+      schedulerDao.schedule(schedulable);
+      logger.debug("Job {} scheduled", createdJob.getJobId());
+    } catch (Exception e) {
+      // we ran into a problem scheduling the job after we inserted the row in WDS's tracking table.
+      // since this job won't run, mark it as failed.
+      jobDao.fail(job.getJobId(), e);
+      return createdJob;
     }
-    arguments.put(ARG_URL, importRequest.getUrl().toString());
-    arguments.put(ARG_INSTANCE, instanceUuid.toString());
 
-    // create the executable job to be scheduled
-    Schedulable schedulable =
-        createSchedulable(importRequest.getType(), createdJob.getJobId(), arguments);
-
-    // schedule the job. after successfully scheduling, mark the job as queued
-    schedulerDao.schedule(schedulable);
-    logger.debug("Job {} scheduled", createdJob.getJobId());
+    // we successfully scheduled the job; mark it as queued.
     jobDao.queued(job.getJobId());
 
     // return the queued job

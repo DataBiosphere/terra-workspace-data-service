@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.sam;
 
 import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.SamFunction;
 
+import java.util.List;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserStatusInfo;
 import org.slf4j.Logger;
@@ -117,5 +118,17 @@ public class HttpSamDao implements SamDao {
   public SystemStatus getSystemStatus() {
     SamFunction<SystemStatus> samFunction = () -> samClientFactory.getStatusApi().getSystemStatus();
     return httpSamClientSupport.withRetryAndErrorHandling(samFunction, "getSystemStatus");
+  }
+
+  public String getPetToken() {
+    SamFunction<String> samFunction =
+        () ->
+            samClientFactory
+                .getGoogleApi(null)
+                .getArbitraryPetServiceAccountToken(
+                    List.of(
+                        "https://www.googleapis.com/auth/userinfo.email",
+                        "https://www.googleapis.com/auth/userinfo.profile"));
+    return httpSamClientSupport.withRetryAndErrorHandling(samFunction, "getPetToken");
   }
 }

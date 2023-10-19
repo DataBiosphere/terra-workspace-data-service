@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.sam;
 
+import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.UsersApi;
@@ -16,4 +17,6 @@ public interface SamClientFactory {
   StatusApi getStatusApi();
 
   UsersApi getUsersApi(String token);
+
+  GoogleApi getGoogleApi(String token);
 }
