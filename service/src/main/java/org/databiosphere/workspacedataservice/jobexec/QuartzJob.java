@@ -1,9 +1,11 @@
 package org.databiosphere.workspacedataservice.jobexec;
 
+import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
+
 import java.net.URL;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
-import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
@@ -36,14 +38,23 @@ public abstract class QuartzJob implements Job {
     UUID jobId = UUID.fromString(context.getJobDetail().getKey().getName());
     try {
       // mark this job as running
-      getJobDao().updateStatus(jobId, GenericJobServerModel.StatusEnum.RUNNING);
+      getJobDao().running(jobId);
+      // look for an auth token in the Quartz JobDataMap
+      String authToken = getJobDataString(context.getMergedJobDataMap(), ARG_TOKEN);
+      // and stash the auth token into job context
+      if (authToken != null) {
+        JobContextHolder.init();
+        JobContextHolder.setAttribute(ATTRIBUTE_NAME_TOKEN, authToken);
+      }
       // execute the specifics of this job
       executeInternal(jobId, context);
       // if we reached here, mark this job as successful
-      getJobDao().updateStatus(jobId, GenericJobServerModel.StatusEnum.SUCCEEDED);
+      getJobDao().succeeded(jobId);
     } catch (Exception e) {
       // on any otherwise-unhandled exception, mark the job as failed
-      getJobDao().fail(jobId, e.getMessage(), e.getStackTrace());
+      getJobDao().fail(jobId, e);
+    } finally {
+      JobContextHolder.destroy();
     }
   }
 

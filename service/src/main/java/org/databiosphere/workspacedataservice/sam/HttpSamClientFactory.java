@@ -1,10 +1,6 @@
 package org.databiosphere.workspacedataservice.sam;
 
-import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
-import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
-
 import java.util.List;
-import java.util.Objects;
 import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
 import org.apache.commons.lang3.StringUtils;
@@ -13,9 +9,9 @@ import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.UsersApi;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.context.request.RequestContextHolder;
 
 /**
  * Implementation of SamClientFactory that creates a Sam ApiClient, initializes that client with the
@@ -39,7 +35,7 @@ public class HttpSamClientFactory implements SamClientFactory {
     // this requires we import terra-common-lib
   }
 
-  private ApiClient getApiClient(String accessToken) {
+  private ApiClient getApiClient(String authToken) {
     // create a new Sam client
     ApiClient apiClient = new ApiClient();
     apiClient.setHttpClient(commonHttpClient);
@@ -47,21 +43,18 @@ public class HttpSamClientFactory implements SamClientFactory {
     if (StringUtils.isNotBlank(samUrl)) {
       apiClient.setBasePath(samUrl);
     }
-    if (accessToken == null) {
-      // grab the current user's bearer token (see BearerTokenFilter)
-      Object token =
-          RequestContextHolder.currentRequestAttributes()
-              .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
-      // add the user's bearer token to the client
-      if (!Objects.isNull(token)) {
-        LOGGER.debug("setting access token for Sam request");
-        apiClient.setAccessToken(token.toString());
-      } else {
-        LOGGER.warn("No access token found for Sam request.");
-      }
+
+    // grab the current user's bearer token (see BearerTokenFilter) or use parameter value
+    BearerToken token = TokenContextUtil.getToken(authToken);
+
+    // add the user's bearer token to the client
+    if (token.nonEmpty()) {
+      LOGGER.debug("setting access token for Sam request");
+      apiClient.setAccessToken(token.getValue());
     } else {
-      apiClient.setAccessToken(accessToken);
+      LOGGER.warn("No access token found for Sam request.");
     }
+
     // return the client
     return apiClient;
   }

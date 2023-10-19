@@ -68,14 +68,13 @@ paths:
   ##############################
   # Job APIs
   ##############################
-  /{instanceUuid}/job/v1/{jobId}:
+  /job/v1/{jobId}:
     get:
       summary: Get status of a long-running job.
       operationId: jobStatusV1
       tags:
         - Job
       parameters:
-        - $ref: '#/components/parameters/instanceUuidPathParam'
         - name: jobId
           in: path
           required: true
