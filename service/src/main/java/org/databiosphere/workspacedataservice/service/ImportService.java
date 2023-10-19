@@ -54,6 +54,9 @@ public class ImportService {
       throw new AuthorizationException("Caller does not have permission to write to instance.");
     }
 
+    // get a token to execute the job
+    String petToken = samDao.getPetToken();
+
     // TODO: translate the ImportRequestServerModel into a Job
     // for now, just make an example job
     logger.debug("Data import of type {} requested", importRequest.getType());
@@ -69,9 +72,6 @@ public class ImportService {
         importRequest.getType());
 
     try {
-      // get a token to execute the job
-      String petToken = samDao.getPetToken();
-
       // create the arguments for the schedulable job
       Map<String, Serializable> arguments = new HashMap<>();
       arguments.put(ARG_TOKEN, petToken);
