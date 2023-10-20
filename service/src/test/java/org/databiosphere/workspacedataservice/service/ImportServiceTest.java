@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.io.Serializable;
@@ -42,6 +43,7 @@ import org.quartz.JobDataMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(profiles = {"mock-sam", "mock-instance-dao"})
@@ -50,7 +52,7 @@ class ImportServiceTest {
 
   @Autowired ImportService importService;
   @Autowired InstanceService instanceService;
-  @Autowired JobDao jobDao;
+  @Autowired @SpyBean JobDao jobDao;
   @Autowired SamDao samDao;
   @MockBean SchedulerDao schedulerDao;
   @MockBean SamClientFactory mockSamClientFactory;
@@ -62,14 +64,14 @@ class ImportServiceTest {
 
   @BeforeEach
   void setUp() throws ApiException {
-
+    //    jobDao = Mockito.spy(jobDao);
     // return the mock ResourcesApi from the mock SamClientFactory
     given(mockSamClientFactory.getResourcesApi(null)).willReturn(mockSamResourcesApi);
     // Sam permission check will always return true
     given(mockSamResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
         .willReturn(true);
     given(mockSamClientFactory.getGoogleApi(null)).willReturn(mockSamGoogleApi);
-    // Sam permission check will always return true
+    // Pet token request returns "arbitraryToken"
     given(mockSamGoogleApi.getArbitraryPetServiceAccountToken(any())).willReturn("arbitraryToken");
     // clear call history for the mock
     Mockito.clearInvocations(mockSamResourcesApi);
@@ -209,5 +211,7 @@ class ImportServiceTest {
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // Import will fail without a pet token
     assertThrows(Exception.class, () -> importService.createImport(instanceId, importRequest));
+    // Job should not have been created
+    verify(jobDao, times(0)).createJob(any());
   }
 }
