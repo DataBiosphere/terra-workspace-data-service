@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -63,8 +64,8 @@ class InstanceInitializerNoWorkspaceIdTest {
   Lock mockLock = mock(Lock.class);
 
   @BeforeEach
-  void setUp() {
-    when(mockLock.tryLock()).thenReturn(true);
+  void setUp() throws InterruptedException {
+    when(mockLock.tryLock(anyLong(), any())).thenReturn(true);
     when(registry.obtain(anyString())).thenReturn(mockLock);
   }
 

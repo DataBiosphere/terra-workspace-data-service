@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.sam;
 
+import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.UsersApi;
@@ -18,5 +19,10 @@ public class MockSamClientFactory implements SamClientFactory {
   @Override
   public UsersApi getUsersApi(String token) {
     return null;
+  }
+
+  @Override
+  public GoogleApi getGoogleApi(String token) {
+    return new MockSamGoogleApi();
   }
 }
