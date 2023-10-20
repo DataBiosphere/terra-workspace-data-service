@@ -64,7 +64,6 @@ class ImportServiceTest {
 
   @BeforeEach
   void setUp() throws ApiException {
-    //    jobDao = Mockito.spy(jobDao);
     // return the mock ResourcesApi from the mock SamClientFactory
     given(mockSamClientFactory.getResourcesApi(null)).willReturn(mockSamResourcesApi);
     // Sam permission check will always return true
