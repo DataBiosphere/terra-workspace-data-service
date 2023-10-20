@@ -97,7 +97,7 @@ class TDRPactTest {
 
     assertThrows(
         DataRepoException.class,
-        () -> dataRepoDao.getSnapshot(UUID.fromString(dummySnapshotId)),
+        () -> dataRepoDao.getSnapshot(UUID.fromString("12345678-abc9-012d-3456-e7fab89cd01e")),
         "nonexistent snapshot should return 404");
   }
 
