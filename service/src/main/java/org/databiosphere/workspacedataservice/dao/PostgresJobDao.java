@@ -44,7 +44,7 @@ public class PostgresJobDao implements JobDao {
       } catch (JsonProcessingException e) {
         // for now, fail silently. If/when we have any inputs that are required,
         // this should rethrow an exception instead of swallowing it
-        // TODO: this will soon need to be a failure
+        // TODO: AJ-1011 this will soon need to be a failure
         logger.error(
             "Error serializing inputs to jsonb for job {}: {}", job.getJobId(), e.getMessage());
       }
@@ -63,6 +63,39 @@ public class PostgresJobDao implements JobDao {
             inputJsonb);
 
     return getJob(job.getJobId());
+  }
+
+  /**
+   * Mark a job as QUEUED.
+   *
+   * @param jobId the job to update
+   * @return the updated job
+   */
+  @Override
+  public GenericJobServerModel queued(UUID jobId) {
+    return updateStatus(jobId, StatusEnum.QUEUED);
+  }
+
+  /**
+   * Mark a job as RUNNING.
+   *
+   * @param jobId the job to update
+   * @return the updated job
+   */
+  @Override
+  public GenericJobServerModel running(UUID jobId) {
+    return updateStatus(jobId, StatusEnum.RUNNING);
+  }
+
+  /**
+   * Mark a job as SUCCEEDED.
+   *
+   * @param jobId the job to update
+   * @return the updated job
+   */
+  @Override
+  public GenericJobServerModel succeeded(UUID jobId) {
+    return updateStatus(jobId, StatusEnum.SUCCEEDED);
   }
 
   /**
@@ -95,17 +128,28 @@ public class PostgresJobDao implements JobDao {
   }
 
   /**
-   * Mark a job as failed, specifying a short human-readable error message and a stack trace.
+   * Mark a job as failed, specifying the Exception that caused the failure
    *
    * @param jobId id of the job to update
-   * @param errorMessage a short error message, if the job is in error
-   * @param stackTrace a full stack trace for debugging, if the job is in error
+   * @param e the exception that caused this job to fail
    * @return the updated job
    */
   @Override
-  public GenericJobServerModel fail(
-      UUID jobId, String errorMessage, StackTraceElement[] stackTrace) {
-    return update(jobId, StatusEnum.ERROR, errorMessage, stackTrace);
+  public GenericJobServerModel fail(UUID jobId, Exception e) {
+    return fail(jobId, e.getMessage(), e);
+  }
+
+  /**
+   * Mark a job as failed, specifying a short human-readable error message and the Exception that
+   * caused the failure
+   *
+   * @param jobId id of the job to update
+   * @param errorMessage a short error message, if the job is in error
+   * @return the updated job
+   */
+  @Override
+  public GenericJobServerModel fail(UUID jobId, String errorMessage, Exception e) {
+    return update(jobId, StatusEnum.ERROR, errorMessage, e.getStackTrace());
   }
 
   private GenericJobServerModel update(
@@ -131,7 +175,7 @@ public class PostgresJobDao implements JobDao {
       } catch (JsonProcessingException e) {
         logger.error(
             "Error serializing stack trace to jsonb for job {}: {}", jobId, e.getMessage());
-        // TODO: should this be fatal?
+        // TODO: AJ-1011 should this be fatal?
       }
     }
 
@@ -141,10 +185,18 @@ public class PostgresJobDao implements JobDao {
     // execute the update
     namedTemplate.update(sb.toString(), params);
 
+    logger.debug("Job {} is now in status {}", jobId, status);
+
     // return the updated job
     return getJob(jobId);
   }
 
+  /**
+   * Retrieve a job.
+   *
+   * @param jobId the job to retrieve
+   * @return the retrieved job
+   */
   @Override
   public GenericJobServerModel getJob(UUID jobId) {
     return namedTemplate.queryForObject(
@@ -186,7 +238,7 @@ public class PostgresJobDao implements JobDao {
 
       job.errorMessage(rs.getString("error"));
 
-      // TODO: also return stacktrace, input, result.
+      // TODO: AJ-1011 also return stacktrace, input, result.
       return job;
     }
   }
