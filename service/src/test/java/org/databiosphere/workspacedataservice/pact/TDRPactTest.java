@@ -59,9 +59,7 @@ class TDRPactTest {
     return builder
         .given("user does not have access to snapshot")
         .uponReceiving("a snapshot request")
-        .pathFromProviderState(
-            "/api/repository/v1/snapshots/${dummySnapshotId}",
-            String.format("/api/repository/v1/snapshots/%s", dummySnapshotId))
+        .path("/api/repository/v1/snapshots/12345678-abc9-012d-3456-e7fab89cd01e")
         .query("include=TABLES")
         .method("GET")
         .willRespondWith()
@@ -78,9 +76,7 @@ class TDRPactTest {
     return builder
         .given("user has access to snapshot")
         .uponReceiving("a snapshot request")
-        .pathFromProviderState(
-            "/api/repository/v1/snapshots/${dummySnapshotId}",
-            String.format("/api/repository/v1/snapshots/%s", dummySnapshotId))
+        .path("/api/repository/v1/snapshots/12345678-abc9-012d-3456-e7fab89cd01e")
         .query("include=TABLES")
         .method("GET")
         .willRespondWith()
@@ -109,7 +105,7 @@ class TDRPactTest {
 
     assertThrows(
         DataRepoException.class,
-        () -> dataRepoDao.getSnapshot(UUID.fromString(dummySnapshotId)),
+        () -> dataRepoDao.getSnapshot(UUID.fromString("12345678-abc9-012d-3456-e7fab89cd01e")),
         "nonexistent snapshot should return 403");
   }
 
@@ -119,7 +115,8 @@ class TDRPactTest {
     DataRepoClientFactory clientFactory = new HttpDataRepoClientFactory(mockServer.getUrl());
     DataRepoDao dataRepoDao = new DataRepoDao(clientFactory);
 
-    SnapshotModel snapshot = dataRepoDao.getSnapshot(UUID.fromString(dummySnapshotId));
+    SnapshotModel snapshot =
+        dataRepoDao.getSnapshot(UUID.fromString("12345678-abc9-012d-3456-e7fab89cd01e"));
     assertNotNull(snapshot, "Snapshot request should return a snapshot");
     assertNotNull(snapshot.getId(), "Snapshot response should have an id");
     assertNotNull(snapshot.getName(), "Snapshot response should have a name");
