@@ -88,6 +88,15 @@ of a workspace you own, e.g.
 export WORKSPACE_ID=123e4567-e89b-12d3-a456-426614174000
 ```
 
+##### SPRING_PROFILES_ACTIVE
+
+Terra's Azure Relay sends CORS headers. When running locally, there is no Azure Relay, so WDS
+needs to send CORS headers itself. This can be done by activating the `local` Spring profile.
+
+```
+export SPRING_PROFILES_ACTIVE=local
+```
+
 ## Running
 
 To just build the code, from the root directory run
