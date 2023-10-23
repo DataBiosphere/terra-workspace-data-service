@@ -52,7 +52,7 @@ class ImportServiceTest {
 
   @Autowired ImportService importService;
   @Autowired InstanceService instanceService;
-  @Autowired @SpyBean JobDao jobDao;
+  @SpyBean JobDao jobDao;
   @Autowired SamDao samDao;
   @MockBean SchedulerDao schedulerDao;
   @MockBean SamClientFactory mockSamClientFactory;
