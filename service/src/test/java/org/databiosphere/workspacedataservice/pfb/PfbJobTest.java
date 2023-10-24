@@ -25,15 +25,14 @@ import org.quartz.JobKey;
 import org.quartz.impl.JobDetailImpl;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-public class PfbJobTest {
+class PfbJobTest {
 
   @MockBean JobDao jobDao;
-  @SpyBean WorkspaceManagerDao wsmDao;
+  @MockBean WorkspaceManagerDao wsmDao;
 
   @Test
   void doNotFailOnMissingSnapshotId() throws JobExecutionException {
@@ -54,6 +53,8 @@ public class PfbJobTest {
 
     // Should not call wsm dao
     verify(wsmDao, times(0)).createDataRepoSnapshotReference(any());
+    // But job should succeed
+    verify(jobDao).succeeded(jobId);
   }
 
   @Test
@@ -66,7 +67,8 @@ public class PfbJobTest {
             new JobDataMap(Map.of(ARG_TOKEN, "expectedToken", ARG_URL, resourceUrl.toString())));
 
     JobDetailImpl jobDetail = new JobDetailImpl();
-    jobDetail.setKey(new JobKey(UUID.randomUUID().toString(), "bar"));
+    UUID jobId = UUID.randomUUID();
+    jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
     when(mockContext.getJobDetail()).thenReturn(jobDetail);
 
     new PfbQuartzJob(jobDao, wsmDao).execute(mockContext);
@@ -76,6 +78,8 @@ public class PfbJobTest {
         .createDataRepoSnapshotReference(
             ArgumentMatchers.argThat(
                 new SnapshotModelMatcher(UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"))));
+    // Job should succeed
+    verify(jobDao).succeeded(jobId);
   }
 
   private class SnapshotModelMatcher implements ArgumentMatcher<SnapshotModel> {

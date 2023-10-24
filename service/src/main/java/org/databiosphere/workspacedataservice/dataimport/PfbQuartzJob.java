@@ -6,9 +6,13 @@ import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.pfb.PfbReader;
 import java.io.IOException;
 import java.net.URL;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
+import java.util.Objects;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.UUID;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dao.JobDao;
@@ -45,33 +49,47 @@ public class PfbQuartzJob extends QuartzJob {
   protected void executeInternal(UUID jobId, JobExecutionContext context) {
     JobDataMap jobDataMap = context.getMergedJobDataMap();
     URL url = getJobDataUrl(jobDataMap, ARG_URL);
-    Set<String> snapshotIds = new HashSet();
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
-      while (dataStream.hasNext()) {
-        GenericRecord record = dataStream.next();
-        // Records in a pfb are stored under the key "object"
-        GenericRecord recordObject = (GenericRecord) record.get("object");
-        if (recordObject == null) {
-          // TODO what type of exception/what message
-          throw new RuntimeException("Record in pfb missing data");
-        }
-        if (recordObject.hasField(SNAPSHOT_ID_IDENTIFIER)) {
-          Object snapId = recordObject.get(SNAPSHOT_ID_IDENTIFIER);
-          if (snapId != null) {
-            snapshotIds.add(snapId.toString());
-          }
+      // translate the Avro DataFileStream into a Java stream
+      Stream<GenericRecord> recordStream =
+          StreamSupport.stream(
+              Spliterators.spliteratorUnknownSize(dataStream.iterator(), Spliterator.ORDERED),
+              false);
+
+      // process the stream into a list of unique snapshotIds
+      List<String> snapshotIds =
+          recordStream
+              .map(rec -> rec.get("object")) // Records in a pfb are stored under the key "object"
+              .filter(obj -> obj instanceof GenericRecord) // which we expect to be a GenericRecord
+              .filter(
+                  obj ->
+                      ((GenericRecord) obj)
+                          .hasField(SNAPSHOT_ID_IDENTIFIER)) // avoid exception if field nonexistent
+              .map(
+                  obj ->
+                      ((GenericRecord) obj)
+                          .get(SNAPSHOT_ID_IDENTIFIER)
+                          .toString()) // within the GenericRecord, find the
+              // source_datarepo_snapshot_id
+              .filter(Objects::nonNull) // expect source_datarepo_snapshot_id to be non-null
+              .distinct() // find only the unique snapshotids
+              .toList();
+
+      // TODO AJ-1371 pass snapshotIds to WSM
+      for (String id : snapshotIds) {
+        try {
+          wsmDao.createDataRepoSnapshotReference(new SnapshotModel().id(UUID.fromString(id)));
+        } catch (Exception e) {
+          // TODO what if it's not a valid UUID?
         }
       }
+
     } catch (IOException e) {
-      // Handle exceptions if necessary
-      e.printStackTrace();
+      // TODO what type of error
+      throw new RuntimeException("Error processing PFB");
     }
 
-    // TODO AJ-1371 pass snapshotIds to WSM
-    for (String id : snapshotIds) {
-      wsmDao.createDataRepoSnapshotReference(new SnapshotModel().id(UUID.fromString(id)));
-    }
     // TODO: AJ-1227 implement PFB import.
     logger.info("TODO: implement PFB import.");
   }
