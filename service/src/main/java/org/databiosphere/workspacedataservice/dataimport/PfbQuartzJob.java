@@ -67,12 +67,10 @@ public class PfbQuartzJob extends QuartzJob {
               .filter(
                   obj ->
                       obj.hasField(SNAPSHOT_ID_IDENTIFIER)) // avoid exception if field nonexistent
-              .map(
-                  obj ->
-                      obj.get(SNAPSHOT_ID_IDENTIFIER)
-                          .toString()) // within the GenericRecord, find the
+              .map(obj -> obj.get(SNAPSHOT_ID_IDENTIFIER)) // within the GenericRecord, find the
               // source_datarepo_snapshot_id
               .filter(Objects::nonNull) // expect source_datarepo_snapshot_id to be non-null
+              .map(obj -> obj.toString())
               .distinct() // find only the unique snapshotids
               .toList();
 
