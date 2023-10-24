@@ -17,6 +17,7 @@ import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
@@ -61,7 +62,7 @@ public class PfbQuartzJob extends QuartzJob {
       List<String> snapshotIds =
           recordStream
               .map(rec -> rec.get("object")) // Records in a pfb are stored under the key "object"
-              .filter(obj -> obj instanceof GenericRecord) // which we expect to be a GenericRecord
+              .filter(GenericRecord.class::isInstance) // which we expect to be a GenericRecord
               .filter(
                   obj ->
                       ((GenericRecord) obj)
@@ -81,13 +82,12 @@ public class PfbQuartzJob extends QuartzJob {
         try {
           wsmDao.createDataRepoSnapshotReference(new SnapshotModel().id(UUID.fromString(id)));
         } catch (Exception e) {
-          // TODO what if it's not a valid UUID?
+          throw new PfbParsingException("Error processing PFB: Invalid snapshot UUID");
         }
       }
 
     } catch (IOException e) {
-      // TODO what type of error
-      throw new RuntimeException("Error processing PFB");
+      throw new PfbParsingException("Error processing PFB");
     }
 
     // TODO: AJ-1227 implement PFB import.
