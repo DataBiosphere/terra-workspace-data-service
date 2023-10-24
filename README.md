@@ -54,7 +54,8 @@ Other profiles that are available are:
 
 You are unlikely to use prod and bee when running locally, those profiles are leveraged when WDS is deployed in Terra. 
 
-If you would like to not use a profile, you can set the following environment variables manually. The variables that need to be set are described below. 
+If you would like to not use a profile (i.e. not set SPRING_PROFILES_ACTIVE variable), you can set the following environment variables manually. The variables that need to be set are described below. 
+You can also add them to your `~/.zshrc` or similar shell profile.
 
 ##### SAM_URL
 
