@@ -63,14 +63,13 @@ public class PfbQuartzJob extends QuartzJob {
           recordStream
               .map(rec -> rec.get("object")) // Records in a pfb are stored under the key "object"
               .filter(GenericRecord.class::isInstance) // which we expect to be a GenericRecord
+              .map(obj -> (GenericRecord) obj)
               .filter(
                   obj ->
-                      ((GenericRecord) obj)
-                          .hasField(SNAPSHOT_ID_IDENTIFIER)) // avoid exception if field nonexistent
+                      obj.hasField(SNAPSHOT_ID_IDENTIFIER)) // avoid exception if field nonexistent
               .map(
                   obj ->
-                      ((GenericRecord) obj)
-                          .get(SNAPSHOT_ID_IDENTIFIER)
+                      obj.get(SNAPSHOT_ID_IDENTIFIER)
                           .toString()) // within the GenericRecord, find the
               // source_datarepo_snapshot_id
               .filter(Objects::nonNull) // expect source_datarepo_snapshot_id to be non-null
@@ -82,12 +81,12 @@ public class PfbQuartzJob extends QuartzJob {
         try {
           wsmDao.createDataRepoSnapshotReference(new SnapshotModel().id(UUID.fromString(id)));
         } catch (Exception e) {
-          throw new PfbParsingException("Error processing PFB: Invalid snapshot UUID");
+          throw new PfbParsingException("Error processing PFB: Invalid snapshot UUID", e);
         }
       }
 
     } catch (IOException e) {
-      throw new PfbParsingException("Error processing PFB");
+      throw new PfbParsingException("Error processing PFB", e);
     }
 
     // TODO: AJ-1227 implement PFB import.
