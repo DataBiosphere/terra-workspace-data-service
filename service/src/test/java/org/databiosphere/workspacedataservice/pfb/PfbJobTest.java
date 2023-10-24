@@ -37,7 +37,6 @@ class PfbJobTest {
   @Test
   void doNotFailOnMissingSnapshotId() throws JobExecutionException {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
-    // TODO is there a smarter/better way to get the correct actual path to this file
     // This uses a non-TDR file so does not have the snapshotId
     URL resourceUrl = getClass().getResource("/minimal_data.avro");
     when(mockContext.getMergedJobDataMap())
@@ -60,7 +59,6 @@ class PfbJobTest {
   @Test
   void snapshotIdsAreParsed() throws JobExecutionException {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
-    // TODO is there a smarter/better way to get the correct actual path to this file
     URL resourceUrl = getClass().getResource("/test.avro");
     when(mockContext.getMergedJobDataMap())
         .thenReturn(
