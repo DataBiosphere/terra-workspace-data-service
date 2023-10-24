@@ -6,4 +6,4 @@ leoUrl: https://leonardo.dsde-dev.broadinstitute.org/
 twds:
   instance:
     # Workspace Id for launching instance
-    workspace-id: 123e4567-e89b-12d3-a456-426614174000
+    workspace-id: ${WORKSPACE_ID:123e4567-e89b-12d3-a456-426614174000}
