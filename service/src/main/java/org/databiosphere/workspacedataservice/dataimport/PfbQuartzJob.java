@@ -50,18 +50,17 @@ public class PfbQuartzJob extends QuartzJob {
         GenericRecord recordObject = (GenericRecord) record.get("object");
         if (recordObject == null) {
           // TODO what type of exception/what message
-          throw new Exception("Record in pfb missing data");
+          throw new RuntimeException("Record in pfb missing data");
         }
-        Object snapId = recordObject.get(SNAPSHOT_ID_IDENTIFIER);
-        if (snapId != null) {
-          snapshotIds.add(snapId.toString());
+        if (recordObject.hasField(SNAPSHOT_ID_IDENTIFIER)) {
+          Object snapId = recordObject.get(SNAPSHOT_ID_IDENTIFIER);
+          if (snapId != null) {
+            snapshotIds.add(snapId.toString());
+          }
         }
       }
     } catch (IOException e) {
       // Handle exceptions if necessary
-      e.printStackTrace();
-    } catch (Exception e) {
-      // TODO what to do with exceptions
       e.printStackTrace();
     }
 

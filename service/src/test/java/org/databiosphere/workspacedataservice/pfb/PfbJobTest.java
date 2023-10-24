@@ -7,7 +7,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.util.AssertionErrors.assertEquals;
 
 import bio.terra.datarepo.model.SnapshotModel;
 import java.net.URL;
@@ -15,7 +14,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.PfbQuartzJob;
-import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
@@ -43,7 +41,8 @@ public class PfbJobTest {
     when(mockContext.getMergedJobDataMap())
         .thenReturn(new JobDataMap(Map.of(ARG_TOKEN, "expectedToken")));
     // TODO is there a smarter/better way to get the correct actual path to this file
-    URL resourceUrl = getClass().getResource("/test.avdl");
+    // This uses a non-TDR file so does not have the snapshotId
+    URL resourceUrl = getClass().getResource("/minimal_data.avro");
     when(mockContext.get(ARG_URL)).thenReturn(resourceUrl.toString());
 
     JobDetailImpl jobDetail = new JobDetailImpl();
@@ -55,11 +54,6 @@ public class PfbJobTest {
 
     // Should not call wsm dao
     verify(wsmDao, times(0)).createDataRepoSnapshotReference(any());
-    GenericJobServerModel job = jobDao.getJob(jobId);
-    assertEquals(
-        "Job should be failed without snapshot id",
-        GenericJobServerModel.StatusEnum.ERROR,
-        job.getStatus().getValue());
   }
 
   @Test
@@ -68,7 +62,7 @@ public class PfbJobTest {
     when(mockContext.getMergedJobDataMap())
         .thenReturn(new JobDataMap(Map.of(ARG_TOKEN, "expectedToken")));
     // TODO is there a smarter/better way to get the correct actual path to this file
-    URL resourceUrl = getClass().getResource("/test.avdl");
+    URL resourceUrl = getClass().getResource("/test.avro");
     when(mockContext.get(ARG_URL)).thenReturn(resourceUrl.toString());
     JobDetailImpl jobDetail = new JobDetailImpl();
     jobDetail.setKey(new JobKey(UUID.randomUUID().toString(), "bar"));
