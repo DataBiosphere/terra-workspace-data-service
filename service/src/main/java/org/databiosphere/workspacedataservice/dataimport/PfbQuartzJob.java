@@ -5,6 +5,7 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.pfb.PfbReader;
 import java.io.IOException;
+import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -13,6 +14,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
+import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,9 +43,11 @@ public class PfbQuartzJob extends QuartzJob {
 
   @Override
   protected void executeInternal(UUID jobId, JobExecutionContext context) {
-    String url = (String) context.get(ARG_URL);
+    JobDataMap jobDataMap = context.getMergedJobDataMap();
+    URL url = getJobDataUrl(jobDataMap, ARG_URL);
     Set<String> snapshotIds = new HashSet();
-    try (DataFileStream<GenericRecord> dataStream = PfbReader.getGenericRecordsStream(url)) {
+    try (DataFileStream<GenericRecord> dataStream =
+        PfbReader.getGenericRecordsStream(url.toString())) {
       while (dataStream.hasNext()) {
         GenericRecord record = dataStream.next();
         // Records in a pfb are stored under the key "object"

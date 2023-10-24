@@ -38,12 +38,12 @@ public class PfbJobTest {
   @Test
   void doNotFailOnMissingSnapshotId() throws JobExecutionException {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
-    when(mockContext.getMergedJobDataMap())
-        .thenReturn(new JobDataMap(Map.of(ARG_TOKEN, "expectedToken")));
     // TODO is there a smarter/better way to get the correct actual path to this file
     // This uses a non-TDR file so does not have the snapshotId
     URL resourceUrl = getClass().getResource("/minimal_data.avro");
-    when(mockContext.get(ARG_URL)).thenReturn(resourceUrl.toString());
+    when(mockContext.getMergedJobDataMap())
+        .thenReturn(
+            new JobDataMap(Map.of(ARG_TOKEN, "expectedToken", ARG_URL, resourceUrl.toString())));
 
     JobDetailImpl jobDetail = new JobDetailImpl();
     UUID jobId = UUID.randomUUID();
@@ -59,11 +59,12 @@ public class PfbJobTest {
   @Test
   void snapshotIdsAreParsed() throws JobExecutionException {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
-    when(mockContext.getMergedJobDataMap())
-        .thenReturn(new JobDataMap(Map.of(ARG_TOKEN, "expectedToken")));
     // TODO is there a smarter/better way to get the correct actual path to this file
     URL resourceUrl = getClass().getResource("/test.avro");
-    when(mockContext.get(ARG_URL)).thenReturn(resourceUrl.toString());
+    when(mockContext.getMergedJobDataMap())
+        .thenReturn(
+            new JobDataMap(Map.of(ARG_TOKEN, "expectedToken", ARG_URL, resourceUrl.toString())));
+
     JobDetailImpl jobDetail = new JobDetailImpl();
     jobDetail.setKey(new JobKey(UUID.randomUUID().toString(), "bar"));
     when(mockContext.getJobDetail()).thenReturn(jobDetail);
