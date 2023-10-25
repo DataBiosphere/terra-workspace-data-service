@@ -55,28 +55,30 @@ public class RestClientRetry {
         LOGGER.error(loggerHint + " REST request resulted in " + e.getMessage(), e);
         throw new RestException(
             HttpStatus.INTERNAL_SERVER_ERROR,
-            "Error from " + loggerHint + " REST target: " + e.getMessage());
+            "Error from " + loggerHint + " REST target: " + e.getMessage()); // not retryable
       }
 
       LOGGER.error(
           loggerHint + " REST request resulted in ApiException(" + exceptionHttpCode + ")", e);
       if (exceptionHttpCode == 0) {
-        throw new RestConnectionException();
+        throw new RestConnectionException(); // retryable
       } else if (exceptionHttpCode == 401) {
-        throw new AuthenticationException(e.getMessage());
+        throw new AuthenticationException(e.getMessage()); // not retryable
       } else if (exceptionHttpCode == 403) {
-        throw new AuthorizationException(e.getMessage());
+        throw new AuthorizationException(e.getMessage()); // not retryable
       } else if (exceptionHttpCode == 500
           || exceptionHttpCode == 502
           || exceptionHttpCode == 503
           || exceptionHttpCode == 504) {
-        throw new RestServerException(HttpStatus.resolve(exceptionHttpCode), e.getMessage());
+        throw new RestServerException(
+            HttpStatus.resolve(exceptionHttpCode), e.getMessage()); // retryable
       } else {
         HttpStatus resolvedStatus = HttpStatus.resolve(exceptionHttpCode);
         if (Objects.isNull(resolvedStatus)) {
           resolvedStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         }
-        throw new RestException(resolvedStatus, "Error from " + loggerHint + ": " + e.getMessage());
+        throw new RestException(
+            resolvedStatus, "Error from " + loggerHint + ": " + e.getMessage()); // not retryable
       }
     }
   }
