@@ -24,11 +24,6 @@ public class SamConfig {
   private static final Logger LOGGER = LoggerFactory.getLogger(SamConfig.class);
 
   @Bean
-  HttpSamClientSupport getHttpSamClientSupport() {
-    return new HttpSamClientSupport();
-  }
-
-  @Bean
   public SamClientFactory getSamClientFactory() {
     // TODO: AJ-898 what validation of the sam url should we do here?
     // - none
