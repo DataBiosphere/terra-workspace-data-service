@@ -12,6 +12,7 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.sam.SamConfig;
 import org.databiosphere.workspacedataservice.sam.SamDao;
@@ -31,7 +32,12 @@ import org.springframework.test.context.TestPropertySource;
 @ActiveProfiles(profiles = "mock-instance-dao")
 @DirtiesContext
 @SpringBootTest(
-    classes = {MockInstanceDaoConfig.class, SamConfig.class, ActivityLoggerConfig.class})
+    classes = {
+      MockInstanceDaoConfig.class,
+      SamConfig.class,
+      ActivityLoggerConfig.class,
+      RestClientRetry.class
+    })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestPropertySource(
     properties = {

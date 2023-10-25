@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.retry.RetryLoggingListener;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
@@ -22,7 +23,7 @@ import org.springframework.test.annotation.DirtiesContext;
 /** Tests for @see HttpSamClientSupport */
 @DirtiesContext
 @SpringBootTest(
-    classes = {SamConfig.class, RetryLoggingListener.class},
+    classes = {SamConfig.class, RetryLoggingListener.class, RestClientRetry.class},
     properties = {
       "sam.retry.maxAttempts=2",
       "sam.retry.backoff.delay=10"

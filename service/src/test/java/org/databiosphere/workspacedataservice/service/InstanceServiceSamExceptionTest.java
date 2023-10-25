@@ -16,12 +16,13 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.sam.SamConfig;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
-import org.databiosphere.workspacedataservice.service.model.exception.SamException;
+import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -55,7 +56,12 @@ import org.springframework.test.context.TestPropertySource;
 @ActiveProfiles(profiles = "mock-instance-dao")
 @DirtiesContext
 @SpringBootTest(
-    classes = {MockInstanceDaoConfig.class, SamConfig.class, ActivityLoggerConfig.class})
+    classes = {
+      MockInstanceDaoConfig.class,
+      SamConfig.class,
+      ActivityLoggerConfig.class,
+      RestClientRetry.class
+    })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestPropertySource(
     properties = {
@@ -237,9 +243,9 @@ class InstanceServiceSamExceptionTest {
 
   private void doSamCreateTest(UUID instanceId, int expectedSamExceptionCode) {
     // attempt to create the instance, which should fail
-    SamException samException =
+    RestException samException =
         assertThrows(
-            SamException.class,
+            RestException.class,
             () -> instanceService.createInstance(instanceId, VERSION),
             "createInstance should throw if caller does not have permission to create wds-instance resource in Sam");
     assertEquals(
@@ -257,9 +263,9 @@ class InstanceServiceSamExceptionTest {
     assertTrue(allInstances.contains(instanceId), "unit test should have created the instances.");
 
     // now attempt to delete the instance, which should fail
-    SamException samException =
+    RestException samException =
         assertThrows(
-            SamException.class,
+            RestException.class,
             () -> instanceService.deleteInstance(instanceId, VERSION),
             "deleteInstance should throw if caller does not have permission to create wds-instance resource in Sam");
     assertEquals(

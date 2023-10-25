@@ -1,10 +1,10 @@
 package org.databiosphere.workspacedataservice.sam;
 
-import static org.databiosphere.workspacedataservice.sam.HttpSamClientSupport.SamFunction;
-
 import java.util.List;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserStatusInfo;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
@@ -17,15 +17,13 @@ public class HttpSamDao implements SamDao {
 
   protected final SamClientFactory samClientFactory;
   private static final Logger LOGGER = LoggerFactory.getLogger(HttpSamDao.class);
-  private final HttpSamClientSupport httpSamClientSupport;
+  private final RestClientRetry restClientRetry;
   private final String workspaceId;
 
   public HttpSamDao(
-      SamClientFactory samClientFactory,
-      HttpSamClientSupport httpSamClientSupport,
-      String workspaceId) {
+      SamClientFactory samClientFactory, RestClientRetry restClientRetry, String workspaceId) {
     this.samClientFactory = samClientFactory;
-    this.httpSamClientSupport = httpSamClientSupport;
+    this.restClientRetry = restClientRetry;
     this.workspaceId = workspaceId;
   }
 
@@ -42,7 +40,7 @@ public class HttpSamDao implements SamDao {
 
   @Override
   public boolean hasCreateInstancePermission(String token) {
-    return hasPermission(ACTION_WRITE, "hasCreateInstancePermission", token);
+    return hasPermission(ACTION_WRITE, "Sam.hasCreateInstancePermission", token);
   }
 
   /**
@@ -58,7 +56,7 @@ public class HttpSamDao implements SamDao {
 
   @Override
   public boolean hasDeleteInstancePermission(String token) {
-    return hasPermission(ACTION_DELETE, "hasDeleteInstancePermission", token);
+    return hasPermission(ACTION_DELETE, "Sam.hasDeleteInstancePermission", token);
   }
 
   // helper implementation for permission checks
@@ -68,12 +66,12 @@ public class HttpSamDao implements SamDao {
         SamDao.RESOURCE_NAME_WORKSPACE,
         workspaceId,
         action);
-    SamFunction<Boolean> samFunction =
+    RestCall<Boolean> samFunction =
         () ->
             samClientFactory
                 .getResourcesApi(token)
                 .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, workspaceId, action);
-    return httpSamClientSupport.withRetryAndErrorHandling(samFunction, loggerHint);
+    return restClientRetry.withRetryAndErrorHandling(samFunction, loggerHint);
   }
 
   /**
@@ -89,7 +87,7 @@ public class HttpSamDao implements SamDao {
 
   @Override
   public boolean hasWriteInstancePermission(String token) {
-    return hasPermission(ACTION_WRITE, "hasWriteInstancePermission", token);
+    return hasPermission(ACTION_WRITE, "Sam.hasWriteInstancePermission", token);
   }
 
   // this cache uses token.hashCode as its key. This prevents any logging such as
@@ -101,9 +99,9 @@ public class HttpSamDao implements SamDao {
 
   public UserStatusInfo getUserInfo(String token) {
     LOGGER.debug("Resolving Sam token to UserStatusInfo ...");
-    SamFunction<UserStatusInfo> samFunction =
+    RestCall<UserStatusInfo> samFunction =
         () -> samClientFactory.getUsersApi(token).getUserStatusInfo();
-    return httpSamClientSupport.withRetryAndErrorHandling(samFunction, "getUserInfo");
+    return restClientRetry.withRetryAndErrorHandling(samFunction, "Sam.getUserInfo");
   }
 
   /**
@@ -116,12 +114,12 @@ public class HttpSamDao implements SamDao {
   }
 
   public SystemStatus getSystemStatus() {
-    SamFunction<SystemStatus> samFunction = () -> samClientFactory.getStatusApi().getSystemStatus();
-    return httpSamClientSupport.withRetryAndErrorHandling(samFunction, "getSystemStatus");
+    RestCall<SystemStatus> samFunction = () -> samClientFactory.getStatusApi().getSystemStatus();
+    return restClientRetry.withRetryAndErrorHandling(samFunction, "Sam.getSystemStatus");
   }
 
   public String getPetToken() {
-    SamFunction<String> samFunction =
+    RestCall<String> samFunction =
         () ->
             samClientFactory
                 .getGoogleApi(null)
@@ -129,6 +127,6 @@ public class HttpSamDao implements SamDao {
                     List.of(
                         "https://www.googleapis.com/auth/userinfo.email",
                         "https://www.googleapis.com/auth/userinfo.profile"));
-    return httpSamClientSupport.withRetryAndErrorHandling(samFunction, "getPetToken");
+    return restClientRetry.withRetryAndErrorHandling(samFunction, "Sam.getPetToken");
   }
 }
