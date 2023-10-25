@@ -37,7 +37,7 @@ class SamPactTest {
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact statusApiPact(PactDslWithProvider builder) {
     return builder
         .given("Sam is ok")
@@ -50,7 +50,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact downStatusApiPact(PactDslWithProvider builder) {
     return builder
         .given("Sam is not ok")
@@ -63,7 +63,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact writeNoPermissionPact(PactDslWithProvider builder) {
     return builder
         .given("user does not have write permission", Map.of("dummyResourceId", dummyResourceId))
@@ -78,7 +78,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact writePermissionPact(PactDslWithProvider builder) {
     return builder
         .given("user has write permission", Map.of("dummyResourceId", dummyResourceId))
@@ -93,7 +93,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact deletePermissionPact(PactDslWithProvider builder) {
     return builder
         .given("user has delete permission", Map.of("dummyResourceId", dummyResourceId))
@@ -108,7 +108,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact deleteNoPermissionPact(PactDslWithProvider builder) {
     return builder
         .given("user does not have delete permission", Map.of("dummyResourceId", dummyResourceId))
@@ -123,7 +123,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact userStatusPact(PactDslWithProvider builder) {
     var userResponseShape =
         new PactDslJsonBody()
@@ -142,7 +142,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact noUserStatusPact(PactDslWithProvider builder) {
     return builder
         .given("user status info request without access token")
@@ -154,7 +154,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact petTokenPact(PactDslWithProvider builder) {
     PactDslJsonRootValue responseBody = PactDslJsonRootValue.stringType("aToken");
 
