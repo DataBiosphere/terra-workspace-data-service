@@ -94,6 +94,8 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
     testImplementation project(':client')
     testImplementation 'au.com.dius.pact.consumer:junit5:4.6.1'
+    testImplementation 'org.junit-pioneer:junit-pioneer:2.1.0'
+
 
     constraints {
         implementation('org.json:json:20231013') {
