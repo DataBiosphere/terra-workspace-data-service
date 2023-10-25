@@ -27,8 +27,8 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @SpringBootTest(
     properties = {
-      "sam.retry.maxAttempts=2",
-      "sam.retry.backoff.delay=10"
+      "rest.retry.maxAttempts=2",
+      "rest.retry.backoff.delay=10"
     }) // aggressive retry settings so unit test doesn't run too long)
 @ActiveProfiles(profiles = {"mock-sam", "mock-instance-dao"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

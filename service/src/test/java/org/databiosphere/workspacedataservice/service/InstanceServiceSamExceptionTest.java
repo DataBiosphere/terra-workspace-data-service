@@ -47,11 +47,11 @@ import org.springframework.test.context.TestPropertySource;
  * createInstance and deleteInstance to respond appropriately: - if Sam returns an ApiException with
  * status code 401, they should throw AuthenticationException. - if Sam returns an ApiException with
  * status code 403, they should throw AuthorizationException. - if Sam returns an ApiException with
- * a well-known status code like 404 or 503, they should throw a SamException with the same status
+ * a well-known status code like 404 or 503, they should throw a RestException with the same status
  * code. - if Sam returns an ApiException with a non-standard status code such as 0, which happens
- * in the case of a connection failure, they should throw a SamException with a 500 error code. - if
- * Sam returns some other exception such as NullPointerException, they should throw a SamException
- * with a 500 error code.
+ * in the case of a connection failure, they should throw a RestException with a 500 error code. -
+ * if Sam returns some other exception such as NullPointerException, they should throw a
+ * RestException with a 500 error code.
  */
 @ActiveProfiles(profiles = "mock-instance-dao")
 @DirtiesContext
@@ -138,7 +138,7 @@ class InstanceServiceSamExceptionTest {
 
   @ParameterizedTest(
       name =
-          "if Sam throws ApiException({0}) on resourcePermissionV2, createInstance and deleteInstance should throw SamException({0})")
+          "if Sam throws ApiException({0}) on resourcePermissionV2, createInstance and deleteInstance should throw RestException({0})")
   @ValueSource(ints = {400, 404, 409, 429, 500, 502, 503})
   void testStandardSamExceptionOnPermissionCheck(int thrownStatusCode) throws ApiException {
     UUID instanceId = UUID.randomUUID();
@@ -156,7 +156,7 @@ class InstanceServiceSamExceptionTest {
 
   @ParameterizedTest(
       name =
-          "if Sam throws ApiException({0}) on resourcePermissionV2, createInstance and deleteInstance should throw SamException(500)")
+          "if Sam throws ApiException({0}) on resourcePermissionV2, createInstance and deleteInstance should throw RestException(500)")
   @ValueSource(ints = {-1, 0, 8080})
   void testNonstandardSamExceptionOnPermissionCheck(int thrownStatusCode) throws ApiException {
     UUID instanceId = UUID.randomUUID();
@@ -174,7 +174,7 @@ class InstanceServiceSamExceptionTest {
 
   @ParameterizedTest(
       name =
-          "if Sam throws {0} on resourcePermissionV2, createInstance and deleteInstance should throw SamException(500)")
+          "if Sam throws {0} on resourcePermissionV2, createInstance and deleteInstance should throw RestException(500)")
   @ValueSource(classes = {NullPointerException.class, RuntimeException.class})
   void testOtherExceptionOnPermissionCheck(Class<Throwable> clazz)
       throws ApiException,
@@ -235,7 +235,7 @@ class InstanceServiceSamExceptionTest {
         "instanceService.deleteInstance should not have deleted the instances.");
   }
 
-  // implementation of tests that expect SamException
+  // implementation of tests that expect RestException
   private void doSamCreateAndDeleteTest(UUID instanceId, int expectedSamExceptionCode) {
     doSamCreateTest(instanceId, expectedSamExceptionCode);
     doSamDeleteTest(instanceId, expectedSamExceptionCode);
@@ -251,7 +251,7 @@ class InstanceServiceSamExceptionTest {
     assertEquals(
         expectedSamExceptionCode,
         samException.getRawStatusCode(),
-        "SamException from createInstance should have same status code as the thrown ApiException");
+        "RestException from createInstance should have same status code as the thrown ApiException");
     List<UUID> allInstances = instanceService.listInstances(VERSION);
     assertFalse(allInstances.contains(instanceId), "should not have created the instances.");
   }
@@ -271,7 +271,7 @@ class InstanceServiceSamExceptionTest {
     assertEquals(
         expectedSamExceptionCode,
         samException.getRawStatusCode(),
-        "SamException from deleteInstance should have same status code as the thrown ApiException");
+        "RestException from deleteInstance should have same status code as the thrown ApiException");
     allInstances = instanceService.listInstances(VERSION);
     assertTrue(
         allInstances.contains(instanceId),
