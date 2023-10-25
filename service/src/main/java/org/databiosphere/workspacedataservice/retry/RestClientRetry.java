@@ -51,34 +51,34 @@ public class RestClientRetry {
       return functionResult;
     } catch (Exception e) {
       int exceptionHttpCode = extractResponseCode(e);
-      if (exceptionHttpCode == Integer.MIN_VALUE) {
-        LOGGER.error(loggerHint + " REST request resulted in " + e.getMessage(), e);
-        throw new RestException(
-            HttpStatus.INTERNAL_SERVER_ERROR,
-            "Error from " + loggerHint + " REST target: " + e.getMessage()); // not retryable
-      }
 
-      LOGGER.error(
-          loggerHint + " REST request resulted in ApiException(" + exceptionHttpCode + ")", e);
-      if (exceptionHttpCode == 0) {
-        throw new RestConnectionException(); // retryable
-      } else if (exceptionHttpCode == 401) {
-        throw new AuthenticationException(e.getMessage()); // not retryable
-      } else if (exceptionHttpCode == 403) {
-        throw new AuthorizationException(e.getMessage()); // not retryable
-      } else if (exceptionHttpCode == 500
-          || exceptionHttpCode == 502
-          || exceptionHttpCode == 503
-          || exceptionHttpCode == 504) {
-        throw new RestServerException(
-            HttpStatus.resolve(exceptionHttpCode), e.getMessage()); // retryable
-      } else {
-        HttpStatus resolvedStatus = HttpStatus.resolve(exceptionHttpCode);
-        if (Objects.isNull(resolvedStatus)) {
-          resolvedStatus = HttpStatus.INTERNAL_SERVER_ERROR;
-        }
-        throw new RestException(
-            resolvedStatus, "Error from " + loggerHint + ": " + e.getMessage()); // not retryable
+      switch (exceptionHttpCode) {
+          // retryable http codes
+        case 0:
+          LOGGER.error(loggerHint + " REST request resulted in connection failure", e);
+          throw new RestConnectionException();
+        case 500:
+        case 502:
+        case 503:
+        case 504:
+          LOGGER.error(
+              loggerHint + " REST request resulted in ApiException(" + exceptionHttpCode + ")", e);
+          throw new RestServerException(
+              HttpStatus.resolve(exceptionHttpCode), e.getMessage()); // retryable
+
+          // non-retryable http codes
+        case 401:
+          throw new AuthenticationException(e.getMessage());
+        case 403:
+          throw new AuthorizationException(e.getMessage());
+        default:
+          HttpStatus resolvedStatus = HttpStatus.resolve(exceptionHttpCode);
+          if (Objects.isNull(resolvedStatus)) {
+            resolvedStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+          }
+          throw new RestException(
+              resolvedStatus,
+              "Error from " + loggerHint + " REST target: " + e.getMessage()); // not retryable
       }
     }
   }
