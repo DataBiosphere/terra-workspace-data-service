@@ -89,5 +89,20 @@ public class PfbQuartzJob extends QuartzJob {
 
     // TODO: AJ-1227 implement PFB import.
     logger.info("TODO: implement PFB import.");
+
+    // TODO should the datafilestream be passed directly to pfbstreamwritehandler or made into
+    // javastream first?
+    try (DataFileStream<GenericRecord> dataStream =
+        PfbReader.getGenericRecordsStream(url.toString())) {
+      // translate the Avro DataFileStream into a Java stream
+      Stream<GenericRecord> recordStream =
+          StreamSupport.stream(
+              Spliterators.spliteratorUnknownSize(dataStream.iterator(), Spliterator.ORDERED),
+              false);
+      // something something PfbStreamWriteHandler(recordStream);
+
+    } catch (IOException e) {
+      throw new PfbParsingException("Error processing PFB", e);
+    }
   }
 }

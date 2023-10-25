@@ -80,6 +80,25 @@ class PfbJobTest {
     verify(jobDao).succeeded(jobId);
   }
 
+  @Test
+  void pfbTablesAreSaved() throws JobExecutionException {
+    JobExecutionContext mockContext = mock(JobExecutionContext.class);
+    URL resourceUrl = getClass().getResource("/test.avro");
+    when(mockContext.getMergedJobDataMap())
+        .thenReturn(
+            new JobDataMap(Map.of(ARG_TOKEN, "expectedToken", ARG_URL, resourceUrl.toString())));
+
+    JobDetailImpl jobDetail = new JobDetailImpl();
+    UUID jobId = UUID.randomUUID();
+    jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
+    when(mockContext.getJobDetail()).thenReturn(jobDetail);
+
+    new PfbQuartzJob(jobDao, wsmDao).execute(mockContext);
+  }
+
+  @Test
+  void primaryKeyConflict() {}
+
   private class SnapshotModelMatcher implements ArgumentMatcher<SnapshotModel> {
     private final UUID expectedSnapshotId;
 
