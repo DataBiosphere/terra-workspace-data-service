@@ -104,10 +104,10 @@ public class RestClientRetry {
       throws RestException, AuthenticationException, AuthorizationException {
 
     // wrap void function in something that returns an object
-    RestCall<String> wrappedFunction =
+    RestCall<?> wrappedFunction =
         () -> {
           voidRestCall.run();
-          return "void";
+          return null;
         };
     withRetryAndErrorHandling(wrappedFunction, loggerHint);
   }
