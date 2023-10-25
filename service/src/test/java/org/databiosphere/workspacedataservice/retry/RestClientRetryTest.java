@@ -2,6 +2,10 @@ package org.databiosphere.workspacedataservice.retry;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
@@ -12,7 +16,6 @@ import org.databiosphere.workspacedataservice.service.model.exception.RestExcept
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junitpioneer.jupiter.cartesian.CartesianTest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,29 +36,42 @@ class RestClientRetryTest {
 
   @Autowired RestClientRetry restClientRetry;
 
-  // for use in @CartesianTest
-  static final Class<?>[] testableExceptions =
-      new Class<?>[] {
+  /**
+   * reusable annotation for @CartesianTest that supplies all the exceptions we care about.
+   * Necessary because the array of classes must be a constant.
+   */
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({ElementType.PARAMETER, ElementType.ANNOTATION_TYPE})
+  @CartesianTest.Values(
+      classes = {
         org.broadinstitute.dsde.workbench.client.sam.ApiException.class,
         bio.terra.workspace.client.ApiException.class,
         bio.terra.datarepo.client.ApiException.class,
         org.broadinstitute.dsde.workbench.client.leonardo.ApiException.class,
         org.databiosphere.workspacedata.client.ApiException.class
-      };
+      })
+  @interface CartesianTestableExceptions {}
 
-  //  static Stream<Arguments> provideHandledExceptionClasses() {
-  //    return Stream.of(
-  //        Arguments.of(org.broadinstitute.dsde.workbench.client.sam.ApiException.class),
-  //        Arguments.of(bio.terra.workspace.client.ApiException.class),
-  //        Arguments.of(bio.terra.datarepo.client.ApiException.class),
-  //        Arguments.of(org.broadinstitute.dsde.workbench.client.leonardo.ApiException.class),
-  //        Arguments.of(org.databiosphere.workspacedata.client.ApiException.class));
-  //  }
+  /**
+   * reusable annotation for @ParameterizedTest that supplies all the exceptions we care about.
+   * Necessary because the array of classes must be a constant.
+   */
+  @Target({ElementType.ANNOTATION_TYPE, ElementType.METHOD})
+  @Retention(RetentionPolicy.RUNTIME)
+  @ValueSource(
+      classes = {
+        org.broadinstitute.dsde.workbench.client.sam.ApiException.class,
+        bio.terra.workspace.client.ApiException.class,
+        bio.terra.datarepo.client.ApiException.class,
+        org.broadinstitute.dsde.workbench.client.leonardo.ApiException.class,
+        org.databiosphere.workspacedata.client.ApiException.class
+      })
+  @interface TestableExceptionsSource {}
 
-  @DisplayName(
-      "When REST target throws a {0} with standard http status code 401, restClientRetry should throw AuthenticationException")
-  @ParameterizedTest
-  @ValueSource(classes = testableExceptions)
+  @ParameterizedTest(
+      name =
+          "When REST target throws a {0} with standard http status code 401, restClientRetry should throw AuthenticationException")
+  @TestableExceptionsSource
   void authenticationException(Class<Exception> clazz)
       throws NoSuchMethodException,
           InvocationTargetException,
@@ -82,10 +98,10 @@ class RestClientRetryTest {
         "voidRestCall should throw AuthenticationException");
   }
 
-  @DisplayName(
-      "When REST target throws a {0} with standard http status code 403, restClientRetry should throw AuthorizationException")
-  @ParameterizedTest
-  @MethodSource("provideHandledExceptionClasses")
+  @ParameterizedTest(
+      name =
+          "When REST target throws a {0} with standard http status code 403, restClientRetry should throw AuthorizationException")
+  @TestableExceptionsSource
   void authorizationException(Class<Exception> clazz)
       throws NoSuchMethodException,
           InvocationTargetException,
@@ -146,48 +162,69 @@ class RestClientRetryTest {
 
   @CartesianTest(
       name =
-          "When REST target throws an ApiException with nonstandard http status code {0}, restClientRetry should throw RestException with code 500")
+          "When REST target throws a {1} with nonstandard http status code {0}, restClientRetry should throw RestException with code 500")
   void apiExceptionsNonstandardCodes(
       @CartesianTest.Values(ints = {0, -1, 8080}) int code,
-      @CartesianTest.MethodFactory("provideHandledExceptionClasses") Class<Exception> clazz) {
+      @CartesianTestableExceptions Class<Exception> clazz)
+      throws NoSuchMethodException,
+          InvocationTargetException,
+          InstantiationException,
+          IllegalAccessException {
+    Exception apiException =
+        clazz.getDeclaredConstructor(int.class, String.class).newInstance(code, "");
     RestCall<Boolean> RestCall =
         () -> {
-          throw new ApiException(code, "");
+          throw apiException;
         };
     VoidRestCall voidRestCall =
         () -> {
-          throw new ApiException(code, "");
+          throw apiException;
         };
     expectRestExceptionWithStatusCode(500, RestCall);
     expectRestExceptionWithStatusCode(500, voidRestCall);
   }
 
-  @ParameterizedTest(
+  @CartesianTest(
       name =
-          "When REST target throws an ApiException with standard http status code {0}, restClientRetry should throw RestException with the same code")
-  @ValueSource(ints = {400, 404, 500, 503})
-  void apiExceptionsStandardCodes(int code) {
+          "When REST target throws a {1} with standard http status code {0}, restClientRetry should throw RestException with the same code")
+  void apiExceptionsStandardCodes(
+      @CartesianTest.Values(ints = {400, 404, 500, 503}) int code,
+      @CartesianTestableExceptions Class<Exception> clazz)
+      throws NoSuchMethodException,
+          InvocationTargetException,
+          InstantiationException,
+          IllegalAccessException {
+    Exception apiException =
+        clazz.getDeclaredConstructor(int.class, String.class).newInstance(code, "");
+
     RestCall<Boolean> RestCall =
         () -> {
-          throw new ApiException(code, "");
+          throw apiException;
         };
     VoidRestCall voidRestCall =
         () -> {
-          throw new ApiException(code, "");
+          throw apiException;
         };
     expectRestExceptionWithStatusCode(code, RestCall);
     expectRestExceptionWithStatusCode(code, voidRestCall);
   }
 
-  @ParameterizedTest(name = "withRetryAndErrorHandling will retry on status code {0}")
-  @ValueSource(ints = {0, 500, 502, 503, 504})
-  void retryableExceptions(int code) {
+  @CartesianTest(name = "withRetryAndErrorHandling will retry on status code {0} for exception {1}")
+  void retryableExceptions(
+      @CartesianTest.Values(ints = {0, 500, 502, 503, 504}) int code,
+      @CartesianTestableExceptions Class<Exception> clazz)
+      throws NoSuchMethodException,
+          InvocationTargetException,
+          InstantiationException,
+          IllegalAccessException {
     AtomicInteger counter = new AtomicInteger(0);
+    Exception apiException =
+        clazz.getDeclaredConstructor(int.class, String.class).newInstance(code, "");
 
     RestCall<Boolean> RestCall =
         () -> {
           counter.incrementAndGet();
-          throw new ApiException(code, "");
+          throw apiException;
         };
 
     // this test doesn't care what exception is thrown; other tests verify that
@@ -204,7 +241,7 @@ class RestClientRetryTest {
     VoidRestCall voidRestCall =
         () -> {
           counter.incrementAndGet();
-          throw new ApiException(code, "");
+          throw apiException;
         };
     // this test doesn't care what exception is thrown; other tests verify that
     assertThrows(
@@ -215,15 +252,24 @@ class RestClientRetryTest {
     assertTrue(counter.get() > 1, "VoidRestCall should have retried");
   }
 
-  @ParameterizedTest(name = "withRetryAndErrorHandling will not retry on status code {0}")
-  @ValueSource(ints = {400, 401, 403, 404, 409, 501})
-  void nonRetryableExceptions(int code) {
+  @CartesianTest(
+      name = "withRetryAndErrorHandling will not retry on status code {0} for exception {1}")
+  void nonRetryableExceptions(
+      @CartesianTest.Values(ints = {400, 401, 403, 404, 409, 501}) int code,
+      @CartesianTestableExceptions Class<Exception> clazz)
+      throws NoSuchMethodException,
+          InvocationTargetException,
+          InstantiationException,
+          IllegalAccessException {
     AtomicInteger counter = new AtomicInteger(0);
+
+    Exception apiException =
+        clazz.getDeclaredConstructor(int.class, String.class).newInstance(code, "");
 
     RestCall<Boolean> RestCall =
         () -> {
           counter.incrementAndGet();
-          throw new ApiException(code, "");
+          throw apiException;
         };
 
     // this test doesn't care what exception is thrown; other tests verify that
@@ -239,7 +285,7 @@ class RestClientRetryTest {
     VoidRestCall voidRestCall =
         () -> {
           counter.incrementAndGet();
-          throw new ApiException(code, "");
+          throw apiException;
         };
     // this test doesn't care what exception is thrown; other tests verify that
     assertThrows(

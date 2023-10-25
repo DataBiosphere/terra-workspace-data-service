@@ -54,7 +54,8 @@ public class RestClientRetry {
       if (exceptionHttpCode == Integer.MIN_VALUE) {
         LOGGER.error(loggerHint + " REST request resulted in " + e.getMessage(), e);
         throw new RestException(
-            HttpStatus.INTERNAL_SERVER_ERROR, "Error from REST target: " + e.getMessage());
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            "Error from " + loggerHint + " REST target: " + e.getMessage());
       }
 
       LOGGER.error(
@@ -75,13 +76,13 @@ public class RestClientRetry {
         if (Objects.isNull(resolvedStatus)) {
           resolvedStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         }
-        throw new RestException(resolvedStatus, "Error from Sam: " + e.getMessage());
+        throw new RestException(resolvedStatus, "Error from " + loggerHint + ": " + e.getMessage());
       }
     }
   }
 
   /**
-   * Perform a Sam client request with logging and exception handling, if that Sam client request
+   * Perform a REST client request with logging and exception handling, if that REST client request
    * returns void.
    *
    * @param voidRestCall the REST client request to perform
