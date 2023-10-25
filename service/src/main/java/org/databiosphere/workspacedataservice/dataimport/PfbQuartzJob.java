@@ -63,14 +63,14 @@ public class PfbQuartzJob extends QuartzJob {
           recordStream
               .map(rec -> rec.get("object")) // Records in a pfb are stored under the key "object"
               .filter(GenericRecord.class::isInstance) // which we expect to be a GenericRecord
-              .map(obj -> (GenericRecord) obj)
+              .map(GenericRecord.class::cast)
               .filter(
                   obj ->
                       obj.hasField(SNAPSHOT_ID_IDENTIFIER)) // avoid exception if field nonexistent
               .map(obj -> obj.get(SNAPSHOT_ID_IDENTIFIER)) // within the GenericRecord, find the
               // source_datarepo_snapshot_id
               .filter(Objects::nonNull) // expect source_datarepo_snapshot_id to be non-null
-              .map(obj -> obj.toString())
+              .map(Object::toString)
               .distinct() // find only the unique snapshotids
               .toList();
 
