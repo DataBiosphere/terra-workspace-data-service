@@ -29,7 +29,7 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
 
     // TODO return multiple WriteStreamInfos?  WHAT TO DO
 
-    return new WriteStreamInfo(records., OperationType.UPSERT);
+    return new WriteStreamInfo(records, OperationType.UPSERT);
   }
 
   private org.databiosphere.workspacedataservice.shared.model.Record genericRecordToRecord(
