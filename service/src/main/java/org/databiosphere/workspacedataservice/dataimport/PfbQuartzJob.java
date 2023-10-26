@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
 import bio.terra.datarepo.model.SnapshotModel;
@@ -17,6 +18,7 @@ import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobDataMap;
@@ -35,10 +37,13 @@ public class PfbQuartzJob extends QuartzJob {
 
   private final JobDao jobDao;
   private final WorkspaceManagerDao wsmDao;
+  private final BatchWriteService batchWriteService;
 
-  public PfbQuartzJob(JobDao jobDao, WorkspaceManagerDao wsmDao) {
+  public PfbQuartzJob(
+      JobDao jobDao, WorkspaceManagerDao wsmDao, BatchWriteService batchWriteService) {
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
+    this.batchWriteService = batchWriteService;
   }
 
   @Override
@@ -89,6 +94,7 @@ public class PfbQuartzJob extends QuartzJob {
 
     // TODO: AJ-1227 implement PFB import.
     logger.info("TODO: implement PFB import.");
+    UUID instanceId = getJobDataUUID(jobDataMap, ARG_INSTANCE);
 
     // TODO should the datafilestream be passed directly to pfbstreamwritehandler or made into
     // javastream first?
@@ -99,7 +105,25 @@ public class PfbQuartzJob extends QuartzJob {
           StreamSupport.stream(
               Spliterators.spliteratorUnknownSize(dataStream.iterator(), Spliterator.ORDERED),
               false);
-      // something something PfbStreamWriteHandler(recordStream);
+
+      // TODO how to deal with multiple record types...
+      // how dumb is this
+      //      Map<Object, Stream<GenericRecord>> groupedByType =
+      //          recordStream.collect(Collectors.groupingBy(rec ->
+      // rec.get("name"))).entrySet().stream()
+      //              .collect(
+      //                  Collectors.toMap(entry -> entry.getKey(), entry ->
+      // entry.getValue().stream()));
+
+      // For each table type stream, call batch write service
+      //      for (Map.Entry<Object, Stream<GenericRecord>> stream : groupedByType.entrySet()) {
+      //        // TODO get recordType, format id correctly
+      //        batchWriteService.batchWritePfbStream(
+      //            stream.getValue(),
+      //            instanceId,
+      //            RecordType.valueOf(stream.getKey().toString()),
+      //            Optional.of("id"));
+      //      }
 
     } catch (IOException e) {
       throw new PfbParsingException("Error processing PFB", e);

@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
@@ -113,6 +114,16 @@ public class BatchWriteService {
           instanceId,
           recordType,
           Optional.of(streamingWriteHandler.getResolvedPrimaryKey()));
+    } catch (IOException e) {
+      throw new BadStreamingWriteRequestException(e);
+    }
+  }
+
+  @WriteTransaction
+  public int batchWritePfbStream(
+      Stream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
+    try (PfbStreamWriteHandler streamingWriteHandler = new PfbStreamWriteHandler(is)) {
+      return consumeWriteStream(streamingWriteHandler, instanceId, recordType, Optional.of(""));
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }

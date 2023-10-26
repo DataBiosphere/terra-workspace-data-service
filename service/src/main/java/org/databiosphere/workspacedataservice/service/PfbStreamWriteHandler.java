@@ -2,11 +2,13 @@ package org.databiosphere.workspacedataservice.service;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
+import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
@@ -20,28 +22,14 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
 
   public WriteStreamInfo readRecords(int numRecords) throws IOException {
 
-    List<org.databiosphere.workspacedataservice.shared.model.Record> records =
-        inputStream.map(this::genericRecordToRecord).collect(Collectors.toList());
+    Map<RecordType, List<Record>> records =
+        inputStream
+            .map(this::genericRecordToRecord)
+            .collect(Collectors.groupingBy(rec -> rec.getRecordType()));
 
-    // TODO how to deal with multiple record types...
-    //
-    //    Map<Object, List<GenericRecord>> groupedByType =
-    //        inputStream.collect(Collectors.groupingBy(rec -> rec.get("name")));
-    // For each table type stream, call batch write service?
-    // Convert the lists to streams
-    //    Map<Object, Stream<GenericRecord>> streamsByRecordType =
-    //        groupedByType.entrySet().stream()
-    //            .collect(Collectors.toMap(entry -> entry.getKey(), entry ->
-    // entry.getValue().stream()));
-    //
-    //    // TODO stream this too
-    //    for (Object key : streamsByRecordType.keySet()) {
-    //      Stream<GenericRecord> category1Stream = streamsByRecordType.get(key);
-    //      // oh crap is this where read records should start...
-    //
-    //    }
+    // TODO return multiple WriteStreamInfos?  WHAT TO DO
 
-    return new WriteStreamInfo(records, OperationType.UPSERT);
+    return new WriteStreamInfo(records., OperationType.UPSERT);
   }
 
   private org.databiosphere.workspacedataservice.shared.model.Record genericRecordToRecord(

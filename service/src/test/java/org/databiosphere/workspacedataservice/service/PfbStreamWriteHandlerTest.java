@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 public class PfbStreamWriteHandlerTest {
 
   @Test
-  void pfbTablesAreParsedCorrectly() throws IOException {
+  void pfbTablesAreParsedCorrectly() {
     URL url = getClass().getResource("/minimal_data.avro");
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
@@ -62,6 +62,52 @@ public class PfbStreamWriteHandlerTest {
         "relations": []
       }
        */
+      List<Record> result = streamInfo.getRecords();
+      Record firstRecord = result.get(0);
+      assertNotNull(firstRecord);
+      assertEquals("HG01101_cram", firstRecord.getId());
+      assertEquals(RecordType.valueOf("submitted_aligned_reads"), firstRecord.getRecordType());
+      assertEquals(19, firstRecord.attributeSet().size());
+      // just a spot check for now
+      // TODO what to do about these being whatever object type
+      assertEquals("aaa1234", firstRecord.getAttributeValue("study_id").toString());
+      assertEquals(512L, firstRecord.getAttributeValue("file_size"));
+    } catch (IOException e) {
+      fail();
+    }
+  }
+
+  // TODO
+  @Test
+  void parseMultipleRecordTypes() {
+    URL url = getClass().getResource("/two_tables.avro");
+    try (DataFileStream<GenericRecord> dataStream =
+        PfbReader.getGenericRecordsStream(url.toString())) {
+      // translate the Avro DataFileStream into a Java stream
+      Stream<GenericRecord> recordStream =
+          StreamSupport.stream(
+              Spliterators.spliteratorUnknownSize(dataStream.iterator(), Spliterator.ORDERED),
+              false);
+
+      PfbStreamWriteHandler pswh = new PfbStreamWriteHandler(recordStream);
+      StreamingWriteHandler.WriteStreamInfo streamInfo = pswh.readRecords(2);
+      /*
+      First record same as in |pfbTablesAreParsedCorrectly|, second record:
+      {
+        "id": "data_release.3511bcae-8725-53f1-b632-d06a9697baa5.1",
+        "name": "data_release",
+        "object": {
+          "created_datetime": "2022-06-01T00:00:00.000000Z",
+          "updated_datetime": "2022-07-01T00:00:00.000000Z",
+          "name": "0399fa30-30f5-4958-9726-9d7afe855f66",
+          "major_version": 1,
+          "minor_version": 1,
+          "release_date": "2022-07-01",
+          "released": false
+          },
+        "relations": []
+      }
+      */
       List<Record> result = streamInfo.getRecords();
       Record firstRecord = result.get(0);
       assertNotNull(firstRecord);
