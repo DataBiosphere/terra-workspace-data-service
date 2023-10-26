@@ -65,7 +65,7 @@ jobs:
       - name: Output consumer contract as non-breaking base64 string
         id: encode-pact
         run: |
-          NON_BREAKING_B64=$(cat service/build/pacts/wds-consumer-tdr.json | base64 -w 0)
+          NON_BREAKING_B64=$(cat service/build/pacts/terra-workspace-data-service-datarepo.json | base64 -w 0)
           echo "pact-b64=${NON_BREAKING_B64}" >> $GITHUB_OUTPUT
 
   publish-pact-job:
