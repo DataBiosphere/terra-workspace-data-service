@@ -2,11 +2,16 @@ package org.databiosphere.workspacedataservice.service;
 
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.io.Serializable;
@@ -14,23 +19,31 @@ import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.broadinstitute.dsde.workbench.client.sam.ApiException;
+import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
+import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.dataimport.PfbQuartzJob;
 import org.databiosphere.workspacedataservice.dataimport.TdrManifestQuartzJob;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.sam.SamClientFactory;
+import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(profiles = {"mock-sam", "mock-instance-dao"})
@@ -39,10 +52,29 @@ class ImportServiceTest {
 
   @Autowired ImportService importService;
   @Autowired InstanceService instanceService;
-  @Autowired JobDao jobDao;
+  @SpyBean JobDao jobDao;
+  @Autowired SamDao samDao;
   @MockBean SchedulerDao schedulerDao;
+  @MockBean SamClientFactory mockSamClientFactory;
+
+  ResourcesApi mockSamResourcesApi = Mockito.mock(ResourcesApi.class);
+  GoogleApi mockSamGoogleApi = Mockito.mock(GoogleApi.class);
 
   private static final String VERSION = "v0.2";
+
+  @BeforeEach
+  void setUp() throws ApiException {
+    // return the mock ResourcesApi from the mock SamClientFactory
+    given(mockSamClientFactory.getResourcesApi(null)).willReturn(mockSamResourcesApi);
+    // Sam permission check will always return true
+    given(mockSamResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
+        .willReturn(true);
+    given(mockSamClientFactory.getGoogleApi(null)).willReturn(mockSamGoogleApi);
+    // Pet token request returns "arbitraryToken"
+    given(mockSamGoogleApi.getArbitraryPetServiceAccountToken(any())).willReturn("arbitraryToken");
+    // clear call history for the mock
+    Mockito.clearInvocations(mockSamResourcesApi);
+  }
 
   // does createSchedulable properly store the jobId, job group, and job data map?
   @ParameterizedTest(name = "for import type {0}")
@@ -130,7 +162,8 @@ class ImportServiceTest {
         "scheduled job had wrong instance argument");
     assertEquals(
         importUri.toString(), actualArguments.get(ARG_URL), "scheduled job had wrong url argument");
-    // TODO: add an assertion for the pet token in the arguments, once we have pet tokens hooked up
+    // The return value of mock sam's get pet token
+    assertEquals("arbitraryToken", actualArguments.get(ARG_TOKEN), "scheduled job had wrong token");
   }
 
   // if we hit an error scheduling the job in Quartz, we should mark the job as being in ERROR
@@ -156,5 +189,28 @@ class ImportServiceTest {
     GenericJobServerModel actual = jobDao.getJob(createdJob.getJobId());
 
     assertEquals(GenericJobServerModel.StatusEnum.ERROR, actual.getStatus());
+  }
+
+  @ParameterizedTest(name = "for import type {0}")
+  @EnumSource(ImportRequestServerModel.TypeEnum.class)
+  void doesNotCreateJobWithoutPetToken(ImportRequestServerModel.TypeEnum importType)
+      throws ApiException {
+    given(mockSamClientFactory.getGoogleApi(null)).willReturn(mockSamGoogleApi);
+    // Sam permission check will always return true
+    given(mockSamGoogleApi.getArbitraryPetServiceAccountToken(any()))
+        .willThrow(new ApiException("token failure for unit test"));
+
+    // schedulerDao.schedule(), which returns void, returns successfully
+    doNothing().when(schedulerDao).schedule(any(Schedulable.class));
+    // create instance (in the MockInstanceDao)
+    UUID instanceId = UUID.randomUUID();
+    instanceService.createInstance(instanceId, VERSION);
+    // define the import request
+    URI importUri = URI.create("http://does/not/matter");
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
+    // Import will fail without a pet token
+    assertThrows(Exception.class, () -> importService.createImport(instanceId, importRequest));
+    // Job should not have been created
+    verify(jobDao, times(0)).createJob(any());
   }
 }

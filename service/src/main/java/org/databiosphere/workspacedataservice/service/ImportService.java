@@ -16,9 +16,7 @@ import org.databiosphere.workspacedataservice.dataimport.TdrManifestSchedulable;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;
-import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
-import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
@@ -56,7 +54,7 @@ public class ImportService {
       throw new AuthorizationException("Caller does not have permission to write to instance.");
     }
 
-    // TODO AJ-1373 use this token for import
+    // get a token to execute the job
     String petToken = samDao.getPetToken();
 
     // TODO: translate the ImportRequestServerModel into a Job
@@ -74,15 +72,9 @@ public class ImportService {
         importRequest.getType());
 
     try {
-      // get the user's token from the current request
-      // TODO: this should actually get a pet token for the user, to ensure the token won't time out
-      BearerToken token = TokenContextUtil.getToken();
-
       // create the arguments for the schedulable job
       Map<String, Serializable> arguments = new HashMap<>();
-      if (token.nonEmpty()) {
-        arguments.put(ARG_TOKEN, token.getValue());
-      }
+      arguments.put(ARG_TOKEN, petToken);
       arguments.put(ARG_URL, importRequest.getUrl().toString());
       arguments.put(ARG_INSTANCE, instanceUuid.toString());
 
