@@ -125,7 +125,7 @@ environment variable WDS will use on the next startup to connect to Sam.
 ```bash
 # start the SAM mock as a docker container in detached mode
 docker run -v `pwd`/service/src/test/resources/nginx.conf:/etc/nginx/nginx.conf -p 9889:80 -d nginx:1.23.3
-export SAM_URL=http://localhost:9889 # this is automatically set if you set the profile to "local"
+export SAM_URL=http://localhost:9889
 ```
 
 To run WDS locally, you can either use the command line:
