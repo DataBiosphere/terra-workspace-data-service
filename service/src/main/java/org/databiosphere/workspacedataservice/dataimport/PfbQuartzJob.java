@@ -4,7 +4,6 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 
 import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.pfb.PfbReader;
-import bio.terra.workspace.client.ApiException;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceList;
 import java.io.IOException;
@@ -14,18 +13,21 @@ import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /** Shell/starting point for PFB import via Quartz. */
@@ -39,9 +41,15 @@ public class PfbQuartzJob extends QuartzJob {
   private final JobDao jobDao;
   private final WorkspaceManagerDao wsmDao;
 
-  public PfbQuartzJob(JobDao jobDao, WorkspaceManagerDao wsmDao) {
+  @Value("${twds.instance.workspace-id}")
+  UUID workspaceId;
+
+  private final RestClientRetry restClientRetry;
+
+  public PfbQuartzJob(JobDao jobDao, WorkspaceManagerDao wsmDao, RestClientRetry restClientRetry) {
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
+    this.restClientRetry = restClientRetry;
   }
 
   @Override
@@ -94,23 +102,53 @@ public class PfbQuartzJob extends QuartzJob {
     logger.info("TODO: implement PFB import.");
   }
 
-  List<UUID> listExistingPolicySnapshots(UUID workspaceId) throws ApiException {
-    // TODO AJ-1371 get all existing snapshot references from WSM
-    ResourceList snapshotList = wsmDao.enumerateDataRepoSnapshotReferences();
-    // TODO: UUID safety
-    List<UUID> snapshotIds =
-        snapshotList.getResources().stream()
-            .map(this::safeGetSnapshotId)
-            .filter(Objects::nonNull)
-            .distinct()
-            .toList();
-    // TODO AJ-1371 filter to policyOnly snapshots
-    // TODO AJ-1371 compare to ${snapshotIds} and find un-added snapshots
-    // TODO AJ-1371 add the unadded ones
-
-    return snapshotIds;
+  List<UUID> existingPolicySnapshotIds() {
+    return listAllSnapshots().getResources().stream()
+        .map(this::safeGetSnapshotId)
+        .filter(Objects::nonNull)
+        .distinct()
+        .toList();
   }
 
+  /**
+   * Get the full list of all snapshot references for the current workspace. WSM returns these
+   * results paginated; this method retrieves pages from WSM and aggregates the results.
+   *
+   * @return the full list of all snapshot references for the workspace.
+   */
+  ResourceList listAllSnapshots() {
+    final int pageSize = 50; // how many to return from WSM at a time
+    final AtomicInteger offset = new AtomicInteger(0);
+
+    ResourceList finalList = new ResourceList(); // collect our results
+
+    while (true) {
+      // get a page of results from WSM
+      RestClientRetry.RestCall<ResourceList> restCall =
+          (() -> wsmDao.enumerateDataRepoSnapshotReferences(workspaceId, offset.get(), pageSize));
+      ResourceList thisPage =
+          restClientRetry.withRetryAndErrorHandling(
+              restCall, "WSM.enumerateDataRepoSnapshotReferences");
+
+      // add this page of results to our collector
+      finalList.getResources().addAll(thisPage.getResources());
+
+      if (thisPage.getResources().size() < pageSize) {
+        // fewer results from WSM than we requested; this is the last page of results
+        return finalList;
+      } else {
+        // bump our offset and request another page of results
+        offset.addAndGet(pageSize);
+      }
+    }
+  }
+
+  /**
+   * Given a ResourceDescription representing a snapshot reference, retrieve that snapshot's UUID.
+   *
+   * @param resourceDescription
+   * @return
+   */
   UUID safeGetSnapshotId(ResourceDescription resourceDescription) {
     var resourceAttributes = resourceDescription.getResourceAttributes();
     if (resourceAttributes != null) {

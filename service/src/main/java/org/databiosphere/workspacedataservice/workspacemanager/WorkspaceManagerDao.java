@@ -46,33 +46,11 @@ public class WorkspaceManagerDao {
     }
   }
 
-  public ResourceList enumerateDataRepoSnapshotReferences() throws ApiException {
-    int pageSize = 50; // how many to return from WSM at a time
-    int offset = 0;
-    ResourceList finalList = new ResourceList(); // collect our results
-
-    UUID workspaceUuid = UUID.fromString(workspaceId);
-
-    while (true) {
-      // get a page of results from WSM
-      ResourceList thisPage =
-          enumerateResources(
-              workspaceUuid,
-              offset,
-              pageSize,
-              ResourceType.DATA_REPO_SNAPSHOT,
-              StewardshipType.REFERENCED);
-      // add this page of results to our collector
-      finalList.getResources().addAll(thisPage.getResources());
-
-      if (thisPage.getResources().size() < pageSize) {
-        // fewer results from WSM than we requested; this is the last page of results
-        return finalList;
-      } else {
-        // bump our offset and request another page of results
-        offset = offset + pageSize;
-      }
-    }
+  public ResourceList enumerateDataRepoSnapshotReferences(UUID workspaceId, int offset, int limit)
+      throws ApiException {
+    // get a page of results from WSM
+    return enumerateResources(
+        workspaceId, offset, limit, ResourceType.DATA_REPO_SNAPSHOT, StewardshipType.REFERENCED);
   }
 
   /** Retrieves the azure storage container url and sas token for a given workspace. */
