@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.pfb;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.PfbQuartzJob;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
@@ -42,7 +44,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-class PfbQuartzJobTest {
+class PfbJobTest {
 
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;
@@ -143,6 +145,109 @@ class PfbQuartzJobTest {
     double expectedInvocations = Math.floor((double) wsmCount / testPageSize) + 1;
     verify(wsmDao, times((int) expectedInvocations))
         .enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt());
+  }
+
+  @Test
+  void safeGetSnapshotId() {
+    UUID snapshotId = UUID.randomUUID();
+    ResourceDescription resourceDescription = createResourceDescription(snapshotId);
+
+    PfbQuartzJob pfbQuartzJob = new PfbQuartzJob(jobDao, wsmDao, restClientRetry);
+    UUID actual = pfbQuartzJob.safeGetSnapshotId(resourceDescription);
+
+    assertEquals(snapshotId, actual);
+  }
+
+  @Test
+  void safeGetSnapshotIdNonUuid() {
+    String notAUuid = "Hello world";
+
+    DataRepoSnapshotAttributes dataRepoSnapshotAttributes = new DataRepoSnapshotAttributes();
+    dataRepoSnapshotAttributes.setSnapshot(notAUuid);
+
+    ResourceAttributesUnion resourceAttributes = new ResourceAttributesUnion();
+    resourceAttributes.setGcpDataRepoSnapshot(dataRepoSnapshotAttributes);
+
+    ResourceDescription resourceDescription = new ResourceDescription();
+    resourceDescription.setResourceAttributes(resourceAttributes);
+
+    PfbQuartzJob pfbQuartzJob = new PfbQuartzJob(jobDao, wsmDao, restClientRetry);
+    UUID actual = pfbQuartzJob.safeGetSnapshotId(resourceDescription);
+
+    assertNull(actual);
+  }
+
+  @Test
+  void safeGetSnapshotIdNull() {
+    String notAUuid = null;
+
+    DataRepoSnapshotAttributes dataRepoSnapshotAttributes = new DataRepoSnapshotAttributes();
+    dataRepoSnapshotAttributes.setSnapshot(notAUuid);
+
+    ResourceAttributesUnion resourceAttributes = new ResourceAttributesUnion();
+    resourceAttributes.setGcpDataRepoSnapshot(dataRepoSnapshotAttributes);
+
+    ResourceDescription resourceDescription = new ResourceDescription();
+    resourceDescription.setResourceAttributes(resourceAttributes);
+
+    PfbQuartzJob pfbQuartzJob = new PfbQuartzJob(jobDao, wsmDao, restClientRetry);
+    UUID actual = pfbQuartzJob.safeGetSnapshotId(resourceDescription);
+
+    assertNull(actual);
+  }
+
+  @Test
+  void safeGetSnapshotIdNoSnapshotObject() {
+    ResourceAttributesUnion resourceAttributes = new ResourceAttributesUnion();
+    resourceAttributes.setGcpDataRepoSnapshot(null);
+
+    ResourceDescription resourceDescription = new ResourceDescription();
+    resourceDescription.setResourceAttributes(resourceAttributes);
+
+    PfbQuartzJob pfbQuartzJob = new PfbQuartzJob(jobDao, wsmDao, restClientRetry);
+    UUID actual = pfbQuartzJob.safeGetSnapshotId(resourceDescription);
+
+    assertNull(actual);
+  }
+
+  @Test
+  void safeGetSnapshotIdNoAttributes() {
+    ResourceDescription resourceDescription = new ResourceDescription();
+    resourceDescription.setResourceAttributes(null);
+
+    PfbQuartzJob pfbQuartzJob = new PfbQuartzJob(jobDao, wsmDao, restClientRetry);
+    UUID actual = pfbQuartzJob.safeGetSnapshotId(resourceDescription);
+
+    assertNull(actual);
+  }
+
+  @Test
+  void existingPolicySnapshotIds() {
+    List<UUID> expected = IntStream.range(0, 75).mapToObj(i -> UUID.randomUUID()).toList();
+
+    List<ResourceDescription> resourceDescriptions =
+        expected.stream().map(this::createResourceDescription).toList();
+
+    ResourceList resourceList = new ResourceList();
+    resourceList.setResources(resourceDescriptions);
+
+    PfbQuartzJob pfbQuartzJob = new PfbQuartzJob(jobDao, wsmDao, restClientRetry);
+    List<UUID> actual = pfbQuartzJob.existingPolicySnapshotIds(resourceList);
+
+    assertEquals(expected, actual);
+  }
+
+  private ResourceDescription createResourceDescription(UUID snapshotId) {
+    DataRepoSnapshotAttributes dataRepoSnapshotAttributes = new DataRepoSnapshotAttributes();
+    dataRepoSnapshotAttributes.setSnapshot(snapshotId.toString());
+
+    ResourceAttributesUnion resourceAttributes = new ResourceAttributesUnion();
+    resourceAttributes.setGcpDataRepoSnapshot(dataRepoSnapshotAttributes);
+
+    ResourceDescription resourceDescription = new ResourceDescription();
+    resourceDescription.setResourceAttributes(resourceAttributes);
+
+    return resourceDescription;
   }
 
   private class SnapshotModelMatcher implements ArgumentMatcher<SnapshotModel> {
