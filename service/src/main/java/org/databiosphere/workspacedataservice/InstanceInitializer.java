@@ -7,7 +7,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile({"!local-cors"})
+@Profile({"!local"})
 public class InstanceInitializer implements ApplicationListener<ContextRefreshedEvent> {
 
   private final InstanceInitializerBean instanceInitializerBean;
