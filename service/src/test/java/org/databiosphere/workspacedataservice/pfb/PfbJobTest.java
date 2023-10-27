@@ -3,12 +3,15 @@ package org.databiosphere.workspacedataservice.pfb;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import bio.terra.datarepo.model.SnapshotModel;
+import bio.terra.workspace.client.ApiException;
+import bio.terra.workspace.model.ResourceList;
 import java.net.URL;
 import java.util.Map;
 import java.util.UUID;
@@ -38,7 +41,7 @@ class PfbJobTest {
   @Autowired RestClientRetry restClientRetry;
 
   @Test
-  void doNotFailOnMissingSnapshotId() throws JobExecutionException {
+  void doNotFailOnMissingSnapshotId() throws JobExecutionException, ApiException {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
     // This uses a non-TDR file so does not have the snapshotId
     URL resourceUrl = getClass().getResource("/minimal_data.avro");
@@ -51,6 +54,10 @@ class PfbJobTest {
     jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
     when(mockContext.getJobDetail()).thenReturn(jobDetail);
 
+    // WSM should report no snapshots already linked to this workspace
+    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
+
     new PfbQuartzJob(jobDao, wsmDao, restClientRetry).execute(mockContext);
 
     // Should not call wsm dao
@@ -60,7 +67,7 @@ class PfbJobTest {
   }
 
   @Test
-  void snapshotIdsAreParsed() throws JobExecutionException {
+  void snapshotIdsAreParsed() throws JobExecutionException, ApiException {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
     URL resourceUrl = getClass().getResource("/test.avro");
     when(mockContext.getMergedJobDataMap())
@@ -71,6 +78,10 @@ class PfbJobTest {
     UUID jobId = UUID.randomUUID();
     jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
     when(mockContext.getJobDetail()).thenReturn(jobDetail);
+
+    // WSM should report no snapshots already linked to this workspace
+    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
 
     new PfbQuartzJob(jobDao, wsmDao, restClientRetry).execute(mockContext);
 
