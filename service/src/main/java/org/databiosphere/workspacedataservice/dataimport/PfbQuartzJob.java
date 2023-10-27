@@ -83,30 +83,42 @@ public class PfbQuartzJob extends QuartzJob {
               .distinct() // find only the unique snapshotids
               .toList();
 
-      // list existing snapshots linked to this workspace
-      List<UUID> existingSnapshotIds =
-          PfbQuartzJobSupport.existingPolicySnapshotIds(workspaceId, 50, wsmDao, restClientRetry);
-      // find the snapshots in this PFB that are not already linked to this workspace
-      List<UUID> newSnapshotIds =
-          snapshotIds.stream().filter(id -> !existingSnapshotIds.contains(id)).toList();
+      // link the found snapshots to the workspace, skipping any that were previously linked
+      linkSnapshots(snapshotIds);
 
-      // pass snapshotIds to WSM
-      for (UUID uuid : newSnapshotIds) {
-        try {
-          RestClientRetry.VoidRestCall voidRestCall =
-              (() -> wsmDao.createDataRepoSnapshotReference(new SnapshotModel().id(uuid)));
-          restClientRetry.withRetryAndErrorHandling(
-              voidRestCall, "WSM.createDataRepoSnapshotReference");
-        } catch (Exception e) {
-          throw new PfbParsingException("Error processing PFB: Invalid snapshot UUID", e);
-        }
-      }
     } catch (IOException e) {
       throw new PfbParsingException("Error processing PFB", e);
     }
 
     // TODO: AJ-1227 implement PFB import.
     logger.info("TODO: implement PFB import.");
+  }
+
+  protected void linkSnapshots(List<UUID> snapshotIds) {
+    // list existing snapshots linked to this workspace
+    List<UUID> existingSnapshotIds =
+        PfbQuartzJobSupport.existingPolicySnapshotIds(workspaceId, 50, wsmDao, restClientRetry);
+    // find the snapshots in this PFB that are not already linked to this workspace
+    List<UUID> newSnapshotIds =
+        snapshotIds.stream().filter(id -> !existingSnapshotIds.contains(id)).toList();
+
+    logger.info(
+        "PFB contains {} snapshot ids. {} of these are already linked to the workspace; {} new links will be created.",
+        snapshotIds.size(),
+        snapshotIds.size() - newSnapshotIds.size(),
+        snapshotIds.size());
+
+    // pass snapshotIds to WSM
+    for (UUID uuid : newSnapshotIds) {
+      try {
+        RestClientRetry.VoidRestCall voidRestCall =
+            (() -> wsmDao.createDataRepoSnapshotReference(new SnapshotModel().id(uuid)));
+        restClientRetry.withRetryAndErrorHandling(
+            voidRestCall, "WSM.createDataRepoSnapshotReference");
+      } catch (Exception e) {
+        throw new PfbParsingException("Error processing PFB: Invalid snapshot UUID", e);
+      }
+    }
   }
 
   private UUID maybeUuid(String input) {

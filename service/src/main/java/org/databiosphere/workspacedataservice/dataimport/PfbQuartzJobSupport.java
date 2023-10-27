@@ -13,11 +13,27 @@ import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerD
 
 public class PfbQuartzJobSupport {
 
+  /**
+   * Query WSM for the full list of referenced snapshots in this workspace, then return the list of
+   * unique snapshotIds from those references.
+   *
+   * @param workspaceId which workspace to use when listing references
+   * @param pageSize how many references to return in each paginated request to WSM
+   * @param wsmDao the Workspace Manager DAO
+   * @param restClientRetry the retry-logic bean for queries to WSM
+   * @return the list of unique ids for all pre-existing snapshot references
+   */
   protected static List<UUID> existingPolicySnapshotIds(
       UUID workspaceId, int pageSize, WorkspaceManagerDao wsmDao, RestClientRetry restClientRetry) {
     return extractSnapshotIds(listAllSnapshots(workspaceId, pageSize, wsmDao, restClientRetry));
   }
 
+  /**
+   * Given a ResourceList, find all the valid ids of referenced snapshots in that list
+   *
+   * @param resourceList the list in which to look for snapshotIds
+   * @return the list of unique ids in the provided list
+   */
   protected static List<UUID> extractSnapshotIds(ResourceList resourceList) {
     return resourceList.getResources().stream()
         .map(PfbQuartzJobSupport::safeGetSnapshotId)
@@ -75,7 +91,7 @@ public class PfbQuartzJobSupport {
         try {
           return UUID.fromString(snapshotIdStr);
         } catch (Exception e) {
-          // TODO: what to do here?
+          // noop; this will return null
         }
       }
     }
