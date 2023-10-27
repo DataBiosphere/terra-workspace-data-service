@@ -115,13 +115,15 @@ sentry:
   mrg: ${LZ_MRG:}
   releasename: ${RELEASE_NAME:}
 
-sam:
+# retry configuration for REST clients (Sam, WSM, TDR, Leo, etc)
+rest:
   retry:
     maxAttempts: 5
     backoff:
       delay: 500
       multiplier: 1.5
 
+# retry configuration for WDS APIs
 api:
   retry:
     maxAttempts: 10
