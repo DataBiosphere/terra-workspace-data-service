@@ -4,8 +4,6 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 
 import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.pfb.PfbReader;
-import bio.terra.workspace.model.ResourceDescription;
-import bio.terra.workspace.model.ResourceList;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
@@ -13,7 +11,6 @@ import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.avro.file.DataFileStream;
@@ -70,7 +67,7 @@ public class PfbQuartzJob extends QuartzJob {
               false);
 
       // process the stream into a list of unique snapshotIds
-      List<String> snapshotIds =
+      List<UUID> snapshotIds =
           recordStream
               .map(rec -> rec.get("object")) // Records in a pfb are stored under the key "object"
               .filter(GenericRecord.class::isInstance) // which we expect to be a GenericRecord
@@ -81,19 +78,29 @@ public class PfbQuartzJob extends QuartzJob {
               .map(obj -> obj.get(SNAPSHOT_ID_IDENTIFIER)) // within the GenericRecord, find the
               // source_datarepo_snapshot_id
               .filter(Objects::nonNull) // expect source_datarepo_snapshot_id to be non-null
-              .map(Object::toString)
+              .map(obj -> maybeUuid(obj.toString()))
+              .filter(Objects::nonNull)
               .distinct() // find only the unique snapshotids
               .toList();
 
-      // TODO AJ-1371 pass snapshotIds to WSM
-      for (String id : snapshotIds) {
+      // list existing snapshots linked to this workspace
+      List<UUID> existingSnapshotIds =
+          PfbQuartzJobSupport.existingPolicySnapshotIds(workspaceId, 50, wsmDao, restClientRetry);
+      // find the snapshots in this PFB that are not already linked to this workspace
+      List<UUID> newSnapshotIds =
+          snapshotIds.stream().filter(id -> !existingSnapshotIds.contains(id)).toList();
+
+      // pass snapshotIds to WSM
+      for (UUID uuid : newSnapshotIds) {
         try {
-          wsmDao.createDataRepoSnapshotReference(new SnapshotModel().id(UUID.fromString(id)));
+          RestClientRetry.VoidRestCall voidRestCall =
+              (() -> wsmDao.createDataRepoSnapshotReference(new SnapshotModel().id(uuid)));
+          restClientRetry.withRetryAndErrorHandling(
+              voidRestCall, "WSM.createDataRepoSnapshotReference");
         } catch (Exception e) {
           throw new PfbParsingException("Error processing PFB: Invalid snapshot UUID", e);
         }
       }
-
     } catch (IOException e) {
       throw new PfbParsingException("Error processing PFB", e);
     }
@@ -102,65 +109,12 @@ public class PfbQuartzJob extends QuartzJob {
     logger.info("TODO: implement PFB import.");
   }
 
-  List<UUID> existingPolicySnapshotIds() {
-    return listAllSnapshots(50).getResources().stream()
-        .map(this::safeGetSnapshotId)
-        .filter(Objects::nonNull)
-        .distinct()
-        .toList();
-  }
-
-  /**
-   * Get the full list of all snapshot references for the current workspace. WSM returns these
-   * results paginated; this method retrieves pages from WSM and aggregates the results.
-   *
-   * @return the full list of all snapshot references for the workspace.
-   */
-  public ResourceList listAllSnapshots(int pageSize) {
-    final AtomicInteger offset = new AtomicInteger(0);
-
-    ResourceList finalList = new ResourceList(); // collect our results
-
-    while (true) {
-      // get a page of results from WSM
-      RestClientRetry.RestCall<ResourceList> restCall =
-          (() -> wsmDao.enumerateDataRepoSnapshotReferences(workspaceId, offset.get(), pageSize));
-      ResourceList thisPage =
-          restClientRetry.withRetryAndErrorHandling(
-              restCall, "WSM.enumerateDataRepoSnapshotReferences");
-
-      // add this page of results to our collector
-      finalList.getResources().addAll(thisPage.getResources());
-
-      if (thisPage.getResources().size() < pageSize) {
-        // fewer results from WSM than we requested; this is the last page of results
-        return finalList;
-      } else {
-        // bump our offset and request another page of results
-        offset.addAndGet(pageSize);
-      }
+  private UUID maybeUuid(String input) {
+    try {
+      return UUID.fromString(input);
+    } catch (Exception e) {
+      logger.warn("found unparseable snapshot id '{}' in PFB contents", input);
+      return null;
     }
-  }
-
-  /**
-   * Given a ResourceDescription representing a snapshot reference, retrieve that snapshot's UUID.
-   *
-   * @param resourceDescription
-   * @return
-   */
-  UUID safeGetSnapshotId(ResourceDescription resourceDescription) {
-    var resourceAttributes = resourceDescription.getResourceAttributes();
-    if (resourceAttributes != null) {
-      var dataRepoSnapshot = resourceAttributes.getGcpDataRepoSnapshot();
-      if (dataRepoSnapshot != null) {
-        String snapshotIdStr = dataRepoSnapshot.getSnapshot();
-        try {
-          return UUID.fromString(snapshotIdStr);
-        } catch (Exception e) {
-          // TODO: what to do here?
-        }
-      }
-    }
-    return null;
   }
 }
