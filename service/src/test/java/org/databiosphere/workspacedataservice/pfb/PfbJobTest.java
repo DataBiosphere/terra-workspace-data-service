@@ -12,6 +12,7 @@ import bio.terra.datarepo.model.SnapshotModel;
 import java.net.URL;
 import java.util.Map;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.PfbQuartzJob;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
@@ -35,6 +36,7 @@ class PfbJobTest {
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;
   @MockBean BatchWriteService batchWriteService;
+  @MockBean ActivityLogger activityLogger;
 
   @Test
   void doNotFailOnMissingSnapshotId() throws JobExecutionException {
@@ -50,7 +52,7 @@ class PfbJobTest {
     jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
     when(mockContext.getJobDetail()).thenReturn(jobDetail);
 
-    new PfbQuartzJob(jobDao, wsmDao, batchWriteService).execute(mockContext);
+    new PfbQuartzJob(jobDao, wsmDao, batchWriteService, activityLogger).execute(mockContext);
 
     // Should not call wsm dao
     verify(wsmDao, times(0)).createDataRepoSnapshotReference(any());
@@ -71,7 +73,7 @@ class PfbJobTest {
     jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
     when(mockContext.getJobDetail()).thenReturn(jobDetail);
 
-    new PfbQuartzJob(jobDao, wsmDao, batchWriteService).execute(mockContext);
+    new PfbQuartzJob(jobDao, wsmDao, batchWriteService, activityLogger).execute(mockContext);
 
     // This is the snapshotId given in the test pfb
     verify(wsmDao)
@@ -95,7 +97,7 @@ class PfbJobTest {
     jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
     when(mockContext.getJobDetail()).thenReturn(jobDetail);
 
-    new PfbQuartzJob(jobDao, wsmDao, batchWriteService).execute(mockContext);
+    new PfbQuartzJob(jobDao, wsmDao, batchWriteService, activityLogger).execute(mockContext);
   }
 
   @Test

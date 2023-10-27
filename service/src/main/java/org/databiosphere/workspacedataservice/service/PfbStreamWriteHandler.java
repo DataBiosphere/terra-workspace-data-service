@@ -2,10 +2,13 @@ package org.databiosphere.workspacedataservice.service;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.apache.avro.Schema;
+import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -14,26 +17,31 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
 public class PfbStreamWriteHandler implements StreamingWriteHandler {
 
-  private final Stream<GenericRecord> inputStream;
+  private final DataFileStream<GenericRecord> inputStream;
 
-  public PfbStreamWriteHandler(Stream<GenericRecord> inputStream) {
+  public PfbStreamWriteHandler(DataFileStream<GenericRecord> inputStream) {
     this.inputStream = inputStream;
   }
 
   public WriteStreamInfo readRecords(int numRecords) throws IOException {
 
-    Map<RecordType, List<Record>> records =
-        inputStream
-            .map(this::genericRecordToRecord)
-            .collect(Collectors.groupingBy(rec -> rec.getRecordType()));
+    // translate the Avro DataFileStream into a Java stream
+    Stream<GenericRecord> recordStream =
+        StreamSupport.stream(
+            Spliterators.spliteratorUnknownSize(inputStream.iterator(), Spliterator.ORDERED),
+            false);
 
-    // TODO return multiple WriteStreamInfos?  WHAT TO DO
+    // TODO pay attention to numRecords
+    List<Record> records =
+        recordStream.map(this::genericRecordToRecord).collect(Collectors.toList());
 
     return new WriteStreamInfo(records, OperationType.UPSERT);
   }
 
+  // TODO how to not write the whole path
   private org.databiosphere.workspacedataservice.shared.model.Record genericRecordToRecord(
       GenericRecord genRec) {
+    // TODO ok to use plain strings here so should they be static variables or what?
     org.databiosphere.workspacedataservice.shared.model.Record converted =
         new org.databiosphere.workspacedataservice.shared.model.Record(
             genRec.get("id").toString(),
@@ -44,7 +52,14 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
     List<Schema.Field> fields = schema.getFields();
     RecordAttributes attributes = RecordAttributes.empty();
     for (Schema.Field field : fields) {
-      attributes.putAttribute(field.name(), objectAttributes.get(field.name()));
+      String fieldName = field.name();
+      // TODO deal with this better?
+      // Making everything a string to avoid weird data type issues later
+      String value =
+          objectAttributes.get(fieldName) == null
+              ? null
+              : objectAttributes.get(fieldName).toString();
+      attributes.putAttribute(fieldName, value);
     }
     converted.setAttributes(attributes);
     return converted;

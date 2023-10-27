@@ -11,7 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
+import org.apache.avro.file.DataFileStream;
+import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
@@ -76,19 +78,75 @@ public class BatchWriteService {
           !info.getRecords().isEmpty();
           info = streamingWriteHandler.readRecords(batchSize)) {
         List<Record> records = info.getRecords();
-        if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
-          schema = inferer.inferTypes(records);
-          createOrModifyRecordType(
-              instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
+        /// TEST
+        // TODO how to deal with firstUpsertBatch
+        // TODO is a recordType == null check the best way to do this?
+        if (recordType == null) {
+          Map<RecordType, List<Record>> sortedRecords =
+              records.stream().collect(Collectors.groupingBy(rec -> rec.getRecordType()));
+          for (Map.Entry<RecordType, List<Record>> recList : sortedRecords.entrySet()) {
+            recordsAffected +=
+                processRecords(
+                    firstUpsertBatch,
+                    info.getOperationType(),
+                    recList.getValue(),
+                    schema,
+                    instanceId,
+                    recList.getKey(),
+                    primaryKey,
+                    recordsAffected);
+          }
+          firstUpsertBatch = false;
+        } else {
+          recordsAffected +=
+              processRecords(
+                  firstUpsertBatch,
+                  info.getOperationType(),
+                  records,
+                  schema,
+                  instanceId,
+                  recordType,
+                  primaryKey,
+                  recordsAffected);
           firstUpsertBatch = false;
         }
-        writeBatch(instanceId, recordType, schema, info, records, primaryKey);
-        recordsAffected += records.size();
+
+        ///
+        /// ORIGINAL CODE
+        //        if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
+        //          schema = inferer.inferTypes(records);
+        //          createOrModifyRecordType(
+        //              instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
+        //          firstUpsertBatch = false;
+        //        }
+        //        writeBatch(instanceId, recordType, schema, info, records, primaryKey);
+        //        recordsAffected += records.size();
+        ////
       }
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
     return recordsAffected;
+  }
+
+  private int processRecords(
+      boolean firstUpsertBatch,
+      OperationType opType,
+      List<Record> records,
+      Map<String, DataTypeMapping> schema,
+      UUID instanceId,
+      RecordType recordType,
+      Optional<String> primaryKey,
+      int recordsAffected) {
+    if (firstUpsertBatch && opType == OperationType.UPSERT) {
+      // TODO should we infer types every time for multi-record type for changes?  Probably I guess?
+      schema = inferer.inferTypes(records);
+      createOrModifyRecordType(
+          instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
+      firstUpsertBatch = false;
+    }
+    writeBatch(instanceId, recordType, schema, opType, records, primaryKey);
+    return recordsAffected + records.size();
   }
 
   // try-with-resources wrapper for JsonStreamWriteHandler; calls consumeWriteStream.
@@ -119,11 +177,12 @@ public class BatchWriteService {
     }
   }
 
+  // TODO probably pass in the primaryKey
   @WriteTransaction
   public int batchWritePfbStream(
-      Stream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
+      DataFileStream<GenericRecord> is, UUID instanceId, Optional<String> primaryKey) {
     try (PfbStreamWriteHandler streamingWriteHandler = new PfbStreamWriteHandler(is)) {
-      return consumeWriteStream(streamingWriteHandler, instanceId, recordType, Optional.of(""));
+      return consumeWriteStream(streamingWriteHandler, instanceId, null, Optional.of("id"));
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
@@ -157,14 +216,14 @@ public class BatchWriteService {
       UUID instanceId,
       RecordType recordType,
       Map<String, DataTypeMapping> schema,
-      StreamingWriteHandler.WriteStreamInfo info,
+      OperationType opType,
       List<Record> records,
       Optional<String> primaryKey)
       throws BatchWriteException {
-    if (info.getOperationType() == OperationType.UPSERT) {
+    if (opType == OperationType.UPSERT) {
       recordService.batchUpsertWithErrorCapture(
           instanceId, recordType, records, schema, primaryKey.orElse(RECORD_ID));
-    } else if (info.getOperationType() == OperationType.DELETE) {
+    } else if (opType == OperationType.DELETE) {
       recordDao.batchDelete(instanceId, recordType, records);
     }
   }

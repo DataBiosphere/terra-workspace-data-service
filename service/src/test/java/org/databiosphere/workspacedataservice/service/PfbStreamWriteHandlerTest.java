@@ -8,10 +8,6 @@ import bio.terra.pfb.PfbReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -25,13 +21,7 @@ public class PfbStreamWriteHandlerTest {
     URL url = getClass().getResource("/minimal_data.avro");
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
-      // translate the Avro DataFileStream into a Java stream
-      Stream<GenericRecord> recordStream =
-          StreamSupport.stream(
-              Spliterators.spliteratorUnknownSize(dataStream.iterator(), Spliterator.ORDERED),
-              false);
-
-      PfbStreamWriteHandler pswh = new PfbStreamWriteHandler(recordStream);
+      PfbStreamWriteHandler pswh = new PfbStreamWriteHandler(dataStream);
       StreamingWriteHandler.WriteStreamInfo streamInfo = pswh.readRecords(1);
       /*
       Expected first record:
@@ -77,19 +67,14 @@ public class PfbStreamWriteHandlerTest {
     }
   }
 
-  // TODO
+  // TODO should i just have this one test i guess
   @Test
   void parseMultipleRecordTypes() {
     URL url = getClass().getResource("/two_tables.avro");
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
-      // translate the Avro DataFileStream into a Java stream
-      Stream<GenericRecord> recordStream =
-          StreamSupport.stream(
-              Spliterators.spliteratorUnknownSize(dataStream.iterator(), Spliterator.ORDERED),
-              false);
 
-      PfbStreamWriteHandler pswh = new PfbStreamWriteHandler(recordStream);
+      PfbStreamWriteHandler pswh = new PfbStreamWriteHandler(dataStream);
       StreamingWriteHandler.WriteStreamInfo streamInfo = pswh.readRecords(2);
       /*
       First record same as in |pfbTablesAreParsedCorrectly|, second record:
@@ -109,6 +94,7 @@ public class PfbStreamWriteHandlerTest {
       }
       */
       List<Record> result = streamInfo.getRecords();
+      assertEquals(2, result.size());
       Record firstRecord = result.get(0);
       assertNotNull(firstRecord);
       assertEquals("HG01101_cram", firstRecord.getId());
@@ -118,6 +104,18 @@ public class PfbStreamWriteHandlerTest {
       // TODO what to do about these being whatever object type
       assertEquals("aaa1234", firstRecord.getAttributeValue("study_id").toString());
       assertEquals(512L, firstRecord.getAttributeValue("file_size"));
+
+      Record secondRecord = result.get(1);
+      assertNotNull(secondRecord);
+      assertEquals("data_release.3511bcae-8725-53f1-b632-d06a9697baa5.1", secondRecord.getId());
+      assertEquals(RecordType.valueOf("data_release"), secondRecord.getRecordType());
+      assertEquals(7, secondRecord.attributeSet().size());
+      // just a spot check for now
+      // TODO what to do about these being whatever object type
+      assertEquals(
+          "2022-07-01T00:00:00.000000Z",
+          secondRecord.getAttributeValue("updated_datetime").toString());
+      assertEquals(1L, secondRecord.getAttributeValue("minor_version"));
     } catch (IOException e) {
       fail();
     }

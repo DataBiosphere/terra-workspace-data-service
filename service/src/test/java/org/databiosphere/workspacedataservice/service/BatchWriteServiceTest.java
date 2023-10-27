@@ -2,12 +2,17 @@ package org.databiosphere.workspacedataservice.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
+import bio.terra.pfb.PfbReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.Optional;
 import java.util.UUID;
+import org.apache.avro.file.DataFileStream;
+import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -54,5 +59,20 @@ class BatchWriteServiceTest {
 
     String errorMessage = ex.getMessage();
     assertEquals("Duplicate field 'key'", errorMessage);
+  }
+
+  // TODO Need to test multiple record types AND multiple record types split across batch sizes
+
+  @Test
+  void testParseMultipleTablesFromPfb() {
+
+    URL url = getClass().getResource("/two_tables.avro");
+    try (DataFileStream<GenericRecord> dataStream =
+        PfbReader.getGenericRecordsStream(url.toString())) {
+      batchWriteService.batchWritePfbStream(dataStream, INSTANCE, Optional.empty());
+      // TODO verify it wrote to database or something else?
+    } catch (IOException e) {
+      fail(); // TODO failure message?
+    }
   }
 }

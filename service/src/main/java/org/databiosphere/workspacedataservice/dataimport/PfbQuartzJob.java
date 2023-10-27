@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
@@ -16,6 +17,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
+import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
@@ -38,12 +40,17 @@ public class PfbQuartzJob extends QuartzJob {
   private final JobDao jobDao;
   private final WorkspaceManagerDao wsmDao;
   private final BatchWriteService batchWriteService;
+  private final ActivityLogger activityLogger;
 
   public PfbQuartzJob(
-      JobDao jobDao, WorkspaceManagerDao wsmDao, BatchWriteService batchWriteService) {
+      JobDao jobDao,
+      WorkspaceManagerDao wsmDao,
+      BatchWriteService batchWriteService,
+      ActivityLogger activityLogger) {
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
     this.batchWriteService = batchWriteService;
+    this.activityLogger = activityLogger;
   }
 
   @Override
@@ -96,37 +103,17 @@ public class PfbQuartzJob extends QuartzJob {
     logger.info("TODO: implement PFB import.");
     UUID instanceId = getJobDataUUID(jobDataMap, ARG_INSTANCE);
 
-    // TODO should the datafilestream be passed directly to pfbstreamwritehandler or made into
-    // javastream first?
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
-      // translate the Avro DataFileStream into a Java stream
-      Stream<GenericRecord> recordStream =
-          StreamSupport.stream(
-              Spliterators.spliteratorUnknownSize(dataStream.iterator(), Spliterator.ORDERED),
-              false);
-
-      // TODO how to deal with multiple record types...
-      // how dumb is this
-      //      Map<Object, Stream<GenericRecord>> groupedByType =
-      //          recordStream.collect(Collectors.groupingBy(rec ->
-      // rec.get("name"))).entrySet().stream()
-      //              .collect(
-      //                  Collectors.toMap(entry -> entry.getKey(), entry ->
-      // entry.getValue().stream()));
-
-      // For each table type stream, call batch write service
-      //      for (Map.Entry<Object, Stream<GenericRecord>> stream : groupedByType.entrySet()) {
-      //        // TODO get recordType, format id correctly
-      //        batchWriteService.batchWritePfbStream(
-      //            stream.getValue(),
-      //            instanceId,
-      //            RecordType.valueOf(stream.getKey().toString()),
-      //            Optional.of("id"));
-      //      }
+      //              // TODO  format id correctly
+      batchWriteService.batchWritePfbStream(dataStream, instanceId, Optional.of("id"));
 
     } catch (IOException e) {
+      // TODO where do we identify that there may have been a partial write?
       throw new PfbParsingException("Error processing PFB", e);
     }
+    // TODO How to find out record type and quantity?
+    //    activityLogger.saveEventForCurrentUser(
+    //        user -> user.upserted().record().withRecordType(recordType).ofQuantity(qty));
   }
 }
