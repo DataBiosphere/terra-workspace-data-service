@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.pfb;
 
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,6 +39,8 @@ class PfbJobTest {
   @MockBean BatchWriteService batchWriteService;
   @MockBean ActivityLogger activityLogger;
 
+  private static final String INSTANCE = "aaaabbbb-cccc-dddd-1111-222233334444";
+
   @Test
   void doNotFailOnMissingSnapshotId() throws JobExecutionException {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
@@ -45,7 +48,14 @@ class PfbJobTest {
     URL resourceUrl = getClass().getResource("/minimal_data.avro");
     when(mockContext.getMergedJobDataMap())
         .thenReturn(
-            new JobDataMap(Map.of(ARG_TOKEN, "expectedToken", ARG_URL, resourceUrl.toString())));
+            new JobDataMap(
+                Map.of(
+                    ARG_TOKEN,
+                    "expectedToken",
+                    ARG_URL,
+                    resourceUrl.toString(),
+                    ARG_INSTANCE,
+                    INSTANCE)));
 
     JobDetailImpl jobDetail = new JobDetailImpl();
     UUID jobId = UUID.randomUUID();
@@ -66,7 +76,14 @@ class PfbJobTest {
     URL resourceUrl = getClass().getResource("/test.avro");
     when(mockContext.getMergedJobDataMap())
         .thenReturn(
-            new JobDataMap(Map.of(ARG_TOKEN, "expectedToken", ARG_URL, resourceUrl.toString())));
+            new JobDataMap(
+                Map.of(
+                    ARG_TOKEN,
+                    "expectedToken",
+                    ARG_URL,
+                    resourceUrl.toString(),
+                    ARG_INSTANCE,
+                    INSTANCE)));
 
     JobDetailImpl jobDetail = new JobDetailImpl();
     UUID jobId = UUID.randomUUID();
@@ -90,7 +107,14 @@ class PfbJobTest {
     URL resourceUrl = getClass().getResource("/test.avro");
     when(mockContext.getMergedJobDataMap())
         .thenReturn(
-            new JobDataMap(Map.of(ARG_TOKEN, "expectedToken", ARG_URL, resourceUrl.toString())));
+            new JobDataMap(
+                Map.of(
+                    ARG_TOKEN,
+                    "expectedToken",
+                    ARG_URL,
+                    resourceUrl.toString(),
+                    ARG_INSTANCE,
+                    INSTANCE)));
 
     JobDetailImpl jobDetail = new JobDetailImpl();
     UUID jobId = UUID.randomUUID();

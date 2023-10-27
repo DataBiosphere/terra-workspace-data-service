@@ -87,7 +87,7 @@ public class BatchWriteService {
           for (Map.Entry<RecordType, List<Record>> recList : sortedRecords.entrySet()) {
             recordsAffected +=
                 processRecords(
-                    firstUpsertBatch,
+                    true,
                     info.getOperationType(),
                     recList.getValue(),
                     schema,
@@ -96,32 +96,20 @@ public class BatchWriteService {
                     primaryKey,
                     recordsAffected);
           }
-          firstUpsertBatch = false;
         } else {
-          recordsAffected +=
-              processRecords(
-                  firstUpsertBatch,
-                  info.getOperationType(),
-                  records,
-                  schema,
-                  instanceId,
-                  recordType,
-                  primaryKey,
-                  recordsAffected);
-          firstUpsertBatch = false;
-        }
 
-        ///
-        /// ORIGINAL CODE
-        //        if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
-        //          schema = inferer.inferTypes(records);
-        //          createOrModifyRecordType(
-        //              instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
-        //          firstUpsertBatch = false;
-        //        }
-        //        writeBatch(instanceId, recordType, schema, info, records, primaryKey);
-        //        recordsAffected += records.size();
-        ////
+          ///
+          /// ORIGINAL CODE
+          if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
+            schema = inferer.inferTypes(records);
+            createOrModifyRecordType(
+                instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
+            firstUpsertBatch = false;
+          }
+          writeBatch(instanceId, recordType, schema, info.getOperationType(), records, primaryKey);
+          recordsAffected += records.size();
+          ////
+        }
       }
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
@@ -177,12 +165,11 @@ public class BatchWriteService {
     }
   }
 
-  // TODO probably pass in the primaryKey
   @WriteTransaction
   public int batchWritePfbStream(
       DataFileStream<GenericRecord> is, UUID instanceId, Optional<String> primaryKey) {
     try (PfbStreamWriteHandler streamingWriteHandler = new PfbStreamWriteHandler(is)) {
-      return consumeWriteStream(streamingWriteHandler, instanceId, null, Optional.of("id"));
+      return consumeWriteStream(streamingWriteHandler, instanceId, null, primaryKey);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
