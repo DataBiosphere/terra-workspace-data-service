@@ -30,7 +30,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-public class PfbQuartzJobTest {
+class PfbQuartzJobTest {
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;
   @Autowired RestClientRetry restClientRetry;
