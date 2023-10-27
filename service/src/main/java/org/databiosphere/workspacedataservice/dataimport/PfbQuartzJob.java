@@ -4,6 +4,9 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 
 import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.pfb.PfbReader;
+import bio.terra.workspace.client.ApiException;
+import bio.terra.workspace.model.ResourceDescription;
+import bio.terra.workspace.model.ResourceList;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
@@ -89,5 +92,38 @@ public class PfbQuartzJob extends QuartzJob {
 
     // TODO: AJ-1227 implement PFB import.
     logger.info("TODO: implement PFB import.");
+  }
+
+  List<UUID> listExistingPolicySnapshots(UUID workspaceId) throws ApiException {
+    // TODO AJ-1371 get all existing snapshot references from WSM
+    ResourceList snapshotList = wsmDao.enumerateDataRepoSnapshotReferences();
+    // TODO: UUID safety
+    List<UUID> snapshotIds =
+        snapshotList.getResources().stream()
+            .map(this::safeGetSnapshotId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+    // TODO AJ-1371 filter to policyOnly snapshots
+    // TODO AJ-1371 compare to ${snapshotIds} and find un-added snapshots
+    // TODO AJ-1371 add the unadded ones
+
+    return snapshotIds;
+  }
+
+  UUID safeGetSnapshotId(ResourceDescription resourceDescription) {
+    var resourceAttributes = resourceDescription.getResourceAttributes();
+    if (resourceAttributes != null) {
+      var dataRepoSnapshot = resourceAttributes.getGcpDataRepoSnapshot();
+      if (dataRepoSnapshot != null) {
+        String snapshotIdStr = dataRepoSnapshot.getSnapshot();
+        try {
+          return UUID.fromString(snapshotIdStr);
+        } catch (Exception e) {
+          // TODO: what to do here?
+        }
+      }
+    }
+    return null;
   }
 }
