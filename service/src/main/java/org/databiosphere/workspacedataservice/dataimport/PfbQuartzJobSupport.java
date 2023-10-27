@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.service.model.exception.PfbImportException;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 
 public class PfbQuartzJobSupport {
@@ -82,6 +83,10 @@ public class PfbQuartzJobSupport {
         offset.addAndGet(pageSize);
       }
     }
+
+    throw new PfbImportException(
+        "Exceeded hard limit of %d for number of pre-existing snapshot references"
+            .formatted(hardLimit));
   }
 
   /**
