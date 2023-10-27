@@ -12,7 +12,7 @@ import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
-import org.databiosphere.workspacedataservice.service.model.exception.SamException;
+import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,8 +27,8 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @SpringBootTest(
     properties = {
-      "sam.retry.maxAttempts=2",
-      "sam.retry.backoff.delay=10"
+      "rest.retry.maxAttempts=2",
+      "rest.retry.backoff.delay=10"
     }) // aggressive retry settings so unit test doesn't run too long)
 @ActiveProfiles(profiles = {"mock-sam", "mock-instance-dao"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -93,7 +93,7 @@ class RecordOrchestratorSamTest {
             new ApiException(
                 0, "intentional failure for unit test")); // 0 indicates a failed connection
     assertThrows(
-        SamException.class,
+        RestException.class,
         () -> recordOrchestratorService.validateAndPermissions(INSTANCE, VERSION),
         "validateAndPermissions should throw if caller does not have write permission in Sam");
   }

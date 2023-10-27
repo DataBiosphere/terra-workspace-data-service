@@ -15,6 +15,7 @@ import java.util.concurrent.locks.Lock;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.*;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoConfig;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
 import org.databiosphere.workspacedataservice.sam.SamConfig;
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
@@ -59,7 +60,8 @@ import org.springframework.test.context.TestPropertySource;
       WorkspaceManagerConfig.class,
       ActivityLoggerConfig.class,
       SamConfig.class,
-      MockSamClientFactoryConfig.class
+      MockSamClientFactoryConfig.class,
+      RestClientRetry.class
     })
 class InstanceInitializerBeanTest {
 
