@@ -103,7 +103,7 @@ public class PfbQuartzJob extends QuartzJob {
   }
 
   List<UUID> existingPolicySnapshotIds() {
-    return listAllSnapshots().getResources().stream()
+    return listAllSnapshots(50).getResources().stream()
         .map(this::safeGetSnapshotId)
         .filter(Objects::nonNull)
         .distinct()
@@ -116,8 +116,7 @@ public class PfbQuartzJob extends QuartzJob {
    *
    * @return the full list of all snapshot references for the workspace.
    */
-  ResourceList listAllSnapshots() {
-    final int pageSize = 50; // how many to return from WSM at a time
+  public ResourceList listAllSnapshots(int pageSize) {
     final AtomicInteger offset = new AtomicInteger(0);
 
     ResourceList finalList = new ResourceList(); // collect our results
