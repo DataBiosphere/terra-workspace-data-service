@@ -13,19 +13,26 @@ import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerD
 
 public class PfbQuartzJobSupport {
 
+  private final UUID workspaceId;
+  private final WorkspaceManagerDao wsmDao;
+  private final RestClientRetry restClientRetry;
+
+  public PfbQuartzJobSupport(
+      UUID workspaceId, WorkspaceManagerDao wsmDao, RestClientRetry restClientRetry) {
+    this.workspaceId = workspaceId;
+    this.wsmDao = wsmDao;
+    this.restClientRetry = restClientRetry;
+  }
+
   /**
    * Query WSM for the full list of referenced snapshots in this workspace, then return the list of
    * unique snapshotIds from those references.
    *
-   * @param workspaceId which workspace to use when listing references
    * @param pageSize how many references to return in each paginated request to WSM
-   * @param wsmDao the Workspace Manager DAO
-   * @param restClientRetry the retry-logic bean for queries to WSM
    * @return the list of unique ids for all pre-existing snapshot references
    */
-  protected static List<UUID> existingPolicySnapshotIds(
-      UUID workspaceId, int pageSize, WorkspaceManagerDao wsmDao, RestClientRetry restClientRetry) {
-    return extractSnapshotIds(listAllSnapshots(workspaceId, pageSize, wsmDao, restClientRetry));
+  protected List<UUID> existingPolicySnapshotIds(int pageSize) {
+    return extractSnapshotIds(listAllSnapshots(pageSize));
   }
 
   /**
@@ -34,9 +41,9 @@ public class PfbQuartzJobSupport {
    * @param resourceList the list in which to look for snapshotIds
    * @return the list of unique ids in the provided list
    */
-  protected static List<UUID> extractSnapshotIds(ResourceList resourceList) {
+  protected List<UUID> extractSnapshotIds(ResourceList resourceList) {
     return resourceList.getResources().stream()
-        .map(PfbQuartzJobSupport::safeGetSnapshotId)
+        .map(this::safeGetSnapshotId)
         .filter(Objects::nonNull)
         .distinct()
         .toList();
@@ -49,13 +56,14 @@ public class PfbQuartzJobSupport {
    * @param pageSize number of results to return from WSM at once
    * @return the full list of all snapshot references for the workspace.
    */
-  protected static ResourceList listAllSnapshots(
-      UUID workspaceId, int pageSize, WorkspaceManagerDao wsmDao, RestClientRetry restClientRetry) {
+  protected ResourceList listAllSnapshots(int pageSize) {
     final AtomicInteger offset = new AtomicInteger(0);
+    final int hardLimit =
+        10000; // under no circumstances return more than this many snapshots from WSM
 
     ResourceList finalList = new ResourceList(); // collect our results
 
-    while (true) {
+    while (offset.get() < hardLimit) {
       // get a page of results from WSM
       RestClientRetry.RestCall<ResourceList> restCall =
           (() -> wsmDao.enumerateDataRepoSnapshotReferences(workspaceId, offset.get(), pageSize));
@@ -82,7 +90,7 @@ public class PfbQuartzJobSupport {
    * @param resourceDescription the WSM object in which to find a snapshotId
    * @return the snapshotId if found, else null
    */
-  protected static UUID safeGetSnapshotId(ResourceDescription resourceDescription) {
+  protected UUID safeGetSnapshotId(ResourceDescription resourceDescription) {
     ResourceAttributesUnion resourceAttributes = resourceDescription.getResourceAttributes();
     if (resourceAttributes != null) {
       DataRepoSnapshotAttributes dataRepoSnapshot = resourceAttributes.getGcpDataRepoSnapshot();

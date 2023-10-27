@@ -96,8 +96,9 @@ public class PfbQuartzJob extends QuartzJob {
 
   protected void linkSnapshots(List<UUID> snapshotIds) {
     // list existing snapshots linked to this workspace
-    List<UUID> existingSnapshotIds =
-        PfbQuartzJobSupport.existingPolicySnapshotIds(workspaceId, 50, wsmDao, restClientRetry);
+    PfbQuartzJobSupport pfbQuartzJobSupport =
+        new PfbQuartzJobSupport(workspaceId, wsmDao, restClientRetry);
+    List<UUID> existingSnapshotIds = pfbQuartzJobSupport.existingPolicySnapshotIds(50);
     // find the snapshots in this PFB that are not already linked to this workspace
     List<UUID> newSnapshotIds =
         snapshotIds.stream().filter(id -> !existingSnapshotIds.contains(id)).toList();
