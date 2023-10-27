@@ -13,12 +13,12 @@ import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerD
 
 public class PfbQuartzJobSupport {
 
-  public static List<UUID> existingPolicySnapshotIds(
+  protected static List<UUID> existingPolicySnapshotIds(
       UUID workspaceId, int pageSize, WorkspaceManagerDao wsmDao, RestClientRetry restClientRetry) {
     return extractSnapshotIds(listAllSnapshots(workspaceId, pageSize, wsmDao, restClientRetry));
   }
 
-  public static List<UUID> extractSnapshotIds(ResourceList resourceList) {
+  protected static List<UUID> extractSnapshotIds(ResourceList resourceList) {
     return resourceList.getResources().stream()
         .map(PfbQuartzJobSupport::safeGetSnapshotId)
         .filter(Objects::nonNull)
@@ -33,7 +33,7 @@ public class PfbQuartzJobSupport {
    * @param pageSize number of results to return from WSM at once
    * @return the full list of all snapshot references for the workspace.
    */
-  public static ResourceList listAllSnapshots(
+  protected static ResourceList listAllSnapshots(
       UUID workspaceId, int pageSize, WorkspaceManagerDao wsmDao, RestClientRetry restClientRetry) {
     final AtomicInteger offset = new AtomicInteger(0);
 
@@ -66,7 +66,7 @@ public class PfbQuartzJobSupport {
    * @param resourceDescription the WSM object in which to find a snapshotId
    * @return the snapshotId if found, else null
    */
-  public static UUID safeGetSnapshotId(ResourceDescription resourceDescription) {
+  protected static UUID safeGetSnapshotId(ResourceDescription resourceDescription) {
     ResourceAttributesUnion resourceAttributes = resourceDescription.getResourceAttributes();
     if (resourceAttributes != null) {
       DataRepoSnapshotAttributes dataRepoSnapshot = resourceAttributes.getGcpDataRepoSnapshot();
