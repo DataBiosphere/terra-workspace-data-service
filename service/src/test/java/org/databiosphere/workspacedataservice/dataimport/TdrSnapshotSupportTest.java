@@ -30,7 +30,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-class PfbQuartzJobSupportTest {
+class TdrSnapshotSupportTest {
 
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;
@@ -69,7 +69,7 @@ class PfbQuartzJobSupportTest {
             });
 
     ResourceList actual =
-        new PfbQuartzJobSupport(UUID.randomUUID(), wsmDao, restClientRetry)
+        new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry)
             .listAllSnapshots(testPageSize);
 
     // assert total size of all results
@@ -94,7 +94,7 @@ class PfbQuartzJobSupportTest {
     ResourceDescription resourceDescription = createResourceDescription(snapshotId);
 
     UUID actual =
-        new PfbQuartzJobSupport(UUID.randomUUID(), wsmDao, restClientRetry)
+        new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry)
             .safeGetSnapshotId(resourceDescription);
 
     assertEquals(snapshotId, actual);
@@ -114,7 +114,7 @@ class PfbQuartzJobSupportTest {
     resourceDescription.setResourceAttributes(resourceAttributes);
 
     UUID actual =
-        new PfbQuartzJobSupport(UUID.randomUUID(), wsmDao, restClientRetry)
+        new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry)
             .safeGetSnapshotId(resourceDescription);
 
     assertNull(actual);
@@ -132,7 +132,7 @@ class PfbQuartzJobSupportTest {
     resourceDescription.setResourceAttributes(resourceAttributes);
 
     UUID actual =
-        new PfbQuartzJobSupport(UUID.randomUUID(), wsmDao, restClientRetry)
+        new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry)
             .safeGetSnapshotId(resourceDescription);
 
     assertNull(actual);
@@ -147,7 +147,7 @@ class PfbQuartzJobSupportTest {
     resourceDescription.setResourceAttributes(resourceAttributes);
 
     UUID actual =
-        new PfbQuartzJobSupport(UUID.randomUUID(), wsmDao, restClientRetry)
+        new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry)
             .safeGetSnapshotId(resourceDescription);
 
     assertNull(actual);
@@ -159,7 +159,7 @@ class PfbQuartzJobSupportTest {
     resourceDescription.setResourceAttributes(null);
 
     UUID actual =
-        new PfbQuartzJobSupport(UUID.randomUUID(), wsmDao, restClientRetry)
+        new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry)
             .safeGetSnapshotId(resourceDescription);
 
     assertNull(actual);
@@ -176,7 +176,7 @@ class PfbQuartzJobSupportTest {
     resourceList.setResources(resourceDescriptions);
 
     List<UUID> actual =
-        new PfbQuartzJobSupport(UUID.randomUUID(), wsmDao, restClientRetry)
+        new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry)
             .extractSnapshotIds(resourceList);
 
     assertEquals(expected, actual);

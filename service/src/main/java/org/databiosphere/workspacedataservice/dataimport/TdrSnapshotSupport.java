@@ -14,7 +14,7 @@ import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerD
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PfbQuartzJobSupport {
+public class TdrSnapshotSupport {
 
   private final UUID workspaceId;
   private final WorkspaceManagerDao wsmDao;
@@ -22,7 +22,7 @@ public class PfbQuartzJobSupport {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  public PfbQuartzJobSupport(
+  public TdrSnapshotSupport(
       UUID workspaceId, WorkspaceManagerDao wsmDao, RestClientRetry restClientRetry) {
     this.workspaceId = workspaceId;
     this.wsmDao = wsmDao;
