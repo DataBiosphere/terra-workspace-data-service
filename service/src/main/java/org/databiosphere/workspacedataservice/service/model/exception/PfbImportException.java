@@ -4,7 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(code = HttpStatus.INTERNAL_SERVER_ERROR)
-public class PfbImportException extends IllegalArgumentException {
+public class PfbImportException extends RuntimeException {
 
   public PfbImportException(String message) {
     super(message);
