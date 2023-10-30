@@ -4,6 +4,16 @@ name: run e2e tests
     # run twice a day at 10:00 and 22:00 UTC every day of the week
     - cron: "0 10/12 * * 1-5"
   workflow_dispatch:
+    inputs:
+      e2ebranch:
+        # Friendly description to be shown in the UI instead of 'name'
+        description: 'Branch of test to run'
+        # Default value if no value is explicitly provided
+        default: 'main'
+        # Input has to be provided for the workflow to run
+        required: false
+        # The data type of the input
+        type: string
 env:
   BEE_NAME: 'wds-${{ github.run_id }}-${{ github.run_attempt}}-dev'
   TOKEN: '${{ secrets.BROADBOT_TOKEN }}'
@@ -76,7 +86,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: broadinstitute/dsp-reusable-workflows/.github/workflows/run-e2e-tests.yaml@main
+    uses: broadinstitute/dsp-reusable-workflows/.github/workflows/run-e2e-tests.yaml@${{ inputs.e2ebranch }}
     with:
       billing-project-name: '${{ needs.params-gen.outputs.project-name }}'
       bee-name: '${{ needs.params-gen.outputs.bee-name }}'
