@@ -39,7 +39,7 @@ import org.springframework.test.context.TestPropertySource;
 
 // "local" profile prevents InstanceInitializerBean from running at Spring startup;
 // that way, we can run it when we want to inside our tests.
-@ActiveProfiles({"mock-storage", "local-cors", "mock-sam"})
+@ActiveProfiles({"mock-storage", "local-cors", "mock-sam", "local"})
 @TestPropertySource(
     properties = {
       "twds.instance.workspace-id=5a9b583c-17ee-4c88-a14c-0edbf31175db",
