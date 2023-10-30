@@ -39,7 +39,7 @@ class TDRPactTest {
 
   static final String dummySnapshotId = "12345678-abc9-012d-3456-e7fab89cd01e";
 
-  @Pact(consumer = "terra-workspace-data-service", provider = "datarepo")
+  @Pact(consumer = "wds", provider = "datarepo")
   public RequestResponsePact noSnapshotPact(PactDslWithProvider builder) {
     return builder
         .given("snapshot doesn't exist")
@@ -54,7 +54,7 @@ class TDRPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "terra-workspace-data-service", provider = "datarepo")
+  @Pact(consumer = "wds", provider = "datarepo")
   public RequestResponsePact noAccessToSnapshotPact(PactDslWithProvider builder) {
     return builder
         .given("user does not have access to snapshot")
@@ -67,7 +67,7 @@ class TDRPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "terra-workspace-data-service", provider = "datarepo")
+  @Pact(consumer = "wds", provider = "datarepo")
   public RequestResponsePact userHasAccessToSnapshotPact(PactDslWithProvider builder) {
     // Current use of datarepo snapshot only relies on id and name
     // Future development should update expected response shape to include fields we need
