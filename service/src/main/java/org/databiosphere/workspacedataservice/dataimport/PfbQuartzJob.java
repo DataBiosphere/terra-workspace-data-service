@@ -38,15 +38,19 @@ public class PfbQuartzJob extends QuartzJob {
   private final JobDao jobDao;
   private final WorkspaceManagerDao wsmDao;
 
-  @Value("${twds.instance.workspace-id}")
-  UUID workspaceId;
+  private final UUID workspaceId;
 
   private final RestClientRetry restClientRetry;
 
-  public PfbQuartzJob(JobDao jobDao, WorkspaceManagerDao wsmDao, RestClientRetry restClientRetry) {
+  public PfbQuartzJob(
+      JobDao jobDao,
+      WorkspaceManagerDao wsmDao,
+      RestClientRetry restClientRetry,
+      @Value("${twds.instance.workspace-id}") UUID workspaceId) {
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
     this.restClientRetry = restClientRetry;
+    this.workspaceId = workspaceId;
   }
 
   @Override

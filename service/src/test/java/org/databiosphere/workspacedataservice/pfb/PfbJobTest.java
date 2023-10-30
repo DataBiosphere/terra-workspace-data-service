@@ -59,7 +59,7 @@ class PfbJobTest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    new PfbQuartzJob(jobDao, wsmDao, restClientRetry).execute(mockContext);
+    new PfbQuartzJob(jobDao, wsmDao, restClientRetry, UUID.randomUUID()).execute(mockContext);
 
     // Should not call wsm dao
     verify(wsmDao, times(0)).createDataRepoSnapshotReference(any());
@@ -84,7 +84,7 @@ class PfbJobTest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    new PfbQuartzJob(jobDao, wsmDao, restClientRetry).execute(mockContext);
+    new PfbQuartzJob(jobDao, wsmDao, restClientRetry, UUID.randomUUID()).execute(mockContext);
 
     // This is the snapshotId given in the test pfb
     verify(wsmDao)

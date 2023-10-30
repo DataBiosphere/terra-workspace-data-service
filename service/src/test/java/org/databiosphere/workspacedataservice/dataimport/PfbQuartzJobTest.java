@@ -42,8 +42,10 @@ class PfbQuartzJobTest {
     // WSM returns no pre-existing snapshots
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
+
     // call linkSnapshots
-    PfbQuartzJob pfbQuartzJob = new PfbQuartzJob(jobDao, wsmDao, restClientRetry);
+    PfbQuartzJob pfbQuartzJob =
+        new PfbQuartzJob(jobDao, wsmDao, restClientRetry, UUID.randomUUID());
     pfbQuartzJob.linkSnapshots(input);
     // capture calls
     ArgumentCaptor<SnapshotModel> argumentCaptor = ArgumentCaptor.forClass(SnapshotModel.class);
@@ -69,7 +71,8 @@ class PfbQuartzJobTest {
         .thenReturn(resourceList);
 
     // call linkSnapshots
-    PfbQuartzJob pfbQuartzJob = new PfbQuartzJob(jobDao, wsmDao, restClientRetry);
+    PfbQuartzJob pfbQuartzJob =
+        new PfbQuartzJob(jobDao, wsmDao, restClientRetry, UUID.randomUUID());
     pfbQuartzJob.linkSnapshots(input);
     // should not call WSM's create-snapshot-reference at all
     verify(wsmDao, times(0)).createDataRepoSnapshotReference(any());
@@ -94,7 +97,8 @@ class PfbQuartzJobTest {
         .thenReturn(resourceList);
 
     // call linkSnapshots
-    PfbQuartzJob pfbQuartzJob = new PfbQuartzJob(jobDao, wsmDao, restClientRetry);
+    PfbQuartzJob pfbQuartzJob =
+        new PfbQuartzJob(jobDao, wsmDao, restClientRetry, UUID.randomUUID());
     pfbQuartzJob.linkSnapshots(input);
 
     // should call WSM's create-snapshot-reference only for the references that didn't already exist
