@@ -40,7 +40,7 @@ public class HttpWorkspaceDataServiceClientFactory implements WorkspaceDataServi
     // add the user's bearer token to the client
     if (token.nonEmpty()) {
       LOGGER.debug("setting access token for workspace data service request");
-      apiClient.setAccessToken(token.getValue());
+      apiClient.setBearerToken(token.getValue());
     } else {
       LOGGER.warn("No access token found for workspace data service request.");
     }
