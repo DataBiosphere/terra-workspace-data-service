@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.sourcewds;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import java.util.Set;
 import org.databiosphere.workspacedata.client.ApiClient;
@@ -21,25 +21,18 @@ class HttpWorkspaceDataServiceClientFactoryTest {
     String dummyToken = "dummy-auth-token";
     String dummyUrl = "https://example.com/";
 
-    if (workspaceDataServiceClientFactory
-        instanceof HttpWorkspaceDataServiceClientFactory httpWorkspaceDataServiceClientFactory) {
-      ApiClient apiClient =
-          httpWorkspaceDataServiceClientFactory.getApiClient(dummyToken, dummyUrl);
+    HttpWorkspaceDataServiceClientFactory httpWorkspaceDataServiceClientFactory =
+        assertInstanceOf(
+            HttpWorkspaceDataServiceClientFactory.class, workspaceDataServiceClientFactory);
 
-      var authentications = apiClient.getAuthentications();
-      assertEquals(Set.of("bearerAuth"), authentications.keySet());
+    ApiClient apiClient = httpWorkspaceDataServiceClientFactory.getApiClient(dummyToken, dummyUrl);
 
-      Authentication bearerAuth = apiClient.getAuthentication("bearerAuth");
-      if (bearerAuth instanceof HttpBearerAuth httpBearerAuth) {
-        assertEquals(
-            dummyToken, httpBearerAuth.getBearerToken(), "actual bearer token was incorrect");
-      } else {
-        fail("bearerAuth was wrong class: " + bearerAuth.getClass().getName());
-      }
-    } else {
-      fail(
-          "workspaceDataServiceClientFactory was wrong class: "
-              + workspaceDataServiceClientFactory.getClass().getName());
-    }
+    var authentications = apiClient.getAuthentications();
+    assertEquals(Set.of("bearerAuth"), authentications.keySet());
+
+    Authentication bearerAuth = apiClient.getAuthentication("bearerAuth");
+    HttpBearerAuth httpBearerAuth = assertInstanceOf(HttpBearerAuth.class, bearerAuth);
+
+    assertEquals(dummyToken, httpBearerAuth.getBearerToken(), "actual bearer token was incorrect");
   }
 }
