@@ -11,12 +11,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbImportException;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PfbQuartzJobSupport {
 
   private final UUID workspaceId;
   private final WorkspaceManagerDao wsmDao;
   private final RestClientRetry restClientRetry;
+
+  private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   public PfbQuartzJobSupport(
       UUID workspaceId, WorkspaceManagerDao wsmDao, RestClientRetry restClientRetry) {
@@ -104,7 +108,16 @@ public class PfbQuartzJobSupport {
         try {
           return UUID.fromString(snapshotIdStr);
         } catch (Exception e) {
-          // noop; this will return null
+          String resourceId = "unknown";
+          try {
+            resourceId = resourceDescription.getMetadata().getResourceId().toString();
+          } catch (Exception inner) {
+            // something is exceptionally funky about this resource.
+            resourceId = inner.getMessage();
+          }
+          logger.warn(
+              "Processed a ResourceDescription [%s] for workspace %s that did not contain a valid snapshotId"
+                  .formatted(resourceId, workspaceId));
         }
       }
     }
