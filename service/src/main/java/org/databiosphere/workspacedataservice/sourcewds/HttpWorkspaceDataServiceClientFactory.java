@@ -23,7 +23,7 @@ public class HttpWorkspaceDataServiceClientFactory implements WorkspaceDataServi
         new ApiClient().getHttpClient().newBuilder().protocols(List.of(Protocol.HTTP_1_1)).build();
   }
 
-  protected ApiClient getApiClient(String authToken, String workspaceDataServiceUrl) {
+  ApiClient getApiClient(String authToken, String workspaceDataServiceUrl) {
     // create a new client
     ApiClient apiClient = new ApiClient();
     apiClient.setHttpClient(commonHttpClient);
