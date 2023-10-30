@@ -19,7 +19,7 @@ repositories {
 
 subprojects {
     group = 'org.databiosphere'
-    version = '0.2.102-SNAPSHOT'
+    version = '0.2.103-SNAPSHOT'
 
     apply plugin: 'idea'
     apply plugin: 'java'
