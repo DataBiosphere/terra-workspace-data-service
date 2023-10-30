@@ -4,6 +4,7 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -62,7 +63,7 @@ class PfbJobTest {
     new PfbQuartzJob(jobDao, wsmDao, restClientRetry, UUID.randomUUID()).execute(mockContext);
 
     // Should not call wsm dao
-    verify(wsmDao, times(0)).createDataRepoSnapshotReference(any());
+    verify(wsmDao, times(0)).createDataRepoSnapshotReference(any(), eq(true));
     // But job should succeed
     verify(jobDao).succeeded(jobId);
   }
@@ -90,7 +91,8 @@ class PfbJobTest {
     verify(wsmDao)
         .createDataRepoSnapshotReference(
             ArgumentMatchers.argThat(
-                new SnapshotModelMatcher(UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"))));
+                new SnapshotModelMatcher(UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"))),
+            eq(true));
     // Job should succeed
     verify(jobDao).succeeded(jobId);
   }
