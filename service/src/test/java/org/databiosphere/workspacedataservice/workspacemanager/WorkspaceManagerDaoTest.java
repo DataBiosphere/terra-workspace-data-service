@@ -111,7 +111,7 @@ class WorkspaceManagerDaoTest {
 
   @Test
   void enumerateResourcesAuthTokenNull() throws ApiException {
-    // call enumerateResources
+    // call enumerateResources with authToken=null
     workspaceManagerDao.enumerateResources(
         UUID.randomUUID(),
         0,
@@ -129,7 +129,7 @@ class WorkspaceManagerDaoTest {
   @Test
   void enumerateResourcesAuthTokenPopulated() throws ApiException {
     String expected = RandomStringUtils.randomAlphanumeric(16);
-    // call enumerateResources
+    // call enumerateResources with authToken={random string value}
     workspaceManagerDao.enumerateResources(
         UUID.randomUUID(),
         0,
