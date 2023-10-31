@@ -106,7 +106,7 @@ public class WorkspaceManagerDao {
     return null;
   }
 
-  private ResourceList enumerateResources(
+  ResourceList enumerateResources(
       UUID workspaceId,
       int offset,
       int limit,
