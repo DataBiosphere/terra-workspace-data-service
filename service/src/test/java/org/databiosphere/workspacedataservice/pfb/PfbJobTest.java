@@ -19,8 +19,8 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.PfbQuartzJob;
-import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
@@ -73,7 +73,9 @@ class PfbJobTest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    new PfbQuartzJob(jobDao, wsmDao, batchWriteService, activityLogger, restClientRetry, UUID.randomUUID()).execute(mockContext);
+    new PfbQuartzJob(
+            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID())
+        .execute(mockContext);
 
     // Should not call wsm dao
     verify(wsmDao, times(0)).createDataRepoSnapshotReference(any());
@@ -105,7 +107,9 @@ class PfbJobTest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    new PfbQuartzJob(jobDao, wsmDao, batchWriteService, activityLogger, restClientRetry, UUID.randomUUID()).execute(mockContext);
+    new PfbQuartzJob(
+            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID())
+        .execute(mockContext);
 
     // This is the snapshotId given in the test pfb
     verify(wsmDao)
@@ -136,7 +140,9 @@ class PfbJobTest {
     jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
     when(mockContext.getJobDetail()).thenReturn(jobDetail);
 
-    new PfbQuartzJob(jobDao, wsmDao, batchWriteService, activityLogger).execute(mockContext);
+    new PfbQuartzJob(
+            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID())
+        .execute(mockContext);
   }
 
   @Test

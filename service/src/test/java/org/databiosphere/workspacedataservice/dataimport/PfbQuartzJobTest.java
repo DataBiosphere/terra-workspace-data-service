@@ -18,8 +18,10 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -33,6 +35,8 @@ import org.springframework.test.annotation.DirtiesContext;
 class PfbQuartzJobTest {
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;
+  @MockBean BatchWriteService batchWriteService;
+  @MockBean ActivityLogger activityLogger;
   @Autowired RestClientRetry restClientRetry;
 
   @Test
@@ -45,7 +49,8 @@ class PfbQuartzJobTest {
 
     // call linkSnapshots
     PfbQuartzJob pfbQuartzJob =
-        new PfbQuartzJob(jobDao, wsmDao, restClientRetry, UUID.randomUUID());
+        new PfbQuartzJob(
+            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID());
     pfbQuartzJob.linkSnapshots(input);
     // capture calls
     ArgumentCaptor<SnapshotModel> argumentCaptor = ArgumentCaptor.forClass(SnapshotModel.class);
@@ -72,7 +77,8 @@ class PfbQuartzJobTest {
 
     // call linkSnapshots
     PfbQuartzJob pfbQuartzJob =
-        new PfbQuartzJob(jobDao, wsmDao, restClientRetry, UUID.randomUUID());
+        new PfbQuartzJob(
+            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID());
     pfbQuartzJob.linkSnapshots(input);
     // should not call WSM's create-snapshot-reference at all
     verify(wsmDao, times(0)).createDataRepoSnapshotReference(any());
@@ -98,7 +104,8 @@ class PfbQuartzJobTest {
 
     // call linkSnapshots
     PfbQuartzJob pfbQuartzJob =
-        new PfbQuartzJob(jobDao, wsmDao, restClientRetry, UUID.randomUUID());
+        new PfbQuartzJob(
+            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID());
     pfbQuartzJob.linkSnapshots(input);
 
     // should call WSM's create-snapshot-reference only for the references that didn't already exist

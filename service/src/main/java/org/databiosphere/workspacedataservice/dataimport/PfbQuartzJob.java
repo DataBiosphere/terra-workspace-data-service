@@ -20,8 +20,8 @@ import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
-import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobDataMap;
@@ -59,6 +59,8 @@ public class PfbQuartzJob extends QuartzJob {
     this.wsmDao = wsmDao;
     this.restClientRetry = restClientRetry;
     this.workspaceId = workspaceId;
+    this.batchWriteService = batchWriteService;
+    this.activityLogger = activityLogger;
   }
 
   @Override
