@@ -371,4 +371,20 @@ class BatchWriteServiceTest {
       fail(); // TODO failure message?
     }
   }
+
+  @Test
+  void testWritePfbStreamReturnsRecordCounts() {
+    URL url = getClass().getResource("/four_tables.avro");
+    try (DataFileStream<GenericRecord> dataStream =
+        PfbReader.getGenericRecordsStream(url.toString())) {
+      Map<RecordType, Integer> result =
+          batchWriteService.batchWritePfbStream(dataStream, INSTANCE, Optional.of("id"));
+      RecordType expectedRecordType = RecordType.valueOf("data_release");
+      RecordType expectedRecordType2 = RecordType.valueOf("submitted_aligned_reads");
+      assertEquals(3, result.get(expectedRecordType));
+      assertEquals(1, result.get(expectedRecordType2));
+    } catch (IOException e) {
+      fail(); // TODO failure message?
+    }
+  }
 }

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,6 +55,7 @@ public class BatchWriteService {
     this.recordService = recordService;
   }
 
+  // TODO should the map response be its own object?  BatchResponse?
   /**
    * Responsible for accepting either a JsonStreamWriteHandler or a TsvStreamWriteHandler, looping
    * over the batches of Records found in the handler, and upserting those records.
@@ -64,12 +66,13 @@ public class BatchWriteService {
    * @param primaryKey PK for the record type
    * @return the number of records written
    */
-  public int consumeWriteStream(
+  public Map<RecordType, Integer> consumeWriteStream(
       StreamingWriteHandler streamingWriteHandler,
       UUID instanceId,
       RecordType recordType,
       Optional<String> primaryKey) {
-    int recordsAffected = 0;
+    //    int recordsAffected = 0;
+    Map<RecordType, Integer> result = new HashMap<>();
     try {
       Map<String, DataTypeMapping> schema = null;
       boolean firstUpsertBatch = true;
@@ -85,7 +88,7 @@ public class BatchWriteService {
           Map<RecordType, List<Record>> sortedRecords =
               records.stream().collect(Collectors.groupingBy(Record::getRecordType));
           for (Map.Entry<RecordType, List<Record>> recList : sortedRecords.entrySet()) {
-            recordsAffected +=
+            int recordsAffected =
                 processRecords(
                     true,
                     info.getOperationType(),
@@ -93,11 +96,16 @@ public class BatchWriteService {
                     schema,
                     instanceId,
                     recList.getKey(),
-                    primaryKey,
-                    recordsAffected);
+                    primaryKey);
+            result.compute(
+                recList.getKey(),
+                (key, value) ->
+                    (value == null)
+                        ? recList.getValue().size()
+                        : value + recList.getValue().size());
           }
         } else {
-
+          result.put(recordType, 0);
           ///
           /// ORIGINAL CODE
           if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
@@ -107,14 +115,19 @@ public class BatchWriteService {
             firstUpsertBatch = false;
           }
           writeBatch(instanceId, recordType, schema, info.getOperationType(), records, primaryKey);
-          recordsAffected += records.size();
+          //          recordsAffected += records.size();
+          result.compute(
+              recordType,
+              (key, value) -> (value == null) ? records.size() : value + records.size());
+
           ////
         }
       }
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
-    return recordsAffected;
+    //    return recordsAffected;
+    return result;
   }
 
   private int processRecords(
@@ -124,17 +137,16 @@ public class BatchWriteService {
       Map<String, DataTypeMapping> schema,
       UUID instanceId,
       RecordType recordType,
-      Optional<String> primaryKey,
-      int recordsAffected) {
+      Optional<String> primaryKey) {
     if (firstUpsertBatch && opType == OperationType.UPSERT) {
       // TODO should we infer types every time for multi-record type for changes?  Probably I guess?
       schema = inferer.inferTypes(records);
       createOrModifyRecordType(
           instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
-      firstUpsertBatch = false;
+      //      firstUpsertBatch = false;
     }
     writeBatch(instanceId, recordType, schema, opType, records, primaryKey);
-    return recordsAffected + records.size();
+    return records.size();
   }
 
   // try-with-resources wrapper for JsonStreamWriteHandler; calls consumeWriteStream.
@@ -143,7 +155,8 @@ public class BatchWriteService {
       InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
     try (StreamingWriteHandler streamingWriteHandler =
         new JsonStreamWriteHandler(is, objectMapper)) {
-      return consumeWriteStream(streamingWriteHandler, instanceId, recordType, primaryKey);
+      return consumeWriteStream(streamingWriteHandler, instanceId, recordType, primaryKey)
+          .get(recordType);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
@@ -156,17 +169,18 @@ public class BatchWriteService {
     try (TsvStreamWriteHandler streamingWriteHandler =
         new TsvStreamWriteHandler(is, tsvReader, recordType, primaryKey)) {
       return consumeWriteStream(
-          streamingWriteHandler,
-          instanceId,
-          recordType,
-          Optional.of(streamingWriteHandler.getResolvedPrimaryKey()));
+              streamingWriteHandler,
+              instanceId,
+              recordType,
+              Optional.of(streamingWriteHandler.getResolvedPrimaryKey()))
+          .get(recordType);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
   }
 
   @WriteTransaction
-  public int batchWritePfbStream(
+  public Map<RecordType, Integer> batchWritePfbStream(
       DataFileStream<GenericRecord> is, UUID instanceId, Optional<String> primaryKey) {
     try (PfbStreamWriteHandler streamingWriteHandler = new PfbStreamWriteHandler(is)) {
       return consumeWriteStream(streamingWriteHandler, instanceId, null, primaryKey);

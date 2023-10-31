@@ -7,6 +7,7 @@ import bio.terra.pfb.PfbReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Spliterator;
@@ -22,6 +23,7 @@ import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
@@ -108,15 +110,24 @@ public class PfbQuartzJob extends QuartzJob {
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
       // TODO should "id" be a static variable
-      batchWriteService.batchWritePfbStream(dataStream, workspaceId, Optional.of("id"));
+      Map<RecordType, Integer> result =
+          batchWriteService.batchWritePfbStream(dataStream, workspaceId, Optional.of("id"));
+
+      // TODO does this work
+      result.entrySet().stream()
+          .forEach(
+              entry -> {
+                RecordType recordType = entry.getKey();
+                int quantity = entry.getValue();
+                activityLogger.saveEventForCurrentUser(
+                    user ->
+                        user.upserted().record().withRecordType(recordType).ofQuantity(quantity));
+              });
 
     } catch (IOException e) {
       // TODO where do we identify that there may have been a partial write?
       throw new PfbParsingException("Error processing PFB", e);
     }
-    // TODO How to find out record type and quantity?
-    //    activityLogger.saveEventForCurrentUser(
-    //        user -> user.upserted().record().withRecordType(recordType).ofQuantity(qty));
   }
 
   protected void linkSnapshots(List<UUID> snapshotIds) {
