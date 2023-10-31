@@ -103,12 +103,11 @@ public class PfbQuartzJob extends QuartzJob {
       throw new PfbParsingException("Error processing PFB", e);
     }
 
-    // TODO: AJ-1227 implement PFB import.
-    logger.info("TODO: implement PFB import.");
+    logger.info("Parsing PFB.");
 
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
-      //              // TODO  format id correctly
+      // TODO should "id" be a static variable
       batchWriteService.batchWritePfbStream(dataStream, workspaceId, Optional.of("id"));
 
     } catch (IOException e) {

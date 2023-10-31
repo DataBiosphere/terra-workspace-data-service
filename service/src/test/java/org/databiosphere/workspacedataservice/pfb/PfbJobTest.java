@@ -123,7 +123,7 @@ class PfbJobTest {
   @Test
   void pfbTablesAreSaved() throws JobExecutionException {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
-    URL resourceUrl = getClass().getResource("/test.avro");
+    URL resourceUrl = getClass().getResource("/two_tables.avro");
     when(mockContext.getMergedJobDataMap())
         .thenReturn(
             new JobDataMap(
