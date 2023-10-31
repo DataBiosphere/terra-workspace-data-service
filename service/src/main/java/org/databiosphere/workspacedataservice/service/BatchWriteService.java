@@ -71,7 +71,6 @@ public class BatchWriteService {
       UUID instanceId,
       RecordType recordType,
       Optional<String> primaryKey) {
-    //    int recordsAffected = 0;
     Map<RecordType, Integer> result = new HashMap<>();
     try {
       Map<String, DataTypeMapping> schema = null;
@@ -81,84 +80,38 @@ public class BatchWriteService {
           !info.getRecords().isEmpty();
           info = streamingWriteHandler.readRecords(batchSize)) {
         List<Record> records = info.getRecords();
-        /// TEST
-        // TODO how to deal with firstUpsertBatch
         // TODO is a recordType == null check the best way to do this?
         if (recordType == null) {
           Map<RecordType, List<Record>> sortedRecords =
               records.stream().collect(Collectors.groupingBy(Record::getRecordType));
           for (Map.Entry<RecordType, List<Record>> recList : sortedRecords.entrySet()) {
-            //            int recordsAffected =
-            processRecords(
-                true,
-                info.getOperationType(),
-                recList.getValue(),
-                schema,
-                instanceId,
-                recList.getKey(),
-                primaryKey);
+            RecordType recType = recList.getKey();
+            List<Record> rList = recList.getValue();
+            schema = inferer.inferTypes(records);
+            createOrModifyRecordType(
+                instanceId, recType, schema, rList, primaryKey.orElse(RECORD_ID));
+            writeBatch(instanceId, recType, schema, info.getOperationType(), rList, primaryKey);
             result.compute(
-                recList.getKey(),
-                (key, value) ->
-                    (value == null)
-                        ? recList.getValue().size()
-                        : value + recList.getValue().size());
+                recType, (key, value) -> (value == null) ? rList.size() : value + rList.size());
           }
         } else {
           result.putIfAbsent(recordType, 0);
-          //                    firstUpsertBatch =
-          schema =
-              processRecords(
-                  firstUpsertBatch,
-                  info.getOperationType(),
-                  records,
-                  schema,
-                  instanceId,
-                  recordType,
-                  primaryKey);
-          firstUpsertBatch = false;
-          ///
-          /// ORIGINAL CODE
-          //          if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
-          //            schema = inferer.inferTypes(records);
-          //            createOrModifyRecordType(
-          //                instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
-          //            firstUpsertBatch = false;
-          //          }
-          //          writeBatch(instanceId, recordType, schema, info.getOperationType(), records,
-          // primaryKey);
-          //          recordsAffected += records.size();
+          if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
+            schema = inferer.inferTypes(records);
+            createOrModifyRecordType(
+                instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
+            firstUpsertBatch = false;
+          }
+          writeBatch(instanceId, recordType, schema, info.getOperationType(), records, primaryKey);
           result.compute(
               recordType,
               (key, value) -> (value == null) ? records.size() : value + records.size());
-
-          ////
         }
       }
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
-    //    return recordsAffected;
     return result;
-  }
-
-  private Map<String, DataTypeMapping> processRecords(
-      boolean firstUpsertBatch,
-      OperationType opType,
-      List<Record> records,
-      Map<String, DataTypeMapping> schema,
-      UUID instanceId,
-      RecordType recordType,
-      Optional<String> primaryKey) {
-    if (firstUpsertBatch && opType == OperationType.UPSERT) {
-      // TODO should we infer types every time for multi-record type for changes?  Probably I guess?
-      schema = inferer.inferTypes(records);
-      createOrModifyRecordType(
-          instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
-      //      firstUpsertBatch = false;
-    }
-    writeBatch(instanceId, recordType, schema, opType, records, primaryKey);
-    return schema;
   }
 
   // try-with-resources wrapper for JsonStreamWriteHandler; calls consumeWriteStream.
