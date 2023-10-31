@@ -77,7 +77,7 @@ class PfbStreamWriteHandlerTest {
       // just a spot check for now
       // TODO what to do about these being whatever object type
       assertEquals("aaa1234", firstRecord.getAttributeValue("study_id").toString());
-      assertEquals("512", firstRecord.getAttributeValue("file_size"));
+      assertEquals(512L, firstRecord.getAttributeValue("file_size"));
 
       Record secondRecord = result.get(1);
       assertNotNull(secondRecord);
@@ -87,7 +87,7 @@ class PfbStreamWriteHandlerTest {
       assertEquals(
           "2022-07-01T00:00:00.000000Z",
           secondRecord.getAttributeValue("updated_datetime").toString());
-      assertEquals("1", secondRecord.getAttributeValue("minor_version"));
+      assertEquals(1L, secondRecord.getAttributeValue("minor_version"));
     } catch (IOException e) {
       fail();
     }

@@ -87,10 +87,11 @@ public class BatchWriteService {
           for (Map.Entry<RecordType, List<Record>> recList : sortedRecords.entrySet()) {
             RecordType recType = recList.getKey();
             List<Record> rList = recList.getValue();
-            schema = inferer.inferTypes(records);
+            Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(rList);
             createOrModifyRecordType(
-                instanceId, recType, schema, rList, primaryKey.orElse(RECORD_ID));
-            writeBatch(instanceId, recType, schema, info.getOperationType(), rList, primaryKey);
+                instanceId, recType, inferredSchema, rList, primaryKey.orElse(RECORD_ID));
+            writeBatch(
+                instanceId, recType, inferredSchema, info.getOperationType(), rList, primaryKey);
             result.compute(
                 recType, (key, value) -> (value == null) ? rList.size() : value + rList.size());
           }
