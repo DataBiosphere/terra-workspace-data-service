@@ -51,12 +51,8 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
     RecordAttributes attributes = RecordAttributes.empty();
     for (Schema.Field field : fields) {
       String fieldName = field.name();
-      // TODO deal with this better?
-      // Making everything a string to avoid weird data type issues later
-      String value =
-          objectAttributes.get(fieldName) == null
-              ? null
-              : objectAttributes.get(fieldName).toString();
+      Object value =
+          objectAttributes.get(fieldName) == null ? null : objectAttributes.get(fieldName);
       attributes.putAttribute(fieldName, value);
     }
     converted.setAttributes(attributes);
