@@ -106,15 +106,17 @@ public class BatchWriteService {
           }
         } else {
           result.putIfAbsent(recordType, 0);
-          firstUpsertBatch =
+          //                    firstUpsertBatch =
+          schema =
               processRecords(
-                  true,
+                  firstUpsertBatch,
                   info.getOperationType(),
                   records,
                   schema,
                   instanceId,
                   recordType,
                   primaryKey);
+          firstUpsertBatch = false;
           ///
           /// ORIGINAL CODE
           //          if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
@@ -140,7 +142,7 @@ public class BatchWriteService {
     return result;
   }
 
-  private boolean processRecords(
+  private Map<String, DataTypeMapping> processRecords(
       boolean firstUpsertBatch,
       OperationType opType,
       List<Record> records,
@@ -153,10 +155,10 @@ public class BatchWriteService {
       schema = inferer.inferTypes(records);
       createOrModifyRecordType(
           instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
-      firstUpsertBatch = false;
+      //      firstUpsertBatch = false;
     }
     writeBatch(instanceId, recordType, schema, opType, records, primaryKey);
-    return firstUpsertBatch;
+    return schema;
   }
 
   // try-with-resources wrapper for JsonStreamWriteHandler; calls consumeWriteStream.
