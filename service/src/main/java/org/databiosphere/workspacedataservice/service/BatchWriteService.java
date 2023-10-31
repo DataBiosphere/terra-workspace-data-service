@@ -88,15 +88,15 @@ public class BatchWriteService {
           Map<RecordType, List<Record>> sortedRecords =
               records.stream().collect(Collectors.groupingBy(Record::getRecordType));
           for (Map.Entry<RecordType, List<Record>> recList : sortedRecords.entrySet()) {
-            int recordsAffected =
-                processRecords(
-                    true,
-                    info.getOperationType(),
-                    recList.getValue(),
-                    schema,
-                    instanceId,
-                    recList.getKey(),
-                    primaryKey);
+            //            int recordsAffected =
+            processRecords(
+                true,
+                info.getOperationType(),
+                recList.getValue(),
+                schema,
+                instanceId,
+                recList.getKey(),
+                primaryKey);
             result.compute(
                 recList.getKey(),
                 (key, value) ->
@@ -105,16 +105,26 @@ public class BatchWriteService {
                         : value + recList.getValue().size());
           }
         } else {
-          result.put(recordType, 0);
+          result.putIfAbsent(recordType, 0);
+          firstUpsertBatch =
+              processRecords(
+                  true,
+                  info.getOperationType(),
+                  records,
+                  schema,
+                  instanceId,
+                  recordType,
+                  primaryKey);
           ///
           /// ORIGINAL CODE
-          if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
-            schema = inferer.inferTypes(records);
-            createOrModifyRecordType(
-                instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
-            firstUpsertBatch = false;
-          }
-          writeBatch(instanceId, recordType, schema, info.getOperationType(), records, primaryKey);
+          //          if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
+          //            schema = inferer.inferTypes(records);
+          //            createOrModifyRecordType(
+          //                instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
+          //            firstUpsertBatch = false;
+          //          }
+          //          writeBatch(instanceId, recordType, schema, info.getOperationType(), records,
+          // primaryKey);
           //          recordsAffected += records.size();
           result.compute(
               recordType,
@@ -130,7 +140,7 @@ public class BatchWriteService {
     return result;
   }
 
-  private int processRecords(
+  private boolean processRecords(
       boolean firstUpsertBatch,
       OperationType opType,
       List<Record> records,
@@ -143,10 +153,10 @@ public class BatchWriteService {
       schema = inferer.inferTypes(records);
       createOrModifyRecordType(
           instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
-      //      firstUpsertBatch = false;
+      firstUpsertBatch = false;
     }
     writeBatch(instanceId, recordType, schema, opType, records, primaryKey);
-    return records.size();
+    return firstUpsertBatch;
   }
 
   // try-with-resources wrapper for JsonStreamWriteHandler; calls consumeWriteStream.
