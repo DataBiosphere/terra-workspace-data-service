@@ -14,7 +14,7 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
 
-public class PfbStreamWriteHandlerTest {
+class PfbStreamWriteHandlerTest {
 
   //  @Test
   //  void pfbTablesAreParsedCorrectly() {

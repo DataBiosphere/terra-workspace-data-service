@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
-import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
 import bio.terra.datarepo.model.SnapshotModel;
@@ -106,12 +105,11 @@ public class PfbQuartzJob extends QuartzJob {
 
     // TODO: AJ-1227 implement PFB import.
     logger.info("TODO: implement PFB import.");
-    UUID instanceId = getJobDataUUID(jobDataMap, ARG_INSTANCE);
 
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
       //              // TODO  format id correctly
-      batchWriteService.batchWritePfbStream(dataStream, instanceId, Optional.of("id"));
+      batchWriteService.batchWritePfbStream(dataStream, workspaceId, Optional.of("id"));
 
     } catch (IOException e) {
       // TODO where do we identify that there may have been a partial write?

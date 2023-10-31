@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.avro.Schema;
@@ -28,12 +27,11 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
     // translate the Avro DataFileStream into a Java stream
     Stream<GenericRecord> recordStream =
         StreamSupport.stream(
-            Spliterators.spliteratorUnknownSize(inputStream.iterator(), Spliterator.ORDERED),
-            false);
+                Spliterators.spliteratorUnknownSize(inputStream.iterator(), Spliterator.ORDERED),
+                false)
+            .limit(numRecords);
 
-    // TODO pay attention to numRecords
-    List<Record> records =
-        recordStream.map(this::genericRecordToRecord).collect(Collectors.toList());
+    List<Record> records = recordStream.map(this::genericRecordToRecord).toList();
 
     return new WriteStreamInfo(records, OperationType.UPSERT);
   }

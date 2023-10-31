@@ -83,7 +83,7 @@ public class BatchWriteService {
         // TODO is a recordType == null check the best way to do this?
         if (recordType == null) {
           Map<RecordType, List<Record>> sortedRecords =
-              records.stream().collect(Collectors.groupingBy(rec -> rec.getRecordType()));
+              records.stream().collect(Collectors.groupingBy(Record::getRecordType));
           for (Map.Entry<RecordType, List<Record>> recList : sortedRecords.entrySet()) {
             recordsAffected +=
                 processRecords(
