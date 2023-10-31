@@ -146,7 +146,7 @@ class WorkspaceManagerDaoTest {
     String actual = argumentCaptor.getValue();
     assertEquals(expected, actual);
   }
-  
+
   @Test
   void policyOnlyProperty() throws ApiException {
     // set up inputs
