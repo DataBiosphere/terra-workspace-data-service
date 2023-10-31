@@ -32,20 +32,19 @@ public class WorkspaceManagerDao {
     this.workspaceId = workspaceId;
   }
 
-  public void createDataRepoSnapshotReference(SnapshotModel snapshotModel, Boolean policyOnly) {
+  /** Creates a snapshot reference in workspace manager for the sole purpose of policy linkages. */
+  public void linkSnapshotForPolicy(SnapshotModel snapshotModel) {
     Properties properties = null;
-    if (policyOnly) {
-      Property policyProperty = new Property();
-      policyProperty.setKey(PROP_PURPOSE);
-      policyProperty.setValue(PURPOSE_POLICY);
-      properties = new Properties();
-      properties.add(policyProperty);
-    }
+    Property policyProperty = new Property();
+    policyProperty.setKey(PROP_PURPOSE);
+    policyProperty.setValue(PURPOSE_POLICY);
+    properties = new Properties();
+    properties.add(policyProperty);
     createDataRepoSnapshotReference(snapshotModel, properties);
   }
 
-  /** Creates a snapshot reference in workspaces manager and creates policy linkages. */
-  public void createDataRepoSnapshotReference(SnapshotModel snapshotModel, Properties properties) {
+  /* Creates a snapshot reference in workspace manager. */
+  private void createDataRepoSnapshotReference(SnapshotModel snapshotModel, Properties properties) {
     final ReferencedGcpResourceApi resourceApi =
         this.workspaceManagerClientFactory.getReferencedGcpResourceApi(null);
 

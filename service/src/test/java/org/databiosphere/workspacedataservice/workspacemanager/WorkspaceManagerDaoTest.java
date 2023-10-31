@@ -66,7 +66,7 @@ class WorkspaceManagerDaoTest {
   void testSnapshotReturned() throws ApiException {
     final SnapshotModel testSnapshot =
         new SnapshotModel().name("test snapshot").id(UUID.randomUUID());
-    workspaceManagerDao.createDataRepoSnapshotReference(testSnapshot, false);
+    workspaceManagerDao.linkSnapshotForPolicy(testSnapshot);
     verify(mockReferencedGcpResourceApi)
         .createDataRepoSnapshotReference(
             argThat(
@@ -89,7 +89,7 @@ class WorkspaceManagerDaoTest {
     var exception =
         assertThrows(
             WorkspaceManagerException.class,
-            () -> workspaceManagerDao.createDataRepoSnapshotReference(testSnapshot, false));
+            () -> workspaceManagerDao.linkSnapshotForPolicy(testSnapshot));
     assertEquals(statusCode, exception.getRawStatusCode());
   }
 
@@ -110,12 +110,12 @@ class WorkspaceManagerDaoTest {
   }
 
   @Test
-  void policyOnlyPropertyTrue() throws ApiException {
+  void policyOnlyProperty() throws ApiException {
     // set up inputs
     UUID snapshotId = UUID.randomUUID();
     SnapshotModel snapshotModel = new SnapshotModel().id(snapshotId);
     // call the create-reference method
-    workspaceManagerDao.createDataRepoSnapshotReference(snapshotModel, true);
+    workspaceManagerDao.linkSnapshotForPolicy(snapshotModel);
 
     // validate that it sent correct Properties to resourceApi.createDataRepoSnapshotReference
     ArgumentCaptor<CreateDataRepoSnapshotReferenceRequestBody> argumentCaptor =
@@ -133,28 +133,6 @@ class WorkspaceManagerDaoTest {
     Property actual = createBody.getMetadata().getProperties().get(0);
     assertEquals(PROP_PURPOSE, actual.getKey());
     assertEquals(PURPOSE_POLICY, actual.getValue());
-  }
-
-  @Test
-  void policyOnlyPropertyFalse() throws ApiException {
-    // set up inputs
-    UUID snapshotId = UUID.randomUUID();
-    SnapshotModel snapshotModel = new SnapshotModel().id(snapshotId);
-    // call the create-reference method
-    workspaceManagerDao.createDataRepoSnapshotReference(snapshotModel, false);
-
-    // validate that it sent correct Properties to resourceApi.createDataRepoSnapshotReference
-    ArgumentCaptor<CreateDataRepoSnapshotReferenceRequestBody> argumentCaptor =
-        ArgumentCaptor.forClass(CreateDataRepoSnapshotReferenceRequestBody.class);
-    verify(mockReferencedGcpResourceApi)
-        .createDataRepoSnapshotReference(argumentCaptor.capture(), any());
-
-    CreateDataRepoSnapshotReferenceRequestBody createBody = argumentCaptor.getValue();
-    assertNotNull(createBody.getSnapshot());
-    assertEquals(snapshotId.toString(), createBody.getSnapshot().getSnapshot());
-
-    assertNotNull(createBody.getMetadata());
-    assertNull(createBody.getMetadata().getProperties());
   }
 
   UUID buildResourceListObjectAndCallExtraction(UUID workspaceId, String name, ResourceType type) {
