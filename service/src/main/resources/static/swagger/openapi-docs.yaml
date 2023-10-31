@@ -889,7 +889,6 @@ components:
       type: object
       required:
         - jobId
-        - jobType
         - status
         - created
         - updated

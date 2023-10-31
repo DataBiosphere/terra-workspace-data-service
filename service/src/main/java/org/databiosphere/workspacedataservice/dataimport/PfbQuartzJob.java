@@ -21,12 +21,14 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /** Shell/starting point for PFB import via Quartz. */
@@ -42,15 +44,21 @@ public class PfbQuartzJob extends QuartzJob {
   private final BatchWriteService batchWriteService;
   private final ActivityLogger activityLogger;
 
+  private final UUID workspaceId;
+
+  private final RestClientRetry restClientRetry;
+
   public PfbQuartzJob(
       JobDao jobDao,
       WorkspaceManagerDao wsmDao,
+      RestClientRetry restClientRetry,
       BatchWriteService batchWriteService,
-      ActivityLogger activityLogger) {
+      ActivityLogger activityLogger,
+      @Value("${twds.instance.workspace-id}") UUID workspaceId) {
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
-    this.batchWriteService = batchWriteService;
-    this.activityLogger = activityLogger;
+    this.restClientRetry = restClientRetry;
+    this.workspaceId = workspaceId;
   }
 
   @Override
@@ -71,7 +79,7 @@ public class PfbQuartzJob extends QuartzJob {
               false);
 
       // process the stream into a list of unique snapshotIds
-      List<String> snapshotIds =
+      List<UUID> snapshotIds =
           recordStream
               .map(rec -> rec.get("object")) // Records in a pfb are stored under the key "object"
               .filter(GenericRecord.class::isInstance) // which we expect to be a GenericRecord
@@ -82,18 +90,13 @@ public class PfbQuartzJob extends QuartzJob {
               .map(obj -> obj.get(SNAPSHOT_ID_IDENTIFIER)) // within the GenericRecord, find the
               // source_datarepo_snapshot_id
               .filter(Objects::nonNull) // expect source_datarepo_snapshot_id to be non-null
-              .map(Object::toString)
+              .map(obj -> maybeUuid(obj.toString()))
+              .filter(Objects::nonNull)
               .distinct() // find only the unique snapshotids
               .toList();
 
-      // TODO AJ-1371 pass snapshotIds to WSM
-      for (String id : snapshotIds) {
-        try {
-          wsmDao.createDataRepoSnapshotReference(new SnapshotModel().id(UUID.fromString(id)));
-        } catch (Exception e) {
-          throw new PfbParsingException("Error processing PFB: Invalid snapshot UUID", e);
-        }
-      }
+      // link the found snapshots to the workspace, skipping any that were previously linked
+      linkSnapshots(snapshotIds);
 
     } catch (IOException e) {
       throw new PfbParsingException("Error processing PFB", e);
@@ -115,5 +118,43 @@ public class PfbQuartzJob extends QuartzJob {
     // TODO How to find out record type and quantity?
     //    activityLogger.saveEventForCurrentUser(
     //        user -> user.upserted().record().withRecordType(recordType).ofQuantity(qty));
+  }
+
+  protected void linkSnapshots(List<UUID> snapshotIds) {
+    // list existing snapshots linked to this workspace
+    TdrSnapshotSupport tdrSnapshotSupport =
+        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry);
+    List<UUID> existingSnapshotIds =
+        tdrSnapshotSupport.existingPolicySnapshotIds(/* pageSize= */ 50);
+    // find the snapshots in this PFB that are not already linked to this workspace
+    List<UUID> newSnapshotIds =
+        snapshotIds.stream().filter(id -> !existingSnapshotIds.contains(id)).toList();
+
+    logger.info(
+        "PFB contains {} snapshot ids. {} of these are already linked to the workspace; {} new links will be created.",
+        snapshotIds.size(),
+        snapshotIds.size() - newSnapshotIds.size(),
+        newSnapshotIds.size());
+
+    // pass snapshotIds to WSM
+    for (UUID uuid : newSnapshotIds) {
+      try {
+        RestClientRetry.VoidRestCall voidRestCall =
+            (() -> wsmDao.createDataRepoSnapshotReference(new SnapshotModel().id(uuid)));
+        restClientRetry.withRetryAndErrorHandling(
+            voidRestCall, "WSM.createDataRepoSnapshotReference");
+      } catch (Exception e) {
+        throw new PfbParsingException("Error processing PFB: Invalid snapshot UUID", e);
+      }
+    }
+  }
+
+  private UUID maybeUuid(String input) {
+    try {
+      return UUID.fromString(input);
+    } catch (Exception e) {
+      logger.warn("found unparseable snapshot id '{}' in PFB contents", input);
+      return null;
+    }
   }
 }

@@ -46,9 +46,15 @@ public class WorkspaceManagerDao {
     }
   }
 
+  public ResourceList enumerateDataRepoSnapshotReferences(UUID workspaceId, int offset, int limit)
+      throws ApiException {
+    // get a page of results from WSM
+    return enumerateResources(
+        workspaceId, offset, limit, ResourceType.DATA_REPO_SNAPSHOT, StewardshipType.REFERENCED);
+  }
+
   /** Retrieves the azure storage container url and sas token for a given workspace. */
   public String getBlobStorageUrl(String storageWorkspaceId, String authToken) {
-    final ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi(authToken);
     final ControlledAzureResourceApi azureResourceApi =
         this.workspaceManagerClientFactory.getAzureResourceApi(authToken);
     int count = 0;
@@ -59,8 +65,7 @@ public class WorkspaceManagerDao {
         LOGGER.debug(
             "Finding storage resource for workspace {} from Workspace Manager ...", workspaceUUID);
         ResourceList resourceList =
-            resourceApi.enumerateResources(
-                workspaceUUID, 0, 5, ResourceType.AZURE_STORAGE_CONTAINER, null);
+            enumerateResources(workspaceUUID, 0, 5, ResourceType.AZURE_STORAGE_CONTAINER, null);
         // note: it is possible a workspace may have more than one storage container associated with
         // it
         // but currently there is no way to tell which one is the primary except for checking the
@@ -93,5 +98,18 @@ public class WorkspaceManagerDao {
       return resourceStorage.getMetadata().getResourceId();
     }
     return null;
+  }
+
+  private ResourceList enumerateResources(
+      UUID workspaceId,
+      int offset,
+      int limit,
+      ResourceType resourceType,
+      StewardshipType stewardshipType)
+      throws ApiException {
+    ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi(null);
+    // TODO: retries
+    return resourceApi.enumerateResources(
+        workspaceId, offset, limit, resourceType, stewardshipType);
   }
 }

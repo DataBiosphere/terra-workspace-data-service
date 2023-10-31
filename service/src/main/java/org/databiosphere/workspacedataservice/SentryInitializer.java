@@ -26,7 +26,7 @@ public class SentryInitializer {
   @Value("${git.commit.id.abbrev}")
   String release;
 
-  @Value("${sentry.samurl}")
+  @Value("${samurl}")
   String samurl;
 
   @Value("${sentry.releasename}")
