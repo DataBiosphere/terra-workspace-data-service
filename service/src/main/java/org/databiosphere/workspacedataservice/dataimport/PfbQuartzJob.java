@@ -118,7 +118,7 @@ public class PfbQuartzJob extends QuartzJob {
     for (UUID uuid : newSnapshotIds) {
       try {
         RestClientRetry.VoidRestCall voidRestCall =
-            (() -> wsmDao.createDataRepoSnapshotReference(new SnapshotModel().id(uuid)));
+            (() -> wsmDao.linkSnapshotForPolicy(new SnapshotModel().id(uuid)));
         restClientRetry.withRetryAndErrorHandling(
             voidRestCall, "WSM.createDataRepoSnapshotReference");
       } catch (Exception e) {

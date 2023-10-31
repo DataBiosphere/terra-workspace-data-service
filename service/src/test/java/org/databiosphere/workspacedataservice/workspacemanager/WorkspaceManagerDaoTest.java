@@ -1,6 +1,9 @@
 package org.databiosphere.workspacedataservice.workspacemanager;
 
+import static org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao.PROP_PURPOSE;
+import static org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao.PURPOSE_POLICY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -19,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,7 +66,7 @@ class WorkspaceManagerDaoTest {
   void testSnapshotReturned() throws ApiException {
     final SnapshotModel testSnapshot =
         new SnapshotModel().name("test snapshot").id(UUID.randomUUID());
-    workspaceManagerDao.createDataRepoSnapshotReference(testSnapshot);
+    workspaceManagerDao.linkSnapshotForPolicy(testSnapshot);
     verify(mockReferencedGcpResourceApi)
         .createDataRepoSnapshotReference(
             argThat(
@@ -85,7 +89,7 @@ class WorkspaceManagerDaoTest {
     var exception =
         assertThrows(
             WorkspaceManagerException.class,
-            () -> workspaceManagerDao.createDataRepoSnapshotReference(testSnapshot));
+            () -> workspaceManagerDao.linkSnapshotForPolicy(testSnapshot));
     assertEquals(statusCode, exception.getRawStatusCode());
   }
 
@@ -103,6 +107,32 @@ class WorkspaceManagerDaoTest {
         buildResourceListObjectAndCallExtraction(
             workspaceId, "sc-" + UUID.randomUUID(), ResourceType.AZURE_STORAGE_CONTAINER);
     assertNull(resourceUUID);
+  }
+
+  @Test
+  void policyOnlyProperty() throws ApiException {
+    // set up inputs
+    UUID snapshotId = UUID.randomUUID();
+    SnapshotModel snapshotModel = new SnapshotModel().id(snapshotId);
+    // call the create-reference method
+    workspaceManagerDao.linkSnapshotForPolicy(snapshotModel);
+
+    // validate that it sent correct Properties to resourceApi.createDataRepoSnapshotReference
+    ArgumentCaptor<CreateDataRepoSnapshotReferenceRequestBody> argumentCaptor =
+        ArgumentCaptor.forClass(CreateDataRepoSnapshotReferenceRequestBody.class);
+    verify(mockReferencedGcpResourceApi)
+        .createDataRepoSnapshotReference(argumentCaptor.capture(), any());
+
+    CreateDataRepoSnapshotReferenceRequestBody createBody = argumentCaptor.getValue();
+    assertNotNull(createBody.getSnapshot());
+    assertEquals(snapshotId.toString(), createBody.getSnapshot().getSnapshot());
+
+    assertNotNull(createBody.getMetadata());
+    assertNotNull(createBody.getMetadata().getProperties());
+    assertEquals(1, createBody.getMetadata().getProperties().size());
+    Property actual = createBody.getMetadata().getProperties().get(0);
+    assertEquals(PROP_PURPOSE, actual.getKey());
+    assertEquals(PURPOSE_POLICY, actual.getValue());
   }
 
   UUID buildResourceListObjectAndCallExtraction(UUID workspaceId, String name, ResourceType type) {
