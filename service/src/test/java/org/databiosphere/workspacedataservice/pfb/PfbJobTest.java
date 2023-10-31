@@ -62,7 +62,7 @@ class PfbJobTest {
     new PfbQuartzJob(jobDao, wsmDao, restClientRetry, UUID.randomUUID()).execute(mockContext);
 
     // Should not call wsm dao
-    verify(wsmDao, times(0)).createDataRepoSnapshotReference(any());
+    verify(wsmDao, times(0)).linkSnapshotForPolicy(any());
     // But job should succeed
     verify(jobDao).succeeded(jobId);
   }
@@ -88,7 +88,7 @@ class PfbJobTest {
 
     // This is the snapshotId given in the test pfb
     verify(wsmDao)
-        .createDataRepoSnapshotReference(
+        .linkSnapshotForPolicy(
             ArgumentMatchers.argThat(
                 new SnapshotModelMatcher(UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"))));
     // Job should succeed
