@@ -8,6 +8,7 @@ on:
     branches:
       - main
       - aj-1188-tdr-consumer
+      - iv-multiple-pacts-demo
     paths-ignore: [ '**.md' ]
 
 env:
