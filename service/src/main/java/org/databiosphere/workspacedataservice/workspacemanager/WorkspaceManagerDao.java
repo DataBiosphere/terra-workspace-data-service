@@ -71,7 +71,12 @@ public class WorkspaceManagerDao {
       throws ApiException {
     // get a page of results from WSM
     return enumerateResources(
-        workspaceId, offset, limit, ResourceType.DATA_REPO_SNAPSHOT, StewardshipType.REFERENCED);
+        workspaceId,
+        offset,
+        limit,
+        ResourceType.DATA_REPO_SNAPSHOT,
+        StewardshipType.REFERENCED,
+        null);
   }
 
   /** Retrieves the azure storage container url and sas token for a given workspace. */
@@ -86,7 +91,8 @@ public class WorkspaceManagerDao {
         LOGGER.debug(
             "Finding storage resource for workspace {} from Workspace Manager ...", workspaceUUID);
         ResourceList resourceList =
-            enumerateResources(workspaceUUID, 0, 5, ResourceType.AZURE_STORAGE_CONTAINER, null);
+            enumerateResources(
+                workspaceUUID, 0, 5, ResourceType.AZURE_STORAGE_CONTAINER, null, authToken);
         // note: it is possible a workspace may have more than one storage container associated with
         // it
         // but currently there is no way to tell which one is the primary except for checking the
@@ -121,14 +127,15 @@ public class WorkspaceManagerDao {
     return null;
   }
 
-  private ResourceList enumerateResources(
+  ResourceList enumerateResources(
       UUID workspaceId,
       int offset,
       int limit,
       ResourceType resourceType,
-      StewardshipType stewardshipType)
+      StewardshipType stewardshipType,
+      String authToken)
       throws ApiException {
-    ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi(null);
+    ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi(authToken);
     // TODO: retries
     return resourceApi.enumerateResources(
         workspaceId, offset, limit, resourceType, stewardshipType);

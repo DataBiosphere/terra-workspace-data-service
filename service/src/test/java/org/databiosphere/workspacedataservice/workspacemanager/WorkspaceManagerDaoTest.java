@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -20,6 +21,7 @@ import bio.terra.workspace.model.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -55,10 +57,11 @@ class WorkspaceManagerDaoTest {
 
   @BeforeEach
   void setUp() {
-    given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi(null))
+    given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi(nullable(String.class)))
         .willReturn(mockReferencedGcpResourceApi);
-    given(mockWorkspaceManagerClientFactory.getResourceApi(null)).willReturn(mockResourceApi);
-    given(mockWorkspaceManagerClientFactory.getAzureResourceApi(null))
+    given(mockWorkspaceManagerClientFactory.getResourceApi(nullable(String.class)))
+        .willReturn(mockResourceApi);
+    given(mockWorkspaceManagerClientFactory.getAzureResourceApi(nullable(String.class)))
         .willReturn(mockControlledAzureResourceApi);
   }
 
@@ -107,6 +110,41 @@ class WorkspaceManagerDaoTest {
         buildResourceListObjectAndCallExtraction(
             workspaceId, "sc-" + UUID.randomUUID(), ResourceType.AZURE_STORAGE_CONTAINER);
     assertNull(resourceUUID);
+  }
+
+  @Test
+  void enumerateResourcesAuthTokenNull() throws ApiException {
+    // call enumerateResources with authToken=null
+    workspaceManagerDao.enumerateResources(
+        UUID.randomUUID(),
+        0,
+        10,
+        ResourceType.DATA_REPO_SNAPSHOT,
+        StewardshipType.REFERENCED,
+        null);
+    // validate argument
+    ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
+    verify(mockWorkspaceManagerClientFactory).getResourceApi(argumentCaptor.capture());
+    String actual = argumentCaptor.getValue();
+    assertNull(actual);
+  }
+
+  @Test
+  void enumerateResourcesAuthTokenPopulated() throws ApiException {
+    String expected = RandomStringUtils.randomAlphanumeric(16);
+    // call enumerateResources with authToken={random string value}
+    workspaceManagerDao.enumerateResources(
+        UUID.randomUUID(),
+        0,
+        10,
+        ResourceType.DATA_REPO_SNAPSHOT,
+        StewardshipType.REFERENCED,
+        expected);
+    // validate argument
+    ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
+    verify(mockWorkspaceManagerClientFactory).getResourceApi(argumentCaptor.capture());
+    String actual = argumentCaptor.getValue();
+    assertEquals(expected, actual);
   }
 
   @Test
