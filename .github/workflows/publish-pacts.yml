@@ -50,6 +50,7 @@ jobs:
     needs: [ init-github-context ]
     outputs:
       pact-b64: ${{ steps.encode-pact.outputs.pact-b64 }}
+      pact-paths: ${{ steps.locate-pacts.outputs.pact-paths }}
 
     steps:
       - name: Checkout current code
@@ -62,24 +63,38 @@ jobs:
           distribution: 'temurin'
       - name: Run consumer tests
         run: ./gradlew pactTests
-      - name: Output consumer contract as non-breaking base64 string
-        id: encode-pact
-        run: |
-          NON_BREAKING_B64=$(cat service/build/pacts/wds-sam.json | base64 -w 0)
-          echo "pact-b64=${NON_BREAKING_B64}" >> $GITHUB_OUTPUT
 
-  publish-pact-job:
+      - name: Locate all pact json files
+        id: locate-pacts
+        run: |
+          pactOutputDir="service/build/pacts"
+
+          # Locate .json pact files in $pactOutputDir
+          pactPaths=($(find "$pactOutputDir" -type f -name "*.json"))
+
+          # Put the pact file paths in JSON string
+          pactPathsJson="["
+
+          # Loop through $pactPaths and append its elements to JSON string
+          for path in "${pactPaths[@]}"; do
+              pactPathsJson="${pactPathsJson}\"$path\", "
+          done
+
+          pactPathsJson="${pactPathsJson%, }]"
+
+          echo "$pactPathsJson"
+          echo "pact-paths=$pactPathsJson" >> $GITHUB_OUTPUT
+
+  pact-paths-job:
     runs-on: ubuntu-latest
-    needs: [ init-github-context, run-consumer-contract-tests ]
-    permissions:
-      contents: 'read'
-      id-token: 'write'
+    needs: [ run-consumer-contract-tests ]
+    strategy:
+      matrix:
+        pact_path: ${{ fromJson(needs.run-consumer-contract-tests.outputs.pact-paths) }}
+
     steps:
-      - name: Dispatch to terra-github-workflows
-        uses: broadinstitute/workflow-dispatch@v3
-        with:
-          workflow: .github/workflows/publish-contracts.yaml
-          repo: broadinstitute/terra-github-workflows
-          ref: refs/heads/main
-          token: ${{ secrets.BROADBOT_TOKEN }} # github token for access to kick off a job in the private repo
-          inputs: '{ "pact-b64": "${{ needs.run-consumer-contract-tests.outputs.pact-b64 }}", "repo-owner": "${{ github.repository_owner }}", "repo-name": "${{ github.event.repository.name }}", "repo-branch": "${{ needs.init-github-context.outputs.repo-branch }}" }'
+      - name: echo paths
+        run: |
+          echo ${{ matrix.pact_path }}
+          NON_BREAKING_B64=$(cat ${{ matrix.pact_path }} | base64 -w 0)
+          echo $NON_BREAKING_B64
