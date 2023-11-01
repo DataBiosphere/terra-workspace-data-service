@@ -19,6 +19,29 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 class TokenContextUtilTest {
 
   @Test
+  void nonNullInitialValueAndNoOrElse() {
+    String expected = RandomStringUtils.randomAlphanumeric(10);
+
+    // set a dummy value into request attributes
+    MockHttpServletRequest request = new MockHttpServletRequest();
+    RequestAttributes requestAttributes = new ServletRequestAttributes(request);
+    requestAttributes.setAttribute(ATTRIBUTE_NAME_TOKEN, "dummy request value", SCOPE_REQUEST);
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+    try {
+      // and set a dummy value into job attributes
+      JobContextHolder.init();
+      JobContextHolder.setAttribute(ATTRIBUTE_NAME_TOKEN, "dummy job value");
+
+      // call getToken with a non-null initialValue
+      BearerToken actual = TokenContextUtil.getToken(expected);
+      assertEquals(BearerToken.of(expected), actual);
+    } finally {
+      JobContextHolder.destroy();
+    }
+  }
+
+  @Test
   void nonNullInitialValue() {
     BearerToken expected = BearerToken.of(RandomStringUtils.randomAlphanumeric(10));
 
