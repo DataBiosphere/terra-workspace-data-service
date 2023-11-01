@@ -14,7 +14,7 @@ inputs:
   REPO_BRANCH:
     description: 'The git branch name'
     required: true
-  PACT_B64:
+  CONTRACTS_B64:
     description: 'Pact content formatted as non-breaking base64 string'
     required: true
   VAULT_ROLE_ID:
