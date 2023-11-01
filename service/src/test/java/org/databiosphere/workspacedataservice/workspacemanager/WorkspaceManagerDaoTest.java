@@ -17,6 +17,8 @@ import bio.terra.workspace.model.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -31,7 +33,7 @@ import org.springframework.test.context.TestPropertySource;
 
 @ActiveProfiles(profiles = "mock-sam")
 @DirtiesContext
-@SpringBootTest(classes = {WorkspaceManagerConfig.class})
+@SpringBootTest(classes = {WorkspaceManagerConfig.class, RestClientRetry.class})
 @TestPropertySource(
     properties = {"twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000"})
 class WorkspaceManagerDaoTest {
@@ -84,7 +86,7 @@ class WorkspaceManagerDaoTest {
         .willThrow(new ApiException(statusCode, "Intentional error thrown for unit test"));
     var exception =
         assertThrows(
-            WorkspaceManagerException.class,
+            AuthenticationException.class,
             () -> workspaceManagerDao.createDataRepoSnapshotReference(testSnapshot));
     assertEquals(statusCode, exception.getRawStatusCode());
   }
