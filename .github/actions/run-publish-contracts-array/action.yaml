@@ -1,0 +1,123 @@
+name: run-publish-contracts
+description: 'Publish contracts through Pact Broker API endpoint /publish/contracts. Require v2.86.0 or above.'
+inputs:
+  PB_URL:
+    description: 'Base URL of Pact Broker'
+    required: false
+    default: 'https://pact-broker.dsp-eng-tools.broadinstitute.org'
+  REPO_OWNER:
+    description: 'The git repo owner'
+    required: true
+  REPO_NAME:
+    description: 'The git repo name'
+    required: true
+  REPO_BRANCH:
+    description: 'The git branch name'
+    required: true
+  PACT_B64:
+    description: 'Pact content formatted as non-breaking base64 string'
+    required: true
+  VAULT_ROLE_ID:
+    description: 'Vault Role ID'
+    required: true
+  VAULT_SECRET_ID:
+    description: 'Vault Secret ID'
+    required: true
+  BROADBOT_TOKEN:
+    description: 'Broadbot Token'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Import Vault Secrets
+      uses: hashicorp/vault-action@v2.4.2
+      with:
+        url: https://clotho.broadinstitute.org:8200
+        method: approle
+        roleId: ${{ inputs.VAULT_ROLE_ID }}
+        secretId: ${{ inputs.VAULT_SECRET_ID }}
+        tlsSkipVerify: true
+        exportToken: true
+        secrets: |
+          secret/dsp/pact-broker/users/readwrite basic_auth_username | PB_USER;
+          secret/dsp/pact-broker/users/readwrite basic_auth_password | PB_PASS;
+
+    - id: mask-secrets
+      run: |
+        echo "::add-mask::${{ env.PB_USER }}"
+        echo "::add-mask::${{ env.PB_PASS }}"
+      shell: bash
+
+    - name: Assemble the JSON Request to PB API endpoint /contracts/publish
+      run: |
+        eval "$(printf '%s' ${{ inputs.PACT_B64 }} \
+          | base64 --decode \
+          | jq -r \
+            '@sh "CONSUMER=\(.consumer.name)",
+             @sh "PROVIDER=\(.provider.name)"')"
+
+        echo
+        echo "==== Detect following consumer / provider from contract ===="
+        echo "CONSUMER=${CONSUMER}"
+        echo "PROVIDER=${PROVIDER}"
+
+        LATEST_COMMIT=$(curl -s \
+             -H "Authorization: token ${{ inputs.BROADBOT_TOKEN }}" \
+             -H "Accept: application/vnd.github.VERSION.sha" \
+             "https://api.github.com/repos/${{ inputs.REPO_OWNER }}/${{ inputs.REPO_NAME }}/commits/${{ inputs.REPO_BRANCH }}")
+
+        echo
+        echo "==== Latest commit hash from consumer repo, chosen to be the pacticipant version number.  ===="
+        echo "REPO=${{ inputs.REPO_OWNER }}/${{ inputs.REPO_NAME }}"
+        echo "LATEST_COMMIT=${LATEST_COMMIT}"
+
+        cat << EOF > request.json
+        {
+          "pacticipantName": "${CONSUMER}",
+          "pacticipantVersionNumber": "${LATEST_COMMIT}",
+          "branch": "${{ inputs.REPO_BRANCH }}",
+          "tags": ["${{ inputs.REPO_BRANCH }}"],
+          "buildUrl": "",
+          "contracts": [
+            {
+              "consumerName": "${CONSUMER}",
+              "providerName": "${PROVIDER}",
+              "specification": "pact",
+              "contentType": "application/json",
+              "content": "${{ inputs.PACT_B64 }}"
+            }
+          ]
+        }
+        EOF
+      shell: bash
+
+    - id: run-publish-contracts
+      name: Publish contracts and handle errors
+      run: |
+        curl -s \
+             -o response.json \
+             -u "${{ env.PB_USER }}:${{ env.PB_PASS }}" \
+             -X POST \
+             -H "Content-Type: application/json" \
+             -d @request.json \
+             ${{ inputs.PB_URL }}/contracts/publish
+
+        if ! [[ -f "response.json" ]]; then
+          echo "The Pact Broker failed to produce a response. Please try republishing again."
+          exit 1
+        fi
+
+        echo
+        echo "==== Pact Broker Response ===="
+        cat response.json | jq
+
+        HAS_ERROR=$(cat response.json | jq 'has("errors")')
+
+        if [ "$HAS_ERROR" = true ]
+        then
+          exit 1
+        else
+          exit 0
+        fi
+      shell: bash

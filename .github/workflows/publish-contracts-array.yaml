@@ -1,0 +1,53 @@
+name: publish-contracts-array
+# This workflow is used for publishing consumer pacts through GHA .github/actions/publish-contracts-array/action.yaml
+# It uses the Pact Broker API POST /contracts/publish endpoint for publishing contracts. Pact Broker v2.86.0 or above is required.
+run-name: ${{ inputs.run-name }}
+on:
+  push:
+    branches:
+      - 'publish-multiple-contracts'
+      - 'AJ-1234-wsm-consumer-pact-tests'
+  workflow_dispatch:
+    inputs:
+      run-name:
+        description: 'Specify the run name to fetch workflow run ID based on run-name'
+        required: false
+        type: string
+      contracts-b64:
+        description: 'Pact contracts array formatted as non-breaking base64 string'
+        required: true
+        type: string
+      repo-owner:
+        description: 'The git repo owner'
+        required: true
+        type: string
+      repo-name:
+        description: 'The git repo name'
+        required: true
+        type: string
+      repo-branch:
+        description: 'The git branch name'
+        required: true
+        type: string
+
+jobs:
+  publish-contracts-array-job:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Publish contracts
+        id: publish-contracts-array
+        uses: ./.github/actions/run-publish-contracts-array
+        with:
+          VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+          VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+          CONTRACTS_B64: ${{ inputs.contracts-b64 }}
+          REPO_OWNER: ${{ inputs.repo-owner }}
+          REPO_NAME: ${{ inputs.repo-name }}
+          REPO_BRANCH: ${{ inputs.repo-branch }}
+          BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
