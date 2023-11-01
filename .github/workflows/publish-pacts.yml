@@ -123,4 +123,4 @@ jobs:
       - name: Unwrap b64
         run: |
           echo ${{ matrix.pact_path }}
-          echo ${{ steps.encodde-pact.outputs.pact-b64 }} | base64 --decode
+          echo ${{ steps.encode-pact.outputs.pact-b64 }} | base64 --decode
