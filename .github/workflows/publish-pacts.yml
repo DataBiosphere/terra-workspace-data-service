@@ -107,10 +107,10 @@ jobs:
     steps:
       - name: Download pact
         uses: actions/download-artifact@v3
-          with:
-            name: wds-pacts-${{ env.WDS_RUN_ID }}
-            path: |
-              ${{ env.PACTS_OUTPUT_DIR }}
+        with:
+          name: wds-pacts-${{ env.WDS_RUN_ID }}
+          path: |
+            ${{ env.PACTS_OUTPUT_DIR }}
 
       - name: Echo path
         run: |
