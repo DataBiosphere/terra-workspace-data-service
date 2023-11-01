@@ -49,8 +49,6 @@ class TDRPactTest {
         .method("GET")
         .willRespondWith()
         .status(404)
-        .body(
-            "{\"message\": \"Snapshot not found - id: 12345678-abc9-012d-3456-e7fab89cd01e\",\"errorDetail\": []}")
         .toPact();
   }
 
