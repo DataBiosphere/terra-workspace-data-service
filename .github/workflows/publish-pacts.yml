@@ -55,7 +55,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ init-github-context ]
     outputs:
-      pact-b64: ${{ steps.encode-pact.outputs.pact-b64 }}
       pact-paths: ${{ steps.locate-pacts.outputs.pact-paths }}
 
     steps:
@@ -86,7 +85,6 @@ jobs:
 
           pactPathsJson="${pactPathsJson%, }]"
 
-          echo "$pactPathsJson"
           echo "pact-paths=$pactPathsJson" >> $GITHUB_OUTPUT
 
       - name: Upload pacts to artifact for use by jobs downstream
