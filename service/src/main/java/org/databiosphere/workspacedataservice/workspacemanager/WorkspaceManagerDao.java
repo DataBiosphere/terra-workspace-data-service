@@ -12,8 +12,6 @@ import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 public class WorkspaceManagerDao {
   public static final String INSTANCE_NAME = "terra";
@@ -89,10 +87,11 @@ public class WorkspaceManagerDao {
         return sasBundle.getUrl();
       } else {
         throw new ApiException(
-            "WorkspaceManagerDao: Can't locate a storage resource matching workspace Id. ");
+            "WorkspaceManagerDao: Can't locate a storage resource matching workspace Id "
+                + workspaceUUID.toString());
       }
     } catch (ApiException e) {
-      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, null, e);
+      throw new WorkspaceManagerException(e);
     }
   }
 
