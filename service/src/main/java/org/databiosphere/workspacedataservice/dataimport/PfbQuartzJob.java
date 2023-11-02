@@ -7,7 +7,6 @@ import bio.terra.pfb.PfbReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Spliterator;
@@ -22,6 +21,7 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
@@ -110,7 +110,7 @@ public class PfbQuartzJob extends QuartzJob {
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
       // TODO should "id" be a static variable
-      Map<RecordType, Integer> result =
+      BatchWriteResult result =
           batchWriteService.batchWritePfbStream(dataStream, workspaceId, Optional.of("id"));
 
       // TODO does this work
@@ -125,7 +125,6 @@ public class PfbQuartzJob extends QuartzJob {
               });
 
     } catch (IOException e) {
-      // TODO where do we identify that there may have been a partial write?
       throw new PfbParsingException("Error processing PFB", e);
     }
   }

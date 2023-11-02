@@ -22,6 +22,7 @@ import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -377,12 +378,12 @@ class BatchWriteServiceTest {
     URL url = getClass().getResource("/four_tables.avro");
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
-      Map<RecordType, Integer> result =
+      BatchWriteResult result =
           batchWriteService.batchWritePfbStream(dataStream, INSTANCE, Optional.of("id"));
       RecordType expectedRecordType = RecordType.valueOf("data_release");
       RecordType expectedRecordType2 = RecordType.valueOf("submitted_aligned_reads");
-      assertEquals(3, result.get(expectedRecordType));
-      assertEquals(1, result.get(expectedRecordType2));
+      assertEquals(3, result.getUpdatedCount(expectedRecordType));
+      assertEquals(1, result.getUpdatedCount(expectedRecordType2));
     } catch (IOException e) {
       fail(); // TODO failure message?
     }

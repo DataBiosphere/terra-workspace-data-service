@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -16,6 +15,7 @@ import java.util.stream.Collectors;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
@@ -66,12 +66,12 @@ public class BatchWriteService {
    * @param primaryKey PK for the record type
    * @return the number of records written
    */
-  public Map<RecordType, Integer> consumeWriteStream(
+  public BatchWriteResult consumeWriteStream(
       StreamingWriteHandler streamingWriteHandler,
       UUID instanceId,
       RecordType recordType,
       Optional<String> primaryKey) {
-    Map<RecordType, Integer> result = new HashMap<>();
+    BatchWriteResult result = BatchWriteResult.empty();
     try {
       Map<String, DataTypeMapping> schema = null;
       boolean firstUpsertBatch = true;
@@ -81,6 +81,7 @@ public class BatchWriteService {
           info = streamingWriteHandler.readRecords(batchSize)) {
         List<Record> records = info.getRecords();
         // TODO is a recordType == null check the best way to do this?
+        // If no recordType is given, assume there may be multiple types and sort by type
         if (recordType == null) {
           Map<RecordType, List<Record>> sortedRecords =
               records.stream().collect(Collectors.groupingBy(Record::getRecordType));
@@ -92,11 +93,11 @@ public class BatchWriteService {
                 instanceId, recType, inferredSchema, rList, primaryKey.orElse(RECORD_ID));
             writeBatch(
                 instanceId, recType, inferredSchema, info.getOperationType(), rList, primaryKey);
-            result.compute(
-                recType, (key, value) -> (value == null) ? rList.size() : value + rList.size());
+            result.increaseCount(recType, rList.size());
           }
         } else {
-          result.putIfAbsent(recordType, 0);
+          // A recordType has been passed in so all records are of this single type
+          result.initialize(recordType);
           if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
             schema = inferer.inferTypes(records);
             createOrModifyRecordType(
@@ -104,9 +105,7 @@ public class BatchWriteService {
             firstUpsertBatch = false;
           }
           writeBatch(instanceId, recordType, schema, info.getOperationType(), records, primaryKey);
-          result.compute(
-              recordType,
-              (key, value) -> (value == null) ? records.size() : value + records.size());
+          result.increaseCount(recordType, records.size());
         }
       }
     } catch (IOException e) {
@@ -122,7 +121,7 @@ public class BatchWriteService {
     try (StreamingWriteHandler streamingWriteHandler =
         new JsonStreamWriteHandler(is, objectMapper)) {
       return consumeWriteStream(streamingWriteHandler, instanceId, recordType, primaryKey)
-          .get(recordType);
+          .getUpdatedCount(recordType);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
@@ -139,14 +138,14 @@ public class BatchWriteService {
               instanceId,
               recordType,
               Optional.of(streamingWriteHandler.getResolvedPrimaryKey()))
-          .get(recordType);
+          .getUpdatedCount(recordType);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
   }
 
   @WriteTransaction
-  public Map<RecordType, Integer> batchWritePfbStream(
+  public BatchWriteResult batchWritePfbStream(
       DataFileStream<GenericRecord> is, UUID instanceId, Optional<String> primaryKey) {
     try (PfbStreamWriteHandler streamingWriteHandler = new PfbStreamWriteHandler(is)) {
       return consumeWriteStream(streamingWriteHandler, instanceId, null, primaryKey);

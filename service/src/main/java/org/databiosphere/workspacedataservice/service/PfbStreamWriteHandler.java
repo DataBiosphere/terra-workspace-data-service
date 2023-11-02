@@ -36,12 +36,10 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
     return new WriteStreamInfo(records, OperationType.UPSERT);
   }
 
-  // TODO how to not write the whole path
-  private org.databiosphere.workspacedataservice.shared.model.Record genericRecordToRecord(
-      GenericRecord genRec) {
+  private Record genericRecordToRecord(GenericRecord genRec) {
     // TODO ok to use plain strings here so should they be static variables or what?
-    org.databiosphere.workspacedataservice.shared.model.Record converted =
-        new org.databiosphere.workspacedataservice.shared.model.Record(
+    Record converted =
+        new Record(
             genRec.get("id").toString(),
             RecordType.valueOf(genRec.get("name").toString()),
             RecordAttributes.empty());
