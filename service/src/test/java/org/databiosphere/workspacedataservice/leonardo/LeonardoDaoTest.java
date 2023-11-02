@@ -2,6 +2,9 @@ package org.databiosphere.workspacedataservice.leonardo;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -47,7 +50,9 @@ class LeonardoDaoTest {
   @Test
   void testWdsUrlNotReturned() throws ApiException {
     final int statusCode = HttpStatus.INTERNAL_SERVER_ERROR.value();
-    given(mockAppsApi.listAppsV2(String.valueOf(UUID.randomUUID()), "things", null, null))
+    given(
+            mockAppsApi.listAppsV2(
+                anyString(), nullable(String.class), anyBoolean(), nullable(String.class)))
         .willThrow(
             new org.broadinstitute.dsde.workbench.client.leonardo.ApiException(
                 statusCode, "Intentional error thrown for unit test"));

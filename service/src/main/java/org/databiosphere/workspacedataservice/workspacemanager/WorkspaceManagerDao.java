@@ -10,6 +10,7 @@ import java.text.SimpleDateFormat;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
+import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,23 +54,27 @@ public class WorkspaceManagerDao {
   private void createDataRepoSnapshotReference(SnapshotModel snapshotModel, Properties properties) {
     final ReferencedGcpResourceApi resourceApi =
         this.workspaceManagerClientFactory.getReferencedGcpResourceApi(null);
-    String timeStamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new java.util.Date());
-    RestCall<Object> createSnapshotFunction =
-        () ->
-            resourceApi.createDataRepoSnapshotReference(
-                new CreateDataRepoSnapshotReferenceRequestBody()
-                    .snapshot(
-                        new DataRepoSnapshotAttributes()
-                            .instanceName(INSTANCE_NAME)
-                            .snapshot(snapshotModel.getId().toString()))
-                    .metadata(
-                        new ReferenceResourceCommonFields()
-                            .cloningInstructions(CloningInstructionsEnum.REFERENCE)
-                            .properties(properties)
-                            .name("%s_%s".formatted(snapshotModel.getName(), timeStamp))),
-                UUID.fromString(workspaceId));
-    restClientRetry.withRetryAndErrorHandling(
-        createSnapshotFunction, "WSM.createSnapshotReference");
+    try {
+      String timeStamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new java.util.Date());
+      RestCall<Object> createSnapshotFunction =
+          () ->
+              resourceApi.createDataRepoSnapshotReference(
+                  new CreateDataRepoSnapshotReferenceRequestBody()
+                      .snapshot(
+                          new DataRepoSnapshotAttributes()
+                              .instanceName(INSTANCE_NAME)
+                              .snapshot(snapshotModel.getId().toString()))
+                      .metadata(
+                          new ReferenceResourceCommonFields()
+                              .cloningInstructions(CloningInstructionsEnum.REFERENCE)
+                              .properties(properties)
+                              .name("%s_%s".formatted(snapshotModel.getName(), timeStamp))),
+                  UUID.fromString(workspaceId));
+      restClientRetry.withRetryAndErrorHandling(
+          createSnapshotFunction, "WSM.createSnapshotReference");
+    } catch (RestException e) {
+      throw new WorkspaceManagerException(e);
+    }
   }
 
   public ResourceList enumerateDataRepoSnapshotReferences(UUID workspaceId, int offset, int limit)
@@ -118,6 +123,8 @@ public class WorkspaceManagerDao {
       }
     } catch (ApiException e) {
       throw new WorkspaceManagerException(e);
+    } catch (RestException e) {
+      throw new WorkspaceManagerException(e);
     }
   }
 
@@ -142,11 +149,15 @@ public class WorkspaceManagerDao {
       String authToken)
       throws ApiException {
     ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi(authToken);
-    RestCall<ResourceList> enumerateResourcesFunction =
-        () ->
-            resourceApi.enumerateResources(
-                workspaceId, offset, limit, resourceType, stewardshipType);
-    return restClientRetry.withRetryAndErrorHandling(
-        enumerateResourcesFunction, "WSM.enumerateResources");
+    try {
+      RestCall<ResourceList> enumerateResourcesFunction =
+          () ->
+              resourceApi.enumerateResources(
+                  workspaceId, offset, limit, resourceType, stewardshipType);
+      return restClientRetry.withRetryAndErrorHandling(
+          enumerateResourcesFunction, "WSM.enumerateResources");
+    } catch (RestException e) {
+      throw new WorkspaceManagerException(e);
+    }
   }
 }

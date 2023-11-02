@@ -6,6 +6,7 @@ import org.databiosphere.workspacedata.model.BackupJob;
 import org.databiosphere.workspacedata.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
+import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,12 +31,17 @@ public class WorkspaceDataServiceDao {
 
   /** Triggers a backup in source workspace data service. */
   public BackupJob triggerBackup(String token, UUID requesterWorkspaceId) {
-    var backupClient =
-        this.workspaceDataServiceClientFactory.getBackupClient(token, workspaceDataServiceUrl);
-    BackupRestoreRequest body = new BackupRestoreRequest();
-    body.setRequestingWorkspaceId(requesterWorkspaceId);
-    RestCall<BackupJob> createBackupFunction = () -> backupClient.createBackup(body, "v0.2");
-    return restClientRetry.withRetryAndErrorHandling(createBackupFunction, "WDS.createBackup");
+    try {
+      var backupClient =
+          this.workspaceDataServiceClientFactory.getBackupClient(token, workspaceDataServiceUrl);
+      BackupRestoreRequest body = new BackupRestoreRequest();
+      body.setRequestingWorkspaceId(requesterWorkspaceId);
+      RestCall<BackupJob> createBackupFunction = () -> backupClient.createBackup(body, "v0.2");
+      return restClientRetry.withRetryAndErrorHandling(createBackupFunction, "WDS.createBackup");
+    } catch (RestException e) {
+      LOGGER.warn("Error from remote WDS: {}", e.getMessage());
+      throw new WorkspaceDataServiceException(e);
+    }
   }
 
   /** Checks status of a backup in source workspace data service. */
