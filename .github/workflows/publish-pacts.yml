@@ -12,13 +12,9 @@ on:
     
 env:
   WDS_RUN_ID: ${{ github.event.repository.name }}-${{ github.run_id }}
-  PACTS_OUTPUT_DIR: service/build/pacts/
   PUBLISH_CONTRACT_RUN_NAME: 'publish-contracts-${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
-
-env:
   WDS_PACTS_ARTIFACT: wds-pacts-${{ github.event.repository.name }}-${{ github.run_id }}
   WDS_PACTS_OUTPUT_DIR: service/build/pacts/
-  PUBLISH_CONTRACT_RUN_NAME: 'publish-contracts-${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
 
 jobs:
   init-github-context:
@@ -77,7 +73,7 @@ jobs:
         id: locate-pacts
         run: |
           # Locate .json pact files in $pactOutputDir
-          pactPaths=($(find "${{ env.WDS_PACTS_OUTPUT_DIR }}" -type f -name "*.json"))
+          pactPaths=($(find "${{ env.WDS_ }}" -type f -name "*.json"))
 
           # Put the Base64-encoded pacts in JSON string
           pactPathsJson="["
@@ -96,7 +92,7 @@ jobs:
         with:
           name: ${{ env.WDS_PACTS_ARTIFACT }}
           path: |
-            ${{ env.WDS_PACTS_OUTPUT_DIR }}
+            ${{ env.WDS_ }}
           retention-days: 1
 
   publish-pacts-job:
@@ -112,7 +108,7 @@ jobs:
         with:
           name: ${{ env.WDS_PACTS_ARTIFACT }}
           path: |
-            ${{ env.WDS_PACTS_OUTPUT_DIR }}
+            ${{ env.WDS_ }}
 
       - name: Encode pact as non-breaking base64 string
         id: encode-pact
