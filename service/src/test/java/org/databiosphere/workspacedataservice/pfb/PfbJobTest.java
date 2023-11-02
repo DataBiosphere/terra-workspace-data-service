@@ -121,7 +121,7 @@ class PfbJobTest {
   }
 
   @Test
-  void pfbTablesAreSaved() throws JobExecutionException {
+  void pfbTablesAreSaved() throws JobExecutionException, ApiException {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
     URL resourceUrl = getClass().getResource("/two_tables.avro");
     when(mockContext.getMergedJobDataMap())
@@ -139,6 +139,9 @@ class PfbJobTest {
     UUID jobId = UUID.randomUUID();
     jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
     when(mockContext.getJobDetail()).thenReturn(jobDetail);
+
+    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
 
     new PfbQuartzJob(
             jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID())

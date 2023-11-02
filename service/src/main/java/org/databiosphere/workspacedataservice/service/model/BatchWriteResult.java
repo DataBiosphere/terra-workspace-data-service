@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.service.model;
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -13,7 +13,7 @@ public class BatchWriteResult {
   }
 
   public static BatchWriteResult empty() {
-    return new BatchWriteResult(Collections.emptyMap());
+    return new BatchWriteResult(new HashMap<>());
   }
 
   public int getUpdatedCount(RecordType recordType) {
