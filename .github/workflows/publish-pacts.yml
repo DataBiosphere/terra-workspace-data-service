@@ -8,11 +8,12 @@ on:
     branches:
       - main
       - aj-1188-tdr-consumer
+      - iv-multiple-pacts-demo
     paths-ignore: [ '**.md' ]
 
 env:
-  WDS_RUN_ID: ${{ github.event.repository.name }}-${{ github.run_id }}
-  PACTS_OUTPUT_DIR: service/build/pacts/
+  WDS_PACTS_ARTIFACT: wds-pacts-${{ github.event.repository.name }}-${{ github.run_id }}
+  WDS_PACTS_OUTPUT_DIR: service/build/pacts/
   PUBLISH_CONTRACT_RUN_NAME: 'publish-contracts-${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
 
 jobs:
@@ -55,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ init-github-context ]
     outputs:
-      pacts-b64: ${{ steps.locate-pacts.outputs.pacts-b64 }}
+      pact-paths: ${{ steps.locate-pacts.outputs.pact-paths }}
 
     steps:
       - name: Checkout current code
@@ -73,42 +74,65 @@ jobs:
         id: locate-pacts
         run: |
           # Locate .json pact files in $pactOutputDir
-          pactPaths=($(find "${{ env.PACTS_OUTPUT_DIR }}" -type f -name "*.json"))
+          pactPaths=($(find "${{ env.WDS_PACTS_OUTPUT_DIR }}" -type f -name "*.json"))
 
           # Put the Base64-encoded pacts in JSON string
-          pactsB64="["
+          pactPathsJson="["
 
           # Loop through $pactPaths and encode the corresponding pact
           for path in "${pactPaths[@]}"; do
-            nonBreakingB64=$(cat "$path" | base64 -w 0)
-            pactsB64="${pactsB64}\"$nonBreakingB64\", "
+            # nonBreakingB64=$(cat "$path" | base64 -w 0)
+            pactPathsJson="${pactPathsJson}\"$path\", "
           done
 
-          # pactPathsJson="${pactPathsJson%, }]"
-          pactsB64="${pactsB64%, }]"
+          pactPathsJson="${pactPathsJson%, }]"
+          # pactsB64="${pactsB64%, }]"
 
-          # echo "pact-paths=$pactPathsJson" >> $GITHUB_OUTPUT
-          echo "pacts-b64=$pactsB64" >> $GITHUB_OUTPUT
+          echo "pact-paths=$pactPathsJson" >> $GITHUB_OUTPUT
+          # echo "pacts-b64=$pactsB64" >> $GITHUB_OUTPUT
+
+      - name: Upload pact files to artifact
+        id: upload-pacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.WDS_PACTS_ARTIFACT }}
+          path: |
+            ${{ env.WDS_PACTS_OUTPUT_DIR }}
+          retention-days: 1
 
   publish-pacts-job:
     runs-on: ubuntu-latest
     needs: [ init-github-context, run-consumer-contract-tests ]
     strategy:
       matrix:
-        pact_b64: ${{ fromJson(needs.run-consumer-contract-tests.outputs.pacts-b64) }}
+        pact_path: ${{ fromJson(needs.run-consumer-contract-tests.outputs.pact-paths) }}
 
     steps:
+      - name: Download pact files from artifact
+        id: download-pacts
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.WDS_PACTS_ARTIFACT }}
+          path: |
+            ${{ env.WDS_PACTS_OUTPUT_DIR }}
+
+      - name: Encode pact as non-breaking base64 string
+        id: encode-pact
+        run: |
+          nonBreakingB64=$(cat "${{ matrix.pact_path }}" | base64 -w 0)
+          echo "pact-b64=${nonBreakingB64}" >> $GITHUB_OUTPUT
+
       - name: Dispatch to terra-github-workflows
         uses: broadinstitute/workflow-dispatch@v4.0.0
         with:
-          run-name: ${{ env.PUBLISH_CONTRACT_RUN_NAME }}
+          run-name: '${{ env.PUBLISH_CONTRACT_RUN_NAME }}-${{ matrix.pact_path }}'
           workflow: .github/workflows/publish-contracts.yaml
           repo: broadinstitute/terra-github-workflows
           ref: refs/heads/main
           token: ${{ secrets.BROADBOT_TOKEN }} # github token for access to kick off a job in the private repo
           inputs: '{
-            "run-name": "${{ env.PUBLISH_CONTRACT_RUN_NAME }}",
-            "pact-b64": "${{ matrix.pact_b64 }}",
+            "run-name": "${{ env.PUBLISH_CONTRACT_RUN_NAME }}-${{ matrix.pact_path }}",
+            "pact-b64": "${{ steps.encode-pact.outputs.pact-b64 }}",
             "repo-owner": "${{ github.repository_owner }}",
             "repo-name": "${{ github.event.repository.name }}",
             "repo-branch": "${{ needs.init-github-context.outputs.repo-branch }}"
