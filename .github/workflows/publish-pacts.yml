@@ -8,7 +8,6 @@ on:
     branches:
       - main
       - aj-1188-tdr-consumer
-      - iv-multiple-pacts-demo
     paths-ignore: [ '**.md' ]
 
 env:
@@ -76,14 +75,12 @@ jobs:
           # Locate .json pact files in $pactOutputDir
           pactPaths=($(find "${{ env.PACTS_OUTPUT_DIR }}" -type f -name "*.json"))
 
-          # Put the pact file paths in JSON string
-          # pactPathsJson="["
+          # Put the B64-encoded pacts in JSON string
           pactsB64="["
 
-          # Loop through $pactPaths and append its elements to JSON string
+          # Loop through $pactPaths and encode the corresponding pact
           for path in "${pactPaths[@]}"; do
             nonBreakingB64=$(cat "$path" | base64 -w 0)
-            # pactPathsJson="${pactPathsJson}\"$path\", "
             pactsB64="${pactsB64}\"$nonBreakingB64\", "
           done
 
@@ -101,8 +98,18 @@ jobs:
         pact_b64: ${{ fromJson(needs.run-consumer-contract-tests.outputs.pacts-b64) }}
 
     steps:
-      - name: Echo pacts
-        run: |
-          echo "${{ matrix.pact_b64 }}" | base64 --decode
-
-
+      - name: Dispatch to terra-github-workflows
+        uses: broadinstitute/workflow-dispatch@v4.0.0
+        with:
+          run-name: ${{ env.PUBLISH_CONTRACT_RUN_NAME }}
+          workflow: .github/workflows/publish-contracts.yaml
+          repo: broadinstitute/terra-github-workflows
+          ref: refs/heads/main
+          token: ${{ secrets.BROADBOT_TOKEN }} # github token for access to kick off a job in the private repo
+          inputs: '{
+            "run-name": "${{ env.PUBLISH_CONTRACT_RUN_NAME }}",
+            "pact-b64": "${{ matrix.pact_b64 }}",
+            "repo-owner": "${{ github.repository_owner }}",
+            "repo-name": "${{ github.event.repository.name }}",
+            "repo-branch": "${{ needs.init-github-context.outputs.repo-branch }}"
+          }'
