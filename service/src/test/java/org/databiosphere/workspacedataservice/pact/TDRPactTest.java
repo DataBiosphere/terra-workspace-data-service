@@ -39,12 +39,12 @@ class TDRPactTest {
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
   }
 
-  static final String dummySnapshotId = "12345678-abc9-012d-3456-e7fab89cd01e";
+  static final UUID dummySnapshotId = UUID.fromString("12345678-abc9-012d-3456-e7fab89cd01e");
 
   @Pact(consumer = "wds", provider = "datarepo")
   public RequestResponsePact noSnapshotPact(PactDslWithProvider builder) {
     return builder
-        .given("snapshot doesn't exist", Map.of("id", dummySnapshotId))
+        .given("snapshot with given id doesn't exist", Map.of("id", dummySnapshotId.toString()))
         .uponReceiving("a snapshot request")
         .path("/api/repository/v1/snapshots/" + dummySnapshotId)
         .query("include=TABLES")
@@ -57,10 +57,12 @@ class TDRPactTest {
   @Pact(consumer = "wds", provider = "datarepo")
   public RequestResponsePact noAccessToSnapshotPact(PactDslWithProvider builder) {
     return builder
-        .given("user does not have access to snapshot")
+        .given(
+            "user does not have access to snapshot with given id",
+            Map.of("id", dummySnapshotId.toString()))
         .uponReceiving("a snapshot request")
         .path("/api/repository/v1/snapshots/" + dummySnapshotId)
-        .query("include=TABLES")
+        .matchQuery("include", "TABLES")
         .method("GET")
         .willRespondWith()
         .status(403)
@@ -72,20 +74,24 @@ class TDRPactTest {
     // Current use of datarepo snapshot only relies on id and name
     // Future development should update expected response shape to include fields we need
     var snapshotResponseShape =
-        new PactDslJsonBody().stringValue("id", dummySnapshotId).stringType("name");
+        new PactDslJsonBody().stringValue("id", dummySnapshotId.toString()).stringType("name");
     return builder
-        .given("user has access to snapshot")
+        .given(
+            "user has access to snapshot with given id", Map.of("id", dummySnapshotId.toString()))
         .uponReceiving("a snapshot request")
         .path("/api/repository/v1/snapshots/" + dummySnapshotId)
         .query("include=TABLES")
         .method("GET")
         .willRespondWith()
         .status(200)
-        .body(newJsonBody(snapshot -> {
-           // toString() only needed if you apply my suggestion to strongly type dummyId
-           snapshot.stringValue("id", dummySnapshotId.toString());
-           snapshot.stringType("name");
-        }).build())
+        .body(
+            newJsonBody(
+                    snapshot -> {
+                      // toString() only needed if you apply my suggestion to strongly type dummyId
+                      snapshot.stringValue("id", dummySnapshotId.toString());
+                      snapshot.stringType("name");
+                    })
+                .build())
         .toPact();
   }
 
@@ -97,7 +103,7 @@ class TDRPactTest {
 
     assertThrows(
         DataRepoException.class,
-        () -> dataRepoDao.getSnapshot(UUID.fromString("12345678-abc9-012d-3456-e7fab89cd01e")),
+        () -> dataRepoDao.getSnapshot(dummySnapshotId),
         "nonexistent snapshot should return 404");
   }
 
@@ -109,7 +115,7 @@ class TDRPactTest {
 
     assertThrows(
         DataRepoException.class,
-        () -> dataRepoDao.getSnapshot(UUID.fromString("12345678-abc9-012d-3456-e7fab89cd01e")),
+        () -> dataRepoDao.getSnapshot(dummySnapshotId),
         "nonexistent snapshot should return 403");
   }
 
@@ -119,11 +125,10 @@ class TDRPactTest {
     DataRepoClientFactory clientFactory = new HttpDataRepoClientFactory(mockServer.getUrl());
     DataRepoDao dataRepoDao = new DataRepoDao(clientFactory);
 
-    SnapshotModel snapshot =
-        dataRepoDao.getSnapshot(UUID.fromString("12345678-abc9-012d-3456-e7fab89cd01e"));
+    SnapshotModel snapshot = dataRepoDao.getSnapshot(dummySnapshotId);
     assertNotNull(snapshot, "Snapshot request should return a snapshot");
     assertNotNull(snapshot.getId(), "Snapshot response should have an id");
     assertNotNull(snapshot.getName(), "Snapshot response should have a name");
-    assertEquals(UUID.fromString(dummySnapshotId), snapshot.getId());
+    assertEquals(dummySnapshotId, snapshot.getId());
   }
 }
