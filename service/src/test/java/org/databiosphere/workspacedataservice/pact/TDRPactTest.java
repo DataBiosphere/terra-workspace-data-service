@@ -81,7 +81,11 @@ class TDRPactTest {
         .method("GET")
         .willRespondWith()
         .status(200)
-        .body(snapshotResponseShape)
+        .body(newJsonBody(snapshot -> {
+           // toString() only needed if you apply my suggestion to strongly type dummyId
+           snapshot.stringValue("id", dummySnapshotId.toString());
+           snapshot.stringType("name");
+        }).build())
         .toPact();
   }
 
