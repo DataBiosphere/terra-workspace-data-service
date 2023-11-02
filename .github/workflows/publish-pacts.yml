@@ -69,13 +69,13 @@ jobs:
       - name: Run consumer tests
         run: ./gradlew pactTests
 
-      - name: Locate all pact json files and retain their paths in pact-paths
+      - name: Locate all pact json files and output Base64-encoded pacts
         id: locate-pacts
         run: |
           # Locate .json pact files in $pactOutputDir
           pactPaths=($(find "${{ env.PACTS_OUTPUT_DIR }}" -type f -name "*.json"))
 
-          # Put the B64-encoded pacts in JSON string
+          # Put the Base64-encoded pacts in JSON string
           pactsB64="["
 
           # Loop through $pactPaths and encode the corresponding pact
