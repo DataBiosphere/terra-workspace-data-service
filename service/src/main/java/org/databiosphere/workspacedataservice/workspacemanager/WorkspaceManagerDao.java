@@ -15,6 +15,15 @@ import org.slf4j.LoggerFactory;
 
 public class WorkspaceManagerDao {
   public static final String INSTANCE_NAME = "terra";
+
+  /**
+   * indicates the purpose of a snapshot reference - e.g. is it created for the sole purpose of
+   * linking policies.
+   */
+  public static final String PROP_PURPOSE = "purpose";
+
+  public static final String PURPOSE_POLICY = "policy";
+
   private final WorkspaceManagerClientFactory workspaceManagerClientFactory;
   private final String workspaceId;
   private final RestClientRetry restClientRetry;
@@ -29,11 +38,21 @@ public class WorkspaceManagerDao {
     this.restClientRetry = restClientRetry;
   }
 
-  /** Creates a snapshot reference in workspaces manager and creates policy linkages. */
-  public void createDataRepoSnapshotReference(SnapshotModel snapshotModel) {
+  /** Creates a snapshot reference in workspace manager for the sole purpose of policy linkages. */
+  public void linkSnapshotForPolicy(SnapshotModel snapshotModel) {
+    Properties properties = null;
+    Property policyProperty = new Property();
+    policyProperty.setKey(PROP_PURPOSE);
+    policyProperty.setValue(PURPOSE_POLICY);
+    properties = new Properties();
+    properties.add(policyProperty);
+    createDataRepoSnapshotReference(snapshotModel, properties);
+  }
+
+  /* Creates a snapshot reference in workspace manager. */
+  private void createDataRepoSnapshotReference(SnapshotModel snapshotModel, Properties properties) {
     final ReferencedGcpResourceApi resourceApi =
         this.workspaceManagerClientFactory.getReferencedGcpResourceApi(null);
-
     String timeStamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new java.util.Date());
     RestCall<Object> createSnapshotFunction =
         () ->
@@ -46,6 +65,7 @@ public class WorkspaceManagerDao {
                     .metadata(
                         new ReferenceResourceCommonFields()
                             .cloningInstructions(CloningInstructionsEnum.REFERENCE)
+                            .properties(properties)
                             .name("%s_%s".formatted(snapshotModel.getName(), timeStamp))),
                 UUID.fromString(workspaceId));
     restClientRetry.withRetryAndErrorHandling(
@@ -56,7 +76,12 @@ public class WorkspaceManagerDao {
       throws ApiException {
     // get a page of results from WSM
     return enumerateResources(
-        workspaceId, offset, limit, ResourceType.DATA_REPO_SNAPSHOT, StewardshipType.REFERENCED);
+        workspaceId,
+        offset,
+        limit,
+        ResourceType.DATA_REPO_SNAPSHOT,
+        StewardshipType.REFERENCED,
+        null);
   }
 
   /** Retrieves the azure storage container url and sas token for a given workspace. */
@@ -68,7 +93,8 @@ public class WorkspaceManagerDao {
       LOGGER.debug(
           "Finding storage resource for workspace {} from Workspace Manager ...", workspaceUUID);
       ResourceList resourceList =
-          enumerateResources(workspaceUUID, 0, 5, ResourceType.AZURE_STORAGE_CONTAINER, null);
+          enumerateResources(
+              workspaceUUID, 0, 5, ResourceType.AZURE_STORAGE_CONTAINER, null, authToken);
       // note: it is possible a workspace may have more than one storage container associated with
       // it
       // but currently there is no way to tell which one is the primary except for checking the
@@ -107,13 +133,15 @@ public class WorkspaceManagerDao {
     return null;
   }
 
-  private ResourceList enumerateResources(
+  ResourceList enumerateResources(
       UUID workspaceId,
       int offset,
       int limit,
       ResourceType resourceType,
-      StewardshipType stewardshipType) {
-    ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi(null);
+      StewardshipType stewardshipType,
+      String authToken)
+      throws ApiException {
+    ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi(authToken);
     RestCall<ResourceList> enumerateResourcesFunction =
         () ->
             resourceApi.enumerateResources(

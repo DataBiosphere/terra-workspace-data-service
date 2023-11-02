@@ -50,7 +50,7 @@ class PfbQuartzJobTest {
     // capture calls
     ArgumentCaptor<SnapshotModel> argumentCaptor = ArgumentCaptor.forClass(SnapshotModel.class);
     // should have called WSM's create-snapshot-reference 10 times
-    verify(wsmDao, times(input.size())).createDataRepoSnapshotReference(argumentCaptor.capture());
+    verify(wsmDao, times(input.size())).linkSnapshotForPolicy(argumentCaptor.capture());
     // those 10 calls should have used our 10 input UUIDs
     List<SnapshotModel> actualModels = argumentCaptor.getAllValues();
     List<UUID> actualUuids = actualModels.stream().map(SnapshotModel::getId).toList();
@@ -75,7 +75,7 @@ class PfbQuartzJobTest {
         new PfbQuartzJob(jobDao, wsmDao, restClientRetry, UUID.randomUUID());
     pfbQuartzJob.linkSnapshots(input);
     // should not call WSM's create-snapshot-reference at all
-    verify(wsmDao, times(0)).createDataRepoSnapshotReference(any());
+    verify(wsmDao, times(0)).linkSnapshotForPolicy(any());
   }
 
   @Test
@@ -104,8 +104,7 @@ class PfbQuartzJobTest {
     // should call WSM's create-snapshot-reference only for the references that didn't already exist
     int expectedCallCount = input.size() - resourceDescriptions.size();
     ArgumentCaptor<SnapshotModel> argumentCaptor = ArgumentCaptor.forClass(SnapshotModel.class);
-    verify(wsmDao, times(expectedCallCount))
-        .createDataRepoSnapshotReference(argumentCaptor.capture());
+    verify(wsmDao, times(expectedCallCount)).linkSnapshotForPolicy(argumentCaptor.capture());
     List<UUID> actual = argumentCaptor.getAllValues().stream().map(SnapshotModel::getId).toList();
     actual.forEach(
         id ->
