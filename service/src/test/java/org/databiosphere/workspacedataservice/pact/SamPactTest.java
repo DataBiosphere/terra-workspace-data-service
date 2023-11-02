@@ -14,9 +14,10 @@ import au.com.dius.pact.core.model.annotations.Pact;
 import java.util.Map;
 import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.*;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
-import org.databiosphere.workspacedataservice.service.model.exception.SamServerException;
+import org.databiosphere.workspacedataservice.service.model.exception.RestServerException;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -37,7 +38,7 @@ class SamPactTest {
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact statusApiPact(PactDslWithProvider builder) {
     return builder
         .given("Sam is ok")
@@ -50,7 +51,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact downStatusApiPact(PactDslWithProvider builder) {
     return builder
         .given("Sam is not ok")
@@ -63,7 +64,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact writeNoPermissionPact(PactDslWithProvider builder) {
     return builder
         .given("user does not have write permission", Map.of("dummyResourceId", dummyResourceId))
@@ -78,7 +79,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact writePermissionPact(PactDslWithProvider builder) {
     return builder
         .given("user has write permission", Map.of("dummyResourceId", dummyResourceId))
@@ -93,7 +94,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact deletePermissionPact(PactDslWithProvider builder) {
     return builder
         .given("user has delete permission", Map.of("dummyResourceId", dummyResourceId))
@@ -108,7 +109,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact deleteNoPermissionPact(PactDslWithProvider builder) {
     return builder
         .given("user does not have delete permission", Map.of("dummyResourceId", dummyResourceId))
@@ -123,7 +124,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact userStatusPact(PactDslWithProvider builder) {
     var userResponseShape =
         new PactDslJsonBody()
@@ -142,7 +143,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact noUserStatusPact(PactDslWithProvider builder) {
     return builder
         .given("user status info request without access token")
@@ -154,7 +155,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds-consumer", provider = "sam-provider")
+  @Pact(consumer = "wds", provider = "sam")
   public RequestResponsePact petTokenPact(PactDslWithProvider builder) {
     PactDslJsonRootValue responseBody = PactDslJsonRootValue.stringType("aToken");
 
@@ -177,7 +178,7 @@ class SamPactTest {
   void testSamServiceStatusCheck(MockServer mockServer) {
     SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
     SamDao samDao =
-        new HttpSamDao(clientFactory, new HttpSamClientSupport(), UUID.randomUUID().toString());
+        new HttpSamDao(clientFactory, new RestClientRetry(), UUID.randomUUID().toString());
 
     SystemStatus samStatus = samDao.getSystemStatus();
     assertTrue(samStatus.getOk());
@@ -188,9 +189,9 @@ class SamPactTest {
   void testSamServiceDown(MockServer mockServer) {
     SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
     SamDao samDao =
-        new HttpSamDao(clientFactory, new HttpSamClientSupport(), UUID.randomUUID().toString());
+        new HttpSamDao(clientFactory, new RestClientRetry(), UUID.randomUUID().toString());
     assertThrows(
-        SamServerException.class, () -> samDao.getSystemStatus(), "down Sam should throw 500");
+        RestServerException.class, () -> samDao.getSystemStatus(), "down Sam should throw 500");
   }
 
   @Test
@@ -198,7 +199,7 @@ class SamPactTest {
   void testSamServiceUserStatusInfo(MockServer mockServer) {
     SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
     SamDao samDao =
-        new HttpSamDao(clientFactory, new HttpSamClientSupport(), UUID.randomUUID().toString());
+        new HttpSamDao(clientFactory, new RestClientRetry(), UUID.randomUUID().toString());
     String userId = samDao.getUserId("accessToken");
     assertNotNull(userId);
   }
@@ -208,7 +209,7 @@ class SamPactTest {
   void testSamServiceNoUser(MockServer mockServer) {
     SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
     SamDao samDao =
-        new HttpSamDao(clientFactory, new HttpSamClientSupport(), UUID.randomUUID().toString());
+        new HttpSamDao(clientFactory, new RestClientRetry(), UUID.randomUUID().toString());
     assertThrows(
         AuthenticationException.class,
         () -> samDao.getUserId(null),
@@ -219,7 +220,7 @@ class SamPactTest {
   @PactTestFor(pactMethod = "deleteNoPermissionPact", pactVersion = PactSpecVersion.V3)
   void testSamDeleteNoPermission(MockServer mockServer) {
     SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
-    SamDao samDao = new HttpSamDao(clientFactory, new HttpSamClientSupport(), dummyResourceId);
+    SamDao samDao = new HttpSamDao(clientFactory, new RestClientRetry(), dummyResourceId);
 
     assertFalse(samDao.hasDeleteInstancePermission());
   }
@@ -228,7 +229,7 @@ class SamPactTest {
   @PactTestFor(pactMethod = "deletePermissionPact", pactVersion = PactSpecVersion.V3)
   void testSamDeletePermission(MockServer mockServer) {
     SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
-    SamDao samDao = new HttpSamDao(clientFactory, new HttpSamClientSupport(), dummyResourceId);
+    SamDao samDao = new HttpSamDao(clientFactory, new RestClientRetry(), dummyResourceId);
 
     assertTrue(samDao.hasDeleteInstancePermission());
   }
@@ -237,7 +238,7 @@ class SamPactTest {
   @PactTestFor(pactMethod = "writeNoPermissionPact", pactVersion = PactSpecVersion.V3)
   void testSamWriteNoPermission(MockServer mockServer) {
     SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
-    SamDao samDao = new HttpSamDao(clientFactory, new HttpSamClientSupport(), dummyResourceId);
+    SamDao samDao = new HttpSamDao(clientFactory, new RestClientRetry(), dummyResourceId);
 
     assertFalse(samDao.hasWriteInstancePermission());
   }
@@ -246,7 +247,7 @@ class SamPactTest {
   @PactTestFor(pactMethod = "writePermissionPact", pactVersion = PactSpecVersion.V3)
   void testSamWritePermission(MockServer mockServer) {
     SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
-    SamDao samDao = new HttpSamDao(clientFactory, new HttpSamClientSupport(), dummyResourceId);
+    SamDao samDao = new HttpSamDao(clientFactory, new RestClientRetry(), dummyResourceId);
 
     assertTrue(samDao.hasWriteInstancePermission());
   }
@@ -256,7 +257,7 @@ class SamPactTest {
   void testPetToken(MockServer mockServer) {
     SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
     SamDao samDao =
-        new HttpSamDao(clientFactory, new HttpSamClientSupport(), UUID.randomUUID().toString());
+        new HttpSamDao(clientFactory, new RestClientRetry(), UUID.randomUUID().toString());
     String petToken = samDao.getPetToken();
     assertNotNull(petToken);
   }

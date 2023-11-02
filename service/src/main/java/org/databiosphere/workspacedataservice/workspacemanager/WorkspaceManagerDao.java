@@ -13,6 +13,15 @@ import org.slf4j.LoggerFactory;
 
 public class WorkspaceManagerDao {
   public static final String INSTANCE_NAME = "terra";
+
+  /**
+   * indicates the purpose of a snapshot reference - e.g. is it created for the sole purpose of
+   * linking policies.
+   */
+  public static final String PROP_PURPOSE = "purpose";
+
+  public static final String PURPOSE_POLICY = "policy";
+
   private final WorkspaceManagerClientFactory workspaceManagerClientFactory;
   private final String workspaceId;
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkspaceManagerDao.class);
@@ -23,8 +32,19 @@ public class WorkspaceManagerDao {
     this.workspaceId = workspaceId;
   }
 
-  /** Creates a snapshot reference in workspaces manager and creates policy linkages. */
-  public void createDataRepoSnapshotReference(SnapshotModel snapshotModel) {
+  /** Creates a snapshot reference in workspace manager for the sole purpose of policy linkages. */
+  public void linkSnapshotForPolicy(SnapshotModel snapshotModel) {
+    Properties properties = null;
+    Property policyProperty = new Property();
+    policyProperty.setKey(PROP_PURPOSE);
+    policyProperty.setValue(PURPOSE_POLICY);
+    properties = new Properties();
+    properties.add(policyProperty);
+    createDataRepoSnapshotReference(snapshotModel, properties);
+  }
+
+  /* Creates a snapshot reference in workspace manager. */
+  private void createDataRepoSnapshotReference(SnapshotModel snapshotModel, Properties properties) {
     final ReferencedGcpResourceApi resourceApi =
         this.workspaceManagerClientFactory.getReferencedGcpResourceApi(null);
 
@@ -39,6 +59,7 @@ public class WorkspaceManagerDao {
               .metadata(
                   new ReferenceResourceCommonFields()
                       .cloningInstructions(CloningInstructionsEnum.REFERENCE)
+                      .properties(properties)
                       .name("%s_%s".formatted(snapshotModel.getName(), timeStamp))),
           UUID.fromString(workspaceId));
     } catch (ApiException e) {
@@ -46,9 +67,20 @@ public class WorkspaceManagerDao {
     }
   }
 
+  public ResourceList enumerateDataRepoSnapshotReferences(UUID workspaceId, int offset, int limit)
+      throws ApiException {
+    // get a page of results from WSM
+    return enumerateResources(
+        workspaceId,
+        offset,
+        limit,
+        ResourceType.DATA_REPO_SNAPSHOT,
+        StewardshipType.REFERENCED,
+        null);
+  }
+
   /** Retrieves the azure storage container url and sas token for a given workspace. */
   public String getBlobStorageUrl(String storageWorkspaceId, String authToken) {
-    final ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi(authToken);
     final ControlledAzureResourceApi azureResourceApi =
         this.workspaceManagerClientFactory.getAzureResourceApi(authToken);
     int count = 0;
@@ -59,8 +91,8 @@ public class WorkspaceManagerDao {
         LOGGER.debug(
             "Finding storage resource for workspace {} from Workspace Manager ...", workspaceUUID);
         ResourceList resourceList =
-            resourceApi.enumerateResources(
-                workspaceUUID, 0, 5, ResourceType.AZURE_STORAGE_CONTAINER, null);
+            enumerateResources(
+                workspaceUUID, 0, 5, ResourceType.AZURE_STORAGE_CONTAINER, null, authToken);
         // note: it is possible a workspace may have more than one storage container associated with
         // it
         // but currently there is no way to tell which one is the primary except for checking the
@@ -93,5 +125,19 @@ public class WorkspaceManagerDao {
       return resourceStorage.getMetadata().getResourceId();
     }
     return null;
+  }
+
+  ResourceList enumerateResources(
+      UUID workspaceId,
+      int offset,
+      int limit,
+      ResourceType resourceType,
+      StewardshipType stewardshipType,
+      String authToken)
+      throws ApiException {
+    ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi(authToken);
+    // TODO: retries
+    return resourceApi.enumerateResources(
+        workspaceId, offset, limit, resourceType, stewardshipType);
   }
 }

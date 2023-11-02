@@ -23,7 +23,7 @@ public class HttpWorkspaceDataServiceClientFactory implements WorkspaceDataServi
         new ApiClient().getHttpClient().newBuilder().protocols(List.of(Protocol.HTTP_1_1)).build();
   }
 
-  private ApiClient getApiClient(String authToken, String workspaceDataServiceUrl) {
+  ApiClient getApiClient(String authToken, String workspaceDataServiceUrl) {
     // create a new client
     ApiClient apiClient = new ApiClient();
     apiClient.setHttpClient(commonHttpClient);
@@ -40,7 +40,7 @@ public class HttpWorkspaceDataServiceClientFactory implements WorkspaceDataServi
     // add the user's bearer token to the client
     if (token.nonEmpty()) {
       LOGGER.debug("setting access token for workspace data service request");
-      apiClient.setAccessToken(token.getValue());
+      apiClient.setBearerToken(token.getValue());
     } else {
       LOGGER.warn("No access token found for workspace data service request.");
     }

@@ -66,6 +66,7 @@ class PermissionsStatusServiceTest {
     samStatusService.doHealthCheck(mockHealthBuilder);
     verify(mockHealthBuilder, times(1))
         .withDetail(
-            "samConnectionError", "500 INTERNAL_SERVER_ERROR \"Error from Sam: Hey SAM is down!\"");
+            "samConnectionError",
+            "500 INTERNAL_SERVER_ERROR \"Error from Sam.getSystemStatus REST target: Hey SAM is down!\"");
   }
 }
