@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.pact;
 
+import static au.com.dius.pact.consumer.dsl.LambdaDsl.newJsonBody;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -87,7 +88,6 @@ class TDRPactTest {
         .body(
             newJsonBody(
                     snapshot -> {
-                      // toString() only needed if you apply my suggestion to strongly type dummyId
                       snapshot.stringValue("id", dummySnapshotId.toString());
                       snapshot.stringType("name");
                     })
