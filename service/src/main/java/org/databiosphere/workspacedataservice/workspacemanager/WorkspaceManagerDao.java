@@ -33,10 +33,8 @@ public class WorkspaceManagerDao {
 
   /** Creates a snapshot reference in workspaces manager and creates policy linkages. */
   public void createDataRepoSnapshotReference(SnapshotModel snapshotModel) {
-    RestCall<ReferencedGcpResourceApi> gcpResourceApiFunction =
-        () -> this.workspaceManagerClientFactory.getReferencedGcpResourceApi(null);
-    ReferencedGcpResourceApi resourceApi =
-        restClientRetry.withRetryAndErrorHandling(gcpResourceApiFunction, "WSM.gcpResourceApi");
+    final ReferencedGcpResourceApi resourceApi =
+        this.workspaceManagerClientFactory.getReferencedGcpResourceApi(null);
 
     String timeStamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new java.util.Date());
     RestCall<Object> createSnapshotFunction =
@@ -66,11 +64,8 @@ public class WorkspaceManagerDao {
   /** Retrieves the azure storage container url and sas token for a given workspace. */
   public String getBlobStorageUrl(String storageWorkspaceId, String authToken) {
     try {
-      RestCall<ControlledAzureResourceApi> azureResourceApiFunction =
-          () -> this.workspaceManagerClientFactory.getAzureResourceApi(authToken);
-      ControlledAzureResourceApi azureResourceApi =
-          restClientRetry.withRetryAndErrorHandling(
-              azureResourceApiFunction, "WSM.azureResourceApi");
+      final ControlledAzureResourceApi azureResourceApi =
+          this.workspaceManagerClientFactory.getAzureResourceApi(authToken);
       UUID workspaceUUID = UUID.fromString(storageWorkspaceId);
       LOGGER.debug(
           "Finding storage resource for workspace {} from Workspace Manager ...", workspaceUUID);
@@ -119,10 +114,7 @@ public class WorkspaceManagerDao {
       int limit,
       ResourceType resourceType,
       StewardshipType stewardshipType) {
-    RestCall<ResourceApi> resourceApiFunction =
-        () -> this.workspaceManagerClientFactory.getResourceApi(null);
-    ResourceApi resourceApi =
-        restClientRetry.withRetryAndErrorHandling(resourceApiFunction, "WSM.resourceApi");
+    ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi(null);
     RestCall<ResourceList> enumerateResourcesFunction =
         () ->
             resourceApi.enumerateResources(

@@ -5,7 +5,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.broadinstitute.dsde.workbench.client.leonardo.api.AppsApi;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.AppStatus;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.AppType;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.ListAppResponse;
@@ -30,8 +29,7 @@ public class LeonardoDao {
 
   /** Asks leo to return apps running in a given workspace setting. */
   public String getWdsEndpointUrl(String token) {
-    RestCall<AppsApi> getAppsFunction = () -> this.leonardoClientFactory.getAppsV2Api(token);
-    var workspaceApps = restClientRetry.withRetryAndErrorHandling(getAppsFunction, "Leo.getApps");
+    var workspaceApps = this.leonardoClientFactory.getAppsV2Api(token);
     RestCall<List<ListAppResponse>> listAppsFunction =
         () -> workspaceApps.listAppsV2(workspaceId, null, false, null);
     List<ListAppResponse> response =
