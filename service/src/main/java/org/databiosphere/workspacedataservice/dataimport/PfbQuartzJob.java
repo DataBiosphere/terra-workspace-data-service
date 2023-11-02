@@ -109,11 +109,9 @@ public class PfbQuartzJob extends QuartzJob {
 
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
-      // TODO should "id" be a static variable
       BatchWriteResult result =
           batchWriteService.batchWritePfbStream(dataStream, workspaceId, Optional.of("id"));
 
-      // TODO does this work
       result.entrySet().stream()
           .forEach(
               entry -> {
@@ -124,7 +122,7 @@ public class PfbQuartzJob extends QuartzJob {
                         user.upserted().record().withRecordType(recordType).ofQuantity(quantity));
               });
 
-    } catch (IOException e) {
+    } catch (Exception e) {
       throw new PfbParsingException("Error processing PFB", e);
     }
   }

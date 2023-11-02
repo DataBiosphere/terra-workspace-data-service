@@ -50,11 +50,23 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
     for (Schema.Field field : fields) {
       String fieldName = field.name();
       Object value =
-          objectAttributes.get(fieldName) == null ? null : objectAttributes.get(fieldName);
+          objectAttributes.get(fieldName) == null
+              ? null
+              : convertAttributeType(objectAttributes.get(fieldName));
       attributes.putAttribute(fieldName, value);
     }
     converted.setAttributes(attributes);
     return converted;
+  }
+
+  private Object convertAttributeType(Object attribute) {
+    if (attribute == null) {
+      return null;
+    }
+    if (attribute instanceof Long /*or other number*/) {
+      return attribute;
+    }
+    return attribute.toString(); // easier for the datatype inferrer to parse
   }
 
   @Override
