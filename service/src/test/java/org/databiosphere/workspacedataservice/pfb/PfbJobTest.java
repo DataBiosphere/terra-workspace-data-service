@@ -21,6 +21,7 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.PfbQuartzJob;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
@@ -72,6 +73,9 @@ class PfbJobTest {
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
+    // We're not testing this so it doesn't matter what returns
+    when(batchWriteService.batchWritePfbStream(any(), any(), any()))
+        .thenReturn(BatchWriteResult.empty());
 
     new PfbQuartzJob(
             jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID())
@@ -106,6 +110,9 @@ class PfbJobTest {
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
+    // We're not testing this so it doesn't matter what returns
+    when(batchWriteService.batchWritePfbStream(any(), any(), any()))
+        .thenReturn(BatchWriteResult.empty());
 
     new PfbQuartzJob(
             jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID())
