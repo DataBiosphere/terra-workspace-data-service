@@ -73,7 +73,7 @@ jobs:
         id: locate-pacts
         run: |
           # Locate .json pact files in $pactOutputDir
-          pactPaths=($(find "${{ env.WDS_ }}" -type f -name "*.json"))
+          pactPaths=($(find "${{ env.WDS_PACTS_OUTPUT_DIR }}" -type f -name "*.json"))
 
           # Put the Base64-encoded pacts in JSON string
           pactPathsJson="["
@@ -92,7 +92,7 @@ jobs:
         with:
           name: ${{ env.WDS_PACTS_ARTIFACT }}
           path: |
-            ${{ env.WDS_ }}
+            ${{ env.WDS_PACTS_OUTPUT_DIR }}
           retention-days: 1
 
   publish-pacts-job:
@@ -108,7 +108,7 @@ jobs:
         with:
           name: ${{ env.WDS_PACTS_ARTIFACT }}
           path: |
-            ${{ env.WDS_ }}
+            ${{ env.WDS_PACTS_OUTPUT_DIR }}
 
       - name: Encode pact as non-breaking base64 string
         id: encode-pact
