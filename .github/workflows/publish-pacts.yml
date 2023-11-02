@@ -8,7 +8,6 @@ on:
     branches:
       - main
       - aj-1188-tdr-consumer
-      - iv-multiple-pacts-demo
     paths-ignore: [ '**.md' ]
 
 env:
@@ -81,15 +80,12 @@ jobs:
 
           # Loop through $pactPaths and encode the corresponding pact
           for path in "${pactPaths[@]}"; do
-            # nonBreakingB64=$(cat "$path" | base64 -w 0)
             pactPathsJson="${pactPathsJson}\"$path\", "
           done
 
           pactPathsJson="${pactPathsJson%, }]"
-          # pactsB64="${pactsB64%, }]"
 
           echo "pact-paths=$pactPathsJson" >> $GITHUB_OUTPUT
-          # echo "pacts-b64=$pactsB64" >> $GITHUB_OUTPUT
 
       - name: Upload pact files to artifact
         id: upload-pacts
