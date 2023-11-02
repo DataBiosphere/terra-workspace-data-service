@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.pact;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -12,6 +13,7 @@ import au.com.dius.pact.core.model.PactSpecVersion;
 import au.com.dius.pact.core.model.RequestResponsePact;
 import au.com.dius.pact.core.model.annotations.Pact;
 import bio.terra.datarepo.model.SnapshotModel;
+import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.datarepo.DataRepoClientFactory;
 import org.databiosphere.workspacedataservice.datarepo.DataRepoDao;
@@ -42,9 +44,9 @@ class TDRPactTest {
   @Pact(consumer = "wds", provider = "datarepo")
   public RequestResponsePact noSnapshotPact(PactDslWithProvider builder) {
     return builder
-        .given("snapshot doesn't exist")
+        .given("snapshot doesn't exist", Map.of("id", dummySnapshotId))
         .uponReceiving("a snapshot request")
-        .path("/api/repository/v1/snapshots/12345678-abc9-012d-3456-e7fab89cd01e")
+        .path("/api/repository/v1/snapshots/" + dummySnapshotId)
         .query("include=TABLES")
         .method("GET")
         .willRespondWith()
@@ -57,7 +59,7 @@ class TDRPactTest {
     return builder
         .given("user does not have access to snapshot")
         .uponReceiving("a snapshot request")
-        .path("/api/repository/v1/snapshots/12345678-abc9-012d-3456-e7fab89cd01e")
+        .path("/api/repository/v1/snapshots/" + dummySnapshotId)
         .query("include=TABLES")
         .method("GET")
         .willRespondWith()
@@ -74,7 +76,7 @@ class TDRPactTest {
     return builder
         .given("user has access to snapshot")
         .uponReceiving("a snapshot request")
-        .path("/api/repository/v1/snapshots/12345678-abc9-012d-3456-e7fab89cd01e")
+        .path("/api/repository/v1/snapshots/" + dummySnapshotId)
         .query("include=TABLES")
         .method("GET")
         .willRespondWith()
@@ -118,5 +120,6 @@ class TDRPactTest {
     assertNotNull(snapshot, "Snapshot request should return a snapshot");
     assertNotNull(snapshot.getId(), "Snapshot response should have an id");
     assertNotNull(snapshot.getName(), "Snapshot response should have a name");
+    assertEquals(UUID.fromString(dummySnapshotId), snapshot.getId());
   }
 }
