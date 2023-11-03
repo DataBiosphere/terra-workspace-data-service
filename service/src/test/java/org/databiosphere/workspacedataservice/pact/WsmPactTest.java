@@ -17,6 +17,7 @@ import bio.terra.workspace.model.CloningInstructionsEnum;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.workspacemanager.HttpWorkspaceManagerClientFactory;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerClientFactory;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
@@ -139,7 +140,7 @@ public class WsmPactTest {
   private WorkspaceManagerDao buildWsmDao(MockServer mockServer) {
     WorkspaceManagerClientFactory clientFactory =
         new HttpWorkspaceManagerClientFactory(mockServer.getUrl());
-    return new WorkspaceManagerDao(clientFactory, WORKSPACE_UUID.toString());
+    return new WorkspaceManagerDao(clientFactory, WORKSPACE_UUID.toString(), new RestClientRetry());
   }
 
   private DslPart createSnapshotReferenceBody(String snapshotName) {
