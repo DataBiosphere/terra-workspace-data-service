@@ -215,7 +215,6 @@ class BatchWriteServiceTest {
       expectedAttributes2.putAll(bonusAttributes);
       RecordType expectedRecordType2 = RecordType.valueOf("submitted_aligned_reads");
       Record expectedRecord2 = new Record("HG01101_cram", expectedRecordType2, expectedAttributes2);
-      // TODO deal with data types, setting them to what actually happens for now
       Map<String, DataTypeMapping> schemaValues1 =
           Map.of(
               "file_format", DataTypeMapping.STRING,

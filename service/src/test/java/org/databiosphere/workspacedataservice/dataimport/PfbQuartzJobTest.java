@@ -214,37 +214,6 @@ class PfbQuartzJobTest {
     verify(jobDao).succeeded(jobId);
   }
 
-  @Test
-  void pfbTablesAreSaved() throws JobExecutionException, ApiException {
-    JobExecutionContext mockContext = mock(JobExecutionContext.class);
-    URL resourceUrl = getClass().getResource("/two_tables.avro");
-    when(mockContext.getMergedJobDataMap())
-        .thenReturn(
-            new JobDataMap(
-                Map.of(
-                    ARG_TOKEN,
-                    "expectedToken",
-                    ARG_URL,
-                    resourceUrl.toString(),
-                    ARG_INSTANCE,
-                    INSTANCE)));
-
-    JobDetailImpl jobDetail = new JobDetailImpl();
-    UUID jobId = UUID.randomUUID();
-    jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
-    when(mockContext.getJobDetail()).thenReturn(jobDetail);
-
-    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new ResourceList());
-
-    new PfbQuartzJob(
-            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID())
-        .execute(mockContext);
-  }
-
-  @Test
-  void primaryKeyConflict() {}
-
   private class SnapshotModelMatcher implements ArgumentMatcher<SnapshotModel> {
     private final UUID expectedSnapshotId;
 
