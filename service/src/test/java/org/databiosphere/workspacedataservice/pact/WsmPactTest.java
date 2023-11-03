@@ -102,7 +102,9 @@ public class WsmPactTest {
             newJsonBody(
                     body ->
                         body.stringMatcher(
-                            "message", "^(.*)policy conflict(.*)$", "unexpected policy conflict"))
+                            "message",
+                            "^(.*)(policy|policies)(.*)conflict(.*)$",
+                            "Workspace policies conflict with source"))
                 .build())
         .toPact();
   }
