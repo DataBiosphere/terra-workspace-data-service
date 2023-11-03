@@ -55,7 +55,6 @@ public class BatchWriteService {
     this.recordService = recordService;
   }
 
-  // TODO should the map response be its own object?  BatchResponse?
   /**
    * Responsible for accepting either a JsonStreamWriteHandler or a TsvStreamWriteHandler, looping
    * over the batches of Records found in the handler, and upserting those records.
@@ -80,7 +79,6 @@ public class BatchWriteService {
           !info.getRecords().isEmpty();
           info = streamingWriteHandler.readRecords(batchSize)) {
         List<Record> records = info.getRecords();
-        // TODO is a recordType == null check the best way to do this?
         // If no recordType is given, assume there may be multiple types and sort by type
         if (recordType == null) {
           Map<RecordType, List<Record>> sortedRecords =

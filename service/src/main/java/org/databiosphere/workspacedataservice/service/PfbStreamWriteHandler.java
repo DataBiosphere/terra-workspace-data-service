@@ -37,7 +37,6 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
   }
 
   private Record genericRecordToRecord(GenericRecord genRec) {
-    // TODO ok to use plain strings here so should they be static variables or what?
     Record converted =
         new Record(
             genRec.get("id").toString(),
