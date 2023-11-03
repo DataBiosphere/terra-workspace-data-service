@@ -4,7 +4,6 @@ import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.workspace.api.ControlledAzureResourceApi;
 import bio.terra.workspace.api.ReferencedGcpResourceApi;
 import bio.terra.workspace.api.ResourceApi;
-import bio.terra.workspace.client.ApiException;
 import bio.terra.workspace.model.*;
 import java.text.SimpleDateFormat;
 import java.util.UUID;
@@ -78,8 +77,7 @@ public class WorkspaceManagerDao {
     }
   }
 
-  public ResourceList enumerateDataRepoSnapshotReferences(UUID workspaceId, int offset, int limit)
-      throws ApiException {
+  public ResourceList enumerateDataRepoSnapshotReferences(UUID workspaceId, int offset, int limit) {
     // get a page of results from WSM
     return enumerateResources(
         workspaceId,
