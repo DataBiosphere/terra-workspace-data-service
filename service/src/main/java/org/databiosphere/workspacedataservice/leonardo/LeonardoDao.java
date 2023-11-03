@@ -5,13 +5,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.broadinstitute.dsde.workbench.client.leonardo.ApiException;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.AppStatus;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.AppType;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.ListAppResponse;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
+import org.springframework.http.HttpStatus;
 
 public class LeonardoDao {
   private final LeonardoClientFactory leonardoClientFactory;
@@ -43,9 +43,8 @@ public class LeonardoDao {
         return url;
       }
 
-      throw new ApiException("Did not locate an app running WDS.");
-    } catch (ApiException e) {
-      throw new LeonardoServiceException(e);
+      throw new RestException(
+          HttpStatus.INTERNAL_SERVER_ERROR, "Did not locate an app running WDS.");
     } catch (RestException e) {
       throw new LeonardoServiceException(e);
     }

@@ -18,12 +18,4 @@ public class WorkspaceDataServiceException extends ResponseStatusException {
   public WorkspaceDataServiceException(RestException cause) {
     super(cause.getStatus(), cause.getMessage(), cause);
   }
-
-  // public WorkspaceDataServiceException(AuthenticationException cause) {
-  //   super(cause.getStatus(), cause.getMessage(), cause);
-  // }
-
-  // public WorkspaceDataServiceException(AuthorizationException cause) {
-  //   super(cause.getStatus(), cause.getMessage(), cause);
-  // }
 }
