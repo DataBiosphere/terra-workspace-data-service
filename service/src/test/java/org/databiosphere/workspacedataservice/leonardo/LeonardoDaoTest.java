@@ -18,7 +18,6 @@ import org.broadinstitute.dsde.workbench.client.leonardo.model.AppType;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.AuditInfo;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.ListAppResponse;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
-import org.databiosphere.workspacedataservice.service.model.exception.RestServerException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +56,7 @@ class LeonardoDaoTest {
             new org.broadinstitute.dsde.workbench.client.leonardo.ApiException(
                 statusCode, "Intentional error thrown for unit test"));
     var exception =
-        assertThrows(RestServerException.class, () -> leonardoDao.getWdsEndpointUrl(any()));
+        assertThrows(LeonardoServiceException.class, () -> leonardoDao.getWdsEndpointUrl(any()));
     assertEquals(statusCode, exception.getRawStatusCode());
   }
 
