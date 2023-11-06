@@ -4,12 +4,12 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import org.apache.commons.lang3.StringUtils;
-import org.databiosphere.workspacedata.client.ApiException;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.service.model.exception.CloningException;
+import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpStatus;
 import org.springframework.integration.support.locks.LockRegistry;
 
 public class InstanceInitializerBean {
@@ -245,8 +246,8 @@ public class InstanceInitializerBean {
       }
     } catch (WorkspaceDataServiceException wdsE) {
       if (wdsE.getCause() != null
-          && wdsE.getCause() instanceof ApiException apiException
-          && apiException.getCode() == 404) {
+          && wdsE.getCause() instanceof RestException restException
+          && restException.getStatus() == HttpStatus.NOT_FOUND) {
         LOGGER.error(
             "Remote source WDS in workspace {} does not support cloning", sourceWorkspaceId);
         cloneDao.terminateCloneToError(
