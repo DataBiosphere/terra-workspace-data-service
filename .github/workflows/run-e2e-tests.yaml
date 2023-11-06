@@ -1,4 +1,4 @@
-name: run e2e tests
+name: Run WDS e2e tests with BEE
 'on':
   schedule:
     # run twice a day at 10:00 and 22:00 UTC every day of the week
@@ -41,6 +41,7 @@ jobs:
       - name: dispatch to terra-github-workflows
         uses: broadinstitute/workflow-dispatch@v3
         with:
+          max_attempts: 3
           workflow: bee-create
           repo: broadinstitute/terra-github-workflows
           ref: refs/heads/main
@@ -59,6 +60,7 @@ jobs:
       - name: dispatch to terra-github-workflows
         uses: broadinstitute/workflow-dispatch@v3
         with:
+          max_attempts: 3
           workflow: attach-billing-project-to-landing-zone.yaml
           repo: broadinstitute/terra-github-workflows
           ref: refs/heads/main
@@ -78,6 +80,7 @@ jobs:
       id-token: write
     uses: broadinstitute/dsp-reusable-workflows/.github/workflows/run-e2e-tests.yaml@main
     with:
+      max_attempts: 2
       billing-project-name: '${{ needs.params-gen.outputs.project-name }}'
       bee-name: '${{ needs.params-gen.outputs.bee-name }}'
       branch: main
