@@ -100,8 +100,7 @@ public class WorkspaceManagerDao {
           enumerateResources(
               workspaceUUID, 0, 5, ResourceType.AZURE_STORAGE_CONTAINER, null, authToken);
       // note: it is possible a workspace may have more than one storage container associated with
-      // it
-      // but currently there is no way to tell which one is the primary except for checking the
+      // it but currently there is no way to tell which one is the primary except for checking the
       // actual container name
       var storageUUID = extractResourceId(resourceList, storageWorkspaceId);
       if (storageUUID != null) {
@@ -111,7 +110,12 @@ public class WorkspaceManagerDao {
         RestCall<CreatedAzureStorageContainerSasToken> sasBundleFunction =
             () ->
                 azureResourceApi.createAzureStorageContainerSasToken(
-                    workspaceUUID, storageUUID, null, null, null, null);
+                    workspaceUUID,
+                    storageUUID,
+                    /* sasIpRange= */ null,
+                    /* sasExpirationDuration= */ null,
+                    /* sasPermissions= */ null,
+                    /* sasBlobName= */ null);
         CreatedAzureStorageContainerSasToken sasBundle =
             restClientRetry.withRetryAndErrorHandling(sasBundleFunction, "WSM.sasBundle");
         return sasBundle.getUrl();
