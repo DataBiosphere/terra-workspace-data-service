@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.sourcewds;
 
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -13,7 +14,8 @@ public class WorkspaceDataServiceConfig {
 
   @Bean
   public WorkspaceDataServiceDao workspaceDataServiceDao(
-      WorkspaceDataServiceClientFactory workspaceDataServiceClientFactory) {
-    return new WorkspaceDataServiceDao(workspaceDataServiceClientFactory);
+      WorkspaceDataServiceClientFactory workspaceDataServiceClientFactory,
+      RestClientRetry restClientRetry) {
+    return new WorkspaceDataServiceDao(workspaceDataServiceClientFactory, restClientRetry);
   }
 }

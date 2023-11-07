@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.leonardo;
 
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,7 +25,8 @@ public class LeonardoConfig {
   }
 
   @Bean
-  public LeonardoDao leonardoDao(LeonardoClientFactory leonardoClientFactory) {
-    return new LeonardoDao(leonardoClientFactory, workspaceId);
+  public LeonardoDao leonardoDao(
+      LeonardoClientFactory leonardoClientFactory, RestClientRetry restClientRetry) {
+    return new LeonardoDao(leonardoClientFactory, workspaceId, restClientRetry);
   }
 }
