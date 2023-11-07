@@ -5,6 +5,7 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -13,7 +14,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import bio.terra.datarepo.model.SnapshotModel;
-import bio.terra.workspace.client.ApiException;
 import bio.terra.workspace.model.DataRepoSnapshotAttributes;
 import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
@@ -56,7 +56,7 @@ class PfbQuartzJobTest {
   private static final String INSTANCE = "aaaabbbb-cccc-dddd-1111-222233334444";
 
   @Test
-  void linkAllNewSnapshots() throws ApiException {
+  void linkAllNewSnapshots() {
     // input is a list of 10 UUIDs
     List<UUID> input = IntStream.range(0, 10).mapToObj(i -> UUID.randomUUID()).toList();
     // WSM returns no pre-existing snapshots
@@ -79,7 +79,7 @@ class PfbQuartzJobTest {
   }
 
   @Test
-  void linkNothingWhenAllExist() throws ApiException {
+  void linkNothingWhenAllExist() {
     // input is a list of 10 UUIDs
     List<UUID> input = IntStream.range(0, 10).mapToObj(i -> UUID.randomUUID()).toList();
 
@@ -101,7 +101,7 @@ class PfbQuartzJobTest {
   }
 
   @Test
-  void linkSomeWhenSomeExist() throws ApiException {
+  void linkSomeWhenSomeExist() {
     // input is a list of 10 UUIDs
     List<UUID> input = IntStream.range(0, 10).mapToObj(i -> UUID.randomUUID()).toList();
 
@@ -137,10 +137,11 @@ class PfbQuartzJobTest {
   }
 
   @Test
-  void doNotFailOnMissingSnapshotId() throws JobExecutionException, ApiException {
+  void doNotFailOnMissingSnapshotId() throws JobExecutionException {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
     // This uses a non-TDR file so does not have the snapshotId
     URL resourceUrl = getClass().getResource("/minimal_data.avro");
+    assertNotNull(resourceUrl);
     when(mockContext.getMergedJobDataMap())
         .thenReturn(
             new JobDataMap(
@@ -160,7 +161,7 @@ class PfbQuartzJobTest {
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
-    // We're not testing this so it doesn't matter what returns
+    // We're not testing this, so it doesn't matter what returns
     when(batchWriteService.batchWritePfbStream(any(), any(), any()))
         .thenReturn(BatchWriteResult.empty());
 
@@ -175,9 +176,10 @@ class PfbQuartzJobTest {
   }
 
   @Test
-  void snapshotIdsAreParsed() throws JobExecutionException, ApiException {
+  void snapshotIdsAreParsed() throws JobExecutionException {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
     URL resourceUrl = getClass().getResource("/test.avro");
+    assertNotNull(resourceUrl);
     when(mockContext.getMergedJobDataMap())
         .thenReturn(
             new JobDataMap(
@@ -197,7 +199,7 @@ class PfbQuartzJobTest {
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
-    // We're not testing this so it doesn't matter what returns
+    // We're not testing this, so it doesn't matter what returns
     when(batchWriteService.batchWritePfbStream(any(), any(), any()))
         .thenReturn(BatchWriteResult.empty());
 
@@ -214,12 +216,8 @@ class PfbQuartzJobTest {
     verify(jobDao).succeeded(jobId);
   }
 
-  private class SnapshotModelMatcher implements ArgumentMatcher<SnapshotModel> {
-    private final UUID expectedSnapshotId;
-
-    public SnapshotModelMatcher(UUID expectedSnapshotId) {
-      this.expectedSnapshotId = expectedSnapshotId;
-    }
+  private record SnapshotModelMatcher(UUID expectedSnapshotId)
+      implements ArgumentMatcher<SnapshotModel> {
 
     @Override
     public boolean matches(SnapshotModel exampleSnapshot) {
