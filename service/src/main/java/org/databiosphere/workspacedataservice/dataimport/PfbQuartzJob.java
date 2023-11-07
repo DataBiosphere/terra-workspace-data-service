@@ -135,29 +135,37 @@ public class PfbQuartzJob extends QuartzJob {
    * @param dataStream stream representing the PFB.
    */
   void findAndLinkSnapshots(DataFileStream<GenericRecord> dataStream) {
+    List<UUID> snapshotIds = findSnapshots(dataStream);
+    // link the found snapshots to the workspace, skipping any that were previously linked
+    linkSnapshots(snapshotIds);
+  }
+
+  /**
+   * Given a DataFileStream representing a PFB, find all the unique snapshot ids in the PFB by
+   * looking in the "source_datarepo_snapshot_id" column of each row in the PFB
+   *
+   * @param dataStream stream representing the PFB.
+   * @return unique UUIDs found in the PFB
+   */
+  List<UUID> findSnapshots(DataFileStream<GenericRecord> dataStream) {
     // translate the Avro DataFileStream into a Java stream
     Stream<GenericRecord> recordStream =
         StreamSupport.stream(
             Spliterators.spliteratorUnknownSize(dataStream.iterator(), Spliterator.ORDERED), false);
 
     // process the stream into a list of unique snapshotIds
-    List<UUID> snapshotIds =
-        recordStream
-            .map(rec -> rec.get("object")) // Records in a pfb are stored under the key "object"
-            .filter(GenericRecord.class::isInstance) // which we expect to be a GenericRecord
-            .map(GenericRecord.class::cast)
-            .filter(
-                obj -> obj.hasField(SNAPSHOT_ID_IDENTIFIER)) // avoid exception if field nonexistent
-            .map(obj -> obj.get(SNAPSHOT_ID_IDENTIFIER)) // within the GenericRecord, find the
-            // source_datarepo_snapshot_id
-            .filter(Objects::nonNull) // expect source_datarepo_snapshot_id to be non-null
-            .map(obj -> maybeUuid(obj.toString()))
-            .filter(Objects::nonNull)
-            .distinct() // find only the unique snapshotids
-            .toList();
-
-    // link the found snapshots to the workspace, skipping any that were previously linked
-    linkSnapshots(snapshotIds);
+    return recordStream
+        .map(rec -> rec.get("object")) // Records in a pfb are stored under the key "object"
+        .filter(GenericRecord.class::isInstance) // which we expect to be a GenericRecord
+        .map(GenericRecord.class::cast)
+        .filter(obj -> obj.hasField(SNAPSHOT_ID_IDENTIFIER)) // avoid exception if field nonexistent
+        .map(obj -> obj.get(SNAPSHOT_ID_IDENTIFIER)) // within the GenericRecord, find the
+        // source_datarepo_snapshot_id
+        .filter(Objects::nonNull) // expect source_datarepo_snapshot_id to be non-null
+        .map(obj -> maybeUuid(obj.toString()))
+        .filter(Objects::nonNull)
+        .distinct() // find only the unique snapshotids
+        .toList();
   }
 
   /**
