@@ -43,9 +43,7 @@ public class PfbQuartzJob extends QuartzJob {
   private final WorkspaceManagerDao wsmDao;
   private final BatchWriteService batchWriteService;
   private final ActivityLogger activityLogger;
-
   private final UUID workspaceId;
-
   private final RestClientRetry restClientRetry;
 
   public PfbQuartzJob(
@@ -76,20 +74,29 @@ public class PfbQuartzJob extends QuartzJob {
 
     // Find all the snapshot ids in the PFB, then create or verify references from the
     // workspace to the snapshot for each of those snapshot ids.
-    logger.info("Linking snapshots for this PFB.");
-    withPfbStream(url, this::findAndLinkSnapshots);
+    // This will throw an exception if there are policy conflicts between the workspace
+    // and the snapshots.
+    // TODO AJ-1227: can this pass also identify all schemas/datatypes?
+    // TODO AJ-1227: can this pass also check if record types are contiguous?
+    logger.info("Finding snapshots in this PFB...");
+    List<UUID> snapshotIds = withPfbStream(url, this::findSnapshots);
+
+    logger.info("Linking snapshots...");
+    linkSnapshots(snapshotIds);
 
     // Import all the tables and rows inside the PFB.
-    logger.info("Importing tables and rows from this PFB.");
-    withPfbStream(url, this::importTables);
+    logger.info("Importing tables and rows from this PFB...");
+    BatchWriteResult batchWriteResult = withPfbStream(url, this::importTables);
+
+    // TODO AJ-1227: persist the BatchWriteResult to the job
   }
 
   /**
    * definition for some function that consumes a PFB stream (as a DataFileStream<GenericRecord>)
    */
   @FunctionalInterface
-  public interface PfbStreamConsumer {
-    void run(DataFileStream<GenericRecord> dataStream) throws Exception;
+  public interface PfbStreamConsumer<T> {
+    T run(DataFileStream<GenericRecord> dataStream) throws Exception;
   }
 
   /**
@@ -99,10 +106,10 @@ public class PfbQuartzJob extends QuartzJob {
    * @param url location of the PFB
    * @param consumer code to execute against the PFB's contents
    */
-  void withPfbStream(URL url, PfbStreamConsumer consumer) {
+  <T> T withPfbStream(URL url, PfbStreamConsumer<T> consumer) {
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
-      consumer.run(dataStream);
+      return consumer.run(dataStream);
     } catch (Exception e) {
       throw new PfbParsingException("Error processing PFB", e);
     }
@@ -113,7 +120,7 @@ public class PfbQuartzJob extends QuartzJob {
    *
    * @param dataStream stream representing the PFB.
    */
-  void importTables(DataFileStream<GenericRecord> dataStream) {
+  BatchWriteResult importTables(DataFileStream<GenericRecord> dataStream) {
     BatchWriteResult result =
         batchWriteService.batchWritePfbStream(dataStream, workspaceId, Optional.of("id"));
 
@@ -126,18 +133,8 @@ public class PfbQuartzJob extends QuartzJob {
               activityLogger.saveEventForCurrentUser(
                   user -> user.upserted().record().withRecordType(recordType).ofQuantity(quantity));
             });
-  }
 
-  /**
-   * Given a DataFileStream representing a PFB, find all the snapshot ids in the PFB, then create or
-   * verify references from the workspace to the snapshot for each of those snapshot ids.
-   *
-   * @param dataStream stream representing the PFB.
-   */
-  void findAndLinkSnapshots(DataFileStream<GenericRecord> dataStream) {
-    List<UUID> snapshotIds = findSnapshots(dataStream);
-    // link the found snapshots to the workspace, skipping any that were previously linked
-    linkSnapshots(snapshotIds);
+    return result;
   }
 
   /**
@@ -198,6 +195,8 @@ public class PfbQuartzJob extends QuartzJob {
         restClientRetry.withRetryAndErrorHandling(
             voidRestCall, "WSM.createDataRepoSnapshotReference");
       } catch (Exception e) {
+        // TODO AJ-1227: this is an incorrect error message, this can also fail due to policy
+        // conflict
         throw new PfbParsingException("Error processing PFB: Invalid snapshot UUID", e);
       }
     }

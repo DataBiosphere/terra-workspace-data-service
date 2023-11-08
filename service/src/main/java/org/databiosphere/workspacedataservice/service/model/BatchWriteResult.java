@@ -5,6 +5,10 @@ import java.util.Map;
 import java.util.Set;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
+/**
+ * The result of a batch-write operation that can update multiple record types. Provides methods for
+ * getting and setting the number of records that were written, grouped by record type.
+ */
 public class BatchWriteResult {
   Map<RecordType, Integer> resultCounts;
 
@@ -17,7 +21,6 @@ public class BatchWriteResult {
   }
 
   public int getUpdatedCount(RecordType recordType) {
-    // TODO deal with missing keys?
     return resultCounts.get(recordType);
   }
 
