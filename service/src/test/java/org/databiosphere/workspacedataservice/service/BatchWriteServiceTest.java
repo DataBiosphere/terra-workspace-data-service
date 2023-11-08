@@ -127,7 +127,7 @@ class BatchWriteServiceTest {
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
       batchWriteService.batchWritePfbStream(dataStream, INSTANCE, Optional.of("id"));
-      // TODO what and how exactly should i be verifying here?
+      // TODO AJ-1227: what and how exactly should i be verifying here?
       RecordAttributes expectedAttributes =
           new RecordAttributes(
               Map.of(
@@ -151,7 +151,7 @@ class BatchWriteServiceTest {
               "data_release.3511bcae-8725-53f1-b632-d06a9697baa5.1",
               expectedRecordType,
               expectedAttributes);
-      // TODO deal with data types, setting them to what actually happens for now
+      // TODO AJ-1227: deal with data types, setting them to what actually happens for now
       Map<String, DataTypeMapping> expectedSchema =
           Map.of(
               "created_datetime",
@@ -256,7 +256,7 @@ class BatchWriteServiceTest {
           .batchUpsert(
               INSTANCE, expectedRecordType2, List.of(expectedRecord2), expectedSchema2, "id");
     } catch (IOException e) {
-      fail(); // TODO failure message?
+      fail(); // TODO AJ-1227: failure message?
     }
   }
 
@@ -339,7 +339,7 @@ class BatchWriteServiceTest {
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
       batchWriteService.batchWritePfbStream(dataStream, INSTANCE, Optional.of("id"));
-      // TODO what and how exactly should i be verifying here?
+      // TODO AJ-1227: what and how exactly should i be verifying here?
       RecordType expectedRecordType = RecordType.valueOf("data_release");
       // Not checking the values since that's verified above, just that it gets called multiple
       // times
@@ -368,7 +368,7 @@ class BatchWriteServiceTest {
               any(),
               eq("id"));
     } catch (IOException e) {
-      fail(); // TODO failure message?
+      fail(); // TODO AJ-1227: failure message?
     }
   }
 
@@ -384,7 +384,7 @@ class BatchWriteServiceTest {
       assertEquals(3, result.getUpdatedCount(expectedRecordType));
       assertEquals(1, result.getUpdatedCount(expectedRecordType2));
     } catch (IOException e) {
-      fail(); // TODO failure message?
+      fail(); // TODO AJ-1227: failure message?
     }
   }
 }

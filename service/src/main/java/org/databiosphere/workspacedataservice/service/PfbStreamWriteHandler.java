@@ -17,7 +17,6 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
     this.inputStream = inputStream;
   }
 
-  // TODO AJ-1227: make sure this has a unit test that involves multiple batches
   public WriteStreamInfo readRecords(int numRecords) throws IOException {
 
     // pull up to numRecords rows, as GenericRecord, from the PFB's DataFileStream and materialize
