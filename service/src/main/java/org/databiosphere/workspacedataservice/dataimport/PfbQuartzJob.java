@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
 import bio.terra.datarepo.model.SnapshotModel;
@@ -71,6 +72,7 @@ public class PfbQuartzJob extends QuartzJob {
     // Grab the PFB url from the job's data map
     JobDataMap jobDataMap = context.getMergedJobDataMap();
     URL url = getJobDataUrl(jobDataMap, ARG_URL);
+    UUID targetInstance = getJobDataUUID(jobDataMap, ARG_INSTANCE);
 
     // Find all the snapshot ids in the PFB, then create or verify references from the
     // workspace to the snapshot for each of those snapshot ids.
@@ -86,7 +88,8 @@ public class PfbQuartzJob extends QuartzJob {
 
     // Import all the tables and rows inside the PFB.
     logger.info("Importing tables and rows from this PFB...");
-    BatchWriteResult batchWriteResult = withPfbStream(url, this::importTables);
+    BatchWriteResult batchWriteResult =
+        withPfbStream(url, stream -> importTables(stream, targetInstance));
 
     // TODO AJ-1227: persist the BatchWriteResult to the job
   }
@@ -120,9 +123,9 @@ public class PfbQuartzJob extends QuartzJob {
    *
    * @param dataStream stream representing the PFB.
    */
-  BatchWriteResult importTables(DataFileStream<GenericRecord> dataStream) {
+  BatchWriteResult importTables(DataFileStream<GenericRecord> dataStream, UUID targetInstance) {
     BatchWriteResult result =
-        batchWriteService.batchWritePfbStream(dataStream, workspaceId, Optional.of("id"));
+        batchWriteService.batchWritePfbStream(dataStream, targetInstance, Optional.of("id"));
 
     result
         .entrySet()
@@ -195,9 +198,7 @@ public class PfbQuartzJob extends QuartzJob {
         restClientRetry.withRetryAndErrorHandling(
             voidRestCall, "WSM.createDataRepoSnapshotReference");
       } catch (Exception e) {
-        // TODO AJ-1227: this is an incorrect error message, this can also fail due to policy
-        // conflict
-        throw new PfbParsingException("Error processing PFB: Invalid snapshot UUID", e);
+        throw new PfbParsingException("Error processing PFB: " + e.getMessage(), e);
       }
     }
   }
