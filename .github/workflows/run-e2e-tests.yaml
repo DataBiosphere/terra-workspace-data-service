@@ -38,6 +38,9 @@ jobs:
       contents: read
       id-token: write
     steps:
+      - uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
       - name: dispatch to terra-github-workflows
         uses: broadinstitute/workflow-dispatch@v3
         with:
@@ -60,7 +63,6 @@ jobs:
       - name: dispatch to terra-github-workflows
         uses: broadinstitute/workflow-dispatch@v3
         with:
-          max_attempts: 3
           workflow: attach-billing-project-to-landing-zone.yaml
           repo: broadinstitute/terra-github-workflows
           ref: refs/heads/main
@@ -80,7 +82,6 @@ jobs:
       id-token: write
     uses: broadinstitute/dsp-reusable-workflows/.github/workflows/run-e2e-tests.yaml@aj-1362-retries
     with:
-      max_attempts: 2
       billing-project-name: '${{ needs.params-gen.outputs.project-name }}'
       bee-name: '${{ needs.params-gen.outputs.bee-name }}'
       branch: main
