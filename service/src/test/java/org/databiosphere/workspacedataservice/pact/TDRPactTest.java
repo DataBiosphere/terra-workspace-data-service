@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.pact;
 
 import static au.com.dius.pact.consumer.dsl.LambdaDsl.newJsonBody;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -72,13 +73,14 @@ class TDRPactTest {
 
   @Pact(consumer = "wds", provider = "datarepo")
   public RequestResponsePact userHasAccessToSnapshotPact(PactDslWithProvider builder) {
-    // Current use of datarepo snapshot only relies on id and name
-    // Future development should update expected response shape to include fields we need
     var snapshotResponseShape =
         new PactDslJsonBody().stringValue("id", dummySnapshotId.toString()).stringType("name");
     return builder
         .given(
             "user has access to snapshot with given id", Map.of("id", dummySnapshotId.toString()))
+        .given(
+            "snapshot with given id has at least one table",
+            Map.of("id", dummySnapshotId.toString()))
         .uponReceiving("a snapshot request")
         .path("/api/repository/v1/snapshots/" + dummySnapshotId)
         .query("include=TABLES")
@@ -90,6 +92,12 @@ class TDRPactTest {
                     snapshot -> {
                       snapshot.stringValue("id", dummySnapshotId.toString());
                       snapshot.stringType("name");
+                      snapshot.minArrayLike(
+                          "tables",
+                          /* minSize= */ 1,
+                          table -> {
+                            table.stringType("name");
+                          });
                     })
                 .build())
         .toPact();
@@ -130,5 +138,9 @@ class TDRPactTest {
     assertNotNull(snapshot.getId(), "Snapshot response should have an id");
     assertNotNull(snapshot.getName(), "Snapshot response should have a name");
     assertEquals(dummySnapshotId, snapshot.getId());
+
+    var tables = snapshot.getTables();
+    assertFalse(tables.isEmpty());
+    tables.forEach(table -> assertNotNull(table.getName()));
   }
 }
