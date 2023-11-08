@@ -39,10 +39,26 @@ jobs:
       id-token: write
     steps:
       - name: dispatch to terra-github-workflows
-      - uses: nick-fields/retry@v2
+        id: FirstAttempt
+        continue-on-error: true
       - uses: broadinstitute/workflow-dispatch@v3
         with:
-          max_attempts: 3
+          workflow: bee-create
+          repo: broadinstitute/terra-github-workflows
+          ref: refs/heads/main
+          token: '${{ env.TOKEN }}'
+          inputs: >-
+            { 
+            "bee-name": "${{ env.BEE_NAME }}", 
+            "bee-template-name":
+            "rawls-e2e-azure-tests", 
+            "version-template": "dev" 
+            }
+
+      - name: dispatch to terra-github-workflows in case of failure
+        if: steps.FirstAttempt.outcome == 'failure'
+      - uses: broadinstitute/workflow-dispatch@v3
+        with:
           workflow: bee-create
           repo: broadinstitute/terra-github-workflows
           ref: refs/heads/main
