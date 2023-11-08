@@ -24,6 +24,10 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
 
   public WriteStreamInfo readRecords(int numRecords) throws IOException {
 
+    // TODO AJ-1227: don't re-create the Stream<GenericRecord> for each batch. We should be able to
+    //    create the Stream<GenericRecord> once in the constructor, then pull numRecords records
+    //    from it in each batch.
+    // TODO AJ-1227: make sure this has a unit test that involves multiple batches
     // translate the Avro DataFileStream into a Java stream
     Stream<GenericRecord> recordStream =
         StreamSupport.stream(
@@ -36,6 +40,7 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
     return new WriteStreamInfo(records, OperationType.UPSERT);
   }
 
+  // TODO AJ-1227: move to a separate, unit-testable, class
   private Record genericRecordToRecord(GenericRecord genRec) {
     Record converted =
         new Record(
@@ -58,6 +63,7 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
     return converted;
   }
 
+  // TODO AJ-1227: move to a separate, unit-testable, class
   private Object convertAttributeType(Object attribute) {
     if (attribute == null) {
       return null;
@@ -65,7 +71,7 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
     if (attribute instanceof Long /*or other number*/) {
       return attribute;
     }
-    return attribute.toString(); // easier for the datatype inferrer to parse
+    return attribute.toString(); // easier for the datatype inferer to parse
   }
 
   @Override
