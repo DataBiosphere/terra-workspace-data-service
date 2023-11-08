@@ -38,11 +38,9 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: nick-fields/retry@v2
-        with:
-          max_attempts: 3
       - name: dispatch to terra-github-workflows
-        uses: broadinstitute/workflow-dispatch@v3
+      - uses: nick-fields/retry@v2
+      - uses: broadinstitute/workflow-dispatch@v3
         with:
           max_attempts: 3
           workflow: bee-create
