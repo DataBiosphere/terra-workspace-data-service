@@ -14,7 +14,6 @@ runs:
   using: 'composite'
   steps:
     - name: dispatch to terra-github-workflows
-      id: FirstAttempt
       continue-on-error: true
       uses: broadinstitute/workflow-dispatch@v3
       with:
