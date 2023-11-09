@@ -46,7 +46,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/create-bee
         with:
-            bee_name: ${{ env.BEE_NAME }}, 
+            bee_name: ${{ env.BEE_NAME }}
             token: '${{ env.TOKEN }}'
 
       - name: dispatch to terra-github-workflows in case of failure
