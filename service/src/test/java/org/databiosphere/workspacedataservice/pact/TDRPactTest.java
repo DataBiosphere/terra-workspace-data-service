@@ -132,9 +132,8 @@ class TDRPactTest {
 
     SnapshotModel snapshot = dataRepoDao.getSnapshot(dummySnapshotId);
     assertNotNull(snapshot, "Snapshot request should return a snapshot");
-    assertNotNull(snapshot.getId(), "Snapshot response should have an id");
     assertNotNull(snapshot.getName(), "Snapshot response should have a name");
-    assertEquals(dummySnapshotId, snapshot.getId());
+    assertEquals(dummySnapshotId, snapshot.getId(), "Snapshot id should match the requested id");
 
     var tables = snapshot.getTables();
     assertFalse(tables.isEmpty());
