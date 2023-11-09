@@ -12,10 +12,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.stream.IntStream;
-import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileStream;
-import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.databiosphere.workspacedataservice.dataimport.PfbTestUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
@@ -30,40 +29,11 @@ class PfbStreamWriteHandlerTest {
    * in numRows: if you request a mock with three rows, it will have records with ids 0, 1, 2.
    */
   private DataFileStream<GenericRecord> mockPfbStream(int numRows) {
-    // define the avro schema for the "object" field. Since "object" is flexible, this schema
-    // doesn't matter much.
-    Schema objectSchema =
-        Schema.createRecord(
-            "objectSchema",
-            "doc",
-            "namespace",
-            false,
-            List.of(new Schema.Field("whatever", Schema.create(Schema.Type.STRING))));
-
-    // define the avro schema for the top-level fields expected in the PFB: id, name, object
-    Schema recordSchema =
-        Schema.createRecord(
-            "recordSchema",
-            "doc",
-            "namespace",
-            false,
-            List.of(
-                new Schema.Field("id", Schema.create(Schema.Type.STRING)),
-                new Schema.Field("name", Schema.create(Schema.Type.STRING)),
-                new Schema.Field("object", objectSchema)));
-
     // create a list of ${numRows} GenericRecords, whose id is their index
     List<GenericRecord> records =
         new java.util.ArrayList<>(
             IntStream.range(0, numRows)
-                .mapToObj(
-                    i -> {
-                      GenericRecord rec = new GenericData.Record(recordSchema);
-                      rec.put("name", "bar");
-                      rec.put("id", i);
-                      rec.put("object", new GenericData.Record(objectSchema));
-                      return rec;
-                    })
+                .mapToObj(i -> PfbTestUtils.makeRecord(Integer.valueOf(i).toString(), "some-name"))
                 .toList());
 
     // create the Mockito mock for DataFileStream with implementations of hasNext() and next()

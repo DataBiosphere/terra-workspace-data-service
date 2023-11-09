@@ -20,23 +20,29 @@ public class PfbRecordConverter {
             genRec.get(ID_FIELD).toString(),
             RecordType.valueOf(genRec.get(TYPE_FIELD).toString()),
             RecordAttributes.empty());
-    GenericRecord objectAttributes =
-        (GenericRecord) genRec.get(OBJECT_FIELD); // contains attributes
-    Schema schema = objectAttributes.getSchema();
-    List<Schema.Field> fields = schema.getFields();
-    RecordAttributes attributes = RecordAttributes.empty();
-    for (Schema.Field field : fields) {
-      String fieldName = field.name();
-      Object value =
-          objectAttributes.get(fieldName) == null
-              ? null
-              : convertAttributeType(objectAttributes.get(fieldName));
-      attributes.putAttribute(fieldName, value);
+
+    // contains attributes
+    if (genRec.get(OBJECT_FIELD) instanceof GenericRecord objectAttributes) {
+      Schema schema = objectAttributes.getSchema();
+      List<Schema.Field> fields = schema.getFields();
+      RecordAttributes attributes = RecordAttributes.empty();
+      for (Schema.Field field : fields) {
+        String fieldName = field.name();
+        Object value =
+            objectAttributes.get(fieldName) == null
+                ? null
+                : convertAttributeType(objectAttributes.get(fieldName));
+        attributes.putAttribute(fieldName, value);
+      }
+      converted.setAttributes(attributes);
     }
-    converted.setAttributes(attributes);
+
     return converted;
   }
 
+  // TODO AJ-1452: respect the datatypes returned by the PFB. For now, we make no guarantee that
+  //    about datatypes; many values are just toString()-ed. This allows us to commit incremental
+  //    progress and save some complicated work for later.
   Object convertAttributeType(Object attribute) {
     if (attribute == null) {
       return null;

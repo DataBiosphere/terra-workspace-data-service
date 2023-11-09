@@ -47,6 +47,7 @@ public class PfbQuartzJob extends QuartzJob {
   private final UUID workspaceId;
   private final RestClientRetry restClientRetry;
 
+  // TODO AJ-1227: assess unit test coverage
   public PfbQuartzJob(
       JobDao jobDao,
       WorkspaceManagerDao wsmDao,
