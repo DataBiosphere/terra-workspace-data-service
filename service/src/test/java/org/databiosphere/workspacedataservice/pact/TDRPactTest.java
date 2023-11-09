@@ -78,9 +78,6 @@ class TDRPactTest {
     return builder
         .given(
             "user has access to snapshot with given id", Map.of("id", dummySnapshotId.toString()))
-        .given(
-            "snapshot with given id has at least one table",
-            Map.of("id", dummySnapshotId.toString()))
         .uponReceiving("a snapshot request")
         .path("/api/repository/v1/snapshots/" + dummySnapshotId)
         .query("include=TABLES")
