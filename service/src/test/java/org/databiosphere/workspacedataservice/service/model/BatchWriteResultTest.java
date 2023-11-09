@@ -61,13 +61,14 @@ class BatchWriteResultTest {
   void incrementNegative() {
     BatchWriteResult batchWriteResult = BatchWriteResult.empty();
 
-    batchWriteResult.initialize(RecordType.valueOf("multi"));
-    assertEquals(0, batchWriteResult.getUpdatedCount(RecordType.valueOf("multi")));
+    RecordType recordType = RecordType.valueOf("negative");
+
+    batchWriteResult.initialize(recordType);
+    assertEquals(0, batchWriteResult.getUpdatedCount(recordType));
 
     Exception e =
         assertThrows(
-            IllegalArgumentException.class,
-            () -> batchWriteResult.increaseCount(RecordType.valueOf("multi"), -123));
+            IllegalArgumentException.class, () -> batchWriteResult.increaseCount(recordType, -123));
 
     assertEquals("Count cannot be negative", e.getMessage());
   }

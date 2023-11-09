@@ -89,10 +89,9 @@ public class PfbQuartzJob extends QuartzJob {
 
     // Import all the tables and rows inside the PFB.
     logger.info("Importing tables and rows from this PFB...");
-    BatchWriteResult batchWriteResult =
-        withPfbStream(url, stream -> importTables(stream, targetInstance));
+    withPfbStream(url, stream -> importTables(stream, targetInstance));
 
-    // TODO AJ-1453: persist the BatchWriteResult to the job
+    // TODO AJ-1453: save the result of importTables and persist the to the job
   }
 
   /**
@@ -100,7 +99,7 @@ public class PfbQuartzJob extends QuartzJob {
    */
   @FunctionalInterface
   public interface PfbStreamConsumer<T> {
-    T run(DataFileStream<GenericRecord> dataStream) throws Exception;
+    T run(DataFileStream<GenericRecord> dataStream);
   }
 
   /**

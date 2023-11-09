@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -65,7 +65,7 @@ class PfbStreamWriteHandlerTest {
                   pfbStreamWriteHandler.readRecords(batchSize);
               !info.getRecords().isEmpty();
               info = pfbStreamWriteHandler.readRecords(batchSize)) {
-            assertThat(info.getRecords().size()).isLessThanOrEqualTo(batchSize);
+            assertThat(info.getRecords()).hasSizeLessThanOrEqualTo(batchSize);
           }
         });
   }
