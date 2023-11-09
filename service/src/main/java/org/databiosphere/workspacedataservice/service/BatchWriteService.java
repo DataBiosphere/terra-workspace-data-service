@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.avro.file.DataFileStream;
@@ -74,7 +75,6 @@ public class BatchWriteService {
     BatchWriteResult result = BatchWriteResult.empty();
     try {
       // tracker to stash the schemas for the record types seen while processing this stream
-      // TODO AJ-1227: unit tests for typesSeen feature
       Map<RecordType, Map<String, DataTypeMapping>> typesSeen = new HashMap<>();
 
       // loop through, in batches, the records provided by the StreamingWriteHandler. This loops
@@ -86,16 +86,17 @@ public class BatchWriteService {
         // get the records for this batch
         List<Record> records = info.getRecords();
 
-        // If no recordType argument is given, assume there may be multiple types and sort by type.
-        // If recordType is specified, assume all records are of that type.
-        // TODO AJ-1227: any reason to not just sort/group in all cases? I am hesitant to change
-        //    the legacy behavior of the recordType argument, but this if/then seems redundant
-        Map<RecordType, List<Record>> sortedRecords;
-        if (recordType == null) {
-          sortedRecords = records.stream().collect(Collectors.groupingBy(Record::getRecordType));
-        } else {
-          sortedRecords = new HashMap<>();
-          sortedRecords.put(recordType, records);
+        // Group the incoming records by their record types. PFB inputs expect to have multiple
+        // types within the same input stream. TSV and JSON are expected to have a single record
+        // type, so this will result in a grouping of 1.
+        // TSV and JSON inputs are validated against the recordType argument. PFB inputs pass
+        // a null recordType argument so there is nothing to validate.
+        Map<RecordType, List<Record>> sortedRecords =
+            records.stream().collect(Collectors.groupingBy(Record::getRecordType));
+        if (recordType != null && !Set.of(recordType).equals(sortedRecords.keySet())) {
+          throw new BadStreamingWriteRequestException(
+              "Record Type was specified as argument to BatchWriteService, "
+                  + "but actual records contained different record types. Cannot continue.");
         }
 
         // loop over all record types in this batch. For each record type, iff this is the first
