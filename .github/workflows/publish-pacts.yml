@@ -10,9 +10,10 @@ on:
     paths-ignore: [ '**.md' ]
 
 env:
+  WDS_RUN_ID: ${{ github.event.repository.name }}-${{ github.run_id }}
+  PUBLISH_CONTRACT_RUN_NAME: 'publish-contracts-${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
   WDS_PACTS_ARTIFACT: wds-pacts-${{ github.event.repository.name }}-${{ github.run_id }}
   WDS_PACTS_OUTPUT_DIR: service/build/pacts/
-  PUBLISH_CONTRACT_RUN_NAME: 'publish-contracts-${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
 
 jobs:
   init-github-context:
@@ -58,8 +59,7 @@ jobs:
 
     steps:
       - name: Checkout current code
-        uses: actions/checkout@v3
-
+        uses: actions/checkout@v4
       - name: Set up JDK
         uses: actions/setup-java@v2
         with:
@@ -76,7 +76,6 @@ jobs:
 
           # Put the Base64-encoded pacts in JSON string
           pactPathsJson="["
-
           # Loop through $pactPaths and encode the corresponding pact
           for path in "${pactPaths[@]}"; do
             pactPathsJson="${pactPathsJson}\"$path\", "
@@ -101,7 +100,6 @@ jobs:
     strategy:
       matrix:
         pact_path: ${{ fromJson(needs.run-consumer-contract-tests.outputs.pact-paths) }}
-
     steps:
       - name: Download pact files from artifact
         id: download-pacts
