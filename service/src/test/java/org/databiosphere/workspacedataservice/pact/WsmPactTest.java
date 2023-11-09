@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import au.com.dius.pact.consumer.MockServer;
 import au.com.dius.pact.consumer.dsl.DslPart;
 import au.com.dius.pact.consumer.dsl.PactDslWithProvider;
-import au.com.dius.pact.consumer.junit5.PactConsumerTestExt;
+import au.com.dius.pact.consumer.junit5.PactConsumerTest;
 import au.com.dius.pact.consumer.junit5.PactTestFor;
 import au.com.dius.pact.core.model.PactSpecVersion;
 import au.com.dius.pact.core.model.RequestResponsePact;
@@ -22,16 +22,12 @@ import org.databiosphere.workspacedataservice.workspacemanager.HttpWorkspaceMana
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerClientFactory;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Tag("pact-test")
-@ExtendWith(PactConsumerTestExt.class)
+@PactConsumerTest
+@PactTestFor(providerName = "workspacemanager", pactVersion = PactSpecVersion.V3)
 public class WsmPactTest {
   // copied from DslPart.UUID_REGEX, used to configure Pact to accept a wildcard UUID as the
   // workspaceId path param
@@ -45,19 +41,12 @@ public class WsmPactTest {
   private static final String SNAPSHOT_NAME = "hardcodedSnapshotName";
   private static final String SNAPSHOT_CREATOR_EMAIL = "snapshot.creator@e.mail";
 
-  @BeforeEach
-  void setUp() {
-    // Without this setup, the HttpClient throws a "No thread-bound request found" error
-    RequestContextHolder.setRequestAttributes(
-        new ServletRequestAttributes(new MockHttpServletRequest()));
-  }
-
   private String snapshotPath(String workspaceIdPart) {
     return String.format(
         "/api/workspaces/v1/%s/resources/referenced/datarepo/snapshots", workspaceIdPart);
   }
 
-  @Pact(consumer = "wds", provider = "workspacemanager")
+  @Pact(consumer = "wds")
   RequestResponsePact linkSnapshotForPolicySuccess(PactDslWithProvider builder) {
     return builder
         .given("a workspace with the given id exists", Map.of("id", WORKSPACE_UUID.toString()))
@@ -81,11 +70,7 @@ public class WsmPactTest {
         .toPact();
   }
 
-  private String conditions(String... conditions) {
-    return String.join(" and ", conditions);
-  }
-
-  @Pact(consumer = "wds", provider = "workspacemanager")
+  @Pact(consumer = "wds")
   RequestResponsePact linkSnapshotForPolicyConflict(PactDslWithProvider builder) {
     return builder
         .given("a workspace with the given id exists", Map.of("id", WORKSPACE_UUID.toString()))
@@ -111,10 +96,7 @@ public class WsmPactTest {
   }
 
   @Test
-  @PactTestFor(
-      pactMethod = "linkSnapshotForPolicySuccess",
-      providerName = "workspacemanager",
-      pactVersion = PactSpecVersion.V3)
+  @PactTestFor(pactMethod = "linkSnapshotForPolicySuccess")
   void testLinkSnapshotForPolicySuccess(MockServer mockServer) {
     var wsmDao = buildWsmDao(mockServer);
     var snapshotModel = buildSnapshotModel();
@@ -123,10 +105,7 @@ public class WsmPactTest {
   }
 
   @Test
-  @PactTestFor(
-      pactMethod = "linkSnapshotForPolicyConflict",
-      providerName = "workspacemanager",
-      pactVersion = PactSpecVersion.V3)
+  @PactTestFor(pactMethod = "linkSnapshotForPolicyConflict")
   void testLinkSnapshotForPolicyConflict(MockServer mockServer) {
     var wsmDao = buildWsmDao(mockServer);
     var snapshotModel = buildSnapshotModel();
