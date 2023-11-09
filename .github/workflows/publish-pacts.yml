@@ -7,9 +7,8 @@ on:
   push:
     branches:
       - main
-      - aj-1188-tdr-consumer
     paths-ignore: [ '**.md' ]
-    
+
 env:
   WDS_RUN_ID: ${{ github.event.repository.name }}-${{ github.run_id }}
   PUBLISH_CONTRACT_RUN_NAME: 'publish-contracts-${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
@@ -60,7 +59,7 @@ jobs:
 
     steps:
       - name: Checkout current code
-        uses: actions/checkout@v4        
+        uses: actions/checkout@v4
       - name: Set up JDK
         uses: actions/setup-java@v2
         with:
