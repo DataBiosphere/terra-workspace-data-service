@@ -19,7 +19,7 @@ runs:
         workflow: bee-create
         repo: broadinstitute/terra-github-workflows
         ref: refs/heads/main
-        token: '$${{ inputs.token }}'
+        token: '${{ inputs.token }}'
         inputs: >-
           { 
           "bee-name": "${{ inputs.bee_name }}", 
