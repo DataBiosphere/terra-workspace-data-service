@@ -70,6 +70,9 @@ public class PfbTestUtils {
    * PFB records. Each record has an id, name, and object attributes. The id is equal to its index
    * in numRows: if you request a mock with three rows, it will have records with ids 0, 1, 2.
    *
+   * <p>If you care about the order in which the record types appear in the stream, make sure to use
+   * an ordered Map such as a TreeMap
+   *
    * @param counts map of type->numRows describing the records to return
    */
   public static DataFileStream<GenericRecord> mockPfbStream(Map<String, Integer> counts) {
