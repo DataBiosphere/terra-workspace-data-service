@@ -38,6 +38,9 @@ jobs:
       contents: read
       id-token: write
     steps:
+      - name: Get actions
+        uses: actions/checkout@v3
+        
       - name: dispatch to terra-github-workflows
         id: FirstAttempt
         continue-on-error: true
