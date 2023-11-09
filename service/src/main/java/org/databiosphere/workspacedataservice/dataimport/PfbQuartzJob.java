@@ -80,8 +80,8 @@ public class PfbQuartzJob extends QuartzJob {
     // workspace to the snapshot for each of those snapshot ids.
     // This will throw an exception if there are policy conflicts between the workspace
     // and the snapshots.
-    // TODO AJ-1227: can this pass also identify all schemas/datatypes?
-    // TODO AJ-1227: can this pass also check if record types are contiguous?
+    // TODO AJ-1452: can this pass also identify all schemas/datatypes?
+    // TODO AJ-1452: can this pass also check if record types are contiguous?
     logger.info("Finding snapshots in this PFB...");
     List<UUID> snapshotIds = withPfbStream(url, this::findSnapshots);
 
@@ -93,7 +93,7 @@ public class PfbQuartzJob extends QuartzJob {
     BatchWriteResult batchWriteResult =
         withPfbStream(url, stream -> importTables(stream, targetInstance));
 
-    // TODO AJ-1227: persist the BatchWriteResult to the job
+    // TODO AJ-1453: persist the BatchWriteResult to the job
   }
 
   /**
@@ -138,7 +138,6 @@ public class PfbQuartzJob extends QuartzJob {
               activityLogger.saveEventForCurrentUser(
                   user -> user.upserted().record().withRecordType(recordType).ofQuantity(quantity));
             });
-
     return result;
   }
 
