@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service.model;
 
+import com.google.common.base.Preconditions;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -20,11 +21,12 @@ public class BatchWriteResult {
     return new BatchWriteResult(new HashMap<>());
   }
 
-  public int getUpdatedCount(RecordType recordType) {
+  public Integer getUpdatedCount(RecordType recordType) {
     return resultCounts.get(recordType);
   }
 
   public void increaseCount(RecordType recordType, int count) {
+    Preconditions.checkArgument(count >= 0, "Count cannot be negative");
     resultCounts.compute(recordType, (key, value) -> (value == null) ? count : value + count);
   }
 
