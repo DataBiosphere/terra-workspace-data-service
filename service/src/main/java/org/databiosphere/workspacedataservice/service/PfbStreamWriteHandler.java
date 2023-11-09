@@ -1,8 +1,11 @@
 package org.databiosphere.workspacedataservice.service;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter;
@@ -18,20 +21,15 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
   }
 
   public WriteStreamInfo readRecords(int numRecords) throws IOException {
-
-    // pull up to numRecords rows, as GenericRecord, from the PFB's DataFileStream and materialize
-    // into a List
-    List<GenericRecord> collector = new ArrayList<>(numRecords);
-    int i = 0;
-    while (inputStream.hasNext() && i < numRecords) {
-      i++;
-      collector.add(inputStream.next());
-    }
+    // pull the next `numRecords` rows from the inputStream and translate to a Java Stream
+    Stream<GenericRecord> pfbBatch =
+        StreamSupport.stream(
+                Spliterators.spliteratorUnknownSize(inputStream, Spliterator.ORDERED), false)
+            .limit(numRecords);
 
     // convert the PFB GenericRecord objects into WDS Record objects
     PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
-    List<Record> records =
-        collector.stream().map(pfbRecordConverter::genericRecordToRecord).toList();
+    List<Record> records = pfbBatch.map(pfbRecordConverter::genericRecordToRecord).toList();
 
     return new WriteStreamInfo(records, OperationType.UPSERT);
   }
