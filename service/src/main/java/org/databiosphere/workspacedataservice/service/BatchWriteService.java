@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -65,45 +66,66 @@ public class BatchWriteService {
    * @param primaryKey PK for the record type
    * @return the number of records written
    */
-  public BatchWriteResult consumeWriteStream(
+  private BatchWriteResult consumeWriteStream(
       StreamingWriteHandler streamingWriteHandler,
       UUID instanceId,
       RecordType recordType,
       Optional<String> primaryKey) {
     BatchWriteResult result = BatchWriteResult.empty();
     try {
-      Map<String, DataTypeMapping> schema = null;
-      boolean firstUpsertBatch = true;
+      // tracker to stash the schemas for the record types seen while processing this stream
+      // TODO AJ-1227: unit tests for typesSeen feature
+      Map<RecordType, Map<String, DataTypeMapping>> typesSeen = new HashMap<>();
+
+      // loop through, in batches, the records provided by the StreamingWriteHandler. This loops
+      // until the StreamingWriteHandler returns an empty batch.
       for (StreamingWriteHandler.WriteStreamInfo info =
               streamingWriteHandler.readRecords(batchSize);
           !info.getRecords().isEmpty();
           info = streamingWriteHandler.readRecords(batchSize)) {
+        // get the records for this batch
         List<Record> records = info.getRecords();
-        // If no recordType is given, assume there may be multiple types and sort by type
+
+        // If no recordType argument is given, assume there may be multiple types and sort by type.
+        // If recordType is specified, assume all records are of that type.
+        // TODO AJ-1227: any reason to not just sort/group in all cases? I am hesitant to change
+        //    the legacy behavior of the recordType argument, but this if/then seems redundant
+        Map<RecordType, List<Record>> sortedRecords;
         if (recordType == null) {
-          Map<RecordType, List<Record>> sortedRecords =
-              records.stream().collect(Collectors.groupingBy(Record::getRecordType));
-          for (Map.Entry<RecordType, List<Record>> recList : sortedRecords.entrySet()) {
-            RecordType recType = recList.getKey();
-            List<Record> rList = recList.getValue();
-            Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(rList);
-            createOrModifyRecordType(
-                instanceId, recType, inferredSchema, rList, primaryKey.orElse(RECORD_ID));
-            writeBatch(
-                instanceId, recType, inferredSchema, info.getOperationType(), rList, primaryKey);
-            result.increaseCount(recType, rList.size());
-          }
+          sortedRecords = records.stream().collect(Collectors.groupingBy(Record::getRecordType));
         } else {
-          // A recordType has been passed in so all records are of this single type
-          result.initialize(recordType);
-          if (firstUpsertBatch && info.getOperationType() == OperationType.UPSERT) {
-            schema = inferer.inferTypes(records);
-            createOrModifyRecordType(
-                instanceId, recordType, schema, records, primaryKey.orElse(RECORD_ID));
-            firstUpsertBatch = false;
+          sortedRecords = new HashMap<>();
+          sortedRecords.put(recordType, records);
+        }
+
+        // loop over all record types in this batch. For each record type, iff this is the first
+        // time we've seen this type, calculate a schema from its records and update the record type
+        // as necessary. Then, write the records into the table.
+        // TODO AJ-1452: for PFB imports, get schema from Avro, not from attribute values inference
+        for (Map.Entry<RecordType, List<Record>> recList : sortedRecords.entrySet()) {
+          RecordType recType = recList.getKey();
+          List<Record> rList = recList.getValue();
+          // have we already processed at least one batch of this record type?
+          boolean isTypeAlreadySeen = typesSeen.containsKey(recType);
+          // if this is the first time we've seen this record type, infer and update this record
+          // type's schema, then save that schema back to the `typesSeen` map
+          if (!isTypeAlreadySeen && info.getOperationType() == OperationType.UPSERT) {
+            Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(rList);
+            Map<String, DataTypeMapping> finalSchema =
+                createOrModifyRecordType(
+                    instanceId, recType, inferredSchema, rList, primaryKey.orElse(RECORD_ID));
+            typesSeen.put(recType, finalSchema);
           }
-          writeBatch(instanceId, recordType, schema, info.getOperationType(), records, primaryKey);
-          result.increaseCount(recordType, records.size());
+          // write these records to the db, using the schema from the `typesSeen` map
+          writeBatch(
+              instanceId,
+              recType,
+              typesSeen.get(recType),
+              info.getOperationType(),
+              rList,
+              primaryKey);
+          // update the result counts
+          result.increaseCount(recType, rList.size());
         }
       }
     } catch (IOException e) {

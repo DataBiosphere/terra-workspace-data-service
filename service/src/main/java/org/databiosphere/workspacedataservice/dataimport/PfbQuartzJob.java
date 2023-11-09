@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import static org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter.ID_FIELD;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
@@ -126,7 +127,7 @@ public class PfbQuartzJob extends QuartzJob {
    */
   BatchWriteResult importTables(DataFileStream<GenericRecord> dataStream, UUID targetInstance) {
     BatchWriteResult result =
-        batchWriteService.batchWritePfbStream(dataStream, targetInstance, Optional.of("id"));
+        batchWriteService.batchWritePfbStream(dataStream, targetInstance, Optional.of(ID_FIELD));
 
     result
         .entrySet()

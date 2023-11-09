@@ -1,9 +1,16 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import static org.mockito.Mockito.when;
+
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.IntStream;
 import org.apache.avro.Schema;
+import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.mockito.Mockito;
 
 public class PfbTestUtils {
 
@@ -51,5 +58,45 @@ public class PfbTestUtils {
     rec.put("name", name);
     rec.put("object", objectAttributes);
     return rec;
+  }
+
+  public static DataFileStream<GenericRecord> mockPfbStream(int numRows, String name) {
+    Map<String, Integer> counts = Map.of(name, numRows);
+    return mockPfbStream(counts);
+  }
+
+  /**
+   * Helper method: create a Mockito mock of a DataFileStream<GenericRecord>, containing `numRows`
+   * PFB records. Each record has an id, name, and object attributes. The id is equal to its index
+   * in numRows: if you request a mock with three rows, it will have records with ids 0, 1, 2.
+   *
+   * @param counts map of type->numRows describing the records to return
+   */
+  public static DataFileStream<GenericRecord> mockPfbStream(Map<String, Integer> counts) {
+    // for each key in `counts`, create a list of ${numRows} GenericRecords, whose id is their index
+    List<GenericRecord> records = new ArrayList<>();
+    counts.forEach(
+        (name, numRows) -> {
+          records.addAll(
+              IntStream.range(0, numRows)
+                  .mapToObj(i -> PfbTestUtils.makeRecord(Integer.valueOf(i).toString(), name))
+                  .toList());
+        });
+
+    // create the Mockito mock for DataFileStream with implementations of hasNext() and next()
+    // that pull from the head of the ${records} list
+    @SuppressWarnings("unchecked")
+    DataFileStream<GenericRecord> dataFileStream = Mockito.mock(DataFileStream.class);
+
+    when(dataFileStream.hasNext()).thenAnswer(invocation -> !records.isEmpty());
+    when(dataFileStream.next())
+        .thenAnswer(
+            invocation -> {
+              GenericRecord rec = records.get(0);
+              records.remove(0);
+              return rec;
+            });
+
+    return dataFileStream;
   }
 }

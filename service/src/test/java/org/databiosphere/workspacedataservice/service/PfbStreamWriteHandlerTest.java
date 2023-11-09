@@ -5,13 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.when;
 
 import bio.terra.pfb.PfbReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
-import java.util.stream.IntStream;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dataimport.PfbTestUtils;
@@ -20,45 +18,15 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mockito;
 
 class PfbStreamWriteHandlerTest {
-
-  /* Helper method: create a Mockito mock of a DataFileStream<GenericRecord>, containing `numRows`
-   * PFB records. Each record has an id, name, and object attributes. The id is equal to its index
-   * in numRows: if you request a mock with three rows, it will have records with ids 0, 1, 2.
-   */
-  private DataFileStream<GenericRecord> mockPfbStream(int numRows) {
-    // create a list of ${numRows} GenericRecords, whose id is their index
-    List<GenericRecord> records =
-        new java.util.ArrayList<>(
-            IntStream.range(0, numRows)
-                .mapToObj(i -> PfbTestUtils.makeRecord(Integer.valueOf(i).toString(), "some-name"))
-                .toList());
-
-    // create the Mockito mock for DataFileStream with implementations of hasNext() and next()
-    // that pull from the head of the ${records} list
-    @SuppressWarnings("unchecked")
-    DataFileStream<GenericRecord> dataFileStream = Mockito.mock(DataFileStream.class);
-
-    when(dataFileStream.hasNext()).thenAnswer(invocation -> !records.isEmpty());
-    when(dataFileStream.next())
-        .thenAnswer(
-            invocation -> {
-              GenericRecord rec = records.get(0);
-              records.remove(0);
-              return rec;
-            });
-
-    return dataFileStream;
-  }
 
   // does PfbStreamWriteHandler properly know how to page through a DataFileStream<GenericRecord>?
   @Test
   void testBatching() throws IOException {
 
     // create a mock PFB stream with 10 rows in it and a PfbStreamWriteHandler for that stream
-    DataFileStream<GenericRecord> dataFileStream = mockPfbStream(10);
+    DataFileStream<GenericRecord> dataFileStream = PfbTestUtils.mockPfbStream(10, "someType");
     PfbStreamWriteHandler pfbStreamWriteHandler = new PfbStreamWriteHandler(dataFileStream);
 
     StreamingWriteHandler.WriteStreamInfo batch; // used in assertions below
@@ -86,7 +54,7 @@ class PfbStreamWriteHandlerTest {
   @ParameterizedTest(name = "dont error if input has {0} row(s)")
   @ValueSource(ints = {0, 1, 49, 50, 51, 99, 100, 101})
   void inputStreamOfCount(Integer numRows) {
-    DataFileStream<GenericRecord> dataFileStream = mockPfbStream(numRows);
+    DataFileStream<GenericRecord> dataFileStream = PfbTestUtils.mockPfbStream(numRows, "someType");
     PfbStreamWriteHandler pfbStreamWriteHandler = new PfbStreamWriteHandler(dataFileStream);
 
     int batchSize = 50;
