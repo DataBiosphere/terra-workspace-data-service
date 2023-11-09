@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -17,24 +19,31 @@ import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 class PfbStreamWriteHandlerTest {
 
+  /* Helper method: create a Mockito mock of a DataFileStream<GenericRecord>, containing `numRows`
+   * PFB records. Each record has an id, name, and object attributes. The id is equal to its index
+   * in numRows: if you request a mock with three rows, it will have records with ids 0, 1, 2.
+   */
   private DataFileStream<GenericRecord> mockPfbStream(int numRows) {
-    // define the avro schema for the "object" field
+    // define the avro schema for the "object" field. Since "object" is flexible, this schema
+    // doesn't matter much.
     Schema objectSchema =
         Schema.createRecord(
-            "object",
+            "objectSchema",
             "doc",
             "namespace",
             false,
             List.of(new Schema.Field("whatever", Schema.create(Schema.Type.STRING))));
 
-    // define the avro schema for the top-level fields: id, name, object
-    Schema schema =
+    // define the avro schema for the top-level fields expected in the PFB: id, name, object
+    Schema recordSchema =
         Schema.createRecord(
-            "name",
+            "recordSchema",
             "doc",
             "namespace",
             false,
@@ -49,7 +58,7 @@ class PfbStreamWriteHandlerTest {
             IntStream.range(0, numRows)
                 .mapToObj(
                     i -> {
-                      GenericRecord rec = new GenericData.Record(schema);
+                      GenericRecord rec = new GenericData.Record(recordSchema);
                       rec.put("name", "bar");
                       rec.put("id", i);
                       rec.put("object", new GenericData.Record(objectSchema));
@@ -57,7 +66,7 @@ class PfbStreamWriteHandlerTest {
                     })
                 .toList());
 
-    // create a Mockito mock for DataFileStream with implementations of hasNext() and next()
+    // create the Mockito mock for DataFileStream with implementations of hasNext() and next()
     // that pull from the head of the ${records} list
     @SuppressWarnings("unchecked")
     DataFileStream<GenericRecord> dataFileStream = Mockito.mock(DataFileStream.class);
@@ -103,8 +112,29 @@ class PfbStreamWriteHandlerTest {
     assertEquals(List.of("8", "9"), batch.getRecords().stream().map(Record::getId).toList());
   }
 
+  // does PfbStreamWriteHandler handle inputs of various sizes correctly?
+  @ParameterizedTest(name = "dont error if input has {0} row(s)")
+  @ValueSource(ints = {0, 1, 49, 50, 51, 99, 100, 101})
+  void inputStreamOfCount(Integer numRows) {
+    DataFileStream<GenericRecord> dataFileStream = mockPfbStream(numRows);
+    PfbStreamWriteHandler pfbStreamWriteHandler = new PfbStreamWriteHandler(dataFileStream);
+
+    int batchSize = 50;
+
+    assertDoesNotThrow(
+        () -> {
+          for (StreamingWriteHandler.WriteStreamInfo info =
+                  pfbStreamWriteHandler.readRecords(batchSize);
+              !info.getRecords().isEmpty();
+              info = pfbStreamWriteHandler.readRecords(batchSize)) {
+            assertThat(info.getRecords().size()).isLessThanOrEqualTo(batchSize);
+          }
+        });
+  }
+
   @Test
-  // TODO AJ-1227: assess
+  // Given a real PFB file, does PfbStreamWriteHandler faithfully return the records inside that
+  // PFB?
   void pfbTablesAreParsedCorrectly() {
     URL url = getClass().getResource("/two_tables.avro");
     assertNotNull(url);
@@ -163,22 +193,16 @@ class PfbStreamWriteHandlerTest {
       assertEquals("HG01101_cram", firstRecord.getId());
       assertEquals(RecordType.valueOf("submitted_aligned_reads"), firstRecord.getRecordType());
       assertEquals(19, firstRecord.attributeSet().size());
-      // just a spot check for now
-      // TODO AJ-1227: what to do about these being whatever object type
-      assertEquals("aaa1234", firstRecord.getAttributeValue("study_id").toString());
-      assertEquals(512L, firstRecord.getAttributeValue("file_size"));
+      // TODO AJ-1452: when PFB parsing properly respects datatypes, add assertions here, or
+      //    better yet write more tests for datatype/attribute handling.
 
       Record secondRecord = result.get(1);
       assertNotNull(secondRecord);
       assertEquals("data_release.3511bcae-8725-53f1-b632-d06a9697baa5.1", secondRecord.getId());
       assertEquals(RecordType.valueOf("data_release"), secondRecord.getRecordType());
       assertEquals(7, secondRecord.attributeSet().size());
-      assertEquals(
-          "2022-07-01T00:00:00.000000Z",
-          secondRecord.getAttributeValue("updated_datetime").toString());
-      assertEquals(1L, secondRecord.getAttributeValue("minor_version"));
     } catch (IOException e) {
-      fail();
+      fail(e);
     }
   }
 }
