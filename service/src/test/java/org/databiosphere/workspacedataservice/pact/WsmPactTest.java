@@ -41,11 +41,6 @@ public class WsmPactTest {
   private static final String SNAPSHOT_NAME = "hardcodedSnapshotName";
   private static final String SNAPSHOT_CREATOR_EMAIL = "snapshot.creator@e.mail";
 
-  private String snapshotPath(String workspaceIdPart) {
-    return String.format(
-        "/api/workspaces/v1/%s/resources/referenced/datarepo/snapshots", workspaceIdPart);
-  }
-
   @Pact(consumer = "wds")
   RequestResponsePact linkSnapshotForPolicySuccess(PactDslWithProvider builder) {
     return builder
@@ -68,6 +63,15 @@ public class WsmPactTest {
                     })
                 .build())
         .toPact();
+  }
+
+  @Test
+  @PactTestFor(pactMethod = "linkSnapshotForPolicySuccess")
+  void testLinkSnapshotForPolicySuccess(MockServer mockServer) {
+    var wsmDao = buildWsmDao(mockServer);
+    var snapshotModel = buildSnapshotModel();
+
+    assertDoesNotThrow(() -> wsmDao.linkSnapshotForPolicy(snapshotModel));
   }
 
   @Pact(consumer = "wds")
@@ -96,15 +100,6 @@ public class WsmPactTest {
   }
 
   @Test
-  @PactTestFor(pactMethod = "linkSnapshotForPolicySuccess")
-  void testLinkSnapshotForPolicySuccess(MockServer mockServer) {
-    var wsmDao = buildWsmDao(mockServer);
-    var snapshotModel = buildSnapshotModel();
-
-    assertDoesNotThrow(() -> wsmDao.linkSnapshotForPolicy(snapshotModel));
-  }
-
-  @Test
   @PactTestFor(pactMethod = "linkSnapshotForPolicyConflict")
   void testLinkSnapshotForPolicyConflict(MockServer mockServer) {
     var wsmDao = buildWsmDao(mockServer);
@@ -116,12 +111,6 @@ public class WsmPactTest {
 
   private SnapshotModel buildSnapshotModel() {
     return new SnapshotModel().id(SNAPSHOT_UUID).name(SNAPSHOT_NAME);
-  }
-
-  private WorkspaceManagerDao buildWsmDao(MockServer mockServer) {
-    WorkspaceManagerClientFactory clientFactory =
-        new HttpWorkspaceManagerClientFactory(mockServer.getUrl());
-    return new WorkspaceManagerDao(clientFactory, WORKSPACE_UUID.toString(), new RestClientRetry());
   }
 
   private DslPart createSnapshotReferenceBody(String snapshotName) {
@@ -156,6 +145,19 @@ public class WsmPactTest {
         .build();
   }
 
+  private WorkspaceManagerDao buildWsmDao(MockServer mockServer) {
+    WorkspaceManagerClientFactory clientFactory =
+        new HttpWorkspaceManagerClientFactory(mockServer.getUrl());
+    return new WorkspaceManagerDao(clientFactory, WORKSPACE_UUID.toString(), new RestClientRetry());
+  }
+
+  // paths
+  private static String snapshotPath(String workspaceIdPart) {
+    return String.format(
+        "/api/workspaces/v1/%s/resources/referenced/datarepo/snapshots", workspaceIdPart);
+  }
+
+  // headers
   private Map<String, String> contentTypeJson() {
     Map<String, String> headers = new HashMap<>();
     // pact will automatically assume an expected Content-Type of "application/json; charset=UTF-8"
