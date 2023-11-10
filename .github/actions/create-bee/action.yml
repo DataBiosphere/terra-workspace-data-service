@@ -23,7 +23,6 @@ runs:
         inputs: >-
           { 
           "bee-name": "${{ inputs.bee_name }}", 
-          "bee-template-name":
-          "rawls-e2e-azure-tests", 
+          "bee-template-name": "rawls-e2e-azure-tests", 
           "version-template": "dev" 
           }
