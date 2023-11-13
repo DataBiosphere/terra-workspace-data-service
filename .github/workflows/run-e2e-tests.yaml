@@ -41,14 +41,20 @@ jobs:
       - name: Get actions
         uses: actions/checkout@v3
         
-      - name: dispatch to terra-github-workflows to create bee with retries
-        uses: Wandalen/wretry.action@master
+      - name: dispatch to terra-github-workflows
+        id: FirstAttempt
+        continue-on-error: true
+        uses: ./.github/actions/create-bee
         with:
-          attempt_limit: 2
-          action: ./.github/actions/create-bee
-          with: |
-              bee_name: ${{ env.BEE_NAME }}
-              token: '${{ env.TOKEN }}'
+            bee_name: ${{ env.BEE_NAME }}
+            token: '${{ env.TOKEN }}'
+
+      - name: retry dispatch to terra-github-workflows in case of failure
+        if: steps.FirstAttempt.outcome == 'failure'
+        uses: ./.github/actions/create-bee
+        with:
+            bee_name: ${{ env.BEE_NAME }}, 
+            token: ${{ env.TOKEN }}
   
   attach-landing-zone-to-bee-workflow:
     runs-on: ubuntu-latest
