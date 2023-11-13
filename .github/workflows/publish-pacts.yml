@@ -24,7 +24,7 @@ jobs:
       repo-version: ${{ steps.extract-branch.outputs.repo-version }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Extract branch
         id: extract-branch
@@ -61,7 +61,7 @@ jobs:
       - name: Checkout current code
         uses: actions/checkout@v4
       - name: Set up JDK
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
