@@ -160,8 +160,7 @@ public class PfbQuartzJob extends QuartzJob {
         .filter(GenericRecord.class::isInstance) // which we expect to be a GenericRecord
         .map(GenericRecord.class::cast)
         .filter(obj -> obj.hasField(SNAPSHOT_ID_IDENTIFIER)) // avoid exception if field nonexistent
-        .map(obj -> obj.get(SNAPSHOT_ID_IDENTIFIER)) // within the GenericRecord, find the
-        // source_datarepo_snapshot_id
+        .map(obj -> obj.get(SNAPSHOT_ID_IDENTIFIER)) // get the source_datarepo_snapshot_id value
         .filter(Objects::nonNull) // expect source_datarepo_snapshot_id to be non-null
         .map(obj -> maybeUuid(obj.toString()))
         .filter(Objects::nonNull) // find only the unique snapshotids
