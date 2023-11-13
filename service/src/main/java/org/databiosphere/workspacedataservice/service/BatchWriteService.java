@@ -91,9 +91,9 @@ public class BatchWriteService {
         // type, so this will result in a grouping of 1.
         // TSV and JSON inputs are validated against the recordType argument. PFB inputs pass
         // a null recordType argument so there is nothing to validate.
-        Map<RecordType, List<Record>> sortedRecords =
+        Map<RecordType, List<Record>> groupedRecords =
             records.stream().collect(Collectors.groupingBy(Record::getRecordType));
-        if (recordType != null && !Set.of(recordType).equals(sortedRecords.keySet())) {
+        if (recordType != null && !Set.of(recordType).equals(groupedRecords.keySet())) {
           throw new BadStreamingWriteRequestException(
               "Record Type was specified as argument to BatchWriteService, "
                   + "but actual records contained different record types. Cannot continue.");
@@ -103,7 +103,7 @@ public class BatchWriteService {
         // time we've seen this type, calculate a schema from its records and update the record type
         // as necessary. Then, write the records into the table.
         // TODO AJ-1452: for PFB imports, get schema from Avro, not from attribute values inference
-        for (Map.Entry<RecordType, List<Record>> recList : sortedRecords.entrySet()) {
+        for (Map.Entry<RecordType, List<Record>> recList : groupedRecords.entrySet()) {
           RecordType recType = recList.getKey();
           List<Record> rList = recList.getValue();
           // have we already processed at least one batch of this record type?
