@@ -7,9 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import au.com.dius.pact.consumer.MockServer;
-import au.com.dius.pact.consumer.dsl.PactDslJsonBody;
 import au.com.dius.pact.consumer.dsl.PactDslWithProvider;
-import au.com.dius.pact.consumer.junit5.PactConsumerTestExt;
+import au.com.dius.pact.consumer.junit5.PactConsumerTest;
 import au.com.dius.pact.consumer.junit5.PactTestFor;
 import au.com.dius.pact.core.model.PactSpecVersion;
 import au.com.dius.pact.core.model.RequestResponsePact;
@@ -21,29 +20,16 @@ import org.databiosphere.workspacedataservice.datarepo.DataRepoClientFactory;
 import org.databiosphere.workspacedataservice.datarepo.DataRepoDao;
 import org.databiosphere.workspacedataservice.datarepo.DataRepoException;
 import org.databiosphere.workspacedataservice.datarepo.HttpDataRepoClientFactory;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Tag("pact-test")
-@ExtendWith(PactConsumerTestExt.class)
-class TDRPactTest {
-
-  @BeforeEach
-  void setUp() {
-    // Without this setup, the HttpClient throws a "No thread-bound request found" error
-    MockHttpServletRequest request = new MockHttpServletRequest();
-    // Set the mock request as the current request context
-    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
-  }
-
+@PactConsumerTest
+@PactTestFor(providerName = "datarepo", pactVersion = PactSpecVersion.V3)
+class TdrPactTest {
   static final UUID dummySnapshotId = UUID.fromString("12345678-abc9-012d-3456-e7fab89cd01e");
 
-  @Pact(consumer = "wds", provider = "datarepo")
+  @Pact(consumer = "wds")
   public RequestResponsePact noSnapshotPact(PactDslWithProvider builder) {
     return builder
         .given("snapshot with given id doesn't exist", Map.of("id", dummySnapshotId.toString()))
@@ -56,7 +42,7 @@ class TDRPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds", provider = "datarepo")
+  @Pact(consumer = "wds")
   public RequestResponsePact noAccessToSnapshotPact(PactDslWithProvider builder) {
     return builder
         .given(
@@ -71,10 +57,8 @@ class TDRPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds", provider = "datarepo")
+  @Pact(consumer = "wds")
   public RequestResponsePact userHasAccessToSnapshotPact(PactDslWithProvider builder) {
-    var snapshotResponseShape =
-        new PactDslJsonBody().stringValue("id", dummySnapshotId.toString()).stringType("name");
     return builder
         .given(
             "user has access to snapshot with given id", Map.of("id", dummySnapshotId.toString()))
@@ -101,7 +85,7 @@ class TDRPactTest {
   }
 
   @Test
-  @PactTestFor(pactMethod = "noSnapshotPact", pactVersion = PactSpecVersion.V3)
+  @PactTestFor(pactMethod = "noSnapshotPact")
   void testNoSnapshot(MockServer mockServer) {
     DataRepoClientFactory clientFactory = new HttpDataRepoClientFactory(mockServer.getUrl());
     DataRepoDao dataRepoDao = new DataRepoDao(clientFactory);
@@ -113,7 +97,7 @@ class TDRPactTest {
   }
 
   @Test
-  @PactTestFor(pactMethod = "noAccessToSnapshotPact", pactVersion = PactSpecVersion.V3)
+  @PactTestFor(pactMethod = "noAccessToSnapshotPact")
   void testNoAccessToSnapshot(MockServer mockServer) {
     DataRepoClientFactory clientFactory = new HttpDataRepoClientFactory(mockServer.getUrl());
     DataRepoDao dataRepoDao = new DataRepoDao(clientFactory);
@@ -125,7 +109,7 @@ class TDRPactTest {
   }
 
   @Test
-  @PactTestFor(pactMethod = "userHasAccessToSnapshotPact", pactVersion = PactSpecVersion.V3)
+  @PactTestFor(pactMethod = "userHasAccessToSnapshotPact")
   void testUserHasAccessToSnapshot(MockServer mockServer) {
     DataRepoClientFactory clientFactory = new HttpDataRepoClientFactory(mockServer.getUrl());
     DataRepoDao dataRepoDao = new DataRepoDao(clientFactory);
