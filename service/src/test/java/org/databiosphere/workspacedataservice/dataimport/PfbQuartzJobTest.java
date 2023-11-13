@@ -75,9 +75,7 @@ class PfbQuartzJobTest {
         .thenReturn(new ResourceList());
 
     // call linkSnapshots
-    PfbQuartzJob pfbQuartzJob =
-        new PfbQuartzJob(
-            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID());
+    PfbQuartzJob pfbQuartzJob = buildQuartzJob();
     pfbQuartzJob.linkSnapshots(input);
     // capture calls
     ArgumentCaptor<SnapshotModel> argumentCaptor = ArgumentCaptor.forClass(SnapshotModel.class);
@@ -105,9 +103,7 @@ class PfbQuartzJobTest {
         .thenReturn(resourceList);
 
     // call linkSnapshots
-    PfbQuartzJob pfbQuartzJob =
-        new PfbQuartzJob(
-            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID());
+    PfbQuartzJob pfbQuartzJob = buildQuartzJob();
     pfbQuartzJob.linkSnapshots(input);
     // should not call WSM's create-snapshot-reference at all
     verify(wsmDao, times(0)).linkSnapshotForPolicy(any());
@@ -135,9 +131,7 @@ class PfbQuartzJobTest {
         .thenReturn(resourceList);
 
     // call linkSnapshots
-    PfbQuartzJob pfbQuartzJob =
-        new PfbQuartzJob(
-            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID());
+    PfbQuartzJob pfbQuartzJob = buildQuartzJob();
     pfbQuartzJob.linkSnapshots(input);
 
     // should call WSM's create-snapshot-reference only for the references that didn't already exist
@@ -179,9 +173,7 @@ class PfbQuartzJobTest {
     when(batchWriteService.batchWritePfbStream(any(), any(), any()))
         .thenReturn(BatchWriteResult.empty());
 
-    new PfbQuartzJob(
-            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID())
-        .execute(mockContext);
+    buildQuartzJob().execute(mockContext);
 
     // Should not call wsm dao
     verify(wsmDao, times(0)).linkSnapshotForPolicy(any());
@@ -215,9 +207,7 @@ class PfbQuartzJobTest {
     when(batchWriteService.batchWritePfbStream(any(), any(), any()))
         .thenReturn(BatchWriteResult.empty());
 
-    new PfbQuartzJob(
-            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID())
-        .execute(mockContext);
+    buildQuartzJob().execute(mockContext);
 
     // This is the snapshotId given in the test pfb
     verify(wsmDao)
@@ -226,6 +216,11 @@ class PfbQuartzJobTest {
                 new SnapshotModelMatcher(UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"))));
     // Job should succeed
     verify(jobDao).succeeded(jobId);
+  }
+
+  private PfbQuartzJob buildQuartzJob() {
+    return new PfbQuartzJob(
+        jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID());
   }
 
   private record SnapshotModelMatcher(UUID expectedSnapshotId)
