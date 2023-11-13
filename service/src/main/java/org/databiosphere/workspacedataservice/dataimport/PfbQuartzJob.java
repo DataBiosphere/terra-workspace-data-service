@@ -10,9 +10,11 @@ import java.net.URL;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.avro.file.DataFileStream;
@@ -82,7 +84,7 @@ public class PfbQuartzJob extends QuartzJob {
     // TODO AJ-1452: can this pass also identify all schemas/datatypes?
     // TODO AJ-1452: can this pass also check if record types are contiguous?
     logger.info("Finding snapshots in this PFB...");
-    List<UUID> snapshotIds = withPfbStream(url, this::findSnapshots);
+    Set<UUID> snapshotIds = withPfbStream(url, this::findSnapshots);
 
     logger.info("Linking snapshots...");
     linkSnapshots(snapshotIds);
@@ -146,7 +148,7 @@ public class PfbQuartzJob extends QuartzJob {
    * @param dataStream stream representing the PFB.
    * @return unique UUIDs found in the PFB
    */
-  List<UUID> findSnapshots(DataFileStream<GenericRecord> dataStream) {
+  Set<UUID> findSnapshots(DataFileStream<GenericRecord> dataStream) {
     // translate the Avro DataFileStream into a Java stream
     Stream<GenericRecord> recordStream =
         StreamSupport.stream(
@@ -162,9 +164,8 @@ public class PfbQuartzJob extends QuartzJob {
         // source_datarepo_snapshot_id
         .filter(Objects::nonNull) // expect source_datarepo_snapshot_id to be non-null
         .map(obj -> maybeUuid(obj.toString()))
-        .filter(Objects::nonNull)
-        .distinct() // find only the unique snapshotids
-        .toList();
+        .filter(Objects::nonNull) // find only the unique snapshotids
+        .collect(Collectors.toSet());
   }
 
   /**
@@ -173,7 +174,7 @@ public class PfbQuartzJob extends QuartzJob {
    *
    * @param snapshotIds the list of snapshot ids to create or verify references.
    */
-  protected void linkSnapshots(List<UUID> snapshotIds) {
+  protected void linkSnapshots(Set<UUID> snapshotIds) {
     // list existing snapshots linked to this workspace
     TdrSnapshotSupport tdrSnapshotSupport =
         new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry);

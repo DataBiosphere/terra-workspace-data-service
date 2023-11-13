@@ -22,7 +22,9 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
@@ -58,7 +60,8 @@ class PfbQuartzJobTest {
   @Test
   void linkAllNewSnapshots() {
     // input is a list of 10 UUIDs
-    List<UUID> input = IntStream.range(0, 10).mapToObj(i -> UUID.randomUUID()).toList();
+    Set<UUID> input =
+        IntStream.range(0, 10).mapToObj(i -> UUID.randomUUID()).collect(Collectors.toSet());
     // WSM returns no pre-existing snapshots
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
@@ -74,14 +77,16 @@ class PfbQuartzJobTest {
     verify(wsmDao, times(input.size())).linkSnapshotForPolicy(argumentCaptor.capture());
     // those 10 calls should have used our 10 input UUIDs
     List<SnapshotModel> actualModels = argumentCaptor.getAllValues();
-    List<UUID> actualUuids = actualModels.stream().map(SnapshotModel::getId).toList();
+    Set<UUID> actualUuids =
+        actualModels.stream().map(SnapshotModel::getId).collect(Collectors.toSet());
     assertEquals(input, actualUuids);
   }
 
   @Test
   void linkNothingWhenAllExist() {
     // input is a list of 10 UUIDs
-    List<UUID> input = IntStream.range(0, 10).mapToObj(i -> UUID.randomUUID()).toList();
+    Set<UUID> input =
+        IntStream.range(0, 10).mapToObj(i -> UUID.randomUUID()).collect(Collectors.toSet());
 
     // WSM returns all of those UUIDs as pre-existing snapshots
     ResourceList resourceList = new ResourceList();
@@ -103,7 +108,8 @@ class PfbQuartzJobTest {
   @Test
   void linkSomeWhenSomeExist() {
     // input is a list of 10 UUIDs
-    List<UUID> input = IntStream.range(0, 10).mapToObj(i -> UUID.randomUUID()).toList();
+    Set<UUID> input =
+        IntStream.range(0, 10).mapToObj(i -> UUID.randomUUID()).collect(Collectors.toSet());
 
     // WSM returns some of those UUIDs as pre-existing snapshots
     ResourceList resourceList = new ResourceList();
@@ -111,7 +117,9 @@ class PfbQuartzJobTest {
     // note that the random in here can select the same UUID twice from the input, thus
     // we need the distinct()
     List<UUID> preExisting =
-        IntStream.range(0, 5).mapToObj(i -> input.get(random.nextInt(input.size()))).toList();
+        IntStream.range(0, 5)
+            .mapToObj(i -> input.stream().toList().get(random.nextInt(input.size())))
+            .toList();
     List<ResourceDescription> resourceDescriptions =
         preExisting.stream().map(this::createResourceDescription).distinct().toList();
     resourceList.setResources(resourceDescriptions);
