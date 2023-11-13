@@ -5,7 +5,6 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -18,7 +17,7 @@ import bio.terra.workspace.model.DataRepoSnapshotAttributes;
 import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceList;
-import java.net.URL;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -42,8 +41,10 @@ import org.quartz.JobExecutionException;
 import org.quartz.JobKey;
 import org.quartz.impl.JobDetailImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
@@ -54,6 +55,13 @@ class PfbQuartzJobTest {
   @MockBean BatchWriteService batchWriteService;
   @MockBean ActivityLogger activityLogger;
   @Autowired RestClientRetry restClientRetry;
+
+  // test resources used below
+  @Value("classpath:minimal_data.avro")
+  Resource minimalDataAvroResource;
+
+  @Value("classpath:test.avro")
+  Resource testAvroResource;
 
   private static final String INSTANCE = "aaaabbbb-cccc-dddd-1111-222233334444";
 
@@ -145,11 +153,9 @@ class PfbQuartzJobTest {
   }
 
   @Test
-  void doNotFailOnMissingSnapshotId() throws JobExecutionException {
+  void doNotFailOnMissingSnapshotId() throws JobExecutionException, IOException {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
     // This uses a non-TDR file so does not have the snapshotId
-    URL resourceUrl = getClass().getResource("/minimal_data.avro");
-    assertNotNull(resourceUrl);
     when(mockContext.getMergedJobDataMap())
         .thenReturn(
             new JobDataMap(
@@ -157,7 +163,7 @@ class PfbQuartzJobTest {
                     ARG_TOKEN,
                     "expectedToken",
                     ARG_URL,
-                    resourceUrl.toString(),
+                    minimalDataAvroResource.getURL().toString(),
                     ARG_INSTANCE,
                     INSTANCE)));
 
@@ -184,10 +190,8 @@ class PfbQuartzJobTest {
   }
 
   @Test
-  void snapshotIdsAreParsed() throws JobExecutionException {
+  void snapshotIdsAreParsed() throws JobExecutionException, IOException {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
-    URL resourceUrl = getClass().getResource("/test.avro");
-    assertNotNull(resourceUrl);
     when(mockContext.getMergedJobDataMap())
         .thenReturn(
             new JobDataMap(
@@ -195,7 +199,7 @@ class PfbQuartzJobTest {
                     ARG_TOKEN,
                     "expectedToken",
                     ARG_URL,
-                    resourceUrl.toString(),
+                    testAvroResource.getURL().toString(),
                     ARG_INSTANCE,
                     INSTANCE)));
 
