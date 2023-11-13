@@ -148,23 +148,8 @@ class PfbQuartzJobTest {
 
   @Test
   void doNotFailOnMissingSnapshotId() throws JobExecutionException, IOException {
-    JobExecutionContext mockContext = mock(JobExecutionContext.class);
-    // This uses a non-TDR file so does not have the snapshotId
-    when(mockContext.getMergedJobDataMap())
-        .thenReturn(
-            new JobDataMap(
-                Map.of(
-                    ARG_TOKEN,
-                    "expectedToken",
-                    ARG_URL,
-                    minimalDataAvroResource.getURL().toString(),
-                    ARG_INSTANCE,
-                    INSTANCE)));
-
-    JobDetailImpl jobDetail = new JobDetailImpl();
     UUID jobId = UUID.randomUUID();
-    jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
-    when(mockContext.getJobDetail()).thenReturn(jobDetail);
+    JobExecutionContext mockContext = stubJobContext(jobId, minimalDataAvroResource);
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
@@ -183,22 +168,8 @@ class PfbQuartzJobTest {
 
   @Test
   void snapshotIdsAreParsed() throws JobExecutionException, IOException {
-    JobExecutionContext mockContext = mock(JobExecutionContext.class);
-    when(mockContext.getMergedJobDataMap())
-        .thenReturn(
-            new JobDataMap(
-                Map.of(
-                    ARG_TOKEN,
-                    "expectedToken",
-                    ARG_URL,
-                    testAvroResource.getURL().toString(),
-                    ARG_INSTANCE,
-                    INSTANCE)));
-
-    JobDetailImpl jobDetail = new JobDetailImpl();
     UUID jobId = UUID.randomUUID();
-    jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
-    when(mockContext.getJobDetail()).thenReturn(jobDetail);
+    JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource);
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
@@ -216,6 +187,26 @@ class PfbQuartzJobTest {
                 new SnapshotModelMatcher(UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"))));
     // Job should succeed
     verify(jobDao).succeeded(jobId);
+  }
+
+  private JobExecutionContext stubJobContext(UUID jobId, Resource resource) throws IOException {
+    JobExecutionContext mockContext = mock(JobExecutionContext.class);
+    when(mockContext.getMergedJobDataMap())
+        .thenReturn(
+            new JobDataMap(
+                Map.of(
+                    ARG_TOKEN,
+                    "expectedToken",
+                    ARG_URL,
+                    resource.getURL().toString(),
+                    ARG_INSTANCE,
+                    INSTANCE)));
+
+    JobDetailImpl jobDetail = new JobDetailImpl();
+    jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
+    when(mockContext.getJobDetail()).thenReturn(jobDetail);
+
+    return mockContext;
   }
 
   private PfbQuartzJob buildQuartzJob() {
