@@ -29,7 +29,7 @@ jobs:
       id-token: 'write'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
@@ -43,7 +43,7 @@ jobs:
           JIRA_ID=$(echo "${{ inputs.jiraId }}" | grep -iEo -m 1 'AJ-[0-9]+' | head -1 || '')
           if [[ -z "$JIRA_ID" ]]; then
             echo "JIRA_ID=missing" >> $GITHUB_OUTPUT
-          else 
+          else
             echo "JIRA_ID=${JIRA_ID}" >> $GITHUB_OUTPUT
           fi
           set -e
@@ -68,13 +68,13 @@ jobs:
       - name: Explicitly auth Docker for GCR
         run: gcloud auth configure-docker --quiet
 
-      - name: Build WDS base Docker image 
+      - name: Build WDS base Docker image
         run: docker build -f Dockerfile --no-cache -t wdsbase:snapshot .
 
-      - name: Tag WDS base Docker image 
+      - name: Tag WDS base Docker image
         run: docker tag wdsbase:snapshot us.gcr.io/broad-dsp-gcr-public/debian/wds-debian-pg-dump:latest
 
-      - name: Push WDS base Docker image 
+      - name: Push WDS base Docker image
         run: docker push us.gcr.io/broad-dsp-gcr-public/debian/wds-debian-pg-dump:latest
 
       - name: Construct GCR docker image name
@@ -117,7 +117,7 @@ jobs:
           docker push --all-tags ${{ steps.acr-image-name.outputs.name }}
 
       - name: Clone terra-helmfile
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: broadinstitute/terra-helmfile
           token: ${{ secrets.BROADBOT_TOKEN }} # Has to be set at checkout AND later when pushing to work
