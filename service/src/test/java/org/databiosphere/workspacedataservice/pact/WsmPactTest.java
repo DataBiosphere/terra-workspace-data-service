@@ -54,7 +54,7 @@ public class WsmPactTest {
   @Pact(consumer = "wds")
   RequestResponsePact linkSnapshotForPolicySuccess(PactDslWithProvider builder) {
     return builder
-        .given("a workspace with the given {id} exists", Map.of("id", WORKSPACE_UUID.toString()))
+        .given("a workspace with the given id exists", Map.of("id", WORKSPACE_UUID.toString()))
         .given("authenticated with the given email", Map.of("email", SNAPSHOT_CREATOR_EMAIL))
         .given("policies allowing snapshot reference creation")
         .uponReceiving("a request to create a snapshot reference")
