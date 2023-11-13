@@ -26,6 +26,7 @@ import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
+import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobDataMap;
@@ -196,8 +197,8 @@ public class PfbQuartzJob extends QuartzJob {
             (() -> wsmDao.linkSnapshotForPolicy(new SnapshotModel().id(uuid)));
         restClientRetry.withRetryAndErrorHandling(
             voidRestCall, "WSM.createDataRepoSnapshotReference");
-      } catch (Exception e) {
-        throw new PfbParsingException("Error processing PFB: " + e.getMessage(), e);
+      } catch (RestException re) {
+        throw new PfbParsingException("Error processing PFB: " + re.getMessage(), re);
       }
     }
   }
