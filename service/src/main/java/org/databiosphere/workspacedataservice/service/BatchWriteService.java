@@ -165,6 +165,22 @@ public class BatchWriteService {
     }
   }
 
+  /**
+   * Persist records from a PFB into WDS's database.
+   *
+   * <p>As of this writing, the only caller of this method is PfbQuartzJob, and the only use case is
+   * import from the UCSC AnVIL Data Browser. In this single use case, the `primaryKey` argument
+   * will always be `Optional.of("id")`. However, as we add use cases and import PFBs from other
+   * providers, this may change, and we will encounter different `primaryKey` argument values.
+   *
+   * @param is the PFB/Avro stream
+   * @param instanceId WDS instance into which to import
+   * @param primaryKey where to find the primary key for records in the PFB/Avro stream
+   * @return counts of updated records, grouped by record type
+   */
+  /*
+   *
+   */
   @WriteTransaction
   public BatchWriteResult batchWritePfbStream(
       DataFileStream<GenericRecord> is, UUID instanceId, Optional<String> primaryKey) {
