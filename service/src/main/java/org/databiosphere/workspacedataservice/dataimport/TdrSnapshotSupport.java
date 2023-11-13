@@ -4,6 +4,7 @@ import bio.terra.workspace.model.DataRepoSnapshotAttributes;
 import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceList;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -36,7 +37,8 @@ public class TdrSnapshotSupport {
    * @param pageSize how many references to return in each paginated request to WSM
    * @return the list of unique ids for all pre-existing snapshot references
    */
-  protected List<UUID> existingPolicySnapshotIds(int pageSize) {
+  @VisibleForTesting
+  public List<UUID> existingPolicySnapshotIds(int pageSize) {
     return extractSnapshotIds(listAllSnapshots(pageSize));
   }
 

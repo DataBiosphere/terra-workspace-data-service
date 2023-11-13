@@ -20,7 +20,6 @@ import bio.terra.workspace.model.CloningInstructionsEnum;
 import bio.terra.workspace.model.ResourceType;
 import bio.terra.workspace.model.StewardshipType;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dataimport.TdrSnapshotSupport;
@@ -333,10 +332,6 @@ public class WsmPactTest {
         .toPact();
   }
 
-  private String enumerateResourcesPath(String workspaceIdPart) {
-    return String.format("/api/workspaces/v1/%s/resources", workspaceIdPart);
-  }
-
   @Pact(consumer = "wds", provider = "workspacemanager")
   RequestResponsePact createAzureStorageContainerSasTokenSuccess(PactDslWithProvider builder) {
     return builder
@@ -432,19 +427,6 @@ public class WsmPactTest {
     assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, thrown.getStatus());
   }
 
-  // Extend TdrSnapshotSupport to make existingPolicySnapshotIds available to exercise the WSM
-  // contract.
-  class TdrSnapshotSupportTestExt extends TdrSnapshotSupport {
-    TdrSnapshotSupportTestExt(MockServer server) {
-      super(WORKSPACE_UUID, buildWsmDao(server), new RestClientRetry());
-    }
-
-    @Override
-    public List<UUID> existingPolicySnapshotIds(int pageSize) {
-      return super.existingPolicySnapshotIds(pageSize);
-    }
-  }
-
   @Test
   @PactTestFor(
       providerName = "workspacemanager",
@@ -454,8 +436,7 @@ public class WsmPactTest {
       pactVersion = PactSpecVersion.V3)
   void testExistingPolicySnapshotIdsEmpty(MockServer mockServer) {
     var snapshotIds =
-        new TdrSnapshotSupportTestExt(mockServer)
-            .existingPolicySnapshotIds(NUM_SNAPSHOTS_REQUESTED);
+        tdrSnapshotSupport(mockServer).existingPolicySnapshotIds(NUM_SNAPSHOTS_REQUESTED);
     assertTrue(snapshotIds.isEmpty());
   }
 
@@ -468,18 +449,15 @@ public class WsmPactTest {
       pactVersion = PactSpecVersion.V3)
   void testExistingPolicySnapshotIdsWithSnapshotsPresent(MockServer mockServer) {
     var snapshotIds =
-        new TdrSnapshotSupportTestExt(mockServer)
-            .existingPolicySnapshotIds(NUM_SNAPSHOTS_REQUESTED);
+        tdrSnapshotSupport(mockServer).existingPolicySnapshotIds(NUM_SNAPSHOTS_REQUESTED);
     assertEquals(NUM_SNAPSHOTS_THAT_EXIST, snapshotIds.size());
   }
 
-  private String sasTokenPath(String workspaceIdPart, String resourceIdPart) {
-    return String.format(
-        "/api/workspaces/v1/%s/resources/controlled/azure/storageContainer/%s/getSasToken",
-        workspaceIdPart, resourceIdPart);
+  private static TdrSnapshotSupport tdrSnapshotSupport(MockServer mockServer) {
+    return new TdrSnapshotSupport(WORKSPACE_UUID, buildWsmDao(mockServer), new RestClientRetry());
   }
 
-  private WorkspaceManagerDao buildWsmDao(MockServer mockServer) {
+  private static WorkspaceManagerDao buildWsmDao(MockServer mockServer) {
     WorkspaceManagerClientFactory clientFactory =
         new HttpWorkspaceManagerClientFactory(mockServer.getUrl());
     return new WorkspaceManagerDao(clientFactory, WORKSPACE_UUID.toString(), new RestClientRetry());
@@ -491,8 +469,18 @@ public class WsmPactTest {
         "/api/workspaces/v1/%s/resources/referenced/datarepo/snapshots", workspaceIdPart);
   }
 
+  private static String enumerateResourcesPath(String workspaceIdPart) {
+    return String.format("/api/workspaces/v1/%s/resources", workspaceIdPart);
+  }
+
+  private static String sasTokenPath(String workspaceIdPart, String resourceIdPart) {
+    return String.format(
+        "/api/workspaces/v1/%s/resources/controlled/azure/storageContainer/%s/getSasToken",
+        workspaceIdPart, resourceIdPart);
+  }
+
   // headers
-  private Map<String, String> contentTypeJson() {
+  private static Map<String, String> contentTypeJson() {
     Map<String, String> headers = new HashMap<>();
     // pact will automatically assume an expected Content-Type of "application/json; charset=UTF-8"
     // unless we explicitly tell it otherwise
@@ -500,7 +488,7 @@ public class WsmPactTest {
     return headers;
   }
 
-  private Map<String, String> acceptJson() {
+  private static Map<String, String> acceptJson() {
     Map<String, String> headers = new HashMap<>();
     headers.put("Accept", "application/json");
     return headers;
