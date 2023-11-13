@@ -5,6 +5,8 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 import bio.terra.common.db.WriteTransaction;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimaps;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -13,7 +15,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
@@ -91,8 +92,9 @@ public class BatchWriteService {
         // type, so this will result in a grouping of 1.
         // TSV and JSON inputs are validated against the recordType argument. PFB inputs pass
         // a null recordType argument so there is nothing to validate.
-        Map<RecordType, List<Record>> groupedRecords =
-            records.stream().collect(Collectors.groupingBy(Record::getRecordType));
+        ImmutableMultimap<RecordType, Record> groupedRecords =
+            Multimaps.index(records, Record::getRecordType);
+
         if (recordType != null && !Set.of(recordType).equals(groupedRecords.keySet())) {
           throw new BadStreamingWriteRequestException(
               "Record Type was specified as argument to BatchWriteService, "
@@ -103,9 +105,8 @@ public class BatchWriteService {
         // time we've seen this type, calculate a schema from its records and update the record type
         // as necessary. Then, write the records into the table.
         // TODO AJ-1452: for PFB imports, get schema from Avro, not from attribute values inference
-        for (Map.Entry<RecordType, List<Record>> recList : groupedRecords.entrySet()) {
-          RecordType recType = recList.getKey();
-          List<Record> rList = recList.getValue();
+        for (RecordType recType : groupedRecords.keys()) {
+          List<Record> rList = groupedRecords.get(recType).asList();
           // have we already processed at least one batch of this record type?
           boolean isTypeAlreadySeen = typesSeen.containsKey(recType);
           // if this is the first time we've seen this record type, infer and update this record
