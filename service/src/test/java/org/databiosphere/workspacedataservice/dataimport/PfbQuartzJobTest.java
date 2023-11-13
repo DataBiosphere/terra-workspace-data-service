@@ -180,7 +180,8 @@ class PfbQuartzJobTest {
 
     buildQuartzJob().execute(mockContext);
 
-    // This is the snapshotId given in the test pfb
+    // The "790795c4..." UUID below is the snapshotId found in the "test.avro" resource used
+    // by this unit test
     verify(wsmDao)
         .linkSnapshotForPolicy(
             ArgumentMatchers.argThat(
