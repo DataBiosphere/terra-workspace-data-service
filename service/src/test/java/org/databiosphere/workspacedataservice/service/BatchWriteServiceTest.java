@@ -158,6 +158,8 @@ class BatchWriteServiceTest {
               eq(INSTANCE), eq(RecordType.valueOf("widget")), any(), any(), eq(primaryKey.get()));
 
       // but we should only have inferred schemas three times - once for each record Type
+      // TODO AJ-1452: this call to `verify` may change significantly as part of AJ-1452; reassess
+      //    during that implementation.
       @SuppressWarnings("unchecked")
       ArgumentCaptor<List<Record>> argumentCaptor = ArgumentCaptor.forClass(List.class);
       verify(inferer, times(3)).inferTypes(argumentCaptor.capture());
