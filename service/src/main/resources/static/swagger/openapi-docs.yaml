@@ -990,17 +990,6 @@ components:
         primaryKey:
           type: string
           description: Attribute name that contains the value to uniquely identify each record, defined as a primary key column in the underlying table.
-    RequestBodySearch:
-      required:
-        - terms
-      type: object
-      description: |
-        v0.2 only supports `terms` and `operator`. Future versions may support additional functionality.
-      properties:
-        terms:
-          $ref: '#/components/schemas/SearchTerms'
-        operator:
-          $ref: '#/components/schemas/SearchOperator'
     SearchLimit:
       type: integer
       default: 10
@@ -1012,10 +1001,6 @@ components:
       default: 0
       minimum: 0
       description: Pagination offset
-    SearchOperator:
-      type: string
-      enum: [ and, or ]
-      description: Search behavior for multiple filter terms
     SearchRequest:
       type: object
       properties:
@@ -1033,30 +1018,6 @@ components:
       default: ASC
       description: |
         Sort direction (descending or ascending)
-    SearchTerms:
-      type: string
-      description: Space-delimited list of terms on which to search
-    StackTraceElement:
-      required:
-        - className
-        - fileName
-        - lineNumber
-        - methodName
-      type: object
-      properties:
-        className:
-          type: string
-          description: class name
-        methodName:
-          type: string
-          description: method name
-        fileName:
-          type: string
-          description: source file name
-        lineNumber:
-          type: integer
-          description: line number
-      description: ""
     StatusResponse:
       type: object
       properties:
