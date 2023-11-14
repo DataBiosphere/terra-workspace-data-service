@@ -54,7 +54,7 @@ public class WsmPactTest {
   @Pact(consumer = "wds")
   RequestResponsePact linkSnapshotForPolicySuccess(PactDslWithProvider builder) {
     return builder
-        .given("a workspace with the given {id} exists", Map.of("id", WORKSPACE_UUID.toString()))
+        .given("a workspace with the given id exists", Map.of("id", WORKSPACE_UUID.toString()))
         .given("authenticated with the given email", Map.of("email", SNAPSHOT_CREATOR_EMAIL))
         .given("policies allowing snapshot reference creation")
         .uponReceiving("a request to create a snapshot reference")
@@ -222,6 +222,10 @@ public class WsmPactTest {
                                       "metadata",
                                       m -> {
                                         m.uuid("workspaceId", WORKSPACE_UUID);
+                                        m.valueFromProviderState(
+                                            "resourceId",
+                                            "storageContainerResourceId",
+                                            RESOURCE_UUID.toString());
                                         m.uuid("resourceId");
                                         m.stringMatcher(
                                             "name",
@@ -337,13 +341,16 @@ public class WsmPactTest {
     return builder
         .given("a workspace with the given id exists", Map.of("id", WORKSPACE_UUID.toString()))
         .given(
-            "a storage container with the given id exists for the given workspace_id",
-            Map.of("id", RESOURCE_UUID.toString(), "workspace_id", WORKSPACE_UUID.toString()))
+            "a storage container resource exists for the given workspace_id",
+            Map.of("workspace_id", WORKSPACE_UUID.toString()))
         .given("permission to create an azure storage container sas token")
         .uponReceiving("a request to create an azure storage container sas token")
         .method("POST")
         .matchPath(
             sasTokenPath(UUID_REGEX_PATTERN, UUID_REGEX_PATTERN),
+            sasTokenPath(WORKSPACE_UUID.toString(), RESOURCE_UUID.toString()))
+        .pathFromProviderState(
+            sasTokenPath(WORKSPACE_UUID.toString(), "${storageContainerResourceId}"),
             sasTokenPath(WORKSPACE_UUID.toString(), RESOURCE_UUID.toString()))
         .headers(contentTypeJson())
         .willRespondWith()
@@ -380,13 +387,16 @@ public class WsmPactTest {
     return builder
         .given("a workspace with the given id exists", Map.of("id", WORKSPACE_UUID.toString()))
         .given(
-            "a storage container with the given id exists for the given workspace_id",
-            Map.of("id", RESOURCE_UUID.toString(), "workspace_id", WORKSPACE_UUID.toString()))
+            "a storage container resource exists for the given workspace_id",
+            Map.of("workspace_id", WORKSPACE_UUID.toString()))
         .given("no permission to create an azure storage container sas token")
         .uponReceiving("a request to create an azure storage container sas token")
         .method("POST")
         .matchPath(
             sasTokenPath(UUID_REGEX_PATTERN, UUID_REGEX_PATTERN),
+            sasTokenPath(WORKSPACE_UUID.toString(), RESOURCE_UUID.toString()))
+        .pathFromProviderState(
+            sasTokenPath(WORKSPACE_UUID.toString(), "${storageContainerResourceId}"),
             sasTokenPath(WORKSPACE_UUID.toString(), RESOURCE_UUID.toString()))
         .headers(contentTypeJson())
         .willRespondWith()
