@@ -1,16 +1,16 @@
 name: 'create bee'
-description: 'Creates a bee for the wds e2e test'
+description: 'Attaches landing zone to an existing bee'
 inputs:
   token:
-    description: 'The auth token to use for bee creation'
+    description: 'The auth token to use for connecting to bee'
     required: true
     type: string
   bee_name:
-    description: 'The name of the bee to create'
+    description: 'The name of the bee to connect to'
     required: true
     type: string
   project_name:
-    description: 'The name of billing project'
+    description: 'The name of billing project to attach to'
     required: true
     type: string
 
