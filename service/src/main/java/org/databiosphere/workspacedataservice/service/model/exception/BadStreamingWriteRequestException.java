@@ -13,6 +13,10 @@ public class BadStreamingWriteRequestException extends IllegalArgumentException 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BadStreamingWriteRequestException.class);
 
+  public BadStreamingWriteRequestException(String message) {
+    super(message);
+  }
+
   public BadStreamingWriteRequestException(IOException ex) {
     super(
         // If the original exception was a JsonMappingException, forward the original message
