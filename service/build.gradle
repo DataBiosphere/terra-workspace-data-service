@@ -166,7 +166,7 @@ compileJava {
     }
 }
 
-sonarqube {
+sonar {
     properties {
         property "sonar.projectName", "terra-workspace-data-service"
         property "sonar.projectKey", "DataBiosphere_workspace-data-service"
