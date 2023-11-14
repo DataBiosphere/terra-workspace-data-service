@@ -1,30 +1,30 @@
 plugins {
-	id 'idea'
-	id 'java-library'
-	id 'maven-publish'
+    id 'idea'
+    id 'java-library'
+    id 'maven-publish'
 
-	id 'com.jfrog.artifactory' version '4.32.0'
-	id 'org.openapi.generator'
-	id 'com.diffplug.spotless' version '6.21.0'
+    id 'com.jfrog.artifactory' version '5.1.10'
+    id 'org.openapi.generator'
+    id 'com.diffplug.spotless' version '6.21.0'
 }
 
 repositories {
-	maven { url 'https://broadinstitute.jfrog.io/artifactory/maven-central' }
-	mavenCentral()
+    maven { url 'https://broadinstitute.jfrog.io/artifactory/maven-central' }
+    mavenCentral()
 }
 
 ext {
-	// these will be overridden by dependencies-jakarta.gradle or dependencies-javax.gradle
-	useJakartaEe = ""
-	libraryName = ""
+    // these will be overridden by dependencies-jakarta.gradle or dependencies-javax.gradle
+    useJakartaEe = ""
+    libraryName = ""
 }
 
 // default to javax, since WDS is currently on Spring Boot 2. -Pjakarta=true overrides
 // the default and creates a Jakarta-based client.
 if (project.hasProperty("jakarta") && "true".equalsIgnoreCase(project.getProperty("jakarta"))) {
-	apply from: "dependencies-jakarta.gradle"
+    apply from: "dependencies-jakarta.gradle"
 } else {
-	apply from: "dependencies-javax.gradle"
+    apply from: "dependencies-javax.gradle"
 }
 
 apply from: 'artifactory.gradle'
@@ -38,23 +38,23 @@ boolean isCiServer = System.getenv().containsKey("CI") && System.getenv().get("C
 boolean spotlessEnabled = true
 
 spotless {
-  java {
-    targetExclude "${buildDir}/**"
-    targetExclude "**/swagger-code/**"
-    targetExclude "**/generated/**"
-    googleJavaFormat()
-    toggleOffOn() // allow spotless:off & spotless:on to protect code from formatting
-  }
+    java {
+        targetExclude "${buildDir}/**"
+        targetExclude "**/swagger-code/**"
+        targetExclude "**/generated/**"
+        googleJavaFormat()
+        toggleOffOn() // allow spotless:off & spotless:on to protect code from formatting
+    }
 }
-spotlessJavaCheck.onlyIf( { spotlessEnabled } )
+spotlessJavaCheck.onlyIf({ spotlessEnabled })
 
 // Run spotless check when running in github actions, otherwise run spotless apply.
 compileJava {
-  if (spotlessEnabled) {
-    if (isCiServer) {
-      dependsOn(spotlessCheck)
-    } else {
-      dependsOn(spotlessApply)
+    if (spotlessEnabled) {
+        if (isCiServer) {
+            dependsOn(spotlessCheck)
+        } else {
+            dependsOn(spotlessApply)
+        }
     }
-  }
 }

@@ -79,7 +79,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew --build-cache sonarqube
+        run: ./gradlew --build-cache sonar
 
       - name: Upload Test Reports
         if: always()
