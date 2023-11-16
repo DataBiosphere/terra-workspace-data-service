@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
 import au.com.dius.pact.consumer.MockServer;
 import au.com.dius.pact.consumer.dsl.DslPart;
@@ -19,25 +20,29 @@ import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.workspace.model.CloningInstructionsEnum;
 import bio.terra.workspace.model.ResourceType;
 import bio.terra.workspace.model.StewardshipType;
-import java.util.HashMap;
-import java.util.Map;
+import com.google.common.collect.ImmutableMap;
+import java.util.Arrays;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dataimport.TdrSnapshotSupport;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.sam.BearerTokenFilter;
 import org.databiosphere.workspacedataservice.workspacemanager.HttpWorkspaceManagerClientFactory;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerClientFactory;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Tag("pact-test")
 @PactConsumerTest
 @PactTestFor(providerName = "workspacemanager", pactVersion = PactSpecVersion.V3)
 public class WsmPactTest {
-  public static final int NUM_SNAPSHOTS_THAT_EXIST = 3;
-  public static final int NUM_SNAPSHOTS_REQUESTED = NUM_SNAPSHOTS_THAT_EXIST + 2;
   // copied from DslPart.UUID_REGEX, used to configure Pact to accept a wildcard UUID as the
   // workspaceId path param
   private static final String UUID_REGEX_PATTERN =
@@ -49,21 +54,35 @@ public class WsmPactTest {
   private static final UUID SNAPSHOT_UUID = UUID.fromString("decade00-0000-4000-a000-000000000000");
   private static final UUID RESOURCE_UUID = UUID.fromString("5ca1ab1e-0000-4000-a000-000000000000");
   private static final String SNAPSHOT_NAME = "hardcodedSnapshotName";
-  private static final String SNAPSHOT_CREATOR_EMAIL = "snapshot.creator@e.mail";
+  private static final String USER_EMAIL = "fake.user@e.mail";
+  private static final int NUM_SNAPSHOTS_THAT_EXIST = 3;
+  private static final int NUM_SNAPSHOTS_REQUESTED = NUM_SNAPSHOTS_THAT_EXIST + 2;
+  private static final String BEARER_TOKEN = "fakebearertoken";
+
+  @BeforeEach
+  void setUp() {
+    // mock all requests to be authorized by the given bearer token
+    var requestAttributes = new ServletRequestAttributes(new MockHttpServletRequest());
+    requestAttributes.setAttribute(
+        BearerTokenFilter.ATTRIBUTE_NAME_TOKEN, BEARER_TOKEN, SCOPE_REQUEST);
+    RequestContextHolder.setRequestAttributes(requestAttributes);
+  }
 
   @Pact(consumer = "wds")
-  RequestResponsePact linkSnapshotForPolicySuccess(PactDslWithProvider builder) {
+  RequestResponsePact createDataRepoSnapshotReference_ok(PactDslWithProvider builder) {
     return builder
-        .given("a workspace with the given id exists", Map.of("id", WORKSPACE_UUID.toString()))
-        .given("authenticated with the given email", Map.of("email", SNAPSHOT_CREATOR_EMAIL))
+        .given("authenticated with the given {email}", ImmutableMap.of("email", USER_EMAIL))
+        .given(
+            "a workspace with the given {id} exists",
+            ImmutableMap.of("id", WORKSPACE_UUID.toString()))
         .given("policies allowing snapshot reference creation")
         .uponReceiving("a request to create a snapshot reference")
-        .method("POST")
+        .method(HttpMethod.POST.name())
         .matchPath(snapshotPath(UUID_REGEX_PATTERN), snapshotPath(WORKSPACE_UUID.toString()))
-        .headers(contentTypeJson())
+        .headers(mergeHeaders(authorization(BEARER_TOKEN), contentTypeJson()))
         .body(createSnapshotReferenceBody(SNAPSHOT_NAME))
         .willRespondWith()
-        .status(200) // ok
+        .status(HttpStatus.OK.value())
         .headers(contentTypeJson())
         .body(
             newJsonBody(
@@ -76,8 +95,8 @@ public class WsmPactTest {
   }
 
   @Test
-  @PactTestFor(pactMethod = "linkSnapshotForPolicySuccess")
-  void testLinkSnapshotForPolicySuccess(MockServer mockServer) {
+  @PactTestFor(pactMethod = "createDataRepoSnapshotReference_ok")
+  void linkSnapshotForPolicy_ok(MockServer mockServer) {
     var wsmDao = buildWsmDao(mockServer);
     var snapshotModel = buildSnapshotModel();
 
@@ -85,22 +104,27 @@ public class WsmPactTest {
   }
 
   @Pact(consumer = "wds")
-  RequestResponsePact linkSnapshotForPolicyConflict(PactDslWithProvider builder) {
+  RequestResponsePact createDataRepoSnapshotReference_conflict(PactDslWithProvider builder) {
     return builder
-        .given("a workspace with the given id exists", Map.of("id", WORKSPACE_UUID.toString()))
-        .given("authenticated with the given email", Map.of("email", SNAPSHOT_CREATOR_EMAIL))
+        .given("authenticated with the given {email}", ImmutableMap.of("email", USER_EMAIL))
+        .given(
+            "a workspace with the given {id} exists",
+            ImmutableMap.of("id", WORKSPACE_UUID.toString()))
         .given("policies preventing snapshot reference creation")
         .uponReceiving("a request to create a snapshot reference")
-        .method("POST")
+        .method(HttpMethod.POST.name())
         .matchPath(snapshotPath(UUID_REGEX_PATTERN), snapshotPath(WORKSPACE_UUID.toString()))
-        .headers(contentTypeJson())
+        .headers(mergeHeaders(authorization(BEARER_TOKEN), contentTypeJson()))
         .body(createSnapshotReferenceBody(SNAPSHOT_NAME))
         .willRespondWith()
-        .status(409) // conflict
+        .status(HttpStatus.CONFLICT.value())
         .headers(contentTypeJson())
         .body(
             newJsonBody(
                     body ->
+                        // We're explicitly looking for a message about policies conflicting here
+                        // because there are other potential reasons for a 409, and we want to be
+                        // sure the provider is simulating the correct scenario.
                         body.stringMatcher(
                             "message",
                             "^(.*)(policy|policies)(.*)conflict(.*)$",
@@ -110,8 +134,8 @@ public class WsmPactTest {
   }
 
   @Test
-  @PactTestFor(pactMethod = "linkSnapshotForPolicyConflict")
-  void testLinkSnapshotForPolicyConflict(MockServer mockServer) {
+  @PactTestFor(pactMethod = "createDataRepoSnapshotReference_conflict")
+  void linkSnapshotForPolicy_conflict(MockServer mockServer) {
     var wsmDao = buildWsmDao(mockServer);
     var snapshotModel = buildSnapshotModel();
 
@@ -156,12 +180,20 @@ public class WsmPactTest {
   }
 
   @Pact(consumer = "wds", provider = "workspacemanager")
-  RequestResponsePact enumerateStorageContainersWhenNoneExist(PactDslWithProvider builder) {
+  RequestResponsePact enumerateStorageContainers_noneExist(PactDslWithProvider builder) {
     return builder
-        .given("a workspace with the given id exists", Map.of("id", WORKSPACE_UUID.toString()))
-        .given("no storage container resources exist for the given workspace_id")
+        .given("authenticated with the given {email}", ImmutableMap.of("email", USER_EMAIL))
+        .given(
+            "a workspace with the given {id} exists",
+            ImmutableMap.of("id", WORKSPACE_UUID.toString()))
+        .given(
+            "an Azure cloud context exists for the given {workspace_id}",
+            ImmutableMap.of("workspace_id", WORKSPACE_UUID.toString()))
+        .given(
+            "no Azure storage container resources exist for the given {workspace_id}",
+            ImmutableMap.of("workspace_id", WORKSPACE_UUID.toString()))
         .uponReceiving("a request to enumerate resources")
-        .method("GET")
+        .method(HttpMethod.GET.name())
         .matchPath(
             enumerateResourcesPath(UUID_REGEX_PATTERN),
             enumerateResourcesPath(WORKSPACE_UUID.toString()))
@@ -170,10 +202,10 @@ public class WsmPactTest {
             ResourceType.AZURE_STORAGE_CONTAINER.toString(),
             ResourceType.AZURE_STORAGE_CONTAINER.toString())
         .matchQuery("offset", /* regex= */ "[0-9]+", /* example= */ "0")
-        .matchQuery("limit", /* regex= */ "[0-9]+", /* example= */ "0")
-        .headers(acceptJson())
+        .matchQuery("limit", /* regex= */ "[1-9](0-9)*", /* example= */ "1")
+        .headers(mergeHeaders(authorization(BEARER_TOKEN), acceptJson()))
         .willRespondWith()
-        .status(200)
+        .status(HttpStatus.OK.value())
         .headers(contentTypeJson())
         .body(
             newJsonBody(
@@ -185,14 +217,20 @@ public class WsmPactTest {
   }
 
   @Pact(consumer = "wds", provider = "workspacemanager")
-  RequestResponsePact enumerateStorageContainersWhenOneExists(PactDslWithProvider builder) {
+  RequestResponsePact enumerateStorageContainers_oneExists(PactDslWithProvider builder) {
     return builder
-        .given("a workspace with the given id exists", Map.of("id", WORKSPACE_UUID.toString()))
+        .given("authenticated with the given {email}", ImmutableMap.of("email", USER_EMAIL))
         .given(
-            "a storage container resource exists for the given workspace_id",
-            Map.of("workspace_id", WORKSPACE_UUID.toString()))
+            "a workspace with the given {id} exists",
+            ImmutableMap.of("id", WORKSPACE_UUID.toString()))
+        .given(
+            "an Azure cloud context exists for the given {workspace_id}",
+            ImmutableMap.of("workspace_id", WORKSPACE_UUID.toString()))
+        .given(
+            "an Azure storage container resource exists for the given {workspace_id}",
+            ImmutableMap.of("workspace_id", WORKSPACE_UUID.toString()))
         .uponReceiving("a request to enumerate storage containers")
-        .method("GET")
+        .method(HttpMethod.GET.name())
         .matchPath(
             enumerateResourcesPath(UUID_REGEX_PATTERN),
             enumerateResourcesPath(WORKSPACE_UUID.toString()))
@@ -205,9 +243,9 @@ public class WsmPactTest {
             "limit",
             String.valueOf(NUM_SNAPSHOTS_REQUESTED),
             String.valueOf(NUM_SNAPSHOTS_REQUESTED))
-        .headers(acceptJson())
+        .headers(mergeHeaders(authorization(BEARER_TOKEN), acceptJson()))
         .willRespondWith()
-        .status(200)
+        .status(HttpStatus.OK.value())
         .headers(contentTypeJson())
         .body(
             newJsonBody(
@@ -240,14 +278,17 @@ public class WsmPactTest {
   }
 
   @Pact(consumer = "wds", provider = "workspacemanager")
-  RequestResponsePact enumerateSnapshotsWhenNoneExist(PactDslWithProvider builder) {
+  RequestResponsePact enumerateSnapshots_noneExist(PactDslWithProvider builder) {
     return builder
-        .given("a workspace with the given id exists", Map.of("id", WORKSPACE_UUID.toString()))
+        .given("authenticated with the given {email}", ImmutableMap.of("email", USER_EMAIL))
         .given(
-            "no snapshot resources exist for the given workspace_id",
-            Map.of("workspace_id", WORKSPACE_UUID.toString()))
+            "a workspace with the given {id} exists",
+            ImmutableMap.of("id", WORKSPACE_UUID.toString()))
+        .given(
+            "no snapshot resources exist for the given {workspace_id}",
+            ImmutableMap.of("workspace_id", WORKSPACE_UUID.toString()))
         .uponReceiving("a request to enumerate snapshot resources")
-        .method("GET")
+        .method(HttpMethod.GET.name())
         .matchPath(
             enumerateResourcesPath(UUID_REGEX_PATTERN),
             enumerateResourcesPath(WORKSPACE_UUID.toString()))
@@ -264,9 +305,9 @@ public class WsmPactTest {
             "limit",
             String.valueOf(NUM_SNAPSHOTS_REQUESTED),
             String.valueOf(NUM_SNAPSHOTS_REQUESTED))
-        .headers(acceptJson())
+        .headers(mergeHeaders(authorization(BEARER_TOKEN), acceptJson()))
         .willRespondWith()
-        .status(200)
+        .status(HttpStatus.OK.value())
         .headers(contentTypeJson())
         .body(
             newJsonBody(
@@ -278,18 +319,20 @@ public class WsmPactTest {
   }
 
   @Pact(consumer = "wds", provider = "workspacemanager")
-  RequestResponsePact enumerateSnapshotsWhenSomeExist(PactDslWithProvider builder) {
+  RequestResponsePact enumerateSnapshots_someExist(PactDslWithProvider builder) {
     return builder
-        .given("a workspace with the given id exists", Map.of("id", WORKSPACE_UUID.toString()))
+        .given("authenticated with the given {email}", ImmutableMap.of("email", USER_EMAIL))
         .given(
-            "{num_snapshots} snapshots exist for the given workspace_id",
-            Map.of(
-                "workspace_id",
-                WORKSPACE_UUID.toString(),
-                "num_snapshots",
-                NUM_SNAPSHOTS_THAT_EXIST))
+            "a workspace with the given {id} exists",
+            ImmutableMap.of("id", WORKSPACE_UUID.toString()))
+        .given(
+            "{num_snapshots} snapshots exist for the given {workspace_id}",
+            new ImmutableMap.Builder<String, String>()
+                .put("num_snapshots", String.valueOf(NUM_SNAPSHOTS_THAT_EXIST))
+                .put("workspace_id", WORKSPACE_UUID.toString())
+                .build())
         .uponReceiving("a paginated request to enumerate snapshot resources")
-        .method("GET")
+        .method(HttpMethod.GET.name())
         .matchPath(
             enumerateResourcesPath(UUID_REGEX_PATTERN),
             enumerateResourcesPath(WORKSPACE_UUID.toString()))
@@ -306,9 +349,9 @@ public class WsmPactTest {
             "limit",
             String.valueOf(NUM_SNAPSHOTS_REQUESTED),
             String.valueOf(NUM_SNAPSHOTS_REQUESTED))
-        .headers(acceptJson())
+        .headers(mergeHeaders(authorization(BEARER_TOKEN), acceptJson()))
         .willRespondWith()
-        .status(200)
+        .status(HttpStatus.OK.value())
         .headers(contentTypeJson())
         .body(
             newJsonBody(
@@ -337,29 +380,39 @@ public class WsmPactTest {
   }
 
   @Pact(consumer = "wds", provider = "workspacemanager")
-  RequestResponsePact createAzureStorageContainerSasTokenSuccess(PactDslWithProvider builder) {
+  RequestResponsePact createAzureStorageContainerSasToken_ok(PactDslWithProvider builder) {
     return builder
-        .given("a workspace with the given id exists", Map.of("id", WORKSPACE_UUID.toString()))
+        .given("authenticated with the given {email}", ImmutableMap.of("email", USER_EMAIL))
         .given(
-            "a storage container resource exists for the given workspace_id",
-            Map.of("workspace_id", WORKSPACE_UUID.toString()))
-        .given("permission to create an azure storage container sas token")
+            "a workspace with the given {id} exists",
+            ImmutableMap.of("id", WORKSPACE_UUID.toString()))
+        .given(
+            "an Azure cloud context exists for the given {workspace_id}",
+            ImmutableMap.of("workspace_id", WORKSPACE_UUID.toString()))
+        .given(
+            "an Azure storage container resource exists for the given {workspace_id}",
+            ImmutableMap.of("workspace_id", WORKSPACE_UUID.toString()))
+        .given(
+            "permission to create an azure storage container sas token for the given {workspace_id}",
+            ImmutableMap.of("workspace_id", WORKSPACE_UUID.toString()))
         .uponReceiving("a request to create an azure storage container sas token")
-        .method("POST")
+        .method(HttpMethod.POST.name())
         .matchPath(
             sasTokenPath(UUID_REGEX_PATTERN, UUID_REGEX_PATTERN),
             sasTokenPath(WORKSPACE_UUID.toString(), RESOURCE_UUID.toString()))
         .pathFromProviderState(
             sasTokenPath(WORKSPACE_UUID.toString(), "${storageContainerResourceId}"),
             sasTokenPath(WORKSPACE_UUID.toString(), RESOURCE_UUID.toString()))
-        .headers(contentTypeJson())
+        .headers(mergeHeaders(authorization(BEARER_TOKEN), contentTypeJson()))
         .willRespondWith()
-        .status(200) // success
+        .status(HttpStatus.OK.value())
         .headers(contentTypeJson())
         .body(
             newJsonBody(
                     body -> {
-                      body.matchUrl("url", /* basePath= */ ".*", /* pathFragments= */ ".*");
+                      // TODO: use matchUrl, just note it produces a very picky regex and is hard to
+                      //   use, which is why it's not already done here
+                      body.stringType("url");
                     })
                 .build())
         .toPact();
@@ -369,38 +422,46 @@ public class WsmPactTest {
   @PactTestFor(
       providerName = "workspacemanager",
       pactMethods = {
-        "enumerateStorageContainersWhenOneExists",
-        "createAzureStorageContainerSasTokenSuccess"
+        "enumerateStorageContainers_oneExists",
+        "createAzureStorageContainerSasToken_ok"
       },
       pactVersion = PactSpecVersion.V3)
-  void testGetBlobStorageUrlSuccess(MockServer mockServer) {
+  void getBlobStorageUrl_ok(MockServer mockServer) {
     var wsmDao = buildWsmDao(mockServer);
 
-    var actualStorageUrl =
-        wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), /* authToken= */ null);
+    var blobStorageUrl = wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), BEARER_TOKEN);
 
-    assertNotNull(actualStorageUrl);
+    assertNotNull(blobStorageUrl);
+    // TODO: the sas URL has some pretty strict formatting requirements and making some assertions
+    //   about what we can do with the URL when interacting with the BlobServiceClient might enhance
+    //   our coverage
   }
 
   @Pact(consumer = "wds", provider = "workspacemanager")
-  RequestResponsePact createAzureStorageContainerSasTokenForbidden(PactDslWithProvider builder) {
+  RequestResponsePact createAzureStorageContainerSasToken_forbidden(PactDslWithProvider builder) {
     return builder
-        .given("a workspace with the given id exists", Map.of("id", WORKSPACE_UUID.toString()))
+        .given("authenticated with the given {email}", ImmutableMap.of("email", USER_EMAIL))
         .given(
-            "a storage container resource exists for the given workspace_id",
-            Map.of("workspace_id", WORKSPACE_UUID.toString()))
+            "a workspace with the given {id} exists",
+            ImmutableMap.of("id", WORKSPACE_UUID.toString()))
+        .given(
+            "an Azure cloud context exists for the given {workspace_id}",
+            ImmutableMap.of("workspace_id", WORKSPACE_UUID.toString()))
+        .given(
+            "an Azure storage container resource exists for the given {workspace_id}",
+            ImmutableMap.of("workspace_id", WORKSPACE_UUID.toString()))
         .given("no permission to create an azure storage container sas token")
         .uponReceiving("a request to create an azure storage container sas token")
-        .method("POST")
+        .method(HttpMethod.POST.name())
         .matchPath(
             sasTokenPath(UUID_REGEX_PATTERN, UUID_REGEX_PATTERN),
             sasTokenPath(WORKSPACE_UUID.toString(), RESOURCE_UUID.toString()))
         .pathFromProviderState(
             sasTokenPath(WORKSPACE_UUID.toString(), "${storageContainerResourceId}"),
             sasTokenPath(WORKSPACE_UUID.toString(), RESOURCE_UUID.toString()))
-        .headers(contentTypeJson())
+        .headers(mergeHeaders(authorization(BEARER_TOKEN), contentTypeJson()))
         .willRespondWith()
-        .status(403)
+        .status(HttpStatus.FORBIDDEN.value())
         .toPact();
   }
 
@@ -408,43 +469,39 @@ public class WsmPactTest {
   @PactTestFor(
       providerName = "workspacemanager",
       pactMethods = {
-        "enumerateStorageContainersWhenOneExists",
-        "createAzureStorageContainerSasTokenForbidden"
+        "enumerateStorageContainers_oneExists",
+        "createAzureStorageContainerSasToken_forbidden"
       },
       pactVersion = PactSpecVersion.V3)
-  void testGetBlobStorageUrlNoPermission(MockServer mockServer) {
+  void getBlobStorageUrl_forbidden(MockServer mockServer) {
     var wsmDao = buildWsmDao(mockServer);
     var thrown =
         assertThrows(
             WorkspaceManagerException.class,
-            () -> wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), /* authToken= */ null));
+            () -> wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), BEARER_TOKEN));
     assertEquals(HttpStatus.FORBIDDEN, thrown.getStatus());
   }
 
   @Test
   @PactTestFor(
       providerName = "workspacemanager",
-      pactMethods = {
-        "enumerateStorageContainersWhenNoneExist",
-      },
+      pactMethod = "enumerateStorageContainers_noneExist",
       pactVersion = PactSpecVersion.V3)
-  void testGetBlobStorageUrlNoResources(MockServer mockServer) {
+  void getBlobStorageUrl_noStorageContainers(MockServer mockServer) {
     var wsmDao = buildWsmDao(mockServer);
     var thrown =
         assertThrows(
             WorkspaceManagerException.class,
-            () -> wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), /* authToken= */ null));
+            () -> wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), BEARER_TOKEN));
     assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, thrown.getStatus());
   }
 
   @Test
   @PactTestFor(
       providerName = "workspacemanager",
-      pactMethods = {
-        "enumerateSnapshotsWhenNoneExist",
-      },
+      pactMethod = "enumerateSnapshots_noneExist",
       pactVersion = PactSpecVersion.V3)
-  void testExistingPolicySnapshotIdsEmpty(MockServer mockServer) {
+  void existingPolicySnapshotIds_noneExist(MockServer mockServer) {
     var snapshotIds =
         tdrSnapshotSupport(mockServer).existingPolicySnapshotIds(NUM_SNAPSHOTS_REQUESTED);
     assertTrue(snapshotIds.isEmpty());
@@ -453,11 +510,9 @@ public class WsmPactTest {
   @Test
   @PactTestFor(
       providerName = "workspacemanager",
-      pactMethods = {
-        "enumerateSnapshotsWhenSomeExist",
-      },
+      pactMethod = "enumerateSnapshots_someExist",
       pactVersion = PactSpecVersion.V3)
-  void testExistingPolicySnapshotIdsWithSnapshotsPresent(MockServer mockServer) {
+  void existingPolicySnapshotIds_someExist(MockServer mockServer) {
     var snapshotIds =
         tdrSnapshotSupport(mockServer).existingPolicySnapshotIds(NUM_SNAPSHOTS_REQUESTED);
     assertEquals(NUM_SNAPSHOTS_THAT_EXIST, snapshotIds.size());
@@ -471,6 +526,34 @@ public class WsmPactTest {
     WorkspaceManagerClientFactory clientFactory =
         new HttpWorkspaceManagerClientFactory(mockServer.getUrl());
     return new WorkspaceManagerDao(clientFactory, WORKSPACE_UUID.toString(), new RestClientRetry());
+  }
+
+  // headers
+  private static ImmutableMap<String, String> authorization(String bearerToken) {
+    return new ImmutableMap.Builder<String, String>()
+        .put("Authorization", String.format("Bearer %s", bearerToken))
+        .build();
+  }
+
+  private static ImmutableMap<String, String> contentTypeJson() {
+    // pact will automatically assume an expected Content-Type of "application/json; charset=UTF-8"
+    // unless we explicitly tell it otherwise
+    return new ImmutableMap.Builder<String, String>()
+        .put("Content-Type", "application/json")
+        .build();
+  }
+
+  private static ImmutableMap<String, String> acceptJson() {
+    return new ImmutableMap.Builder<String, String>().put("Accept", "application/json").build();
+  }
+
+  @SafeVarargs
+  private static ImmutableMap<String, String> mergeHeaders(
+      ImmutableMap<String, String>... headerMaps) {
+    return Arrays.stream(headerMaps)
+        .map(map -> new ImmutableMap.Builder<String, String>().putAll(map))
+        .reduce(new ImmutableMap.Builder<>(), (first, second) -> first.putAll(second.build()))
+        .build();
   }
 
   // paths
@@ -487,20 +570,5 @@ public class WsmPactTest {
     return String.format(
         "/api/workspaces/v1/%s/resources/controlled/azure/storageContainer/%s/getSasToken",
         workspaceIdPart, resourceIdPart);
-  }
-
-  // headers
-  private static Map<String, String> contentTypeJson() {
-    Map<String, String> headers = new HashMap<>();
-    // pact will automatically assume an expected Content-Type of "application/json; charset=UTF-8"
-    // unless we explicitly tell it otherwise
-    headers.put("Content-Type", "application/json");
-    return headers;
-  }
-
-  private static Map<String, String> acceptJson() {
-    Map<String, String> headers = new HashMap<>();
-    headers.put("Accept", "application/json");
-    return headers;
   }
 }
