@@ -9,6 +9,8 @@ import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Logic to convert a PFB's GenericRecord to WDS's Record */
 public class PfbRecordConverter {
@@ -18,6 +20,8 @@ public class PfbRecordConverter {
   public static final String OBJECT_FIELD = "object";
 
   private final Map<String, Map<String, DataTypeMapping>> recordTypeSchemas;
+
+  private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   public PfbRecordConverter(Map<String, Map<String, DataTypeMapping>> recordTypeSchemas) {
     this.recordTypeSchemas = recordTypeSchemas;
@@ -89,6 +93,14 @@ public class PfbRecordConverter {
         returnValue = attribute.toString();
     }
     if (returnValue == null) {
+      // If we reach here, it means that the actual object returned by Avro did not
+      // match the expected WDS data type, and the "instanceof" clauses in the cases above
+      // don't satisfy. This should only happen if our logic is faulty.
+      logger.warn(
+          "mismatched attribute datatype: expected "
+              + targetDataType
+              + " but found "
+              + attribute.getClass().getSimpleName());
       returnValue = attribute.toString();
     }
 
