@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
@@ -15,6 +16,9 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class PfbRecordConverterTest {
 
@@ -175,5 +179,51 @@ class PfbRecordConverterTest {
     assertEquals("https://some/path/to/a/file", actual.getAttributeValue("afile"));
     assertEquals("3.14159", actual.getAttributeValue("pi"));
     assertEquals("true", actual.getAttributeValue("booly"));
+  }
+
+  // arguments for parameterized test, in the form of: input value, input datatype, expected return
+  // value
+  static Stream<Arguments> provideConvertAttributeTypeArgs() {
+    return Stream.of(
+        // most basic case
+        Arguments.of("hello", DataTypeMapping.STRING, "hello"),
+        // null inputs
+        Arguments.of(null, DataTypeMapping.STRING, null),
+        Arguments.of(null, DataTypeMapping.BOOLEAN, null),
+        // numbers
+        Arguments.of(Long.MIN_VALUE, DataTypeMapping.NUMBER, BigDecimal.valueOf(Long.MIN_VALUE)),
+        Arguments.of(Long.MAX_VALUE, DataTypeMapping.NUMBER, BigDecimal.valueOf(Long.MAX_VALUE)),
+        Arguments.of(
+            Integer.MIN_VALUE, DataTypeMapping.NUMBER, BigDecimal.valueOf(Integer.MIN_VALUE)),
+        Arguments.of(
+            Integer.MAX_VALUE, DataTypeMapping.NUMBER, BigDecimal.valueOf(Integer.MAX_VALUE)),
+        Arguments.of(Float.MIN_VALUE, DataTypeMapping.NUMBER, BigDecimal.valueOf(Float.MIN_VALUE)),
+        Arguments.of(Float.MAX_VALUE, DataTypeMapping.NUMBER, BigDecimal.valueOf(Float.MAX_VALUE)),
+        Arguments.of(
+            Double.MIN_VALUE, DataTypeMapping.NUMBER, BigDecimal.valueOf(Double.MIN_VALUE)),
+        Arguments.of(
+            Double.MAX_VALUE, DataTypeMapping.NUMBER, BigDecimal.valueOf(Double.MAX_VALUE)),
+        // booleans
+        Arguments.of(true, DataTypeMapping.BOOLEAN, true),
+        Arguments.of(false, DataTypeMapping.BOOLEAN, false),
+
+        // mismatched inputs and datatypes - will be toString()-ed
+        Arguments.of(3.14, DataTypeMapping.BOOLEAN, "3.14"),
+        Arguments.of(true, DataTypeMapping.NUMBER, "true"),
+
+        // null datatypes - will be toString()-ed
+        Arguments.of("hi", null, "hi"),
+        Arguments.of(3.14, null, "3.14"),
+        Arguments.of(true, null, "true"));
+  }
+
+  @ParameterizedTest(name = "with input of {0} and {1}, return value should be {2}")
+  @MethodSource("provideConvertAttributeTypeArgs")
+  void convertAttributeType(Object input, DataTypeMapping inputDataType, Object expected) {
+    // schema doesn't matter here for creating the converter
+    PfbRecordConverter pfbRecordConverter = new PfbRecordConverter(Map.of());
+
+    Object actual = pfbRecordConverter.convertAttributeType(input, inputDataType);
+    assertEquals(expected, actual);
   }
 }
