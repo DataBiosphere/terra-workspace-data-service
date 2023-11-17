@@ -13,7 +13,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.PfbParsing
 public class PfbSchemaConverter {
 
   /** Utility class to ease handling of array types */
-  record PfbDataType(Boolean isArray, Schema.Type schemaType) {}
+  record PfbDataType(boolean isArray, Schema.Type schemaType) {}
 
   // ENUM datatype should be treated as a string
   // FIXED and BYTE datatypes will be treated as string, but unlikely to give decent output
@@ -41,7 +41,7 @@ public class PfbSchemaConverter {
 
   /** return the WDS DataTypeMapping to use for a given PfbDataType */
   DataTypeMapping mapTypes(PfbDataType pfbDataType) {
-    if (pfbDataType.isArray()) {
+    if (pfbDataType.isArray) {
       return ARRAY_CONVERSIONS.getOrDefault(
           pfbDataType.schemaType, DataTypeMapping.ARRAY_OF_STRING);
     } else {
@@ -52,7 +52,7 @@ public class PfbSchemaConverter {
   /** return the PfbDataType for a single field within the PFB's "object" column */
   PfbDataType getFieldSchema(Schema fieldSchema) {
     if (!fieldSchema.isUnion()) {
-      boolean isArray = fieldSchema.getType() == Schema.Type.ARRAY;
+      boolean isArray = Schema.Type.ARRAY.equals(fieldSchema.getType());
       Schema.Type schemaType =
           isArray ? fieldSchema.getElementType().getType() : fieldSchema.getType();
       return new PfbDataType(isArray, schemaType);
