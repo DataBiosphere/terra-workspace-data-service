@@ -97,10 +97,9 @@ public class PfbRecordConverter {
       // match the expected WDS data type, and the "instanceof" clauses in the cases above
       // don't satisfy. This should only happen if our logic is faulty.
       logger.warn(
-          "mismatched attribute datatype: expected "
-              + targetDataType
-              + " but found "
-              + attribute.getClass().getSimpleName());
+          "mismatched attribute datatype: expected {} but found {}",
+          targetDataType,
+          attribute.getClass().getSimpleName());
       returnValue = attribute.toString();
     }
 

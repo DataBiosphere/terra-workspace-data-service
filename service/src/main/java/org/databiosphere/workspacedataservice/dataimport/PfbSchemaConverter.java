@@ -41,7 +41,7 @@ public class PfbSchemaConverter {
 
   /** return the WDS DataTypeMapping to use for a given PfbDataType */
   DataTypeMapping mapTypes(PfbDataType pfbDataType) {
-    if (pfbDataType.isArray) {
+    if (pfbDataType.isArray()) {
       return ARRAY_CONVERSIONS.getOrDefault(
           pfbDataType.schemaType, DataTypeMapping.ARRAY_OF_STRING);
     } else {
