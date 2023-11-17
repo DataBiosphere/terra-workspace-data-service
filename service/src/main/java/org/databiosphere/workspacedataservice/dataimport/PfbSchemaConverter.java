@@ -52,7 +52,7 @@ public class PfbSchemaConverter {
   /** return the PfbDataType for a single field within the PFB's "object" column */
   PfbDataType getFieldSchema(Schema fieldSchema) {
     if (!fieldSchema.isUnion()) {
-      Boolean isArray = fieldSchema.getType() == Schema.Type.ARRAY;
+      boolean isArray = fieldSchema.getType() == Schema.Type.ARRAY;
       Schema.Type schemaType =
           isArray ? fieldSchema.getElementType().getType() : fieldSchema.getType();
       return new PfbDataType(isArray, schemaType);
