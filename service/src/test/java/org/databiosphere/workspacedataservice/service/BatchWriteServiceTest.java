@@ -144,7 +144,7 @@ class BatchWriteServiceTest {
       //    - 1 call for batch #8 which will be (item, widget)
       //    - 7 more calls for batches #9-15 which will be (widget, widget)
       // * inferTypes once for each of "thing", "item", and "widget"
-      batchWriteService.batchWritePfbStream(pfbStream, INSTANCE, Optional.of(ID_FIELD));
+      batchWriteService.batchWritePfbStream(pfbStream, INSTANCE, Optional.of(ID_FIELD), Map.of());
 
       // verify calls to batchUpsertWithErrorCapture
       verify(recordService, times(3))
@@ -189,7 +189,8 @@ class BatchWriteServiceTest {
     Map<String, Integer> counts = Map.of("thing", 5, "item", 10, "widget", 15);
     try (DataFileStream<GenericRecord> pfbStream = PfbTestUtils.mockPfbStream(counts)) {
       BatchWriteResult result =
-          batchWriteService.batchWritePfbStream(pfbStream, INSTANCE, Optional.of(ID_FIELD));
+          batchWriteService.batchWritePfbStream(
+              pfbStream, INSTANCE, Optional.of(ID_FIELD), Map.of());
       assertEquals(3, result.entrySet().size());
       assertEquals(5, result.getUpdatedCount(RecordType.valueOf("thing")));
       assertEquals(10, result.getUpdatedCount(RecordType.valueOf("item")));
@@ -208,7 +209,8 @@ class BatchWriteServiceTest {
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
       BatchWriteResult result =
-          batchWriteService.batchWritePfbStream(dataStream, INSTANCE, Optional.of(ID_FIELD));
+          batchWriteService.batchWritePfbStream(
+              dataStream, INSTANCE, Optional.of(ID_FIELD), Map.of());
 
       assertEquals(2, result.entrySet().size());
       assertEquals(3, result.getUpdatedCount(RecordType.valueOf("data_release")));

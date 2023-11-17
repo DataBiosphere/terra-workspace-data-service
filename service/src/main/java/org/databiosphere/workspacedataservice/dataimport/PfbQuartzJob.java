@@ -6,8 +6,10 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 
 import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.pfb.PfbReader;
+import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -17,6 +19,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
@@ -25,6 +28,7 @@ import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -78,12 +82,21 @@ public class PfbQuartzJob extends QuartzJob {
     URL url = getJobDataUrl(jobDataMap, ARG_URL);
     UUID targetInstance = getJobDataUUID(jobDataMap, ARG_INSTANCE);
 
+    // Retrieve the schema(s) as reported by PfbReader for use later.
+    // N.B. It does not seem worthwhile to create/modify Postgres tables here, based on
+    // this retrieved schema. This schema does not handle file, date, datetime etc. columns yet -
+    // those are only determined after sampling values within the records. So, if we updated tables
+    // now we'd still have to do it again later.
+    //
+    // This is HTTP connection #1 to the PFB.
+    Map<String, Map<String, DataTypeMapping>> recordTypeSchemas = calculateSchema(url);
+
     // Find all the snapshot ids in the PFB, then create or verify references from the
     // workspace to the snapshot for each of those snapshot ids.
     // This will throw an exception if there are policy conflicts between the workspace
     // and the snapshots.
-    // TODO AJ-1452: can this pass also identify all schemas/datatypes?
-    // TODO AJ-1452: can this pass also check if record types are contiguous?
+    //
+    // This is HTTP connection #2 to the PFB.
     logger.info("Finding snapshots in this PFB...");
     Set<UUID> snapshotIds = withPfbStream(url, this::findSnapshots);
 
@@ -91,10 +104,26 @@ public class PfbQuartzJob extends QuartzJob {
     linkSnapshots(snapshotIds);
 
     // Import all the tables and rows inside the PFB.
+    //
+    // This is HTTP connection #3 to the PFB.
     logger.info("Importing tables and rows from this PFB...");
-    withPfbStream(url, stream -> importTables(stream, targetInstance));
+    withPfbStream(url, stream -> importTables(stream, targetInstance, recordTypeSchemas));
 
     // TODO AJ-1453: save the result of importTables and persist the to the job
+  }
+
+  Map<String, Map<String, DataTypeMapping>> calculateSchema(URL url) {
+    List<Schema> pfbSchemas;
+    try {
+      pfbSchemas = PfbReader.getPfbSchema(url.toString());
+    } catch (IOException e) {
+      throw new PfbParsingException("Could not read PFB schemas: " + e.getMessage(), e);
+    }
+
+    // convert the PFB schema to a WDS schema
+    PfbSchemaConverter pfbSchemaConverter = new PfbSchemaConverter();
+    return pfbSchemas.stream()
+        .collect(Collectors.toMap(Schema::getName, pfbSchemaConverter::pfbSchemaToWdsSchema));
   }
 
   /**
@@ -126,9 +155,13 @@ public class PfbQuartzJob extends QuartzJob {
    *
    * @param dataStream stream representing the PFB.
    */
-  BatchWriteResult importTables(DataFileStream<GenericRecord> dataStream, UUID targetInstance) {
+  BatchWriteResult importTables(
+      DataFileStream<GenericRecord> dataStream,
+      UUID targetInstance,
+      Map<String, Map<String, DataTypeMapping>> recordTypeSchemas) {
     BatchWriteResult result =
-        batchWriteService.batchWritePfbStream(dataStream, targetInstance, Optional.of(ID_FIELD));
+        batchWriteService.batchWritePfbStream(
+            dataStream, targetInstance, Optional.of(ID_FIELD), recordTypeSchemas);
 
     result
         .entrySet()

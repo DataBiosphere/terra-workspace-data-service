@@ -10,6 +10,7 @@ import bio.terra.pfb.PfbReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dataimport.PfbTestUtils;
@@ -27,7 +28,8 @@ class PfbStreamWriteHandlerTest {
 
     // create a mock PFB stream with 10 rows in it and a PfbStreamWriteHandler for that stream
     DataFileStream<GenericRecord> dataFileStream = PfbTestUtils.mockPfbStream(10, "someType");
-    PfbStreamWriteHandler pfbStreamWriteHandler = new PfbStreamWriteHandler(dataFileStream);
+    PfbStreamWriteHandler pfbStreamWriteHandler =
+        new PfbStreamWriteHandler(dataFileStream, Map.of());
 
     StreamingWriteHandler.WriteStreamInfo batch; // used in assertions below
 
@@ -55,7 +57,8 @@ class PfbStreamWriteHandlerTest {
   @ValueSource(ints = {0, 1, 49, 50, 51, 99, 100, 101})
   void inputStreamOfCount(Integer numRows) {
     DataFileStream<GenericRecord> dataFileStream = PfbTestUtils.mockPfbStream(numRows, "someType");
-    PfbStreamWriteHandler pfbStreamWriteHandler = new PfbStreamWriteHandler(dataFileStream);
+    PfbStreamWriteHandler pfbStreamWriteHandler =
+        new PfbStreamWriteHandler(dataFileStream, Map.of());
 
     int batchSize = 50;
 
@@ -79,7 +82,7 @@ class PfbStreamWriteHandlerTest {
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
 
-      PfbStreamWriteHandler pswh = new PfbStreamWriteHandler(dataStream);
+      PfbStreamWriteHandler pswh = new PfbStreamWriteHandler(dataStream, Map.of());
       StreamingWriteHandler.WriteStreamInfo streamInfo = pswh.readRecords(2);
       /*
         Expected records:

@@ -155,7 +155,7 @@ class PfbQuartzJobTest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
     // We're not testing this, so it doesn't matter what returns
-    when(batchWriteService.batchWritePfbStream(any(), any(), any()))
+    when(batchWriteService.batchWritePfbStream(any(), any(), any(), any()))
         .thenReturn(BatchWriteResult.empty());
 
     buildQuartzJob().execute(mockContext);
@@ -175,7 +175,7 @@ class PfbQuartzJobTest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
     // We're not testing this, so it doesn't matter what returns
-    when(batchWriteService.batchWritePfbStream(any(), any(), any()))
+    when(batchWriteService.batchWritePfbStream(any(), any(), any(), any()))
         .thenReturn(BatchWriteResult.empty());
 
     buildQuartzJob().execute(mockContext);

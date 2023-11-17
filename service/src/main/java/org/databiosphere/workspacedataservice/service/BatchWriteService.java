@@ -184,8 +184,12 @@ public class BatchWriteService {
    */
   @WriteTransaction
   public BatchWriteResult batchWritePfbStream(
-      DataFileStream<GenericRecord> is, UUID instanceId, Optional<String> primaryKey) {
-    try (PfbStreamWriteHandler streamingWriteHandler = new PfbStreamWriteHandler(is)) {
+      DataFileStream<GenericRecord> is,
+      UUID instanceId,
+      Optional<String> primaryKey,
+      Map<String, Map<String, DataTypeMapping>> recordTypeSchemas) {
+    try (PfbStreamWriteHandler streamingWriteHandler =
+        new PfbStreamWriteHandler(is, recordTypeSchemas)) {
       return consumeWriteStream(streamingWriteHandler, instanceId, null, primaryKey);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
