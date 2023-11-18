@@ -261,8 +261,8 @@ class PfbRecordConverterTest {
 
   @Test
   void nullFieldArgument() {
+    PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
     assertThrows(
-        PfbParsingException.class,
-        () -> new PfbRecordConverter().convertAttributeType("anything", null));
+        PfbParsingException.class, () -> pfbRecordConverter.convertAttributeType("anything", null));
   }
 }
