@@ -82,15 +82,6 @@ public class PfbQuartzJob extends QuartzJob {
     URL url = getJobDataUrl(jobDataMap, ARG_URL);
     UUID targetInstance = getJobDataUUID(jobDataMap, ARG_INSTANCE);
 
-    // Retrieve the schema(s) as reported by PfbReader for use later.
-    // N.B. It does not seem worthwhile to create/modify Postgres tables here, based on
-    // this retrieved schema. This schema does not handle file, date, datetime etc. columns yet -
-    // those are only determined after sampling values within the records. So, if we updated tables
-    // now we'd still have to do it again later.
-    //
-    // This is HTTP connection #1 to the PFB.
-    Map<String, Map<String, DataTypeMapping>> recordTypeSchemas = calculateSchema(url);
-
     // Find all the snapshot ids in the PFB, then create or verify references from the
     // workspace to the snapshot for each of those snapshot ids.
     // This will throw an exception if there are policy conflicts between the workspace
@@ -107,7 +98,7 @@ public class PfbQuartzJob extends QuartzJob {
     //
     // This is HTTP connection #3 to the PFB.
     logger.info("Importing tables and rows from this PFB...");
-    withPfbStream(url, stream -> importTables(stream, targetInstance, recordTypeSchemas));
+    withPfbStream(url, stream -> importTables(stream, targetInstance));
 
     // TODO AJ-1453: save the result of importTables and persist the to the job
   }
@@ -155,13 +146,9 @@ public class PfbQuartzJob extends QuartzJob {
    *
    * @param dataStream stream representing the PFB.
    */
-  BatchWriteResult importTables(
-      DataFileStream<GenericRecord> dataStream,
-      UUID targetInstance,
-      Map<String, Map<String, DataTypeMapping>> recordTypeSchemas) {
+  BatchWriteResult importTables(DataFileStream<GenericRecord> dataStream, UUID targetInstance) {
     BatchWriteResult result =
-        batchWriteService.batchWritePfbStream(
-            dataStream, targetInstance, Optional.of(ID_FIELD), recordTypeSchemas);
+        batchWriteService.batchWritePfbStream(dataStream, targetInstance, Optional.of(ID_FIELD));
 
     result
         .entrySet()
