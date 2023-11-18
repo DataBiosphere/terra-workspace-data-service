@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -14,7 +13,6 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -125,43 +123,34 @@ class PfbRecordConverterTest {
     assertEquals(List.of("enumValue2", "enumValue1"), actual.getAttributeValue("arrayOfEnums"));
   }
 
-  // arguments for parameterized test, in the form of: input value, input datatype, expected return
-  // value
+  // arguments for parameterized test, in the form of: input value, expected return value
   static Stream<Arguments> provideConvertScalarAttributesArgs() {
     return Stream.of(
         // most basic case
-        Arguments.of("hello", Schema.Type.STRING, "hello"),
+        Arguments.of("hello", "hello"),
         // null inputs
-        Arguments.of(null, Schema.Type.STRING, null),
-        Arguments.of(null, Schema.Type.BOOLEAN, null),
+        Arguments.of(null, null),
         // numbers
-        Arguments.of(Long.MIN_VALUE, Schema.Type.LONG, BigDecimal.valueOf(Long.MIN_VALUE)),
-        Arguments.of(Long.MAX_VALUE, Schema.Type.LONG, BigDecimal.valueOf(Long.MAX_VALUE)),
-        Arguments.of(Integer.MIN_VALUE, Schema.Type.INT, BigDecimal.valueOf(Integer.MIN_VALUE)),
-        Arguments.of(Integer.MAX_VALUE, Schema.Type.INT, BigDecimal.valueOf(Integer.MAX_VALUE)),
-        Arguments.of(Float.MIN_VALUE, Schema.Type.FLOAT, BigDecimal.valueOf(Float.MIN_VALUE)),
-        Arguments.of(Float.MAX_VALUE, Schema.Type.FLOAT, BigDecimal.valueOf(Float.MAX_VALUE)),
-        Arguments.of(Double.MIN_VALUE, Schema.Type.DOUBLE, BigDecimal.valueOf(Double.MIN_VALUE)),
-        Arguments.of(Double.MAX_VALUE, Schema.Type.DOUBLE, BigDecimal.valueOf(Double.MAX_VALUE)),
+        Arguments.of(Long.MIN_VALUE, BigDecimal.valueOf(Long.MIN_VALUE)),
+        Arguments.of(Long.MAX_VALUE, BigDecimal.valueOf(Long.MAX_VALUE)),
+        Arguments.of(Integer.MIN_VALUE, BigDecimal.valueOf(Integer.MIN_VALUE)),
+        Arguments.of(Integer.MAX_VALUE, BigDecimal.valueOf(Integer.MAX_VALUE)),
+        Arguments.of(Float.MIN_VALUE, BigDecimal.valueOf(Float.MIN_VALUE)),
+        Arguments.of(Float.MAX_VALUE, BigDecimal.valueOf(Float.MAX_VALUE)),
+        Arguments.of(Double.MIN_VALUE, BigDecimal.valueOf(Double.MIN_VALUE)),
+        Arguments.of(Double.MAX_VALUE, BigDecimal.valueOf(Double.MAX_VALUE)),
         // booleans
-        Arguments.of(true, Schema.Type.BOOLEAN, true),
-        Arguments.of(false, Schema.Type.BOOLEAN, false),
-
-        // mismatched inputs and datatypes - will respect the actual value, not the declared type.
-        // These should never happen in practice, unless the Avro API has a bug.
-        Arguments.of(3.14, Schema.Type.BOOLEAN, BigDecimal.valueOf(3.14)),
-        Arguments.of(true, Schema.Type.LONG, true));
+        Arguments.of(true, true),
+        Arguments.of(false, false));
   }
 
   // targeted test for converting scalar Avro values to WDS values
-  @ParameterizedTest(name = "with input of {0} and {1}, return value should be {2}")
+  @ParameterizedTest(name = "with input of {0}, return value should be {2}")
   @MethodSource("provideConvertScalarAttributesArgs")
-  void convertScalarAttributes(Object input, Schema.Type schemaType, Object expected) {
+  void convertScalarAttributes(Object input, Object expected) {
     PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
 
-    Schema.Field field = new Schema.Field("someFieldName", Schema.create(schemaType));
-
-    Object actual = pfbRecordConverter.convertAttributeType(input, field);
+    Object actual = pfbRecordConverter.convertAttributeType(input);
     assertEquals(expected, actual);
   }
 
@@ -170,13 +159,9 @@ class PfbRecordConverterTest {
   void convertScalarEnums() {
     PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
 
-    Schema enumSchema = Schema.createEnum("name", "doc", "namespace", List.of("foo", "bar", "baz"));
-
-    Schema.Field field = new Schema.Field("someFieldName", enumSchema);
-
     Object input = new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "bar");
 
-    Object actual = pfbRecordConverter.convertAttributeType(input, field);
+    Object actual = pfbRecordConverter.convertAttributeType(input);
     assertEquals("bar", actual);
   }
 
@@ -185,58 +170,47 @@ class PfbRecordConverterTest {
   static Stream<Arguments> provideConvertArrayAttributesArgs() {
     return Stream.of(
         // most basic case
-        Arguments.of(List.of("hello", "world"), Schema.Type.STRING, List.of("hello", "world")),
+        Arguments.of(List.of("hello", "world"), List.of("hello", "world")),
         // null inputs
-        Arguments.of(null, Schema.Type.STRING, null),
-        Arguments.of(null, Schema.Type.BOOLEAN, null),
+        Arguments.of(null, null),
         // empty arrays
-        Arguments.of(List.of(), Schema.Type.STRING, List.of()),
-        Arguments.of(List.of(), Schema.Type.LONG, List.of()),
-        Arguments.of(List.of(), Schema.Type.INT, List.of()),
+        Arguments.of(List.of(), List.of()),
         // numbers
         Arguments.of(
             List.of(Long.MIN_VALUE, 1L, Long.MAX_VALUE),
-            Schema.Type.LONG,
             List.of(
                 BigDecimal.valueOf(Long.MIN_VALUE),
                 BigDecimal.valueOf(1L),
                 BigDecimal.valueOf(Long.MAX_VALUE))),
         Arguments.of(
             List.of(Integer.MIN_VALUE, 1, Integer.MAX_VALUE),
-            Schema.Type.INT,
             List.of(
                 BigDecimal.valueOf(Integer.MIN_VALUE),
                 BigDecimal.valueOf(1),
                 BigDecimal.valueOf(Integer.MAX_VALUE))),
         Arguments.of(
             List.of(Float.MIN_VALUE, 1F, Float.MAX_VALUE),
-            Schema.Type.FLOAT,
             List.of(
                 BigDecimal.valueOf(Float.MIN_VALUE),
                 BigDecimal.valueOf(1F),
                 BigDecimal.valueOf(Float.MAX_VALUE))),
         Arguments.of(
             List.of(Double.MIN_VALUE, 1D, Double.MAX_VALUE),
-            Schema.Type.DOUBLE,
             List.of(
                 BigDecimal.valueOf(Double.MIN_VALUE),
                 BigDecimal.valueOf(1D),
                 BigDecimal.valueOf(Double.MAX_VALUE))),
         // booleans
-        Arguments.of(List.of(true, false, true), Schema.Type.BOOLEAN, List.of(true, false, true)));
+        Arguments.of(List.of(true, false, true), List.of(true, false, true)));
   }
 
   // targeted test for converting array Avro values to WDS values
-  @ParameterizedTest(name = "with input of {0} and item type {1}, return value should be {2}")
+  @ParameterizedTest(name = "with array input of {0}, return value should be {2}")
   @MethodSource("provideConvertArrayAttributesArgs")
-  void convertArrayAttributes(Object input, Schema.Type itemType, Object expected) {
+  void convertArrayAttributes(Object input, Object expected) {
     PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
 
-    Schema arraySchema = Schema.createArray(Schema.create(itemType));
-
-    Schema.Field field = new Schema.Field("someFieldName", arraySchema);
-
-    Object actual = pfbRecordConverter.convertAttributeType(input, field);
+    Object actual = pfbRecordConverter.convertAttributeType(input);
     assertEquals(expected, actual);
   }
 
@@ -245,24 +219,13 @@ class PfbRecordConverterTest {
   void convertArrayOfEnums() {
     PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
 
-    Schema enumSchema = Schema.createEnum("name", "doc", "namespace", List.of("foo", "bar", "baz"));
-
-    Schema.Field field = new Schema.Field("someFieldName", enumSchema);
-
     Object input =
         List.of(
             new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "bar"),
             new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "foo"),
             new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "baz"));
 
-    Object actual = pfbRecordConverter.convertAttributeType(input, field);
+    Object actual = pfbRecordConverter.convertAttributeType(input);
     assertEquals(List.of("bar", "foo", "baz"), actual);
-  }
-
-  @Test
-  void nullFieldArgument() {
-    PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
-    assertThrows(
-        PfbParsingException.class, () -> pfbRecordConverter.convertAttributeType("anything", null));
   }
 }

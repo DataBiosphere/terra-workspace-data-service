@@ -6,7 +6,6 @@ import java.util.List;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericRecord;
-import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -36,7 +35,7 @@ public class PfbRecordConverter {
         Object value =
             objectAttributes.get(fieldName) == null
                 ? null
-                : convertAttributeType(objectAttributes.get(fieldName), field);
+                : convertAttributeType(objectAttributes.get(fieldName));
         attributes.putAttribute(fieldName, value);
       }
       converted.setAttributes(attributes);
@@ -45,16 +44,10 @@ public class PfbRecordConverter {
     return converted;
   }
 
-  Object convertAttributeType(Object attribute, Schema.Field field) {
+  Object convertAttributeType(Object attribute) {
 
     if (attribute == null) {
       return null;
-    }
-    if (field == null) {
-      // as of this writing, this should never happen; all callers of this method supply a value.
-      // this check exists to protect against future callers.
-      throw new PfbParsingException(
-          "Something went wrong. convertAttributeType was called with a null field.");
     }
 
     // Avro numbers - see
@@ -86,7 +79,7 @@ public class PfbRecordConverter {
     // Avro arrays
     if (attribute instanceof Collection<?> collAttr) {
       // recurse
-      return collAttr.stream().map(x -> convertAttributeType(x, field)).toList();
+      return collAttr.stream().map(this::convertAttributeType).toList();
     }
 
     // TODO AJ-1452: handle remaining possible Avro datatypes:
