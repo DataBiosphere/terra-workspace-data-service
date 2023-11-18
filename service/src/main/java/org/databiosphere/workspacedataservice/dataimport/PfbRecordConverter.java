@@ -8,8 +8,6 @@ import org.databiosphere.workspacedataservice.service.model.exception.PfbParsing
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Logic to convert a PFB's GenericRecord to WDS's Record */
 public class PfbRecordConverter {
@@ -17,8 +15,6 @@ public class PfbRecordConverter {
   public static final String ID_FIELD = "id";
   public static final String TYPE_FIELD = "name";
   public static final String OBJECT_FIELD = "object";
-
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   public Record genericRecordToRecord(GenericRecord genRec) {
     // create the WDS record shell (id, record type, empty attributes)

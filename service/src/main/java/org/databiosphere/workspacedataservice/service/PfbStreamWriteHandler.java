@@ -20,7 +20,6 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
    * Create a new PfbStreamWriteHandler and specify the expected schemas for the PFB.
    *
    * @param inputStream the PFB stream
-   * @param recordTypeSchemas the expected WDS schema for the PFB
    */
   public PfbStreamWriteHandler(DataFileStream<GenericRecord> inputStream) {
     this.inputStream = inputStream;

@@ -74,11 +74,6 @@ class PfbRecordConverterTest {
     objectAttributes.put("afile", "https://some/path/to/a/file");
     objectAttributes.put("booly", Boolean.TRUE);
 
-    // translate the object schema to WDS schema
-    PfbSchemaConverter pfbSchemaConverter = new PfbSchemaConverter();
-    Map<String, Map<String, DataTypeMapping>> wdsSchema =
-        Map.of("mytype", pfbSchemaConverter.pfbSchemaToWdsSchema(myObjSchema));
-
     GenericRecord input = PfbTestUtils.makeRecord("my-id", "mytype", objectAttributes);
     Record actual = new PfbRecordConverter().genericRecordToRecord(input);
 
@@ -159,11 +154,6 @@ class PfbRecordConverterTest {
     objectAttributes.put("pi", 3.14159);
     objectAttributes.put("afile", "https://some/path/to/a/file");
     objectAttributes.put("booly", Boolean.TRUE);
-
-    // translate the object schema to WDS schema
-    PfbSchemaConverter pfbSchemaConverter = new PfbSchemaConverter();
-    Map<String, Map<String, DataTypeMapping>> wdsSchema =
-        Map.of("THISISTHEWRONGTYPE", pfbSchemaConverter.pfbSchemaToWdsSchema(myObjSchema));
 
     GenericRecord input = PfbTestUtils.makeRecord("my-id", "mytype", objectAttributes);
     Record actual = new PfbRecordConverter().genericRecordToRecord(input);

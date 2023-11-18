@@ -6,10 +6,8 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 
 import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.pfb.PfbReader;
-import java.io.IOException;
 import java.net.URL;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -19,7 +17,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
@@ -28,7 +25,6 @@ import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
-import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -87,7 +83,7 @@ public class PfbQuartzJob extends QuartzJob {
     // This will throw an exception if there are policy conflicts between the workspace
     // and the snapshots.
     //
-    // This is HTTP connection #2 to the PFB.
+    // This is HTTP connection #1 to the PFB.
     logger.info("Finding snapshots in this PFB...");
     Set<UUID> snapshotIds = withPfbStream(url, this::findSnapshots);
 
@@ -96,25 +92,11 @@ public class PfbQuartzJob extends QuartzJob {
 
     // Import all the tables and rows inside the PFB.
     //
-    // This is HTTP connection #3 to the PFB.
+    // This is HTTP connection #2 to the PFB.
     logger.info("Importing tables and rows from this PFB...");
     withPfbStream(url, stream -> importTables(stream, targetInstance));
 
     // TODO AJ-1453: save the result of importTables and persist the to the job
-  }
-
-  Map<String, Map<String, DataTypeMapping>> calculateSchema(URL url) {
-    List<Schema> pfbSchemas;
-    try {
-      pfbSchemas = PfbReader.getPfbSchema(url.toString());
-    } catch (IOException e) {
-      throw new PfbParsingException("Could not read PFB schemas: " + e.getMessage(), e);
-    }
-
-    // convert the PFB schema to a WDS schema
-    PfbSchemaConverter pfbSchemaConverter = new PfbSchemaConverter();
-    return pfbSchemas.stream()
-        .collect(Collectors.toMap(Schema::getName, pfbSchemaConverter::pfbSchemaToWdsSchema));
   }
 
   /**
