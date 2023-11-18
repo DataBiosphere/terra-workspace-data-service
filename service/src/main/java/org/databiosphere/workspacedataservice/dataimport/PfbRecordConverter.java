@@ -1,8 +1,10 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -33,7 +35,6 @@ public class PfbRecordConverter {
         String fieldName = field.name();
         Object value = null;
         if (objectAttributes.get(fieldName) != null) {
-          // TODO AJ-1452: is this an enum?
           value = convertAttributeType(objectAttributes.get(fieldName), field);
         }
         attributes.putAttribute(fieldName, value);
@@ -44,8 +45,6 @@ public class PfbRecordConverter {
     return converted;
   }
 
-  // TODO AJ-1452: This only handles scalar numbers, booleans and strings. We need to add support
-  //     for other datatypes later.
   Object convertAttributeType(Object attribute, Schema.Field field) {
 
     if (attribute == null) {
@@ -74,6 +73,24 @@ public class PfbRecordConverter {
     if (attribute instanceof Boolean boolAttr) {
       return boolAttr;
     }
+
+    // Avro enums
+    if (attribute instanceof GenericEnumSymbol<?> enumAttr) {
+      // TODO AJ-1288: decode enums using PfbReader.convertEnum
+      return enumAttr.toString();
+    }
+
+    // Avro arrays
+    if (attribute instanceof Collection<?> collAttr) {
+      // recurse
+      return collAttr.stream().map(x -> convertAttributeType(x, field)).toList();
+    }
+
+    // TODO AJ-1452: handle remaining possible Avro datatypes:
+    //     Avro bytes are implemented as ByteBuffer. toString() these?
+    //     Avro fixed are implemented as GenericFixed. toString() these?
+    //     Avro maps are implemented as Map. Can we make these into WDS json?
+    //     Avro records are implemented as GenericRecord. Can we make these into WDS json?
 
     // for now, everything else is a String
     return attribute.toString();
