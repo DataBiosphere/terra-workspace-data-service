@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import bio.terra.pfb.PfbReader;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URL;
 import java.util.List;
 import org.apache.avro.file.DataFileStream;
@@ -131,8 +132,13 @@ class PfbStreamWriteHandlerTest {
       assertEquals("HG01101_cram", firstRecord.getId());
       assertEquals(RecordType.valueOf("submitted_aligned_reads"), firstRecord.getRecordType());
       assertEquals(19, firstRecord.attributeSet().size());
-      // TODO AJ-1452: when PFB parsing properly respects datatypes, add assertions here, or
-      //    better yet write more tests for datatype/attribute handling.
+
+      // smoke-test a few values
+      assertEquals(BigDecimal.valueOf(512), firstRecord.getAttributeValue("file_size"));
+      assertEquals("registered", firstRecord.getAttributeValue("file_state"));
+      assertEquals(
+          "drs://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa",
+          firstRecord.getAttributeValue("ga4gh_drs_uri"));
 
       Record secondRecord = result.get(1);
       assertNotNull(secondRecord);

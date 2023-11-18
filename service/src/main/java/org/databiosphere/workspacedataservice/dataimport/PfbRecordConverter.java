@@ -51,7 +51,10 @@ public class PfbRecordConverter {
       return null;
     }
     if (field == null) {
-      throw new PfbParsingException("Something went wrong. Field is null.");
+      // as of this writing, this should never happen; all callers of this method supply a value.
+      // this check exists to protect against future callers.
+      throw new PfbParsingException(
+          "Something went wrong. convertAttributeType was called with a null field.");
     }
 
     // Avro numbers - see

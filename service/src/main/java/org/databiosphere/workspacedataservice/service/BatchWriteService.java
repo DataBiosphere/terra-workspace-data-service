@@ -104,7 +104,6 @@ public class BatchWriteService {
         // loop over all record types in this batch. For each record type, iff this is the first
         // time we've seen this type, calculate a schema from its records and update the record type
         // as necessary. Then, write the records into the table.
-        // TODO AJ-1452: for PFB imports, get schema from Avro, not from attribute values inference
         for (RecordType recType : groupedRecords.keySet()) {
           List<Record> rList = groupedRecords.get(recType).asList();
           // have we already processed at least one batch of this record type?

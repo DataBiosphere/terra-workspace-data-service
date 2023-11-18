@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -13,6 +14,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -53,10 +55,13 @@ class PfbRecordConverterTest {
     assertThat(actual.attributeSet()).isEmpty();
   }
 
-  // if the GenericRecord has attributes in the "object" column, the WDS record should have the same
-  // attributes
+  // "smoke test" unit test: given an Avro GenericRecord containing a variety of values,
+  // convert to a WDS record and assert correctness of that WDS record.
   @Test
   void valuesInObjectAttributes() {
+    Schema enumSchema =
+        Schema.createEnum("name", "doc", "namespace", List.of("enumValue1", "enumValue2"));
+
     Schema myObjSchema =
         Schema.createRecord(
             "mytype",
@@ -67,13 +72,28 @@ class PfbRecordConverterTest {
                 new Schema.Field("marco", Schema.create(Schema.Type.STRING)),
                 new Schema.Field("pi", Schema.create(Schema.Type.LONG)),
                 new Schema.Field("afile", Schema.create(Schema.Type.STRING)),
-                new Schema.Field("booly", Schema.create(Schema.Type.BOOLEAN))));
+                new Schema.Field("booly", Schema.create(Schema.Type.BOOLEAN)),
+                new Schema.Field("enum", enumSchema),
+                new Schema.Field(
+                    "arrayOfNumbers", Schema.createArray(Schema.create(Schema.Type.LONG))),
+                new Schema.Field(
+                    "arrayOfStrings", Schema.createArray(Schema.create(Schema.Type.STRING))),
+                new Schema.Field("arrayOfEnums", Schema.createArray(enumSchema))));
 
     GenericData.Record objectAttributes = new GenericData.Record(myObjSchema);
     objectAttributes.put("marco", "polo");
     objectAttributes.put("pi", 3.14159);
     objectAttributes.put("afile", "https://some/path/to/a/file");
     objectAttributes.put("booly", Boolean.TRUE);
+    objectAttributes.put(
+        "enum", new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "enumValue2"));
+    objectAttributes.put("arrayOfNumbers", List.of(1.2, 3.4));
+    objectAttributes.put("arrayOfStrings", List.of("one", "two", "three"));
+    objectAttributes.put(
+        "arrayOfEnums",
+        List.of(
+            new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "enumValue2"),
+            new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "enumValue1")));
 
     GenericRecord input = PfbTestUtils.makeRecord("my-id", "mytype", objectAttributes);
     Record actual = new PfbRecordConverter().genericRecordToRecord(input);
@@ -81,14 +101,28 @@ class PfbRecordConverterTest {
     Set<Map.Entry<String, Object>> actualAttributeSet = actual.attributeSet();
     Set<String> actualKeySet =
         actualAttributeSet.stream().map(Map.Entry::getKey).collect(Collectors.toSet());
-    assertEquals(Set.of("marco", "pi", "afile", "booly"), actualKeySet);
+    assertEquals(
+        Set.of(
+            "marco",
+            "pi",
+            "afile",
+            "booly",
+            "enum",
+            "arrayOfNumbers",
+            "arrayOfStrings",
+            "arrayOfEnums"),
+        actualKeySet);
 
     assertEquals("polo", actual.getAttributeValue("marco"));
     assertEquals("https://some/path/to/a/file", actual.getAttributeValue("afile"));
     assertEquals(BigDecimal.valueOf(3.14159), actual.getAttributeValue("pi"));
     assertEquals(Boolean.TRUE, actual.getAttributeValue("booly"));
-
-    // TODO AJ-1452: add more test coverage as the runtime functionality evolves.
+    assertEquals("enumValue2", actual.getAttributeValue("enum"));
+    assertEquals(
+        List.of(BigDecimal.valueOf(1.2), BigDecimal.valueOf(3.4)),
+        actual.getAttributeValue("arrayOfNumbers"));
+    assertEquals(List.of("one", "two", "three"), actual.getAttributeValue("arrayOfStrings"));
+    assertEquals(List.of("enumValue2", "enumValue1"), actual.getAttributeValue("arrayOfEnums"));
   }
 
   // arguments for parameterized test, in the form of: input value, input datatype, expected return
@@ -119,6 +153,7 @@ class PfbRecordConverterTest {
         Arguments.of(true, Schema.Type.LONG, true));
   }
 
+  // targeted test for converting scalar Avro values to WDS values
   @ParameterizedTest(name = "with input of {0} and {1}, return value should be {2}")
   @MethodSource("provideConvertScalarAttributesArgs")
   void convertScalarAttributes(Object input, Schema.Type schemaType, Object expected) {
@@ -130,6 +165,7 @@ class PfbRecordConverterTest {
     assertEquals(expected, actual);
   }
 
+  // targeted test for converting scalar Avro enums to WDS values
   @Test
   void convertScalarEnums() {
     PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
@@ -190,6 +226,7 @@ class PfbRecordConverterTest {
         Arguments.of(List.of(true, false, true), Schema.Type.BOOLEAN, List.of(true, false, true)));
   }
 
+  // targeted test for converting array Avro values to WDS values
   @ParameterizedTest(name = "with input of {0} and item type {1}, return value should be {2}")
   @MethodSource("provideConvertArrayAttributesArgs")
   void convertArrayAttributes(Object input, Schema.Type itemType, Object expected) {
@@ -203,6 +240,7 @@ class PfbRecordConverterTest {
     assertEquals(expected, actual);
   }
 
+  // targeted test for converting array Avro enums to WDS values
   @Test
   void convertArrayOfEnums() {
     PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
@@ -219,5 +257,12 @@ class PfbRecordConverterTest {
 
     Object actual = pfbRecordConverter.convertAttributeType(input, field);
     assertEquals(List.of("bar", "foo", "baz"), actual);
+  }
+
+  @Test
+  void nullFieldArgument() {
+    assertThrows(
+        PfbParsingException.class,
+        () -> new PfbRecordConverter().convertAttributeType("anything", null));
   }
 }
