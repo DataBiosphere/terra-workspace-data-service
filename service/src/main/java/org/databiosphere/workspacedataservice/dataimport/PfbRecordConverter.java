@@ -33,10 +33,10 @@ public class PfbRecordConverter {
       RecordAttributes attributes = RecordAttributes.empty();
       for (Schema.Field field : fields) {
         String fieldName = field.name();
-        Object value = null;
-        if (objectAttributes.get(fieldName) != null) {
-          value = convertAttributeType(objectAttributes.get(fieldName), field);
-        }
+        Object value =
+            objectAttributes.get(fieldName) == null
+                ? null
+                : convertAttributeType(objectAttributes.get(fieldName), field);
         attributes.putAttribute(fieldName, value);
       }
       converted.setAttributes(attributes);
