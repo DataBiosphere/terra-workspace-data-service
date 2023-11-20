@@ -72,7 +72,7 @@ public class PfbRecordConverter {
 
     // Avro enums
     if (attribute instanceof GenericEnumSymbol<?> enumAttr) {
-      // TODO AJ-1288: decode enums using PfbReader.convertEnum
+      // TODO AJ-1479: decode enums using PfbReader.convertEnum
       return enumAttr.toString();
     }
 
@@ -82,7 +82,7 @@ public class PfbRecordConverter {
       return collAttr.stream().map(this::convertAttributeType).toList();
     }
 
-    // TODO AJ-1452: handle remaining possible Avro datatypes:
+    // TODO AJ-1478: handle remaining possible Avro datatypes:
     //     Avro bytes are implemented as ByteBuffer. toString() these?
     //     Avro fixed are implemented as GenericFixed. toString() these?
     //     Avro maps are implemented as Map. Can we make these into WDS json?
