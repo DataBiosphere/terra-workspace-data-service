@@ -82,8 +82,8 @@ public class PfbQuartzJob extends QuartzJob {
     // workspace to the snapshot for each of those snapshot ids.
     // This will throw an exception if there are policy conflicts between the workspace
     // and the snapshots.
-    // TODO AJ-1452: can this pass also identify all schemas/datatypes?
-    // TODO AJ-1452: can this pass also check if record types are contiguous?
+    //
+    // This is HTTP connection #1 to the PFB.
     logger.info("Finding snapshots in this PFB...");
     Set<UUID> snapshotIds = withPfbStream(url, this::findSnapshots);
 
@@ -91,6 +91,8 @@ public class PfbQuartzJob extends QuartzJob {
     linkSnapshots(snapshotIds);
 
     // Import all the tables and rows inside the PFB.
+    //
+    // This is HTTP connection #2 to the PFB.
     logger.info("Importing tables and rows from this PFB...");
     withPfbStream(url, stream -> importTables(stream, targetInstance));
 
