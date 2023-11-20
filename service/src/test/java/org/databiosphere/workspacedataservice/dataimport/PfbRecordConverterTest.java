@@ -165,8 +165,7 @@ class PfbRecordConverterTest {
     assertEquals("bar", actual);
   }
 
-  // arguments for parameterized test, in the form of: input value, input datatype, expected return
-  // value
+  // arguments for parameterized test, in the form of: input value, expected return value
   static Stream<Arguments> provideConvertArrayAttributesArgs() {
     return Stream.of(
         // most basic case
