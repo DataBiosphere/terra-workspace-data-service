@@ -87,7 +87,7 @@ class RecordDaoTest {
   }
 
   @AfterEach
-  void cleanUp() {
+  void tearDown() {
     instanceDao.dropSchema(instanceId);
   }
 

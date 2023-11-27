@@ -31,7 +31,6 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.databiosphere.workspacedataservice.shared.model.SortDirection;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,20 +61,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Import(SmallBatchWriteTestConfig.class)
 class FullStackRecordControllerTest {
   @Autowired private TestRestTemplate restTemplate;
-  private static HttpHeaders headers;
-  private static UUID instanceId;
+  private HttpHeaders headers;
+  private UUID instanceId;
   private static final String versionId = "v0.2";
   @Autowired private ObjectMapper mapper;
 
-  @BeforeAll
-  static void setUp() {
+  @BeforeEach
+  void setUp() {
     headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     instanceId = UUID.randomUUID();
-  }
 
-  @BeforeEach
-  void beforeEach() {
     ResponseEntity<String> response =
         restTemplate.exchange(
             "/instances/{v}/{instanceid}",
@@ -88,7 +84,7 @@ class FullStackRecordControllerTest {
   }
 
   @AfterEach
-  void afterEach() {
+  void tearDown() {
     ResponseEntity<String> response =
         restTemplate.exchange(
             "/instances/{v}/{instanceid}",

@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import static org.databiosphere.workspacedataservice.shared.model.job.JobType.SYNC_CLONE;
+
 import bio.terra.common.db.WriteTransaction;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,6 +15,7 @@ import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
+import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,8 +124,8 @@ public class PostgresCloneDao implements CloneDao {
     that the following workspace was not created from a clone.
   */
   @Override
-  public Job<CloneResponse> getCloneStatus() {
-    List<Job<CloneResponse>> responses =
+  public Job<JobInput, CloneResponse> getCloneStatus() {
+    List<Job<JobInput, CloneResponse>> responses =
         namedTemplate.query(
             "select id, status, error, createdtime, updatedtime, sourceworkspaceid, clonestatus from sys_wds.clone",
             new PostgresCloneDao.CloneJobRowMapper());
@@ -137,9 +140,9 @@ public class PostgresCloneDao implements CloneDao {
   }
 
   // rowmapper for retrieving Job<CloneResponse> objects from the db
-  private static class CloneJobRowMapper implements RowMapper<Job<CloneResponse>> {
+  private static class CloneJobRowMapper implements RowMapper<Job<JobInput, CloneResponse>> {
     @Override
-    public Job<CloneResponse> mapRow(ResultSet rs, int rowNum) throws SQLException {
+    public Job<JobInput, CloneResponse> mapRow(ResultSet rs, int rowNum) throws SQLException {
       UUID sourceWorkspaceId = rs.getObject("sourceworkspaceid", UUID.class);
       CloneStatus cloneStatus = CloneStatus.UNKNOWN;
       String cloneStatusString = rs.getString("clonestatus");
@@ -170,7 +173,15 @@ public class PostgresCloneDao implements CloneDao {
       LocalDateTime created = rs.getTimestamp("createdtime").toLocalDateTime();
       LocalDateTime updated = rs.getTimestamp("updatedtime").toLocalDateTime();
 
-      return new Job<>(jobId, status, errorMessage, created, updated, cloneResponse);
+      return new Job<>(
+          jobId,
+          SYNC_CLONE,
+          status,
+          errorMessage,
+          created,
+          updated,
+          JobInput.empty(),
+          cloneResponse);
     }
   }
 }

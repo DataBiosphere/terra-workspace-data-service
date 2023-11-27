@@ -43,7 +43,7 @@ class PermissionsStatusServiceTest {
   final Health.Builder mockHealthBuilder = Mockito.mock(Health.Builder.class);
 
   @BeforeEach
-  void beforeEach() {
+  void setUp() {
     // return the mock StatusApi from the mock SamClientFactory
     given(mockSamClientFactory.getStatusApi()).willReturn(mockStatusApi);
     Mockito.clearInvocations(mockStatusApi);
@@ -66,6 +66,7 @@ class PermissionsStatusServiceTest {
     samStatusService.doHealthCheck(mockHealthBuilder);
     verify(mockHealthBuilder, times(1))
         .withDetail(
-            "samConnectionError", "500 INTERNAL_SERVER_ERROR \"Error from Sam: Hey SAM is down!\"");
+            "samConnectionError",
+            "500 INTERNAL_SERVER_ERROR \"Error from Sam.getSystemStatus REST target: Hey SAM is down!\"");
   }
 }

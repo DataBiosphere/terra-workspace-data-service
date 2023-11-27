@@ -10,10 +10,12 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
 import org.databiosphere.workspacedataservice.sam.SamConfig;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +30,8 @@ import org.springframework.test.context.ActiveProfiles;
       MockInstanceDaoConfig.class,
       SamConfig.class,
       MockSamClientFactoryConfig.class,
-      ActivityLoggerConfig.class
+      ActivityLoggerConfig.class,
+      RestClientRetry.class
     })
 class InstanceServiceTest {
 
@@ -42,6 +45,10 @@ class InstanceServiceTest {
   @BeforeEach
   void setUp() {
     instanceService = new InstanceService(instanceDao, samDao, activityLogger);
+  }
+
+  @AfterEach
+  void tearDown() {
     // Delete all instances
     instanceDao.listInstanceSchemas().forEach(instance -> instanceDao.dropSchema(instance));
   }

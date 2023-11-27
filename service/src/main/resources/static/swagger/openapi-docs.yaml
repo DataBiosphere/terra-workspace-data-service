@@ -20,6 +20,10 @@ tags:
     description: Cloning APIs including Backup and Restore
   - name: Records
     description: Record APIs
+  - name: Import
+    description: Import APIs
+  - name: Job
+    description: Job APIs
   - name: Instances
     description: Instance APIs
   - name: Schema
@@ -352,6 +356,19 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   ##############################
+  # Import APIs
+  ##############################
+  /{instanceUuid}/import/v1:
+    # OpenApi requires "/" to be replaced with "~1" in the path being referenced
+    $ref: 'apis-v1.yaml#/paths/~1{instanceUuid}~1import~1v1'
+
+  ##############################
+  # Job APIs
+  ##############################
+  /job/v1/{jobId}:
+    $ref: 'apis-v1.yaml#/paths/~1job~1v1~1{jobId}'
+
+  ##############################
   # Instances APIs
   ##############################
   /instances/{v}:
@@ -517,7 +534,11 @@ paths:
   ##############################
   /{instanceid}/snapshots/{v}/{snapshotid}:
     post:
+      deprecated: true
       summary: Import a snapshot from Terra Data Repo
+      description: |
+        This API will be removed on or after Jan 1 2024.
+        Use the POST /{instanceid}/import/v1 API instead.
       operationId: importSnapshot
       security:
         - bearerAuth: [ ]
@@ -555,6 +576,14 @@ components:
       required: true
       schema:
         type: string
+    instanceUuidPathParam:
+      name: instanceUuid
+      in: path
+      description: WDS instance id; by convention equal to workspace id
+      required: true
+      schema:
+        type: string
+        format: uuid
     recordIdPathParam:
       name: id
       in: path
@@ -685,6 +714,9 @@ components:
         - $ref: '#/components/schemas/Job'
         - type: object
           properties:
+            input:
+              type: object
+              description: Input arguments; expected to be empty.
             result:
               $ref: '#/components/schemas/BackupResponse'
     BackupResponse:
@@ -764,6 +796,9 @@ components:
         - $ref: '#/components/schemas/Job'
         - type: object
           properties:
+            input:
+              type: object
+              description: Input arguments; expected to be empty.
             result:
               $ref: '#/components/schemas/CloneResponse'
     CloneResponse:
@@ -883,6 +918,8 @@ components:
       properties:
         jobId:
           type: string
+        jobType:
+          type: string
         status:
           type: string
           enum: [ QUEUED, RUNNING, SUCCEEDED, ERROR, CANCELLED, UNKNOWN ]
@@ -891,8 +928,6 @@ components:
         updated:
           type: string
         errorMessage:
-          type: string
-        exception:
           type: string
     RecordAttributes:
       type: object
@@ -978,17 +1013,6 @@ components:
         primaryKey:
           type: string
           description: Attribute name that contains the value to uniquely identify each record, defined as a primary key column in the underlying table.
-    RequestBodySearch:
-      required:
-        - terms
-      type: object
-      description: |
-        v0.2 only supports `terms` and `operator`. Future versions may support additional functionality.
-      properties:
-        terms:
-          $ref: '#/components/schemas/SearchTerms'
-        operator:
-          $ref: '#/components/schemas/SearchOperator'
     SearchLimit:
       type: integer
       default: 10
@@ -1000,10 +1024,6 @@ components:
       default: 0
       minimum: 0
       description: Pagination offset
-    SearchOperator:
-      type: string
-      enum: [ and, or ]
-      description: Search behavior for multiple filter terms
     SearchRequest:
       type: object
       properties:
@@ -1021,30 +1041,6 @@ components:
       default: ASC
       description: |
         Sort direction (descending or ascending)
-    SearchTerms:
-      type: string
-      description: Space-delimited list of terms on which to search
-    StackTraceElement:
-      required:
-        - className
-        - fileName
-        - lineNumber
-        - methodName
-      type: object
-      properties:
-        className:
-          type: string
-          description: class name
-        methodName:
-          type: string
-          description: method name
-        fileName:
-          type: string
-          description: source file name
-        lineNumber:
-          type: integer
-          description: line number
-      description: ""
     StatusResponse:
       type: object
       properties:

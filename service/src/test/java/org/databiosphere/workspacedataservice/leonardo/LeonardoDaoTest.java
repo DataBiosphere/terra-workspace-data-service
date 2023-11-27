@@ -2,6 +2,9 @@ package org.databiosphere.workspacedataservice.leonardo;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -14,6 +17,7 @@ import org.broadinstitute.dsde.workbench.client.leonardo.model.AppStatus;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.AppType;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.AuditInfo;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.ListAppResponse;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +28,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 
 @DirtiesContext
-@SpringBootTest(classes = {LeonardoConfig.class})
+@SpringBootTest(classes = {LeonardoConfig.class, RestClientRetry.class})
 @TestPropertySource(
     properties = {"twds.instance.workspace-id=90e1b179-9f83-4a6f-a8c2-db083df4cd03"})
 class LeonardoDaoTest {
@@ -35,7 +39,7 @@ class LeonardoDaoTest {
   final AppsApi mockAppsApi = mock(AppsApi.class);
 
   @BeforeEach
-  void beforeEach() {
+  void setUp() {
     given(leonardoClientFactory.getAppsV2Api(any())).willReturn(mockAppsApi);
   }
 
@@ -45,7 +49,9 @@ class LeonardoDaoTest {
   @Test
   void testWdsUrlNotReturned() throws ApiException {
     final int statusCode = HttpStatus.INTERNAL_SERVER_ERROR.value();
-    given(mockAppsApi.listAppsV2(String.valueOf(UUID.randomUUID()), "things", null, null))
+    given(
+            mockAppsApi.listAppsV2(
+                anyString(), nullable(String.class), anyBoolean(), nullable(String.class)))
         .willThrow(
             new org.broadinstitute.dsde.workbench.client.leonardo.ApiException(
                 statusCode, "Intentional error thrown for unit test"));

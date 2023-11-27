@@ -46,3 +46,4 @@ config/
 gha-creds-*.json
 
 service/backup.sql
+/service/.openapi-generator/

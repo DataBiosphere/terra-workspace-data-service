@@ -4,19 +4,25 @@ import java.util.UUID;
 import org.databiosphere.workspacedata.client.ApiException;
 import org.databiosphere.workspacedata.model.BackupJob;
 import org.databiosphere.workspacedata.model.BackupRestoreRequest;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
+import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class WorkspaceDataServiceDao {
   private final WorkspaceDataServiceClientFactory workspaceDataServiceClientFactory;
+  private final RestClientRetry restClientRetry;
 
   private String workspaceDataServiceUrl;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkspaceDataServiceDao.class);
 
   public WorkspaceDataServiceDao(
-      WorkspaceDataServiceClientFactory workspaceDataServiceClientFactory) {
+      WorkspaceDataServiceClientFactory workspaceDataServiceClientFactory,
+      RestClientRetry restClientRetry) {
     this.workspaceDataServiceClientFactory = workspaceDataServiceClientFactory;
+    this.restClientRetry = restClientRetry;
   }
 
   public void setWorkspaceDataServiceUrl(String endpointUrl) {
@@ -30,8 +36,9 @@ public class WorkspaceDataServiceDao {
           this.workspaceDataServiceClientFactory.getBackupClient(token, workspaceDataServiceUrl);
       BackupRestoreRequest body = new BackupRestoreRequest();
       body.setRequestingWorkspaceId(requesterWorkspaceId);
-      return backupClient.createBackup(body, "v0.2");
-    } catch (ApiException e) {
+      RestCall<BackupJob> createBackupFunction = () -> backupClient.createBackup(body, "v0.2");
+      return restClientRetry.withRetryAndErrorHandling(createBackupFunction, "WDS.createBackup");
+    } catch (RestException e) {
       LOGGER.warn("Error from remote WDS: {}", e.getMessage());
       throw new WorkspaceDataServiceException(e);
     }

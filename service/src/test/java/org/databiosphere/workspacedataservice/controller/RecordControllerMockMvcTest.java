@@ -62,14 +62,14 @@ class RecordControllerMockMvcTest {
   @Autowired private ObjectMapper mapper;
   @Autowired private MockMvc mockMvc;
 
-  private static UUID instanceId;
+  private UUID instanceId;
 
   private static final String versionId = "v0.2";
 
   @Autowired TestDao testDao;
 
   @BeforeEach
-  void beforeEach() throws Exception {
+  void setUp() throws Exception {
     instanceId = UUID.randomUUID();
     mockMvc
         .perform(post("/instances/{v}/{instanceid}", versionId, instanceId).content(""))
@@ -77,7 +77,7 @@ class RecordControllerMockMvcTest {
   }
 
   @AfterEach
-  void afterEach() {
+  void tearDown() {
     try {
       mockMvc
           .perform(delete("/instances/{v}/{instanceid}", versionId, instanceId).content(""))
@@ -88,7 +88,7 @@ class RecordControllerMockMvcTest {
   }
 
   @AfterAll
-  void afterAll() throws Exception {
+  void deleteAllInstances() throws Exception {
     MvcResult response = mockMvc.perform(get("/instances/{v}", versionId)).andReturn();
     UUID[] allInstances =
         mapper.readValue(response.getResponse().getContentAsString(), UUID[].class);

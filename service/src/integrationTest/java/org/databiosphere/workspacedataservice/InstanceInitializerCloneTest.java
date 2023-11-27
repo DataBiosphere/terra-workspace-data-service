@@ -21,10 +21,11 @@ import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
+import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceClientFactory;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,7 @@ import org.springframework.test.context.TestPropertySource;
 
 // "local" profile prevents InstanceInitializerBean from running at Spring startup;
 // that way, we can run it when we want to inside our tests.
-@ActiveProfiles({"mock-storage", "local", "mock-sam"})
+@ActiveProfiles({"mock-storage", "local-cors", "mock-sam", "local"})
 @TestPropertySource(
     properties = {
       "twds.instance.workspace-id=5a9b583c-17ee-4c88-a14c-0edbf31175db",
@@ -69,8 +70,8 @@ class InstanceInitializerCloneTest {
   @Value("${twds.instance.source-workspace-id}")
   String sourceWorkspaceId;
 
-  @BeforeEach
-  void beforeEach() {
+  @AfterEach
+  void tearDown() {
     // clean up any instances left in the db
     List<UUID> allInstances = instanceDao.listInstanceSchemas();
     allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
@@ -104,7 +105,7 @@ class InstanceInitializerCloneTest {
     instanceInitializerBean.initializeInstance();
 
     // clone job should have errored, with friendly error message
-    Job<CloneResponse> cloneStatus = cloneDao.getCloneStatus();
+    Job<JobInput, CloneResponse> cloneStatus = cloneDao.getCloneStatus();
     assertSame(JobStatus.ERROR, cloneStatus.getStatus());
     assertSame(CloneStatus.BACKUPERROR, cloneStatus.getResult().status());
     assertEquals(
@@ -147,7 +148,7 @@ class InstanceInitializerCloneTest {
     instanceInitializerBean.initializeInstance();
 
     // clone job should have succeeded
-    Job<CloneResponse> cloneStatus = cloneDao.getCloneStatus();
+    Job<JobInput, CloneResponse> cloneStatus = cloneDao.getCloneStatus();
     assertSame(JobStatus.SUCCEEDED, cloneStatus.getStatus());
     assertSame(CloneStatus.RESTORESUCCEEDED, cloneStatus.getResult().status());
 
