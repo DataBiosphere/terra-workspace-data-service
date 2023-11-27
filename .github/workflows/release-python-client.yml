@@ -61,6 +61,7 @@ jobs:
       - name: Install python package locally
         working-directory: ./wds-client
         run: |
+          pip install wheel
           pip install .
 
       - name: Initialize Postgres DB
