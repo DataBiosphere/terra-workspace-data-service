@@ -42,7 +42,7 @@ spotless {
         targetExclude "${buildDir}/**"
         targetExclude "**/swagger-code/**"
         targetExclude "**/generated/**"
-        googleJavaFormat()
+        googleJavaFormat('1.18.1')
         toggleOffOn() // allow spotless:off & spotless:on to protect code from formatting
     }
 }
