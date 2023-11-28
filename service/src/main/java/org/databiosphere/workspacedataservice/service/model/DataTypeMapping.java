@@ -70,7 +70,7 @@ public enum DataTypeMapping {
       return EMPTY_ARRAY;
     }
     return switch (baseType) {
-      case STRING -> ARRAY_OF_STRING;
+      case STRING, NULL -> ARRAY_OF_STRING;
       case FILE -> ARRAY_OF_FILE;
       case RELATION -> ARRAY_OF_RELATION;
       case BOOLEAN -> ARRAY_OF_BOOLEAN;
