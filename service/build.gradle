@@ -62,7 +62,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.13.5'
-    implementation 'io.sentry:sentry-logback:6.12.1'
+    implementation 'io.sentry:sentry-logback:6.34.0'
     implementation 'org.liquibase:liquibase-core:4.21.1'
     implementation 'javax.cache:cache-api'
     implementation 'org.ehcache:ehcache:3.10.8'
