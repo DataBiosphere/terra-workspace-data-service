@@ -6,7 +6,7 @@ plugins {
     id 'org.sonarqube'
     id 'com.gorylenko.gradle-git-properties'
     id 'org.openapi.generator'
-    id 'com.diffplug.spotless' version '6.23.0'
+    id 'com.diffplug.spotless'
     id 'jacoco'
     id "au.com.dius.pact" version "4.6.1"
     id 'jvm-test-suite'
@@ -140,7 +140,7 @@ spotless {
         targetExclude "${buildDir}/**"
         targetExclude "**/swagger-code/**"
         targetExclude "**/generated/**"
-        googleJavaFormat()
+        googleJavaFormat('1.18.1')
         toggleOffOn() // allow spotless:off & spotless:on to protect code from formatting
     }
 }

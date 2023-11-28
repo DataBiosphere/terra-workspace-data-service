@@ -1,9 +1,9 @@
 dependencies {
-	//Need to include libraries for generated code to work
-	api 'com.google.code.gson:gson:2.9.1'
-	api 'io.gsonfire:gson-fire:1.8.5'
-	api 'com.squareup.okhttp3:okhttp:4.10.0'
-	api 'com.squareup.okhttp3:logging-interceptor:4.10.0'
+    //Need to include libraries for generated code to work
+    api 'com.google.code.gson:gson:2.10.1'
+    api 'io.gsonfire:gson-fire:1.9.0'
+    api 'com.squareup.okhttp3:okhttp:4.12.0'
+    api 'com.squareup.okhttp3:logging-interceptor:4.12.0'
 }
 
 openApiValidate {
@@ -11,83 +11,83 @@ openApiValidate {
 }
 
 openApiGenerate {
-	inputSpec = "$rootDir/service/src/main/resources/static/swagger/openapi-docs.yaml".toString()
-	outputDir = "$buildDir/generated".toString()
-	generatorName = 'java'
-	library = 'okhttp-gson' // the default
-	httpUserAgent = "wds-client/${project.version.toString().replace('-SNAPSHOT', '')}/java"
-	configOptions.set([
-			disallowAdditionalPropertiesIfNotPresent: "false",
-			useJakartaEe: "${useJakartaEe}", // for compatibility with Spring Boot 2 or 3
-			prependFormOrBodyParameters: "true", // orders arguments in the Java client same as previous swagger-codegen
-	])
-	invokerPackage = "${artifactGroup}.client".toString()
-	modelPackage = "${artifactGroup}.model".toString()
-	apiPackage = "${artifactGroup}.api".toString()
-	// we may want to generate tests or doc later ...
-	generateModelTests = false
-	generateModelDocumentation = false
-	generateApiTests = false
-	generateApiDocumentation = false
+    inputSpec = "$rootDir/service/src/main/resources/static/swagger/openapi-docs.yaml".toString()
+    outputDir = "$buildDir/generated".toString()
+    generatorName = 'java'
+    library = 'okhttp-gson' // the default
+    httpUserAgent = "wds-client/${project.version.toString().replace('-SNAPSHOT', '')}/java"
+    configOptions.set([
+        disallowAdditionalPropertiesIfNotPresent: "false",
+        useJakartaEe                            : "${useJakartaEe}", // for compatibility with Spring Boot 2 or 3
+        prependFormOrBodyParameters             : "true", // orders arguments in the Java client same as previous swagger-codegen
+    ])
+    invokerPackage = "${artifactGroup}.client".toString()
+    modelPackage = "${artifactGroup}.model".toString()
+    apiPackage = "${artifactGroup}.api".toString()
+    // we may want to generate tests or doc later ...
+    generateModelTests = false
+    generateModelDocumentation = false
+    generateApiTests = false
+    generateApiDocumentation = false
 
-	/*
-		openapi-generator has annoying bugs with our RecordAttributes model class.
-		RecordAttributes, as defined in our OpenAPI spec, has no predefined properties
-		of its own, but is a map of String to Object using dynamic key names.
+    /*
+        openapi-generator has annoying bugs with our RecordAttributes model class.
+        RecordAttributes, as defined in our OpenAPI spec, has no predefined properties
+        of its own, but is a map of String to Object using dynamic key names.
 
-		https://github.com/OpenAPITools/openapi-generator/issues/10848 is the easiest issue
-		to start with to learn more about these bugs.
+        https://github.com/OpenAPITools/openapi-generator/issues/10848 is the easiest issue
+        to start with to learn more about these bugs.
 
-		To address these bugs, we:
-			- set `generateAliasAsModel` to true, which tells the generator to use a
-			  RecordAttributes class instead of using Map<String, Object> directly
-			- use `schemaMappings` to tell the generator to use OUR hand-coded
-			  RecordAttributes class, under client/src/main/java, instead of trying to
-			  generate its own
-			- use gradle tasks to address the uncompilable syntax, caused by the known bugs,
-			  in classes that refer to RecordAttributes; see the backUpSources and patchSources tasks.
+        To address these bugs, we:
+            - set `generateAliasAsModel` to true, which tells the generator to use a
+              RecordAttributes class instead of using Map<String, Object> directly
+            - use `schemaMappings` to tell the generator to use OUR hand-coded
+              RecordAttributes class, under client/src/main/java, instead of trying to
+              generate its own
+            - use gradle tasks to address the uncompilable syntax, caused by the known bugs,
+              in classes that refer to RecordAttributes; see the backUpSources and patchSources tasks.
 
-	*/
-	generateAliasAsModel = true // true to create RecordAttributes instead of Map<String, Object>
-	schemaMappings.set([
-			RecordAttributes: "org.databiosphere.workspacedata.model.RecordAttributes"
-	])
+    */
+    generateAliasAsModel = true // true to create RecordAttributes instead of Map<String, Object>
+    schemaMappings.set([
+        RecordAttributes: "org.databiosphere.workspacedata.model.RecordAttributes"
+    ])
 }
 
 // openapi-generator creates uncompilable code when generateAliasAsModel is true.
 // copy all the Java classes in the model package from src/ to src-original/
 tasks.register('backUpSources', Copy) {
-	from layout.buildDirectory.dir("generated/src/main/java/org/databiosphere/workspacedata/model")
-	include "*.java"
-	into layout.buildDirectory.dir("generated/src-original/main/java/org/databiosphere/workspacedata/model")
+    from layout.buildDirectory.dir("generated/src/main/java/org/databiosphere/workspacedata/model")
+    include "*.java"
+    into layout.buildDirectory.dir("generated/src-original/main/java/org/databiosphere/workspacedata/model")
 }
 
 // and now, copy them back from src-original/ to src/, but replace the broken code with
 // working code.
 tasks.register('patchSources', Copy) {
-	from layout.buildDirectory.dir("generated/src-original/main/java/org/databiosphere/workspacedata/model")
-	include "*.java"
-	into layout.buildDirectory.dir("generated/src/main/java/org/databiosphere/workspacedata/model")
-	filter { String line ->
-		line.replace(
-				"RecordAttributes attributes = new HashMap<>();",
-				"RecordAttributes attributes = new RecordAttributes();")
-	}
+    from layout.buildDirectory.dir("generated/src-original/main/java/org/databiosphere/workspacedata/model")
+    include "*.java"
+    into layout.buildDirectory.dir("generated/src/main/java/org/databiosphere/workspacedata/model")
+    filter { String line ->
+        line.replace(
+            "RecordAttributes attributes = new HashMap<>();",
+            "RecordAttributes attributes = new RecordAttributes();")
+    }
 }
 
 // control task order: openApiValidate -> openApiGenerate -> backUpSources -> patchSources
 tasks.getByName('openApiGenerate').dependsOn 'openApiValidate'
 tasks.register('fixOpenApiGenerate') {
-	doFirst {
-		logger.lifecycle("")
-		logger.lifecycle("WDS is building library ${libraryName}")
-		logger.lifecycle("specify -Pjakarta=(true|false) to control which library this task creates")
-	}
-	dependsOn 'openApiGenerate'
-	dependsOn 'backUpSources'
-	dependsOn 'patchSources'
-	tasks.getByName('backUpSources').mustRunAfter 'openApiGenerate'
-	tasks.getByName('patchSources').mustRunAfter 'backUpSources'
+    doFirst {
+        logger.lifecycle("")
+        logger.lifecycle("WDS is building library ${libraryName}")
+        logger.lifecycle("specify -Pjakarta=(true|false) to control which library this task creates")
+    }
+    dependsOn 'openApiGenerate'
+    dependsOn 'backUpSources'
+    dependsOn 'patchSources'
+    tasks.getByName('backUpSources').mustRunAfter 'openApiGenerate'
+    tasks.getByName('patchSources').mustRunAfter 'backUpSources'
 }
 
 idea.module.generatedSourceDirs = [file("${openApiGenerate.outputDir.get()}/src/main")]
