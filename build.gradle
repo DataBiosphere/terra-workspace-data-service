@@ -38,7 +38,6 @@ subprojects {
 
         dependencies {
             dependency 'org.yaml:snakeyaml:2.0'
-            dependency 'io.netty:netty-handler:4.1.94.Final'
             dependency 'org.webjars:webjars-locator-core:0.53'
         }
     }
