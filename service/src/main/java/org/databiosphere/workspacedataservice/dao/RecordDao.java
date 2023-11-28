@@ -712,7 +712,7 @@ public class RecordDao {
     return inferer.getArrayOfType(attVal.toString(), typeMapping.getJavaArrayTypeForDbWrites());
   }
 
-  private Object[] getListAsArray(List<?> attVal, DataTypeMapping typeMapping) {
+  Object[] getListAsArray(List<?> attVal, DataTypeMapping typeMapping) {
     return switch (typeMapping) {
       case ARRAY_OF_STRING,
           ARRAY_OF_FILE,
@@ -720,7 +720,10 @@ public class RecordDao {
           ARRAY_OF_DATE,
           ARRAY_OF_DATE_TIME,
           ARRAY_OF_NUMBER,
-          EMPTY_ARRAY -> attVal.stream().map(Object::toString).toList().toArray(new String[0]);
+          EMPTY_ARRAY -> attVal.stream()
+          .map(e -> Objects.toString(e, null))
+          .toList()
+          .toArray(new String[0]);
       case ARRAY_OF_BOOLEAN ->
       // accept all casings of True and False if they're strings
       attVal.stream()
