@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import static bio.terra.pfb.PfbReader.convertEnum;
+
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
@@ -72,8 +74,7 @@ public class PfbRecordConverter {
 
     // Avro enums
     if (attribute instanceof GenericEnumSymbol<?> enumAttr) {
-      // TODO AJ-1479: decode enums using PfbReader.convertEnum
-      return enumAttr.toString();
+      return convertEnum(enumAttr.toString());
     }
 
     // Avro arrays
