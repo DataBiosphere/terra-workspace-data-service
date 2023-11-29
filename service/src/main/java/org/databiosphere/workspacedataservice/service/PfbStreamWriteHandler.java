@@ -39,6 +39,20 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
     return new WriteStreamInfo(records, OperationType.UPSERT);
   }
 
+  public WriteStreamInfo readRelations(int numRecords) throws IOException {
+    // pull the next `numRecords` rows from the inputStream and translate to a Java Stream
+    Stream<GenericRecord> pfbBatch =
+        StreamSupport.stream(
+                Spliterators.spliteratorUnknownSize(inputStream, Spliterator.ORDERED), false)
+            .limit(numRecords);
+
+    // convert the PFB GenericRecord objects into WDS Record objects
+    PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
+    List<Record> records = pfbBatch.map(pfbRecordConverter::genericRecordToRelations).toList();
+
+    return new WriteStreamInfo(records, OperationType.UPSERT);
+  }
+
   @Override
   public void close() throws IOException {
     inputStream.close();

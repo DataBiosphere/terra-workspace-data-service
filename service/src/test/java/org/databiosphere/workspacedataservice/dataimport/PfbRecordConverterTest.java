@@ -1,6 +1,9 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.OBJECT_SCHEMA;
+import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.RELATION_ARRAY_SCHEMA;
+import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.RELATION_SCHEMA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
@@ -13,7 +16,9 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -121,6 +126,23 @@ class PfbRecordConverterTest {
         actual.getAttributeValue("arrayOfNumbers"));
     assertEquals(List.of("one", "two", "three"), actual.getAttributeValue("arrayOfStrings"));
     assertEquals(List.of("enumValue2", "enumValue1"), actual.getAttributeValue("arrayOfEnums"));
+  }
+
+  @Test
+  void relationsInRecord() {
+    GenericData.Record relation = new GenericData.Record(RELATION_SCHEMA);
+    relation.put("dst_id", "relation_id");
+    relation.put("dst_name", "relation_table");
+    GenericData.Array relations = new GenericData.Array(RELATION_ARRAY_SCHEMA, List.of(relation));
+
+    GenericRecord input =
+        PfbTestUtils.makeRecord(
+            "my-id", "mytype", new GenericData.Record(OBJECT_SCHEMA), relations);
+    Record actual = new PfbRecordConverter().genericRecordToRelations(input);
+
+    assertEquals(
+        RelationUtils.createRelationString(RecordType.valueOf("relation_table"), "relation_id"),
+        actual.getAttributeValue("relation_table_id"));
   }
 
   // arguments for parameterized test, in the form of: input value, expected return value

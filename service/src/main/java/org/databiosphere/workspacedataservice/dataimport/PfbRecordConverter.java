@@ -4,8 +4,10 @@ import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericRecord;
+import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -16,6 +18,7 @@ public class PfbRecordConverter {
   public static final String ID_FIELD = "id";
   public static final String TYPE_FIELD = "name";
   public static final String OBJECT_FIELD = "object";
+  public static final String RELATIONS_FIELD = "relations";
 
   public Record genericRecordToRecord(GenericRecord genRec) {
     // create the WDS record shell (id, record type, empty attributes)
@@ -37,6 +40,35 @@ public class PfbRecordConverter {
                 ? null
                 : convertAttributeType(objectAttributes.get(fieldName));
         attributes.putAttribute(fieldName, value);
+      }
+      converted.setAttributes(attributes);
+    }
+
+    return converted;
+  }
+
+  public Record genericRecordToRelations(GenericRecord genRec) {
+    // create the WDS record shell (id, record type, empty attributes)
+    Record converted =
+        new Record(
+            genRec.get(ID_FIELD).toString(),
+            RecordType.valueOf(genRec.get(TYPE_FIELD).toString()),
+            RecordAttributes.empty());
+
+    // get the relations array from the record
+    // TODO is GenericData.Array the correct type?
+    if (genRec.get(RELATIONS_FIELD) instanceof GenericData.Array relationArray) {
+      RecordAttributes attributes = RecordAttributes.empty();
+      // TODO shouldn't it be a GenericRecord tho
+      for (Object relationObject : relationArray) {
+        // TODO all the correct typing and such
+        GenericRecord relation = (GenericRecord) relationObject;
+        String relationType = relation.get("dst_name").toString();
+        String relationId = relation.get("dst_id").toString();
+        // TODO is this the right naming convention?  a prettier way to set it up?
+        attributes.putAttribute(
+            relationType + "_id",
+            RelationUtils.createRelationString(RecordType.valueOf(relationType), relationId));
       }
       converted.setAttributes(attributes);
     }
