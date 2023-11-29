@@ -9,6 +9,7 @@ import static org.databiosphere.workspacedataservice.service.model.exception.Inv
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -712,6 +713,7 @@ public class RecordDao {
     return inferer.getArrayOfType(attVal.toString(), typeMapping.getJavaArrayTypeForDbWrites());
   }
 
+  @VisibleForTesting
   Object[] getListAsArray(List<?> attVal, DataTypeMapping typeMapping) {
     return switch (typeMapping) {
       case ARRAY_OF_STRING,
@@ -721,7 +723,7 @@ public class RecordDao {
           ARRAY_OF_DATE_TIME,
           ARRAY_OF_NUMBER,
           EMPTY_ARRAY -> attVal.stream()
-          .map(e -> Objects.toString(e, null))
+          .map(e -> Objects.toString(e, null)) // .toString() non-nulls, else return null
           .toList()
           .toArray(new String[0]);
       case ARRAY_OF_BOOLEAN ->
