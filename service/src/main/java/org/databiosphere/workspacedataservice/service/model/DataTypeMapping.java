@@ -70,13 +70,18 @@ public enum DataTypeMapping {
       return EMPTY_ARRAY;
     }
     return switch (baseType) {
-      case STRING, NULL -> ARRAY_OF_STRING;
+      case STRING -> ARRAY_OF_STRING;
       case FILE -> ARRAY_OF_FILE;
       case RELATION -> ARRAY_OF_RELATION;
       case BOOLEAN -> ARRAY_OF_BOOLEAN;
       case NUMBER -> ARRAY_OF_NUMBER;
       case DATE -> ARRAY_OF_DATE;
       case DATE_TIME -> ARRAY_OF_DATE_TIME;
+      case NULL ->
+      // if we only detect nulls in the array, we can't detect the intended type.
+      // treat it as a string in this case.
+      ARRAY_OF_STRING;
+
       default -> throw new IllegalArgumentException("No supported array type for " + baseType);
     };
   }
