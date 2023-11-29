@@ -77,6 +77,11 @@ public enum DataTypeMapping {
       case NUMBER -> ARRAY_OF_NUMBER;
       case DATE -> ARRAY_OF_DATE;
       case DATE_TIME -> ARRAY_OF_DATE_TIME;
+      case NULL ->
+      // if we only detect nulls in the array, we can't detect the intended type.
+      // treat it as a string in this case.
+      ARRAY_OF_STRING;
+
       default -> throw new IllegalArgumentException("No supported array type for " + baseType);
     };
   }
