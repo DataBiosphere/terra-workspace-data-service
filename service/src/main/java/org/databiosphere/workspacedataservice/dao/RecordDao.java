@@ -664,7 +664,8 @@ public class RecordDao {
     return records.stream().map(r -> getInsertArgs(r, cols, recordTypeRowIdentifier)).toList();
   }
 
-  private Object getValueForSql(Object attVal, DataTypeMapping typeMapping) {
+  @VisibleForTesting
+  Object getValueForSql(Object attVal, DataTypeMapping typeMapping) {
     if (Objects.isNull(attVal)) {
       return null;
     }
@@ -701,7 +702,9 @@ public class RecordDao {
       return getArrayValues(attVal, typeMapping);
     }
     if (attVal instanceof List<?> list && typeMapping == DataTypeMapping.STRING) {
-      return "{" + list.stream().map(Object::toString).collect(Collectors.joining(",")) + "}";
+      return "{"
+          + list.stream().map(e -> Objects.toString(e, null)).collect(Collectors.joining(","))
+          + "}";
     }
     return attVal;
   }

@@ -987,6 +987,18 @@ class RecordDaoTest {
   }
 
   @Test
+  void testSqlForNullsList() {
+    List<?> input = new ArrayList<>();
+    input.add(null);
+    input.add(null);
+    input.add(null);
+    String expected = "{null,null,null}";
+    Object actual = recordDao.getValueForSql(input, DataTypeMapping.STRING);
+
+    assertEquals(expected, actual);
+  }
+
+  @Test
   void testSomeNullsInStringList() {
     List<String> input = new ArrayList<>();
     input.add(null);
