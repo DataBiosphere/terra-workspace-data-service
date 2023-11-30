@@ -58,6 +58,15 @@ public class BatchWriteService {
     this.recordService = recordService;
   }
 
+  private BatchWriteResult consumeWriteStream(
+      StreamingWriteHandler streamingWriteHandler,
+      UUID instanceId,
+      RecordType recordType,
+      Optional<String> primaryKey) {
+    return consumeWriteStreamWithRelations(
+        streamingWriteHandler, instanceId, recordType, primaryKey, false);
+  }
+
   /**
    * Responsible for accepting either a JsonStreamWriteHandler or a TsvStreamWriteHandler, looping
    * over the batches of Records found in the handler, and upserting those records.
@@ -68,20 +77,28 @@ public class BatchWriteService {
    * @param primaryKey PK for the record type
    * @return the number of records written
    */
-  private BatchWriteResult consumeWriteStream(
+  private BatchWriteResult consumeWriteStreamWithRelations(
       StreamingWriteHandler streamingWriteHandler,
       UUID instanceId,
       RecordType recordType,
-      Optional<String> primaryKey) {
+      Optional<String> primaryKey,
+      boolean relationsOnly) {
     BatchWriteResult result = BatchWriteResult.empty();
     try {
+      // Verify relationsOnly is only for pfbstreamingwriteHandler
+      if (relationsOnly && !(streamingWriteHandler instanceof PfbStreamWriteHandler)) {
+        throw new RuntimeException("incorrect");
+      }
+
       // tracker to stash the schemas for the record types seen while processing this stream
       Map<RecordType, Map<String, DataTypeMapping>> typesSeen = new HashMap<>();
 
       // loop through, in batches, the records provided by the StreamingWriteHandler. This loops
       // until the StreamingWriteHandler returns an empty batch.
       for (StreamingWriteHandler.WriteStreamInfo info =
-              streamingWriteHandler.readRecords(batchSize);
+              relationsOnly
+                  ? ((PfbStreamWriteHandler) streamingWriteHandler).readRelations(batchSize)
+                  : streamingWriteHandler.readRecords(batchSize);
           !info.getRecords().isEmpty();
           info = streamingWriteHandler.readRecords(batchSize)) {
         // get the records for this batch
@@ -186,6 +203,17 @@ public class BatchWriteService {
       DataFileStream<GenericRecord> is, UUID instanceId, Optional<String> primaryKey) {
     try (PfbStreamWriteHandler streamingWriteHandler = new PfbStreamWriteHandler(is)) {
       return consumeWriteStream(streamingWriteHandler, instanceId, null, primaryKey);
+    } catch (IOException e) {
+      throw new BadStreamingWriteRequestException(e);
+    }
+  }
+
+  @WriteTransaction
+  public BatchWriteResult batchWritePfbStreamWithRelations(
+      DataFileStream<GenericRecord> is, UUID instanceId, Optional<String> primaryKey) {
+    try (PfbStreamWriteHandler streamingWriteHandler = new PfbStreamWriteHandler(is)) {
+      return consumeWriteStreamWithRelations(
+          streamingWriteHandler, instanceId, null, primaryKey, true);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }

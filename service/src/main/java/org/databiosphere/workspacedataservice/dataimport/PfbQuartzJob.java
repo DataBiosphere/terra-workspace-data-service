@@ -96,6 +96,10 @@ public class PfbQuartzJob extends QuartzJob {
     logger.info("Importing tables and rows from this PFB...");
     withPfbStream(url, stream -> importTables(stream, targetInstance));
 
+    // This is HTTP connection #3 to the PFB.
+    logger.info("Updating tables and rows from this PFB with relations...");
+    withPfbStream(url, stream -> addRelationsToTables(stream, targetInstance));
+
     // TODO AJ-1453: save the result of importTables and persist the to the job
   }
 
@@ -131,6 +135,24 @@ public class PfbQuartzJob extends QuartzJob {
   BatchWriteResult importTables(DataFileStream<GenericRecord> dataStream, UUID targetInstance) {
     BatchWriteResult result =
         batchWriteService.batchWritePfbStream(dataStream, targetInstance, Optional.of(ID_FIELD));
+
+    result
+        .entrySet()
+        .forEach(
+            entry -> {
+              RecordType recordType = entry.getKey();
+              int quantity = entry.getValue();
+              activityLogger.saveEventForCurrentUser(
+                  user -> user.upserted().record().withRecordType(recordType).ofQuantity(quantity));
+            });
+    return result;
+  }
+
+  BatchWriteResult addRelationsToTables(
+      DataFileStream<GenericRecord> dataStream, UUID targetInstance) {
+    BatchWriteResult result =
+        batchWriteService.batchWritePfbStreamWithRelations(
+            dataStream, targetInstance, Optional.of(ID_FIELD));
 
     result
         .entrySet()
