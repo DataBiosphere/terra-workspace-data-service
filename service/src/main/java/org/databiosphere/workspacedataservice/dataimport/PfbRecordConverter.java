@@ -65,7 +65,12 @@ public class PfbRecordConverter {
         GenericRecord relation = (GenericRecord) relationObject;
         String relationType = relation.get("dst_name").toString();
         String relationId = relation.get("dst_id").toString();
-        // TODO is this the right naming convention?  a prettier way to set it up?
+        /* TODO is this the right naming convention?  a prettier way to set it up?
+        looking at existing pfbs, it appears that the 'relationType would be,
+        e.g., 'activities' but the column name in a table related to it
+        would be 'activity_id'.  deriving the singular from the plural is not
+        always straightforward!  we'd have to look at the pfb schema directly
+        */
         attributes.putAttribute(
             relationType + "_id",
             RelationUtils.createRelationString(RecordType.valueOf(relationType), relationId));

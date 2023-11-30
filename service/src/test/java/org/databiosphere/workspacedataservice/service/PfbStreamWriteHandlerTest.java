@@ -149,4 +149,52 @@ class PfbStreamWriteHandlerTest {
       fail(e);
     }
   }
+
+  // relations
+  @Test
+  void relationsAreParsedCorrectly() {
+    URL url = getClass().getResource("/test.avro");
+    assertNotNull(url);
+    try (DataFileStream<GenericRecord> dataStream =
+        PfbReader.getGenericRecordsStream(url.toString())) {
+
+      PfbStreamWriteHandler pswh = new PfbStreamWriteHandler(dataStream);
+      StreamingWriteHandler.WriteStreamInfo streamInfo = pswh.readRelations(5);
+
+      List<Record> result = streamInfo.getRecords();
+      assertEquals(5, result.size());
+      Record firstRecord = result.get(0);
+      // The first record does not have any relations
+      assertNotNull(firstRecord);
+      assertEquals("activities.34f8be82-2973-52c8-ad95-ba79416c51ab.3", firstRecord.getId());
+      assertEquals(0, firstRecord.attributeSet().size());
+
+      // validate that relations were identified
+      Record secondRecord = result.get(4);
+      assertNotNull(secondRecord);
+      assertEquals("files.3511bcae-8725-53f1-b632-d06a9697baa5.1", secondRecord.getId());
+      // this record has 4 relations
+      assertEquals(4, secondRecord.attributeSet().size());
+      assertEquals(
+          RelationUtils.createRelationString(
+              RecordType.valueOf("activities"),
+              "activities.34f8be82-2973-52c8-ad95-ba79416c51ab.3"),
+          secondRecord.getAttributeValue("activities_id"));
+      assertEquals(
+          RelationUtils.createRelationString(
+              RecordType.valueOf("biosamples"),
+              "biosamples.30a60040-fdca-5473-b2d5-cd3839e983c7.1"),
+          secondRecord.getAttributeValue("biosamples_id"));
+      assertEquals(
+          RelationUtils.createRelationString(
+              RecordType.valueOf("datasets"), "datasets.cd90e9d7-4b3c-5705-bcbf-d477af2c4f7d.1"),
+          secondRecord.getAttributeValue("datasets_id"));
+      assertEquals(
+          RelationUtils.createRelationString(
+              RecordType.valueOf("donors"), "donors.cce44986-0d04-54ea-8343-83748cd7225a.1"),
+          secondRecord.getAttributeValue("donors_id"));
+    } catch (IOException e) {
+      fail(e);
+    }
+  }
 }
