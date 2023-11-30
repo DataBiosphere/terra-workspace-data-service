@@ -249,4 +249,20 @@ class PfbRecordConverterTest {
     Object actual = pfbRecordConverter.convertAttributeType(input);
     assertEquals(List.of("bar", "foo", "baz"), actual);
   }
+
+  @Test
+  void decodesEnumsCorrectly() {
+    PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
+
+    Object input =
+        List.of(
+            new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "bpm_20__3E__20_60"),
+            new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "bpm_20__3E__20_80"),
+            new GenericData.EnumSymbol(
+                Schema.create(Schema.Type.STRING), "only_20_space_20_conversions"),
+            new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "noconversion"));
+
+    Object actual = pfbRecordConverter.convertAttributeType(input);
+    assertEquals(List.of("bpm > 60", "bpm > 80", "only space conversions", "noconversion"), actual);
+  }
 }

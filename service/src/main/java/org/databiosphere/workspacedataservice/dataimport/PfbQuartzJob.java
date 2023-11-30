@@ -119,7 +119,7 @@ public class PfbQuartzJob extends QuartzJob {
         PfbReader.getGenericRecordsStream(url.toString())) {
       return consumer.run(dataStream);
     } catch (Exception e) {
-      throw new PfbParsingException("Error processing PFB", e);
+      throw new PfbParsingException("Error processing PFB: " + e.getMessage(), e);
     }
   }
 
