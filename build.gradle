@@ -40,6 +40,8 @@ subprojects {
         dependencies {
             dependency 'org.yaml:snakeyaml:2.0'
             dependency 'org.webjars:webjars-locator-core:0.53'
+            dependency 'ch.qos.logback:logback-classic:1.2.13+' // CVE-2023-6378
+            dependency 'ch.qos.logback:logback-core:1.2.13+' // CVE-2023-6378
         }
     }
 }
