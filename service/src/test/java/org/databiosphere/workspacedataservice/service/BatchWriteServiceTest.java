@@ -144,7 +144,7 @@ class BatchWriteServiceTest {
       //    - 1 call for batch #8 which will be (item, widget)
       //    - 7 more calls for batches #9-15 which will be (widget, widget)
       // * inferTypes once for each of "thing", "item", and "widget"
-      batchWriteService.batchWritePfbStream(pfbStream, INSTANCE, Optional.of(ID_FIELD));
+      batchWriteService.batchWritePfbStream(pfbStream, INSTANCE, Optional.of(ID_FIELD), false);
 
       // verify calls to batchUpsertWithErrorCapture
       verify(recordService, times(3))
@@ -187,7 +187,7 @@ class BatchWriteServiceTest {
     Map<String, Integer> counts = Map.of("thing", 5, "item", 10, "widget", 15);
     try (DataFileStream<GenericRecord> pfbStream = PfbTestUtils.mockPfbStream(counts)) {
       BatchWriteResult result =
-          batchWriteService.batchWritePfbStream(pfbStream, INSTANCE, Optional.of(ID_FIELD));
+          batchWriteService.batchWritePfbStream(pfbStream, INSTANCE, Optional.of(ID_FIELD), false);
       assertEquals(3, result.entrySet().size());
       assertEquals(5, result.getUpdatedCount(RecordType.valueOf("thing")));
       assertEquals(10, result.getUpdatedCount(RecordType.valueOf("item")));
@@ -206,11 +206,29 @@ class BatchWriteServiceTest {
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
       BatchWriteResult result =
-          batchWriteService.batchWritePfbStream(dataStream, INSTANCE, Optional.of(ID_FIELD));
+          batchWriteService.batchWritePfbStream(dataStream, INSTANCE, Optional.of(ID_FIELD), false);
 
       assertEquals(2, result.entrySet().size());
       assertEquals(3, result.getUpdatedCount(RecordType.valueOf("data_release")));
       assertEquals(1, result.getUpdatedCount(RecordType.valueOf("submitted_aligned_reads")));
+    } catch (IOException e) {
+      fail(e.getMessage());
+    }
+  }
+
+  //  TODO: forward-looking relations, cyclical
+  @Test
+  void batchWriteRelationsFromPfb() {
+    URL url = getClass().getResource("/test.avro");
+    assertNotNull(url);
+    try (DataFileStream<GenericRecord> dataStream =
+        PfbReader.getGenericRecordsStream(url.toString())) {
+      BatchWriteResult result =
+          batchWriteService.batchWritePfbStream(dataStream, INSTANCE, Optional.of(ID_FIELD), true);
+
+      assertEquals(1, result.entrySet().size());
+      // The 'files' record type has relations, so it should have been updated
+      assertEquals(3202, result.getUpdatedCount(RecordType.valueOf("files")));
     } catch (IOException e) {
       fail(e.getMessage());
     }

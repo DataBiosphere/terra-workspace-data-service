@@ -26,20 +26,15 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
   }
 
   public WriteStreamInfo readRecords(int numRecords) throws IOException {
-    // pull the next `numRecords` rows from the inputStream and translate to a Java Stream
-    Stream<GenericRecord> pfbBatch =
-        StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(inputStream, Spliterator.ORDERED), false)
-            .limit(numRecords);
-
-    // convert the PFB GenericRecord objects into WDS Record objects
-    PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
-    List<Record> records = pfbBatch.map(pfbRecordConverter::genericRecordToRecord).toList();
-
-    return new WriteStreamInfo(records, OperationType.UPSERT);
+    return convertStream(numRecords, false);
   }
 
   public WriteStreamInfo readRelations(int numRecords) throws IOException {
+    return convertStream(numRecords, true);
+  }
+
+  // TODO maybe use a functional interface or something instead of a boolean
+  private WriteStreamInfo convertStream(int numRecords, boolean relations) throws IOException {
     // pull the next `numRecords` rows from the inputStream and translate to a Java Stream
     Stream<GenericRecord> pfbBatch =
         StreamSupport.stream(
@@ -48,7 +43,13 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
 
     // convert the PFB GenericRecord objects into WDS Record objects
     PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
-    List<Record> records = pfbBatch.map(pfbRecordConverter::genericRecordToRelations).toList();
+    List<Record> records =
+        pfbBatch
+            .map(
+                relations
+                    ? pfbRecordConverter::genericRecordToRelations
+                    : pfbRecordConverter::genericRecordToRecord)
+            .toList();
 
     return new WriteStreamInfo(records, OperationType.UPSERT);
   }

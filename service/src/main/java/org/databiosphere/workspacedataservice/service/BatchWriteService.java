@@ -100,7 +100,10 @@ public class BatchWriteService {
                   ? ((PfbStreamWriteHandler) streamingWriteHandler).readRelations(batchSize)
                   : streamingWriteHandler.readRecords(batchSize);
           !info.getRecords().isEmpty();
-          info = streamingWriteHandler.readRecords(batchSize)) {
+          info =
+              relationsOnly
+                  ? ((PfbStreamWriteHandler) streamingWriteHandler).readRelations(batchSize)
+                  : streamingWriteHandler.readRecords(batchSize)) {
         // get the records for this batch
         List<Record> records = info.getRecords();
 
@@ -134,16 +137,19 @@ public class BatchWriteService {
                     instanceId, recType, inferredSchema, rList, primaryKey.orElse(RECORD_ID));
             typesSeen.put(recType, finalSchema);
           }
-          // write these records to the db, using the schema from the `typesSeen` map
-          writeBatch(
-              instanceId,
-              recType,
-              typesSeen.get(recType),
-              info.getOperationType(),
-              rList,
-              primaryKey);
-          // update the result counts
-          result.increaseCount(recType, rList.size());
+          // when updating relations only, do not update if there are no relations
+          if (!relationsOnly || !typesSeen.get(recType).isEmpty()) {
+            // write these records to the db, using the schema from the `typesSeen` map
+            writeBatch(
+                instanceId,
+                recType,
+                typesSeen.get(recType),
+                info.getOperationType(),
+                rList,
+                primaryKey);
+            // update the result counts
+            result.increaseCount(recType, rList.size());
+          }
         }
       }
     } catch (IOException e) {
@@ -200,20 +206,13 @@ public class BatchWriteService {
    */
   @WriteTransaction
   public BatchWriteResult batchWritePfbStream(
-      DataFileStream<GenericRecord> is, UUID instanceId, Optional<String> primaryKey) {
-    try (PfbStreamWriteHandler streamingWriteHandler = new PfbStreamWriteHandler(is)) {
-      return consumeWriteStream(streamingWriteHandler, instanceId, null, primaryKey);
-    } catch (IOException e) {
-      throw new BadStreamingWriteRequestException(e);
-    }
-  }
-
-  @WriteTransaction
-  public BatchWriteResult batchWritePfbStreamWithRelations(
-      DataFileStream<GenericRecord> is, UUID instanceId, Optional<String> primaryKey) {
+      DataFileStream<GenericRecord> is,
+      UUID instanceId,
+      Optional<String> primaryKey,
+      boolean relations) {
     try (PfbStreamWriteHandler streamingWriteHandler = new PfbStreamWriteHandler(is)) {
       return consumeWriteStreamWithRelations(
-          streamingWriteHandler, instanceId, null, primaryKey, true);
+          streamingWriteHandler, instanceId, null, primaryKey, relations);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }

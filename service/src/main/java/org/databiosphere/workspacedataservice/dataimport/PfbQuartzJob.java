@@ -134,7 +134,8 @@ public class PfbQuartzJob extends QuartzJob {
    */
   BatchWriteResult importTables(DataFileStream<GenericRecord> dataStream, UUID targetInstance) {
     BatchWriteResult result =
-        batchWriteService.batchWritePfbStream(dataStream, targetInstance, Optional.of(ID_FIELD));
+        batchWriteService.batchWritePfbStream(
+            dataStream, targetInstance, Optional.of(ID_FIELD), false);
 
     result
         .entrySet()
@@ -151,18 +152,21 @@ public class PfbQuartzJob extends QuartzJob {
   BatchWriteResult addRelationsToTables(
       DataFileStream<GenericRecord> dataStream, UUID targetInstance) {
     BatchWriteResult result =
-        batchWriteService.batchWritePfbStreamWithRelations(
-            dataStream, targetInstance, Optional.of(ID_FIELD));
+        batchWriteService.batchWritePfbStream(
+            dataStream, targetInstance, Optional.of(ID_FIELD), true);
 
-    result
-        .entrySet()
-        .forEach(
-            entry -> {
-              RecordType recordType = entry.getKey();
-              int quantity = entry.getValue();
-              activityLogger.saveEventForCurrentUser(
-                  user -> user.upserted().record().withRecordType(recordType).ofQuantity(quantity));
-            });
+    if (result != null) {
+      result
+          .entrySet()
+          .forEach(
+              entry -> {
+                RecordType recordType = entry.getKey();
+                int quantity = entry.getValue();
+                activityLogger.saveEventForCurrentUser(
+                    user ->
+                        user.upserted().record().withRecordType(recordType).ofQuantity(quantity));
+              });
+    }
     return result;
   }
 

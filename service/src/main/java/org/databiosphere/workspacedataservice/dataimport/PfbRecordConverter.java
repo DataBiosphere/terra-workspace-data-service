@@ -59,7 +59,8 @@ public class PfbRecordConverter {
 
     // get the relations array from the record
     // TODO is GenericData.Array the correct type?
-    if (genRec.get(RELATIONS_FIELD) instanceof GenericData.Array relationArray) {
+    if (genRec.get(RELATIONS_FIELD) instanceof GenericData.Array relationArray
+        && !relationArray.isEmpty()) {
       RecordAttributes attributes = RecordAttributes.empty();
       // TODO shouldn't it be a GenericRecord tho
       for (Object relationObject : relationArray) {
