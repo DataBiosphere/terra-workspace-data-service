@@ -6,7 +6,6 @@ import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -58,13 +57,12 @@ public class PfbRecordConverter {
             RecordAttributes.empty());
 
     // get the relations array from the record
-    // TODO is GenericData.Array the correct type?
-    if (genRec.get(RELATIONS_FIELD) instanceof GenericData.Array relationArray
+    if (genRec.get(RELATIONS_FIELD) instanceof Collection relationArray
         && !relationArray.isEmpty()) {
       RecordAttributes attributes = RecordAttributes.empty();
-      // TODO shouldn't it be a GenericRecord tho
       for (Object relationObject : relationArray) {
-        // TODO all the correct typing and such
+        // Here we assume that the relations object is a GenericRecord with keys "dst_name" and
+        // "dst_id"
         GenericRecord relation = (GenericRecord) relationObject;
         String relationType = relation.get("dst_name").toString();
         String relationId = relation.get("dst_id").toString();

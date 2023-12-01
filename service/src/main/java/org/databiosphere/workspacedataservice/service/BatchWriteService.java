@@ -87,7 +87,9 @@ public class BatchWriteService {
     try {
       // Verify relationsOnly is only for pfbstreamingwriteHandler
       if (relationsOnly && !(streamingWriteHandler instanceof PfbStreamWriteHandler)) {
-        throw new RuntimeException("incorrect");
+        throw new BadStreamingWriteRequestException(
+            "BatchWriteService attempted to re-read PFB "
+                + "on a non-PFB import. Cannot continue.");
       }
 
       // tracker to stash the schemas for the record types seen while processing this stream

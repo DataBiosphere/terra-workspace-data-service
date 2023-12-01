@@ -34,7 +34,7 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
   }
 
   // TODO maybe use a functional interface or something instead of a boolean
-  private WriteStreamInfo convertStream(int numRecords, boolean relations) throws IOException {
+  private WriteStreamInfo convertStream(int numRecords, boolean relations) {
     // pull the next `numRecords` rows from the inputStream and translate to a Java Stream
     Stream<GenericRecord> pfbBatch =
         StreamSupport.stream(
