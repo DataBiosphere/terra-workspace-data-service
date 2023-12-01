@@ -101,6 +101,18 @@ dependencies {
         implementation('org.apache.commons:commons-compress:1.24.0') {
             because("CVE-2023-42503")
         }
+
+
+        // this is redundant (and ineffective) without an explicit override in build.gradle
+        // dependencyManagement, but left here for documentation purposes
+        implementation('ch.qos.logback:logback-classic:1.2.13+') {
+            because("CVE-2023-6378")
+        }
+        // this is redundant (and ineffective) without an explicit override in build.gradle
+        // dependencyManagement, but left here for documentation purposes
+        implementation('ch.qos.logback:logback-core:1.2.13+') {
+            because("CVE-2023-6378")
+        }
     }
 }
 
