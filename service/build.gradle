@@ -110,7 +110,7 @@ dependencies {
         }
         // this is redundant (and ineffective) without an explicit override in build.gradle
         // dependencyManagement, but left here for documentation purposes
-        implementation('ch.qos.logback:logback-core:1.2.13+') {
+        implementation('ch.qos.logback:logback-core:1.3.12+') {
             because("CVE-2023-6378")
         }
     }
