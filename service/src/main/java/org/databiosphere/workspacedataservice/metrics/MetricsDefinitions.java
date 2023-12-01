@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.metrics;
 
-public class MetricsDefinitions {
+public final class MetricsDefinitions {
+
+  private MetricsDefinitions() {}
 
   /** counter for column schema changes, i.e. "alter column" sql statements */
   public static final String COUNTER_COLCHANGE = "column_change_datatype";
