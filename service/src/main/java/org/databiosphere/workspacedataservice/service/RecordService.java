@@ -205,7 +205,6 @@ public class RecordService {
         difference.entriesDiffering();
     for (Map.Entry<String, MapDifference.ValueDifference<DataTypeMapping>> entry :
         differenceMap.entrySet()) {
-
       String column = entry.getKey();
       MapDifference.ValueDifference<DataTypeMapping> valueDifference = entry.getValue();
       // Don't allow updating relation columns
