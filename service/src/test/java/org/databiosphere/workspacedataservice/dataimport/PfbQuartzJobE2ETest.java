@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import bio.terra.workspace.model.ResourceList;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -27,6 +28,8 @@ import org.databiosphere.workspacedataservice.service.ImportService;
 import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -69,6 +72,9 @@ public class PfbQuartzJobE2ETest {
 
   @Value("classpath:test.avro")
   Resource testAvroResource;
+
+  @Value("classpath:precision.avro")
+  Resource testPrecisionResource;
 
   UUID instanceId;
 
@@ -131,6 +137,43 @@ public class PfbQuartzJobE2ETest {
         Map.of(
             "activities", 3202, "files", 3202, "donors", 3202, "biosamples", 3202, "datasets", 1),
         actualCounts);
+  }
+
+  @Test
+  void numberPrecisionInTestResource() throws IOException, JobExecutionException {
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(
+            ImportRequestServerModel.TypeEnum.PFB, testPrecisionResource.getURI());
+
+    // because we have a mock scheduler dao, this won't trigger Quartz
+    GenericJobServerModel genericJobServerModel =
+        importService.createImport(instanceId, importRequest);
+
+    UUID jobId = genericJobServerModel.getJobId();
+    JobExecutionContext mockContext = stubJobContext(jobId, testPrecisionResource, instanceId);
+
+    // WSM should report no snapshots already linked to this workspace
+    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
+
+    buildQuartzJob().execute(mockContext);
+
+    // this record, within the test.avro file, is known to have numbers with high decimal
+    // precision. Retrieve some of them and check for the expected high-precision values.
+
+    RecordResponse recordResponse =
+        recordOrchestratorService.getSingleRecord(
+            instanceId, "v0.2", RecordType.valueOf("aliquot"), "aliquot_melituria_Khattish");
+
+    assertEquals(
+        BigDecimal.valueOf(76.98304748535156),
+        recordResponse.recordAttributes().getAttributeValue("a260_a280_ratio"));
+    assertEquals(
+        BigDecimal.valueOf(24.167686462402344),
+        recordResponse.recordAttributes().getAttributeValue("aliquot_quantity"));
+    assertEquals(
+        BigDecimal.valueOf(12.1218843460083),
+        recordResponse.recordAttributes().getAttributeValue("concentration"));
   }
 
   @Test
