@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.buildQuartzJob;
 import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.stubJobContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,6 +14,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
@@ -25,6 +27,8 @@ import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.ImportService;
 import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
+import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -121,7 +125,11 @@ public class PfbQuartzJobE2ETest {
     List<RecordTypeSchema> allTypes =
         recordOrchestratorService.describeAllRecordTypes(instanceId, "v0.2");
 
-    // could assert on individual column data types to see if they are good
+    // spot-check some column data types to see if they are good
+    assertDataType(allTypes, "activities", "activity_type", DataTypeMapping.ARRAY_OF_STRING);
+    assertDataType(allTypes, "files", "file_format", DataTypeMapping.STRING);
+    assertDataType(allTypes, "files", "file_size", DataTypeMapping.NUMBER);
+    assertDataType(allTypes, "files", "is_supplementary", DataTypeMapping.BOOLEAN);
 
     Map<String, Integer> actualCounts =
         allTypes.stream()
@@ -214,5 +222,23 @@ public class PfbQuartzJobE2ETest {
     assertEquals(
         BigDecimal.valueOf(12.1218843460083),
         recordResponse.recordAttributes().getAttributeValue("concentration"));
+  }
+
+  private void assertDataType(
+      List<RecordTypeSchema> allTypes,
+      String typeName,
+      String attributeName,
+      DataTypeMapping expectedType) {
+
+    Optional<RecordTypeSchema> maybeRecordTypeSchema =
+        allTypes.stream().filter(x -> x.name().getName().equals(typeName)).findFirst();
+    assertThat(maybeRecordTypeSchema).isNotEmpty();
+
+    List<AttributeSchema> allAttributes = maybeRecordTypeSchema.get().attributes();
+    Optional<AttributeSchema> maybeAttributeSchema =
+        allAttributes.stream().filter(x -> x.name().equals(attributeName)).findFirst();
+    assertThat(maybeAttributeSchema).isNotEmpty();
+
+    assertEquals(expectedType.name(), maybeAttributeSchema.get().datatype());
   }
 }
