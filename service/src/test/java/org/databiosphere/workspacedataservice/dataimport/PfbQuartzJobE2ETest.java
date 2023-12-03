@@ -1,13 +1,11 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
-import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
-import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
-import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
+import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.buildQuartzJob;
+import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.stubJobContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import bio.terra.workspace.model.ResourceList;
@@ -36,11 +34,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-import org.quartz.JobKey;
-import org.quartz.impl.JobDetailImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -94,6 +89,7 @@ public class PfbQuartzJobE2ETest {
     instanceService.deleteInstance(instanceId, "v0.2");
   }
 
+  /* import test.avro, and validate the tables and row counts it imported. */
   @Test
   void importTestResource() throws IOException, JobExecutionException {
     ImportRequestServerModel importRequest =
@@ -111,7 +107,8 @@ public class PfbQuartzJobE2ETest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    buildQuartzJob().execute(mockContext);
+    buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+        .execute(mockContext);
 
     /* the testAvroResource should insert:
        - 3202 record(s) of type activities
@@ -124,7 +121,7 @@ public class PfbQuartzJobE2ETest {
     List<RecordTypeSchema> allTypes =
         recordOrchestratorService.describeAllRecordTypes(instanceId, "v0.2");
 
-    // TODO: could assert on individual column data types to see if they are good
+    // could assert on individual column data types to see if they are good
 
     Map<String, Integer> actualCounts =
         allTypes.stream()
@@ -139,43 +136,7 @@ public class PfbQuartzJobE2ETest {
         actualCounts);
   }
 
-  @Test
-  void numberPrecisionInTestResource() throws IOException, JobExecutionException {
-    ImportRequestServerModel importRequest =
-        new ImportRequestServerModel(
-            ImportRequestServerModel.TypeEnum.PFB, testPrecisionResource.getURI());
-
-    // because we have a mock scheduler dao, this won't trigger Quartz
-    GenericJobServerModel genericJobServerModel =
-        importService.createImport(instanceId, importRequest);
-
-    UUID jobId = genericJobServerModel.getJobId();
-    JobExecutionContext mockContext = stubJobContext(jobId, testPrecisionResource, instanceId);
-
-    // WSM should report no snapshots already linked to this workspace
-    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new ResourceList());
-
-    buildQuartzJob().execute(mockContext);
-
-    // this record, within the test.avro file, is known to have numbers with high decimal
-    // precision. Retrieve some of them and check for the expected high-precision values.
-
-    RecordResponse recordResponse =
-        recordOrchestratorService.getSingleRecord(
-            instanceId, "v0.2", RecordType.valueOf("aliquot"), "aliquot_melituria_Khattish");
-
-    assertEquals(
-        BigDecimal.valueOf(76.98304748535156),
-        recordResponse.recordAttributes().getAttributeValue("a260_a280_ratio"));
-    assertEquals(
-        BigDecimal.valueOf(24.167686462402344),
-        recordResponse.recordAttributes().getAttributeValue("aliquot_quantity"));
-    assertEquals(
-        BigDecimal.valueOf(12.1218843460083),
-        recordResponse.recordAttributes().getAttributeValue("concentration"));
-  }
-
+  /* import four_tables.avro, and validate the tables and row counts it imported. */
   @Test
   void importFourTablesResource() throws IOException, JobExecutionException {
     ImportRequestServerModel importRequest =
@@ -193,7 +154,8 @@ public class PfbQuartzJobE2ETest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    buildQuartzJob().execute(mockContext);
+    buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+        .execute(mockContext);
 
     /* the fourTablesAvroResource should insert:
        - 3 record(s) of type data_release
@@ -213,29 +175,44 @@ public class PfbQuartzJobE2ETest {
     assertEquals(Map.of("data_release", 3, "submitted_aligned_reads", 1), actualCounts);
   }
 
-  private JobExecutionContext stubJobContext(UUID jobId, Resource resource, UUID instanceId)
-      throws IOException {
-    JobExecutionContext mockContext = mock(JobExecutionContext.class);
-    when(mockContext.getMergedJobDataMap())
-        .thenReturn(
-            new JobDataMap(
-                Map.of(
-                    ARG_TOKEN,
-                    "expectedToken",
-                    ARG_URL,
-                    resource.getURL().toString(),
-                    ARG_INSTANCE,
-                    instanceId.toString())));
+  /* import precision.avro, and spot-check a record to ensure the numeric values inside that
+       record preserved all of its decimal places.
+  */
+  @Test
+  void numberPrecision() throws IOException, JobExecutionException {
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(
+            ImportRequestServerModel.TypeEnum.PFB, testPrecisionResource.getURI());
 
-    JobDetailImpl jobDetail = new JobDetailImpl();
-    jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
-    when(mockContext.getJobDetail()).thenReturn(jobDetail);
+    // because we have a mock scheduler dao, this won't trigger Quartz
+    GenericJobServerModel genericJobServerModel =
+        importService.createImport(instanceId, importRequest);
 
-    return mockContext;
-  }
+    UUID jobId = genericJobServerModel.getJobId();
+    JobExecutionContext mockContext = stubJobContext(jobId, testPrecisionResource, instanceId);
 
-  private PfbQuartzJob buildQuartzJob() {
-    return new PfbQuartzJob(
-        jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID());
+    // WSM should report no snapshots already linked to this workspace
+    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
+
+    buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+        .execute(mockContext);
+
+    // this record, within the precision.avro file, is known to have numbers with high decimal
+    // precision. Retrieve some of them and check for the expected high-precision values.
+    RecordResponse recordResponse =
+        recordOrchestratorService.getSingleRecord(
+            instanceId, "v0.2", RecordType.valueOf("aliquot"), "aliquot_melituria_Khattish");
+
+    // the expected values here match what is output by PyPFB
+    assertEquals(
+        BigDecimal.valueOf(76.98304748535156),
+        recordResponse.recordAttributes().getAttributeValue("a260_a280_ratio"));
+    assertEquals(
+        BigDecimal.valueOf(24.167686462402344),
+        recordResponse.recordAttributes().getAttributeValue("aliquot_quantity"));
+    assertEquals(
+        BigDecimal.valueOf(12.1218843460083),
+        recordResponse.recordAttributes().getAttributeValue("concentration"));
   }
 }
