@@ -48,11 +48,16 @@ import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
+/**
+ * Tests for PFB import that execute "end-to-end" - that is, they go through the whole process of
+ * parsing the PFB, creating tables in Postgres, inserting rows, and then reading back the
+ * rows/counts/schema from Postgres.
+ */
 @ActiveProfiles(profiles = "mock-sam")
 @DirtiesContext
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class PfbQuartzJobE2ETest {
+class PfbQuartzJobE2ETest {
 
   @Autowired JobDao jobDao;
   @Autowired RestClientRetry restClientRetry;
