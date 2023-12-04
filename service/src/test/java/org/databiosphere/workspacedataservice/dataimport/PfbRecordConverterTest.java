@@ -16,6 +16,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -33,7 +34,9 @@ class PfbRecordConverterTest {
     String inputName = RandomStringUtils.randomAlphanumeric(16);
     GenericRecord input = PfbTestUtils.makeRecord(inputId, inputName);
 
-    Record actual = new PfbRecordConverter().genericRecordToRecord(input, false);
+    Record actual =
+        new PfbRecordConverter()
+            .genericRecordToRecord(input, PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
 
     assertEquals(inputId, actual.getId());
     assertEquals(inputName, actual.getRecordTypeName());
@@ -43,7 +46,9 @@ class PfbRecordConverterTest {
   @Test
   void emptyObjectAttributes() {
     GenericRecord input = PfbTestUtils.makeRecord("my-id", "my-name");
-    Record actual = new PfbRecordConverter().genericRecordToRecord(input, false);
+    Record actual =
+        new PfbRecordConverter()
+            .genericRecordToRecord(input, PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
 
     assertThat(actual.attributeSet()).isEmpty();
   }
@@ -53,7 +58,9 @@ class PfbRecordConverterTest {
   void nullObjectAttributes() {
     GenericRecord input =
         PfbTestUtils.makeRecord("this-record-has", "a-null-for-the-object-field", null);
-    Record actual = new PfbRecordConverter().genericRecordToRecord(input, false);
+    Record actual =
+        new PfbRecordConverter()
+            .genericRecordToRecord(input, PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
 
     assertThat(actual.attributeSet()).isEmpty();
   }
@@ -99,7 +106,9 @@ class PfbRecordConverterTest {
             new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "enumValue1")));
 
     GenericRecord input = PfbTestUtils.makeRecord("my-id", "mytype", objectAttributes);
-    Record actual = new PfbRecordConverter().genericRecordToRecord(input, false);
+    Record actual =
+        new PfbRecordConverter()
+            .genericRecordToRecord(input, PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
 
     Set<Map.Entry<String, Object>> actualAttributeSet = actual.attributeSet();
     Set<String> actualKeySet =
@@ -138,7 +147,9 @@ class PfbRecordConverterTest {
     GenericRecord input =
         PfbTestUtils.makeRecord(
             "my-id", "mytype", new GenericData.Record(OBJECT_SCHEMA), relations);
-    Record actual = new PfbRecordConverter().genericRecordToRecord(input, true);
+    Record actual =
+        new PfbRecordConverter()
+            .genericRecordToRecord(input, PfbStreamWriteHandler.PfbImportMode.RELATIONS);
 
     assertEquals(
         RelationUtils.createRelationString(RecordType.valueOf("relation_table"), "relation_id"),

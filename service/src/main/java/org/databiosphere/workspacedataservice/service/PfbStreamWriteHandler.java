@@ -14,17 +14,23 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 
 public class PfbStreamWriteHandler implements StreamingWriteHandler {
 
+  public enum PfbImportMode {
+    RELATIONS,
+    BASE_ATTRIBUTES
+  }
+
   private final DataFileStream<GenericRecord> inputStream;
-  private final boolean relationsOnly;
+  private final PfbImportMode pfbImportMode;
 
   /**
    * Create a new PfbStreamWriteHandler and specify the expected schemas for the PFB.
    *
    * @param inputStream the PFB stream
    */
-  public PfbStreamWriteHandler(DataFileStream<GenericRecord> inputStream, boolean relationsOnly) {
+  public PfbStreamWriteHandler(
+      DataFileStream<GenericRecord> inputStream, PfbImportMode pfbImportMode) {
     this.inputStream = inputStream;
-    this.relationsOnly = relationsOnly;
+    this.pfbImportMode = pfbImportMode;
   }
 
   // TODO maybe use a functional interface or something instead of a boolean
@@ -39,7 +45,7 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
     // convert the PFB GenericRecord objects into WDS Record objects
     PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
     List<Record> records =
-        pfbBatch.map(rec -> pfbRecordConverter.genericRecordToRecord(rec, relationsOnly)).toList();
+        pfbBatch.map(rec -> pfbRecordConverter.genericRecordToRecord(rec, pfbImportMode)).toList();
 
     return new WriteStreamInfo(records, OperationType.UPSERT);
   }

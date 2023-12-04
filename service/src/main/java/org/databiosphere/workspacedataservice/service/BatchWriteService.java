@@ -64,7 +64,11 @@ public class BatchWriteService {
       RecordType recordType,
       Optional<String> primaryKey) {
     return consumeWriteStreamWithRelations(
-        streamingWriteHandler, instanceId, recordType, primaryKey, false);
+        streamingWriteHandler,
+        instanceId,
+        recordType,
+        primaryKey,
+        PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
   }
 
   /**
@@ -82,11 +86,12 @@ public class BatchWriteService {
       UUID instanceId,
       RecordType recordType,
       Optional<String> primaryKey,
-      boolean relationsOnly) {
+      PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
     BatchWriteResult result = BatchWriteResult.empty();
     try {
       // Verify relationsOnly is only for pfbstreamingwriteHandler
-      if (relationsOnly && !(streamingWriteHandler instanceof PfbStreamWriteHandler)) {
+      if (pfbImportMode == PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES
+          && !(streamingWriteHandler instanceof PfbStreamWriteHandler)) {
         throw new BadStreamingWriteRequestException(
             "BatchWriteService attempted to re-read PFB "
                 + "on a non-PFB import. Cannot continue.");
@@ -135,8 +140,9 @@ public class BatchWriteService {
             typesSeen.put(recType, finalSchema);
           }
           // when updating relations only, do not update if there are no relations
-          if (!relationsOnly || !typesSeen.get(recType).isEmpty()) {
-            if (relationsOnly) {
+          if (pfbImportMode == PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES
+              || !typesSeen.get(recType).isEmpty()) {
+            if (pfbImportMode == PfbStreamWriteHandler.PfbImportMode.RELATIONS) {
               // For relations only, remove records that have no relations
               rList = rList.stream().filter(rec -> !rec.attributeSet().isEmpty()).toList();
             }
@@ -210,11 +216,11 @@ public class BatchWriteService {
       DataFileStream<GenericRecord> is,
       UUID instanceId,
       Optional<String> primaryKey,
-      boolean relationsOnly) {
+      PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
     try (PfbStreamWriteHandler streamingWriteHandler =
-        new PfbStreamWriteHandler(is, relationsOnly)) {
+        new PfbStreamWriteHandler(is, pfbImportMode)) {
       return consumeWriteStreamWithRelations(
-          streamingWriteHandler, instanceId, null, primaryKey, relationsOnly);
+          streamingWriteHandler, instanceId, null, primaryKey, pfbImportMode);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }

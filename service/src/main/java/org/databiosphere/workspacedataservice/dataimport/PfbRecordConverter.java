@@ -8,6 +8,7 @@ import java.util.List;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericRecord;
+import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -21,14 +22,15 @@ public class PfbRecordConverter {
   public static final String OBJECT_FIELD = "object";
   public static final String RELATIONS_FIELD = "relations";
 
-  public Record genericRecordToRecord(GenericRecord genRec, boolean relationsOnly) {
+  public Record genericRecordToRecord(
+      GenericRecord genRec, PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
     // create the WDS record shell (id, record type, empty attributes)
     Record converted =
         new Record(
             genRec.get(ID_FIELD).toString(),
             RecordType.valueOf(genRec.get(TYPE_FIELD).toString()),
             RecordAttributes.empty());
-    if (relationsOnly) {
+    if (pfbImportMode == PfbStreamWriteHandler.PfbImportMode.RELATIONS) {
       return addRelations(genRec, converted);
     } else {
       return addAttributes(genRec, converted);
