@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.pact;
 
+import static org.databiosphere.workspacedataservice.TestTags.PACT_TEST;
 import static org.junit.jupiter.api.Assertions.*;
 
 import au.com.dius.pact.consumer.MockServer;
@@ -24,7 +25,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-@Tag("pact-test")
+@Tag(PACT_TEST)
 @ExtendWith(PactConsumerTestExt.class)
 class SamPactTest {
 

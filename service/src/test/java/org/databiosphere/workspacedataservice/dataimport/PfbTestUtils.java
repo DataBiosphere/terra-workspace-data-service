@@ -1,17 +1,33 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.IntStream;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.mockito.Mockito;
+import org.quartz.JobDataMap;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobKey;
+import org.quartz.impl.JobDetailImpl;
+import org.springframework.core.io.Resource;
 
 public class PfbTestUtils {
 
@@ -132,5 +148,36 @@ public class PfbTestUtils {
             });
 
     return dataFileStream;
+  }
+
+  public static JobExecutionContext stubJobContext(UUID jobId, Resource resource, UUID instanceId)
+      throws IOException {
+    JobExecutionContext mockContext = mock(JobExecutionContext.class);
+    when(mockContext.getMergedJobDataMap())
+        .thenReturn(
+            new JobDataMap(
+                Map.of(
+                    ARG_TOKEN,
+                    "expectedToken",
+                    ARG_URL,
+                    resource.getURL().toString(),
+                    ARG_INSTANCE,
+                    instanceId.toString())));
+
+    JobDetailImpl jobDetail = new JobDetailImpl();
+    jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
+    when(mockContext.getJobDetail()).thenReturn(jobDetail);
+
+    return mockContext;
+  }
+
+  public static PfbQuartzJob buildQuartzJob(
+      JobDao jobDao,
+      WorkspaceManagerDao wsmDao,
+      RestClientRetry restClientRetry,
+      BatchWriteService batchWriteService,
+      ActivityLogger activityLogger) {
+    return new PfbQuartzJob(
+        jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID());
   }
 }

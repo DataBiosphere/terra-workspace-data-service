@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.pact;
 
 import static au.com.dius.pact.consumer.dsl.LambdaDsl.newJsonBody;
+import static org.databiosphere.workspacedataservice.TestTags.PACT_TEST;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -39,7 +40,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-@Tag("pact-test")
+@Tag(PACT_TEST)
 @PactConsumerTest
 @PactTestFor(providerName = "workspacemanager", pactVersion = PactSpecVersion.V3)
 public class WsmPactTest {
