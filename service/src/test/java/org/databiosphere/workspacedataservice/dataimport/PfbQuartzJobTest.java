@@ -1,13 +1,11 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
-import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
-import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
-import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
+import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.buildQuartzJob;
+import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.stubJobContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -19,7 +17,6 @@ import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceList;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -35,11 +32,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
-import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-import org.quartz.JobKey;
-import org.quartz.impl.JobDetailImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -75,7 +69,8 @@ class PfbQuartzJobTest {
         .thenReturn(new ResourceList());
 
     // call linkSnapshots
-    PfbQuartzJob pfbQuartzJob = buildQuartzJob();
+    PfbQuartzJob pfbQuartzJob =
+        buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger);
     pfbQuartzJob.linkSnapshots(input);
     // capture calls
     ArgumentCaptor<SnapshotModel> argumentCaptor = ArgumentCaptor.forClass(SnapshotModel.class);
@@ -103,7 +98,8 @@ class PfbQuartzJobTest {
         .thenReturn(resourceList);
 
     // call linkSnapshots
-    PfbQuartzJob pfbQuartzJob = buildQuartzJob();
+    PfbQuartzJob pfbQuartzJob =
+        buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger);
     pfbQuartzJob.linkSnapshots(input);
     // should not call WSM's create-snapshot-reference at all
     verify(wsmDao, times(0)).linkSnapshotForPolicy(any());
@@ -131,7 +127,8 @@ class PfbQuartzJobTest {
         .thenReturn(resourceList);
 
     // call linkSnapshots
-    PfbQuartzJob pfbQuartzJob = buildQuartzJob();
+    PfbQuartzJob pfbQuartzJob =
+        buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger);
     pfbQuartzJob.linkSnapshots(input);
 
     // should call WSM's create-snapshot-reference only for the references that didn't already exist
@@ -149,7 +146,8 @@ class PfbQuartzJobTest {
   @Test
   void doNotFailOnMissingSnapshotId() throws JobExecutionException, IOException {
     UUID jobId = UUID.randomUUID();
-    JobExecutionContext mockContext = stubJobContext(jobId, minimalDataAvroResource);
+    JobExecutionContext mockContext =
+        stubJobContext(jobId, minimalDataAvroResource, UUID.randomUUID());
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
@@ -158,7 +156,8 @@ class PfbQuartzJobTest {
     when(batchWriteService.batchWritePfbStream(any(), any(), any()))
         .thenReturn(BatchWriteResult.empty());
 
-    buildQuartzJob().execute(mockContext);
+    buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+        .execute(mockContext);
 
     // Should not call wsm dao
     verify(wsmDao, times(0)).linkSnapshotForPolicy(any());
@@ -169,7 +168,7 @@ class PfbQuartzJobTest {
   @Test
   void snapshotIdsAreParsed() throws JobExecutionException, IOException {
     UUID jobId = UUID.randomUUID();
-    JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource);
+    JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource, UUID.randomUUID());
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
@@ -178,7 +177,8 @@ class PfbQuartzJobTest {
     when(batchWriteService.batchWritePfbStream(any(), any(), any()))
         .thenReturn(BatchWriteResult.empty());
 
-    buildQuartzJob().execute(mockContext);
+    buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+        .execute(mockContext);
 
     // The "790795c4..." UUID below is the snapshotId found in the "test.avro" resource used
     // by this unit test
@@ -188,31 +188,6 @@ class PfbQuartzJobTest {
                 new SnapshotModelMatcher(UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"))));
     // Job should succeed
     verify(jobDao).succeeded(jobId);
-  }
-
-  private JobExecutionContext stubJobContext(UUID jobId, Resource resource) throws IOException {
-    JobExecutionContext mockContext = mock(JobExecutionContext.class);
-    when(mockContext.getMergedJobDataMap())
-        .thenReturn(
-            new JobDataMap(
-                Map.of(
-                    ARG_TOKEN,
-                    "expectedToken",
-                    ARG_URL,
-                    resource.getURL().toString(),
-                    ARG_INSTANCE,
-                    INSTANCE)));
-
-    JobDetailImpl jobDetail = new JobDetailImpl();
-    jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
-    when(mockContext.getJobDetail()).thenReturn(jobDetail);
-
-    return mockContext;
-  }
-
-  private PfbQuartzJob buildQuartzJob() {
-    return new PfbQuartzJob(
-        jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID());
   }
 
   private record SnapshotModelMatcher(UUID expectedSnapshotId)
