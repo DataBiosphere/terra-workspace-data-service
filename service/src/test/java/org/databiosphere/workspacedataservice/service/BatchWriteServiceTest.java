@@ -205,11 +205,11 @@ class BatchWriteServiceTest {
     }
   }
 
-  // the test file "/four_tables.avro" contains 4 records - 1 "data_release" and 3
+  // the test file "/four_rows.avro" contains 4 records - 1 "data_release" and 3
   // "submitted_aligned_reads". Do we get the right counts back when importing this file?
   @Test
   void batchWriteResultCountsFromPfb() {
-    URL url = getClass().getResource("/four_tables.avro");
+    URL url = getClass().getResource("/four_rows.avro");
     assertNotNull(url);
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {

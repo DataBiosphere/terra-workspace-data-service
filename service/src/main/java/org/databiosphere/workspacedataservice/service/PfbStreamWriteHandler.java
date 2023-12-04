@@ -33,8 +33,6 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
     this.pfbImportMode = pfbImportMode;
   }
 
-  // TODO maybe use a functional interface or something instead of a boolean
-
   public WriteStreamInfo readRecords(int numRecords) {
     // pull the next `numRecords` rows from the inputStream and translate to a Java Stream
     Stream<GenericRecord> pfbBatch =

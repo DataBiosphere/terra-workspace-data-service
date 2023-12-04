@@ -75,8 +75,8 @@ class PfbQuartzJobE2ETest {
   @MockBean WorkspaceManagerDao wsmDao;
 
   // test resources used below
-  @Value("classpath:four_tables.avro")
-  Resource fourTablesAvroResource;
+  @Value("classpath:four_rows.avro")
+  Resource fourRowsAvroResource;
 
   @Value("classpath:test.avro")
   Resource testAvroResource;
@@ -163,19 +163,19 @@ class PfbQuartzJobE2ETest {
     assertEquals(expectedCounts, actualCounts);
   }
 
-  /* import four_tables.avro, and validate the tables and row counts it imported. */
+  /* import four_rows.avro, and validate the tables and row counts it imported. */
   @Test
-  void importFourTablesResource() throws IOException, JobExecutionException {
+  void importFourRowsResource() throws IOException, JobExecutionException {
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(
-            ImportRequestServerModel.TypeEnum.PFB, fourTablesAvroResource.getURI());
+            ImportRequestServerModel.TypeEnum.PFB, fourRowsAvroResource.getURI());
 
     // because we have a mock scheduler dao, this won't trigger Quartz
     GenericJobServerModel genericJobServerModel =
         importService.createImport(instanceId, importRequest);
 
     UUID jobId = genericJobServerModel.getJobId();
-    JobExecutionContext mockContext = stubJobContext(jobId, fourTablesAvroResource, instanceId);
+    JobExecutionContext mockContext = stubJobContext(jobId, fourRowsAvroResource, instanceId);
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
@@ -184,7 +184,7 @@ class PfbQuartzJobE2ETest {
     buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
         .execute(mockContext);
 
-    /* the fourTablesAvroResource should insert:
+    /* the fourRowsAvroResource should insert:
        - 3 record(s) of type data_release
        - 1 record(s) of type submitted_aligned_reads
     */
@@ -249,7 +249,7 @@ class PfbQuartzJobE2ETest {
         recordResponse.recordAttributes().getAttributeValue("concentration"));
   }
 
-  // TODO this file is very similar to the fourTablesResource; should we combine this test with that
+  // TODO this file is very similar to the fourRowsResource; should we combine this test with that
   // one?
   @Test
   void importWithForwardRelations() throws IOException, JobExecutionException {
