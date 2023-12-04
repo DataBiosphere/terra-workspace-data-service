@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.databiosphere.workspacedataservice.TestTags.SLOW;
 import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.buildQuartzJob;
 import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.stubJobContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,6 +37,7 @@ import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerD
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.quartz.JobExecutionContext;
@@ -100,6 +102,7 @@ class PfbQuartzJobE2ETest {
 
   /* import test.avro, and validate the tables and row counts it imported. */
   @Test
+  @Tag(SLOW)
   void importTestResource() throws IOException, JobExecutionException {
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(
