@@ -11,6 +11,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 import bio.terra.workspace.model.ResourceList;
+import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
@@ -146,10 +147,16 @@ class PfbQuartzJobE2ETest {
                     recordTypeSchema -> recordTypeSchema.name().getName(),
                     RecordTypeSchema::count));
 
-    assertEquals(
-        Map.of(
-            "activities", 3202, "files", 3202, "donors", 3202, "biosamples", 3202, "datasets", 1),
-        actualCounts);
+    Map<String, Integer> expectedCounts =
+        new ImmutableMap.Builder<String, Integer>()
+            .put("activities", 3202)
+            .put("files", 3202)
+            .put("donors", 3202)
+            .put("biosamples", 3202)
+            .put("datasets", 1)
+            .build();
+
+    assertEquals(expectedCounts, actualCounts);
   }
 
   /* import four_tables.avro, and validate the tables and row counts it imported. */
@@ -188,7 +195,13 @@ class PfbQuartzJobE2ETest {
                     recordTypeSchema -> recordTypeSchema.name().getName(),
                     RecordTypeSchema::count));
 
-    assertEquals(Map.of("data_release", 3, "submitted_aligned_reads", 1), actualCounts);
+    Map<String, Integer> expectedCounts =
+        new ImmutableMap.Builder<String, Integer>()
+            .put("data_release", 3)
+            .put("submitted_aligned_reads", 1)
+            .build();
+
+    assertEquals(expectedCounts, actualCounts);
   }
 
   /* import precision.avro, and spot-check a record to ensure the numeric values inside that
