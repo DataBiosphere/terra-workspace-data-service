@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.pact;
 
 import static au.com.dius.pact.consumer.dsl.LambdaDsl.newJsonBody;
+import static org.databiosphere.workspacedataservice.TestTags.PACT_TEST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -23,7 +24,7 @@ import org.databiosphere.workspacedataservice.datarepo.HttpDataRepoClientFactory
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-@Tag("pact-test")
+@Tag(PACT_TEST)
 @PactConsumerTest
 @PactTestFor(providerName = "datarepo", pactVersion = PactSpecVersion.V3)
 class TdrPactTest {
