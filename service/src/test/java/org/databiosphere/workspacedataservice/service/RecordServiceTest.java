@@ -1,8 +1,8 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_ATTRIBUTENAME;
+import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_ATTRIBUTE_NAME;
 import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_INSTANCE;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_RECORDTYPE;
+import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_RECORD_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
@@ -93,8 +93,8 @@ class RecordServiceTest {
     // assert the counter has been incremented once
     assertEquals(1, counter.count());
     // validate the tags for that counter
-    assertEquals(recordType.getName(), counter.getId().getTag(TAG_RECORDTYPE));
-    assertEquals("myAttr", counter.getId().getTag(TAG_ATTRIBUTENAME));
+    assertEquals(recordType.getName(), counter.getId().getTag(TAG_RECORD_TYPE));
+    assertEquals("myAttr", counter.getId().getTag(TAG_ATTRIBUTE_NAME));
     assertEquals(instanceId.toString(), counter.getId().getTag(TAG_INSTANCE));
     assertEquals(DataTypeMapping.NUMBER.toString(), counter.getId().getTag("OldDataType"));
     assertEquals(DataTypeMapping.STRING.toString(), counter.getId().getTag("NewDataType"));
