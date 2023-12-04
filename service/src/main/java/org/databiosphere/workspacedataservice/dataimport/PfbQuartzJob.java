@@ -24,6 +24,7 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
@@ -94,11 +95,18 @@ public class PfbQuartzJob extends QuartzJob {
     //
     // This is HTTP connection #2 to the PFB.
     logger.info("Importing tables and rows from this PFB...");
-    withPfbStream(url, stream -> importTables(stream, targetInstance, false));
+    withPfbStream(
+        url,
+        stream ->
+            importTables(
+                stream, targetInstance, PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES));
 
     // This is HTTP connection #3 to the PFB.
     logger.info("Updating tables and rows from this PFB with relations...");
-    withPfbStream(url, stream -> importTables(stream, targetInstance, true));
+    withPfbStream(
+        url,
+        stream ->
+            importTables(stream, targetInstance, PfbStreamWriteHandler.PfbImportMode.RELATIONS));
 
     // TODO AJ-1453: save the result of importTables and persist the to the job
   }
@@ -132,13 +140,15 @@ public class PfbQuartzJob extends QuartzJob {
    *
    * @param dataStream stream representing the PFB.
    * @param targetInstance the UUID of the WDS instance being imported to
-   * @param relationsOnly indicating whether to import all data in the tables or only the relations
+   * @param pfbImportMode indicating whether to import all data in the tables or only the relations
    */
   BatchWriteResult importTables(
-      DataFileStream<GenericRecord> dataStream, UUID targetInstance, boolean relationsOnly) {
+      DataFileStream<GenericRecord> dataStream,
+      UUID targetInstance,
+      PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
     BatchWriteResult result =
         batchWriteService.batchWritePfbStream(
-            dataStream, targetInstance, Optional.of(ID_FIELD), relationsOnly);
+            dataStream, targetInstance, Optional.of(ID_FIELD), pfbImportMode);
 
     if (result != null) {
       result
