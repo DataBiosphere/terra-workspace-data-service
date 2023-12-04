@@ -56,24 +56,20 @@ public class PfbRecordConverter {
 
   private Record addRelations(GenericRecord genRec, Record converted) {
     // get the relations array from the record
-    if (genRec.get(RELATIONS_FIELD) instanceof Collection relationArray
+    if (genRec.get(RELATIONS_FIELD) instanceof Collection<?> relationArray
         && !relationArray.isEmpty()) {
       RecordAttributes attributes = RecordAttributes.empty();
       for (Object relationObject : relationArray) {
         // Here we assume that the relations object is a GenericRecord with keys "dst_name" and
         // "dst_id"
-        GenericRecord relation = (GenericRecord) relationObject;
-        String relationType = relation.get("dst_name").toString();
-        String relationId = relation.get("dst_id").toString();
-        /* TODO is this the right naming convention?  a prettier way to set it up?
-        looking at existing pfbs, it appears that the 'relationType would be,
-        e.g., 'activities' but the column name in a table related to it
-        would be 'activity_id'.  deriving the singular from the plural is not
-        always straightforward!  we'd have to look at the pfb schema directly
-        */
-        attributes.putAttribute(
-            relationType + "_id",
-            RelationUtils.createRelationString(RecordType.valueOf(relationType), relationId));
+        if (relationObject instanceof GenericRecord relation) {
+          String relationType = relation.get("dst_name").toString();
+          String relationId = relation.get("dst_id").toString();
+          // Give the relation column the name of the record type it's linked to
+          attributes.putAttribute(
+              relationType,
+              RelationUtils.createRelationString(RecordType.valueOf(relationType), relationId));
+        }
       }
       converted.setAttributes(attributes);
     }
