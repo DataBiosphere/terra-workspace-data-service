@@ -287,7 +287,7 @@ class PfbQuartzJobE2ETest {
         .attributes()
         .contains(
             new AttributeSchema(
-                "submitted_aligned_reads_id",
+                "submitted_aligned_reads",
                 DataTypeMapping.RELATION.toString(),
                 RecordType.valueOf("submitted_aligned_reads"))));
     RecordResponse relatedRecord =
@@ -300,7 +300,7 @@ class PfbQuartzJobE2ETest {
     assertEquals(
         RelationUtils.createRelationString(
             RecordType.valueOf("submitted_aligned_reads"), "HG01102_cram"),
-        relatedRecord.recordAttributes().getAttributeValue("submitted_aligned_reads_id"));
+        relatedRecord.recordAttributes().getAttributeValue("submitted_aligned_reads"));
   }
 
   private void assertDataType(

@@ -142,7 +142,7 @@ class PfbRecordConverterTest {
 
     assertEquals(
         RelationUtils.createRelationString(RecordType.valueOf("relation_table"), "relation_id"),
-        actual.getAttributeValue("relation_table_id"));
+        actual.getAttributeValue("relation_table"));
   }
 
   // arguments for parameterized test, in the form of: input value, expected return value
