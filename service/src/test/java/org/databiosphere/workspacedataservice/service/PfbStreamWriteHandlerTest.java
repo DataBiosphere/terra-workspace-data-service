@@ -28,7 +28,7 @@ class PfbStreamWriteHandlerTest {
 
     // create a mock PFB stream with 10 rows in it and a PfbStreamWriteHandler for that stream
     DataFileStream<GenericRecord> dataFileStream = PfbTestUtils.mockPfbStream(10, "someType");
-    PfbStreamWriteHandler pfbStreamWriteHandler = new PfbStreamWriteHandler(dataFileStream);
+    PfbStreamWriteHandler pfbStreamWriteHandler = new PfbStreamWriteHandler(dataFileStream, false);
 
     StreamingWriteHandler.WriteStreamInfo batch; // used in assertions below
 
@@ -56,7 +56,7 @@ class PfbStreamWriteHandlerTest {
   @ValueSource(ints = {0, 1, 49, 50, 51, 99, 100, 101})
   void inputStreamOfCount(Integer numRows) {
     DataFileStream<GenericRecord> dataFileStream = PfbTestUtils.mockPfbStream(numRows, "someType");
-    PfbStreamWriteHandler pfbStreamWriteHandler = new PfbStreamWriteHandler(dataFileStream);
+    PfbStreamWriteHandler pfbStreamWriteHandler = new PfbStreamWriteHandler(dataFileStream, false);
 
     int batchSize = 50;
 
@@ -80,7 +80,7 @@ class PfbStreamWriteHandlerTest {
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
 
-      PfbStreamWriteHandler pswh = new PfbStreamWriteHandler(dataStream);
+      PfbStreamWriteHandler pswh = new PfbStreamWriteHandler(dataStream, false);
       StreamingWriteHandler.WriteStreamInfo streamInfo = pswh.readRecords(2);
       /*
         Expected records:
@@ -158,8 +158,8 @@ class PfbStreamWriteHandlerTest {
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
 
-      PfbStreamWriteHandler pswh = new PfbStreamWriteHandler(dataStream);
-      StreamingWriteHandler.WriteStreamInfo streamInfo = pswh.readRelations(5);
+      PfbStreamWriteHandler pswh = new PfbStreamWriteHandler(dataStream, true);
+      StreamingWriteHandler.WriteStreamInfo streamInfo = pswh.readRecords(5);
 
       List<Record> result = streamInfo.getRecords();
       assertEquals(5, result.size());

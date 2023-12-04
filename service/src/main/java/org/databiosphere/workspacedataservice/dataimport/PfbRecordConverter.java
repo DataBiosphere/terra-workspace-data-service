@@ -21,14 +21,21 @@ public class PfbRecordConverter {
   public static final String OBJECT_FIELD = "object";
   public static final String RELATIONS_FIELD = "relations";
 
-  public Record genericRecordToRecord(GenericRecord genRec) {
+  public Record genericRecordToRecord(GenericRecord genRec, boolean relationsOnly) {
     // create the WDS record shell (id, record type, empty attributes)
     Record converted =
         new Record(
             genRec.get(ID_FIELD).toString(),
             RecordType.valueOf(genRec.get(TYPE_FIELD).toString()),
             RecordAttributes.empty());
+    if (relationsOnly) {
+      return addRelations(genRec, converted);
+    } else {
+      return addAttributes(genRec, converted);
+    }
+  }
 
+  private Record addAttributes(GenericRecord genRec, Record converted) {
     // loop over all Avro fields and add to the record's attributes
     if (genRec.get(OBJECT_FIELD) instanceof GenericRecord objectAttributes) {
       Schema schema = objectAttributes.getSchema();
@@ -44,18 +51,10 @@ public class PfbRecordConverter {
       }
       converted.setAttributes(attributes);
     }
-
     return converted;
   }
 
-  public Record genericRecordToRelations(GenericRecord genRec) {
-    // create the WDS record shell (id, record type, empty attributes)
-    Record converted =
-        new Record(
-            genRec.get(ID_FIELD).toString(),
-            RecordType.valueOf(genRec.get(TYPE_FIELD).toString()),
-            RecordAttributes.empty());
-
+  private Record addRelations(GenericRecord genRec, Record converted) {
     // get the relations array from the record
     if (genRec.get(RELATIONS_FIELD) instanceof Collection relationArray
         && !relationArray.isEmpty()) {
@@ -78,7 +77,6 @@ public class PfbRecordConverter {
       }
       converted.setAttributes(attributes);
     }
-
     return converted;
   }
 

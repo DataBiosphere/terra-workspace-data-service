@@ -15,26 +15,21 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 public class PfbStreamWriteHandler implements StreamingWriteHandler {
 
   private final DataFileStream<GenericRecord> inputStream;
+  private final boolean relationsOnly;
 
   /**
    * Create a new PfbStreamWriteHandler and specify the expected schemas for the PFB.
    *
    * @param inputStream the PFB stream
    */
-  public PfbStreamWriteHandler(DataFileStream<GenericRecord> inputStream) {
+  public PfbStreamWriteHandler(DataFileStream<GenericRecord> inputStream, boolean relationsOnly) {
     this.inputStream = inputStream;
-  }
-
-  public WriteStreamInfo readRecords(int numRecords) throws IOException {
-    return convertStream(numRecords, false);
-  }
-
-  public WriteStreamInfo readRelations(int numRecords) throws IOException {
-    return convertStream(numRecords, true);
+    this.relationsOnly = relationsOnly;
   }
 
   // TODO maybe use a functional interface or something instead of a boolean
-  private WriteStreamInfo convertStream(int numRecords, boolean relations) {
+
+  public WriteStreamInfo readRecords(int numRecords) {
     // pull the next `numRecords` rows from the inputStream and translate to a Java Stream
     Stream<GenericRecord> pfbBatch =
         StreamSupport.stream(
@@ -44,12 +39,7 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
     // convert the PFB GenericRecord objects into WDS Record objects
     PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
     List<Record> records =
-        pfbBatch
-            .map(
-                relations
-                    ? pfbRecordConverter::genericRecordToRelations
-                    : pfbRecordConverter::genericRecordToRecord)
-            .toList();
+        pfbBatch.map(rec -> pfbRecordConverter.genericRecordToRecord(rec, relationsOnly)).toList();
 
     return new WriteStreamInfo(records, OperationType.UPSERT);
   }

@@ -98,14 +98,9 @@ public class BatchWriteService {
       // loop through, in batches, the records provided by the StreamingWriteHandler. This loops
       // until the StreamingWriteHandler returns an empty batch.
       for (StreamingWriteHandler.WriteStreamInfo info =
-              relationsOnly
-                  ? ((PfbStreamWriteHandler) streamingWriteHandler).readRelations(batchSize)
-                  : streamingWriteHandler.readRecords(batchSize);
+              streamingWriteHandler.readRecords(batchSize);
           !info.getRecords().isEmpty();
-          info =
-              relationsOnly
-                  ? ((PfbStreamWriteHandler) streamingWriteHandler).readRelations(batchSize)
-                  : streamingWriteHandler.readRecords(batchSize)) {
+          info = streamingWriteHandler.readRecords(batchSize)) {
         // get the records for this batch
         List<Record> records = info.getRecords();
 
@@ -211,10 +206,11 @@ public class BatchWriteService {
       DataFileStream<GenericRecord> is,
       UUID instanceId,
       Optional<String> primaryKey,
-      boolean relations) {
-    try (PfbStreamWriteHandler streamingWriteHandler = new PfbStreamWriteHandler(is)) {
+      boolean relationsOnly) {
+    try (PfbStreamWriteHandler streamingWriteHandler =
+        new PfbStreamWriteHandler(is, relationsOnly)) {
       return consumeWriteStreamWithRelations(
-          streamingWriteHandler, instanceId, null, primaryKey, relations);
+          streamingWriteHandler, instanceId, null, primaryKey, relationsOnly);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
