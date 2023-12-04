@@ -185,20 +185,20 @@ class PfbStreamWriteHandlerTest {
           RelationUtils.createRelationString(
               RecordType.valueOf("activities"),
               "activities.34f8be82-2973-52c8-ad95-ba79416c51ab.3"),
-          secondRecord.getAttributeValue("activities_id"));
+          secondRecord.getAttributeValue("activities"));
       assertEquals(
           RelationUtils.createRelationString(
               RecordType.valueOf("biosamples"),
               "biosamples.30a60040-fdca-5473-b2d5-cd3839e983c7.1"),
-          secondRecord.getAttributeValue("biosamples_id"));
+          secondRecord.getAttributeValue("biosamples"));
       assertEquals(
           RelationUtils.createRelationString(
               RecordType.valueOf("datasets"), "datasets.cd90e9d7-4b3c-5705-bcbf-d477af2c4f7d.1"),
-          secondRecord.getAttributeValue("datasets_id"));
+          secondRecord.getAttributeValue("datasets"));
       assertEquals(
           RelationUtils.createRelationString(
               RecordType.valueOf("donors"), "donors.cce44986-0d04-54ea-8343-83748cd7225a.1"),
-          secondRecord.getAttributeValue("donors_id"));
+          secondRecord.getAttributeValue("donors"));
     } catch (IOException e) {
       fail(e);
     }

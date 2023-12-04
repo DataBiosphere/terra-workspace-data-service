@@ -144,7 +144,11 @@ class BatchWriteServiceTest {
       //    - 1 call for batch #8 which will be (item, widget)
       //    - 7 more calls for batches #9-15 which will be (widget, widget)
       // * inferTypes once for each of "thing", "item", and "widget"
-      batchWriteService.batchWritePfbStream(pfbStream, INSTANCE, Optional.of(ID_FIELD), false);
+      batchWriteService.batchWritePfbStream(
+          pfbStream,
+          INSTANCE,
+          Optional.of(ID_FIELD),
+          PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
 
       // verify calls to batchUpsertWithErrorCapture
       verify(recordService, times(3))
@@ -187,7 +191,11 @@ class BatchWriteServiceTest {
     Map<String, Integer> counts = Map.of("thing", 5, "item", 10, "widget", 15);
     try (DataFileStream<GenericRecord> pfbStream = PfbTestUtils.mockPfbStream(counts)) {
       BatchWriteResult result =
-          batchWriteService.batchWritePfbStream(pfbStream, INSTANCE, Optional.of(ID_FIELD), false);
+          batchWriteService.batchWritePfbStream(
+              pfbStream,
+              INSTANCE,
+              Optional.of(ID_FIELD),
+              PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
       assertEquals(3, result.entrySet().size());
       assertEquals(5, result.getUpdatedCount(RecordType.valueOf("thing")));
       assertEquals(10, result.getUpdatedCount(RecordType.valueOf("item")));
@@ -206,7 +214,11 @@ class BatchWriteServiceTest {
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
       BatchWriteResult result =
-          batchWriteService.batchWritePfbStream(dataStream, INSTANCE, Optional.of(ID_FIELD), false);
+          batchWriteService.batchWritePfbStream(
+              dataStream,
+              INSTANCE,
+              Optional.of(ID_FIELD),
+              PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
 
       assertEquals(2, result.entrySet().size());
       assertEquals(3, result.getUpdatedCount(RecordType.valueOf("data_release")));
@@ -223,7 +235,11 @@ class BatchWriteServiceTest {
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
       BatchWriteResult result =
-          batchWriteService.batchWritePfbStream(dataStream, INSTANCE, Optional.of(ID_FIELD), true);
+          batchWriteService.batchWritePfbStream(
+              dataStream,
+              INSTANCE,
+              Optional.of(ID_FIELD),
+              PfbStreamWriteHandler.PfbImportMode.RELATIONS);
 
       assertEquals(1, result.entrySet().size());
       // The 'files' record type has relations, so it should have been updated
@@ -240,7 +256,11 @@ class BatchWriteServiceTest {
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
       BatchWriteResult result =
-          batchWriteService.batchWritePfbStream(dataStream, INSTANCE, Optional.of(ID_FIELD), true);
+          batchWriteService.batchWritePfbStream(
+              dataStream,
+              INSTANCE,
+              Optional.of(ID_FIELD),
+              PfbStreamWriteHandler.PfbImportMode.RELATIONS);
 
       assertEquals(1, result.entrySet().size());
       // Only one of the data_release records had any relations present

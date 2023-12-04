@@ -90,7 +90,7 @@ public class BatchWriteService {
     BatchWriteResult result = BatchWriteResult.empty();
     try {
       // Verify relationsOnly is only for pfbstreamingwriteHandler
-      if (pfbImportMode == PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES
+      if (pfbImportMode == PfbStreamWriteHandler.PfbImportMode.RELATIONS
           && !(streamingWriteHandler instanceof PfbStreamWriteHandler)) {
         throw new BadStreamingWriteRequestException(
             "BatchWriteService attempted to re-read PFB "
