@@ -216,7 +216,6 @@ class BatchWriteServiceTest {
     }
   }
 
-  //  TODO: forward-looking relations, cyclical
   @Test
   void batchWriteRelationsFromPfb() {
     URL url = getClass().getResource("/test.avro");
@@ -229,6 +228,23 @@ class BatchWriteServiceTest {
       assertEquals(1, result.entrySet().size());
       // The 'files' record type has relations, so it should have been updated
       assertEquals(3202, result.getUpdatedCount(RecordType.valueOf("files")));
+    } catch (IOException e) {
+      fail(e.getMessage());
+    }
+  }
+
+  @Test
+  void batchWriteSomeRelationsFromPfb() {
+    URL url = getClass().getResource("/forward_relations.avro");
+    assertNotNull(url);
+    try (DataFileStream<GenericRecord> dataStream =
+        PfbReader.getGenericRecordsStream(url.toString())) {
+      BatchWriteResult result =
+          batchWriteService.batchWritePfbStream(dataStream, INSTANCE, Optional.of(ID_FIELD), true);
+
+      assertEquals(1, result.entrySet().size());
+      // Only one of the data_release records had any relations present
+      assertEquals(1, result.getUpdatedCount(RecordType.valueOf("data_release")));
     } catch (IOException e) {
       fail(e.getMessage());
     }

@@ -29,6 +29,7 @@ import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.ImportService;
 import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
+import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
@@ -82,6 +83,9 @@ class PfbQuartzJobE2ETest {
 
   @Value("classpath:precision.avro")
   Resource testPrecisionResource;
+
+  @Value("classpath:forward_relations.avro")
+  Resource forwardRelationsAvroResource;
 
   UUID instanceId;
 
@@ -243,6 +247,60 @@ class PfbQuartzJobE2ETest {
     assertEquals(
         BigDecimal.valueOf(12.1218843460083),
         recordResponse.recordAttributes().getAttributeValue("concentration"));
+  }
+
+  // TODO this file is very similar to the fourTablesResource; should we combine this test with that
+  // one?
+  @Test
+  void importWithForwardRelations() throws IOException, JobExecutionException {
+    // The first record in this file relates to the fourth;
+    // TODO do we want to set batch size to 2 so that forward relation is in a later batch?
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(
+            ImportRequestServerModel.TypeEnum.PFB, forwardRelationsAvroResource.getURI());
+
+    // because we have a mock scheduler dao, this won't trigger Quartz
+    GenericJobServerModel genericJobServerModel =
+        importService.createImport(instanceId, importRequest);
+
+    UUID jobId = genericJobServerModel.getJobId();
+    JobExecutionContext mockContext =
+        stubJobContext(jobId, forwardRelationsAvroResource, instanceId);
+
+    // WSM should report no snapshots already linked to this workspace
+    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
+
+    buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+        .execute(mockContext);
+
+    /* the forwardRelationsAvroResource should insert:
+       - 1 record of type submitted_aligned_reads
+       - 3 record(s) of type data_release, one of which relates to the submitted_aligned_reads record
+    */
+
+    RecordTypeSchema dataReleaseSchema =
+        recordOrchestratorService.describeRecordType(
+            instanceId, "v0.2", RecordType.valueOf("data_release"));
+
+    assert (dataReleaseSchema
+        .attributes()
+        .contains(
+            new AttributeSchema(
+                "submitted_aligned_reads_id",
+                DataTypeMapping.RELATION.toString(),
+                RecordType.valueOf("submitted_aligned_reads"))));
+    RecordResponse relatedRecord =
+        recordOrchestratorService.getSingleRecord(
+            instanceId,
+            "v0.2",
+            RecordType.valueOf("data_release"),
+            "data_release.4622cdbf-9836-64a2-c743-e17b0708cbb6.2");
+
+    assertEquals(
+        RelationUtils.createRelationString(
+            RecordType.valueOf("submitted_aligned_reads"), "HG01102_cram"),
+        relatedRecord.recordAttributes().getAttributeValue("submitted_aligned_reads_id"));
   }
 
   private void assertDataType(

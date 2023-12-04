@@ -150,7 +150,6 @@ class PfbStreamWriteHandlerTest {
     }
   }
 
-  // relations
   @Test
   void relationsAreParsedCorrectly() {
     URL url = getClass().getResource("/test.avro");

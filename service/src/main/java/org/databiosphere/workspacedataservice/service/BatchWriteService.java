@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
@@ -136,6 +137,13 @@ public class BatchWriteService {
           }
           // when updating relations only, do not update if there are no relations
           if (!relationsOnly || !typesSeen.get(recType).isEmpty()) {
+            if (relationsOnly) {
+              // For relations only, remove records that have no relations
+              rList =
+                  rList.stream()
+                      .filter(rec -> !rec.attributeSet().isEmpty())
+                      .collect(Collectors.toList());
+            }
             // write these records to the db, using the schema from the `typesSeen` map
             writeBatch(
                 instanceId,
