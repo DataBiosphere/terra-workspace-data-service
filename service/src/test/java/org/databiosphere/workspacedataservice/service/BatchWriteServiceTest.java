@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.service;
 
 import static org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter.ID_FIELD;
+import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -144,7 +146,8 @@ class BatchWriteServiceTest {
       //    - 1 call for batch #8 which will be (item, widget)
       //    - 7 more calls for batches #9-15 which will be (widget, widget)
       // * inferTypes once for each of "thing", "item", and "widget"
-      batchWriteService.batchWritePfbStream(pfbStream, INSTANCE, Optional.of(ID_FIELD));
+      batchWriteService.batchWritePfbStream(
+          pfbStream, INSTANCE, Optional.of(ID_FIELD), BASE_ATTRIBUTES);
 
       // verify calls to batchUpsertWithErrorCapture
       verify(recordService, times(3))
@@ -187,7 +190,8 @@ class BatchWriteServiceTest {
     Map<String, Integer> counts = Map.of("thing", 5, "item", 10, "widget", 15);
     try (DataFileStream<GenericRecord> pfbStream = PfbTestUtils.mockPfbStream(counts)) {
       BatchWriteResult result =
-          batchWriteService.batchWritePfbStream(pfbStream, INSTANCE, Optional.of(ID_FIELD));
+          batchWriteService.batchWritePfbStream(
+              pfbStream, INSTANCE, Optional.of(ID_FIELD), BASE_ATTRIBUTES);
       assertEquals(3, result.entrySet().size());
       assertEquals(5, result.getUpdatedCount(RecordType.valueOf("thing")));
       assertEquals(10, result.getUpdatedCount(RecordType.valueOf("item")));
@@ -197,20 +201,57 @@ class BatchWriteServiceTest {
     }
   }
 
-  // the test file "/four_tables.avro" contains 4 records - 1 "data_release" and 3
+  // the test file "/four_rows.avro" contains 4 records - 1 "data_release" and 3
   // "submitted_aligned_reads". Do we get the right counts back when importing this file?
   @Test
   void batchWriteResultCountsFromPfb() {
-    URL url = getClass().getResource("/four_tables.avro");
+    URL url = getClass().getResource("/four_rows.avro");
     assertNotNull(url);
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
       BatchWriteResult result =
-          batchWriteService.batchWritePfbStream(dataStream, INSTANCE, Optional.of(ID_FIELD));
+          batchWriteService.batchWritePfbStream(
+              dataStream, INSTANCE, Optional.of(ID_FIELD), BASE_ATTRIBUTES);
 
       assertEquals(2, result.entrySet().size());
       assertEquals(3, result.getUpdatedCount(RecordType.valueOf("data_release")));
       assertEquals(1, result.getUpdatedCount(RecordType.valueOf("submitted_aligned_reads")));
+    } catch (IOException e) {
+      fail(e.getMessage());
+    }
+  }
+
+  @Test
+  void batchWriteRelationsFromPfb() {
+    URL url = getClass().getResource("/test.avro");
+    assertNotNull(url);
+    try (DataFileStream<GenericRecord> dataStream =
+        PfbReader.getGenericRecordsStream(url.toString())) {
+      BatchWriteResult result =
+          batchWriteService.batchWritePfbStream(
+              dataStream, INSTANCE, Optional.of(ID_FIELD), RELATIONS);
+
+      assertEquals(1, result.entrySet().size());
+      // The 'files' record type has relations, so it should have been updated
+      assertEquals(3202, result.getUpdatedCount(RecordType.valueOf("files")));
+    } catch (IOException e) {
+      fail(e.getMessage());
+    }
+  }
+
+  @Test
+  void batchWriteSomeRelationsFromPfb() {
+    URL url = getClass().getResource("/forward_relations.avro");
+    assertNotNull(url);
+    try (DataFileStream<GenericRecord> dataStream =
+        PfbReader.getGenericRecordsStream(url.toString())) {
+      BatchWriteResult result =
+          batchWriteService.batchWritePfbStream(
+              dataStream, INSTANCE, Optional.of(ID_FIELD), RELATIONS);
+
+      assertEquals(1, result.entrySet().size());
+      // Only one of the data_release records had any relations present
+      assertEquals(1, result.getUpdatedCount(RecordType.valueOf("data_release")));
     } catch (IOException e) {
       fail(e.getMessage());
     }

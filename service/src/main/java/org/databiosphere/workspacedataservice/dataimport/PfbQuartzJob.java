@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter.ID_FIELD;
+import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
@@ -24,6 +26,7 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
@@ -94,7 +97,11 @@ public class PfbQuartzJob extends QuartzJob {
     //
     // This is HTTP connection #2 to the PFB.
     logger.info("Importing tables and rows from this PFB...");
-    withPfbStream(url, stream -> importTables(stream, targetInstance));
+    withPfbStream(url, stream -> importTables(stream, targetInstance, BASE_ATTRIBUTES));
+
+    // This is HTTP connection #3 to the PFB.
+    logger.info("Updating tables and rows from this PFB with relations...");
+    withPfbStream(url, stream -> importTables(stream, targetInstance, RELATIONS));
 
     // TODO AJ-1453: save the result of importTables and persist the to the job
   }
@@ -127,20 +134,29 @@ public class PfbQuartzJob extends QuartzJob {
    * Given a DataFileStream representing a PFB, import all the tables and rows inside that PFB.
    *
    * @param dataStream stream representing the PFB.
+   * @param targetInstance the UUID of the WDS instance being imported to
+   * @param pfbImportMode indicating whether to import all data in the tables or only the relations
    */
-  BatchWriteResult importTables(DataFileStream<GenericRecord> dataStream, UUID targetInstance) {
+  BatchWriteResult importTables(
+      DataFileStream<GenericRecord> dataStream,
+      UUID targetInstance,
+      PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
     BatchWriteResult result =
-        batchWriteService.batchWritePfbStream(dataStream, targetInstance, Optional.of(ID_FIELD));
+        batchWriteService.batchWritePfbStream(
+            dataStream, targetInstance, Optional.of(ID_FIELD), pfbImportMode);
 
-    result
-        .entrySet()
-        .forEach(
-            entry -> {
-              RecordType recordType = entry.getKey();
-              int quantity = entry.getValue();
-              activityLogger.saveEventForCurrentUser(
-                  user -> user.upserted().record().withRecordType(recordType).ofQuantity(quantity));
-            });
+    if (result != null) {
+      result
+          .entrySet()
+          .forEach(
+              entry -> {
+                RecordType recordType = entry.getKey();
+                int quantity = entry.getValue();
+                activityLogger.saveEventForCurrentUser(
+                    user ->
+                        user.upserted().record().withRecordType(recordType).ofQuantity(quantity));
+              });
+    }
     return result;
   }
 

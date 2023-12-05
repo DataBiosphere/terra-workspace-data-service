@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 
 import bio.terra.common.db.WriteTransaction;
@@ -58,6 +60,15 @@ public class BatchWriteService {
     this.recordService = recordService;
   }
 
+  private BatchWriteResult consumeWriteStream(
+      StreamingWriteHandler streamingWriteHandler,
+      UUID instanceId,
+      RecordType recordType,
+      Optional<String> primaryKey) {
+    return consumeWriteStreamWithRelations(
+        streamingWriteHandler, instanceId, recordType, primaryKey, BASE_ATTRIBUTES);
+  }
+
   /**
    * Responsible for accepting either a JsonStreamWriteHandler or a TsvStreamWriteHandler, looping
    * over the batches of Records found in the handler, and upserting those records.
@@ -68,13 +79,21 @@ public class BatchWriteService {
    * @param primaryKey PK for the record type
    * @return the number of records written
    */
-  private BatchWriteResult consumeWriteStream(
+  private BatchWriteResult consumeWriteStreamWithRelations(
       StreamingWriteHandler streamingWriteHandler,
       UUID instanceId,
       RecordType recordType,
-      Optional<String> primaryKey) {
+      Optional<String> primaryKey,
+      PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
     BatchWriteResult result = BatchWriteResult.empty();
     try {
+      // Verify relationsOnly is only for pfbstreamingwriteHandler
+      if (pfbImportMode == RELATIONS && !(streamingWriteHandler instanceof PfbStreamWriteHandler)) {
+        throw new BadStreamingWriteRequestException(
+            "BatchWriteService attempted to re-read PFB "
+                + "on a non-PFB import. Cannot continue.");
+      }
+
       // tracker to stash the schemas for the record types seen while processing this stream
       Map<RecordType, Map<String, DataTypeMapping>> typesSeen = new HashMap<>();
 
@@ -117,16 +136,23 @@ public class BatchWriteService {
                     instanceId, recType, inferredSchema, rList, primaryKey.orElse(RECORD_ID));
             typesSeen.put(recType, finalSchema);
           }
-          // write these records to the db, using the schema from the `typesSeen` map
-          writeBatch(
-              instanceId,
-              recType,
-              typesSeen.get(recType),
-              info.getOperationType(),
-              rList,
-              primaryKey);
-          // update the result counts
-          result.increaseCount(recType, rList.size());
+          // when updating relations only, do not update if there are no relations
+          if (pfbImportMode == BASE_ATTRIBUTES || !typesSeen.get(recType).isEmpty()) {
+            if (pfbImportMode == RELATIONS) {
+              // For relations only, remove records that have no relations
+              rList = rList.stream().filter(rec -> !rec.attributeSet().isEmpty()).toList();
+            }
+            // write these records to the db, using the schema from the `typesSeen` map
+            writeBatch(
+                instanceId,
+                recType,
+                typesSeen.get(recType),
+                info.getOperationType(),
+                rList,
+                primaryKey);
+            // update the result counts
+            result.increaseCount(recType, rList.size());
+          }
         }
       }
     } catch (IOException e) {
@@ -183,9 +209,14 @@ public class BatchWriteService {
    */
   @WriteTransaction
   public BatchWriteResult batchWritePfbStream(
-      DataFileStream<GenericRecord> is, UUID instanceId, Optional<String> primaryKey) {
-    try (PfbStreamWriteHandler streamingWriteHandler = new PfbStreamWriteHandler(is)) {
-      return consumeWriteStream(streamingWriteHandler, instanceId, null, primaryKey);
+      DataFileStream<GenericRecord> is,
+      UUID instanceId,
+      Optional<String> primaryKey,
+      PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
+    try (PfbStreamWriteHandler streamingWriteHandler =
+        new PfbStreamWriteHandler(is, pfbImportMode)) {
+      return consumeWriteStreamWithRelations(
+          streamingWriteHandler, instanceId, null, primaryKey, pfbImportMode);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }

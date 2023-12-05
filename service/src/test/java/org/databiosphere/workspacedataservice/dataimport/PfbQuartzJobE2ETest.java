@@ -29,6 +29,7 @@ import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.ImportService;
 import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
+import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
@@ -74,14 +75,20 @@ class PfbQuartzJobE2ETest {
   @MockBean WorkspaceManagerDao wsmDao;
 
   // test resources used below
-  @Value("classpath:four_tables.avro")
-  Resource fourTablesAvroResource;
+  @Value("classpath:four_rows.avro")
+  Resource fourRowsAvroResource;
 
   @Value("classpath:test.avro")
   Resource testAvroResource;
 
   @Value("classpath:precision.avro")
   Resource testPrecisionResource;
+
+  @Value("classpath:forward_relations.avro")
+  Resource forwardRelationsAvroResource;
+
+  @Value("classpath:cyclical.pfb")
+  Resource cyclicalAvroResource;
 
   UUID instanceId;
 
@@ -159,19 +166,19 @@ class PfbQuartzJobE2ETest {
     assertEquals(expectedCounts, actualCounts);
   }
 
-  /* import four_tables.avro, and validate the tables and row counts it imported. */
+  /* import four_rows.avro, and validate the tables and row counts it imported. */
   @Test
-  void importFourTablesResource() throws IOException, JobExecutionException {
+  void importFourRowsResource() throws IOException, JobExecutionException {
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(
-            ImportRequestServerModel.TypeEnum.PFB, fourTablesAvroResource.getURI());
+            ImportRequestServerModel.TypeEnum.PFB, fourRowsAvroResource.getURI());
 
     // because we have a mock scheduler dao, this won't trigger Quartz
     GenericJobServerModel genericJobServerModel =
         importService.createImport(instanceId, importRequest);
 
     UUID jobId = genericJobServerModel.getJobId();
-    JobExecutionContext mockContext = stubJobContext(jobId, fourTablesAvroResource, instanceId);
+    JobExecutionContext mockContext = stubJobContext(jobId, fourRowsAvroResource, instanceId);
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
@@ -180,7 +187,7 @@ class PfbQuartzJobE2ETest {
     buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
         .execute(mockContext);
 
-    /* the fourTablesAvroResource should insert:
+    /* the fourRowsAvroResource should insert:
        - 3 record(s) of type data_release
        - 1 record(s) of type submitted_aligned_reads
     */
@@ -243,6 +250,123 @@ class PfbQuartzJobE2ETest {
     assertEquals(
         BigDecimal.valueOf(12.1218843460083),
         recordResponse.recordAttributes().getAttributeValue("concentration"));
+  }
+
+  @Test
+  void importWithForwardRelations() throws IOException, JobExecutionException {
+    // The first record in this file relates to the fourth;
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(
+            ImportRequestServerModel.TypeEnum.PFB, forwardRelationsAvroResource.getURI());
+
+    // because we have a mock scheduler dao, this won't trigger Quartz
+    GenericJobServerModel genericJobServerModel =
+        importService.createImport(instanceId, importRequest);
+
+    UUID jobId = genericJobServerModel.getJobId();
+    JobExecutionContext mockContext =
+        stubJobContext(jobId, forwardRelationsAvroResource, instanceId);
+
+    // WSM should report no snapshots already linked to this workspace
+    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
+
+    buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+        .execute(mockContext);
+
+    /* the forwardRelationsAvroResource should insert:
+       - 1 record of type submitted_aligned_reads
+       - 3 record(s) of type data_release, one of which relates to the submitted_aligned_reads record
+    */
+
+    RecordTypeSchema dataReleaseSchema =
+        recordOrchestratorService.describeRecordType(
+            instanceId, "v0.2", RecordType.valueOf("data_release"));
+
+    assert (dataReleaseSchema
+        .attributes()
+        .contains(
+            new AttributeSchema(
+                "submitted_aligned_reads",
+                DataTypeMapping.RELATION.toString(),
+                RecordType.valueOf("submitted_aligned_reads"))));
+    RecordResponse relatedRecord =
+        recordOrchestratorService.getSingleRecord(
+            instanceId,
+            "v0.2",
+            RecordType.valueOf("data_release"),
+            "data_release.4622cdbf-9836-64a2-c743-e17b0708cbb6.2");
+
+    assertEquals(
+        RelationUtils.createRelationString(
+            RecordType.valueOf("submitted_aligned_reads"), "HG01102_cram"),
+        relatedRecord.recordAttributes().getAttributeValue("submitted_aligned_reads"));
+  }
+
+  @Test
+  void importCyclicalRelations() throws IOException, JobExecutionException {
+    // submitted_aligned_reads relates to data_release and vice versa
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(
+            ImportRequestServerModel.TypeEnum.PFB, cyclicalAvroResource.getURI());
+
+    // because we have a mock scheduler dao, this won't trigger Quartz
+    GenericJobServerModel genericJobServerModel =
+        importService.createImport(instanceId, importRequest);
+
+    UUID jobId = genericJobServerModel.getJobId();
+    JobExecutionContext mockContext = stubJobContext(jobId, cyclicalAvroResource, instanceId);
+
+    // WSM should report no snapshots already linked to this workspace
+    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
+
+    buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+        .execute(mockContext);
+
+    RecordTypeSchema dataReleaseSchema =
+        recordOrchestratorService.describeRecordType(
+            instanceId, "v0.2", RecordType.valueOf("data_release"));
+
+    assert (dataReleaseSchema
+        .attributes()
+        .contains(
+            new AttributeSchema(
+                "submitted_aligned_reads",
+                DataTypeMapping.RELATION.toString(),
+                RecordType.valueOf("submitted_aligned_reads"))));
+    RecordResponse relatedRecord =
+        recordOrchestratorService.getSingleRecord(
+            instanceId,
+            "v0.2",
+            RecordType.valueOf("data_release"),
+            "data_release.4622cdbf-9836-64a2-c743-e17b0708cbb6.2");
+
+    assertEquals(
+        RelationUtils.createRelationString(
+            RecordType.valueOf("submitted_aligned_reads"), "HG01102_cram"),
+        relatedRecord.recordAttributes().getAttributeValue("submitted_aligned_reads"));
+
+    RecordTypeSchema alignedReadsSchema =
+        recordOrchestratorService.describeRecordType(
+            instanceId, "v0.2", RecordType.valueOf("submitted_aligned_reads"));
+
+    assert (alignedReadsSchema
+        .attributes()
+        .contains(
+            new AttributeSchema(
+                "data_release",
+                DataTypeMapping.RELATION.toString(),
+                RecordType.valueOf("data_release"))));
+    RecordResponse relatedRecord2 =
+        recordOrchestratorService.getSingleRecord(
+            instanceId, "v0.2", RecordType.valueOf("submitted_aligned_reads"), "HG01102_cram");
+
+    assertEquals(
+        RelationUtils.createRelationString(
+            RecordType.valueOf("data_release"),
+            "data_release.4622cdbf-9836-64a2-c743-e17b0708cbb6.2"),
+        relatedRecord2.recordAttributes().getAttributeValue("data_release"));
   }
 
   private void assertDataType(

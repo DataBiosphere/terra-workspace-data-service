@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -24,11 +26,12 @@ class PfbStreamWriteHandlerTest {
 
   // does PfbStreamWriteHandler properly know how to page through a DataFileStream<GenericRecord>?
   @Test
-  void testBatching() throws IOException {
+  void testBatching() {
 
     // create a mock PFB stream with 10 rows in it and a PfbStreamWriteHandler for that stream
     DataFileStream<GenericRecord> dataFileStream = PfbTestUtils.mockPfbStream(10, "someType");
-    PfbStreamWriteHandler pfbStreamWriteHandler = new PfbStreamWriteHandler(dataFileStream);
+    PfbStreamWriteHandler pfbStreamWriteHandler =
+        new PfbStreamWriteHandler(dataFileStream, BASE_ATTRIBUTES);
 
     StreamingWriteHandler.WriteStreamInfo batch; // used in assertions below
 
@@ -56,7 +59,8 @@ class PfbStreamWriteHandlerTest {
   @ValueSource(ints = {0, 1, 49, 50, 51, 99, 100, 101})
   void inputStreamOfCount(Integer numRows) {
     DataFileStream<GenericRecord> dataFileStream = PfbTestUtils.mockPfbStream(numRows, "someType");
-    PfbStreamWriteHandler pfbStreamWriteHandler = new PfbStreamWriteHandler(dataFileStream);
+    PfbStreamWriteHandler pfbStreamWriteHandler =
+        new PfbStreamWriteHandler(dataFileStream, BASE_ATTRIBUTES);
 
     int batchSize = 50;
 
@@ -80,7 +84,7 @@ class PfbStreamWriteHandlerTest {
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
 
-      PfbStreamWriteHandler pswh = new PfbStreamWriteHandler(dataStream);
+      PfbStreamWriteHandler pswh = new PfbStreamWriteHandler(dataStream, BASE_ATTRIBUTES);
       StreamingWriteHandler.WriteStreamInfo streamInfo = pswh.readRecords(2);
       /*
         Expected records:
@@ -145,6 +149,53 @@ class PfbStreamWriteHandlerTest {
       assertEquals("data_release.3511bcae-8725-53f1-b632-d06a9697baa5.1", secondRecord.getId());
       assertEquals(RecordType.valueOf("data_release"), secondRecord.getRecordType());
       assertEquals(7, secondRecord.attributeSet().size());
+    } catch (IOException e) {
+      fail(e);
+    }
+  }
+
+  @Test
+  void relationsAreParsedCorrectly() {
+    URL url = getClass().getResource("/test.avro");
+    assertNotNull(url);
+    try (DataFileStream<GenericRecord> dataStream =
+        PfbReader.getGenericRecordsStream(url.toString())) {
+
+      PfbStreamWriteHandler pswh = new PfbStreamWriteHandler(dataStream, RELATIONS);
+      StreamingWriteHandler.WriteStreamInfo streamInfo = pswh.readRecords(5);
+
+      List<Record> result = streamInfo.getRecords();
+      assertEquals(5, result.size());
+      Record firstRecord = result.get(0);
+      // The first record does not have any relations
+      assertNotNull(firstRecord);
+      assertEquals("activities.34f8be82-2973-52c8-ad95-ba79416c51ab.3", firstRecord.getId());
+      assertEquals(0, firstRecord.attributeSet().size());
+
+      // validate that relations were identified
+      Record secondRecord = result.get(4);
+      assertNotNull(secondRecord);
+      assertEquals("files.3511bcae-8725-53f1-b632-d06a9697baa5.1", secondRecord.getId());
+      // this record has 4 relations
+      assertEquals(4, secondRecord.attributeSet().size());
+      assertEquals(
+          RelationUtils.createRelationString(
+              RecordType.valueOf("activities"),
+              "activities.34f8be82-2973-52c8-ad95-ba79416c51ab.3"),
+          secondRecord.getAttributeValue("activities"));
+      assertEquals(
+          RelationUtils.createRelationString(
+              RecordType.valueOf("biosamples"),
+              "biosamples.30a60040-fdca-5473-b2d5-cd3839e983c7.1"),
+          secondRecord.getAttributeValue("biosamples"));
+      assertEquals(
+          RelationUtils.createRelationString(
+              RecordType.valueOf("datasets"), "datasets.cd90e9d7-4b3c-5705-bcbf-d477af2c4f7d.1"),
+          secondRecord.getAttributeValue("datasets"));
+      assertEquals(
+          RelationUtils.createRelationString(
+              RecordType.valueOf("donors"), "donors.cce44986-0d04-54ea-8343-83748cd7225a.1"),
+          secondRecord.getAttributeValue("donors"));
     } catch (IOException e) {
       fail(e);
     }
