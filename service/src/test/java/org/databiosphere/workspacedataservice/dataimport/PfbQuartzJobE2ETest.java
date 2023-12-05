@@ -252,12 +252,9 @@ class PfbQuartzJobE2ETest {
         recordResponse.recordAttributes().getAttributeValue("concentration"));
   }
 
-  // TODO this file is very similar to the fourRowsResource; should we combine this test with that
-  // one?
   @Test
   void importWithForwardRelations() throws IOException, JobExecutionException {
     // The first record in this file relates to the fourth;
-    // TODO do we want to set batch size to 2 so that forward relation is in a later batch?
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(
             ImportRequestServerModel.TypeEnum.PFB, forwardRelationsAvroResource.getURI());
@@ -306,7 +303,6 @@ class PfbQuartzJobE2ETest {
         relatedRecord.recordAttributes().getAttributeValue("submitted_aligned_reads"));
   }
 
-  // TODO this cyclical file also includes a forward relation; do we need both of these tests?
   @Test
   void importCyclicalRelations() throws IOException, JobExecutionException {
     // submitted_aligned_reads relates to data_release and vice versa
