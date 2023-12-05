@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.service;
 
 import static org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter.ID_FIELD;
+import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -145,10 +147,7 @@ class BatchWriteServiceTest {
       //    - 7 more calls for batches #9-15 which will be (widget, widget)
       // * inferTypes once for each of "thing", "item", and "widget"
       batchWriteService.batchWritePfbStream(
-          pfbStream,
-          INSTANCE,
-          Optional.of(ID_FIELD),
-          PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
+          pfbStream, INSTANCE, Optional.of(ID_FIELD), BASE_ATTRIBUTES);
 
       // verify calls to batchUpsertWithErrorCapture
       verify(recordService, times(3))
@@ -192,10 +191,7 @@ class BatchWriteServiceTest {
     try (DataFileStream<GenericRecord> pfbStream = PfbTestUtils.mockPfbStream(counts)) {
       BatchWriteResult result =
           batchWriteService.batchWritePfbStream(
-              pfbStream,
-              INSTANCE,
-              Optional.of(ID_FIELD),
-              PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
+              pfbStream, INSTANCE, Optional.of(ID_FIELD), BASE_ATTRIBUTES);
       assertEquals(3, result.entrySet().size());
       assertEquals(5, result.getUpdatedCount(RecordType.valueOf("thing")));
       assertEquals(10, result.getUpdatedCount(RecordType.valueOf("item")));
@@ -215,10 +211,7 @@ class BatchWriteServiceTest {
         PfbReader.getGenericRecordsStream(url.toString())) {
       BatchWriteResult result =
           batchWriteService.batchWritePfbStream(
-              dataStream,
-              INSTANCE,
-              Optional.of(ID_FIELD),
-              PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
+              dataStream, INSTANCE, Optional.of(ID_FIELD), BASE_ATTRIBUTES);
 
       assertEquals(2, result.entrySet().size());
       assertEquals(3, result.getUpdatedCount(RecordType.valueOf("data_release")));
@@ -236,10 +229,7 @@ class BatchWriteServiceTest {
         PfbReader.getGenericRecordsStream(url.toString())) {
       BatchWriteResult result =
           batchWriteService.batchWritePfbStream(
-              dataStream,
-              INSTANCE,
-              Optional.of(ID_FIELD),
-              PfbStreamWriteHandler.PfbImportMode.RELATIONS);
+              dataStream, INSTANCE, Optional.of(ID_FIELD), RELATIONS);
 
       assertEquals(1, result.entrySet().size());
       // The 'files' record type has relations, so it should have been updated
@@ -257,10 +247,7 @@ class BatchWriteServiceTest {
         PfbReader.getGenericRecordsStream(url.toString())) {
       BatchWriteResult result =
           batchWriteService.batchWritePfbStream(
-              dataStream,
-              INSTANCE,
-              Optional.of(ID_FIELD),
-              PfbStreamWriteHandler.PfbImportMode.RELATIONS);
+              dataStream, INSTANCE, Optional.of(ID_FIELD), RELATIONS);
 
       assertEquals(1, result.entrySet().size());
       // Only one of the data_release records had any relations present

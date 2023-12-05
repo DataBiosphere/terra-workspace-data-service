@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import static org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter.RELATIONS_ID;
+import static org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter.RELATIONS_NAME;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
@@ -42,8 +44,8 @@ public class PfbTestUtils {
           "namespace",
           false,
           List.of(
-              new Schema.Field("dst_id", Schema.create(Schema.Type.STRING)),
-              new Schema.Field("dst_name", Schema.create(Schema.Type.STRING))));
+              new Schema.Field(RELATIONS_ID, Schema.create(Schema.Type.STRING)),
+              new Schema.Field(RELATIONS_NAME, Schema.create(Schema.Type.STRING))));
   public static Schema RELATION_ARRAY_SCHEMA = SchemaBuilder.array().items(RELATION_SCHEMA);
 
   // define the avro schema for the top-level fields expected in the PFB: id, name, object

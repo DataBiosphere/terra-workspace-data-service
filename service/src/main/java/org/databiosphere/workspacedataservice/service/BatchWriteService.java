@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 
 import bio.terra.common.db.WriteTransaction;
@@ -64,11 +66,7 @@ public class BatchWriteService {
       RecordType recordType,
       Optional<String> primaryKey) {
     return consumeWriteStreamWithRelations(
-        streamingWriteHandler,
-        instanceId,
-        recordType,
-        primaryKey,
-        PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
+        streamingWriteHandler, instanceId, recordType, primaryKey, BASE_ATTRIBUTES);
   }
 
   /**
@@ -90,8 +88,7 @@ public class BatchWriteService {
     BatchWriteResult result = BatchWriteResult.empty();
     try {
       // Verify relationsOnly is only for pfbstreamingwriteHandler
-      if (pfbImportMode == PfbStreamWriteHandler.PfbImportMode.RELATIONS
-          && !(streamingWriteHandler instanceof PfbStreamWriteHandler)) {
+      if (pfbImportMode == RELATIONS && !(streamingWriteHandler instanceof PfbStreamWriteHandler)) {
         throw new BadStreamingWriteRequestException(
             "BatchWriteService attempted to re-read PFB "
                 + "on a non-PFB import. Cannot continue.");
@@ -140,9 +137,8 @@ public class BatchWriteService {
             typesSeen.put(recType, finalSchema);
           }
           // when updating relations only, do not update if there are no relations
-          if (pfbImportMode == PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES
-              || !typesSeen.get(recType).isEmpty()) {
-            if (pfbImportMode == PfbStreamWriteHandler.PfbImportMode.RELATIONS) {
+          if (pfbImportMode == BASE_ATTRIBUTES || !typesSeen.get(recType).isEmpty()) {
+            if (pfbImportMode == RELATIONS) {
               // For relations only, remove records that have no relations
               rList = rList.stream().filter(rec -> !rec.attributeSet().isEmpty()).toList();
             }

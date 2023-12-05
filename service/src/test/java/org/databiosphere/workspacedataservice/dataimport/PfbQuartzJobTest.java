@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.buildQuartzJob;
 import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.stubJobContext;
+import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,7 +28,6 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
-import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
@@ -155,8 +155,7 @@ class PfbQuartzJobTest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
     // We're not testing this, so it doesn't matter what returns
-    when(batchWriteService.batchWritePfbStream(
-            any(), any(), any(), eq(PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES)))
+    when(batchWriteService.batchWritePfbStream(any(), any(), any(), eq(BASE_ATTRIBUTES)))
         .thenReturn(BatchWriteResult.empty());
 
     buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
@@ -177,8 +176,7 @@ class PfbQuartzJobTest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
     // We're not testing this, so it doesn't matter what returns
-    when(batchWriteService.batchWritePfbStream(
-            any(), any(), any(), eq(PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES)))
+    when(batchWriteService.batchWritePfbStream(any(), any(), any(), eq(BASE_ATTRIBUTES)))
         .thenReturn(BatchWriteResult.empty());
 
     buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)

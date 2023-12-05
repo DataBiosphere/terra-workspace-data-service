@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static bio.terra.pfb.PfbReader.convertEnum;
+import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
 
 import java.math.BigDecimal;
 import java.util.Collection;
@@ -21,6 +22,8 @@ public class PfbRecordConverter {
   public static final String TYPE_FIELD = "name";
   public static final String OBJECT_FIELD = "object";
   public static final String RELATIONS_FIELD = "relations";
+  public static final String RELATIONS_ID = "dst_id";
+  public static final String RELATIONS_NAME = "dst_name";
 
   public Record genericRecordToRecord(
       GenericRecord genRec, PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
@@ -30,7 +33,7 @@ public class PfbRecordConverter {
             genRec.get(ID_FIELD).toString(),
             RecordType.valueOf(genRec.get(TYPE_FIELD).toString()),
             RecordAttributes.empty());
-    if (pfbImportMode == PfbStreamWriteHandler.PfbImportMode.RELATIONS) {
+    if (pfbImportMode == RELATIONS) {
       return addRelations(genRec, converted);
     } else {
       return addAttributes(genRec, converted);
@@ -65,8 +68,8 @@ public class PfbRecordConverter {
         // Here we assume that the relations object is a GenericRecord with keys "dst_name" and
         // "dst_id"
         if (relationObject instanceof GenericRecord relation) {
-          String relationType = relation.get("dst_name").toString();
-          String relationId = relation.get("dst_id").toString();
+          String relationType = relation.get(RELATIONS_NAME).toString();
+          String relationId = relation.get(RELATIONS_ID).toString();
           // Give the relation column the name of the record type it's linked to
           attributes.putAttribute(
               relationType,

@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter.ID_FIELD;
+import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
@@ -95,18 +97,11 @@ public class PfbQuartzJob extends QuartzJob {
     //
     // This is HTTP connection #2 to the PFB.
     logger.info("Importing tables and rows from this PFB...");
-    withPfbStream(
-        url,
-        stream ->
-            importTables(
-                stream, targetInstance, PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES));
+    withPfbStream(url, stream -> importTables(stream, targetInstance, BASE_ATTRIBUTES));
 
     // This is HTTP connection #3 to the PFB.
     logger.info("Updating tables and rows from this PFB with relations...");
-    withPfbStream(
-        url,
-        stream ->
-            importTables(stream, targetInstance, PfbStreamWriteHandler.PfbImportMode.RELATIONS));
+    withPfbStream(url, stream -> importTables(stream, targetInstance, RELATIONS));
 
     // TODO AJ-1453: save the result of importTables and persist the to the job
   }
