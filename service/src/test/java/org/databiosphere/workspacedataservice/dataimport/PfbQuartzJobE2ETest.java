@@ -87,6 +87,9 @@ class PfbQuartzJobE2ETest {
   @Value("classpath:forward_relations.avro")
   Resource forwardRelationsAvroResource;
 
+  @Value("classpath:cyclical.pfb")
+  Resource cyclicalAvroResource;
+
   UUID instanceId;
 
   @BeforeAll
@@ -301,6 +304,73 @@ class PfbQuartzJobE2ETest {
         RelationUtils.createRelationString(
             RecordType.valueOf("submitted_aligned_reads"), "HG01102_cram"),
         relatedRecord.recordAttributes().getAttributeValue("submitted_aligned_reads"));
+  }
+
+  // TODO this cyclical file also includes a forward relation; do we need both of these tests?
+  @Test
+  void importCyclicalRelations() throws IOException, JobExecutionException {
+    // submitted_aligned_reads relates to data_release and vice versa
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(
+            ImportRequestServerModel.TypeEnum.PFB, cyclicalAvroResource.getURI());
+
+    // because we have a mock scheduler dao, this won't trigger Quartz
+    GenericJobServerModel genericJobServerModel =
+        importService.createImport(instanceId, importRequest);
+
+    UUID jobId = genericJobServerModel.getJobId();
+    JobExecutionContext mockContext = stubJobContext(jobId, cyclicalAvroResource, instanceId);
+
+    // WSM should report no snapshots already linked to this workspace
+    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
+
+    buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+        .execute(mockContext);
+
+    RecordTypeSchema dataReleaseSchema =
+        recordOrchestratorService.describeRecordType(
+            instanceId, "v0.2", RecordType.valueOf("data_release"));
+
+    assert (dataReleaseSchema
+        .attributes()
+        .contains(
+            new AttributeSchema(
+                "submitted_aligned_reads",
+                DataTypeMapping.RELATION.toString(),
+                RecordType.valueOf("submitted_aligned_reads"))));
+    RecordResponse relatedRecord =
+        recordOrchestratorService.getSingleRecord(
+            instanceId,
+            "v0.2",
+            RecordType.valueOf("data_release"),
+            "data_release.4622cdbf-9836-64a2-c743-e17b0708cbb6.2");
+
+    assertEquals(
+        RelationUtils.createRelationString(
+            RecordType.valueOf("submitted_aligned_reads"), "HG01102_cram"),
+        relatedRecord.recordAttributes().getAttributeValue("submitted_aligned_reads"));
+
+    RecordTypeSchema alignedReadsSchema =
+        recordOrchestratorService.describeRecordType(
+            instanceId, "v0.2", RecordType.valueOf("submitted_aligned_reads"));
+
+    assert (alignedReadsSchema
+        .attributes()
+        .contains(
+            new AttributeSchema(
+                "data_release",
+                DataTypeMapping.RELATION.toString(),
+                RecordType.valueOf("data_release"))));
+    RecordResponse relatedRecord2 =
+        recordOrchestratorService.getSingleRecord(
+            instanceId, "v0.2", RecordType.valueOf("submitted_aligned_reads"), "HG01102_cram");
+
+    assertEquals(
+        RelationUtils.createRelationString(
+            RecordType.valueOf("data_release"),
+            "data_release.4622cdbf-9836-64a2-c743-e17b0708cbb6.2"),
+        relatedRecord2.recordAttributes().getAttributeValue("data_release"));
   }
 
   private void assertDataType(
