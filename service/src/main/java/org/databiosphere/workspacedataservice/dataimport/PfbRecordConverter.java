@@ -13,6 +13,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericFixed;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.lang3.NotImplementedException;
 import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -91,24 +92,13 @@ public class PfbRecordConverter {
       return null;
     }
 
-    // Avro numbers - see
+    // For list of Avro types - see
     // https://avro.apache.org/docs/current/api/java/org/apache/avro/generic/package-summary.html#package_description
-    if (attribute instanceof Long longAttr) {
-      return BigDecimal.valueOf(longAttr);
-    }
-    if (attribute instanceof Integer intAttr) {
-      return BigDecimal.valueOf(intAttr);
-    }
-    if (attribute instanceof Float floatAttr) {
-      return BigDecimal.valueOf(floatAttr);
-    }
-    if (attribute instanceof Double doubleAttr) {
-      return BigDecimal.valueOf(doubleAttr);
-    }
 
-    // Avro booleans
-    if (attribute instanceof Boolean boolAttr) {
-      return boolAttr;
+    // Avro records
+    if (attribute instanceof GenericRecord recordAttr) {
+      throw new NotImplementedException("Avro `record` attributes not yet supported (AJ-1478)");
+      // TODO AJ-1478: Make these into WDS json?
     }
 
     // Avro enums
@@ -122,9 +112,13 @@ public class PfbRecordConverter {
       return collAttr.stream().map(this::convertAttributeType).toList();
     }
 
-    // Avro bytes
-    if (attribute instanceof ByteBuffer byteBufferAttr) {
-      return new String(byteBufferAttr.array());
+    // Avro maps
+    if (attribute instanceof Map<?, ?> mapAttr) {
+      // recurse
+      return BiStream.from(mapAttr)
+          .mapKeys(Object::toString)
+          .mapValues(this::convertAttributeType)
+          .toMap();
     }
 
     // Avro fixed
@@ -132,18 +126,44 @@ public class PfbRecordConverter {
       return new String(fixedAttr.bytes());
     }
 
-    // Avro maps
-    if (attribute instanceof Map<?, ?> mapAttr) {
-      return BiStream.from(mapAttr)
-          .mapKeys(Object::toString)
-          .mapValues(this::convertAttributeType)
-          .toMap();
+    // Avro strings
+    if (attribute instanceof String stringAttr) {
+      return stringAttr;
     }
 
-    // TODO AJ-1478: handle remaining possible Avro datatypes:
-    //     Avro records are implemented as GenericRecord. Can we make these into WDS json?
+    // Avro bytes
+    if (attribute instanceof ByteBuffer byteBufferAttr) {
+      return new String(byteBufferAttr.array());
+    }
 
-    // for now, everything else is a String
-    return attribute.toString();
+    // Avro ints
+    if (attribute instanceof Integer intAttr) {
+      return BigDecimal.valueOf(intAttr);
+    }
+
+    // Avro longs
+    if (attribute instanceof Long longAttr) {
+      return BigDecimal.valueOf(longAttr);
+    }
+
+    // Avro floats
+    if (attribute instanceof Float floatAttr) {
+      return BigDecimal.valueOf(floatAttr);
+    }
+
+    // Avro doubles
+    if (attribute instanceof Double doubleAttr) {
+      return BigDecimal.valueOf(doubleAttr);
+    }
+
+    // Avro booleans
+    if (attribute instanceof Boolean boolAttr) {
+      return boolAttr;
+    }
+
+    throw new UnsupportedOperationException(
+        String.format(
+            "convertAttributeType received value \"%s\" with unexpected type %s",
+            attribute, attribute.getClass()));
   }
 }
