@@ -3,10 +3,12 @@ package org.databiosphere.workspacedataservice.dataimport;
 import static bio.terra.pfb.PfbReader.convertEnum;
 import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
 
+import com.google.mu.util.stream.BiStream;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericFixed;
@@ -16,9 +18,12 @@ import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Logic to convert a PFB's GenericRecord to WDS's Record */
 public class PfbRecordConverter {
+  private static final Logger LOGGER = LoggerFactory.getLogger(PfbRecordConverter.class);
 
   public static final String ID_FIELD = "id";
   public static final String TYPE_FIELD = "name";
@@ -89,24 +94,12 @@ public class PfbRecordConverter {
       return null;
     }
 
-    // Avro numbers - see
+    // For list of Avro types - see
     // https://avro.apache.org/docs/current/api/java/org/apache/avro/generic/package-summary.html#package_description
-    if (attribute instanceof Long longAttr) {
-      return BigDecimal.valueOf(longAttr);
-    }
-    if (attribute instanceof Integer intAttr) {
-      return BigDecimal.valueOf(intAttr);
-    }
-    if (attribute instanceof Float floatAttr) {
-      return BigDecimal.valueOf(floatAttr);
-    }
-    if (attribute instanceof Double doubleAttr) {
-      return BigDecimal.valueOf(doubleAttr);
-    }
 
-    // Avro booleans
-    if (attribute instanceof Boolean boolAttr) {
-      return boolAttr;
+    // Avro records
+    if (attribute instanceof GenericRecord recordAttr) {
+      return recordAttr.toString(); // TODO AJ-1478: Make these into WDS json?
     }
 
     // Avro enums
@@ -120,9 +113,13 @@ public class PfbRecordConverter {
       return collAttr.stream().map(this::convertAttributeType).toList();
     }
 
-    // Avro bytes
-    if (attribute instanceof ByteBuffer byteBufferAttr) {
-      return new String(byteBufferAttr.array());
+    // Avro maps
+    if (attribute instanceof Map<?, ?> mapAttr) {
+      // recurse
+      return BiStream.from(mapAttr)
+          .mapKeys(Object::toString)
+          .mapValues(this::convertAttributeType)
+          .toMap();
     }
 
     // Avro fixed
@@ -130,11 +127,45 @@ public class PfbRecordConverter {
       return new String(fixedAttr.bytes());
     }
 
-    // TODO AJ-1478: handle remaining possible Avro datatypes:
-    //     Avro maps are implemented as Map. Can we make these into WDS json?
-    //     Avro records are implemented as GenericRecord. Can we make these into WDS json?
+    // Avro strings
+    if (attribute instanceof String stringAttr) {
+      return stringAttr;
+    }
 
-    // for now, everything else is a String
+    // Avro bytes
+    if (attribute instanceof ByteBuffer byteBufferAttr) {
+      return new String(byteBufferAttr.array());
+    }
+
+    // Avro ints
+    if (attribute instanceof Integer intAttr) {
+      return BigDecimal.valueOf(intAttr);
+    }
+
+    // Avro longs
+    if (attribute instanceof Long longAttr) {
+      return BigDecimal.valueOf(longAttr);
+    }
+
+    // Avro floats
+    if (attribute instanceof Float floatAttr) {
+      return BigDecimal.valueOf(floatAttr);
+    }
+
+    // Avro doubles
+    if (attribute instanceof Double doubleAttr) {
+      return BigDecimal.valueOf(doubleAttr);
+    }
+
+    // Avro booleans
+    if (attribute instanceof Boolean boolAttr) {
+      return boolAttr;
+    }
+
+    LOGGER.warn(
+        "convertAttributeType received value \"{}\" with unexpected type {}",
+        attribute,
+        attribute.getClass());
     return attribute.toString();
   }
 }
