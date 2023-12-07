@@ -120,10 +120,12 @@ public class PfbRecordConverter {
       return collAttr.stream().map(this::convertAttributeType).toList();
     }
 
+    // Avro bytes
     if (attribute instanceof ByteBuffer byteBufferAttr) {
       return new String(byteBufferAttr.array());
     }
 
+    // Avro fixed
     if (attribute instanceof GenericFixed fixedAttr) {
       return new String(fixedAttr.bytes());
     }
