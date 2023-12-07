@@ -13,7 +13,6 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericFixed;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.commons.lang3.NotImplementedException;
 import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -100,8 +99,7 @@ public class PfbRecordConverter {
 
     // Avro records
     if (attribute instanceof GenericRecord recordAttr) {
-      throw new NotImplementedException("Avro `record` attributes not yet supported (AJ-1478)");
-      // TODO AJ-1478: Make these into WDS json?
+      return recordAttr.toString(); // TODO AJ-1478: Make these into WDS json?
     }
 
     // Avro enums
