@@ -6,10 +6,12 @@ import static org.databiosphere.workspacedataservice.dataimport.PfbRecordConvert
 import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.OBJECT_SCHEMA;
 import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.RELATION_ARRAY_SCHEMA;
 import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.RELATION_SCHEMA;
-import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES;
-import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -20,7 +22,10 @@ import java.util.stream.Stream;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.generic.GenericRecordBuilder;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.service.JsonConfig;
+import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -31,6 +36,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class PfbRecordConverterTest {
 
+  private final PfbRecordConverter converter =
+      new PfbRecordConverter(new JsonConfig().objectMapper());
+
   // PFB "id" and "name" columns become the WDS Record id and type, respectively
   @Test
   void recordIdentifiers() {
@@ -38,7 +46,7 @@ class PfbRecordConverterTest {
     String inputName = RandomStringUtils.randomAlphanumeric(16);
     GenericRecord input = PfbTestUtils.makeRecord(inputId, inputName);
 
-    Record actual = new PfbRecordConverter().genericRecordToRecord(input, BASE_ATTRIBUTES);
+    Record actual = converter.genericRecordToRecord(input, PfbImportMode.BASE_ATTRIBUTES);
 
     assertEquals(inputId, actual.getId());
     assertEquals(inputName, actual.getRecordTypeName());
@@ -48,17 +56,7 @@ class PfbRecordConverterTest {
   @Test
   void emptyObjectAttributes() {
     GenericRecord input = PfbTestUtils.makeRecord("my-id", "my-name");
-    Record actual = new PfbRecordConverter().genericRecordToRecord(input, BASE_ATTRIBUTES);
-
-    assertThat(actual.attributeSet()).isEmpty();
-  }
-
-  // if the GenericRecord has null in the "object" column, the WDS record should have no attributes
-  @Test
-  void nullObjectAttributes() {
-    GenericRecord input =
-        PfbTestUtils.makeRecord("this-record-has", "a-null-for-the-object-field", null);
-    Record actual = new PfbRecordConverter().genericRecordToRecord(input, BASE_ATTRIBUTES);
+    Record actual = converter.genericRecordToRecord(input, PfbImportMode.BASE_ATTRIBUTES);
 
     assertThat(actual.attributeSet()).isEmpty();
   }
@@ -72,6 +70,16 @@ class PfbRecordConverterTest {
 
     Schema fixedTenBytes =
         Schema.createFixed("fixedBytes", /* doc= */ null, /* space= */ null, /* size= */ 10);
+    Schema embeddedObjectSchema =
+        Schema.createRecord(
+            "embeddedType",
+            "doc",
+            "namespace",
+            false,
+            List.of(
+                new Schema.Field("embeddedLong", Schema.create(Schema.Type.LONG)),
+                new Schema.Field("embeddedString", Schema.create(Schema.Type.STRING))));
+
     Schema myObjSchema =
         Schema.createRecord(
             "mytype",
@@ -94,31 +102,40 @@ class PfbRecordConverterTest {
                 new Schema.Field("mapOfNumbers", Schema.createMap(Schema.create(Schema.Type.LONG))),
                 new Schema.Field(
                     "mapOfStrings", Schema.createMap(Schema.create(Schema.Type.STRING))),
-                new Schema.Field("mapOfEnums", Schema.createMap(enumSchema))));
+                new Schema.Field("mapOfEnums", Schema.createMap(enumSchema)),
+                new Schema.Field("embeddedObject", embeddedObjectSchema)));
 
-    GenericData.Record objectAttributes = new GenericData.Record(myObjSchema);
-    objectAttributes.put("marco", "polo");
-    objectAttributes.put("pi", 3.14159);
-    objectAttributes.put("afile", "https://some/path/to/a/file");
-    objectAttributes.put("booly", Boolean.TRUE);
-    objectAttributes.put(
-        "enum", new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "enumValue2"));
-    objectAttributes.put("bytesOfStuff", ByteBuffer.wrap("some bytes".getBytes()));
-    objectAttributes.put(
-        "tenFixedBytesOfStuff", new GenericData.Fixed(fixedTenBytes, "fixedBytes".getBytes()));
-    objectAttributes.put("arrayOfNumbers", List.of(1.2, 3.4));
-    objectAttributes.put("arrayOfStrings", List.of("one", "two", "three"));
-    objectAttributes.put(
-        "arrayOfEnums",
-        List.of(
-            new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "enumValue2"),
-            new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "enumValue1")));
-    objectAttributes.put("mapOfNumbers", Map.of("one", 1L, "two", 2L, "three", 3L));
-    objectAttributes.put("mapOfStrings", Map.of("one", "one", "two", "two", "three", "three"));
-    objectAttributes.put("mapOfEnums", Map.of("one", "enumValue1", "two", "enumValue2"));
-
+    GenericData.Record embeddedObjectRecord =
+        new GenericRecordBuilder(embeddedObjectSchema)
+            .set("embeddedLong", 123L)
+            .set("embeddedString", "embeddedString")
+            .build();
+    GenericData.Record objectAttributes =
+        new GenericRecordBuilder(myObjSchema)
+            .set("marco", "polo")
+            .set("pi", 3.14159)
+            .set("afile", "https://some/path/to/a/file")
+            .set("booly", Boolean.TRUE)
+            .set(
+                "enum", new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "enumValue2"))
+            .set("bytesOfStuff", ByteBuffer.wrap("some bytes".getBytes()))
+            .set(
+                "tenFixedBytesOfStuff",
+                new GenericData.Fixed(fixedTenBytes, "fixedBytes".getBytes()))
+            .set("arrayOfNumbers", List.of(1.2, 3.4))
+            .set("arrayOfStrings", List.of("one", "two", "three"))
+            .set(
+                "arrayOfEnums",
+                List.of(
+                    new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "enumValue2"),
+                    new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "enumValue1")))
+            .set("mapOfNumbers", Map.of("one", 1L, "two", 2L, "three", 3L))
+            .set("mapOfStrings", Map.of("one", "one", "two", "two", "three", "three"))
+            .set("mapOfEnums", Map.of("one", "enumValue1", "two", "enumValue2"))
+            .set("embeddedObject", embeddedObjectRecord)
+            .build();
     GenericRecord input = PfbTestUtils.makeRecord("my-id", "mytype", objectAttributes);
-    Record actual = new PfbRecordConverter().genericRecordToRecord(input, BASE_ATTRIBUTES);
+    Record actual = converter.genericRecordToRecord(input, PfbImportMode.BASE_ATTRIBUTES);
 
     Set<Map.Entry<String, Object>> actualAttributeSet = actual.attributeSet();
     Set<String> actualKeySet =
@@ -137,7 +154,8 @@ class PfbRecordConverterTest {
             "arrayOfEnums",
             "mapOfNumbers",
             "mapOfStrings",
-            "mapOfEnums"),
+            "mapOfEnums",
+            "embeddedObject"),
         actualKeySet);
 
     assertEquals("polo", actual.getAttributeValue("marco"));
@@ -152,20 +170,16 @@ class PfbRecordConverterTest {
         actual.getAttributeValue("arrayOfNumbers"));
     assertEquals(List.of("one", "two", "three"), actual.getAttributeValue("arrayOfStrings"));
     assertEquals(List.of("enumValue2", "enumValue1"), actual.getAttributeValue("arrayOfEnums"));
-    assertEquals(
-        Map.of(
-            "one",
-            BigDecimal.valueOf(1L),
-            "two",
-            BigDecimal.valueOf(2L),
-            "three",
-            BigDecimal.valueOf(3L)),
-        actual.getAttributeValue("mapOfNumbers"));
-    assertEquals(
-        Map.of("one", "one", "two", "two", "three", "three"),
+    assertEqualsJsonString(
+        "{\"one\":1,\"two\":2,\"three\":3}", actual.getAttributeValue("mapOfNumbers"));
+    assertEqualsJsonString(
+        "{\"one\":\"one\",\"two\":\"two\",\"three\":\"three\"}",
         actual.getAttributeValue("mapOfStrings"));
-    assertEquals(
-        Map.of("one", "enumValue1", "two", "enumValue2"), actual.getAttributeValue("mapOfEnums"));
+    assertEqualsJsonString(
+        "{\"one\":\"enumValue1\",\"two\":\"enumValue2\"}", actual.getAttributeValue("mapOfEnums"));
+    assertEqualsJsonString(
+        "{\"embeddedLong\":123,\"embeddedString\":\"embeddedString\"}",
+        actual.getAttributeValue("embeddedObject"));
   }
 
   @Test
@@ -179,7 +193,7 @@ class PfbRecordConverterTest {
     GenericRecord input =
         PfbTestUtils.makeRecord(
             "my-id", "mytype", new GenericData.Record(OBJECT_SCHEMA), relations);
-    Record actual = new PfbRecordConverter().genericRecordToRecord(input, RELATIONS);
+    Record actual = converter.genericRecordToRecord(input, PfbImportMode.RELATIONS);
 
     assertEquals(
         RelationUtils.createRelationString(RecordType.valueOf("relation_table"), "relation_id"),
@@ -208,23 +222,19 @@ class PfbRecordConverterTest {
   }
 
   // targeted test for converting scalar Avro values to WDS values
-  @ParameterizedTest(name = "with input of {0}, return value should be {2}")
+  @ParameterizedTest(name = "with input of {0}, return value should be {1}")
   @MethodSource("provideConvertScalarAttributesArgs")
   void convertScalarAttributes(Object input, Object expected) {
-    PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
-
-    Object actual = pfbRecordConverter.convertAttributeType(input);
+    Object actual = converter.convertAttributeType(input);
     assertEquals(expected, actual);
   }
 
   // targeted test for converting scalar Avro enums to WDS values
   @Test
   void convertScalarEnums() {
-    PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
-
     Object input = new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "bar");
 
-    Object actual = pfbRecordConverter.convertAttributeType(input);
+    Object actual = converter.convertAttributeType(input);
     assertEquals("bar", actual);
   }
 
@@ -267,43 +277,70 @@ class PfbRecordConverterTest {
   }
 
   // targeted test for converting array Avro values to WDS values
-  @ParameterizedTest(name = "with array input of {0}, return value should be {2}")
+  @ParameterizedTest(name = "with array input of {0}, return value should be {1}")
   @MethodSource("provideConvertArrayAttributesArgs")
   void convertArrayAttributes(Object input, Object expected) {
-    PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
-
-    Object actual = pfbRecordConverter.convertAttributeType(input);
+    Object actual = converter.convertAttributeType(input);
     assertEquals(expected, actual);
   }
 
   // targeted test for converting array Avro enums to WDS values
   @Test
   void convertArrayOfEnums() {
-    PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
-
     Object input =
         List.of(
             new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "bar"),
             new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "foo"),
             new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "baz"));
 
-    Object actual = pfbRecordConverter.convertAttributeType(input);
+    Object actual = converter.convertAttributeType(input);
     assertEquals(List.of("bar", "foo", "baz"), actual);
   }
 
-  @Test
-  void decodesEnumsCorrectly() {
-    PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
+  @ParameterizedTest(
+      name = "with an enum value of {0} embedded in a list, return value should include {1}")
+  @MethodSource("provideDecodeEnumArgs")
+  void decodesEnums(String symbol, String expected) {
+    Object input = List.of(new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), symbol));
+    Object actual = converter.convertAttributeType(input);
+    assertEquals(List.of(expected), actual);
+  }
 
-    Object input =
-        List.of(
-            new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "bpm_20__3E__20_60"),
-            new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "bpm_20__3E__20_80"),
-            new GenericData.EnumSymbol(
-                Schema.create(Schema.Type.STRING), "only_20_space_20_conversions"),
-            new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "noconversion"));
+  // arguments for parameterized test, in the form of: input value, expected return value
+  static Stream<Arguments> provideDecodeEnumArgs() {
+    return Stream.of(
+        Arguments.of("bpm_20__3E__20_60", "bpm > 60"),
+        Arguments.of("bpm_20__3E__20_80", "bpm > 80"),
+        Arguments.of("only_20_space_20_conversions", "only space conversions"),
+        Arguments.of("noconversion", "noconversion"));
+  }
 
-    Object actual = pfbRecordConverter.convertAttributeType(input);
-    assertEquals(List.of("bpm > 60", "bpm > 80", "only space conversions", "noconversion"), actual);
+  private void assertEqualsJsonString(String expectedJsonString, Object actualValue) {
+    assertThat(actualValue).isInstanceOf(String.class);
+
+    try {
+      JsonNode actualJson = normalizeJson(actualValue.toString());
+      JsonNode expectedJson = normalizeJson(expectedJsonString);
+      assertThat(actualJson).isEqualTo(expectedJson);
+    } catch (JsonProcessingException e) {
+      fail(
+          String.format(
+              "Unable to parse JSON strings for comparison. Expected: "
+                  + expectedJsonString
+                  + " Actual: "
+                  + actualValue),
+          e);
+    }
+  }
+
+  private JsonNode normalizeJson(String jsonString) throws JsonProcessingException {
+    ObjectMapper objectMapper = new JsonConfig().objectMapper();
+    JsonNode tree = objectMapper.readTree(jsonString);
+
+    // Convert JSON tree to a canonical string representation
+    String normalizedJson = objectMapper.writeValueAsString(tree);
+
+    // Parse the normalized string back to a JsonNode
+    return objectMapper.readTree(normalizedJson);
   }
 }

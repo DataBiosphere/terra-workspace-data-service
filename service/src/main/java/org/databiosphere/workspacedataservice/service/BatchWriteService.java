@@ -214,7 +214,7 @@ public class BatchWriteService {
       Optional<String> primaryKey,
       PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
     try (PfbStreamWriteHandler streamingWriteHandler =
-        new PfbStreamWriteHandler(is, pfbImportMode)) {
+        new PfbStreamWriteHandler(is, pfbImportMode, objectMapper)) {
       return consumeWriteStreamWithRelations(
           streamingWriteHandler, instanceId, null, primaryKey, pfbImportMode);
     } catch (IOException e) {
