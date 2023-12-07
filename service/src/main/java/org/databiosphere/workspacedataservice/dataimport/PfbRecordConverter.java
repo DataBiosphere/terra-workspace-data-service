@@ -4,10 +4,12 @@ import static bio.terra.pfb.PfbReader.convertEnum;
 import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
 
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericEnumSymbol;
+import org.apache.avro.generic.GenericFixed;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -118,9 +120,17 @@ public class PfbRecordConverter {
       return collAttr.stream().map(this::convertAttributeType).toList();
     }
 
+    // Avro bytes
+    if (attribute instanceof ByteBuffer byteBufferAttr) {
+      return new String(byteBufferAttr.array());
+    }
+
+    // Avro fixed
+    if (attribute instanceof GenericFixed fixedAttr) {
+      return new String(fixedAttr.bytes());
+    }
+
     // TODO AJ-1478: handle remaining possible Avro datatypes:
-    //     Avro bytes are implemented as ByteBuffer. toString() these?
-    //     Avro fixed are implemented as GenericFixed. toString() these?
     //     Avro maps are implemented as Map. Can we make these into WDS json?
     //     Avro records are implemented as GenericRecord. Can we make these into WDS json?
 
