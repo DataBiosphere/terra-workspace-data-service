@@ -19,9 +19,12 @@ import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Logic to convert a PFB's GenericRecord to WDS's Record */
 public class PfbRecordConverter {
+  private static final Logger LOGGER = LoggerFactory.getLogger(PfbRecordConverter.class);
 
   public static final String ID_FIELD = "id";
   public static final String TYPE_FIELD = "name";
@@ -161,9 +164,10 @@ public class PfbRecordConverter {
       return boolAttr;
     }
 
-    throw new UnsupportedOperationException(
-        String.format(
-            "convertAttributeType received value \"%s\" with unexpected type %s",
-            attribute, attribute.getClass()));
+    LOGGER.warn(
+        "convertAttributeType received value \"{}\" with unexpected type {}",
+        attribute,
+        attribute.getClass());
+    return attribute.toString();
   }
 }
