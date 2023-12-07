@@ -161,6 +161,11 @@ class PfbRecordConverterTest {
             "three",
             BigDecimal.valueOf(3L)),
         actual.getAttributeValue("mapOfNumbers"));
+    assertEquals(
+        Map.of("one", "one", "two", "two", "three", "three"),
+        actual.getAttributeValue("mapOfStrings"));
+    assertEquals(
+        Map.of("one", "enumValue1", "two", "enumValue2"), actual.getAttributeValue("mapOfEnums"));
   }
 
   @Test
