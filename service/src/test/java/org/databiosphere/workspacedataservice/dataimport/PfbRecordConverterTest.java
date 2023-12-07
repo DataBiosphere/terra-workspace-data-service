@@ -11,6 +11,7 @@ import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandl
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -69,6 +70,8 @@ class PfbRecordConverterTest {
     Schema enumSchema =
         Schema.createEnum("name", "doc", "namespace", List.of("enumValue1", "enumValue2"));
 
+    Schema fixedTenBytes =
+        Schema.createFixed("fixedBytes", /* doc= */ null, /* space= */ null, /* size= */ 10);
     Schema myObjSchema =
         Schema.createRecord(
             "mytype",
@@ -81,6 +84,8 @@ class PfbRecordConverterTest {
                 new Schema.Field("afile", Schema.create(Schema.Type.STRING)),
                 new Schema.Field("booly", Schema.create(Schema.Type.BOOLEAN)),
                 new Schema.Field("enum", enumSchema),
+                new Schema.Field("bytesOfStuff", Schema.create(Schema.Type.BYTES)),
+                new Schema.Field("tenFixedBytesOfStuff", fixedTenBytes),
                 new Schema.Field(
                     "arrayOfNumbers", Schema.createArray(Schema.create(Schema.Type.LONG))),
                 new Schema.Field(
@@ -94,6 +99,9 @@ class PfbRecordConverterTest {
     objectAttributes.put("booly", Boolean.TRUE);
     objectAttributes.put(
         "enum", new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "enumValue2"));
+    objectAttributes.put("bytesOfStuff", ByteBuffer.wrap("some bytes".getBytes()));
+    objectAttributes.put(
+        "tenFixedBytesOfStuff", new GenericData.Fixed(fixedTenBytes, "fixedBytes".getBytes()));
     objectAttributes.put("arrayOfNumbers", List.of(1.2, 3.4));
     objectAttributes.put("arrayOfStrings", List.of("one", "two", "three"));
     objectAttributes.put(
@@ -115,6 +123,8 @@ class PfbRecordConverterTest {
             "afile",
             "booly",
             "enum",
+            "bytesOfStuff",
+            "tenFixedBytesOfStuff",
             "arrayOfNumbers",
             "arrayOfStrings",
             "arrayOfEnums"),
@@ -125,6 +135,8 @@ class PfbRecordConverterTest {
     assertEquals(BigDecimal.valueOf(3.14159), actual.getAttributeValue("pi"));
     assertEquals(Boolean.TRUE, actual.getAttributeValue("booly"));
     assertEquals("enumValue2", actual.getAttributeValue("enum"));
+    assertEquals("some bytes", actual.getAttributeValue("bytesOfStuff"));
+    assertEquals("fixedBytes", actual.getAttributeValue("tenFixedBytesOfStuff"));
     assertEquals(
         List.of(BigDecimal.valueOf(1.2), BigDecimal.valueOf(3.4)),
         actual.getAttributeValue("arrayOfNumbers"));
