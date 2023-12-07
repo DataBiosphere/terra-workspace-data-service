@@ -90,7 +90,11 @@ class PfbRecordConverterTest {
                     "arrayOfNumbers", Schema.createArray(Schema.create(Schema.Type.LONG))),
                 new Schema.Field(
                     "arrayOfStrings", Schema.createArray(Schema.create(Schema.Type.STRING))),
-                new Schema.Field("arrayOfEnums", Schema.createArray(enumSchema))));
+                new Schema.Field("arrayOfEnums", Schema.createArray(enumSchema)),
+                new Schema.Field("mapOfNumbers", Schema.createMap(Schema.create(Schema.Type.LONG))),
+                new Schema.Field(
+                    "mapOfStrings", Schema.createMap(Schema.create(Schema.Type.STRING))),
+                new Schema.Field("mapOfEnums", Schema.createMap(enumSchema))));
 
     GenericData.Record objectAttributes = new GenericData.Record(myObjSchema);
     objectAttributes.put("marco", "polo");
@@ -109,6 +113,9 @@ class PfbRecordConverterTest {
         List.of(
             new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "enumValue2"),
             new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "enumValue1")));
+    objectAttributes.put("mapOfNumbers", Map.of("one", 1L, "two", 2L, "three", 3L));
+    objectAttributes.put("mapOfStrings", Map.of("one", "one", "two", "two", "three", "three"));
+    objectAttributes.put("mapOfEnums", Map.of("one", "enumValue1", "two", "enumValue2"));
 
     GenericRecord input = PfbTestUtils.makeRecord("my-id", "mytype", objectAttributes);
     Record actual = new PfbRecordConverter().genericRecordToRecord(input, BASE_ATTRIBUTES);
@@ -127,7 +134,10 @@ class PfbRecordConverterTest {
             "tenFixedBytesOfStuff",
             "arrayOfNumbers",
             "arrayOfStrings",
-            "arrayOfEnums"),
+            "arrayOfEnums",
+            "mapOfNumbers",
+            "mapOfStrings",
+            "mapOfEnums"),
         actualKeySet);
 
     assertEquals("polo", actual.getAttributeValue("marco"));
@@ -142,6 +152,15 @@ class PfbRecordConverterTest {
         actual.getAttributeValue("arrayOfNumbers"));
     assertEquals(List.of("one", "two", "three"), actual.getAttributeValue("arrayOfStrings"));
     assertEquals(List.of("enumValue2", "enumValue1"), actual.getAttributeValue("arrayOfEnums"));
+    assertEquals(
+        Map.of(
+            "one",
+            BigDecimal.valueOf(1L),
+            "two",
+            BigDecimal.valueOf(2L),
+            "three",
+            BigDecimal.valueOf(3L)),
+        actual.getAttributeValue("mapOfNumbers"));
   }
 
   @Test
@@ -149,7 +168,8 @@ class PfbRecordConverterTest {
     GenericData.Record relation = new GenericData.Record(RELATION_SCHEMA);
     relation.put(RELATIONS_ID, "relation_id");
     relation.put(RELATIONS_NAME, "relation_table");
-    GenericData.Array relations = new GenericData.Array(RELATION_ARRAY_SCHEMA, List.of(relation));
+    GenericData.Array<GenericData.Record> relations =
+        new GenericData.Array<>(RELATION_ARRAY_SCHEMA, List.of(relation));
 
     GenericRecord input =
         PfbTestUtils.makeRecord(

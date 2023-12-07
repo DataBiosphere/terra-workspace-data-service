@@ -3,10 +3,12 @@ package org.databiosphere.workspacedataservice.dataimport;
 import static bio.terra.pfb.PfbReader.convertEnum;
 import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
 
+import com.google.mu.util.stream.BiStream;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericFixed;
@@ -130,8 +132,15 @@ public class PfbRecordConverter {
       return new String(fixedAttr.bytes());
     }
 
+    // Avro maps
+    if (attribute instanceof Map<?, ?> mapAttr) {
+      return BiStream.from(mapAttr)
+          .mapKeys(Object::toString)
+          .mapValues(this::convertAttributeType)
+          .toMap();
+    }
+
     // TODO AJ-1478: handle remaining possible Avro datatypes:
-    //     Avro maps are implemented as Map. Can we make these into WDS json?
     //     Avro records are implemented as GenericRecord. Can we make these into WDS json?
 
     // for now, everything else is a String
