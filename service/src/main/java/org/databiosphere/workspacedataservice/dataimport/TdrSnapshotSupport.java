@@ -1,16 +1,23 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import bio.terra.datarepo.model.RelationshipModel;
+import bio.terra.datarepo.model.TableModel;
 import bio.terra.workspace.model.DataRepoSnapshotAttributes;
 import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceList;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbImportException;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +27,8 @@ public class TdrSnapshotSupport {
   private final UUID workspaceId;
   private final WorkspaceManagerDao wsmDao;
   private final RestClientRetry restClientRetry;
+
+  private static final String DEFAULT_PRIMARY_KEY = "datarepo_row_id";
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -124,5 +133,42 @@ public class TdrSnapshotSupport {
       }
     }
     return null;
+  }
+
+  // TODO AJ-1013 unit tests
+  Map<RecordType, String> identifyPrimaryKeys(List<TableModel> tables) {
+    return tables.stream()
+        .collect(
+            Collectors.toMap(
+                tableModel -> RecordType.valueOf(tableModel.getName()),
+                tableModel -> identifyPrimaryKey(tableModel.getPrimaryKey())));
+  }
+
+  // TODO AJ-1013 unit tests
+  String identifyPrimaryKey(List<String> snapshotKeys) {
+    if (snapshotKeys.size() == 1) {
+      return snapshotKeys.get(0);
+    }
+    return DEFAULT_PRIMARY_KEY;
+  }
+
+  String getDefaultPrimaryKey() {
+    return DEFAULT_PRIMARY_KEY;
+  }
+
+  // TODO AJ-1013 unit tests
+
+  /**
+   * Returns a Multimap of RecordType -> RelationshipModel, indicating all the outbound relations
+   * for any given RecordType in this snapshot model.
+   *
+   * @param relationshipModels relationship models from the TDR manifest
+   * @return the relationship models, mapped by RecordType
+   */
+  Multimap<RecordType, RelationshipModel> identifyRelations(
+      List<RelationshipModel> relationshipModels) {
+    return Multimaps.index(
+        relationshipModels,
+        relationshipModel -> RecordType.valueOf(relationshipModel.getFrom().getTable()));
   }
 }

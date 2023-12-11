@@ -19,7 +19,9 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.parquet.hadoop.ParquetReader;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.dataimport.ParquetStreamWriteHandler;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
@@ -217,6 +219,22 @@ public class BatchWriteService {
         new PfbStreamWriteHandler(is, pfbImportMode)) {
       return consumeWriteStreamWithRelations(
           streamingWriteHandler, instanceId, null, primaryKey, pfbImportMode);
+    } catch (IOException e) {
+      throw new BadStreamingWriteRequestException(e);
+    }
+  }
+
+  @WriteTransaction
+  public BatchWriteResult batchWriteParquetStream(
+      ParquetReader<GenericRecord> avroParquetReader,
+      UUID instanceId,
+      RecordType recordType,
+      Optional<String> primaryKey,
+      PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
+    try (ParquetStreamWriteHandler streamingWriteHandler =
+        new ParquetStreamWriteHandler(avroParquetReader, pfbImportMode)) {
+      return consumeWriteStreamWithRelations(
+          streamingWriteHandler, instanceId, recordType, primaryKey, pfbImportMode);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
