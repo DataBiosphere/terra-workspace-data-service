@@ -180,7 +180,7 @@ public class TdrSnapshotSupport {
   }
 
   String identifyPrimaryKey(List<String> snapshotKeys) {
-    if (snapshotKeys.size() == 1) {
+    if (snapshotKeys != null && snapshotKeys.size() == 1) {
       return snapshotKeys.get(0);
     }
     return DEFAULT_PRIMARY_KEY;
@@ -190,7 +190,6 @@ public class TdrSnapshotSupport {
     return DEFAULT_PRIMARY_KEY;
   }
 
-  // TODO AJ-1013 unit tests
   /**
    * Returns a Multimap of RecordType -> RelationshipModel, indicating all the outbound relations
    * for any given RecordType in this snapshot model.

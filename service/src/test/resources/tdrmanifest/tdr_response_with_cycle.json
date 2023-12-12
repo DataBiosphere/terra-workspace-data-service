@@ -1,0 +1,1002 @@
+{
+  "snapshot": {
+    "id": "9516afec-583f-11ec-bf63-0242ac130002",
+    "name": "unit_test_snapshot",
+    "description": "Exemplar snapshot for unit testing data",
+    "createdDate": "2021-04-05T07:07:08.654321Z",
+    "source": [
+      {
+        "dataset": {
+          "id": "d70f8266-583f-11ec-bf63-0242ac130002",
+          "name": "unit_test_dataset",
+          "description": "Exemplar dataset for unit testing data",
+          "defaultProfileId": "e55435f6-583f-11ec-bf63-0242ac130002",
+          "createdDate": "2021-01-02T03:04:05.654321Z",
+          "storage": [
+            {
+              "region": "us-central1",
+              "cloudResource": "bigquery",
+              "cloudPlatform": "gcp"
+            },
+            {
+              "region": "us-east4",
+              "cloudResource": "firestore",
+              "cloudPlatform": "gcp"
+            },
+            {
+              "region": "us-central1",
+              "cloudResource": "bucket",
+              "cloudPlatform": "gcp"
+            }
+          ]
+        },
+        "asset": null
+      }
+    ],
+    "tables": [
+      {
+        "name": "messages",
+        "columns": [
+          {
+            "name": "messages_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 0
+      },
+      {
+        "name": "location",
+        "columns": [
+          {
+            "name": "location_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 0
+      },
+      {
+        "name": "cost",
+        "columns": [
+          {
+            "name": "cost_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 82
+      },
+      {
+        "name": "product",
+        "columns": [
+          {
+            "name": "product_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 0
+      },
+      {
+        "name": "footnote",
+        "columns": [
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "file_id",
+            "datatype": "fileref",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "footnote_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "descriptor",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 23
+      },
+      {
+        "name": "diagram",
+        "columns": [
+          {
+            "name": "diagram_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 0
+      },
+      {
+        "name": "graphic",
+        "columns": [
+          {
+            "name": "graphic_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 0
+      },
+      {
+        "name": "sequence",
+        "columns": [
+          {
+            "name": "sequence_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 21
+      },
+      {
+        "name": "project",
+        "columns": [
+          {
+            "name": "project_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 1
+      },
+      {
+        "name": "person",
+        "columns": [
+          {
+            "name": "person_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 1643
+      },
+      {
+        "name": "signature",
+        "columns": [
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "file_id",
+            "datatype": "fileref",
+            "array_of": false
+          },
+          {
+            "name": "signature_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "descriptor",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 0
+      },
+      {
+        "name": "photo",
+        "columns": [
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "file_id",
+            "datatype": "fileref",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "photo_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "descriptor",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 0
+      },
+      {
+        "name": "regulation",
+        "columns": [
+          {
+            "name": "regulation_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 0
+      },
+      {
+        "name": "annotation",
+        "columns": [
+          {
+            "name": "annotation_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 0
+      },
+      {
+        "name": "lab",
+        "columns": [
+          {
+            "name": "lab_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 0
+      },
+      {
+        "name": "edges",
+        "columns": [
+          {
+            "name": "edges_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "project_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 221
+      },
+      {
+        "name": "xray",
+        "columns": [
+          {
+            "name": "xray_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "file_id",
+            "datatype": "fileref",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "descriptor",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 0
+      },
+      {
+        "name": "test",
+        "columns": [
+          {
+            "name": "test_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 1
+      },
+      {
+        "name": "vial",
+        "columns": [
+          {
+            "name": "vial_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 1
+      },
+      {
+        "name": "process",
+        "columns": [
+          {
+            "name": "process_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 9876
+      },
+      {
+        "name": "test_result",
+        "columns": [
+          {
+            "name": "test_result_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 0
+      },
+      {
+        "name": "room",
+        "columns": [
+          {
+            "name": "room_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 0
+      },
+      {
+        "name": "chemical",
+        "columns": [
+          {
+            "name": "chemical_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 2345
+      },
+      {
+        "name": "letter",
+        "columns": [
+          {
+            "name": "letter_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 0
+      },
+      {
+        "name": "species",
+        "columns": [
+          {
+            "name": "species_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 808
+      },
+      {
+        "name": "reading",
+        "columns": [
+          {
+            "name": "reading_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 1
+      },
+      {
+        "name": "genome",
+        "columns": [
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "file_id",
+            "datatype": "fileref",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "genome_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "descriptor",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 2097
+      }
+    ],
+    "relationships": [
+      {
+        "name": "from_edges.project_id_to_project.project_id",
+        "from": {
+          "table": "edges",
+          "column": "project_id"
+        },
+        "to": {
+          "table": "project",
+          "column": "project_id"
+        }
+      },
+      {
+        "name": "test1",
+        "from": {
+          "table": "product",
+          "column": "test_column"
+        },
+        "to": {
+          "table": "footnote",
+          "column": "datarepo_row_id"
+        }
+      },
+      {
+        "name": "test2",
+        "from": {
+          "table": "footnote",
+          "column": "test_column"
+        },
+        "to": {
+          "table": "diagram",
+          "column": "datarepo_row_id"
+        }
+      },
+      {
+        "name": "test3",
+        "from": {
+          "table": "diagram",
+          "column": "test_column"
+        },
+        "to": {
+          "table": "messages",
+          "column": "datarepo_row_id"
+        }
+      },
+      {
+        "name": "test4",
+        "from": {
+          "table": "messages",
+          "column": "test_column"
+        },
+        "to": {
+          "table": "product",
+          "column": "datarepo_row_id"
+        }
+      }
+    ],
+    "profileId": "bff61446-583f-11ec-bf63-0242ac130002",
+    "dataProject": "my-project",
+    "accessInformation": null
+  },
+  "format": {
+    "parquet": {
+      "location": {
+        "tables": [
+          {
+            "name": "messages",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/messages/messages-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "location",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/location/location-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "cost",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/cost/cost-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "product",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/product/product-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "footnote",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/footnote/footnote-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "diagram",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/diagram/diagram-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "graphic",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/graphic/graphic-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "sequence",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/sequence/sequence-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "project",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/project/project-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "person",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/person/person-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "signature",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/signature/signature-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "photo",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/photo/photo-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "regulation",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/regulation/regulation-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "annotation",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/annotation/annotation-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "lab",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/lab/lab-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "edges",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/edges/edges-000000000000.parquet",
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/edges/edges-000000000001.parquet"
+            ]
+          },
+          {
+            "name": "xray",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/xray/xray-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "test",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/test/test-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "vial",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/vial/vial-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "process",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/process/process-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "test_result",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/test_result/test_result-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "room",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/room/room-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "chemical",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/chemical/chemical-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "letter",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/letter/letter-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "species",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/species/species-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "reading",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/reading/reading-000000000000.parquet"
+            ]
+          },
+          {
+            "name": "genome",
+            "paths": [
+              "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/genome/genome-000000000000.parquet"
+            ]
+          }
+        ]
+      },
+      "manifest": "gs://my-project-snapshot-export-bucket/feKB6na2Ta2EI5xZDwCqjA/manifest.json"
+    },
+    "workspace": null
+  }
+}

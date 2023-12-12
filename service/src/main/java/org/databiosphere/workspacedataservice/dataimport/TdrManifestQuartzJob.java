@@ -232,7 +232,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @param manifestUrl url to the manifest
    * @return parsed object
    */
-  private SnapshotExportResponseModel parseManifest(URL manifestUrl) {
+  SnapshotExportResponseModel parseManifest(URL manifestUrl) {
     // read manifest
     try {
       return mapper.readValue(manifestUrl, SnapshotExportResponseModel.class);
@@ -248,8 +248,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @param snapshotExportResponseModel the inbound manifest
    * @return information necessary for the import
    */
-  // TODO AJ-1013 unit tests
-  private List<TdrManifestImportTable> extractTableInfo(
+  List<TdrManifestImportTable> extractTableInfo(
       SnapshotExportResponseModel snapshotExportResponseModel) {
 
     TdrSnapshotSupport tdrSnapshotSupport =

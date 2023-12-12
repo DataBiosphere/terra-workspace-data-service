@@ -181,6 +181,13 @@ class TdrSnapshotSupportTest {
   }
 
   @Test
+  void nullPrimaryKey() {
+    TdrSnapshotSupport support = defaultSupport();
+    String actual = support.identifyPrimaryKey(null);
+    assertEquals(support.getDefaultPrimaryKey(), actual);
+  }
+
+  @Test
   void missingPrimaryKey() {
     TdrSnapshotSupport support = defaultSupport();
     String actual = support.identifyPrimaryKey(List.of());
