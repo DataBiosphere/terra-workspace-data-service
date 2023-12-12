@@ -136,8 +136,8 @@ public class PfbRecordConverter {
     }
 
     // Avro strings
-    if (attribute instanceof String stringAttr) {
-      return stringAttr;
+    if (attribute instanceof CharSequence charSequenceAttr) {
+      return charSequenceAttr.toString();
     }
 
     // Avro bytes
