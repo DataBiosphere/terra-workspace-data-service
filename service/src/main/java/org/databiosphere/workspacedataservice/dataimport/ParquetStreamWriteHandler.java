@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
-import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,7 +12,6 @@ import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
-// TODO AJ-1013: how much can be consolidated with PfbStreamWriteHandler?
 public class ParquetStreamWriteHandler implements StreamingWriteHandler {
 
   private final ParquetReader<GenericRecord> parquetReader;
@@ -50,7 +48,7 @@ public class ParquetStreamWriteHandler implements StreamingWriteHandler {
     ParquetRecordConverter converter = new ParquetRecordConverter(recordType, primaryKey);
     List<Record> records =
         genericRecords.stream()
-            .map(gr -> converter.genericRecordToRecord(gr, BASE_ATTRIBUTES))
+            .map(gr -> converter.genericRecordToRecord(gr, pfbImportMode))
             .toList();
 
     return new WriteStreamInfo(records, OperationType.UPSERT);
