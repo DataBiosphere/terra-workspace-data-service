@@ -8,6 +8,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import bio.terra.datarepo.model.TableModel;
 import bio.terra.workspace.client.ApiException;
 import bio.terra.workspace.model.DataRepoSnapshotAttributes;
 import bio.terra.workspace.model.ResourceAttributesUnion;
@@ -15,10 +16,13 @@ import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -93,9 +97,7 @@ class TdrSnapshotSupportTest {
     UUID snapshotId = UUID.randomUUID();
     ResourceDescription resourceDescription = createResourceDescription(snapshotId);
 
-    UUID actual =
-        new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry)
-            .safeGetSnapshotId(resourceDescription);
+    UUID actual = defaultSupport().safeGetSnapshotId(resourceDescription);
 
     assertEquals(snapshotId, actual);
   }
@@ -113,9 +115,7 @@ class TdrSnapshotSupportTest {
     ResourceDescription resourceDescription = new ResourceDescription();
     resourceDescription.setResourceAttributes(resourceAttributes);
 
-    UUID actual =
-        new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry)
-            .safeGetSnapshotId(resourceDescription);
+    UUID actual = defaultSupport().safeGetSnapshotId(resourceDescription);
 
     assertNull(actual);
   }
@@ -131,9 +131,7 @@ class TdrSnapshotSupportTest {
     ResourceDescription resourceDescription = new ResourceDescription();
     resourceDescription.setResourceAttributes(resourceAttributes);
 
-    UUID actual =
-        new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry)
-            .safeGetSnapshotId(resourceDescription);
+    UUID actual = defaultSupport().safeGetSnapshotId(resourceDescription);
 
     assertNull(actual);
   }
@@ -146,9 +144,7 @@ class TdrSnapshotSupportTest {
     ResourceDescription resourceDescription = new ResourceDescription();
     resourceDescription.setResourceAttributes(resourceAttributes);
 
-    UUID actual =
-        new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry)
-            .safeGetSnapshotId(resourceDescription);
+    UUID actual = defaultSupport().safeGetSnapshotId(resourceDescription);
 
     assertNull(actual);
   }
@@ -158,9 +154,7 @@ class TdrSnapshotSupportTest {
     ResourceDescription resourceDescription = new ResourceDescription();
     resourceDescription.setResourceAttributes(null);
 
-    UUID actual =
-        new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry)
-            .safeGetSnapshotId(resourceDescription);
+    UUID actual = defaultSupport().safeGetSnapshotId(resourceDescription);
 
     assertNull(actual);
   }
@@ -175,11 +169,66 @@ class TdrSnapshotSupportTest {
     ResourceList resourceList = new ResourceList();
     resourceList.setResources(resourceDescriptions);
 
-    List<UUID> actual =
-        new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry)
-            .extractSnapshotIds(resourceList);
+    List<UUID> actual = defaultSupport().extractSnapshotIds(resourceList);
 
     assertEquals(expected, actual);
+  }
+
+  @Test
+  void defaultPrimaryKey() {
+    TdrSnapshotSupport support = defaultSupport();
+    assertEquals("datarepo_row_id", support.getDefaultPrimaryKey());
+  }
+
+  @Test
+  void missingPrimaryKey() {
+    TdrSnapshotSupport support = defaultSupport();
+    String actual = support.identifyPrimaryKey(List.of());
+    assertEquals(support.getDefaultPrimaryKey(), actual);
+  }
+
+  @Test
+  void multiplePrimaryKeys() {
+    TdrSnapshotSupport support = defaultSupport();
+    String actual = support.identifyPrimaryKey(List.of("one", "two"));
+    assertEquals(support.getDefaultPrimaryKey(), actual);
+  }
+
+  @Test
+  void singlePrimaryKey() {
+    TdrSnapshotSupport support = defaultSupport();
+    String expected = "my_primary_key";
+    String actual = support.identifyPrimaryKey(List.of(expected));
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  void singleRandomPrimaryKey() {
+    TdrSnapshotSupport support = defaultSupport();
+    String expected = RandomStringUtils.randomPrint(16);
+    String actual = support.identifyPrimaryKey(List.of(expected));
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  void primaryKeysForAllTables() {
+    TdrSnapshotSupport support = defaultSupport();
+    List<TableModel> input =
+        List.of(
+            new TableModel().name("table1").primaryKey(List.of()),
+            new TableModel().name("table2").primaryKey(List.of("pk2")),
+            new TableModel().name("table3").primaryKey(List.of("pk3", "anotherpk")));
+    Map<RecordType, String> expected =
+        Map.of(
+            RecordType.valueOf("table1"), "datarepo_row_id",
+            RecordType.valueOf("table2"), "pk2",
+            RecordType.valueOf("table3"), "datarepo_row_id");
+    Map<RecordType, String> actual = support.identifyPrimaryKeys(input);
+    assertEquals(expected, actual);
+  }
+
+  private TdrSnapshotSupport defaultSupport() {
+    return new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry);
   }
 
   private ResourceDescription createResourceDescription(UUID snapshotId) {

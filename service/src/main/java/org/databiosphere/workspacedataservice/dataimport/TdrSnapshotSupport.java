@@ -171,7 +171,6 @@ public class TdrSnapshotSupport {
     }
   }
 
-  // TODO AJ-1013 unit tests
   Map<RecordType, String> identifyPrimaryKeys(List<TableModel> tables) {
     return tables.stream()
         .collect(
@@ -180,7 +179,6 @@ public class TdrSnapshotSupport {
                 tableModel -> identifyPrimaryKey(tableModel.getPrimaryKey())));
   }
 
-  // TODO AJ-1013 unit tests
   String identifyPrimaryKey(List<String> snapshotKeys) {
     if (snapshotKeys.size() == 1) {
       return snapshotKeys.get(0);
@@ -193,7 +191,6 @@ public class TdrSnapshotSupport {
   }
 
   // TODO AJ-1013 unit tests
-
   /**
    * Returns a Multimap of RecordType -> RelationshipModel, indicating all the outbound relations
    * for any given RecordType in this snapshot model.
