@@ -33,11 +33,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
+@SpringBootTest(classes = {JsonConfig.class, PfbConfig.class})
 class PfbRecordConverterTest {
 
-  private final PfbRecordConverter converter =
-      new PfbRecordConverter(new JsonConfig().objectMapper());
+  @Autowired private PfbRecordConverter converter;
 
   // PFB "id" and "name" columns become the WDS Record id and type, respectively
   @Test

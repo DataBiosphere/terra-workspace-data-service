@@ -14,14 +14,20 @@ import java.net.URL;
 import java.util.List;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
+import org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter;
 import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
+@SpringBootTest(classes = {JsonConfig.class, PfbRecordConverter.class})
 class PfbStreamWriteHandlerTest {
+  @Autowired private PfbRecordConverter pfbRecordConverter;
+
   // does PfbStreamWriteHandler properly know how to page through a DataFileStream<GenericRecord>?
   @Test
   void testBatching() {
@@ -195,8 +201,8 @@ class PfbStreamWriteHandlerTest {
     return PfbReader.getGenericRecordsStream(url.toString());
   }
 
-  private static PfbStreamWriteHandler buildHandler(
+  private PfbStreamWriteHandler buildHandler(
       DataFileStream<GenericRecord> dataFileStream, PfbImportMode importMode) {
-    return new PfbStreamWriteHandler(dataFileStream, importMode, new JsonConfig().objectMapper());
+    return new PfbStreamWriteHandler(dataFileStream, importMode, pfbRecordConverter);
   }
 }

@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.List;
 import java.util.Spliterator;
@@ -27,14 +26,16 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
    * Create a new PfbStreamWriteHandler and specify the expected schemas for the PFB.
    *
    * @param inputStream the PFB stream
+   * @param pfbImportMode the mode to use when importing the PFB
+   * @param pfbRecordConverter the converter to use when converting PFB records to WDS records
    */
   public PfbStreamWriteHandler(
       DataFileStream<GenericRecord> inputStream,
       PfbImportMode pfbImportMode,
-      ObjectMapper objectMapper) {
+      PfbRecordConverter pfbRecordConverter) {
     this.inputStream = inputStream;
     this.pfbImportMode = pfbImportMode;
-    this.pfbRecordConverter = new PfbRecordConverter(objectMapper);
+    this.pfbRecordConverter = pfbRecordConverter;
   }
 
   public WriteStreamInfo readRecords(int numRecords) {
