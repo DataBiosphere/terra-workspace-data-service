@@ -15,6 +15,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.io.FileUtils;
@@ -30,8 +31,8 @@ import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
-import org.databiosphere.workspacedataservice.service.DataRepoService;
 import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
+import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobDataMap;
@@ -51,7 +52,6 @@ public class TdrManifestQuartzJob extends QuartzJob {
   private final BatchWriteService batchWriteService;
   private final ActivityLogger activityLogger;
   private final ObjectMapper mapper;
-  private final DataRepoService dataRepoService; // TODO AJ-1013 do we need this dao?
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -62,8 +62,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       BatchWriteService batchWriteService,
       ActivityLogger activityLogger,
       @Value("${twds.instance.workspace-id}") UUID workspaceId,
-      ObjectMapper mapper,
-      DataRepoService dataRepoService) {
+      ObjectMapper mapper) {
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
     this.restClientRetry = restClientRetry;
@@ -71,7 +70,6 @@ public class TdrManifestQuartzJob extends QuartzJob {
     this.batchWriteService = batchWriteService;
     this.activityLogger = activityLogger;
     this.mapper = mapper;
-    this.dataRepoService = dataRepoService;
   }
 
   @Override
@@ -93,7 +91,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     URL url = getJobDataUrl(jobDataMap, ARG_URL);
 
     /*
-      + 1. read manifest, find snapshot id
+      1. read manifest, find snapshot id
       2. create reference from workspace to snapshot
       3. find all tables and primary keys for each table. Potentially read the whole schema here.
       4. Identify all the parquet files for each table.
@@ -119,7 +117,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
     TdrSnapshotSupport tdrSnapshotSupport =
         new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry);
 
-    // TODO AJ-1013 create snapshot reference - use linkSnapshots from PfbQuartzJob
+    // Create snapshot reference
+    linkSnapshots(Set.of(snapshotId));
 
     // find all the exported tables in the manifest.
     // This is the format.parquet.location.tables section in the manifest
@@ -145,12 +144,11 @@ public class TdrManifestQuartzJob extends QuartzJob {
           RecordType recordType = RecordType.valueOf(table.getName());
           String pk =
               primaryKeys.getOrDefault(recordType, tdrSnapshotSupport.getDefaultPrimaryKey());
-
           logger.info("Processing table '{}' ...", table.getName());
-          List<String> paths = table.getPaths();
 
-          logger.info("Table '{}' has {} export file(s) ...", table.getName(), paths.size());
-          paths.forEach(path -> logger.info("    --> " + path));
+          // find all Parquet files for this table
+          List<String> paths = table.getPaths();
+          logger.debug("Table '{}' has {} export file(s) ...", table.getName(), paths.size());
 
           paths.forEach(
               encodedPath -> {
@@ -159,40 +157,22 @@ public class TdrManifestQuartzJob extends QuartzJob {
                 String correctlyEncodedPart =
                     java.net.URLDecoder.decode(incorrectlyEncodedPart, Charset.defaultCharset());
                 String path = encodedPath.replace(incorrectlyEncodedPart, correctlyEncodedPart);
-
-                //                URI uri = URI.create(encodedPath);
-                //                String encoded = uri.getPath();
-                //                String decoded = java.net.URLDecoder.decode(encoded,
-                // Charset.defaultCharset());
-                //                String path = encodedPath.replace(encoded, decoded);
                 // TODO AJ-1013: END temp hack to work around TDR bug
                 try {
-
-                  // TODO AJ-1013 access the URL directly, instead of downloading to a temp file?
+                  // download the file from the URL to a temp file on the local filesystem
+                  // Azure urls, with SAS tokens, don't need any particular auth.
+                  // TODO AJ-1013 do we need auth for GCS urls?
+                  // TODO AJ-1013 can we access the URL directly, no temp file?
                   File tempFile = File.createTempFile("tdr-", "download");
+                  logger.info("downloading to temp file {} ...", tempFile.getPath());
                   FileUtils.copyURLToFile(new URL(path), tempFile);
                   Path hadoopFilePath = new Path(tempFile.getPath());
-                  logger.info("opening reader for file {} ...", path);
-                  logger.info(
-                      "hadoopFilePath for this file is {} ...", hadoopFilePath.toUri().toString());
 
+                  // generate the HadoopInputFile
                   InputFile inputFile;
-                  // open the parquet file for reading
-                  //                String containerName = "c1d4b239-3a19-473b-a075-a9c9fbcc9e5c";
-                  //                String accountName = "tdrdevwdcmeqdsmccbzepcwd";
                   try {
+                    // do we need any other config here?
                     Configuration configuration = new Configuration();
-                    //                  configuration.set("fs.azure",
-                    // "org.apache.hadoop.fs.azure.NativeAzureFileSystem");
-                    //                  configuration.set("fs.azure.authorization", token);
-                    //                  configuration.set(
-                    //
-                    // "fs.azure.sas.containerName.tdrdevwdcmeqdsmccbzepcwd.blob.core.windows.net",
-                    //                      token);
-
-                    // hdfs.DistributedFileSystem
-
-                    // TODO AJ-1013: auth? If this is only signed urls, there's no problem.
                     inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
                   } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -201,35 +181,55 @@ public class TdrManifestQuartzJob extends QuartzJob {
                   // upsert this parquet file's contents
                   try (ParquetReader<GenericRecord> avroParquetReader =
                       AvroParquetReader.<GenericRecord>builder(inputFile).build()) {
-
                     logger.info("batch-writing records for file ...");
 
-                    // TODO AJ-1013 pass in which columns are relations
-                    batchWriteService.batchWriteParquetStream(
-                        avroParquetReader,
-                        instanceId,
-                        recordType,
-                        pk,
-                        PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
+                    // TODO AJ-1013 pass in which columns are relations, so they can be ignored
+                    //     in this first pass
+                    BatchWriteResult result =
+                        batchWriteService.batchWriteParquetStream(
+                            avroParquetReader,
+                            instanceId,
+                            recordType,
+                            pk,
+                            PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
 
-                    // TODO AJ-1013: activity logging
-
+                    // activity logging
+                    if (result != null) {
+                      result
+                          .entrySet()
+                          .forEach(
+                              entry -> {
+                                activityLogger.saveEventForCurrentUser(
+                                    user ->
+                                        user.upserted()
+                                            .record()
+                                            .withRecordType(entry.getKey())
+                                            .ofQuantity(entry.getValue()));
+                              });
+                    }
                   } catch (IOException e) {
-                    logger.error(
-                        "Hit an error on file {}: {}",
-                        hadoopFilePath.toUri().toString(),
-                        e.getMessage(),
-                        e);
+                    logger.error("Hit an error on file: {}", e.getMessage(), e);
                   }
                 } catch (Throwable t) {
-                  logger.error("Hit an error on file {}: {}. Continuing.", path, t.getMessage());
+                  logger.error("Hit an error on file: {}. Continuing.", t.getMessage());
                 }
               });
         });
 
     // TODO AJ-1013 upsert relation columns
-
-    logger.info(tables.toString());
     // TODO AJ-1013 re-evaluate dataRepoService.importSnapshot, should it be removed?
+  }
+
+  /**
+   * Given a list of snapshot ids, create references from the workspace to the snapshot for each id
+   * that does not already have a reference.
+   *
+   * @param snapshotIds the list of snapshot ids to create or verify references.
+   */
+  protected void linkSnapshots(Set<UUID> snapshotIds) {
+    // list existing snapshots linked to this workspace
+    TdrSnapshotSupport tdrSnapshotSupport =
+        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry);
+    tdrSnapshotSupport.linkSnapshots(snapshotIds);
   }
 }

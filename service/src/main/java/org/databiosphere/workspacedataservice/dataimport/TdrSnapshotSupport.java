@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import bio.terra.datarepo.model.RelationshipModel;
+import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.datarepo.model.TableModel;
 import bio.terra.workspace.model.DataRepoSnapshotAttributes;
 import bio.terra.workspace.model.ResourceAttributesUnion;
@@ -12,11 +13,13 @@ import com.google.common.collect.Multimaps;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
-import org.databiosphere.workspacedataservice.service.model.exception.PfbImportException;
+import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
+import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.slf4j.Logger;
@@ -99,7 +102,7 @@ public class TdrSnapshotSupport {
       }
     }
 
-    throw new PfbImportException(
+    throw new DataImportException(
         "Exceeded hard limit of %d for number of pre-existing snapshot references"
             .formatted(hardLimit));
   }
@@ -133,6 +136,38 @@ public class TdrSnapshotSupport {
       }
     }
     return null;
+  }
+
+  /**
+   * Given a list of snapshot ids, create references from the workspace to the snapshot for each id
+   * that does not already have a reference.
+   *
+   * @param snapshotIds the list of snapshot ids to create or verify references.
+   */
+  protected void linkSnapshots(Set<UUID> snapshotIds) {
+    // list existing snapshots linked to this workspace
+    List<UUID> existingSnapshotIds = existingPolicySnapshotIds(/* pageSize= */ 50);
+    // find the snapshots that are not already linked to this workspace
+    List<UUID> newSnapshotIds =
+        snapshotIds.stream().filter(id -> !existingSnapshotIds.contains(id)).toList();
+
+    logger.info(
+        "Import data contains {} snapshot ids. {} of these are already linked to the workspace; {} new links will be created.",
+        snapshotIds.size(),
+        snapshotIds.size() - newSnapshotIds.size(),
+        newSnapshotIds.size());
+
+    // pass snapshotIds to WSM
+    for (UUID uuid : newSnapshotIds) {
+      try {
+        RestClientRetry.VoidRestCall voidRestCall =
+            (() -> wsmDao.linkSnapshotForPolicy(new SnapshotModel().id(uuid)));
+        restClientRetry.withRetryAndErrorHandling(
+            voidRestCall, "WSM.createDataRepoSnapshotReference");
+      } catch (RestException re) {
+        throw new DataImportException("Error processing data import: " + re.getMessage(), re);
+      }
+    }
   }
 
   // TODO AJ-1013 unit tests
