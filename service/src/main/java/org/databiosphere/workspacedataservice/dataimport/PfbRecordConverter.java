@@ -107,6 +107,10 @@ public class PfbRecordConverter {
     // Avro records
     if (attribute instanceof GenericRecord recordAttr) {
       // According to its Javadoc, GenericData#toString() renders the given datum as JSON
+      // However, it may contribute to numeric precision loss (see:
+      // https://broadworkbench.atlassian.net/browse/AJ-1292)
+      // If that's the case, then it may be necessary to traverse the record recursively and do a
+      // less lossy conversion process.
       return GenericData.get().toString(recordAttr);
     }
 
