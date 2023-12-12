@@ -64,18 +64,18 @@ public class TdrManifestQuartzJobTest {
     // but only contains export data files for project, edges, and test_result.
     List<TdrManifestImportTable> expected =
         List.of(
-            // null primary key
+            // single primary key
             new TdrManifestImportTable(
                 RecordType.valueOf("project"),
-                "datarepo_row_id",
+                "project_id",
                 List.of(
                     new URL(
                         "https://mysnapshotsa.blob.core.windows.net/metadata/parquet/9516afec-583f-11ec-bf63-0242ac130002/project.parquet/F0EE365B-314D-4E19-A177-E8F63D883716_9274_0-1.parquet?sp=r&st=2022-08-04T15:31:55Z&se=2022-08-06T23:31:55Z&spr=https&sv=2021-06-08&sr=b&sig=bogus")),
                 List.of()),
-            // single primary key
+            // null primary key
             new TdrManifestImportTable(
                 RecordType.valueOf("edges"),
-                "edges_id",
+                "datarepo_row_id",
                 List.of(
                     new URL(
                         "https://mysnapshotsa.blob.core.windows.net/metadata/parquet/9516afec-583f-11ec-bf63-0242ac130002/edges.parquet/F0EE365B-314D-4E19-A177-E8F63D883716_9274_0-1.parquet?sp=r&st=2022-08-04T15:31:55Z&se=2022-08-06T23:31:55Z&spr=https&sv=2021-06-08&sr=b&sig=bogus"),
@@ -86,7 +86,8 @@ public class TdrManifestQuartzJobTest {
                         .name("from_edges.project_id_to_project.project_id")
                         .from(new RelationshipTermModel().table("edges").column("project_id"))
                         .to(new RelationshipTermModel().table("project").column("project_id")))),
-            // compound primary key
+            // compound primary key. Also has a relation listed in the manifest, but with an invalid
+            // target
             new TdrManifestImportTable(
                 RecordType.valueOf("test_result"),
                 "datarepo_row_id",

@@ -7,27 +7,24 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
 import org.databiosphere.workspacedataservice.service.StreamingWriteHandler;
+import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
 public class ParquetStreamWriteHandler implements StreamingWriteHandler {
 
   private final ParquetReader<GenericRecord> parquetReader;
   private final PfbStreamWriteHandler.PfbImportMode pfbImportMode;
 
-  private final RecordType recordType;
-  private final String primaryKey;
+  private final TdrManifestImportTable table;
 
   public ParquetStreamWriteHandler(
       ParquetReader<GenericRecord> parquetReader,
       PfbStreamWriteHandler.PfbImportMode pfbImportMode,
-      RecordType recordType,
-      String primaryKey) {
+      TdrManifestImportTable table) {
     this.parquetReader = parquetReader;
     this.pfbImportMode = pfbImportMode;
-    this.recordType = recordType;
-    this.primaryKey = primaryKey;
+    this.table = table;
   }
 
   @Override
@@ -44,7 +41,7 @@ public class ParquetStreamWriteHandler implements StreamingWriteHandler {
     }
 
     // convert avro generic records to WDS records
-    ParquetRecordConverter converter = new ParquetRecordConverter(recordType, primaryKey);
+    ParquetRecordConverter converter = new ParquetRecordConverter(table);
     List<Record> records =
         genericRecords.stream()
             .map(gr -> converter.genericRecordToRecord(gr, pfbImportMode))

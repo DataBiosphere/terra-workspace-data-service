@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -107,7 +108,10 @@ public class TdrManifestQuartzJob extends QuartzJob {
         targetInstance,
         PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
 
-    // TODO AJ-1013 upsert relation columns
+    // add relations to the existing base attributes
+    importTables(
+        tdrManifestImportTables, targetInstance, PfbStreamWriteHandler.PfbImportMode.RELATIONS);
+
     // TODO AJ-1013 re-evaluate dataRepoService.importSnapshot, should it be removed?
   }
 
@@ -115,16 +119,14 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * Given a single Parquet file to be imported, import it
    *
    * @param path path to Parquet file to be imported. TODO AJ-1013: can this be a URL?
-   * @param recordType record type for this file
-   * @param pk primary key for this record type
+   * @param table info about the table to be imported
    * @param targetInstance instance into which to import
    * @param pfbImportMode mode for this invocation
    * @return statistics on what was imported
    */
   private BatchWriteResult importTable(
       String path,
-      RecordType recordType,
-      String pk,
+      TdrManifestImportTable table,
       UUID targetInstance,
       PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
     try {
@@ -152,15 +154,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
           AvroParquetReader.<GenericRecord>builder(inputFile).build()) {
         logger.info("batch-writing records for file ...");
 
-        // TODO AJ-1013 pass in which columns are relations, so they can be ignored
-        //     in this first pass
         BatchWriteResult result =
             batchWriteService.batchWriteParquetStream(
-                avroParquetReader,
-                targetInstance,
-                recordType,
-                pk,
-                PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
+                avroParquetReader, targetInstance, table, pfbImportMode);
 
         // activity logging
         if (result != null) {
@@ -201,14 +197,14 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // loop through the tables to be imported
     importTables.forEach(
         importTable -> {
-          // record type and primary key for this table
-          RecordType recordType = importTable.recordType();
-          String pk = importTable.primaryKey();
-          logger.info("Processing table '{}' ...", recordType.getName());
+          logger.info("Processing table '{}' ...", importTable.recordType().getName());
 
           // find all Parquet files for this table
           List<URL> paths = importTable.dataFiles();
-          logger.debug("Table '{}' has {} export file(s) ...", recordType.getName(), paths.size());
+          logger.debug(
+              "Table '{}' has {} export file(s) ...",
+              importTable.recordType().getName(),
+              paths.size());
 
           // loop through each parquet file
           paths.forEach(
@@ -221,7 +217,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
                 String path =
                     encodedPath.toString().replace(incorrectlyEncodedPart, correctlyEncodedPart);
                 // TODO AJ-1013: END temp hack to work around TDR bug
-                importTable(path, recordType, pk, targetInstance, pfbImportMode);
+                importTable(path, importTable, targetInstance, pfbImportMode);
               });
         });
   }
@@ -284,8 +280,26 @@ public class TdrManifestQuartzJob extends QuartzJob {
                         .formatted(recordType.getName()));
               }
               String primaryKey = primaryKeys.get(recordType);
+
               // this table may or may not have relations
-              List<RelationshipModel> relations = List.copyOf(relationsByTable.get(recordType));
+              Collection<RelationshipModel> possibleRelations = relationsByTable.get(recordType);
+
+              // filter relations to those that point at a valid primary key
+              List<RelationshipModel> relations =
+                  possibleRelations.stream()
+                      .filter(
+                          relationshipModel -> {
+                            // the target table and column requested by the snapshot model
+                            String requestedTable = relationshipModel.getTo().getTable();
+                            String requestedPrimaryKey = relationshipModel.getTo().getColumn();
+                            // the actual primary key for the target table
+                            String actualPrimaryKey =
+                                primaryKeys.get(RecordType.valueOf(requestedTable));
+                            return requestedPrimaryKey != null
+                                && requestedPrimaryKey.equals(actualPrimaryKey);
+                          })
+                      .toList();
+
               // determine data files for this table
               List<URL> dataFiles =
                   table.getPaths().stream()

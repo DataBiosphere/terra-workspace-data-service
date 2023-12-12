@@ -1,24 +1,28 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import bio.terra.datarepo.model.RelationshipModel;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import org.apache.avro.generic.GenericRecord;
+import org.databiosphere.workspacedataservice.service.RelationUtils;
+import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Logic to convert a TDR Parquet's GenericRecord to WDS's Record */
 public class ParquetRecordConverter extends AvroRecordConverter {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ParquetRecordConverter.class);
-
   private final RecordType recordType;
   private final String idField;
+  private final List<RelationshipModel> relationshipModels;
 
-  public ParquetRecordConverter(RecordType recordType, String idField) {
+  public ParquetRecordConverter(TdrManifestImportTable table) {
     super();
-    this.recordType = recordType;
-    this.idField = idField;
+    this.recordType = table.recordType();
+    this.idField = table.primaryKey();
+    this.relationshipModels = table.relations();
   }
 
   @Override
@@ -28,12 +32,54 @@ public class ParquetRecordConverter extends AvroRecordConverter {
 
   @Override
   protected final Record addAttributes(GenericRecord objectAttributes, Record converted) {
-    return super.addAttributes(objectAttributes, converted, Set.of(idField));
+    // for base attributes, skip the id field and all relations
+    List<String> relationNames =
+        relationshipModels.stream().map(r -> r.getFrom().getColumn()).toList();
+    Set<String> allIgnores = new HashSet<>();
+    allIgnores.add(idField);
+    allIgnores.addAll(relationNames);
+
+    return super.addAttributes(objectAttributes, converted, allIgnores);
   }
 
   @Override
   protected final Record addRelations(GenericRecord genRec, Record converted) {
-    // TODO AJ-1013 implement relations for TDR import
+    // find relation columns for this type
+    if (relationshipModels.isEmpty()) {
+      return converted;
+    }
+
+    RecordAttributes attributes = RecordAttributes.empty();
+
+    // loop through relation columns
+    relationshipModels.forEach(
+        relationshipModel -> {
+          String attrName = relationshipModel.getFrom().getColumn();
+          // get value from Avro
+          Object value = genRec.get(attrName);
+          if (value != null) {
+            String targetType = relationshipModel.getTo().getTable();
+            // is it an array?
+            if (value instanceof Collection<?> relArray) {
+              List<String> rels =
+                  relArray.stream()
+                      .map(
+                          relValue ->
+                              RelationUtils.createRelationString(
+                                  RecordType.valueOf(targetType), relValue.toString()))
+                      .toList();
+              attributes.putAttribute(attrName, rels);
+            } else {
+              attributes.putAttribute(
+                  attrName,
+                  RelationUtils.createRelationString(
+                      RecordType.valueOf(targetType), value.toString()));
+            }
+          }
+        });
+
+    converted.setAttributes(attributes);
+
     return converted;
   }
 }

@@ -53,7 +53,9 @@
             "array_of": false
           }
         ],
-        "primaryKey": null,
+        "primaryKey": [
+          "project_id"
+        ],
         "partitionMode": "none",
         "datePartitionOptions": null,
         "intPartitionOptions": null,
@@ -83,9 +85,7 @@
             "array_of": false
           }
         ],
-        "primaryKey": [
-          "edges_id"
-        ],
+        "primaryKey": null,
         "partitionMode": "none",
         "datePartitionOptions": null,
         "intPartitionOptions": null,
@@ -165,6 +165,17 @@
         "to": {
           "table": "project",
           "column": "project_id"
+        }
+      },
+      {
+        "name": "from_test_result.project_id_to_project.project_id",
+        "from": {
+          "table": "test_result",
+          "column": "version"
+        },
+        "to": {
+          "table": "edges",
+          "column": "edges_id"
         }
       }
     ],

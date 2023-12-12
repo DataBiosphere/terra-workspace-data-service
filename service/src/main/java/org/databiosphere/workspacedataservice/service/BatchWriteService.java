@@ -24,6 +24,7 @@ import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.ParquetStreamWriteHandler;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
@@ -231,13 +232,17 @@ public class BatchWriteService {
   public BatchWriteResult batchWriteParquetStream(
       ParquetReader<GenericRecord> avroParquetReader,
       UUID instanceId,
-      RecordType recordType,
-      String primaryKey,
+      TdrManifestImportTable table,
       PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
+    // record type and primary key for this
     try (ParquetStreamWriteHandler streamingWriteHandler =
-        new ParquetStreamWriteHandler(avroParquetReader, pfbImportMode, recordType, primaryKey)) {
+        new ParquetStreamWriteHandler(avroParquetReader, pfbImportMode, table)) {
       return consumeWriteStreamWithRelations(
-          streamingWriteHandler, instanceId, recordType, Optional.of(primaryKey), pfbImportMode);
+          streamingWriteHandler,
+          instanceId,
+          table.recordType(),
+          Optional.of(table.primaryKey()),
+          pfbImportMode);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
