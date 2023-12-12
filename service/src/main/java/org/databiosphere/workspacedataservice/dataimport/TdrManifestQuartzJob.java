@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
-import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
 import bio.terra.datarepo.model.RelationshipModel;
@@ -11,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Multimap;
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -33,6 +33,8 @@ import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
+import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
+import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobDataMap;
@@ -80,45 +82,178 @@ public class TdrManifestQuartzJob extends QuartzJob {
   // TODO AJ-1013 unit tests
   @Override
   protected void executeInternal(UUID jobId, JobExecutionContext context) {
-    // retrieve the Quartz JobDataMap, which contains arguments for this execution
+    // Grab the manifest url from the job's data map
     JobDataMap jobDataMap = context.getMergedJobDataMap();
-
-    // get instanceid from job data
-    UUID instanceId = getJobDataUUID(jobDataMap, ARG_INSTANCE);
-    // get auth token
-    String token = getJobDataString(jobDataMap, ARG_TOKEN);
-    // get the TDR manifest url from job data
     URL url = getJobDataUrl(jobDataMap, ARG_URL);
-
-    /*
-      1. read manifest, find snapshot id
-      2. create reference from workspace to snapshot
-      3. find all tables and primary keys for each table. Potentially read the whole schema here.
-      4. Identify all the parquet files for each table.
-      5. Read each parquet file into Avro java objects
-      6. Insert base attributes for each parquet file, using recordType=tableName and id=primary key from schema
-      7. Second pass to insert relations
-
-    */
+    UUID targetInstance = getJobDataUUID(jobDataMap, ARG_INSTANCE);
 
     // read manifest
-    SnapshotExportResponseModel snapshotExportResponseModel;
+    SnapshotExportResponseModel snapshotExportResponseModel = parseManifest(url);
+
+    // get the snapshot id from the manifest
+    UUID snapshotId = snapshotExportResponseModel.getSnapshot().getId();
+    logger.info("Starting import of snapshot {} to instance {}", snapshotId, targetInstance);
+
+    // Create snapshot reference
+    linkSnapshots(Set.of(snapshotId));
+
+    // read the manifest and extract the information necessary to perform the import
+    List<TdrManifestImportTable> tdrManifestImportTables =
+        extractTableInfo(snapshotExportResponseModel);
+
+    // loop through the tables to be imported and upsert base attributes
+    importTables(
+        tdrManifestImportTables,
+        targetInstance,
+        PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
+
+    // TODO AJ-1013 upsert relation columns
+    // TODO AJ-1013 re-evaluate dataRepoService.importSnapshot, should it be removed?
+  }
+
+  /**
+   * Given a single Parquet file to be imported, import it
+   *
+   * @param path path to Parquet file to be imported. TODO AJ-1013: can this be a URL?
+   * @param recordType record type for this file
+   * @param pk primary key for this record type
+   * @param targetInstance instance into which to import
+   * @param pfbImportMode mode for this invocation
+   * @return statistics on what was imported
+   */
+  private BatchWriteResult importTable(
+      String path,
+      RecordType recordType,
+      String pk,
+      UUID targetInstance,
+      PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
     try {
-      snapshotExportResponseModel = mapper.readValue(url, SnapshotExportResponseModel.class);
+      // download the file from the URL to a temp file on the local filesystem
+      // Azure urls, with SAS tokens, don't need any particular auth.
+      // TODO AJ-1013 do we need auth for GCS urls?
+      // TODO AJ-1013 can we access the URL directly, no temp file?
+      File tempFile = File.createTempFile("tdr-", "download");
+      logger.info("downloading to temp file {} ...", tempFile.getPath());
+      FileUtils.copyURLToFile(new URL(path), tempFile);
+      Path hadoopFilePath = new Path(tempFile.getPath());
+
+      // generate the HadoopInputFile
+      InputFile inputFile;
+      try {
+        // do we need any other config here?
+        Configuration configuration = new Configuration();
+        inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+
+      // upsert this parquet file's contents
+      try (ParquetReader<GenericRecord> avroParquetReader =
+          AvroParquetReader.<GenericRecord>builder(inputFile).build()) {
+        logger.info("batch-writing records for file ...");
+
+        // TODO AJ-1013 pass in which columns are relations, so they can be ignored
+        //     in this first pass
+        BatchWriteResult result =
+            batchWriteService.batchWriteParquetStream(
+                avroParquetReader,
+                targetInstance,
+                recordType,
+                pk,
+                PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
+
+        // activity logging
+        if (result != null) {
+          result
+              .entrySet()
+              .forEach(
+                  entry -> {
+                    activityLogger.saveEventForCurrentUser(
+                        user ->
+                            user.upserted()
+                                .record()
+                                .withRecordType(entry.getKey())
+                                .ofQuantity(entry.getValue()));
+                  });
+        }
+        return result;
+      } catch (IOException e) {
+        logger.error("Hit an error on file: {}", e.getMessage(), e);
+        throw new TdrManifestImportException(e.getMessage());
+      }
+    } catch (Throwable t) {
+      logger.error("Hit an error on file: {}. Continuing.", t.getMessage());
+      throw new TdrManifestImportException(t.getMessage());
+    }
+  }
+
+  /**
+   * Given the list of tables/data files to be imported, loop through and import each one
+   *
+   * @param importTables tables to be imported
+   * @param targetInstance instance into which to import
+   * @param pfbImportMode mode for this invocation
+   */
+  private void importTables(
+      List<TdrManifestImportTable> importTables,
+      UUID targetInstance,
+      PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
+    // loop through the tables to be imported
+    importTables.forEach(
+        importTable -> {
+          // record type and primary key for this table
+          RecordType recordType = importTable.recordType();
+          String pk = importTable.primaryKey();
+          logger.info("Processing table '{}' ...", recordType.getName());
+
+          // find all Parquet files for this table
+          List<URL> paths = importTable.dataFiles();
+          logger.debug("Table '{}' has {} export file(s) ...", recordType.getName(), paths.size());
+
+          // loop through each parquet file
+          paths.forEach(
+              encodedPath -> {
+                // TODO AJ-1013: temp hack to work around TDR bug
+                String incorrectlyEncodedPart =
+                    encodedPath.toString().substring(0, encodedPath.toString().indexOf('?'));
+                String correctlyEncodedPart =
+                    java.net.URLDecoder.decode(incorrectlyEncodedPart, Charset.defaultCharset());
+                String path =
+                    encodedPath.toString().replace(incorrectlyEncodedPart, correctlyEncodedPart);
+                // TODO AJ-1013: END temp hack to work around TDR bug
+                importTable(path, recordType, pk, targetInstance, pfbImportMode);
+              });
+        });
+  }
+
+  /**
+   * Read the manifest from the user-specified URL into a SnapshotExportResponseModel java object
+   *
+   * @param manifestUrl url to the manifest
+   * @return parsed object
+   */
+  private SnapshotExportResponseModel parseManifest(URL manifestUrl) {
+    // read manifest
+    try {
+      return mapper.readValue(manifestUrl, SnapshotExportResponseModel.class);
     } catch (IOException e) {
       throw new JobExecutionException(
           "Error reading TDR snapshot manifest: %s".formatted(e.getMessage()), e);
     }
+  }
 
-    // get the snapshot id from the manifest
-    UUID snapshotId = snapshotExportResponseModel.getSnapshot().getId();
-    logger.info("Starting import of snapshot {} to instance {}", snapshotId, instanceId);
+  /**
+   * Given a SnapshotExportResponseModel, extract relevant info about the tables being imported.
+   *
+   * @param snapshotExportResponseModel the inbound manifest
+   * @return information necessary for the import
+   */
+  // TODO AJ-1013 unit tests
+  private List<TdrManifestImportTable> extractTableInfo(
+      SnapshotExportResponseModel snapshotExportResponseModel) {
 
     TdrSnapshotSupport tdrSnapshotSupport =
         new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry);
-
-    // Create snapshot reference
-    linkSnapshots(Set.of(snapshotId));
 
     // find all the exported tables in the manifest.
     // This is the format.parquet.location.tables section in the manifest
@@ -133,91 +268,40 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
     // find the relations for each table.
     // This is the snapshot.relationships section in the manifest
-    Multimap<RecordType, RelationshipModel> relations =
+    Multimap<RecordType, RelationshipModel> relationsByTable =
         tdrSnapshotSupport.identifyRelations(
             snapshotExportResponseModel.getSnapshot().getRelationships());
 
-    // loop through the exported tables and process the parquet files for each one
-    tables.forEach(
-        table -> {
-          // record type and primary key for this table
-          RecordType recordType = RecordType.valueOf(table.getName());
-          String pk =
-              primaryKeys.getOrDefault(recordType, tdrSnapshotSupport.getDefaultPrimaryKey());
-          logger.info("Processing table '{}' ...", table.getName());
-
-          // find all Parquet files for this table
-          List<String> paths = table.getPaths();
-          logger.debug("Table '{}' has {} export file(s) ...", table.getName(), paths.size());
-
-          paths.forEach(
-              encodedPath -> {
-                // TODO AJ-1013: temp hack to work around TDR bug
-                String incorrectlyEncodedPart = encodedPath.substring(0, encodedPath.indexOf('?'));
-                String correctlyEncodedPart =
-                    java.net.URLDecoder.decode(incorrectlyEncodedPart, Charset.defaultCharset());
-                String path = encodedPath.replace(incorrectlyEncodedPart, correctlyEncodedPart);
-                // TODO AJ-1013: END temp hack to work around TDR bug
-                try {
-                  // download the file from the URL to a temp file on the local filesystem
-                  // Azure urls, with SAS tokens, don't need any particular auth.
-                  // TODO AJ-1013 do we need auth for GCS urls?
-                  // TODO AJ-1013 can we access the URL directly, no temp file?
-                  File tempFile = File.createTempFile("tdr-", "download");
-                  logger.info("downloading to temp file {} ...", tempFile.getPath());
-                  FileUtils.copyURLToFile(new URL(path), tempFile);
-                  Path hadoopFilePath = new Path(tempFile.getPath());
-
-                  // generate the HadoopInputFile
-                  InputFile inputFile;
-                  try {
-                    // do we need any other config here?
-                    Configuration configuration = new Configuration();
-                    inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
-                  } catch (IOException e) {
-                    throw new RuntimeException(e);
-                  }
-
-                  // upsert this parquet file's contents
-                  try (ParquetReader<GenericRecord> avroParquetReader =
-                      AvroParquetReader.<GenericRecord>builder(inputFile).build()) {
-                    logger.info("batch-writing records for file ...");
-
-                    // TODO AJ-1013 pass in which columns are relations, so they can be ignored
-                    //     in this first pass
-                    BatchWriteResult result =
-                        batchWriteService.batchWriteParquetStream(
-                            avroParquetReader,
-                            instanceId,
-                            recordType,
-                            pk,
-                            PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
-
-                    // activity logging
-                    if (result != null) {
-                      result
-                          .entrySet()
-                          .forEach(
-                              entry -> {
-                                activityLogger.saveEventForCurrentUser(
-                                    user ->
-                                        user.upserted()
-                                            .record()
-                                            .withRecordType(entry.getKey())
-                                            .ofQuantity(entry.getValue()));
-                              });
-                    }
-                  } catch (IOException e) {
-                    logger.error("Hit an error on file: {}", e.getMessage(), e);
-                  }
-                } catch (Throwable t) {
-                  logger.error("Hit an error on file: {}. Continuing.", t.getMessage());
-                }
-              });
-        });
-
-    // TODO AJ-1013 upsert relation columns
-    // TODO AJ-1013 re-evaluate dataRepoService.importSnapshot, should it be removed?
+    // loop through the tables that have data files
+    return tables.stream()
+        .map(
+            table -> {
+              RecordType recordType = RecordType.valueOf(table.getName());
+              // primary key must have already been calculated; if not, it's an inconsistency
+              // in the manifest file itself
+              if (!primaryKeys.containsKey(recordType)) {
+                throw new TdrManifestImportException(
+                    "Table %s with data files is unknown to the snapshot model"
+                        .formatted(recordType.getName()));
+              }
+              String primaryKey = primaryKeys.get(recordType);
+              // this table may or may not have relations
+              List<RelationshipModel> relations = List.copyOf(relationsByTable.get(recordType));
+              // determine data files for this table
+              List<URL> dataFiles =
+                  table.getPaths().stream()
+                      .map(
+                          x -> {
+                            try {
+                              return new URL(x);
+                            } catch (MalformedURLException e) {
+                              throw new TdrManifestImportException(e.getMessage());
+                            }
+                          })
+                      .toList();
+              return new TdrManifestImportTable(recordType, primaryKey, dataFiles, relations);
+            })
+        .toList();
   }
 
   /**

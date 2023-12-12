@@ -167,6 +167,7 @@ public class TdrSnapshotSupport {
       } catch (RestException re) {
         throw new DataImportException("Error processing data import: " + re.getMessage(), re);
       }
+      // TODO AJ-1013 activity logging for linking the snapshot
     }
   }
 
