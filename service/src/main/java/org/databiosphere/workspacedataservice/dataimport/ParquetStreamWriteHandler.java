@@ -11,6 +11,7 @@ import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
 import org.databiosphere.workspacedataservice.service.StreamingWriteHandler;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
 // TODO AJ-1013: how much can be consolidated with PfbStreamWriteHandler?
 public class ParquetStreamWriteHandler implements StreamingWriteHandler {
@@ -18,11 +19,18 @@ public class ParquetStreamWriteHandler implements StreamingWriteHandler {
   private final ParquetReader<GenericRecord> parquetReader;
   private final PfbStreamWriteHandler.PfbImportMode pfbImportMode;
 
+  private final RecordType recordType;
+  private final String primaryKey;
+
   public ParquetStreamWriteHandler(
       ParquetReader<GenericRecord> parquetReader,
-      PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
+      PfbStreamWriteHandler.PfbImportMode pfbImportMode,
+      RecordType recordType,
+      String primaryKey) {
     this.parquetReader = parquetReader;
     this.pfbImportMode = pfbImportMode;
+    this.recordType = recordType;
+    this.primaryKey = primaryKey;
   }
 
   @Override
@@ -39,7 +47,7 @@ public class ParquetStreamWriteHandler implements StreamingWriteHandler {
     }
 
     // convert avro generic records to WDS records
-    PfbRecordConverter converter = new PfbRecordConverter();
+    ParquetRecordConverter converter = new ParquetRecordConverter(recordType, primaryKey);
     List<Record> records =
         genericRecords.stream()
             .map(gr -> converter.genericRecordToRecord(gr, BASE_ATTRIBUTES))

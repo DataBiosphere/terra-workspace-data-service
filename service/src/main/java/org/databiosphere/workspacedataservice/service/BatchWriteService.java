@@ -221,6 +221,9 @@ public class BatchWriteService {
           streamingWriteHandler, instanceId, null, primaryKey, pfbImportMode);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
+    } catch (Exception e) {
+      System.err.println("ERROR IN batchWritePfbStream: " + e.getMessage());
+      return new BatchWriteResult(Map.of());
     }
   }
 
@@ -229,12 +232,12 @@ public class BatchWriteService {
       ParquetReader<GenericRecord> avroParquetReader,
       UUID instanceId,
       RecordType recordType,
-      Optional<String> primaryKey,
+      String primaryKey,
       PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
     try (ParquetStreamWriteHandler streamingWriteHandler =
-        new ParquetStreamWriteHandler(avroParquetReader, pfbImportMode)) {
+        new ParquetStreamWriteHandler(avroParquetReader, pfbImportMode, recordType, primaryKey)) {
       return consumeWriteStreamWithRelations(
-          streamingWriteHandler, instanceId, recordType, primaryKey, pfbImportMode);
+          streamingWriteHandler, instanceId, recordType, Optional.of(primaryKey), pfbImportMode);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }

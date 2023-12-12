@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
 import bio.terra.datarepo.model.RelationshipModel;
@@ -8,13 +9,15 @@ import bio.terra.datarepo.model.SnapshotExportResponseModel;
 import bio.terra.datarepo.model.SnapshotExportResponseModelFormatParquetLocationTables;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Multimap;
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetReader;
@@ -84,9 +87,11 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
     // get instanceid from job data
     UUID instanceId = getJobDataUUID(jobDataMap, ARG_INSTANCE);
-
+    // get auth token
+    String token = getJobDataString(jobDataMap, ARG_TOKEN);
     // get the TDR manifest url from job data
     URL url = getJobDataUrl(jobDataMap, ARG_URL);
+
     /*
       + 1. read manifest, find snapshot id
       2. create reference from workspace to snapshot
@@ -143,35 +148,81 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
           logger.info("Processing table '{}' ...", table.getName());
           List<String> paths = table.getPaths();
+
+          logger.info("Table '{}' has {} export file(s) ...", table.getName(), paths.size());
+          paths.forEach(path -> logger.info("    --> " + path));
+
           paths.forEach(
-              path -> {
-                logger.info("opening reader for file ...");
-                InputFile inputFile;
-                // open the parquet file for reading
+              encodedPath -> {
+                // TODO AJ-1013: temp hack to work around TDR bug
+                String incorrectlyEncodedPart = encodedPath.substring(0, encodedPath.indexOf('?'));
+                String correctlyEncodedPart =
+                    java.net.URLDecoder.decode(incorrectlyEncodedPart, Charset.defaultCharset());
+                String path = encodedPath.replace(incorrectlyEncodedPart, correctlyEncodedPart);
+
+                //                URI uri = URI.create(encodedPath);
+                //                String encoded = uri.getPath();
+                //                String decoded = java.net.URLDecoder.decode(encoded,
+                // Charset.defaultCharset());
+                //                String path = encodedPath.replace(encoded, decoded);
+                // TODO AJ-1013: END temp hack to work around TDR bug
                 try {
-                  // TODO AJ-1013: auth? If this is only signed urls, there's no problem.
-                  inputFile = HadoopInputFile.fromPath(new Path(path), new Configuration());
-                } catch (IOException e) {
-                  throw new RuntimeException(e);
-                }
-                // upsert this parquet file's contents
-                try (ParquetReader<GenericRecord> avroParquetReader =
-                    AvroParquetReader.genericRecordReader(inputFile)) {
 
-                  logger.info("batch-writing records for file ...");
+                  // TODO AJ-1013 access the URL directly, instead of downloading to a temp file?
+                  File tempFile = File.createTempFile("tdr-", "download");
+                  FileUtils.copyURLToFile(new URL(path), tempFile);
+                  Path hadoopFilePath = new Path(tempFile.getPath());
+                  logger.info("opening reader for file {} ...", path);
+                  logger.info(
+                      "hadoopFilePath for this file is {} ...", hadoopFilePath.toUri().toString());
 
-                  // TODO AJ-1013 pass in which columns are relations
-                  batchWriteService.batchWriteParquetStream(
-                      avroParquetReader,
-                      instanceId,
-                      recordType,
-                      Optional.of(pk),
-                      PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
+                  InputFile inputFile;
+                  // open the parquet file for reading
+                  //                String containerName = "c1d4b239-3a19-473b-a075-a9c9fbcc9e5c";
+                  //                String accountName = "tdrdevwdcmeqdsmccbzepcwd";
+                  try {
+                    Configuration configuration = new Configuration();
+                    //                  configuration.set("fs.azure",
+                    // "org.apache.hadoop.fs.azure.NativeAzureFileSystem");
+                    //                  configuration.set("fs.azure.authorization", token);
+                    //                  configuration.set(
+                    //
+                    // "fs.azure.sas.containerName.tdrdevwdcmeqdsmccbzepcwd.blob.core.windows.net",
+                    //                      token);
 
-                  // TODO AJ-1013: activity logging
+                    // hdfs.DistributedFileSystem
 
-                } catch (IOException e) {
-                  throw new RuntimeException(e);
+                    // TODO AJ-1013: auth? If this is only signed urls, there's no problem.
+                    inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
+                  } catch (IOException e) {
+                    throw new RuntimeException(e);
+                  }
+
+                  // upsert this parquet file's contents
+                  try (ParquetReader<GenericRecord> avroParquetReader =
+                      AvroParquetReader.<GenericRecord>builder(inputFile).build()) {
+
+                    logger.info("batch-writing records for file ...");
+
+                    // TODO AJ-1013 pass in which columns are relations
+                    batchWriteService.batchWriteParquetStream(
+                        avroParquetReader,
+                        instanceId,
+                        recordType,
+                        pk,
+                        PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
+
+                    // TODO AJ-1013: activity logging
+
+                  } catch (IOException e) {
+                    logger.error(
+                        "Hit an error on file {}: {}",
+                        hadoopFilePath.toUri().toString(),
+                        e.getMessage(),
+                        e);
+                  }
+                } catch (Throwable t) {
+                  logger.error("Hit an error on file {}: {}. Continuing.", path, t.getMessage());
                 }
               });
         });
