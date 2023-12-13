@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,14 +18,17 @@ public class ParquetStreamWriteHandler implements StreamingWriteHandler {
   private final PfbStreamWriteHandler.PfbImportMode pfbImportMode;
 
   private final TdrManifestImportTable table;
+  private final ObjectMapper objectMapper;
 
   public ParquetStreamWriteHandler(
       ParquetReader<GenericRecord> parquetReader,
       PfbStreamWriteHandler.PfbImportMode pfbImportMode,
-      TdrManifestImportTable table) {
+      TdrManifestImportTable table,
+      ObjectMapper objectMapper) {
     this.parquetReader = parquetReader;
     this.pfbImportMode = pfbImportMode;
     this.table = table;
+    this.objectMapper = objectMapper;
   }
 
   @Override
@@ -41,7 +45,7 @@ public class ParquetStreamWriteHandler implements StreamingWriteHandler {
     }
 
     // convert avro generic records to WDS records
-    ParquetRecordConverter converter = new ParquetRecordConverter(table);
+    ParquetRecordConverter converter = new ParquetRecordConverter(table, objectMapper);
     List<Record> records =
         genericRecords.stream()
             .map(gr -> converter.genericRecordToRecord(gr, pfbImportMode))

@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import bio.terra.datarepo.model.RelationshipModel;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -18,8 +19,8 @@ public class ParquetRecordConverter extends AvroRecordConverter {
   private final String idField;
   private final List<RelationshipModel> relationshipModels;
 
-  public ParquetRecordConverter(TdrManifestImportTable table) {
-    super();
+  public ParquetRecordConverter(TdrManifestImportTable table, ObjectMapper objectMapper) {
+    super(objectMapper);
     this.recordType = table.recordType();
     this.idField = table.primaryKey();
     this.relationshipModels = table.relations();

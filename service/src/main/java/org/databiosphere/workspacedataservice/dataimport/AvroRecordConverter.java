@@ -3,15 +3,16 @@ package org.databiosphere.workspacedataservice.dataimport;
 import static bio.terra.pfb.PfbReader.convertEnum;
 import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
 
-import com.google.mu.util.stream.BiStream;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericFixed;
 import org.apache.avro.generic.GenericRecord;
@@ -28,7 +29,11 @@ import org.slf4j.LoggerFactory;
 public abstract class AvroRecordConverter {
   private static final Logger LOGGER = LoggerFactory.getLogger(AvroRecordConverter.class);
 
-  public AvroRecordConverter() {}
+  private final ObjectMapper objectMapper;
+
+  public AvroRecordConverter(ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
 
   /**
    * Create the "shell" Record, with a valid RecordId and a valid RecordType, but no attributes.
@@ -77,7 +82,7 @@ public abstract class AvroRecordConverter {
     return converted;
   }
 
-  protected Object convertAttributeType(Object attribute) {
+  Object convertAttributeType(Object attribute) {
 
     if (attribute == null) {
       return null;
@@ -88,7 +93,12 @@ public abstract class AvroRecordConverter {
 
     // Avro records
     if (attribute instanceof GenericRecord recordAttr) {
-      return recordAttr.toString(); // TODO AJ-1478: Make these into WDS json?
+      // According to its Javadoc, GenericData#toString() renders the given datum as JSON
+      // However, it may contribute to numeric precision loss (see:
+      // https://broadworkbench.atlassian.net/browse/AJ-1292)
+      // If that's the case, then it may be necessary to traverse the record recursively and do a
+      // less lossy conversion process.
+      return GenericData.get().toString(recordAttr);
     }
 
     // Avro enums
@@ -104,11 +114,7 @@ public abstract class AvroRecordConverter {
 
     // Avro maps
     if (attribute instanceof Map<?, ?> mapAttr) {
-      // recurse
-      return BiStream.from(mapAttr)
-          .mapKeys(Object::toString)
-          .mapValues(this::convertAttributeType)
-          .toMap();
+      return convertToString(mapAttr);
     }
 
     // Avro fixed
@@ -117,8 +123,8 @@ public abstract class AvroRecordConverter {
     }
 
     // Avro strings
-    if (attribute instanceof String stringAttr) {
-      return stringAttr;
+    if (attribute instanceof CharSequence charSequenceAttr) {
+      return charSequenceAttr.toString();
     }
 
     // Avro bytes
@@ -151,15 +157,23 @@ public abstract class AvroRecordConverter {
       return boolAttr;
     }
 
-    // We don't see this type in PFB files, is this specific to parquet-mr?
-    if (attribute instanceof org.apache.avro.util.Utf8 utf8data) {
-      return new String(utf8data.getBytes(), StandardCharsets.UTF_8);
-    }
-
     LOGGER.warn(
         "convertAttributeType received value \"{}\" with unexpected type {}",
         attribute,
         attribute.getClass());
     return attribute.toString();
+  }
+
+  private String convertToString(Object attribute) {
+    try {
+      return objectMapper.writeValueAsString(attribute);
+    } catch (JsonProcessingException e) {
+      LOGGER.warn(
+          String.format(
+              "Unable to convert attribute \"%s\" to JSON string, falling back to toString()",
+              attribute),
+          e);
+      return attribute.toString();
+    }
   }
 }

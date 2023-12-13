@@ -240,7 +240,7 @@ public class BatchWriteService {
       PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
     // record type and primary key for this
     try (ParquetStreamWriteHandler streamingWriteHandler =
-        new ParquetStreamWriteHandler(avroParquetReader, pfbImportMode, table)) {
+        new ParquetStreamWriteHandler(avroParquetReader, pfbImportMode, table, objectMapper)) {
       return consumeWriteStreamWithRelations(
           streamingWriteHandler,
           instanceId,
