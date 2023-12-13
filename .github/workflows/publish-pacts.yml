@@ -162,3 +162,23 @@ jobs:
             "repo-branch": "${{ needs.init-github-context.outputs.repo-branch }}",
             "release-tag": "${{ needs.regulated-tag-job.outputs.new-tag }}"
           }'
+  can-i-deploy:
+    runs-on: ubuntu-latest
+    if: ${{ needs.init-github-context.outputs.fork == 'false' }}
+    needs:
+      - init-github-context
+      - publish-pacts-job
+    steps:
+      - name: Dispatch to terra-github-workflows
+        uses: broadinstitute/workflow-dispatch@v4.0.0
+        with:
+          run-name: "${{ env.CAN_I_DEPLOY_RUN_NAME }}"
+          workflow: .github/workflows/can-i-deploy.yaml
+          repo: broadinstitute/terra-github-workflows
+          ref: refs/heads/main
+          token: ${{ secrets.BROADBOT_TOKEN }} # github token for access to kick off a job in the private repo
+          inputs: '{
+            "run-name": "${{ env.CAN_I_DEPLOY_RUN_NAME }}",
+            "pacticipant": "wds",
+            "version": "${{ needs.init-github-context.outputs.repo-version }}"
+          }'
