@@ -12,7 +12,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -125,7 +124,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @return statistics on what was imported
    */
   private BatchWriteResult importTable(
-      String path,
+      URL path,
       TdrManifestImportTable table,
       UUID targetInstance,
       PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
@@ -136,7 +135,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       // TODO AJ-1013 can we access the URL directly, no temp file?
       File tempFile = File.createTempFile("tdr-", "download");
       logger.info("downloading to temp file {} ...", tempFile.getPath());
-      FileUtils.copyURLToFile(new URL(path), tempFile);
+      FileUtils.copyURLToFile(path, tempFile);
       Path hadoopFilePath = new Path(tempFile.getPath());
 
       // generate the HadoopInputFile
@@ -175,11 +174,13 @@ public class TdrManifestQuartzJob extends QuartzJob {
         return result;
       } catch (IOException e) {
         logger.error("Hit an error on file: {}", e.getMessage(), e);
-        throw new TdrManifestImportException(e.getMessage());
+        return new BatchWriteResult(Map.of());
+        // throw new TdrManifestImportException(e.getMessage());
       }
     } catch (Throwable t) {
       logger.error("Hit an error on file: {}. Continuing.", t.getMessage());
-      throw new TdrManifestImportException(t.getMessage());
+      return new BatchWriteResult(Map.of());
+      // throw new TdrManifestImportException(t.getMessage());
     }
   }
 
@@ -208,14 +209,17 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
           // loop through each parquet file
           paths.forEach(
-              encodedPath -> {
+              path -> {
                 // TODO AJ-1013: temp hack to work around TDR bug
-                String incorrectlyEncodedPart =
-                    encodedPath.toString().substring(0, encodedPath.toString().indexOf('?'));
-                String correctlyEncodedPart =
-                    java.net.URLDecoder.decode(incorrectlyEncodedPart, Charset.defaultCharset());
-                String path =
-                    encodedPath.toString().replace(incorrectlyEncodedPart, correctlyEncodedPart);
+                //                String incorrectlyEncodedPart =
+                //                    encodedPath.toString().substring(0,
+                // encodedPath.toString().indexOf('?'));
+                //                String correctlyEncodedPart =
+                //                    java.net.URLDecoder.decode(incorrectlyEncodedPart,
+                // Charset.defaultCharset());
+                //                String path =
+                //                    encodedPath.toString().replace(incorrectlyEncodedPart,
+                // correctlyEncodedPart);
                 // TODO AJ-1013: END temp hack to work around TDR bug
                 importTable(path, importTable, targetInstance, pfbImportMode);
               });
@@ -267,8 +271,11 @@ public class TdrManifestQuartzJob extends QuartzJob {
         tdrSnapshotSupport.identifyRelations(
             snapshotExportResponseModel.getSnapshot().getRelationships());
 
-    // loop through the tables that have data files
+    // loop through the tables that have data files. In the TDR manifest, the first file in the list
+    // will always be a directory, and we want to skip that directory; we only care about the files.
+    // So, filter out that first directory.
     return tables.stream()
+        .filter(table -> table.getPaths().size() > 1)
         .map(
             table -> {
               RecordType recordType = RecordType.valueOf(table.getName());
@@ -301,8 +308,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
                       .toList();
 
               // determine data files for this table
+              // skip the first file, which is a directory
               List<URL> dataFiles =
-                  table.getPaths().stream()
+                  table.getPaths().subList(1, table.getPaths().size()).stream()
                       .map(
                           x -> {
                             try {

@@ -95,10 +95,11 @@ public class BatchWriteService {
     BatchWriteResult result = BatchWriteResult.empty();
     try {
       // Verify relationsOnly is only for pfbstreamingwriteHandler
-      if (pfbImportMode == RELATIONS && !(streamingWriteHandler instanceof PfbStreamWriteHandler)) {
+      if (pfbImportMode == RELATIONS
+          && !(streamingWriteHandler instanceof TwoPassStreamingWriteHandler)) {
         throw new BadStreamingWriteRequestException(
-            "BatchWriteService attempted to re-read PFB "
-                + "on a non-PFB import. Cannot continue.");
+            "BatchWriteService attempted to re-read input data, but this input is not configured "
+                + "as re-readable. Cannot continue.");
       }
 
       // tracker to stash the schemas for the record types seen while processing this stream

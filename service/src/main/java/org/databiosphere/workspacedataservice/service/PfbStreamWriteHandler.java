@@ -12,7 +12,7 @@ import org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 
-public class PfbStreamWriteHandler implements StreamingWriteHandler {
+public class PfbStreamWriteHandler implements TwoPassStreamingWriteHandler {
   public enum PfbImportMode {
     RELATIONS,
     BASE_ATTRIBUTES

@@ -7,12 +7,12 @@ import java.util.List;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
-import org.databiosphere.workspacedataservice.service.StreamingWriteHandler;
+import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 
-public class ParquetStreamWriteHandler implements StreamingWriteHandler {
+public class ParquetStreamWriteHandler implements TwoPassStreamingWriteHandler {
 
   private final ParquetReader<GenericRecord> parquetReader;
   private final PfbStreamWriteHandler.PfbImportMode pfbImportMode;
