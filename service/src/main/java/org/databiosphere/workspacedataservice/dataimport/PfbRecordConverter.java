@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static bio.terra.pfb.PfbReader.convertEnum;
-import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
