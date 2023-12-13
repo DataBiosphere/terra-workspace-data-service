@@ -1,15 +1,16 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static bio.terra.pfb.PfbReader.convertEnum;
-import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
 
-import com.google.mu.util.stream.BiStream;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericFixed;
 import org.apache.avro.generic.GenericRecord;
@@ -32,6 +33,12 @@ public class PfbRecordConverter {
   public static final String RELATIONS_ID = "dst_id";
   public static final String RELATIONS_NAME = "dst_name";
 
+  private final ObjectMapper objectMapper;
+
+  public PfbRecordConverter(ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
+
   public Record genericRecordToRecord(
       GenericRecord genRec, PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
     // create the WDS record shell (id, record type, empty attributes)
@@ -40,11 +47,10 @@ public class PfbRecordConverter {
             genRec.get(ID_FIELD).toString(),
             RecordType.valueOf(genRec.get(TYPE_FIELD).toString()),
             RecordAttributes.empty());
-    if (pfbImportMode == RELATIONS) {
-      return addRelations(genRec, converted);
-    } else {
-      return addAttributes(genRec, converted);
-    }
+    return switch (pfbImportMode) {
+      case RELATIONS -> addRelations(genRec, converted);
+      case BASE_ATTRIBUTES -> addAttributes(genRec, converted);
+    };
   }
 
   private Record addAttributes(GenericRecord genRec, Record converted) {
@@ -99,7 +105,12 @@ public class PfbRecordConverter {
 
     // Avro records
     if (attribute instanceof GenericRecord recordAttr) {
-      return recordAttr.toString(); // TODO AJ-1478: Make these into WDS json?
+      // According to its Javadoc, GenericData#toString() renders the given datum as JSON
+      // However, it may contribute to numeric precision loss (see:
+      // https://broadworkbench.atlassian.net/browse/AJ-1292)
+      // If that's the case, then it may be necessary to traverse the record recursively and do a
+      // less lossy conversion process.
+      return GenericData.get().toString(recordAttr);
     }
 
     // Avro enums
@@ -115,11 +126,7 @@ public class PfbRecordConverter {
 
     // Avro maps
     if (attribute instanceof Map<?, ?> mapAttr) {
-      // recurse
-      return BiStream.from(mapAttr)
-          .mapKeys(Object::toString)
-          .mapValues(this::convertAttributeType)
-          .toMap();
+      return convertToString(mapAttr);
     }
 
     // Avro fixed
@@ -128,8 +135,8 @@ public class PfbRecordConverter {
     }
 
     // Avro strings
-    if (attribute instanceof String stringAttr) {
-      return stringAttr;
+    if (attribute instanceof CharSequence charSequenceAttr) {
+      return charSequenceAttr.toString();
     }
 
     // Avro bytes
@@ -167,5 +174,18 @@ public class PfbRecordConverter {
         attribute,
         attribute.getClass());
     return attribute.toString();
+  }
+
+  private String convertToString(Object attribute) {
+    try {
+      return objectMapper.writeValueAsString(attribute);
+    } catch (JsonProcessingException e) {
+      LOGGER.warn(
+          String.format(
+              "Unable to convert attribute \"%s\" to JSON string, falling back to toString()",
+              attribute),
+          e);
+      return attribute.toString();
+    }
   }
 }

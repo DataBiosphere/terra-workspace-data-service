@@ -1,8 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES;
-import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
+import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.mockPfbStream;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -15,23 +14,26 @@ import java.net.URL;
 import java.util.List;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
-import org.databiosphere.workspacedataservice.dataimport.PfbTestUtils;
+import org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter;
+import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
+@SpringBootTest(classes = {JsonConfig.class, PfbRecordConverter.class})
 class PfbStreamWriteHandlerTest {
+  @Autowired private PfbRecordConverter pfbRecordConverter;
 
   // does PfbStreamWriteHandler properly know how to page through a DataFileStream<GenericRecord>?
   @Test
   void testBatching() {
-
     // create a mock PFB stream with 10 rows in it and a PfbStreamWriteHandler for that stream
-    DataFileStream<GenericRecord> dataFileStream = PfbTestUtils.mockPfbStream(10, "someType");
     PfbStreamWriteHandler pfbStreamWriteHandler =
-        new PfbStreamWriteHandler(dataFileStream, BASE_ATTRIBUTES);
+        buildHandler(mockPfbStream(10, "someType"), PfbImportMode.BASE_ATTRIBUTES);
 
     StreamingWriteHandler.WriteStreamInfo batch; // used in assertions below
 
@@ -58,9 +60,8 @@ class PfbStreamWriteHandlerTest {
   @ParameterizedTest(name = "dont error if input has {0} row(s)")
   @ValueSource(ints = {0, 1, 49, 50, 51, 99, 100, 101})
   void inputStreamOfCount(Integer numRows) {
-    DataFileStream<GenericRecord> dataFileStream = PfbTestUtils.mockPfbStream(numRows, "someType");
     PfbStreamWriteHandler pfbStreamWriteHandler =
-        new PfbStreamWriteHandler(dataFileStream, BASE_ATTRIBUTES);
+        buildHandler(mockPfbStream(numRows, "someType"), PfbImportMode.BASE_ATTRIBUTES);
 
     int batchSize = 50;
 
@@ -79,12 +80,8 @@ class PfbStreamWriteHandlerTest {
   // Given a real PFB file, does PfbStreamWriteHandler faithfully return the records inside that
   // PFB?
   void pfbTablesAreParsedCorrectly() {
-    URL url = getClass().getResource("/two_tables.avro");
-    assertNotNull(url);
-    try (DataFileStream<GenericRecord> dataStream =
-        PfbReader.getGenericRecordsStream(url.toString())) {
-
-      PfbStreamWriteHandler pswh = new PfbStreamWriteHandler(dataStream, BASE_ATTRIBUTES);
+    try (DataFileStream<GenericRecord> dataFileStream = streamRecordsFromFile("/two_tables.avro")) {
+      PfbStreamWriteHandler pswh = buildHandler(dataFileStream, PfbImportMode.BASE_ATTRIBUTES);
       StreamingWriteHandler.WriteStreamInfo streamInfo = pswh.readRecords(2);
       /*
         Expected records:
@@ -156,13 +153,10 @@ class PfbStreamWriteHandlerTest {
 
   @Test
   void relationsAreParsedCorrectly() {
-    URL url = getClass().getResource("/test.avro");
-    assertNotNull(url);
-    try (DataFileStream<GenericRecord> dataStream =
-        PfbReader.getGenericRecordsStream(url.toString())) {
+    try (DataFileStream<GenericRecord> dataFileStream = streamRecordsFromFile("/test.avro")) {
 
-      PfbStreamWriteHandler pswh = new PfbStreamWriteHandler(dataStream, RELATIONS);
-      StreamingWriteHandler.WriteStreamInfo streamInfo = pswh.readRecords(5);
+      StreamingWriteHandler.WriteStreamInfo streamInfo =
+          buildHandler(dataFileStream, PfbImportMode.RELATIONS).readRecords(5);
 
       List<Record> result = streamInfo.getRecords();
       assertEquals(5, result.size());
@@ -199,5 +193,16 @@ class PfbStreamWriteHandlerTest {
     } catch (IOException e) {
       fail(e);
     }
+  }
+
+  private DataFileStream<GenericRecord> streamRecordsFromFile(String fileName) throws IOException {
+    URL url = getClass().getResource(fileName);
+    assertNotNull(url);
+    return PfbReader.getGenericRecordsStream(url.toString());
+  }
+
+  private PfbStreamWriteHandler buildHandler(
+      DataFileStream<GenericRecord> dataFileStream, PfbImportMode importMode) {
+    return new PfbStreamWriteHandler(dataFileStream, importMode, pfbRecordConverter);
   }
 }

@@ -19,6 +19,7 @@ import org.apache.avro.SchemaBuilder;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.generic.GenericRecordBuilder;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
@@ -101,12 +102,12 @@ public class PfbTestUtils {
    */
   public static GenericRecord makeRecord(
       String id, String name, GenericData.Record objectAttributes, GenericData.Array relations) {
-    GenericRecord rec = new GenericData.Record(RECORD_SCHEMA);
-    rec.put("id", id);
-    rec.put("name", name);
-    rec.put("object", objectAttributes);
-    rec.put("relations", relations);
-    return rec;
+    return new GenericRecordBuilder(RECORD_SCHEMA)
+        .set("id", id)
+        .set("name", name)
+        .set("object", objectAttributes)
+        .set("relations", relations)
+        .build();
   }
 
   public static DataFileStream<GenericRecord> mockPfbStream(int numRows, String name) {

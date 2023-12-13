@@ -13,7 +13,6 @@ import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 
 public class PfbStreamWriteHandler implements StreamingWriteHandler {
-
   public enum PfbImportMode {
     RELATIONS,
     BASE_ATTRIBUTES
@@ -21,16 +20,22 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
 
   private final DataFileStream<GenericRecord> inputStream;
   private final PfbImportMode pfbImportMode;
+  private final PfbRecordConverter pfbRecordConverter;
 
   /**
    * Create a new PfbStreamWriteHandler and specify the expected schemas for the PFB.
    *
    * @param inputStream the PFB stream
+   * @param pfbImportMode the mode to use when importing the PFB
+   * @param pfbRecordConverter the converter to use when converting PFB records to WDS records
    */
   public PfbStreamWriteHandler(
-      DataFileStream<GenericRecord> inputStream, PfbImportMode pfbImportMode) {
+      DataFileStream<GenericRecord> inputStream,
+      PfbImportMode pfbImportMode,
+      PfbRecordConverter pfbRecordConverter) {
     this.inputStream = inputStream;
     this.pfbImportMode = pfbImportMode;
+    this.pfbRecordConverter = pfbRecordConverter;
   }
 
   public WriteStreamInfo readRecords(int numRecords) {
@@ -41,7 +46,6 @@ public class PfbStreamWriteHandler implements StreamingWriteHandler {
             .limit(numRecords);
 
     // convert the PFB GenericRecord objects into WDS Record objects
-    PfbRecordConverter pfbRecordConverter = new PfbRecordConverter();
     List<Record> records =
         pfbBatch.map(rec -> pfbRecordConverter.genericRecordToRecord(rec, pfbImportMode)).toList();
 
