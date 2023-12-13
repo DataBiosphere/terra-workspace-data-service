@@ -1,7 +1,23 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+
 import java.util.Collection;
 import java.util.Set;
+
+import static bio.terra.pfb.PfbReader.convertEnum;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
+import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericEnumSymbol;
+import org.apache.avro.generic.GenericFixed;
+
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -21,8 +37,11 @@ public class PfbRecordConverter extends AvroRecordConverter {
   public static final String RELATIONS_ID = "dst_id";
   public static final String RELATIONS_NAME = "dst_name";
 
-  public PfbRecordConverter() {
+  private final ObjectMapper objectMapper;
+
+  public PfbRecordConverter(ObjectMapper objectMapper) {
     super();
+    this.objectMapper = objectMapper;
   }
 
   @Override
@@ -63,5 +82,100 @@ public class PfbRecordConverter extends AvroRecordConverter {
       converted.setAttributes(attributes);
     }
     return converted;
+  }
+
+  Object convertAttributeType(Object attribute) {
+
+    if (attribute == null) {
+      return null;
+    }
+
+    // For list of Avro types - see
+    // https://avro.apache.org/docs/current/api/java/org/apache/avro/generic/package-summary.html#package_description
+
+    // Avro records
+    if (attribute instanceof GenericRecord recordAttr) {
+      // According to its Javadoc, GenericData#toString() renders the given datum as JSON
+      // However, it may contribute to numeric precision loss (see:
+      // https://broadworkbench.atlassian.net/browse/AJ-1292)
+      // If that's the case, then it may be necessary to traverse the record recursively and do a
+      // less lossy conversion process.
+      return GenericData.get().toString(recordAttr);
+    }
+
+    // Avro enums
+    if (attribute instanceof GenericEnumSymbol<?> enumAttr) {
+      return convertEnum(enumAttr.toString());
+    }
+
+    // Avro arrays
+    if (attribute instanceof Collection<?> collAttr) {
+      // recurse
+      return collAttr.stream().map(this::convertAttributeType).toList();
+    }
+
+    // Avro maps
+    if (attribute instanceof Map<?, ?> mapAttr) {
+      return convertToString(mapAttr);
+    }
+
+    // Avro fixed
+    if (attribute instanceof GenericFixed fixedAttr) {
+      return new String(fixedAttr.bytes());
+    }
+
+    // Avro strings
+    if (attribute instanceof CharSequence charSequenceAttr) {
+      return charSequenceAttr.toString();
+    }
+
+    // Avro bytes
+    if (attribute instanceof ByteBuffer byteBufferAttr) {
+      return new String(byteBufferAttr.array());
+    }
+
+    // Avro ints
+    if (attribute instanceof Integer intAttr) {
+      return BigDecimal.valueOf(intAttr);
+    }
+
+    // Avro longs
+    if (attribute instanceof Long longAttr) {
+      return BigDecimal.valueOf(longAttr);
+    }
+
+    // Avro floats
+    if (attribute instanceof Float floatAttr) {
+      return BigDecimal.valueOf(floatAttr);
+    }
+
+    // Avro doubles
+    if (attribute instanceof Double doubleAttr) {
+      return BigDecimal.valueOf(doubleAttr);
+    }
+
+    // Avro booleans
+    if (attribute instanceof Boolean boolAttr) {
+      return boolAttr;
+    }
+
+    LOGGER.warn(
+        "convertAttributeType received value \"{}\" with unexpected type {}",
+        attribute,
+        attribute.getClass());
+    return attribute.toString();
+  }
+
+  private String convertToString(Object attribute) {
+    try {
+      return objectMapper.writeValueAsString(attribute);
+    } catch (JsonProcessingException e) {
+      LOGGER.warn(
+          String.format(
+              "Unable to convert attribute \"%s\" to JSON string, falling back to toString()",
+              attribute),
+          e);
+      return attribute.toString();
+    }
   }
 }

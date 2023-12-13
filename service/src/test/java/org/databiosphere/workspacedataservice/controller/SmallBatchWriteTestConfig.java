@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RecordService;
@@ -22,7 +23,9 @@ public class SmallBatchWriteTestConfig {
       DataTypeInferer inf,
       ObjectMapper objectMapper,
       ObjectReader tsvReader,
-      RecordService recordService) {
-    return new BatchWriteService(recordDao, 1, inf, objectMapper, tsvReader, recordService);
+      RecordService recordService,
+      PfbRecordConverter pfbRecordConverter) {
+    return new BatchWriteService(
+        recordDao, 1, inf, objectMapper, tsvReader, recordService, pfbRecordConverter);
   }
 }
