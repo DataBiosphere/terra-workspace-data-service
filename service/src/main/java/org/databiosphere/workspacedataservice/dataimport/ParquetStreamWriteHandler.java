@@ -12,7 +12,7 @@ import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTab
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 
-// TODO AJ-1013 reorganize StreamingWriteHandler out of the service package, and add some
+// TODO AJ-1519 reorganize StreamingWriteHandler out of the service package, and add some
 //     hierarchy to the dataimport package,
 public class ParquetStreamWriteHandler implements TwoPassStreamingWriteHandler {
 

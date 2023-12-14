@@ -79,7 +79,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     return this.jobDao;
   }
 
-  // TODO AJ-1013 unit tests
+  // TODO AJ-1523 unit tests
   @Override
   protected void executeInternal(UUID jobId, JobExecutionContext context) {
     // Grab the manifest url from the job's data map
@@ -111,7 +111,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     importTables(
         tdrManifestImportTables, targetInstance, PfbStreamWriteHandler.PfbImportMode.RELATIONS);
 
-    // TODO AJ-1013 re-evaluate dataRepoService.importSnapshot, should it be removed?
+    // TODO AJ-1521 re-evaluate dataRepoService.importSnapshot, should it be removed?
   }
 
   /**
@@ -131,7 +131,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     try {
       // download the file from the URL to a temp file on the local filesystem
       // Azure urls, with SAS tokens, don't need any particular auth.
-      // TODO AJ-1013 can we access the URL directly, no temp file?
+      // TODO AJ-1517 can we access the URL directly, no temp file?
       File tempFile = File.createTempFile("tdr-", "download");
       logger.info("downloading to temp file {} ...", tempFile.getPath());
       FileUtils.copyURLToFile(path, tempFile);
@@ -157,6 +157,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
                 avroParquetReader, targetInstance, table, pfbImportMode);
 
         // activity logging
+        // TODO AJ-1520 this activity logging can be a "false positive" - we will log here,
+        //     but if the overall transaction fails and is rolled back these logs will be false
         if (result != null) {
           result
               .entrySet()
@@ -175,14 +177,14 @@ public class TdrManifestQuartzJob extends QuartzJob {
         logger.error("Hit an error on file: {}", e.getMessage(), e);
         return new BatchWriteResult(Map.of());
         // throw new TdrManifestImportException(e.getMessage());
-        // TODO AJ-1013 more specific handling for 0-length directories; other errors should
+        // TODO AJ-1518 more specific handling for 0-length directories; other errors should
         //     be true failures
       }
     } catch (Throwable t) {
       logger.error("Hit an error on file: {}. Continuing.", t.getMessage());
       return new BatchWriteResult(Map.of());
       // throw new TdrManifestImportException(t.getMessage());
-      // TODO AJ-1013 more specific handling for 0-length directories; other errors should
+      // TODO AJ-1518 more specific handling for 0-length directories; other errors should
       //     be true failures
     }
   }

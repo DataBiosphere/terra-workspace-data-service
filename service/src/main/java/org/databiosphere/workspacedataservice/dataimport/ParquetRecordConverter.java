@@ -13,7 +13,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
 /** Logic to convert a TDR Parquet's GenericRecord to WDS's Record */
-// TODO AJ-1013 should ParquetRecordConverter be a bean, like PfbRecordConverter? Right now,
+// TODO AJ-1522 should ParquetRecordConverter be a bean, like PfbRecordConverter? Right now,
 //     we construct separate ParquetRecordConverter instances for each table being imported.
 public class ParquetRecordConverter extends AvroRecordConverter {
   private final RecordType recordType;
