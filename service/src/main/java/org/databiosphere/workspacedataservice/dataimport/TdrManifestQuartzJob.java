@@ -117,7 +117,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
   /**
    * Given a single Parquet file to be imported, import it
    *
-   * @param path path to Parquet file to be imported. TODO AJ-1013: can this be a URL?
+   * @param path path to Parquet file to be imported.
    * @param table info about the table to be imported
    * @param targetInstance instance into which to import
    * @param pfbImportMode mode for this invocation
@@ -131,7 +131,6 @@ public class TdrManifestQuartzJob extends QuartzJob {
     try {
       // download the file from the URL to a temp file on the local filesystem
       // Azure urls, with SAS tokens, don't need any particular auth.
-      // TODO AJ-1013 do we need auth for GCS urls?
       // TODO AJ-1013 can we access the URL directly, no temp file?
       File tempFile = File.createTempFile("tdr-", "download");
       logger.info("downloading to temp file {} ...", tempFile.getPath());
@@ -176,11 +175,15 @@ public class TdrManifestQuartzJob extends QuartzJob {
         logger.error("Hit an error on file: {}", e.getMessage(), e);
         return new BatchWriteResult(Map.of());
         // throw new TdrManifestImportException(e.getMessage());
+        // TODO AJ-1013 more specific handling for 0-length directories; other errors should
+        //     be true failures
       }
     } catch (Throwable t) {
       logger.error("Hit an error on file: {}. Continuing.", t.getMessage());
       return new BatchWriteResult(Map.of());
       // throw new TdrManifestImportException(t.getMessage());
+      // TODO AJ-1013 more specific handling for 0-length directories; other errors should
+      //     be true failures
     }
   }
 
@@ -195,7 +198,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
       List<TdrManifestImportTable> importTables,
       UUID targetInstance,
       PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
-    // loop through the tables to be imported
+    // loop through the tables that have data files. In the TDR manifest, for Azure snapshots only,
+    // the first file in the list will always be a directory. Attempting to import that directory
+    // will fail; it has no content. Ensure we are resilient to those failures.
     importTables.forEach(
         importTable -> {
           logger.info("Processing table '{}' ...", importTable.recordType().getName());
@@ -210,17 +215,6 @@ public class TdrManifestQuartzJob extends QuartzJob {
           // loop through each parquet file
           paths.forEach(
               path -> {
-                // TODO AJ-1013: temp hack to work around TDR bug
-                //                String incorrectlyEncodedPart =
-                //                    encodedPath.toString().substring(0,
-                // encodedPath.toString().indexOf('?'));
-                //                String correctlyEncodedPart =
-                //                    java.net.URLDecoder.decode(incorrectlyEncodedPart,
-                // Charset.defaultCharset());
-                //                String path =
-                //                    encodedPath.toString().replace(incorrectlyEncodedPart,
-                // correctlyEncodedPart);
-                // TODO AJ-1013: END temp hack to work around TDR bug
                 importTable(path, importTable, targetInstance, pfbImportMode);
               });
         });
@@ -271,11 +265,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
         tdrSnapshotSupport.identifyRelations(
             snapshotExportResponseModel.getSnapshot().getRelationships());
 
-    // loop through the tables that have data files. In the TDR manifest, the first file in the list
-    // will always be a directory, and we want to skip that directory; we only care about the files.
-    // So, filter out that first directory.
     return tables.stream()
-        .filter(table -> table.getPaths().size() > 1)
         .map(
             table -> {
               RecordType recordType = RecordType.valueOf(table.getName());
@@ -308,9 +298,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
                       .toList();
 
               // determine data files for this table
-              // skip the first file, which is a directory
               List<URL> dataFiles =
-                  table.getPaths().subList(1, table.getPaths().size()).stream()
+                  table.getPaths().stream()
                       .map(
                           x -> {
                             try {
