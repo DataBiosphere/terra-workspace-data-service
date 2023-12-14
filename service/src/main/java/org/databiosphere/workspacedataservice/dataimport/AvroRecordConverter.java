@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static bio.terra.pfb.PfbReader.convertEnum;
-import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,6 +18,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,32 +36,59 @@ public abstract class AvroRecordConverter {
   }
 
   /**
-   * Create the "shell" Record, with a valid RecordId and a valid RecordType, but no attributes.
-   * Subclasses must implement this method, which is called for every GenericRecord in the inbound
-   * import data.
+   * What is the id for this record? Subclasses must implement this method, which is called for
+   * every GenericRecord in the inbound import data.
    *
-   * @param genRec the Avro GenericRecord to be converted
-   * @return the WDS Record shell
+   * @param genericRecord the inbound Avro GenericRecord to be converted
+   * @return the id to use for the WDS record
    */
-  abstract Record createRecordShell(GenericRecord genRec);
+  abstract String extractRecordId(GenericRecord genericRecord);
 
-  abstract Record addAttributes(GenericRecord objectAttributes, Record converted);
+  /**
+   * What is the RecordType for this record? Subclasses must implement this method, which is called
+   * for every GenericRecord in the inbound import data.
+   *
+   * @param genericRecord the inbound Avro GenericRecord to be converted
+   * @return the RecordType to use for the WDS record
+   */
+  abstract RecordType extractRecordType(GenericRecord genericRecord);
 
-  abstract Record addRelations(GenericRecord genRec, Record converted);
+  /**
+   * When operating in {@see PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES} mode, what
+   * attributes should be upserted for this GenericRecord?
+   *
+   * @param genericRecord the inbound Avro GenericRecord to be converted
+   * @return the base WDS attributes
+   */
+  abstract RecordAttributes extractBaseAttributes(GenericRecord genericRecord);
+
+  /**
+   * When operating in {@see PfbStreamWriteHandler.PfbImportMode.RELATIONS} mode, what attributes
+   * should be upserted for this GenericRecord?
+   *
+   * @param genericRecord the inbound Avro GenericRecord to be converted
+   * @return the WDS relation attributes
+   */
+  abstract RecordAttributes extractRelations(GenericRecord genericRecord);
 
   public Record genericRecordToRecord(
       GenericRecord genRec, PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
-    // create the WDS record shell (id, record type, empty attributes)
-    Record converted = createRecordShell(genRec);
-    if (pfbImportMode == RELATIONS) {
-      return addRelations(genRec, converted);
-    } else {
-      return addAttributes(genRec, converted);
-    }
+    // determine id and type for this record
+    String id = extractRecordId(genRec);
+    RecordType recordType = extractRecordType(genRec);
+
+    // determine attributes for this record
+    RecordAttributes recordAttributes =
+        switch (pfbImportMode) {
+          case RELATIONS -> extractRelations(genRec);
+          case BASE_ATTRIBUTES -> extractBaseAttributes(genRec);
+        };
+
+    return new Record(id, recordType, recordAttributes);
   }
 
-  protected Record addAttributes(
-      GenericRecord objectAttributes, Record converted, Set<String> ignoreAttributes) {
+  protected RecordAttributes baseAttributes(
+      GenericRecord objectAttributes, Set<String> ignoreAttributes) {
     // loop over all Avro fields and add to the record's attributes
     Schema schema = objectAttributes.getSchema();
     List<Schema.Field> fields = schema.getFields();
@@ -78,8 +105,7 @@ public abstract class AvroRecordConverter {
               : convertAttributeType(objectAttributes.get(fieldName));
       attributes.putAttribute(fieldName, value);
     }
-    converted.setAttributes(attributes);
-    return converted;
+    return attributes;
   }
 
   Object convertAttributeType(Object attribute) {

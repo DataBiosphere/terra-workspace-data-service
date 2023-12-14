@@ -5,15 +5,11 @@ import java.util.Collection;
 import java.util.Set;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Logic to convert a PFB's GenericRecord to WDS's Record */
 public class PfbRecordConverter extends AvroRecordConverter {
-  private static final Logger LOGGER = LoggerFactory.getLogger(PfbRecordConverter.class);
 
   public static final String ID_FIELD = "id";
   public static final String TYPE_FIELD = "name";
@@ -27,26 +23,28 @@ public class PfbRecordConverter extends AvroRecordConverter {
   }
 
   @Override
-  Record createRecordShell(GenericRecord genRec) {
-    return new Record(
-        genRec.get(ID_FIELD).toString(),
-        RecordType.valueOf(genRec.get(TYPE_FIELD).toString()),
-        RecordAttributes.empty());
+  String extractRecordId(GenericRecord genericRecord) {
+    return genericRecord.get(ID_FIELD).toString();
   }
 
   @Override
-  protected final Record addAttributes(GenericRecord genRec, Record converted) {
+  RecordType extractRecordType(GenericRecord genericRecord) {
+    return RecordType.valueOf(genericRecord.get(TYPE_FIELD).toString());
+  }
+
+  @Override
+  protected final RecordAttributes extractBaseAttributes(GenericRecord genericRecord) {
     // extract the OBJECT_FIELD sub-record, then find all its attributes
-    if (genRec.get(OBJECT_FIELD) instanceof GenericRecord objectAttributes) {
-      return super.addAttributes(objectAttributes, converted, Set.of());
+    if (genericRecord.get(OBJECT_FIELD) instanceof GenericRecord objectAttributes) {
+      return super.baseAttributes(objectAttributes, Set.of());
     }
-    return converted;
+    return RecordAttributes.empty();
   }
 
   @Override
-  protected final Record addRelations(GenericRecord genRec, Record converted) {
+  protected final RecordAttributes extractRelations(GenericRecord genericRecord) {
     // get the relations array from the record
-    if (genRec.get(RELATIONS_FIELD) instanceof Collection<?> relationArray
+    if (genericRecord.get(RELATIONS_FIELD) instanceof Collection<?> relationArray
         && !relationArray.isEmpty()) {
       RecordAttributes attributes = RecordAttributes.empty();
       for (Object relationObject : relationArray) {
@@ -61,8 +59,8 @@ public class PfbRecordConverter extends AvroRecordConverter {
               RelationUtils.createRelationString(RecordType.valueOf(relationType), relationId));
         }
       }
-      converted.setAttributes(attributes);
+      return attributes;
     }
-    return converted;
+    return RecordAttributes.empty();
   }
 }

@@ -9,11 +9,12 @@ import java.util.Set;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
-import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
 /** Logic to convert a TDR Parquet's GenericRecord to WDS's Record */
+// TODO AJ-1013 should ParquetRecordConverter be a bean, like PfbRecordConverter? Right now,
+//     we construct separate ParquetRecordConverter instances for each table being imported.
 public class ParquetRecordConverter extends AvroRecordConverter {
   private final RecordType recordType;
   private final String idField;
@@ -27,12 +28,17 @@ public class ParquetRecordConverter extends AvroRecordConverter {
   }
 
   @Override
-  Record createRecordShell(GenericRecord genRec) {
-    return new Record(genRec.get(idField).toString(), recordType, RecordAttributes.empty());
+  String extractRecordId(GenericRecord genericRecord) {
+    return genericRecord.get(idField).toString();
   }
 
   @Override
-  protected final Record addAttributes(GenericRecord objectAttributes, Record converted) {
+  RecordType extractRecordType(GenericRecord genericRecord) {
+    return recordType;
+  }
+
+  @Override
+  protected final RecordAttributes extractBaseAttributes(GenericRecord genericRecord) {
     // for base attributes, skip the id field and all relations
     List<String> relationNames =
         relationshipModels.stream().map(r -> r.getFrom().getColumn()).toList();
@@ -40,14 +46,14 @@ public class ParquetRecordConverter extends AvroRecordConverter {
     allIgnores.add(idField);
     allIgnores.addAll(relationNames);
 
-    return super.addAttributes(objectAttributes, converted, allIgnores);
+    return super.baseAttributes(genericRecord, allIgnores);
   }
 
   @Override
-  protected final Record addRelations(GenericRecord genRec, Record converted) {
+  protected final RecordAttributes extractRelations(GenericRecord genericRecord) {
     // find relation columns for this type
     if (relationshipModels.isEmpty()) {
-      return converted;
+      return RecordAttributes.empty();
     }
 
     RecordAttributes attributes = RecordAttributes.empty();
@@ -57,7 +63,7 @@ public class ParquetRecordConverter extends AvroRecordConverter {
         relationshipModel -> {
           String attrName = relationshipModel.getFrom().getColumn();
           // get value from Avro
-          Object value = genRec.get(attrName);
+          Object value = genericRecord.get(attrName);
           if (value != null) {
             String targetType = relationshipModel.getTo().getTable();
             // is it an array?
@@ -79,8 +85,6 @@ public class ParquetRecordConverter extends AvroRecordConverter {
           }
         });
 
-    converted.setAttributes(attributes);
-
-    return converted;
+    return attributes;
   }
 }
