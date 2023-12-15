@@ -22,10 +22,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Logic to convert Avro GenericRecord to WDS's Record Avro GenericRecord is used by PFB import and
- * TDR import.
- */
+/** Logic to convert Avro GenericRecord to WDS's Record. Used by PFB import and TDR import. */
 public abstract class AvroRecordConverter {
   private static final Logger LOGGER = LoggerFactory.getLogger(AvroRecordConverter.class);
 
