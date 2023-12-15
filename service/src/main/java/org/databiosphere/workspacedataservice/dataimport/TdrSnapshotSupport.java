@@ -10,6 +10,7 @@ import bio.terra.workspace.model.ResourceList;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -146,10 +147,9 @@ public class TdrSnapshotSupport {
    */
   protected void linkSnapshots(Set<UUID> snapshotIds) {
     // list existing snapshots linked to this workspace
-    List<UUID> existingSnapshotIds = existingPolicySnapshotIds(/* pageSize= */ 50);
+    Set<UUID> existingSnapshotIds = Set.copyOf(existingPolicySnapshotIds(/* pageSize= */ 50));
     // find the snapshots that are not already linked to this workspace
-    List<UUID> newSnapshotIds =
-        snapshotIds.stream().filter(id -> !existingSnapshotIds.contains(id)).toList();
+    Set<UUID> newSnapshotIds = Sets.difference(snapshotIds, existingSnapshotIds);
 
     logger.info(
         "Import data contains {} snapshot ids. {} of these are already linked to the workspace; {} new links will be created.",
