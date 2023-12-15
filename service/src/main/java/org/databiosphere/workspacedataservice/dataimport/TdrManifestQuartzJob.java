@@ -128,6 +128,12 @@ public class TdrManifestQuartzJob extends QuartzJob {
       TdrManifestImportTable table,
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
+    // In the TDR manifest, for Azure snapshots only,
+    // the first file in the list will always be a directory. Attempting to import that directory
+    // will fail; it has no content. To ensure we are resilient to those failures, wrap everything
+    // in try/catch.
+    // TODO AJ-1518 more specific handling for 0-length directories; other errors should
+    //     be true failures
     try {
       // download the file from the URL to a temp file on the local filesystem
       // Azure urls, with SAS tokens, don't need any particular auth.
@@ -200,9 +206,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       List<TdrManifestImportTable> importTables,
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
-    // loop through the tables that have data files. In the TDR manifest, for Azure snapshots only,
-    // the first file in the list will always be a directory. Attempting to import that directory
-    // will fail; it has no content. Ensure we are resilient to those failures.
+    // loop through the tables that have data files.
     importTables.forEach(
         importTable -> {
           logger.info("Processing table '{}' ...", importTable.recordType().getName());
