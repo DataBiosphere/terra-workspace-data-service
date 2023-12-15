@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Set;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
+import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
@@ -22,27 +23,26 @@ public class PfbRecordConverter extends AvroRecordConverter {
     super(objectMapper);
   }
 
-  @Override
-  String extractRecordId(GenericRecord genericRecord) {
-    return genericRecord.get(ID_FIELD).toString();
+  private Record createEmptyRecord(GenericRecord genericRecord) {
+    return new Record(
+        genericRecord.get(ID_FIELD).toString(),
+        RecordType.valueOf(genericRecord.get(TYPE_FIELD).toString()));
   }
 
   @Override
-  RecordType extractRecordType(GenericRecord genericRecord) {
-    return RecordType.valueOf(genericRecord.get(TYPE_FIELD).toString());
-  }
-
-  @Override
-  protected final RecordAttributes extractBaseAttributes(GenericRecord genericRecord) {
+  protected final Record convertBaseAttributes(GenericRecord genericRecord) {
+    Record record = createEmptyRecord(genericRecord);
     // extract the OBJECT_FIELD sub-record, then find all its attributes
     if (genericRecord.get(OBJECT_FIELD) instanceof GenericRecord objectAttributes) {
-      return super.baseAttributes(objectAttributes, Set.of());
+      RecordAttributes attributes = extractBaseAttributes(objectAttributes, Set.of());
+      record.setAttributes(attributes);
     }
-    return RecordAttributes.empty();
+    return record;
   }
 
   @Override
-  protected final RecordAttributes extractRelations(GenericRecord genericRecord) {
+  protected final Record convertRelations(GenericRecord genericRecord) {
+    Record record = createEmptyRecord(genericRecord);
     // get the relations array from the record
     if (genericRecord.get(RELATIONS_FIELD) instanceof Collection<?> relationArray
         && !relationArray.isEmpty()) {
@@ -59,8 +59,8 @@ public class PfbRecordConverter extends AvroRecordConverter {
               RelationUtils.createRelationString(RecordType.valueOf(relationType), relationId));
         }
       }
-      return attributes;
+      record.setAttributes(attributes);
     }
-    return RecordAttributes.empty();
+    return record;
   }
 }

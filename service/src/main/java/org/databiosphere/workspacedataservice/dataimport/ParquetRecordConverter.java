@@ -9,6 +9,7 @@ import java.util.Set;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
+import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
@@ -27,18 +28,13 @@ public class ParquetRecordConverter extends AvroRecordConverter {
     this.relationshipModels = table.relations();
   }
 
-  @Override
-  String extractRecordId(GenericRecord genericRecord) {
-    return genericRecord.get(idField).toString();
+  private Record createEmptyRecord(GenericRecord genericRecord) {
+    return new Record(genericRecord.get(idField).toString(), recordType);
   }
 
   @Override
-  RecordType extractRecordType(GenericRecord genericRecord) {
-    return recordType;
-  }
-
-  @Override
-  protected final RecordAttributes extractBaseAttributes(GenericRecord genericRecord) {
+  protected final Record convertBaseAttributes(GenericRecord genericRecord) {
+    Record record = createEmptyRecord(genericRecord);
     // for base attributes, skip the id field and all relations
     List<String> relationNames =
         relationshipModels.stream().map(r -> r.getFrom().getColumn()).toList();
@@ -46,14 +42,17 @@ public class ParquetRecordConverter extends AvroRecordConverter {
     allIgnores.add(idField);
     allIgnores.addAll(relationNames);
 
-    return super.baseAttributes(genericRecord, allIgnores);
+    record.setAttributes(extractBaseAttributes(genericRecord, allIgnores));
+
+    return record;
   }
 
   @Override
-  protected final RecordAttributes extractRelations(GenericRecord genericRecord) {
+  protected final Record convertRelations(GenericRecord genericRecord) {
+    Record record = createEmptyRecord(genericRecord);
     // find relation columns for this type
     if (relationshipModels.isEmpty()) {
-      return RecordAttributes.empty();
+      return record;
     }
 
     RecordAttributes attributes = RecordAttributes.empty();
@@ -85,6 +84,8 @@ public class ParquetRecordConverter extends AvroRecordConverter {
           }
         });
 
-    return attributes;
+    record.setAttributes(attributes);
+
+    return record;
   }
 }

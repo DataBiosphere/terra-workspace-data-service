@@ -48,7 +48,7 @@ public class ParquetStreamWriteHandler implements TwoPassStreamingWriteHandler {
     // convert avro generic records to WDS records
     ParquetRecordConverter converter = new ParquetRecordConverter(table, objectMapper);
     List<Record> records =
-        genericRecords.stream().map(gr -> converter.genericRecordToRecord(gr, importMode)).toList();
+        genericRecords.stream().map(gr -> converter.convert(gr, importMode)).toList();
 
     return new WriteStreamInfo(records, OperationType.UPSERT);
   }

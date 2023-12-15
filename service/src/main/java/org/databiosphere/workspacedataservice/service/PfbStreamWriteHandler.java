@@ -43,7 +43,7 @@ public class PfbStreamWriteHandler implements TwoPassStreamingWriteHandler {
 
     // convert the PFB GenericRecord objects into WDS Record objects
     List<Record> records =
-        pfbBatch.map(rec -> pfbRecordConverter.genericRecordToRecord(rec, importMode)).toList();
+        pfbBatch.map(rec -> pfbRecordConverter.convert(rec, importMode)).toList();
 
     return new WriteStreamInfo(records, OperationType.UPSERT);
   }

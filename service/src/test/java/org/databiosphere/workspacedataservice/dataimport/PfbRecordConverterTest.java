@@ -49,8 +49,7 @@ class PfbRecordConverterTest {
     GenericRecord input = PfbTestUtils.makeRecord(inputId, inputName);
 
     Record actual =
-        converter.genericRecordToRecord(
-            input, TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
+        converter.convert(input, TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
 
     assertEquals(inputId, actual.getId());
     assertEquals(inputName, actual.getRecordTypeName());
@@ -61,8 +60,7 @@ class PfbRecordConverterTest {
   void emptyObjectAttributes() {
     GenericRecord input = PfbTestUtils.makeRecord("my-id", "my-name");
     Record actual =
-        converter.genericRecordToRecord(
-            input, TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
+        converter.convert(input, TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
 
     assertThat(actual.attributeSet()).isEmpty();
   }
@@ -142,8 +140,7 @@ class PfbRecordConverterTest {
             .build();
     GenericRecord input = PfbTestUtils.makeRecord("my-id", "mytype", objectAttributes);
     Record actual =
-        converter.genericRecordToRecord(
-            input, TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
+        converter.convert(input, TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
 
     Set<Map.Entry<String, Object>> actualAttributeSet = actual.attributeSet();
     Set<String> actualKeySet =
@@ -201,8 +198,7 @@ class PfbRecordConverterTest {
     GenericRecord input =
         PfbTestUtils.makeRecord(
             "my-id", "mytype", new GenericData.Record(OBJECT_SCHEMA), relations);
-    Record actual =
-        converter.genericRecordToRecord(input, TwoPassStreamingWriteHandler.ImportMode.RELATIONS);
+    Record actual = converter.convert(input, TwoPassStreamingWriteHandler.ImportMode.RELATIONS);
 
     assertEquals(
         RelationUtils.createRelationString(RecordType.valueOf("relation_table"), "relation_id"),

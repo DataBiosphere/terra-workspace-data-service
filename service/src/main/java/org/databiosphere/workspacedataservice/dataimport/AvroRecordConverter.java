@@ -18,7 +18,6 @@ import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
-import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,58 +32,48 @@ public abstract class AvroRecordConverter {
   }
 
   /**
-   * What is the id for this record? Subclasses must implement this method, which is called for
-   * every GenericRecord in the inbound import data.
-   *
-   * @param genericRecord the inbound Avro GenericRecord to be converted
-   * @return the id to use for the WDS record
+   * Converts an Avro record to a WDS record. In {@link
+   * TwoPassStreamingWriteHandler.ImportMode#BASE_ATTRIBUTES} mode, this will call {@link
+   * #convertBaseAttributes(GenericRecord)} with the intention of creating a Record containing all
+   * non-relation attributes. In {@link TwoPassStreamingWriteHandler.ImportMode#RELATIONS} mode,
+   * this will call {@link #convertRelations(GenericRecord)} with the intention of creating a Record
+   * containing only relation attributes.
    */
-  abstract String extractRecordId(GenericRecord genericRecord);
-
-  /**
-   * What is the RecordType for this record? Subclasses must implement this method, which is called
-   * for every GenericRecord in the inbound import data.
-   *
-   * @param genericRecord the inbound Avro GenericRecord to be converted
-   * @return the RecordType to use for the WDS record
-   */
-  abstract RecordType extractRecordType(GenericRecord genericRecord);
+  public Record convert(GenericRecord genRec, TwoPassStreamingWriteHandler.ImportMode importMode) {
+    return switch (importMode) {
+      case RELATIONS -> convertRelations(genRec);
+      case BASE_ATTRIBUTES -> convertBaseAttributes(genRec);
+    };
+  }
 
   /**
    * When operating in {@see TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES} mode, what
-   * attributes should be upserted for this GenericRecord?
+   * Record - and its attributes - should be upserted?
    *
    * @param genericRecord the inbound Avro GenericRecord to be converted
-   * @return the base WDS attributes
+   * @return the Record containing base (non-relation) WDS attributes
    */
-  abstract RecordAttributes extractBaseAttributes(GenericRecord genericRecord);
+  abstract Record convertBaseAttributes(GenericRecord genericRecord);
 
   /**
-   * When operating in {@see TwoPassStreamingWriteHandler.ImportMode.RELATIONS} mode, what
-   * attributes should be upserted for this GenericRecord?
+   * When operating in {@see TwoPassStreamingWriteHandler.ImportMode.RELATIONS} mode, what Record -
+   * and its attributes - should be upserted?
    *
    * @param genericRecord the inbound Avro GenericRecord to be converted
-   * @return the WDS relation attributes
+   * @return the Record containing WDS relation attributes
    */
-  abstract RecordAttributes extractRelations(GenericRecord genericRecord);
+  abstract Record convertRelations(GenericRecord genericRecord);
 
-  public Record genericRecordToRecord(
-      GenericRecord genRec, TwoPassStreamingWriteHandler.ImportMode importMode) {
-    // determine id and type for this record
-    String id = extractRecordId(genRec);
-    RecordType recordType = extractRecordType(genRec);
-
-    // determine attributes for this record
-    RecordAttributes recordAttributes =
-        switch (importMode) {
-          case RELATIONS -> extractRelations(genRec);
-          case BASE_ATTRIBUTES -> extractBaseAttributes(genRec);
-        };
-
-    return new Record(id, recordType, recordAttributes);
-  }
-
-  protected RecordAttributes baseAttributes(
+  /**
+   * Extract WDS attributes from an Avro GenericRecord, optionally skipping over a set of
+   * field/attribute names. Subclasses can call this, as it implements logic shared between PFB and
+   * Parquet import.
+   *
+   * @param objectAttributes the Avro record from which to extract WDS attributes
+   * @param ignoreAttributes field names that should not be extracted from the Avro record
+   * @return the extracted attributes
+   */
+  protected RecordAttributes extractBaseAttributes(
       GenericRecord objectAttributes, Set<String> ignoreAttributes) {
     // loop over all Avro fields and add to the record's attributes
     Schema schema = objectAttributes.getSchema();
@@ -105,6 +94,12 @@ public abstract class AvroRecordConverter {
     return attributes;
   }
 
+  /**
+   * Converts a single Avro field's to a WDS attribute value.
+   *
+   * @param attribute the Avro field
+   * @return the WDS attribute value
+   */
   Object convertAttributeType(Object attribute) {
 
     if (attribute == null) {
