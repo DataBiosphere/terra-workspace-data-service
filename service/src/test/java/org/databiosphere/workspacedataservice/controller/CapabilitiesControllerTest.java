@@ -20,7 +20,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
-public class CapabilitiesControllerTest {
+class CapabilitiesControllerTest {
   @Autowired MockMvc mockMvc;
   @Autowired ObjectMapper objectMapper;
 
