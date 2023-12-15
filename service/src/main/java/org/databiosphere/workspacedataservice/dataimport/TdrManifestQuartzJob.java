@@ -307,11 +307,11 @@ public class TdrManifestQuartzJob extends QuartzJob {
               List<URL> dataFiles =
                   table.getPaths().stream()
                       .map(
-                          x -> {
+                          path -> {
                             try {
-                              return new URL(x);
+                              return new URL(path);
                             } catch (MalformedURLException e) {
-                              throw new TdrManifestImportException(e.getMessage());
+                              throw new TdrManifestImportException(e.getMessage(), e);
                             }
                           })
                       .toList();
