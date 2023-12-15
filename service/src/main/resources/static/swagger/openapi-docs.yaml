@@ -30,6 +30,8 @@ tags:
     description: Schema Manipulation APIs (coming soon)
   - name: General WDS Information
     description: Information regarding versioning, health, info, etc. for WDS
+  - name: Capabilities
+    description: Describes the features of WDS
   - name: Snapshots
     description: Snapshot APIs
 
@@ -505,6 +507,13 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/VersionResponseBody'
+
+  ##############################
+  # Capabilities APIs
+  ##############################
+  /capabilities/v1:
+    # OpenApi requires "/" to be replaced with "~1" in the path being referenced
+    $ref: 'apis-v1.yaml#/paths/~1capabilities~1v1'
 
   ##############################
   # Snapshots APIs

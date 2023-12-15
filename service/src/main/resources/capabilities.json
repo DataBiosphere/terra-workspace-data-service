@@ -1,0 +1,6 @@
+{
+  "capabilities": true,
+  "cloning": true,
+  "import-pfb": true,
+  "import-tdrmanifest": false
+}
