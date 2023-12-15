@@ -85,7 +85,7 @@ dependencies {
     // Parquet, used for TDR snapshot import
     implementation "org.apache.parquet:parquet-common:$parquet_mr_version"
     implementation "org.apache.parquet:parquet-avro:$parquet_mr_version"
-    implementation("org.apache.parquet:parquet-hadoop:$parquet_mr_version")
+    implementation "org.apache.parquet:parquet-hadoop:$parquet_mr_version"
 
     // we need Hadoop libraries to read Parquet files for TDR import. However, Hadoop brings
     // a boatload of transitive dependencies we don't need, some of which (e.g. com.sun.xml.bind)
