@@ -26,7 +26,7 @@ import org.apache.avro.generic.GenericRecordBuilder;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler;
+import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler.ImportMode;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
@@ -48,8 +48,7 @@ class PfbRecordConverterTest {
     String inputName = RandomStringUtils.randomAlphanumeric(16);
     GenericRecord input = PfbTestUtils.makeRecord(inputId, inputName);
 
-    Record actual =
-        converter.convert(input, TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
+    Record actual = converter.convert(input, ImportMode.BASE_ATTRIBUTES);
 
     assertEquals(inputId, actual.getId());
     assertEquals(inputName, actual.getRecordTypeName());
@@ -59,8 +58,7 @@ class PfbRecordConverterTest {
   @Test
   void emptyObjectAttributes() {
     GenericRecord input = PfbTestUtils.makeRecord("my-id", "my-name");
-    Record actual =
-        converter.convert(input, TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
+    Record actual = converter.convert(input, ImportMode.BASE_ATTRIBUTES);
 
     assertThat(actual.attributeSet()).isEmpty();
   }
