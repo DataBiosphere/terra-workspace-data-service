@@ -290,34 +290,32 @@ public class TdrManifestQuartzJob extends QuartzJob {
               // filter relations to those that point at a valid primary key
               List<RelationshipModel> relations =
                   possibleRelations.stream()
-                      .filter(
-                          relationshipModel -> {
-                            // the target table and column requested by the snapshot model
-                            String requestedTable = relationshipModel.getTo().getTable();
-                            String requestedPrimaryKey = relationshipModel.getTo().getColumn();
-                            // the actual primary key for the target table
-                            String actualPrimaryKey =
-                                primaryKeys.get(RecordType.valueOf(requestedTable));
-                            return requestedPrimaryKey != null
-                                && requestedPrimaryKey.equals(actualPrimaryKey);
-                          })
+                      .filter(relationshipModel -> isValidRelation(relationshipModel, primaryKeys))
                       .toList();
 
               // determine data files for this table
-              List<URL> dataFiles =
-                  table.getPaths().stream()
-                      .map(
-                          path -> {
-                            try {
-                              return new URL(path);
-                            } catch (MalformedURLException e) {
-                              throw new TdrManifestImportException(e.getMessage(), e);
-                            }
-                          })
-                      .toList();
+              List<URL> dataFiles = table.getPaths().stream().map(this::parseUrl).toList();
               return new TdrManifestImportTable(recordType, primaryKey, dataFiles, relations);
             })
         .toList();
+  }
+
+  private boolean isValidRelation(
+      RelationshipModel relationshipModel, Map<RecordType, String> primaryKeys) {
+    // the target table and column requested by the snapshot model
+    String requestedTable = relationshipModel.getTo().getTable();
+    String requestedPrimaryKey = relationshipModel.getTo().getColumn();
+    // the actual primary key for the target table
+    String actualPrimaryKey = primaryKeys.get(RecordType.valueOf(requestedTable));
+    return requestedPrimaryKey != null && requestedPrimaryKey.equals(actualPrimaryKey);
+  }
+
+  private URL parseUrl(String path) {
+    try {
+      return new URL(path);
+    } catch (MalformedURLException e) {
+      throw new TdrManifestImportException(e.getMessage(), e);
+    }
   }
 
   /**
