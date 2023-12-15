@@ -31,7 +31,7 @@ import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
-import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
+import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
@@ -105,11 +105,11 @@ public class TdrManifestQuartzJob extends QuartzJob {
     importTables(
         tdrManifestImportTables,
         targetInstance,
-        PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES);
+        TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
 
     // add relations to the existing base attributes
     importTables(
-        tdrManifestImportTables, targetInstance, PfbStreamWriteHandler.PfbImportMode.RELATIONS);
+        tdrManifestImportTables, targetInstance, TwoPassStreamingWriteHandler.ImportMode.RELATIONS);
 
     // TODO AJ-1521 re-evaluate dataRepoService.importSnapshot, should it be removed?
   }
@@ -120,14 +120,14 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @param path path to Parquet file to be imported.
    * @param table info about the table to be imported
    * @param targetInstance instance into which to import
-   * @param pfbImportMode mode for this invocation
+   * @param importMode mode for this invocation
    * @return statistics on what was imported
    */
   private BatchWriteResult importTable(
       URL path,
       TdrManifestImportTable table,
       UUID targetInstance,
-      PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
+      TwoPassStreamingWriteHandler.ImportMode importMode) {
     try {
       // download the file from the URL to a temp file on the local filesystem
       // Azure urls, with SAS tokens, don't need any particular auth.
@@ -154,7 +154,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
         BatchWriteResult result =
             batchWriteService.batchWriteParquetStream(
-                avroParquetReader, targetInstance, table, pfbImportMode);
+                avroParquetReader, targetInstance, table, importMode);
 
         // activity logging
         // TODO AJ-1520 this activity logging can be a "false positive" - we will log here,
@@ -194,12 +194,12 @@ public class TdrManifestQuartzJob extends QuartzJob {
    *
    * @param importTables tables to be imported
    * @param targetInstance instance into which to import
-   * @param pfbImportMode mode for this invocation
+   * @param importMode mode for this invocation
    */
   private void importTables(
       List<TdrManifestImportTable> importTables,
       UUID targetInstance,
-      PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
+      TwoPassStreamingWriteHandler.ImportMode importMode) {
     // loop through the tables that have data files. In the TDR manifest, for Azure snapshots only,
     // the first file in the list will always be a directory. Attempting to import that directory
     // will fail; it has no content. Ensure we are resilient to those failures.
@@ -217,7 +217,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
           // loop through each parquet file
           paths.forEach(
               path -> {
-                importTable(path, importTable, targetInstance, pfbImportMode);
+                importTable(path, importTable, targetInstance, importMode);
               });
         });
   }

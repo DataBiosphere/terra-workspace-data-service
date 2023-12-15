@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.parquet.hadoop.ParquetReader;
-import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
 import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
@@ -17,18 +16,18 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 public class ParquetStreamWriteHandler implements TwoPassStreamingWriteHandler {
 
   private final ParquetReader<GenericRecord> parquetReader;
-  private final PfbStreamWriteHandler.PfbImportMode pfbImportMode;
+  private final ImportMode importMode;
 
   private final TdrManifestImportTable table;
   private final ObjectMapper objectMapper;
 
   public ParquetStreamWriteHandler(
       ParquetReader<GenericRecord> parquetReader,
-      PfbStreamWriteHandler.PfbImportMode pfbImportMode,
+      ImportMode importMode,
       TdrManifestImportTable table,
       ObjectMapper objectMapper) {
     this.parquetReader = parquetReader;
-    this.pfbImportMode = pfbImportMode;
+    this.importMode = importMode;
     this.table = table;
     this.objectMapper = objectMapper;
   }
@@ -49,9 +48,7 @@ public class ParquetStreamWriteHandler implements TwoPassStreamingWriteHandler {
     // convert avro generic records to WDS records
     ParquetRecordConverter converter = new ParquetRecordConverter(table, objectMapper);
     List<Record> records =
-        genericRecords.stream()
-            .map(gr -> converter.genericRecordToRecord(gr, pfbImportMode))
-            .toList();
+        genericRecords.stream().map(gr -> converter.genericRecordToRecord(gr, importMode)).toList();
 
     return new WriteStreamInfo(records, OperationType.UPSERT);
   }

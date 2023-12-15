@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES;
-import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
+import static org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler.ImportMode.RELATIONS;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 
 import bio.terra.common.db.WriteTransaction;
@@ -91,11 +91,11 @@ public class BatchWriteService {
       UUID instanceId,
       RecordType recordType,
       Optional<String> primaryKey,
-      PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
+      TwoPassStreamingWriteHandler.ImportMode importMode) {
     BatchWriteResult result = BatchWriteResult.empty();
     try {
       // Verify relationsOnly is only for pfbstreamingwriteHandler
-      if (pfbImportMode == RELATIONS
+      if (importMode == RELATIONS
           && !(streamingWriteHandler instanceof TwoPassStreamingWriteHandler)) {
         throw new BadStreamingWriteRequestException(
             "BatchWriteService attempted to re-read input data, but this input is not configured "
@@ -145,8 +145,8 @@ public class BatchWriteService {
             typesSeen.put(recType, finalSchema);
           }
           // when updating relations only, do not update if there are no relations
-          if (pfbImportMode == BASE_ATTRIBUTES || !typesSeen.get(recType).isEmpty()) {
-            if (pfbImportMode == RELATIONS) {
+          if (importMode == BASE_ATTRIBUTES || !typesSeen.get(recType).isEmpty()) {
+            if (importMode == RELATIONS) {
               // For relations only, remove records that have no relations
               rList = rList.stream().filter(rec -> !rec.attributeSet().isEmpty()).toList();
             }
@@ -220,11 +220,11 @@ public class BatchWriteService {
       DataFileStream<GenericRecord> is,
       UUID instanceId,
       Optional<String> primaryKey,
-      PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
+      TwoPassStreamingWriteHandler.ImportMode importMode) {
     try (PfbStreamWriteHandler streamingWriteHandler =
-        new PfbStreamWriteHandler(is, pfbImportMode, pfbRecordConverter)) {
+        new PfbStreamWriteHandler(is, importMode, pfbRecordConverter)) {
       return consumeWriteStreamWithRelations(
-          streamingWriteHandler, instanceId, null, primaryKey, pfbImportMode);
+          streamingWriteHandler, instanceId, null, primaryKey, importMode);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     } catch (Exception e) {
@@ -238,16 +238,16 @@ public class BatchWriteService {
       ParquetReader<GenericRecord> avroParquetReader,
       UUID instanceId,
       TdrManifestImportTable table,
-      PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
+      TwoPassStreamingWriteHandler.ImportMode importMode) {
     // record type and primary key for this
     try (ParquetStreamWriteHandler streamingWriteHandler =
-        new ParquetStreamWriteHandler(avroParquetReader, pfbImportMode, table, objectMapper)) {
+        new ParquetStreamWriteHandler(avroParquetReader, importMode, table, objectMapper)) {
       return consumeWriteStreamWithRelations(
           streamingWriteHandler,
           instanceId,
           table.recordType(),
           Optional.of(table.primaryKey()),
-          pfbImportMode);
+          importMode);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }

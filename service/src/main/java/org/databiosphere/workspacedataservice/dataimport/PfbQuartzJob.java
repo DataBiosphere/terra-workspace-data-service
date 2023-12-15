@@ -1,8 +1,8 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter.ID_FIELD;
-import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES;
-import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
+import static org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler.ImportMode.RELATIONS;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
@@ -24,7 +24,7 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
-import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
+import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -132,15 +132,15 @@ public class PfbQuartzJob extends QuartzJob {
    *
    * @param dataStream stream representing the PFB.
    * @param targetInstance the UUID of the WDS instance being imported to
-   * @param pfbImportMode indicating whether to import all data in the tables or only the relations
+   * @param importMode indicating whether to import all data in the tables or only the relations
    */
   BatchWriteResult importTables(
       DataFileStream<GenericRecord> dataStream,
       UUID targetInstance,
-      PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
+      TwoPassStreamingWriteHandler.ImportMode importMode) {
     BatchWriteResult result =
         batchWriteService.batchWritePfbStream(
-            dataStream, targetInstance, Optional.of(ID_FIELD), pfbImportMode);
+            dataStream, targetInstance, Optional.of(ID_FIELD), importMode);
 
     if (result != null) {
       result

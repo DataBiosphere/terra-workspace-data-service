@@ -15,7 +15,7 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericFixed;
 import org.apache.avro.generic.GenericRecord;
-import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
+import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -54,7 +54,7 @@ public abstract class AvroRecordConverter {
   abstract RecordType extractRecordType(GenericRecord genericRecord);
 
   /**
-   * When operating in {@see PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES} mode, what
+   * When operating in {@see TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES} mode, what
    * attributes should be upserted for this GenericRecord?
    *
    * @param genericRecord the inbound Avro GenericRecord to be converted
@@ -63,8 +63,8 @@ public abstract class AvroRecordConverter {
   abstract RecordAttributes extractBaseAttributes(GenericRecord genericRecord);
 
   /**
-   * When operating in {@see PfbStreamWriteHandler.PfbImportMode.RELATIONS} mode, what attributes
-   * should be upserted for this GenericRecord?
+   * When operating in {@see TwoPassStreamingWriteHandler.ImportMode.RELATIONS} mode, what
+   * attributes should be upserted for this GenericRecord?
    *
    * @param genericRecord the inbound Avro GenericRecord to be converted
    * @return the WDS relation attributes
@@ -72,14 +72,14 @@ public abstract class AvroRecordConverter {
   abstract RecordAttributes extractRelations(GenericRecord genericRecord);
 
   public Record genericRecordToRecord(
-      GenericRecord genRec, PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
+      GenericRecord genRec, TwoPassStreamingWriteHandler.ImportMode importMode) {
     // determine id and type for this record
     String id = extractRecordId(genRec);
     RecordType recordType = extractRecordType(genRec);
 
     // determine attributes for this record
     RecordAttributes recordAttributes =
-        switch (pfbImportMode) {
+        switch (importMode) {
           case RELATIONS -> extractRelations(genRec);
           case BASE_ATTRIBUTES -> extractBaseAttributes(genRec);
         };

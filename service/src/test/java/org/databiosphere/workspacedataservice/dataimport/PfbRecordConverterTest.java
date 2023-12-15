@@ -25,8 +25,8 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
-import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
+import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
@@ -48,7 +48,9 @@ class PfbRecordConverterTest {
     String inputName = RandomStringUtils.randomAlphanumeric(16);
     GenericRecord input = PfbTestUtils.makeRecord(inputId, inputName);
 
-    Record actual = converter.genericRecordToRecord(input, PfbImportMode.BASE_ATTRIBUTES);
+    Record actual =
+        converter.genericRecordToRecord(
+            input, TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
 
     assertEquals(inputId, actual.getId());
     assertEquals(inputName, actual.getRecordTypeName());
@@ -58,7 +60,9 @@ class PfbRecordConverterTest {
   @Test
   void emptyObjectAttributes() {
     GenericRecord input = PfbTestUtils.makeRecord("my-id", "my-name");
-    Record actual = converter.genericRecordToRecord(input, PfbImportMode.BASE_ATTRIBUTES);
+    Record actual =
+        converter.genericRecordToRecord(
+            input, TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
 
     assertThat(actual.attributeSet()).isEmpty();
   }
@@ -137,7 +141,9 @@ class PfbRecordConverterTest {
             .set("embeddedObject", embeddedObjectRecord)
             .build();
     GenericRecord input = PfbTestUtils.makeRecord("my-id", "mytype", objectAttributes);
-    Record actual = converter.genericRecordToRecord(input, PfbImportMode.BASE_ATTRIBUTES);
+    Record actual =
+        converter.genericRecordToRecord(
+            input, TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
 
     Set<Map.Entry<String, Object>> actualAttributeSet = actual.attributeSet();
     Set<String> actualKeySet =
@@ -195,7 +201,8 @@ class PfbRecordConverterTest {
     GenericRecord input =
         PfbTestUtils.makeRecord(
             "my-id", "mytype", new GenericData.Record(OBJECT_SCHEMA), relations);
-    Record actual = converter.genericRecordToRecord(input, PfbImportMode.RELATIONS);
+    Record actual =
+        converter.genericRecordToRecord(input, TwoPassStreamingWriteHandler.ImportMode.RELATIONS);
 
     assertEquals(
         RelationUtils.createRelationString(RecordType.valueOf("relation_table"), "relation_id"),
