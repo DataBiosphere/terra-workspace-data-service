@@ -137,8 +137,7 @@ class PfbRecordConverterTest {
             .set("embeddedObject", embeddedObjectRecord)
             .build();
     GenericRecord input = PfbTestUtils.makeRecord("my-id", "mytype", objectAttributes);
-    Record actual =
-        converter.convert(input, TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
+    Record actual = converter.convert(input, ImportMode.BASE_ATTRIBUTES);
 
     Set<Map.Entry<String, Object>> actualAttributeSet = actual.attributeSet();
     Set<String> actualKeySet =
@@ -196,7 +195,7 @@ class PfbRecordConverterTest {
     GenericRecord input =
         PfbTestUtils.makeRecord(
             "my-id", "mytype", new GenericData.Record(OBJECT_SCHEMA), relations);
-    Record actual = converter.convert(input, TwoPassStreamingWriteHandler.ImportMode.RELATIONS);
+    Record actual = converter.convert(input, ImportMode.RELATIONS);
 
     assertEquals(
         RelationUtils.createRelationString(RecordType.valueOf("relation_table"), "relation_id"),
