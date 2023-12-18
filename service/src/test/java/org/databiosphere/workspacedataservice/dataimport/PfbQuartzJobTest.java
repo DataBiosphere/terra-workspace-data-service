@@ -2,7 +2,7 @@ package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.buildQuartzJob;
 import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.stubJobContext;
-import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;

@@ -37,6 +37,8 @@ jib {
 
 ext {
     jersey_version = "2.36"
+    parquet_mr_version = "1.13.1"
+    hadoop_version = "3.3.6"
 }
 
 dependencies {
@@ -79,6 +81,29 @@ dependencies {
     implementation "bio.terra:workspace-manager-client:0.254.717-SNAPSHOT"
     implementation "bio.terra:java-pfb-library:0.15.0"
     implementation project(path: ':client')
+
+    // Parquet, used for TDR snapshot import
+    implementation "org.apache.parquet:parquet-common:$parquet_mr_version"
+    implementation "org.apache.parquet:parquet-avro:$parquet_mr_version"
+    implementation "org.apache.parquet:parquet-hadoop:$parquet_mr_version"
+
+    // we need Hadoop libraries to read Parquet files for TDR import. However, Hadoop brings
+    // a boatload of transitive dependencies we don't need, some of which (e.g. com.sun.xml.bind)
+    // cause conflicts. Exclude a lot of the transitive deps. Inspired by https://stackoverflow.com/a/60067027
+    def withoutHadoopExcludes = {
+        exclude(group: 'log4j')
+        exclude(group: 'org.slf4j')
+        exclude(group: 'org.mortbay.jetty')
+        exclude(group: 'javax.servlet.jsp')
+        exclude(group: 'com.sun.jersey')
+        exclude(group: 'com.sun.xml.bind')
+        exclude(group: 'org.apache.curator')
+        exclude(group: 'org.apache.zookeeper')
+        exclude(group: 'org.apache.kerby')
+        exclude(group: 'com.google.protobuf')
+    }
+    implementation "org.apache.hadoop:hadoop-common:$hadoop_version", withoutHadoopExcludes
+    implementation "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoop_version", withoutHadoopExcludes
 
     // hk2 is required to use WSM client, but not correctly exposed by the client
     implementation "org.glassfish.jersey.inject:jersey-hk2:$jersey_version"

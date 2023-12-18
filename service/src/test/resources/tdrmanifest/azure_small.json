@@ -1,0 +1,215 @@
+{
+  "snapshot": {
+    "id": "9516afec-583f-11ec-bf63-0242ac130002",
+    "name": "unit_test_snapshot",
+    "description": "Exemplar snapshot for unit testing data",
+    "createdDate": "2021-04-05T07:07:08.654321Z",
+    "source": [
+      {
+        "dataset": {
+          "id": "d70f8266-583f-11ec-bf63-0242ac130002",
+          "name": "unit_test_dataset",
+          "description": "Exemplar dataset for unit testing data",
+          "defaultProfileId": "e55435f6-583f-11ec-bf63-0242ac130002",
+          "createdDate": "2021-01-02T03:04:05.654321Z",
+          "storage": [
+            {
+              "region": "westus2",
+              "cloudResource": "application_deployment",
+              "cloudPlatform": "azure"
+            },
+            {
+              "region": "westus2",
+              "cloudResource": "storage_account",
+              "cloudPlatform": "azure"
+            },
+            {
+              "region": "westus2",
+              "cloudResource": "synapse_workspace",
+              "cloudPlatform": "azure"
+            }
+          ]
+        },
+        "asset": null
+      }
+    ],
+    "tables": [
+      {
+        "name": "project",
+        "columns": [
+          {
+            "name": "project_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": [
+          "project_id"
+        ],
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 1
+      },
+      {
+        "name": "edges",
+        "columns": [
+          {
+            "name": "edges_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "project_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 221
+      },
+      {
+        "name": "test_result",
+        "columns": [
+          {
+            "name": "test_result_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": [
+          "version",
+          "content"
+        ],
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 0
+      },
+      {
+        "name": "genome",
+        "columns": [
+          {
+            "name": "content",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "file_id",
+            "datatype": "fileref",
+            "array_of": false
+          },
+          {
+            "name": "version",
+            "datatype": "timestamp",
+            "array_of": false
+          },
+          {
+            "name": "genome_id",
+            "datatype": "string",
+            "array_of": false
+          },
+          {
+            "name": "descriptor",
+            "datatype": "string",
+            "array_of": false
+          }
+        ],
+        "primaryKey": null,
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 2097
+      }
+    ],
+    "relationships": [
+      {
+        "name": "from_edges.project_id_to_project.project_id",
+        "from": {
+          "table": "edges",
+          "column": "project_id"
+        },
+        "to": {
+          "table": "project",
+          "column": "project_id"
+        }
+      },
+      {
+        "name": "from_test_result.project_id_to_project.project_id",
+        "from": {
+          "table": "test_result",
+          "column": "version"
+        },
+        "to": {
+          "table": "edges",
+          "column": "edges_id"
+        }
+      }
+    ],
+    "profileId": "bff61446-583f-11ec-bf63-0242ac130002",
+    "dataProject": null,
+    "accessInformation": null
+  },
+  "format": {
+    "parquet": {
+      "location": {
+        "tables": [
+          {
+            "name": "project",
+            "paths": [
+              "https://mysnapshotsa.blob.core.windows.net/metadata/parquet/9516afec-583f-11ec-bf63-0242ac130002/project.parquet/F0EE365B-314D-4E19-A177-E8F63D883716_9274_0-1.parquet?sp=r&st=2022-08-04T15:31:55Z&se=2022-08-06T23:31:55Z&spr=https&sv=2021-06-08&sr=b&sig=bogus"
+            ]
+          },
+          {
+            "name": "edges",
+            "paths": [
+              "https://mysnapshotsa.blob.core.windows.net/metadata/parquet/9516afec-583f-11ec-bf63-0242ac130002/edges.parquet/F0EE365B-314D-4E19-A177-E8F63D883716_9274_0-1.parquet?sp=r&st=2022-08-04T15:31:55Z&se=2022-08-06T23:31:55Z&spr=https&sv=2021-06-08&sr=b&sig=bogus",
+              "https://mysnapshotsa.blob.core.windows.net/metadata/parquet/9516afec-583f-11ec-bf63-0242ac130002/edges.parquet/F0EE365B-314D-4E19-A177-E8F63D883716_9274_0-2.parquet?sp=r&st=2022-08-04T15:31:55Z&se=2022-08-06T23:31:55Z&spr=https&sv=2021-06-08&sr=b&sig=bogus"
+            ]
+          },
+          {
+            "name": "test_result",
+            "paths": [
+              "https://mysnapshotsa.blob.core.windows.net/metadata/parquet/9516afec-583f-11ec-bf63-0242ac130002/test_result.parquet/F0EE365B-314D-4E19-A177-E8F63D883716_9274_0-1.parquet?sp=r&st=2022-08-04T15:31:55Z&se=2022-08-06T23:31:55Z&spr=https&sv=2021-06-08&sr=b&sig=bogus"
+            ]
+          }
+        ]
+      },
+      "manifest": "https://mysnapshotsa.blob.core.windows.net/metadata/manifests/rand.json"
+    },
+    "workspace": null
+  }
+}

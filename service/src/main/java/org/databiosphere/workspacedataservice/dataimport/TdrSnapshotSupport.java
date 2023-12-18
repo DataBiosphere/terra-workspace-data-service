@@ -1,16 +1,27 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import bio.terra.datarepo.model.RelationshipModel;
+import bio.terra.datarepo.model.SnapshotModel;
+import bio.terra.datarepo.model.TableModel;
 import bio.terra.workspace.model.DataRepoSnapshotAttributes;
 import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceList;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.Sets;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
-import org.databiosphere.workspacedataservice.service.model.exception.PfbImportException;
+import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
+import org.databiosphere.workspacedataservice.service.model.exception.RestException;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +31,8 @@ public class TdrSnapshotSupport {
   private final UUID workspaceId;
   private final WorkspaceManagerDao wsmDao;
   private final RestClientRetry restClientRetry;
+
+  private static final String DEFAULT_PRIMARY_KEY = "datarepo_row_id";
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -90,7 +103,7 @@ public class TdrSnapshotSupport {
       }
     }
 
-    throw new PfbImportException(
+    throw new DataImportException(
         "Exceeded hard limit of %d for number of pre-existing snapshot references"
             .formatted(hardLimit));
   }
@@ -124,5 +137,70 @@ public class TdrSnapshotSupport {
       }
     }
     return null;
+  }
+
+  /**
+   * Given a list of snapshot ids, create references from the workspace to the snapshot for each id
+   * that does not already have a reference.
+   *
+   * @param snapshotIds the list of snapshot ids to create or verify references.
+   */
+  protected void linkSnapshots(Set<UUID> snapshotIds) {
+    // list existing snapshots linked to this workspace
+    Set<UUID> existingSnapshotIds = Set.copyOf(existingPolicySnapshotIds(/* pageSize= */ 50));
+    // find the snapshots that are not already linked to this workspace
+    Set<UUID> newSnapshotIds = Sets.difference(snapshotIds, existingSnapshotIds);
+
+    logger.info(
+        "Import data contains {} snapshot ids. {} of these are already linked to the workspace; {} new links will be created.",
+        snapshotIds.size(),
+        snapshotIds.size() - newSnapshotIds.size(),
+        newSnapshotIds.size());
+
+    // pass snapshotIds to WSM
+    for (UUID uuid : newSnapshotIds) {
+      try {
+        RestClientRetry.VoidRestCall voidRestCall =
+            (() -> wsmDao.linkSnapshotForPolicy(new SnapshotModel().id(uuid)));
+        restClientRetry.withRetryAndErrorHandling(
+            voidRestCall, "WSM.createDataRepoSnapshotReference");
+      } catch (RestException re) {
+        throw new DataImportException("Error processing data import: " + re.getMessage(), re);
+      }
+      // TODO AJ-1520 activity logging for linking the snapshot
+    }
+  }
+
+  Map<RecordType, String> identifyPrimaryKeys(List<TableModel> tables) {
+    return tables.stream()
+        .collect(
+            Collectors.toMap(
+                tableModel -> RecordType.valueOf(tableModel.getName()),
+                tableModel -> identifyPrimaryKey(tableModel.getPrimaryKey())));
+  }
+
+  String identifyPrimaryKey(List<String> snapshotKeys) {
+    if (snapshotKeys != null && snapshotKeys.size() == 1) {
+      return snapshotKeys.get(0);
+    }
+    return DEFAULT_PRIMARY_KEY;
+  }
+
+  String getDefaultPrimaryKey() {
+    return DEFAULT_PRIMARY_KEY;
+  }
+
+  /**
+   * Returns a Multimap of RecordType -> RelationshipModel, indicating all the outbound relations
+   * for any given RecordType in this snapshot model.
+   *
+   * @param relationshipModels relationship models from the TDR manifest
+   * @return the relationship models, mapped by RecordType
+   */
+  Multimap<RecordType, RelationshipModel> identifyRelations(
+      List<RelationshipModel> relationshipModels) {
+    return Multimaps.index(
+        relationshipModels,
+        relationshipModel -> RecordType.valueOf(relationshipModel.getFrom().getTable()));
   }
 }

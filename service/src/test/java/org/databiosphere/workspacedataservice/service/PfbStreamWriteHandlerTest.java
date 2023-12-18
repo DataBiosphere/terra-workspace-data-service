@@ -15,7 +15,7 @@ import java.util.List;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter;
-import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode;
+import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler.ImportMode;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,8 @@ class PfbStreamWriteHandlerTest {
   void testBatching() {
     // create a mock PFB stream with 10 rows in it and a PfbStreamWriteHandler for that stream
     PfbStreamWriteHandler pfbStreamWriteHandler =
-        buildHandler(mockPfbStream(10, "someType"), PfbImportMode.BASE_ATTRIBUTES);
+        buildHandler(
+            mockPfbStream(10, "someType"), TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
 
     StreamingWriteHandler.WriteStreamInfo batch; // used in assertions below
 
@@ -61,7 +62,9 @@ class PfbStreamWriteHandlerTest {
   @ValueSource(ints = {0, 1, 49, 50, 51, 99, 100, 101})
   void inputStreamOfCount(Integer numRows) {
     PfbStreamWriteHandler pfbStreamWriteHandler =
-        buildHandler(mockPfbStream(numRows, "someType"), PfbImportMode.BASE_ATTRIBUTES);
+        buildHandler(
+            mockPfbStream(numRows, "someType"),
+            TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
 
     int batchSize = 50;
 
@@ -81,7 +84,7 @@ class PfbStreamWriteHandlerTest {
   // PFB?
   void pfbTablesAreParsedCorrectly() {
     try (DataFileStream<GenericRecord> dataFileStream = streamRecordsFromFile("/two_tables.avro")) {
-      PfbStreamWriteHandler pswh = buildHandler(dataFileStream, PfbImportMode.BASE_ATTRIBUTES);
+      PfbStreamWriteHandler pswh = buildHandler(dataFileStream, ImportMode.BASE_ATTRIBUTES);
       StreamingWriteHandler.WriteStreamInfo streamInfo = pswh.readRecords(2);
       /*
         Expected records:
@@ -156,7 +159,7 @@ class PfbStreamWriteHandlerTest {
     try (DataFileStream<GenericRecord> dataFileStream = streamRecordsFromFile("/test.avro")) {
 
       StreamingWriteHandler.WriteStreamInfo streamInfo =
-          buildHandler(dataFileStream, PfbImportMode.RELATIONS).readRecords(5);
+          buildHandler(dataFileStream, ImportMode.RELATIONS).readRecords(5);
 
       List<Record> result = streamInfo.getRecords();
       assertEquals(5, result.size());
@@ -202,7 +205,7 @@ class PfbStreamWriteHandlerTest {
   }
 
   private PfbStreamWriteHandler buildHandler(
-      DataFileStream<GenericRecord> dataFileStream, PfbImportMode importMode) {
+      DataFileStream<GenericRecord> dataFileStream, ImportMode importMode) {
     return new PfbStreamWriteHandler(dataFileStream, importMode, pfbRecordConverter);
   }
 }

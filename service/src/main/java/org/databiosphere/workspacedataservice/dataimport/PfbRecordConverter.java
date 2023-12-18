@@ -1,30 +1,16 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
-import static bio.terra.pfb.PfbReader.convertEnum;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.math.BigDecimal;
-import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericEnumSymbol;
-import org.apache.avro.generic.GenericFixed;
+import java.util.Set;
 import org.apache.avro.generic.GenericRecord;
-import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Logic to convert a PFB's GenericRecord to WDS's Record */
-public class PfbRecordConverter {
-  private static final Logger LOGGER = LoggerFactory.getLogger(PfbRecordConverter.class);
+public class PfbRecordConverter extends AvroRecordConverter {
 
   public static final String ID_FIELD = "id";
   public static final String TYPE_FIELD = "name";
@@ -33,48 +19,32 @@ public class PfbRecordConverter {
   public static final String RELATIONS_ID = "dst_id";
   public static final String RELATIONS_NAME = "dst_name";
 
-  private final ObjectMapper objectMapper;
-
   public PfbRecordConverter(ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
+    super(objectMapper);
   }
 
-  public Record genericRecordToRecord(
-      GenericRecord genRec, PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
-    // create the WDS record shell (id, record type, empty attributes)
-    Record converted =
-        new Record(
-            genRec.get(ID_FIELD).toString(),
-            RecordType.valueOf(genRec.get(TYPE_FIELD).toString()),
-            RecordAttributes.empty());
-    return switch (pfbImportMode) {
-      case RELATIONS -> addRelations(genRec, converted);
-      case BASE_ATTRIBUTES -> addAttributes(genRec, converted);
-    };
+  private Record createEmptyRecord(GenericRecord genericRecord) {
+    return new Record(
+        genericRecord.get(ID_FIELD).toString(),
+        RecordType.valueOf(genericRecord.get(TYPE_FIELD).toString()));
   }
 
-  private Record addAttributes(GenericRecord genRec, Record converted) {
-    // loop over all Avro fields and add to the record's attributes
-    if (genRec.get(OBJECT_FIELD) instanceof GenericRecord objectAttributes) {
-      Schema schema = objectAttributes.getSchema();
-      List<Schema.Field> fields = schema.getFields();
-      RecordAttributes attributes = RecordAttributes.empty();
-      for (Schema.Field field : fields) {
-        String fieldName = field.name();
-        Object value =
-            objectAttributes.get(fieldName) == null
-                ? null
-                : convertAttributeType(objectAttributes.get(fieldName));
-        attributes.putAttribute(fieldName, value);
-      }
-      converted.setAttributes(attributes);
+  @Override
+  protected final Record convertBaseAttributes(GenericRecord genericRecord) {
+    Record record = createEmptyRecord(genericRecord);
+    // extract the OBJECT_FIELD sub-record, then find all its attributes
+    if (genericRecord.get(OBJECT_FIELD) instanceof GenericRecord objectAttributes) {
+      RecordAttributes attributes = extractBaseAttributes(objectAttributes, Set.of());
+      record.setAttributes(attributes);
     }
-    return converted;
+    return record;
   }
 
-  private Record addRelations(GenericRecord genRec, Record converted) {
+  @Override
+  protected final Record convertRelations(GenericRecord genericRecord) {
+    Record record = createEmptyRecord(genericRecord);
     // get the relations array from the record
-    if (genRec.get(RELATIONS_FIELD) instanceof Collection<?> relationArray
+    if (genericRecord.get(RELATIONS_FIELD) instanceof Collection<?> relationArray
         && !relationArray.isEmpty()) {
       RecordAttributes attributes = RecordAttributes.empty();
       for (Object relationObject : relationArray) {
@@ -89,103 +59,8 @@ public class PfbRecordConverter {
               RelationUtils.createRelationString(RecordType.valueOf(relationType), relationId));
         }
       }
-      converted.setAttributes(attributes);
+      record.setAttributes(attributes);
     }
-    return converted;
-  }
-
-  Object convertAttributeType(Object attribute) {
-
-    if (attribute == null) {
-      return null;
-    }
-
-    // For list of Avro types - see
-    // https://avro.apache.org/docs/current/api/java/org/apache/avro/generic/package-summary.html#package_description
-
-    // Avro records
-    if (attribute instanceof GenericRecord recordAttr) {
-      // According to its Javadoc, GenericData#toString() renders the given datum as JSON
-      // However, it may contribute to numeric precision loss (see:
-      // https://broadworkbench.atlassian.net/browse/AJ-1292)
-      // If that's the case, then it may be necessary to traverse the record recursively and do a
-      // less lossy conversion process.
-      return GenericData.get().toString(recordAttr);
-    }
-
-    // Avro enums
-    if (attribute instanceof GenericEnumSymbol<?> enumAttr) {
-      return convertEnum(enumAttr.toString());
-    }
-
-    // Avro arrays
-    if (attribute instanceof Collection<?> collAttr) {
-      // recurse
-      return collAttr.stream().map(this::convertAttributeType).toList();
-    }
-
-    // Avro maps
-    if (attribute instanceof Map<?, ?> mapAttr) {
-      return convertToString(mapAttr);
-    }
-
-    // Avro fixed
-    if (attribute instanceof GenericFixed fixedAttr) {
-      return new String(fixedAttr.bytes());
-    }
-
-    // Avro strings
-    if (attribute instanceof CharSequence charSequenceAttr) {
-      return charSequenceAttr.toString();
-    }
-
-    // Avro bytes
-    if (attribute instanceof ByteBuffer byteBufferAttr) {
-      return new String(byteBufferAttr.array());
-    }
-
-    // Avro ints
-    if (attribute instanceof Integer intAttr) {
-      return BigDecimal.valueOf(intAttr);
-    }
-
-    // Avro longs
-    if (attribute instanceof Long longAttr) {
-      return BigDecimal.valueOf(longAttr);
-    }
-
-    // Avro floats
-    if (attribute instanceof Float floatAttr) {
-      return BigDecimal.valueOf(floatAttr);
-    }
-
-    // Avro doubles
-    if (attribute instanceof Double doubleAttr) {
-      return BigDecimal.valueOf(doubleAttr);
-    }
-
-    // Avro booleans
-    if (attribute instanceof Boolean boolAttr) {
-      return boolAttr;
-    }
-
-    LOGGER.warn(
-        "convertAttributeType received value \"{}\" with unexpected type {}",
-        attribute,
-        attribute.getClass());
-    return attribute.toString();
-  }
-
-  private String convertToString(Object attribute) {
-    try {
-      return objectMapper.writeValueAsString(attribute);
-    } catch (JsonProcessingException e) {
-      LOGGER.warn(
-          String.format(
-              "Unable to convert attribute \"%s\" to JSON string, falling back to toString()",
-              attribute),
-          e);
-      return attribute.toString();
-    }
+    return record;
   }
 }
