@@ -1,15 +1,13 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter.ID_FIELD;
-import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.BASE_ATTRIBUTES;
-import static org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler.PfbImportMode.RELATIONS;
+import static org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler.ImportMode.RELATIONS;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
-import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.pfb.PfbReader;
 import java.net.URL;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -26,10 +24,9 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
-import org.databiosphere.workspacedataservice.service.PfbStreamWriteHandler;
+import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
-import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobDataMap;
@@ -135,15 +132,15 @@ public class PfbQuartzJob extends QuartzJob {
    *
    * @param dataStream stream representing the PFB.
    * @param targetInstance the UUID of the WDS instance being imported to
-   * @param pfbImportMode indicating whether to import all data in the tables or only the relations
+   * @param importMode indicating whether to import all data in the tables or only the relations
    */
   BatchWriteResult importTables(
       DataFileStream<GenericRecord> dataStream,
       UUID targetInstance,
-      PfbStreamWriteHandler.PfbImportMode pfbImportMode) {
+      TwoPassStreamingWriteHandler.ImportMode importMode) {
     BatchWriteResult result =
         batchWriteService.batchWritePfbStream(
-            dataStream, targetInstance, Optional.of(ID_FIELD), pfbImportMode);
+            dataStream, targetInstance, Optional.of(ID_FIELD), importMode);
 
     if (result != null) {
       result
@@ -196,29 +193,7 @@ public class PfbQuartzJob extends QuartzJob {
     // list existing snapshots linked to this workspace
     TdrSnapshotSupport tdrSnapshotSupport =
         new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry);
-    List<UUID> existingSnapshotIds =
-        tdrSnapshotSupport.existingPolicySnapshotIds(/* pageSize= */ 50);
-    // find the snapshots in this PFB that are not already linked to this workspace
-    List<UUID> newSnapshotIds =
-        snapshotIds.stream().filter(id -> !existingSnapshotIds.contains(id)).toList();
-
-    logger.info(
-        "PFB contains {} snapshot ids. {} of these are already linked to the workspace; {} new links will be created.",
-        snapshotIds.size(),
-        snapshotIds.size() - newSnapshotIds.size(),
-        newSnapshotIds.size());
-
-    // pass snapshotIds to WSM
-    for (UUID uuid : newSnapshotIds) {
-      try {
-        RestClientRetry.VoidRestCall voidRestCall =
-            (() -> wsmDao.linkSnapshotForPolicy(new SnapshotModel().id(uuid)));
-        restClientRetry.withRetryAndErrorHandling(
-            voidRestCall, "WSM.createDataRepoSnapshotReference");
-      } catch (RestException re) {
-        throw new PfbParsingException("Error processing PFB: " + re.getMessage(), re);
-      }
-    }
+    tdrSnapshotSupport.linkSnapshots(snapshotIds);
   }
 
   private UUID maybeUuid(String input) {

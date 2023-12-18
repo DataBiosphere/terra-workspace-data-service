@@ -26,16 +26,12 @@ public class Record {
 
   public Record() {}
 
-  public Record(String id) {
-    Preconditions.checkArgument(StringUtils.isNotBlank(id), "Record id can't be null or empty");
-    this.id = id;
+  public Record(String id, RecordType type) {
+    this(id, type, RecordAttributes.empty());
   }
 
   public Record(String id, RecordType type, RecordRequest request) {
-    Preconditions.checkArgument(StringUtils.isNotBlank(id), "Record id can't be null or empty");
-    this.id = id;
-    this.recordType = type;
-    this.attributes = request.recordAttributes();
+    this(id, type, request.recordAttributes());
   }
 
   public String getId() {
