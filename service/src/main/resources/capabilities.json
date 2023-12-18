@@ -1,0 +1,5 @@
+{
+  "capabilities": true,
+  "dataimport.pfb": true,
+  "dataimport.tdrmanifest": false
+}
