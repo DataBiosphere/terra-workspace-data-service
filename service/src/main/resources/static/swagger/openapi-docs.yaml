@@ -507,6 +507,15 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/VersionResponseBody'
+  /prometheus:
+    get:
+      summary: App health metrics for Prometheus -- generated via Spring Boot Actuator (see https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/#prometheus for details)
+      operationId: prometheusGet
+      tags:
+        - General WDS Information
+      responses:
+        200:
+          $ref: '#/components/responses/PrometheusResponseBody'
 
   ##############################
   # Capabilities APIs
@@ -635,6 +644,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/VersionResponse'
+    PrometheusResponseBody:
+      description: Metrics in a format that can be scraped by Prometheus
+      content:
+        text/plain:
+          schema:
+            type: string
 
   requestBodies:
     BackupRestoreRequestBody:
