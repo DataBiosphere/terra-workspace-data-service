@@ -5,6 +5,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 public class WorkspaceManagerException extends ResponseStatusException {
   public WorkspaceManagerException(RestException cause) {
-    super(cause.getStatus(), cause.getMessage(), cause);
+    super(cause.getStatusCode(), cause.getMessage(), cause);
   }
 }

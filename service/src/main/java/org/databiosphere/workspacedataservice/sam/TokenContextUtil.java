@@ -3,9 +3,9 @@ package org.databiosphere.workspacedataservice.sam;
 import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
 import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
+import jakarta.validation.constraints.NotNull;
 import java.util.Map;
 import java.util.function.Supplier;
-import javax.validation.constraints.NotNull;
 import org.databiosphere.workspacedataservice.jobexec.JobContextHolder;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.slf4j.Logger;
