@@ -5,7 +5,6 @@ import static io.micrometer.core.instrument.config.MeterFilter.deny;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import java.util.Set;
@@ -25,7 +24,7 @@ public class MetricsConfig {
   @VisibleForTesting
   static final Set<String> ALLOWED_PREFIXES =
       // please keep this list alphabetized
-      ImmutableSet.of(
+      Set.of(
           "application",
           "cache",
           "disk",
