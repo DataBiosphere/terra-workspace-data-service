@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @DirtiesContext
 @SpringBootTest(properties = "management.metrics.export.prometheus.enabled=true")
 @AutoConfigureMockMvc
-public class MetricsConfigTest {
+class MetricsConfigTest {
   @Autowired private BuildProperties buildProperties;
   @Autowired private MockMvc mockMvc;
   @Autowired private MeterRegistry metrics;
