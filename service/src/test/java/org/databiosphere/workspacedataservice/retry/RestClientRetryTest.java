@@ -304,7 +304,7 @@ class RestClientRetryTest {
 
     assertEquals(
         expectedStatusCode,
-        actual.getRawStatusCode(),
+        actual.getStatusCode().value(),
         "RestCall: Incorrect status code in RestException");
   }
 
@@ -318,7 +318,7 @@ class RestClientRetryTest {
 
     assertEquals(
         expectedStatusCode,
-        actual.getRawStatusCode(),
+        actual.getStatusCode().value(),
         "voidRestCall: Incorrect status code in RestException");
   }
 }

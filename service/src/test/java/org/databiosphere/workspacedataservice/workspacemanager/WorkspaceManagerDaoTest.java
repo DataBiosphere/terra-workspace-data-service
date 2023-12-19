@@ -94,7 +94,7 @@ class WorkspaceManagerDaoTest {
         assertThrows(
             WorkspaceManagerException.class,
             () -> workspaceManagerDao.linkSnapshotForPolicy(testSnapshot));
-    assertEquals(statusCode, exception.getRawStatusCode());
+    assertEquals(statusCode, exception.getStatusCode().value());
   }
 
   @Test

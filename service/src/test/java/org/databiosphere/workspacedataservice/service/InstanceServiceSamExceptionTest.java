@@ -250,7 +250,7 @@ class InstanceServiceSamExceptionTest {
             "createInstance should throw if caller does not have permission to create wds-instance resource in Sam");
     assertEquals(
         expectedSamExceptionCode,
-        samException.getRawStatusCode(),
+        samException.getStatusCode().value(),
         "RestException from createInstance should have same status code as the thrown ApiException");
     List<UUID> allInstances = instanceService.listInstances(VERSION);
     assertFalse(allInstances.contains(instanceId), "should not have created the instances.");
@@ -270,7 +270,7 @@ class InstanceServiceSamExceptionTest {
             "deleteInstance should throw if caller does not have permission to create wds-instance resource in Sam");
     assertEquals(
         expectedSamExceptionCode,
-        samException.getRawStatusCode(),
+        samException.getStatusCode().value(),
         "RestException from deleteInstance should have same status code as the thrown ApiException");
     allInstances = instanceService.listInstances(VERSION);
     assertTrue(
