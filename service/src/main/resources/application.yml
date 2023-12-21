@@ -53,6 +53,10 @@ spring:
       password: ${env.wds.db.password}
       maximum-pool-size: 7
       minimum-idle: 7
+  mvc:
+    problemdetails:
+      # TODO AJ-1157: can we turn this back on?
+      enabled: false
   servlet:
     multipart.max-request-size: 5GB
     multipart.max-file-size: 5GB

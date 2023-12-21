@@ -28,6 +28,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
       Exception ex, HttpServletRequest servletRequest) {
     Map<String, Object> errorBody = new LinkedHashMap<>();
 
+    // TODO AJ-1157: what shape should we return here? This will depend on problem details being
+    //    enabled or disabled.
     errorBody.put("timestamp", new Date());
     errorBody.put("status", HttpStatus.BAD_REQUEST.value());
     errorBody.put("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
