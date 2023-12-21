@@ -4,7 +4,7 @@ import bio.terra.workspace.api.ControlledAzureResourceApi;
 import bio.terra.workspace.api.ReferencedGcpResourceApi;
 import bio.terra.workspace.api.ResourceApi;
 import bio.terra.workspace.client.ApiClient;
-import javax.ws.rs.client.Client;
+import jakarta.ws.rs.client.Client;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;

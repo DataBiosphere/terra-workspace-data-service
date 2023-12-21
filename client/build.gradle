@@ -21,10 +21,10 @@ ext {
 
 // default to javax, since WDS is currently on Spring Boot 2. -Pjakarta=true overrides
 // the default and creates a Jakarta-based client.
-if (project.hasProperty("jakarta") && "true".equalsIgnoreCase(project.getProperty("jakarta"))) {
-    apply from: "dependencies-jakarta.gradle"
-} else {
+if (project.hasProperty("jakarta") && "false".equalsIgnoreCase(project.getProperty("jakarta"))) {
     apply from: "dependencies-javax.gradle"
+} else {
+    apply from: "dependencies-jakarta.gradle"
 }
 
 apply from: 'artifactory.gradle'
