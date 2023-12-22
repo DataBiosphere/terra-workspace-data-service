@@ -1,9 +1,12 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -33,13 +36,27 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     errorBody.put("timestamp", new Date());
     errorBody.put("status", HttpStatus.BAD_REQUEST.value());
     errorBody.put("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
-    // MethodArgumentTypeMismatchException nested exception contains
-    // the real message we want to display
-    if (ex.getCause() != null && ex.getCause().getCause() != null) {
-      errorBody.put("message", ex.getCause().getCause().getMessage());
-    }
     errorBody.put("path", servletRequest.getRequestURI());
 
+    // MethodArgumentTypeMismatchException nested exceptions contains
+    // the real message we want to display. Gather all the nested messages and display the last one.
+    List<String> errorMessages = gatherNestedErrorMessages(ex, new ArrayList<>());
+    if (!errorMessages.isEmpty()) {
+      errorBody.put("messages", errorMessages.get(errorMessages.size() - 1));
+    } else {
+      errorBody.put("messages", "Unexpected error: " + ex.getClass().getName());
+    }
+
     return ResponseEntity.badRequest().body(errorBody);
+  }
+
+  private List<String> gatherNestedErrorMessages(Throwable t, List<String> accumulator) {
+    if (StringUtils.isNotBlank(t.getMessage())) {
+      accumulator.add(t.getMessage());
+    }
+    if (t.getCause() == null) {
+      return accumulator;
+    }
+    return gatherNestedErrorMessages(t.getCause(), accumulator);
   }
 }
