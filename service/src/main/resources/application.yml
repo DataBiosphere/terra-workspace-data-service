@@ -23,14 +23,18 @@ management:
       group:
         liveness:
           include: livenessState,db
+    prometheus:
+      enabled: true
   endpoints:
     enabled-by-default: false
     web:
-      exposure.include: info,health
+      exposure:
+        include: "info,health,prometheus"
       base-path: /
       path-mapping:
         info: version
         health: status
+        prometheus: prometheus
   # additional keys to expose in the actuator info endpoint:
   info:
     env:

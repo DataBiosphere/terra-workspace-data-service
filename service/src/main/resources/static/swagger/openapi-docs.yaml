@@ -635,7 +635,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/VersionResponse'
-
   requestBodies:
     BackupRestoreRequestBody:
       description: A backup request
