@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import com.google.common.annotations.VisibleForTesting;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Date;
@@ -74,9 +75,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   public ResponseEntity<Map<String, Object>> handleAllExceptions(
       Exception ex, HttpServletRequest servletRequest) {
     Map<String, Object> errorBody = new LinkedHashMap<>();
-
-    // TODO AJ-1157: what shape should we return here? This will depend on problem details being
-    //    enabled or disabled.
     errorBody.put("timestamp", new Date());
     errorBody.put("status", HttpStatus.BAD_REQUEST.value());
     errorBody.put("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
@@ -94,7 +92,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     return ResponseEntity.badRequest().body(errorBody);
   }
 
-  private List<String> gatherNestedErrorMessages(Throwable t, List<String> accumulator) {
+  @VisibleForTesting
+  List<String> gatherNestedErrorMessages(@NotNull Throwable t, @NotNull List<String> accumulator) {
     if (StringUtils.isNotBlank(t.getMessage())) {
       accumulator.add(t.getMessage());
     }
