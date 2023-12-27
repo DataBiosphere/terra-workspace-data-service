@@ -25,18 +25,18 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-  private final String ERROR = "error";
-  private final String MESSAGE = "message";
-  private final String PATH = "path";
-  private final String STATUS = "status";
-  private final String TIMESTAMP = "timestamp";
+  private static final String ERROR = "error";
+  private static final String MESSAGE = "message";
+  private static final String PATH = "path";
+  private static final String STATUS = "status";
+  private static final String TIMESTAMP = "timestamp";
 
   /**
    * Override to explicitly translate Problem Details structures back to {@link
    * org.databiosphere.workspacedata.model.ErrorResponse} structures. This ensures backwards
    * compatibility for clients.
    *
-   * <p>Even though {@code }spring.mvc.problemdetails.enabled} is set to false in config, many
+   * <p>Even though {@code spring.mvc.problemdetails.enabled} is set to false in config, many
    * exception classes extend {@link org.springframework.web.server.ResponseStatusException}, and
    * that exception serializes to a problem detail in the response.
    *
