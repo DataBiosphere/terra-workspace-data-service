@@ -1,9 +1,9 @@
 dependencies {
     //Need to include libraries for generated code to work
-    api 'com.google.code.gson:gson:2.10.1'
+    api 'com.google.code.gson:gson'
     api 'io.gsonfire:gson-fire:1.9.0'
-    api 'com.squareup.okhttp3:okhttp:4.12.0'
-    api 'com.squareup.okhttp3:logging-interceptor:4.12.0'
+    api 'com.squareup.okhttp3:okhttp'
+    api 'com.squareup.okhttp3:logging-interceptor'
 }
 
 openApiValidate {
