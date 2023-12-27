@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -23,6 +24,12 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+
+  private final String ERROR = "error";
+  private final String MESSAGE = "message";
+  private final String PATH = "path";
+  private final String STATUS = "status";
+  private final String TIMESTAMP = "timestamp";
 
   /**
    * Override to explicitly translate Problem Details structures back to {@link
@@ -48,13 +55,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
       @NotNull WebRequest request) {
     if (body instanceof ProblemDetail problemDetail) {
       Map<String, Object> errorBody = new LinkedHashMap<>();
-      errorBody.put("timestamp", new Date());
-      errorBody.put("status", problemDetail.getStatus());
-      errorBody.put("error", problemDetail.getTitle());
-      errorBody.put("message", problemDetail.getDetail());
+      errorBody.put(ERROR, problemDetail.getTitle());
+      errorBody.put(MESSAGE, problemDetail.getDetail());
+      errorBody.put(STATUS, problemDetail.getStatus());
+      errorBody.put(TIMESTAMP, new Date());
 
       if (request instanceof ServletWebRequest servletWebRequest) {
-        errorBody.put("path", servletWebRequest.getRequest().getRequestURI());
+        errorBody.put(PATH, servletWebRequest.getRequest().getRequestURI());
       }
       return new ResponseEntity<>(errorBody, headers, statusCode);
     }
@@ -75,21 +82,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   public ResponseEntity<Map<String, Object>> handleAllExceptions(
       Exception ex, HttpServletRequest servletRequest) {
     Map<String, Object> errorBody = new LinkedHashMap<>();
-    errorBody.put("timestamp", new Date());
-    errorBody.put("status", HttpStatus.BAD_REQUEST.value());
-    errorBody.put("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
-    errorBody.put("path", servletRequest.getRequestURI());
+    errorBody.put(ERROR, HttpStatus.BAD_REQUEST.getReasonPhrase());
+    errorBody.put(PATH, servletRequest.getRequestURI());
+    errorBody.put(STATUS, HttpStatus.BAD_REQUEST.value());
+    errorBody.put(TIMESTAMP, new Date());
 
     // MethodArgumentTypeMismatchException nested exceptions contains
     // the real message we want to display. Gather all the nested messages and display the last one.
     List<String> errorMessages = gatherNestedErrorMessages(ex, new ArrayList<>());
     if (!errorMessages.isEmpty()) {
-      errorBody.put("message", errorMessages.get(errorMessages.size() - 1));
+      errorBody.put(MESSAGE, errorMessages.get(errorMessages.size() - 1));
     } else {
-      errorBody.put("message", "Unexpected error: " + ex.getClass().getName());
+      errorBody.put(MESSAGE, "Unexpected error: " + ex.getClass().getName());
     }
 
-    return ResponseEntity.badRequest().body(errorBody);
+    return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(errorBody);
   }
 
   @VisibleForTesting

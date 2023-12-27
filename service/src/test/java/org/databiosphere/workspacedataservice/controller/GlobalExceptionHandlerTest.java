@@ -43,7 +43,7 @@ class GlobalExceptionHandlerTest {
     List<String> actual =
         globalExceptionHandler.gatherNestedErrorMessages(input, new ArrayList<>());
     assertThat(actual).size().isEqualTo(1);
-    assertEquals(actual.get(0), "one");
+    assertEquals("one", actual.get(0));
   }
 
   @Test
@@ -54,8 +54,8 @@ class GlobalExceptionHandlerTest {
     List<String> actual =
         globalExceptionHandler.gatherNestedErrorMessages(input, new ArrayList<>());
     assertThat(actual).size().isEqualTo(2);
-    assertEquals(actual.get(0), "one");
-    assertEquals(actual.get(1), "two");
+    assertEquals("one", actual.get(0));
+    assertEquals("two", actual.get(1));
   }
 
   @Test
@@ -68,8 +68,8 @@ class GlobalExceptionHandlerTest {
     List<String> actual =
         globalExceptionHandler.gatherNestedErrorMessages(input, new ArrayList<>());
     assertThat(actual).size().isEqualTo(3);
-    assertEquals(actual.get(0), "one");
-    assertEquals(actual.get(1), "two");
-    assertEquals(actual.get(2), "three");
+    assertEquals("one", actual.get(0));
+    assertEquals("two", actual.get(1));
+    assertEquals("three", actual.get(2));
   }
 }
