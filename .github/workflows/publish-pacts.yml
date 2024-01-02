@@ -12,6 +12,7 @@ on:
 env:
   WDS_RUN_ID: ${{ github.event.repository.name }}-${{ github.run_id }}
   PUBLISH_CONTRACT_RUN_NAME: 'publish-contracts-${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
+  CAN_I_DEPLOY_RUN_NAME: 'can-i-deploy-${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
   WDS_PACTS_ARTIFACT: wds-pacts-${{ github.event.repository.name }}-${{ github.run_id }}
   WDS_PACTS_OUTPUT_DIR: service/build/pacts/
 
@@ -161,10 +162,10 @@ jobs:
             "repo-name": "${{ github.event.repository.name }}",
             "repo-branch": "${{ needs.init-github-context.outputs.repo-branch }}",
             "release-tag": "${{ needs.regulated-tag-job.outputs.new-tag }}"
-          }'
+            }'
+
   can-i-deploy:
     runs-on: ubuntu-latest
-    if: ${{ needs.init-github-context.outputs.fork == 'false' }}
     needs:
       - init-github-context
       - publish-pacts-job
@@ -181,4 +182,4 @@ jobs:
             "run-name": "${{ env.CAN_I_DEPLOY_RUN_NAME }}",
             "pacticipant": "wds",
             "version": "${{ needs.init-github-context.outputs.repo-version }}"
-          }'
+            }'

@@ -10,12 +10,12 @@ on:
         type: string
       dry-run:
         description: "Determine the next version without tagging the branch. The workflow can use the outputs new_tag and tag in subsequent steps. Possible values are true and false (default)"
-        default: false
+        default: 'false'
         required: false
         type: string
       print-tag:
         description: "Echo tag to console"
-        default: true
+        default: 'true'
         required: false
         type: string
       release-branches:
