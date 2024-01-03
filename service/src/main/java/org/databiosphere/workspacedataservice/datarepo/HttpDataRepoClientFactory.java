@@ -2,7 +2,7 @@ package org.databiosphere.workspacedataservice.datarepo;
 
 import bio.terra.datarepo.api.RepositoryApi;
 import bio.terra.datarepo.client.ApiClient;
-import javax.ws.rs.client.Client;
+import jakarta.ws.rs.client.Client;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;

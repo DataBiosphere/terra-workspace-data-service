@@ -5,6 +5,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 public class LeonardoServiceException extends ResponseStatusException {
   public LeonardoServiceException(RestException cause) {
-    super(cause.getStatus(), cause.getMessage(), cause);
+    super(cause.getStatusCode(), cause.getMessage(), cause);
   }
 }

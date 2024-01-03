@@ -16,6 +16,6 @@ public class WorkspaceDataServiceException extends ResponseStatusException {
   }
 
   public WorkspaceDataServiceException(RestException cause) {
-    super(cause.getStatus(), cause.getMessage(), cause);
+    super(cause.getStatusCode(), cause.getMessage(), cause);
   }
 }

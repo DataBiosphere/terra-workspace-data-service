@@ -480,7 +480,7 @@ public class WsmPactTest {
         assertThrows(
             WorkspaceManagerException.class,
             () -> wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), BEARER_TOKEN));
-    assertEquals(HttpStatus.FORBIDDEN, thrown.getStatus());
+    assertEquals(HttpStatus.FORBIDDEN, thrown.getStatusCode());
   }
 
   @Test
@@ -494,7 +494,7 @@ public class WsmPactTest {
         assertThrows(
             WorkspaceManagerException.class,
             () -> wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), BEARER_TOKEN));
-    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, thrown.getStatus());
+    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, thrown.getStatusCode());
   }
 
   @Test

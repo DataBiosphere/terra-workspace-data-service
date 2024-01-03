@@ -247,7 +247,7 @@ public class InstanceInitializerBean {
     } catch (WorkspaceDataServiceException wdsE) {
       if (wdsE.getCause() != null
           && wdsE.getCause() instanceof RestException restException
-          && restException.getStatus() == HttpStatus.NOT_FOUND) {
+          && restException.getStatusCode() == HttpStatus.NOT_FOUND) {
         LOGGER.error(
             "Remote source WDS in workspace {} does not support cloning", sourceWorkspaceId);
         cloneDao.terminateCloneToError(

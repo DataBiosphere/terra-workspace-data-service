@@ -57,7 +57,7 @@ class LeonardoDaoTest {
                 statusCode, "Intentional error thrown for unit test"));
     var exception =
         assertThrows(LeonardoServiceException.class, () -> leonardoDao.getWdsEndpointUrl(any()));
-    assertEquals(statusCode, exception.getRawStatusCode());
+    assertEquals(statusCode, exception.getStatusCode().value());
   }
 
   @Test
