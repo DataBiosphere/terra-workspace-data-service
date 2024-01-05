@@ -110,8 +110,6 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // add relations to the existing base attributes
     importTables(
         tdrManifestImportTables, targetInstance, TwoPassStreamingWriteHandler.ImportMode.RELATIONS);
-
-    // TODO AJ-1521 re-evaluate dataRepoService.importSnapshot, should it be removed?
   }
 
   /**
