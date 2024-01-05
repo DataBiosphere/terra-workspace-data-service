@@ -20,6 +20,8 @@ import java.util.UUID;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.hadoop.ParquetReader;
@@ -151,43 +153,52 @@ public class TdrManifestQuartzJob extends QuartzJob {
         throw new RuntimeException(e);
       }
 
-      // upsert this parquet file's contents
-      try (ParquetReader<GenericRecord> avroParquetReader =
-          AvroParquetReader.<GenericRecord>builder(inputFile).build()) {
-        logger.info("batch-writing records for file ...");
+      FileSystem fileSystem = FileSystem.get(new Configuration());
+      FileStatus fileStatus = fileSystem.getFileStatus(hadoopFilePath);
+      if (fileStatus.getLen() == 0) {
+        logger.info("Empty file in parquet, skipping");
+        return BatchWriteResult.empty();
+      } else {
 
-        BatchWriteResult result =
-            batchWriteService.batchWriteParquetStream(
-                avroParquetReader, targetInstance, table, importMode);
+        //      }
+        // upsert this parquet file's contents
+        try (ParquetReader<GenericRecord> avroParquetReader =
+            AvroParquetReader.<GenericRecord>builder(inputFile).build()) {
+          logger.info("batch-writing records for file ...");
 
-        // activity logging
-        // TODO AJ-1520 this activity logging can be a "false positive" - we will log here,
-        //     but if the overall transaction fails and is rolled back these logs will be false
-        if (result != null) {
-          result
-              .entrySet()
-              .forEach(
-                  entry -> {
-                    activityLogger.saveEventForCurrentUser(
-                        user ->
-                            user.upserted()
-                                .record()
-                                .withRecordType(entry.getKey())
-                                .ofQuantity(entry.getValue()));
-                  });
+          BatchWriteResult result =
+              batchWriteService.batchWriteParquetStream(
+                  avroParquetReader, targetInstance, table, importMode);
+
+          // activity logging
+          // TODO AJ-1520 this activity logging can be a "false positive" - we will log here,
+          //     but if the overall transaction fails and is rolled back these logs will be false
+          if (result != null) {
+            result
+                .entrySet()
+                .forEach(
+                    entry -> {
+                      activityLogger.saveEventForCurrentUser(
+                          user ->
+                              user.upserted()
+                                  .record()
+                                  .withRecordType(entry.getKey())
+                                  .ofQuantity(entry.getValue()));
+                    });
+          }
+          return result;
+        } catch (IOException e) {
+          logger.error("Hit an error on file: {}", e.getMessage(), e);
+          //        return new BatchWriteResult(Map.of());
+          throw new TdrManifestImportException(e.getMessage());
+          // TODO AJ-1518 more specific handling for 0-length directories; other errors should
+          //     be true failures
         }
-        return result;
-      } catch (IOException e) {
-        logger.error("Hit an error on file: {}", e.getMessage(), e);
-        return new BatchWriteResult(Map.of());
-        // throw new TdrManifestImportException(e.getMessage());
-        // TODO AJ-1518 more specific handling for 0-length directories; other errors should
-        //     be true failures
       }
     } catch (Throwable t) {
       logger.error("Hit an error on file: {}. Continuing.", t.getMessage());
-      return new BatchWriteResult(Map.of());
-      // throw new TdrManifestImportException(t.getMessage());
+      //      return new BatchWriteResult(Map.of());
+      throw new TdrManifestImportException(t.getMessage());
       // TODO AJ-1518 more specific handling for 0-length directories; other errors should
       //     be true failures
     }
