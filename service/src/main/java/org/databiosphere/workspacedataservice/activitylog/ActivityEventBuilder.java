@@ -74,6 +74,16 @@ public class ActivityEventBuilder {
     return this;
   }
 
+  public ActivityEventBuilder started() {
+    this.action = ActivityModels.Action.STARTED;
+    return this;
+  }
+
+  public ActivityEventBuilder completed() {
+    this.action = ActivityModels.Action.COMPLETED;
+    return this;
+  }
+
   public ActivityEventBuilder modified() {
     this.action = ActivityModels.Action.MODIFY;
     return this;
@@ -108,6 +118,11 @@ public class ActivityEventBuilder {
 
   public ActivityEventBuilder snapshotReference() {
     this.thing = ActivityModels.Thing.SNAPSHOT_REFERENCE;
+    return this;
+  }
+
+  public ActivityEventBuilder importTables() {
+    this.thing = ActivityModels.Thing.IMPORT_TABLES;
     return this;
   }
 
