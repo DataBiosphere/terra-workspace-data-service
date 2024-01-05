@@ -101,7 +101,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     List<TdrManifestImportTable> tdrManifestImportTables =
         extractTableInfo(snapshotExportResponseModel);
 
-    // activity logged - note start of import
+    // activity logger - note start of import
     activityLogger.saveEventForCurrentUser(
         user -> user.started().importTables().withUuid(snapshotId));
 
