@@ -7,6 +7,7 @@ import bio.terra.datarepo.model.RelationshipModel;
 import bio.terra.datarepo.model.SnapshotExportResponseModel;
 import bio.terra.datarepo.model.SnapshotExportResponseModelFormatParquetLocationTables;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Multimap;
 import java.io.File;
 import java.io.IOException;
@@ -123,17 +124,12 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @param importMode mode for this invocation
    * @return statistics on what was imported
    */
-  private BatchWriteResult importTable(
+  @VisibleForTesting
+  BatchWriteResult importTable(
       URL path,
       TdrManifestImportTable table,
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
-    // In the TDR manifest, for Azure snapshots only,
-    // the first file in the list will always be a directory. Attempting to import that directory
-    // will fail; it has no content. To ensure we are resilient to those failures, wrap everything
-    // in try/catch.
-    // TODO AJ-1518 more specific handling for 0-length directories; other errors should
-    //     be true failures
     try {
       // download the file from the URL to a temp file on the local filesystem
       // Azure urls, with SAS tokens, don't need any particular auth.
@@ -153,6 +149,10 @@ public class TdrManifestQuartzJob extends QuartzJob {
         throw new RuntimeException(e);
       }
 
+      // In the TDR manifest, for Azure snapshots only,
+      // the first file in the list will always be a directory. Attempting to import that directory
+      // will fail; it has no content. To avoid those failures,
+      // check files for length and ignore any that are empty
       FileSystem fileSystem = FileSystem.get(new Configuration());
       FileStatus fileStatus = fileSystem.getFileStatus(hadoopFilePath);
       if (fileStatus.getLen() == 0) {
@@ -189,18 +189,12 @@ public class TdrManifestQuartzJob extends QuartzJob {
           return result;
         } catch (IOException e) {
           logger.error("Hit an error on file: {}", e.getMessage(), e);
-          //        return new BatchWriteResult(Map.of());
           throw new TdrManifestImportException(e.getMessage());
-          // TODO AJ-1518 more specific handling for 0-length directories; other errors should
-          //     be true failures
         }
       }
     } catch (Throwable t) {
       logger.error("Hit an error on file: {}. Continuing.", t.getMessage());
-      //      return new BatchWriteResult(Map.of());
       throw new TdrManifestImportException(t.getMessage());
-      // TODO AJ-1518 more specific handling for 0-length directories; other errors should
-      //     be true failures
     }
   }
 

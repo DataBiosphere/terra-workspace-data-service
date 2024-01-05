@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import bio.terra.datarepo.model.RelationshipModel;
@@ -14,6 +15,7 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.TdrManifestExemplarData.AzureSmall;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
@@ -42,6 +44,9 @@ public class TdrManifestQuartzJobTest {
 
   @Value("classpath:tdrmanifest/tdr_response_with_cycle.json")
   Resource manifestWithCycle;
+
+  @Value("classpath:empty_parquet.parquet")
+  Resource emptyParquet;
 
   @Test
   void extractSnapshotInfo() throws IOException {
@@ -91,5 +96,36 @@ public class TdrManifestQuartzJobTest {
         tdrManifestQuartzJob.extractTableInfo(snapshotExportResponseModel);
 
     assertEquals(expected, actual);
+  }
+
+  @Test
+  void parseEmptyParquet() throws IOException {
+    UUID workspaceId = UUID.randomUUID();
+
+    TdrManifestQuartzJob tdrManifestQuartzJob =
+        new TdrManifestQuartzJob(
+            jobDao,
+            wsmDao,
+            restClientRetry,
+            batchWriteService,
+            activityLogger,
+            workspaceId,
+            objectMapper);
+
+    TdrManifestImportTable table =
+        new TdrManifestImportTable(
+            RecordType.valueOf("data"),
+            "datarepo_row_id",
+            List.of(emptyParquet.getURL()),
+            List.of());
+
+    // An empty file should not throw any errors
+    assertDoesNotThrow(
+        () ->
+            tdrManifestQuartzJob.importTable(
+                emptyParquet.getURL(),
+                table,
+                workspaceId,
+                TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES));
   }
 }
