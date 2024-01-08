@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -17,7 +18,9 @@ import org.databiosphere.workspacedataservice.dataimport.TdrManifestExemplarData
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler;
+import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
+import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
@@ -124,13 +127,15 @@ public class TdrManifestQuartzJobTest {
             List.of());
 
     // An empty file should not throw any errors
-    assertDoesNotThrow(
-        () ->
-            tdrManifestQuartzJob.importTable(
-                emptyParquet.getURL(),
-                table,
-                workspaceId,
-                TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES));
+    BatchWriteResult actual =
+        assertDoesNotThrow(
+            () ->
+                tdrManifestQuartzJob.importTable(
+                    emptyParquet.getURL(),
+                    table,
+                    workspaceId,
+                    TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES));
+    assertThat(actual.entrySet()).isEmpty();
   }
 
   @Test
@@ -156,7 +161,7 @@ public class TdrManifestQuartzJobTest {
 
     // Make sure real errors on parsing parquets are not swallowed
     assertThrows(
-        Exception.class,
+        TdrManifestImportException.class,
         () ->
             tdrManifestQuartzJob.importTable(
                 manifestAzure.getURL(),
