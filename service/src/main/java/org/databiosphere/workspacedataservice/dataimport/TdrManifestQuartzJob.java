@@ -264,7 +264,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       SnapshotExportResponseModel snapshotExportResponseModel) {
 
     TdrSnapshotSupport tdrSnapshotSupport =
-        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry);
+        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
 
     // find all the exported tables in the manifest.
     // This is the format.parquet.location.tables section in the manifest
@@ -339,7 +339,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
   protected void linkSnapshots(Set<UUID> snapshotIds) {
     // list existing snapshots linked to this workspace
     TdrSnapshotSupport tdrSnapshotSupport =
-        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry);
+        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
     tdrSnapshotSupport.linkSnapshots(snapshotIds);
   }
 }
