@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import bio.terra.datarepo.model.RelationshipModel;
 import bio.terra.datarepo.model.RelationshipTermModel;
@@ -47,6 +48,9 @@ public class TdrManifestQuartzJobTest {
 
   @Value("classpath:empty_parquet.parquet")
   Resource emptyParquet;
+
+  @Value("classpath:malformed_parquet.parquet")
+  Resource malformedParquet;
 
   @Test
   void extractSnapshotInfo() throws IOException {
@@ -124,6 +128,38 @@ public class TdrManifestQuartzJobTest {
         () ->
             tdrManifestQuartzJob.importTable(
                 emptyParquet.getURL(),
+                table,
+                workspaceId,
+                TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES));
+  }
+
+  @Test
+  void parseMalformedParquet() throws IOException {
+    UUID workspaceId = UUID.randomUUID();
+
+    TdrManifestQuartzJob tdrManifestQuartzJob =
+        new TdrManifestQuartzJob(
+            jobDao,
+            wsmDao,
+            restClientRetry,
+            batchWriteService,
+            activityLogger,
+            workspaceId,
+            objectMapper);
+
+    TdrManifestImportTable table =
+        new TdrManifestImportTable(
+            RecordType.valueOf("data"),
+            "datarepo_row_id",
+            List.of(malformedParquet.getURL()),
+            List.of());
+
+    // Make sure real errors on parsing parquets are not swallowed
+    assertThrows(
+        Exception.class,
+        () ->
+            tdrManifestQuartzJob.importTable(
+                manifestAzure.getURL(),
                 table,
                 workspaceId,
                 TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES));
