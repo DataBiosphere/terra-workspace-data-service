@@ -34,7 +34,7 @@ public class TdrManifestQuartzJobTest {
 
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;
-  @MockBean BatchWriteService batchWriteService;
+  @Autowired BatchWriteService batchWriteService;
   @MockBean ActivityLogger activityLogger;
   @Autowired RestClientRetry restClientRetry;
   @Autowired ObjectMapper objectMapper;

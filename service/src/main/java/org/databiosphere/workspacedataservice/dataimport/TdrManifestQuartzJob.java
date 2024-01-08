@@ -138,59 +138,57 @@ public class TdrManifestQuartzJob extends QuartzJob {
       logger.info("downloading to temp file {} ...", tempFile.getPath());
       FileUtils.copyURLToFile(path, tempFile);
       Path hadoopFilePath = new Path(tempFile.getPath());
-
-      // generate the HadoopInputFile
-      InputFile inputFile;
-      try {
-        // do we need any other config here?
-        Configuration configuration = new Configuration();
-        inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+      // do we need any other config here?
+      Configuration configuration = new Configuration();
 
       // In the TDR manifest, for Azure snapshots only,
       // the first file in the list will always be a directory. Attempting to import that directory
       // will fail; it has no content. To avoid those failures,
       // check files for length and ignore any that are empty
-      FileSystem fileSystem = FileSystem.get(new Configuration());
+      FileSystem fileSystem = FileSystem.get(configuration);
       FileStatus fileStatus = fileSystem.getFileStatus(hadoopFilePath);
       if (fileStatus.getLen() == 0) {
         logger.info("Empty file in parquet, skipping");
         return BatchWriteResult.empty();
-      } else {
+      }
 
-        //      }
-        // upsert this parquet file's contents
-        try (ParquetReader<GenericRecord> avroParquetReader =
-            AvroParquetReader.<GenericRecord>builder(inputFile).build()) {
-          logger.info("batch-writing records for file ...");
+      // generate the HadoopInputFile
+      InputFile inputFile;
+      try {
+        inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
 
-          BatchWriteResult result =
-              batchWriteService.batchWriteParquetStream(
-                  avroParquetReader, targetInstance, table, importMode);
+      // upsert this parquet file's contents
+      try (ParquetReader<GenericRecord> avroParquetReader =
+          AvroParquetReader.<GenericRecord>builder(inputFile).build()) {
+        logger.info("batch-writing records for file ...");
 
-          // activity logging
-          // TODO AJ-1520 this activity logging can be a "false positive" - we will log here,
-          //     but if the overall transaction fails and is rolled back these logs will be false
-          if (result != null) {
-            result
-                .entrySet()
-                .forEach(
-                    entry -> {
-                      activityLogger.saveEventForCurrentUser(
-                          user ->
-                              user.upserted()
-                                  .record()
-                                  .withRecordType(entry.getKey())
-                                  .ofQuantity(entry.getValue()));
-                    });
-          }
-          return result;
-        } catch (IOException e) {
-          logger.error("Hit an error on file: {}", e.getMessage(), e);
-          throw new TdrManifestImportException(e.getMessage());
+        BatchWriteResult result =
+            batchWriteService.batchWriteParquetStream(
+                avroParquetReader, targetInstance, table, importMode);
+
+        // activity logging
+        // TODO AJ-1520 this activity logging can be a "false positive" - we will log here,
+        //     but if the overall transaction fails and is rolled back these logs will be false
+        if (result != null) {
+          result
+              .entrySet()
+              .forEach(
+                  entry -> {
+                    activityLogger.saveEventForCurrentUser(
+                        user ->
+                            user.upserted()
+                                .record()
+                                .withRecordType(entry.getKey())
+                                .ofQuantity(entry.getValue()));
+                  });
         }
+        return result;
+      } catch (IOException e) {
+        logger.error("Hit an error on file: {}", e.getMessage(), e);
+        throw new TdrManifestImportException(e.getMessage());
       }
     } catch (Throwable t) {
       logger.error("Hit an error on file: {}. Continuing.", t.getMessage());
