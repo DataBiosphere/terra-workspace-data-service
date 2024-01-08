@@ -102,14 +102,31 @@ public class TdrManifestQuartzJob extends QuartzJob {
         extractTableInfo(snapshotExportResponseModel);
 
     // loop through the tables to be imported and upsert base attributes
-    importTables(
-        tdrManifestImportTables,
-        targetInstance,
-        TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
+    var result =
+        importTables(
+            tdrManifestImportTables,
+            targetInstance,
+            TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
 
     // add relations to the existing base attributes
     importTables(
         tdrManifestImportTables, targetInstance, TwoPassStreamingWriteHandler.ImportMode.RELATIONS);
+
+    // activity logging for import status
+    // no specific activity logging for relations since main import is a superset
+    if (result != null) {
+      result
+          .entrySet()
+          .forEach(
+              entry -> {
+                activityLogger.saveEventForCurrentUser(
+                    user ->
+                        user.upserted()
+                            .record()
+                            .withRecordType(entry.getKey())
+                            .ofQuantity(entry.getValue()));
+              });
+    }
   }
 
   /**
@@ -160,22 +177,6 @@ public class TdrManifestQuartzJob extends QuartzJob {
             batchWriteService.batchWriteParquetStream(
                 avroParquetReader, targetInstance, table, importMode);
 
-        // activity logging
-        // TODO AJ-1520 this activity logging can be a "false positive" - we will log here,
-        //     but if the overall transaction fails and is rolled back these logs will be false
-        if (result != null) {
-          result
-              .entrySet()
-              .forEach(
-                  entry -> {
-                    activityLogger.saveEventForCurrentUser(
-                        user ->
-                            user.upserted()
-                                .record()
-                                .withRecordType(entry.getKey())
-                                .ofQuantity(entry.getValue()));
-                  });
-        }
         return result;
       } catch (IOException e) {
         logger.error("Hit an error on file: {}", e.getMessage(), e);
@@ -200,10 +201,12 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @param targetInstance instance into which to import
    * @param importMode mode for this invocation
    */
-  private void importTables(
+  private BatchWriteResult importTables(
       List<TdrManifestImportTable> importTables,
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
+
+    var combinedResult = BatchWriteResult.empty();
     // loop through the tables that have data files.
     importTables.forEach(
         importTable -> {
@@ -219,9 +222,20 @@ public class TdrManifestQuartzJob extends QuartzJob {
           // loop through each parquet file
           paths.forEach(
               path -> {
-                importTable(path, importTable, targetInstance, importMode);
+                var result = importTable(path, importTable, targetInstance, importMode);
+
+                if (result != null) {
+                  result
+                      .entrySet()
+                      .forEach(
+                          entry -> {
+                            combinedResult.increaseCount(entry.getKey(), entry.getValue());
+                          });
+                }
               });
         });
+
+    return combinedResult;
   }
 
   /**
