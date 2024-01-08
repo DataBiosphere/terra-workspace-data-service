@@ -24,7 +24,6 @@ import bio.terra.workspace.model.StewardshipType;
 import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dataimport.TdrSnapshotSupport;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.BearerTokenFilter;
@@ -35,7 +34,6 @@ import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerE
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -61,7 +59,6 @@ public class WsmPactTest {
   private static final int NUM_SNAPSHOTS_THAT_EXIST = 3;
   private static final int NUM_SNAPSHOTS_REQUESTED = NUM_SNAPSHOTS_THAT_EXIST + 2;
   private static final String BEARER_TOKEN = "fakebearertoken";
-  @MockBean ActivityLogger activityLogger;
 
   @BeforeEach
   void setUp() {
@@ -522,9 +519,8 @@ public class WsmPactTest {
     assertEquals(NUM_SNAPSHOTS_THAT_EXIST, snapshotIds.size());
   }
 
-  private TdrSnapshotSupport tdrSnapshotSupport(MockServer mockServer) {
-    return new TdrSnapshotSupport(
-        WORKSPACE_UUID, buildWsmDao(mockServer), new RestClientRetry(), activityLogger);
+  private static TdrSnapshotSupport tdrSnapshotSupport(MockServer mockServer) {
+    return new TdrSnapshotSupport(WORKSPACE_UUID, buildWsmDao(mockServer), new RestClientRetry());
   }
 
   private static WorkspaceManagerDao buildWsmDao(MockServer mockServer) {

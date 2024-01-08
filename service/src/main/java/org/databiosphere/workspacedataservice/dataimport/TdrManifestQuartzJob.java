@@ -101,10 +101,6 @@ public class TdrManifestQuartzJob extends QuartzJob {
     List<TdrManifestImportTable> tdrManifestImportTables =
         extractTableInfo(snapshotExportResponseModel);
 
-    // activity logged - note start of import
-    activityLogger.saveEventForCurrentUser(
-        user -> user.started().importTables().withUuid(snapshotId));
-
     // loop through the tables to be imported and upsert base attributes
     importTables(
         tdrManifestImportTables,
@@ -114,11 +110,6 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // add relations to the existing base attributes
     importTables(
         tdrManifestImportTables, targetInstance, TwoPassStreamingWriteHandler.ImportMode.RELATIONS);
-
-    // activity logger - note end of import, if this event is not seen
-    // it would be safe to assume that import didn't complete successfully
-    activityLogger.saveEventForCurrentUser(
-        user -> user.completed().importTables().withUuid(snapshotId));
   }
 
   /**
@@ -169,12 +160,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
             batchWriteService.batchWriteParquetStream(
                 avroParquetReader, targetInstance, table, importMode);
 
-        // activity logging - mark what records were imported
-        // this event doesn't indicate that the whole import failed, but it allows to have a
-        // breadcrumb
-        // to hopefully see which tables made the import fail if a failure does occur
-        // there is a separate event that tracks overall start and finish of the whole import inside
-        // executeInternal
+        // activity logging
+        // TODO AJ-1520 this activity logging can be a "false positive" - we will log here,
+        //     but if the overall transaction fails and is rolled back these logs will be false
         if (result != null) {
           result
               .entrySet()
@@ -262,7 +250,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       SnapshotExportResponseModel snapshotExportResponseModel) {
 
     TdrSnapshotSupport tdrSnapshotSupport =
-        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
+        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry);
 
     // find all the exported tables in the manifest.
     // This is the format.parquet.location.tables section in the manifest
@@ -337,7 +325,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
   protected void linkSnapshots(Set<UUID> snapshotIds) {
     // list existing snapshots linked to this workspace
     TdrSnapshotSupport tdrSnapshotSupport =
-        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
+        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry);
     tdrSnapshotSupport.linkSnapshots(snapshotIds);
   }
 }

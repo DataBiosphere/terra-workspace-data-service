@@ -4,14 +4,12 @@ public class ActivityModels {
 
   public enum Action {
     CREATE("created"),
-    COMPLETED("completed"),
     DELETE("deleted"),
     UPDATE("updated"),
     UPSERT("upserted"),
     MODIFY("modified"),
     LINK("linked"),
-    RESTORE("restored"),
-    STARTED("started");
+    RESTORE("restored");
 
     private final String name;
 
@@ -29,7 +27,6 @@ public class ActivityModels {
     TABLE("table"),
     RECORD("record"),
     SNAPSHOT_REFERENCE("snapshot reference"),
-    IMPORT_TABLES("import tables"),
     BACKUP("backup");
 
     private final String name;

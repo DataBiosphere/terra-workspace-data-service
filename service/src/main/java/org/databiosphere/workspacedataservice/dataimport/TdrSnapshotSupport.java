@@ -18,7 +18,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
@@ -32,21 +31,16 @@ public class TdrSnapshotSupport {
   private final UUID workspaceId;
   private final WorkspaceManagerDao wsmDao;
   private final RestClientRetry restClientRetry;
-  private final ActivityLogger activityLogger;
 
   private static final String DEFAULT_PRIMARY_KEY = "datarepo_row_id";
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   public TdrSnapshotSupport(
-      UUID workspaceId,
-      WorkspaceManagerDao wsmDao,
-      RestClientRetry restClientRetry,
-      ActivityLogger activityLogger) {
+      UUID workspaceId, WorkspaceManagerDao wsmDao, RestClientRetry restClientRetry) {
     this.workspaceId = workspaceId;
     this.wsmDao = wsmDao;
     this.restClientRetry = restClientRetry;
-    this.activityLogger = activityLogger;
   }
 
   /**
@@ -170,11 +164,10 @@ public class TdrSnapshotSupport {
             (() -> wsmDao.linkSnapshotForPolicy(new SnapshotModel().id(uuid)));
         restClientRetry.withRetryAndErrorHandling(
             voidRestCall, "WSM.createDataRepoSnapshotReference");
-        activityLogger.saveEventForCurrentUser(
-            user -> user.linked().snapshotReference().withUuid(uuid));
       } catch (RestException re) {
         throw new DataImportException("Error processing data import: " + re.getMessage(), re);
       }
+      // TODO AJ-1520 activity logging for linking the snapshot
     }
   }
 
