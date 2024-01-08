@@ -25,6 +25,7 @@ public class JsonConfig {
             .configure(JsonParser.Feature.STRICT_DUPLICATE_DETECTION, true)
             .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
             .configure(DeserializationFeature.USE_BIG_INTEGER_FOR_INTS, true)
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .findAndAddModules()
             .build();
     mapper

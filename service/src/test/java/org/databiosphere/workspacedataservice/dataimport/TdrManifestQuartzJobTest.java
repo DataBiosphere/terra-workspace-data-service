@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import bio.terra.datarepo.model.RelationshipModel;
@@ -42,6 +43,10 @@ public class TdrManifestQuartzJobTest {
 
   @Value("classpath:tdrmanifest/tdr_response_with_cycle.json")
   Resource manifestWithCycle;
+
+  // this one contains properties not defined in the Java models
+  @Value("classpath:tdrmanifest/extra_properties.json")
+  Resource manifestWithUnknownProperties;
 
   @Test
   void extractSnapshotInfo() throws IOException {
@@ -91,5 +96,32 @@ public class TdrManifestQuartzJobTest {
         tdrManifestQuartzJob.extractTableInfo(snapshotExportResponseModel);
 
     assertEquals(expected, actual);
+  }
+
+  @Test
+  /*
+   * the TDR manifest JSON changes not-infrequently. When TDR adds fields, are we resilient to those
+   * additions?
+   */
+  void parseUnknownFieldsInManifest() throws IOException {
+    UUID workspaceId = UUID.randomUUID();
+    TdrManifestQuartzJob tdrManifestQuartzJob =
+        new TdrManifestQuartzJob(
+            jobDao,
+            wsmDao,
+            restClientRetry,
+            batchWriteService,
+            activityLogger,
+            workspaceId,
+            objectMapper);
+
+    SnapshotExportResponseModel snapshotExportResponseModel =
+        assertDoesNotThrow(
+            () -> tdrManifestQuartzJob.parseManifest(manifestWithUnknownProperties.getURL()));
+
+    // smoke-test that it parsed correctly
+    assertEquals(
+        UUID.fromString("00000000-1111-2222-3333-444455556666"),
+        snapshotExportResponseModel.getSnapshot().getId());
   }
 }
