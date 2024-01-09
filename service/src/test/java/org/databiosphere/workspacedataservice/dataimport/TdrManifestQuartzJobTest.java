@@ -55,6 +55,10 @@ public class TdrManifestQuartzJobTest {
   @Value("classpath:malformed_parquet.parquet")
   Resource malformedParquet;
 
+  // this one contains properties not defined in the Java models
+  @Value("classpath:tdrmanifest/extra_properties.json")
+  Resource manifestWithUnknownProperties;
+
   @Test
   void extractSnapshotInfo() throws IOException {
     UUID workspaceId = UUID.randomUUID();
@@ -108,7 +112,6 @@ public class TdrManifestQuartzJobTest {
   @Test
   void parseEmptyParquet() throws IOException {
     UUID workspaceId = UUID.randomUUID();
-
     TdrManifestQuartzJob tdrManifestQuartzJob =
         new TdrManifestQuartzJob(
             jobDao,
@@ -136,6 +139,39 @@ public class TdrManifestQuartzJobTest {
                     workspaceId,
                     TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES));
     assertThat(actual.entrySet()).isEmpty();
+  }
+
+  /*
+   * the TDR manifest JSON changes not-infrequently. When TDR adds fields, are we resilient to those
+   * additions?
+   */
+  void parseUnknownFieldsInManifest() throws IOException {
+    UUID workspaceId = UUID.randomUUID();
+    TdrManifestQuartzJob tdrManifestQuartzJob =
+        new TdrManifestQuartzJob(
+            jobDao,
+            wsmDao,
+            restClientRetry,
+            batchWriteService,
+            activityLogger,
+            workspaceId,
+            objectMapper);
+
+    TdrManifestImportTable table =
+        new TdrManifestImportTable(
+            RecordType.valueOf("data"),
+            "datarepo_row_id",
+            List.of(emptyParquet.getURL()),
+            List.of());
+
+    SnapshotExportResponseModel snapshotExportResponseModel =
+        assertDoesNotThrow(
+            () -> tdrManifestQuartzJob.parseManifest(manifestWithUnknownProperties.getURL()));
+
+    // smoke-test that it parsed correctly
+    assertEquals(
+        UUID.fromString("00000000-1111-2222-3333-444455556666"),
+        snapshotExportResponseModel.getSnapshot().getId());
   }
 
   @Test
