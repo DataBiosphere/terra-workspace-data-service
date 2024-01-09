@@ -153,45 +153,37 @@ public class TdrManifestQuartzJob extends QuartzJob {
       }
 
       // generate the HadoopInputFile
-      InputFile inputFile;
-      try {
-        inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+      InputFile inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
 
       // upsert this parquet file's contents
-      try (ParquetReader<GenericRecord> avroParquetReader =
-          AvroParquetReader.<GenericRecord>builder(inputFile).build()) {
-        logger.info("batch-writing records for file ...");
+      ParquetReader<GenericRecord> avroParquetReader =
+          AvroParquetReader.<GenericRecord>builder(inputFile).build();
+      logger.info("batch-writing records for file ...");
 
-        BatchWriteResult result =
-            batchWriteService.batchWriteParquetStream(
-                avroParquetReader, targetInstance, table, importMode);
+      BatchWriteResult result =
+          batchWriteService.batchWriteParquetStream(
+              avroParquetReader, targetInstance, table, importMode);
 
-        // activity logging
-        // TODO AJ-1520 this activity logging can be a "false positive" - we will log here,
-        //     but if the overall transaction fails and is rolled back these logs will be false
-        if (result != null) {
-          result
-              .entrySet()
-              .forEach(
-                  entry -> {
-                    activityLogger.saveEventForCurrentUser(
-                        user ->
-                            user.upserted()
-                                .record()
-                                .withRecordType(entry.getKey())
-                                .ofQuantity(entry.getValue()));
-                  });
-        }
-        return result;
-      } catch (IOException e) {
-        logger.error("Hit an error on file: {}", e.getMessage(), e);
-        throw new TdrManifestImportException(e.getMessage());
+      // activity logging
+      // TODO AJ-1520 this activity logging can be a "false positive" - we will log here,
+      //     but if the overall transaction fails and is rolled back these logs will be false
+      if (result != null) {
+        result
+            .entrySet()
+            .forEach(
+                entry -> {
+                  activityLogger.saveEventForCurrentUser(
+                      user ->
+                          user.upserted()
+                              .record()
+                              .withRecordType(entry.getKey())
+                              .ofQuantity(entry.getValue()));
+                });
       }
+      return result;
+
     } catch (Throwable t) {
-      logger.error("Hit an error on file: {}. Continuing.", t.getMessage());
+      logger.error("Hit an error on file: {}", t.getMessage());
       throw new TdrManifestImportException(t.getMessage());
     }
   }
