@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -136,7 +135,7 @@ public class TdrManifestQuartzJobTest {
     // An empty file should not throw any errors
     Map<String, List<InputFile>> actual =
         assertDoesNotThrow(() -> tdrManifestQuartzJob.prepareTableImport(List.of(table)));
-    assertThat(actual.get("data").isEmpty());
+    assert (actual.get("data").isEmpty());
   }
 
   /*

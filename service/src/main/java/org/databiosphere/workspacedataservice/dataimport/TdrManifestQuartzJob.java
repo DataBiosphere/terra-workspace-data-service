@@ -155,47 +155,16 @@ public class TdrManifestQuartzJob extends QuartzJob {
       TdrManifestImportTable table,
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
-    try {
-      // download the file from the URL to a temp file on the local filesystem
-      // Azure urls, with SAS tokens, don't need any particular auth.
-      // TODO AJ-1517 can we access the URL directly, no temp file?
-      //      File tempFile = File.createTempFile("tdr-", "download");
-      //      logger.info("downloading to temp file {} ...", tempFile.getPath());
-      //      FileUtils.copyURLToFile(path, tempFile);
-      //      Path hadoopFilePath = new Path(tempFile.getPath());
-      //
-      //      // generate the HadoopInputFile
-      //      InputFile inputFile;
-      //      try {
-      //        // do we need any other config here?
-      //        Configuration configuration = new Configuration();
-      //        inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
-      //      } catch (IOException e) {
-      //        throw new RuntimeException(e);
-      //      }
+    // upsert this parquet file's contents
+    try (ParquetReader<GenericRecord> avroParquetReader =
+        AvroParquetReader.<GenericRecord>builder(inputFile).build()) {
+      logger.info("batch-writing records for file ...");
 
-      // In the TDR manifest, for Azure snapshots only,
-      // the first file in the list will always be a directory. Attempting to import that directory
-      // will fail; it has no content. To avoid those failures,
-      // check files for length and ignore any that are empty
-      //      FileSystem fileSystem = FileSystem.get(configuration);
-      //      FileStatus fileStatus = fileSystem.getFileStatus(hadoopFilePath);
-      //      if (fileStatus.getLen() == 0) {
-      //        logger.info("Empty file in parquet, skipping");
-      //        return BatchWriteResult.empty();
-      //      }
+      BatchWriteResult result =
+          batchWriteService.batchWriteParquetStream(
+              avroParquetReader, targetInstance, table, importMode);
 
-      // upsert this parquet file's contents
-      try (ParquetReader<GenericRecord> avroParquetReader =
-          AvroParquetReader.<GenericRecord>builder(inputFile).build()) {
-        logger.info("batch-writing records for file ...");
-
-        BatchWriteResult result =
-            batchWriteService.batchWriteParquetStream(
-                avroParquetReader, targetInstance, table, importMode);
-
-        return result;
-      }
+      return result;
     } catch (Throwable t) {
       logger.error("Hit an error on file: {}", t.getMessage());
       throw new TdrManifestImportException(t.getMessage());
@@ -260,7 +229,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
           paths.forEach(
               path -> {
                 try {
-
+                  // download the file from the URL to a temp file on the local filesystem
+                  // Azure urls, with SAS tokens, don't need any particular auth.
                   File tempFile = File.createTempFile("tdr-", "download");
                   logger.info("downloading to temp file {} ...", tempFile.getPath());
                   FileUtils.copyURLToFile(path, tempFile);
@@ -283,9 +253,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
                   }
 
                 } catch (IOException e) {
-                  throw new RuntimeException(e);
+                  throw new TdrManifestImportException(e.getMessage());
                 }
-                //                importTable(path, importTable, targetInstance, importMode);
               });
           fileMap.put(importTable.recordType().getName(), files);
         });
