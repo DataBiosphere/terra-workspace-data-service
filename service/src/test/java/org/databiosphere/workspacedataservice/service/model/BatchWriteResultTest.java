@@ -127,5 +127,11 @@ class BatchWriteResultTest {
     assertEquals(4, batchWriteResultOne.getUpdatedCount(RecordType.valueOf("fourth")));
     assertEquals(5, batchWriteResultOne.getUpdatedCount(RecordType.valueOf("fifth")));
     assertEquals(6, batchWriteResultOne.getUpdatedCount(RecordType.valueOf("sixth")));
+
+    BatchWriteResult batchWriteResultThree = BatchWriteResult.empty();
+    batchWriteResultThree.increaseCount(RecordType.valueOf("fourth"), 4);
+
+    batchWriteResultOne.merge(batchWriteResultThree);
+    assertEquals(8, batchWriteResultOne.getUpdatedCount(RecordType.valueOf("fourth")));
   }
 }
