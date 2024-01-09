@@ -105,4 +105,27 @@ class BatchWriteResultTest {
             RecordType.valueOf("first"), RecordType.valueOf("second"), RecordType.valueOf("third")),
         batchWriteResult.entrySet().stream().map(Map.Entry::getKey).collect(Collectors.toSet()));
   }
+
+  @Test
+  void mergeTwoResults() {
+    BatchWriteResult batchWriteResultOne = BatchWriteResult.empty();
+    batchWriteResultOne.increaseCount(RecordType.valueOf("first"), 1);
+    batchWriteResultOne.increaseCount(RecordType.valueOf("second"), 2);
+    batchWriteResultOne.increaseCount(RecordType.valueOf("third"), 3);
+
+    BatchWriteResult batchWriteResultTwo = BatchWriteResult.empty();
+    batchWriteResultTwo.increaseCount(RecordType.valueOf("fourth"), 4);
+    batchWriteResultTwo.increaseCount(RecordType.valueOf("fifth"), 5);
+    batchWriteResultTwo.increaseCount(RecordType.valueOf("sixth"), 6);
+
+    batchWriteResultOne.merge(batchWriteResultTwo);
+
+    // verify counts
+    assertEquals(1, batchWriteResultOne.getUpdatedCount(RecordType.valueOf("first")));
+    assertEquals(2, batchWriteResultOne.getUpdatedCount(RecordType.valueOf("second")));
+    assertEquals(3, batchWriteResultOne.getUpdatedCount(RecordType.valueOf("third")));
+    assertEquals(4, batchWriteResultOne.getUpdatedCount(RecordType.valueOf("fourth")));
+    assertEquals(5, batchWriteResultOne.getUpdatedCount(RecordType.valueOf("fifth")));
+    assertEquals(6, batchWriteResultOne.getUpdatedCount(RecordType.valueOf("sixth")));
+  }
 }

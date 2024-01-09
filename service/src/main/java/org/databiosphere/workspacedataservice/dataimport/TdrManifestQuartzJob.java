@@ -114,19 +114,17 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
     // activity logging for import status
     // no specific activity logging for relations since main import is a superset
-    if (result != null) {
-      result
-          .entrySet()
-          .forEach(
-              entry -> {
-                activityLogger.saveEventForCurrentUser(
-                    user ->
-                        user.upserted()
-                            .record()
-                            .withRecordType(entry.getKey())
-                            .ofQuantity(entry.getValue()));
-              });
-    }
+    result
+        .entrySet()
+        .forEach(
+            entry -> {
+              activityLogger.saveEventForCurrentUser(
+                  user ->
+                      user.upserted()
+                          .record()
+                          .withRecordType(entry.getKey())
+                          .ofQuantity(entry.getValue()));
+            });
   }
 
   /**
@@ -225,12 +223,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
                 var result = importTable(path, importTable, targetInstance, importMode);
 
                 if (result != null) {
-                  result
-                      .entrySet()
-                      .forEach(
-                          entry -> {
-                            combinedResult.increaseCount(entry.getKey(), entry.getValue());
-                          });
+                  combinedResult.merge(result);
                 }
               });
         });
