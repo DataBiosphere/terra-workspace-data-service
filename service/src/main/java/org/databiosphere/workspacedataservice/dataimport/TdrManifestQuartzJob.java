@@ -105,14 +105,29 @@ public class TdrManifestQuartzJob extends QuartzJob {
         extractTableInfo(snapshotExportResponseModel);
 
     // loop through the tables to be imported and upsert base attributes
-    importTables(
-        tdrManifestImportTables,
-        targetInstance,
-        TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
+    var result =
+        importTables(
+            tdrManifestImportTables,
+            targetInstance,
+            TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
 
     // add relations to the existing base attributes
     importTables(
         tdrManifestImportTables, targetInstance, TwoPassStreamingWriteHandler.ImportMode.RELATIONS);
+
+    // activity logging for import status
+    // no specific activity logging for relations since main import is a superset
+    result
+        .entrySet()
+        .forEach(
+            entry -> {
+              activityLogger.saveEventForCurrentUser(
+                  user ->
+                      user.upserted()
+                          .record()
+                          .withRecordType(entry.getKey())
+                          .ofQuantity(entry.getValue()));
+            });
   }
 
   /**
@@ -164,22 +179,6 @@ public class TdrManifestQuartzJob extends QuartzJob {
             batchWriteService.batchWriteParquetStream(
                 avroParquetReader, targetInstance, table, importMode);
 
-        // activity logging
-        // TODO AJ-1520 this activity logging can be a "false positive" - we will log here,
-        //     but if the overall transaction fails and is rolled back these logs will be false
-        if (result != null) {
-          result
-              .entrySet()
-              .forEach(
-                  entry -> {
-                    activityLogger.saveEventForCurrentUser(
-                        user ->
-                            user.upserted()
-                                .record()
-                                .withRecordType(entry.getKey())
-                                .ofQuantity(entry.getValue()));
-                  });
-        }
         return result;
       }
     } catch (Throwable t) {
@@ -195,10 +194,12 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @param targetInstance instance into which to import
    * @param importMode mode for this invocation
    */
-  private void importTables(
+  private BatchWriteResult importTables(
       List<TdrManifestImportTable> importTables,
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
+
+    var combinedResult = BatchWriteResult.empty();
     // loop through the tables that have data files.
     importTables.forEach(
         importTable -> {
@@ -214,9 +215,15 @@ public class TdrManifestQuartzJob extends QuartzJob {
           // loop through each parquet file
           paths.forEach(
               path -> {
-                importTable(path, importTable, targetInstance, importMode);
+                var result = importTable(path, importTable, targetInstance, importMode);
+
+                if (result != null) {
+                  combinedResult.merge(result);
+                }
               });
         });
+
+    return combinedResult;
   }
 
   /**
@@ -245,7 +252,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       SnapshotExportResponseModel snapshotExportResponseModel) {
 
     TdrSnapshotSupport tdrSnapshotSupport =
-        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry);
+        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
 
     // find all the exported tables in the manifest.
     // This is the format.parquet.location.tables section in the manifest
@@ -320,7 +327,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
   protected void linkSnapshots(Set<UUID> snapshotIds) {
     // list existing snapshots linked to this workspace
     TdrSnapshotSupport tdrSnapshotSupport =
-        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry);
+        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
     tdrSnapshotSupport.linkSnapshots(snapshotIds);
   }
 }
