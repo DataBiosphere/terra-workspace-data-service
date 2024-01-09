@@ -192,7 +192,7 @@ public class PfbQuartzJob extends QuartzJob {
   protected void linkSnapshots(Set<UUID> snapshotIds) {
     // list existing snapshots linked to this workspace
     TdrSnapshotSupport tdrSnapshotSupport =
-        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry);
+        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
     tdrSnapshotSupport.linkSnapshots(snapshotIds);
   }
 

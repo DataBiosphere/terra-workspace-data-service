@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -38,6 +39,7 @@ class TdrSnapshotSupportTest {
 
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;
+  @MockBean ActivityLogger activityLogger;
   @Autowired RestClientRetry restClientRetry;
 
   @ParameterizedTest(name = "paginates through results when WSM has {0} references")
@@ -73,7 +75,7 @@ class TdrSnapshotSupportTest {
             });
 
     ResourceList actual =
-        new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry)
+        new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry, activityLogger)
             .listAllSnapshots(testPageSize);
 
     // assert total size of all results
@@ -235,7 +237,7 @@ class TdrSnapshotSupportTest {
   }
 
   private TdrSnapshotSupport defaultSupport() {
-    return new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry);
+    return new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry, activityLogger);
   }
 
   private ResourceDescription createResourceDescription(UUID snapshotId) {

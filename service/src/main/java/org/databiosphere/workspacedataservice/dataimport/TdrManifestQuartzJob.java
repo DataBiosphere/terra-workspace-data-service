@@ -7,6 +7,7 @@ import bio.terra.datarepo.model.RelationshipModel;
 import bio.terra.datarepo.model.SnapshotExportResponseModel;
 import bio.terra.datarepo.model.SnapshotExportResponseModelFormatParquetLocationTables;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Multimap;
 import java.io.File;
 import java.io.IOException;
@@ -22,6 +23,8 @@ import java.util.UUID;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.hadoop.ParquetReader;
@@ -108,11 +111,12 @@ public class TdrManifestQuartzJob extends QuartzJob {
     Map<String, List<InputFile>> fileMap = prepareTableImport(tdrManifestImportTables);
 
     // loop through the tables to be imported and upsert base attributes
-    importTables(
-        tdrManifestImportTables,
-        fileMap,
-        targetInstance,
-        TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
+    var result =
+        importTables(
+            tdrManifestImportTables,
+            fileMap,
+            targetInstance,
+            TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
 
     // add relations to the existing base attributes
     importTables(
@@ -120,6 +124,20 @@ public class TdrManifestQuartzJob extends QuartzJob {
         fileMap,
         targetInstance,
         TwoPassStreamingWriteHandler.ImportMode.RELATIONS);
+
+    // activity logging for import status
+    // no specific activity logging for relations since main import is a superset
+    result
+        .entrySet()
+        .forEach(
+            entry -> {
+              activityLogger.saveEventForCurrentUser(
+                  user ->
+                      user.upserted()
+                          .record()
+                          .withRecordType(entry.getKey())
+                          .ofQuantity(entry.getValue()));
+            });
   }
 
   /**
@@ -131,17 +149,12 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @param importMode mode for this invocation
    * @return statistics on what was imported
    */
-  private BatchWriteResult importTable(
+  @VisibleForTesting
+  BatchWriteResult importTable(
       InputFile inputFile,
       TdrManifestImportTable table,
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
-    // In the TDR manifest, for Azure snapshots only,
-    // the first file in the list will always be a directory. Attempting to import that directory
-    // will fail; it has no content. To ensure we are resilient to those failures, wrap everything
-    // in try/catch.
-    // TODO AJ-1518 more specific handling for 0-length directories; other errors should
-    //     be true failures
     try {
       // download the file from the URL to a temp file on the local filesystem
       // Azure urls, with SAS tokens, don't need any particular auth.
@@ -161,6 +174,17 @@ public class TdrManifestQuartzJob extends QuartzJob {
       //        throw new RuntimeException(e);
       //      }
 
+      // In the TDR manifest, for Azure snapshots only,
+      // the first file in the list will always be a directory. Attempting to import that directory
+      // will fail; it has no content. To avoid those failures,
+      // check files for length and ignore any that are empty
+      //      FileSystem fileSystem = FileSystem.get(configuration);
+      //      FileStatus fileStatus = fileSystem.getFileStatus(hadoopFilePath);
+      //      if (fileStatus.getLen() == 0) {
+      //        logger.info("Empty file in parquet, skipping");
+      //        return BatchWriteResult.empty();
+      //      }
+
       // upsert this parquet file's contents
       try (ParquetReader<GenericRecord> avroParquetReader =
           AvroParquetReader.<GenericRecord>builder(inputFile).build()) {
@@ -170,36 +194,11 @@ public class TdrManifestQuartzJob extends QuartzJob {
             batchWriteService.batchWriteParquetStream(
                 avroParquetReader, targetInstance, table, importMode);
 
-        // activity logging
-        // TODO AJ-1520 this activity logging can be a "false positive" - we will log here,
-        //     but if the overall transaction fails and is rolled back these logs will be false
-        if (result != null) {
-          result
-              .entrySet()
-              .forEach(
-                  entry -> {
-                    activityLogger.saveEventForCurrentUser(
-                        user ->
-                            user.upserted()
-                                .record()
-                                .withRecordType(entry.getKey())
-                                .ofQuantity(entry.getValue()));
-                  });
-        }
         return result;
-      } catch (IOException e) {
-        logger.error("Hit an error on file: {}", e.getMessage(), e);
-        return new BatchWriteResult(Map.of());
-        // throw new TdrManifestImportException(e.getMessage());
-        // TODO AJ-1518 more specific handling for 0-length directories; other errors should
-        //     be true failures
       }
     } catch (Throwable t) {
-      logger.error("Hit an error on file: {}. Continuing.", t.getMessage());
-      return new BatchWriteResult(Map.of());
-      // throw new TdrManifestImportException(t.getMessage());
-      // TODO AJ-1518 more specific handling for 0-length directories; other errors should
-      //     be true failures
+      logger.error("Hit an error on file: {}", t.getMessage());
+      throw new TdrManifestImportException(t.getMessage());
     }
   }
 
@@ -210,11 +209,13 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @param targetInstance instance into which to import
    * @param importMode mode for this invocation
    */
-  private void importTables(
+  private BatchWriteResult importTables(
       List<TdrManifestImportTable> importTables,
       Map<String, List<InputFile>> fileMap,
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
+
+    var combinedResult = BatchWriteResult.empty();
     // loop through the tables that have data files.
     importTables.forEach(
         importTable -> {
@@ -225,9 +226,13 @@ public class TdrManifestQuartzJob extends QuartzJob {
               .get(importTable.recordType().getName())
               .forEach(
                   file -> {
-                    importTable(file, importTable, targetInstance, importMode);
+                    var result = importTable(file, importTable, targetInstance, importMode);
+                    if (result != null) {
+                      combinedResult.merge(result);
+                    }
                   });
         });
+    return combinedResult;
   }
 
   /**
@@ -235,8 +240,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
    *
    * @param importTables tables to be imported
    */
-  private Map<String, List<InputFile>> prepareTableImport(
-      List<TdrManifestImportTable> importTables) {
+  @VisibleForTesting
+  Map<String, List<InputFile>> prepareTableImport(List<TdrManifestImportTable> importTables) {
     Map<String, List<InputFile>> fileMap = new HashMap<>();
     // loop through the tables that have data files.
     importTables.forEach(
@@ -262,9 +267,21 @@ public class TdrManifestQuartzJob extends QuartzJob {
                   Path hadoopFilePath = new Path(tempFile.getPath());
                   Configuration configuration = new Configuration();
 
-                  // generate the HadoopInputFile
-                  InputFile inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
-                  files.add(inputFile);
+                  // In the TDR manifest, for Azure snapshots only,
+                  // the first file in the list will always be a directory. Attempting to import
+                  // that directory
+                  // will fail; it has no content. To avoid those failures,
+                  // check files for length and ignore any that are empty
+                  FileSystem fileSystem = FileSystem.get(configuration);
+                  FileStatus fileStatus = fileSystem.getFileStatus(hadoopFilePath);
+                  if (fileStatus.getLen() == 0) {
+                    logger.info("Empty file in parquet, skipping");
+                  } else {
+                    // generate the HadoopInputFile
+                    InputFile inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
+                    files.add(inputFile);
+                  }
+
                 } catch (IOException e) {
                   throw new RuntimeException(e);
                 }
@@ -301,7 +318,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       SnapshotExportResponseModel snapshotExportResponseModel) {
 
     TdrSnapshotSupport tdrSnapshotSupport =
-        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry);
+        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
 
     // find all the exported tables in the manifest.
     // This is the format.parquet.location.tables section in the manifest
@@ -376,7 +393,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
   protected void linkSnapshots(Set<UUID> snapshotIds) {
     // list existing snapshots linked to this workspace
     TdrSnapshotSupport tdrSnapshotSupport =
-        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry);
+        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
     tdrSnapshotSupport.linkSnapshots(snapshotIds);
   }
 }

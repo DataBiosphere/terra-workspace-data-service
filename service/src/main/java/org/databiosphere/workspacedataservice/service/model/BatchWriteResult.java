@@ -25,6 +25,10 @@ public class BatchWriteResult {
     return resultCounts.get(recordType);
   }
 
+  public void merge(BatchWriteResult other) {
+    other.resultCounts.forEach((key, value) -> this.resultCounts.merge(key, value, Integer::sum));
+  }
+
   public void increaseCount(RecordType recordType, int count) {
     Preconditions.checkArgument(count >= 0, "Count cannot be negative");
     resultCounts.compute(recordType, (key, value) -> (value == null) ? count : value + count);

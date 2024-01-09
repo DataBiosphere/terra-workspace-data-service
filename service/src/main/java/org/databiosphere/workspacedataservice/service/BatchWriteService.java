@@ -22,7 +22,6 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.ParquetStreamWriteHandler;
-import org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
@@ -48,7 +47,6 @@ public class BatchWriteService {
   private final ObjectReader tsvReader;
 
   private final RecordService recordService;
-  private final PfbRecordConverter pfbRecordConverter;
 
   public BatchWriteService(
       RecordDao recordDao,
@@ -56,15 +54,13 @@ public class BatchWriteService {
       DataTypeInferer inf,
       ObjectMapper objectMapper,
       ObjectReader tsvReader,
-      RecordService recordService,
-      PfbRecordConverter pfbRecordConverter) {
+      RecordService recordService) {
     this.recordDao = recordDao;
     this.batchSize = batchSize;
     this.inferer = inf;
     this.objectMapper = objectMapper;
     this.tsvReader = tsvReader;
     this.recordService = recordService;
-    this.pfbRecordConverter = pfbRecordConverter;
   }
 
   private BatchWriteResult consumeWriteStream(
@@ -222,7 +218,7 @@ public class BatchWriteService {
       Optional<String> primaryKey,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
     try (PfbStreamWriteHandler streamingWriteHandler =
-        new PfbStreamWriteHandler(is, importMode, pfbRecordConverter)) {
+        new PfbStreamWriteHandler(is, importMode, objectMapper)) {
       return consumeWriteStreamWithRelations(
           streamingWriteHandler, instanceId, null, primaryKey, importMode);
     } catch (IOException e) {
