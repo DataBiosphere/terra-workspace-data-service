@@ -12,7 +12,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -101,28 +103,36 @@ public class TdrManifestQuartzJob extends QuartzJob {
     List<TdrManifestImportTable> tdrManifestImportTables =
         extractTableInfo(snapshotExportResponseModel);
 
+    // get all the parquet files from the manifests
+    // TODO do we really want to download them all at once ahead of time?
+    Map<String, List<InputFile>> fileMap = prepareTableImport(tdrManifestImportTables);
+
     // loop through the tables to be imported and upsert base attributes
     importTables(
         tdrManifestImportTables,
+        fileMap,
         targetInstance,
         TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
 
     // add relations to the existing base attributes
     importTables(
-        tdrManifestImportTables, targetInstance, TwoPassStreamingWriteHandler.ImportMode.RELATIONS);
+        tdrManifestImportTables,
+        fileMap,
+        targetInstance,
+        TwoPassStreamingWriteHandler.ImportMode.RELATIONS);
   }
 
   /**
    * Given a single Parquet file to be imported, import it
    *
-   * @param path path to Parquet file to be imported.
+   * @param inputFile Parquet file to be imported.
    * @param table info about the table to be imported
    * @param targetInstance instance into which to import
    * @param importMode mode for this invocation
    * @return statistics on what was imported
    */
   private BatchWriteResult importTable(
-      URL path,
+      InputFile inputFile,
       TdrManifestImportTable table,
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
@@ -136,20 +146,20 @@ public class TdrManifestQuartzJob extends QuartzJob {
       // download the file from the URL to a temp file on the local filesystem
       // Azure urls, with SAS tokens, don't need any particular auth.
       // TODO AJ-1517 can we access the URL directly, no temp file?
-      File tempFile = File.createTempFile("tdr-", "download");
-      logger.info("downloading to temp file {} ...", tempFile.getPath());
-      FileUtils.copyURLToFile(path, tempFile);
-      Path hadoopFilePath = new Path(tempFile.getPath());
-
-      // generate the HadoopInputFile
-      InputFile inputFile;
-      try {
-        // do we need any other config here?
-        Configuration configuration = new Configuration();
-        inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+      //      File tempFile = File.createTempFile("tdr-", "download");
+      //      logger.info("downloading to temp file {} ...", tempFile.getPath());
+      //      FileUtils.copyURLToFile(path, tempFile);
+      //      Path hadoopFilePath = new Path(tempFile.getPath());
+      //
+      //      // generate the HadoopInputFile
+      //      InputFile inputFile;
+      //      try {
+      //        // do we need any other config here?
+      //        Configuration configuration = new Configuration();
+      //        inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
+      //      } catch (IOException e) {
+      //        throw new RuntimeException(e);
+      //      }
 
       // upsert this parquet file's contents
       try (ParquetReader<GenericRecord> avroParquetReader =
@@ -202,12 +212,36 @@ public class TdrManifestQuartzJob extends QuartzJob {
    */
   private void importTables(
       List<TdrManifestImportTable> importTables,
+      Map<String, List<InputFile>> fileMap,
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
     // loop through the tables that have data files.
     importTables.forEach(
         importTable -> {
           logger.info("Processing table '{}' ...", importTable.recordType().getName());
+
+          // loop through each parquet file
+          fileMap
+              .get(importTable.recordType().getName())
+              .forEach(
+                  file -> {
+                    importTable(file, importTable, targetInstance, importMode);
+                  });
+        });
+  }
+
+  /**
+   * Given the list of tables/data files to be imported, loop through and import each one
+   *
+   * @param importTables tables to be imported
+   */
+  private Map<String, List<InputFile>> prepareTableImport(
+      List<TdrManifestImportTable> importTables) {
+    Map<String, List<InputFile>> fileMap = new HashMap<>();
+    // loop through the tables that have data files.
+    importTables.forEach(
+        importTable -> {
+          logger.info("Fetching files for table '{}' ...", importTable.recordType().getName());
 
           // find all Parquet files for this table
           List<URL> paths = importTable.dataFiles();
@@ -216,12 +250,29 @@ public class TdrManifestQuartzJob extends QuartzJob {
               importTable.recordType().getName(),
               paths.size());
 
+          List<InputFile> files = new ArrayList<>();
           // loop through each parquet file
           paths.forEach(
               path -> {
-                importTable(path, importTable, targetInstance, importMode);
+                try {
+
+                  File tempFile = File.createTempFile("tdr-", "download");
+                  logger.info("downloading to temp file {} ...", tempFile.getPath());
+                  FileUtils.copyURLToFile(path, tempFile);
+                  Path hadoopFilePath = new Path(tempFile.getPath());
+                  Configuration configuration = new Configuration();
+
+                  // generate the HadoopInputFile
+                  InputFile inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
+                  files.add(inputFile);
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+                //                importTable(path, importTable, targetInstance, importMode);
               });
+          fileMap.put(importTable.recordType().getName(), files);
         });
+    return fileMap;
   }
 
   /**
