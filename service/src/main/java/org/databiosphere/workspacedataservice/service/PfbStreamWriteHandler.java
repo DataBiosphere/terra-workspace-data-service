@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.List;
 import java.util.Spliterator;
@@ -16,22 +17,20 @@ public class PfbStreamWriteHandler implements TwoPassStreamingWriteHandler {
 
   private final DataFileStream<GenericRecord> inputStream;
   private final ImportMode importMode;
-  private final PfbRecordConverter pfbRecordConverter;
+  private final ObjectMapper objectMapper;
 
   /**
    * Create a new PfbStreamWriteHandler and specify the expected schemas for the PFB.
    *
    * @param inputStream the PFB stream
    * @param importMode the mode to use when importing the PFB
-   * @param pfbRecordConverter the converter to use when converting PFB records to WDS records
+   * @param objectMapper the object mapper to use when converting PFB records to WDS records
    */
   public PfbStreamWriteHandler(
-      DataFileStream<GenericRecord> inputStream,
-      ImportMode importMode,
-      PfbRecordConverter pfbRecordConverter) {
+      DataFileStream<GenericRecord> inputStream, ImportMode importMode, ObjectMapper objectMapper) {
     this.inputStream = inputStream;
     this.importMode = importMode;
-    this.pfbRecordConverter = pfbRecordConverter;
+    this.objectMapper = objectMapper;
   }
 
   public WriteStreamInfo readRecords(int numRecords) {
@@ -42,6 +41,7 @@ public class PfbStreamWriteHandler implements TwoPassStreamingWriteHandler {
             .limit(numRecords);
 
     // convert the PFB GenericRecord objects into WDS Record objects
+    PfbRecordConverter pfbRecordConverter = new PfbRecordConverter(objectMapper);
     List<Record> records =
         pfbBatch.map(rec -> pfbRecordConverter.convert(rec, importMode)).toList();
 
