@@ -7,6 +7,7 @@ import bio.terra.datarepo.model.RelationshipModel;
 import bio.terra.datarepo.model.SnapshotExportResponseModel;
 import bio.terra.datarepo.model.SnapshotExportResponseModelFormatParquetLocationTables;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Multimap;
 import java.io.File;
 import java.io.IOException;
@@ -20,6 +21,8 @@ import java.util.UUID;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.hadoop.ParquetReader;
@@ -121,17 +124,12 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @param importMode mode for this invocation
    * @return statistics on what was imported
    */
-  private BatchWriteResult importTable(
+  @VisibleForTesting
+  BatchWriteResult importTable(
       URL path,
       TdrManifestImportTable table,
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
-    // In the TDR manifest, for Azure snapshots only,
-    // the first file in the list will always be a directory. Attempting to import that directory
-    // will fail; it has no content. To ensure we are resilient to those failures, wrap everything
-    // in try/catch.
-    // TODO AJ-1518 more specific handling for 0-length directories; other errors should
-    //     be true failures
     try {
       // download the file from the URL to a temp file on the local filesystem
       // Azure urls, with SAS tokens, don't need any particular auth.
@@ -140,16 +138,22 @@ public class TdrManifestQuartzJob extends QuartzJob {
       logger.info("downloading to temp file {} ...", tempFile.getPath());
       FileUtils.copyURLToFile(path, tempFile);
       Path hadoopFilePath = new Path(tempFile.getPath());
+      // do we need any other config here?
+      Configuration configuration = new Configuration();
+
+      // In the TDR manifest, for Azure snapshots only,
+      // the first file in the list will always be a directory. Attempting to import that directory
+      // will fail; it has no content. To avoid those failures,
+      // check files for length and ignore any that are empty
+      FileSystem fileSystem = FileSystem.get(configuration);
+      FileStatus fileStatus = fileSystem.getFileStatus(hadoopFilePath);
+      if (fileStatus.getLen() == 0) {
+        logger.info("Empty file in parquet, skipping");
+        return BatchWriteResult.empty();
+      }
 
       // generate the HadoopInputFile
-      InputFile inputFile;
-      try {
-        // do we need any other config here?
-        Configuration configuration = new Configuration();
-        inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+      InputFile inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
 
       // upsert this parquet file's contents
       try (ParquetReader<GenericRecord> avroParquetReader =
@@ -177,19 +181,10 @@ public class TdrManifestQuartzJob extends QuartzJob {
                   });
         }
         return result;
-      } catch (IOException e) {
-        logger.error("Hit an error on file: {}", e.getMessage(), e);
-        return new BatchWriteResult(Map.of());
-        // throw new TdrManifestImportException(e.getMessage());
-        // TODO AJ-1518 more specific handling for 0-length directories; other errors should
-        //     be true failures
       }
     } catch (Throwable t) {
-      logger.error("Hit an error on file: {}. Continuing.", t.getMessage());
-      return new BatchWriteResult(Map.of());
-      // throw new TdrManifestImportException(t.getMessage());
-      // TODO AJ-1518 more specific handling for 0-length directories; other errors should
-      //     be true failures
+      logger.error("Hit an error on file: {}", t.getMessage());
+      throw new TdrManifestImportException(t.getMessage());
     }
   }
 

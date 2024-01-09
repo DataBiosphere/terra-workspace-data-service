@@ -1,7 +1,9 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import bio.terra.datarepo.model.RelationshipModel;
 import bio.terra.datarepo.model.RelationshipTermModel;
@@ -15,7 +17,10 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.TdrManifestExemplarData.AzureSmall;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler;
+import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
+import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
@@ -32,7 +37,7 @@ public class TdrManifestQuartzJobTest {
 
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;
-  @MockBean BatchWriteService batchWriteService;
+  @Autowired BatchWriteService batchWriteService;
   @MockBean ActivityLogger activityLogger;
   @Autowired RestClientRetry restClientRetry;
   @Autowired ObjectMapper objectMapper;
@@ -43,6 +48,12 @@ public class TdrManifestQuartzJobTest {
 
   @Value("classpath:tdrmanifest/tdr_response_with_cycle.json")
   Resource manifestWithCycle;
+
+  @Value("classpath:empty_parquet.parquet")
+  Resource emptyParquet;
+
+  @Value("classpath:malformed_parquet.parquet")
+  Resource malformedParquet;
 
   // this one contains properties not defined in the Java models
   @Value("classpath:tdrmanifest/extra_properties.json")
@@ -99,6 +110,37 @@ public class TdrManifestQuartzJobTest {
   }
 
   @Test
+  void parseEmptyParquet() throws IOException {
+    UUID workspaceId = UUID.randomUUID();
+    TdrManifestQuartzJob tdrManifestQuartzJob =
+        new TdrManifestQuartzJob(
+            jobDao,
+            wsmDao,
+            restClientRetry,
+            batchWriteService,
+            activityLogger,
+            workspaceId,
+            objectMapper);
+
+    TdrManifestImportTable table =
+        new TdrManifestImportTable(
+            RecordType.valueOf("data"),
+            "datarepo_row_id",
+            List.of(emptyParquet.getURL()),
+            List.of());
+
+    // An empty file should not throw any errors
+    BatchWriteResult actual =
+        assertDoesNotThrow(
+            () ->
+                tdrManifestQuartzJob.importTable(
+                    emptyParquet.getURL(),
+                    table,
+                    workspaceId,
+                    TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES));
+    assertThat(actual.entrySet()).isEmpty();
+  }
+
   /*
    * the TDR manifest JSON changes not-infrequently. When TDR adds fields, are we resilient to those
    * additions?
@@ -115,6 +157,13 @@ public class TdrManifestQuartzJobTest {
             workspaceId,
             objectMapper);
 
+    TdrManifestImportTable table =
+        new TdrManifestImportTable(
+            RecordType.valueOf("data"),
+            "datarepo_row_id",
+            List.of(emptyParquet.getURL()),
+            List.of());
+
     SnapshotExportResponseModel snapshotExportResponseModel =
         assertDoesNotThrow(
             () -> tdrManifestQuartzJob.parseManifest(manifestWithUnknownProperties.getURL()));
@@ -123,5 +172,37 @@ public class TdrManifestQuartzJobTest {
     assertEquals(
         UUID.fromString("00000000-1111-2222-3333-444455556666"),
         snapshotExportResponseModel.getSnapshot().getId());
+  }
+
+  @Test
+  void parseMalformedParquet() throws IOException {
+    UUID workspaceId = UUID.randomUUID();
+
+    TdrManifestQuartzJob tdrManifestQuartzJob =
+        new TdrManifestQuartzJob(
+            jobDao,
+            wsmDao,
+            restClientRetry,
+            batchWriteService,
+            activityLogger,
+            workspaceId,
+            objectMapper);
+
+    TdrManifestImportTable table =
+        new TdrManifestImportTable(
+            RecordType.valueOf("data"),
+            "datarepo_row_id",
+            List.of(malformedParquet.getURL()),
+            List.of());
+
+    // Make sure real errors on parsing parquets are not swallowed
+    assertThrows(
+        TdrManifestImportException.class,
+        () ->
+            tdrManifestQuartzJob.importTable(
+                manifestAzure.getURL(),
+                table,
+                workspaceId,
+                TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES));
   }
 }
