@@ -1,8 +1,8 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter.ID_FIELD;
-import static org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES;
-import static org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler.ImportMode.RELATIONS;
+import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.ID_FIELD;
+import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode.RELATIONS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -28,7 +28,7 @@ import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.dataimport.PfbTestUtils;
+import org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
 import org.databiosphere.workspacedataservice.shared.model.Record;

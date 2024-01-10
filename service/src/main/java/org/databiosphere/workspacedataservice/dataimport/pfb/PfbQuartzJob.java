@@ -1,8 +1,8 @@
-package org.databiosphere.workspacedataservice.dataimport;
+package org.databiosphere.workspacedataservice.dataimport.pfb;
 
-import static org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter.ID_FIELD;
-import static org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES;
-import static org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler.ImportMode.RELATIONS;
+import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.ID_FIELD;
+import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode.RELATIONS;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
@@ -21,10 +21,11 @@ import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dataimport.TdrSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
-import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;

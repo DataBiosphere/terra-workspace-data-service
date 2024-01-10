@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.dataimport;
+package org.databiosphere.workspacedataservice.dataimport.tdr;
 
 import bio.terra.datarepo.model.RelationshipModel;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.avro.generic.GenericRecord;
+import org.databiosphere.workspacedataservice.dataimport.AvroRecordConverter;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -33,7 +34,7 @@ public class ParquetRecordConverter extends AvroRecordConverter {
   }
 
   @Override
-  protected final Record convertBaseAttributes(GenericRecord genericRecord) {
+  public final Record convertBaseAttributes(GenericRecord genericRecord) {
     Record record = createEmptyRecord(genericRecord);
     // for base attributes, skip the id field and all relations
     List<String> relationNames =
@@ -48,7 +49,7 @@ public class ParquetRecordConverter extends AvroRecordConverter {
   }
 
   @Override
-  protected final Record convertRelations(GenericRecord genericRecord) {
+  public final Record convertRelations(GenericRecord genericRecord) {
     Record record = createEmptyRecord(genericRecord);
     // find relation columns for this type
     if (relationshipModels.isEmpty()) {

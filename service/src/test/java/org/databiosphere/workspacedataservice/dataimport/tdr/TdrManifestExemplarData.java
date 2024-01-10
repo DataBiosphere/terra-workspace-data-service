@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.dataimport;
+package org.databiosphere.workspacedataservice.dataimport.tdr;
 
 import java.net.MalformedURLException;
 import java.net.URL;

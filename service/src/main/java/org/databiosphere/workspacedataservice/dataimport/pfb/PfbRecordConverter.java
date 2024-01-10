@@ -1,9 +1,10 @@
-package org.databiosphere.workspacedataservice.dataimport;
+package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collection;
 import java.util.Set;
 import org.apache.avro.generic.GenericRecord;
+import org.databiosphere.workspacedataservice.dataimport.AvroRecordConverter;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -30,7 +31,7 @@ public class PfbRecordConverter extends AvroRecordConverter {
   }
 
   @Override
-  protected final Record convertBaseAttributes(GenericRecord genericRecord) {
+  public final Record convertBaseAttributes(GenericRecord genericRecord) {
     Record record = createEmptyRecord(genericRecord);
     // extract the OBJECT_FIELD sub-record, then find all its attributes
     if (genericRecord.get(OBJECT_FIELD) instanceof GenericRecord objectAttributes) {
@@ -41,7 +42,7 @@ public class PfbRecordConverter extends AvroRecordConverter {
   }
 
   @Override
-  protected final Record convertRelations(GenericRecord genericRecord) {
+  public final Record convertRelations(GenericRecord genericRecord) {
     Record record = createEmptyRecord(genericRecord);
     // get the relations array from the record
     if (genericRecord.get(RELATIONS_FIELD) instanceof Collection<?> relationArray

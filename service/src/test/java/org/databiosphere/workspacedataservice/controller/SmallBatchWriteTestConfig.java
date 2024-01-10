@@ -3,7 +3,7 @@ package org.databiosphere.workspacedataservice.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter;
+import org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RecordService;

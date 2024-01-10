@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.dataimport;
+package org.databiosphere.workspacedataservice.recordstream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -6,13 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.parquet.hadoop.ParquetReader;
-import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler;
+import org.databiosphere.workspacedataservice.dataimport.tdr.ParquetRecordConverter;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 
-// TODO AJ-1519 reorganize StreamingWriteHandler out of the service package, and add some
-//     hierarchy to the dataimport package,
 public class ParquetStreamWriteHandler implements TwoPassStreamingWriteHandler {
 
   private final ParquetReader<GenericRecord> parquetReader;

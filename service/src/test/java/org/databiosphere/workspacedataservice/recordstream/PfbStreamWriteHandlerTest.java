@@ -1,7 +1,7 @@
-package org.databiosphere.workspacedataservice.service;
+package org.databiosphere.workspacedataservice.recordstream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.mockPfbStream;
+import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.mockPfbStream;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -14,8 +14,13 @@ import java.net.URL;
 import java.util.List;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
-import org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter;
-import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler.ImportMode;
+import org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter;
+import org.databiosphere.workspacedataservice.recordstream.PfbStreamWriteHandler;
+import org.databiosphere.workspacedataservice.recordstream.StreamingWriteHandler;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode;
+import org.databiosphere.workspacedataservice.service.JsonConfig;
+import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;

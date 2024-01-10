@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES;
-import static org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler.ImportMode.RELATIONS;
+import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode.RELATIONS;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 
 import bio.terra.common.db.WriteTransaction;
@@ -21,8 +21,13 @@ import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.dataimport.ParquetStreamWriteHandler;
-import org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter;
+import org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter;
+import org.databiosphere.workspacedataservice.recordstream.JsonStreamWriteHandler;
+import org.databiosphere.workspacedataservice.recordstream.ParquetStreamWriteHandler;
+import org.databiosphere.workspacedataservice.recordstream.PfbStreamWriteHandler;
+import org.databiosphere.workspacedataservice.recordstream.StreamingWriteHandler;
+import org.databiosphere.workspacedataservice.recordstream.TsvStreamWriteHandler;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;

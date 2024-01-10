@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.dataimport;
+package org.databiosphere.workspacedataservice.dataimport.tdr;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
-import org.databiosphere.workspacedataservice.dataimport.TdrManifestExemplarData.AzureSmall;
+import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJob;
+import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestExemplarData.AzureSmall;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;

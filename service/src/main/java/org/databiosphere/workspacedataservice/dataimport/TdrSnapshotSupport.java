@@ -145,7 +145,7 @@ public class TdrSnapshotSupport {
    *
    * @param snapshotIds the list of snapshot ids to create or verify references.
    */
-  protected void linkSnapshots(Set<UUID> snapshotIds) {
+  public void linkSnapshots(Set<UUID> snapshotIds) {
     // list existing snapshots linked to this workspace
     Set<UUID> existingSnapshotIds = Set.copyOf(existingPolicySnapshotIds(/* pageSize= */ 50));
     // find the snapshots that are not already linked to this workspace
@@ -171,7 +171,7 @@ public class TdrSnapshotSupport {
     }
   }
 
-  Map<RecordType, String> identifyPrimaryKeys(List<TableModel> tables) {
+  public Map<RecordType, String> identifyPrimaryKeys(List<TableModel> tables) {
     return tables.stream()
         .collect(
             Collectors.toMap(
@@ -197,7 +197,7 @@ public class TdrSnapshotSupport {
    * @param relationshipModels relationship models from the TDR manifest
    * @return the relationship models, mapped by RecordType
    */
-  Multimap<RecordType, RelationshipModel> identifyRelations(
+  public Multimap<RecordType, RelationshipModel> identifyRelations(
       List<RelationshipModel> relationshipModels) {
     return Multimaps.index(
         relationshipModels,

@@ -1,9 +1,9 @@
-package org.databiosphere.workspacedataservice.dataimport;
+package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
-import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.buildQuartzJob;
-import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.stubJobContext;
+import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.buildQuartzJob;
+import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;

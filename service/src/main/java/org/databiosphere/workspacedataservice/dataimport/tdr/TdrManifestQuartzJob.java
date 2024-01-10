@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.dataimport;
+package org.databiosphere.workspacedataservice.dataimport.tdr;
 
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
@@ -27,11 +27,12 @@ import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.InputFile;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dataimport.TdrSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
-import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
@@ -230,7 +231,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @param manifestUrl url to the manifest
    * @return parsed object
    */
-  SnapshotExportResponseModel parseManifest(URL manifestUrl) {
+  public SnapshotExportResponseModel parseManifest(URL manifestUrl) {
     // read manifest
     try {
       return mapper.readValue(manifestUrl, SnapshotExportResponseModel.class);
@@ -246,7 +247,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @param snapshotExportResponseModel the inbound manifest
    * @return information necessary for the import
    */
-  List<TdrManifestImportTable> extractTableInfo(
+  public List<TdrManifestImportTable> extractTableInfo(
       SnapshotExportResponseModel snapshotExportResponseModel) {
 
     TdrSnapshotSupport tdrSnapshotSupport =

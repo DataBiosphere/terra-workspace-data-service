@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.service;
+package org.databiosphere.workspacedataservice.recordstream;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.databiosphere.workspacedataservice.shared.model.BatchOperation;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -75,8 +76,8 @@ public class JsonStreamWriteHandler implements StreamingWriteHandler {
     inputStream.close();
   }
 
-  // Exposed (as protected, not public) to assist with unit tests.
-  protected JsonParser getParser() {
+  // Exposed to assist with unit tests.
+  public JsonParser getParser() {
     return this.parser;
   }
 }
