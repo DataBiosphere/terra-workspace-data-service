@@ -407,4 +407,9 @@ public class RecordService {
   public void deleteRecordType(UUID instanceId, RecordType recordType) {
     recordDao.deleteRecordType(instanceId, recordType);
   }
+
+  @WriteTransaction
+  public void deleteAttribute(UUID instanceId, RecordType recordType, String attribute) {
+    recordDao.deleteAttribute(instanceId, recordType, attribute);
+  }
 }
