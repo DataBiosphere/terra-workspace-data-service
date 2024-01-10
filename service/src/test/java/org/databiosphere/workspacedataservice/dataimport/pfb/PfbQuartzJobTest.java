@@ -53,10 +53,10 @@ class PfbQuartzJobTest {
   @Autowired RestClientRetry restClientRetry;
 
   // test resources used below
-  @Value("classpath:minimal_data.avro")
+  @Value("classpath:avro/minimal_data.avro")
   Resource minimalDataAvroResource;
 
-  @Value("classpath:test.avro")
+  @Value("classpath:avro/test.avro")
   Resource testAvroResource;
 
   private static final String INSTANCE = "aaaabbbb-cccc-dddd-1111-222233334444";

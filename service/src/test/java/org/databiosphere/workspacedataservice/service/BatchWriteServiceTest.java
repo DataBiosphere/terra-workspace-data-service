@@ -205,7 +205,7 @@ class BatchWriteServiceTest {
   // "submitted_aligned_reads". Do we get the right counts back when importing this file?
   @Test
   void batchWriteResultCountsFromPfb() {
-    URL url = getClass().getResource("/four_rows.avro");
+    URL url = getClass().getResource("/avro/four_rows.avro");
     assertNotNull(url);
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
@@ -223,7 +223,7 @@ class BatchWriteServiceTest {
 
   @Test
   void batchWriteRelationsFromPfb() {
-    URL url = getClass().getResource("/test.avro");
+    URL url = getClass().getResource("/avro/test.avro");
     assertNotNull(url);
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
@@ -241,7 +241,7 @@ class BatchWriteServiceTest {
 
   @Test
   void batchWriteSomeRelationsFromPfb() {
-    URL url = getClass().getResource("/forward_relations.avro");
+    URL url = getClass().getResource("/avro/forward_relations.avro");
     assertNotNull(url);
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {

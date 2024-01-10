@@ -85,7 +85,8 @@ class PfbStreamWriteHandlerTest {
   // Given a real PFB file, does PfbStreamWriteHandler faithfully return the records inside that
   // PFB?
   void pfbTablesAreParsedCorrectly() {
-    try (DataFileStream<GenericRecord> dataFileStream = streamRecordsFromFile("/two_tables.avro")) {
+    try (DataFileStream<GenericRecord> dataFileStream =
+        streamRecordsFromFile("/avro/two_tables.avro")) {
       PfbStreamWriteHandler pswh = buildHandler(dataFileStream, ImportMode.BASE_ATTRIBUTES);
       StreamingWriteHandler.WriteStreamInfo streamInfo = pswh.readRecords(2);
       /*
@@ -158,7 +159,7 @@ class PfbStreamWriteHandlerTest {
 
   @Test
   void relationsAreParsedCorrectly() {
-    try (DataFileStream<GenericRecord> dataFileStream = streamRecordsFromFile("/test.avro")) {
+    try (DataFileStream<GenericRecord> dataFileStream = streamRecordsFromFile("/avro/test.avro")) {
 
       StreamingWriteHandler.WriteStreamInfo streamInfo =
           buildHandler(dataFileStream, ImportMode.RELATIONS).readRecords(5);
