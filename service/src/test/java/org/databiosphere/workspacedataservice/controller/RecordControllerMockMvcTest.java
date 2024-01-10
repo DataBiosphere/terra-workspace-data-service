@@ -1976,6 +1976,7 @@ class RecordControllerMockMvcTest {
   void deleteAttribute() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
+    String attributeToDelete = "attr1";
     mockMvc
         .perform(
             delete(
@@ -1983,8 +1984,13 @@ class RecordControllerMockMvcTest {
                 instanceId,
                 versionId,
                 recordType,
-                "attr1"))
+                attributeToDelete))
         .andExpect(status().isNoContent());
+
+    mockMvc
+        .perform(
+            get("/{instanceId}/types/{version}/{recordType}", instanceId, versionId, recordType))
+        .andExpect(content().string(not(containsString(attributeToDelete))));
   }
 
   @Test
