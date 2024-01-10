@@ -24,8 +24,6 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.databiosphere.workspacedataservice.dataimport.pfb.PfbConfig;
-import org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter;
 import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.service.RelationUtils;

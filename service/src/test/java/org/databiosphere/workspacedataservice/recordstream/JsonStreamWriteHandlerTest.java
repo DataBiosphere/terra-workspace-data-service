@@ -9,8 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.stream.Stream;
-
-import org.databiosphere.workspacedataservice.recordstream.JsonStreamWriteHandler;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;

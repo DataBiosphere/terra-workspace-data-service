@@ -7,9 +7,6 @@ import static org.databiosphere.workspacedataservice.shared.model.OperationType.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.List;
-
-import org.databiosphere.workspacedataservice.recordstream.JsonStreamWriteHandler;
-import org.databiosphere.workspacedataservice.recordstream.StreamingWriteHandler;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.junit.jupiter.api.Test;
