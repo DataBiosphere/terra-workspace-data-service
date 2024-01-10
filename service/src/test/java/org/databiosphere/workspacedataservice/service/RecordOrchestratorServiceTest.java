@@ -182,6 +182,8 @@ class RecordOrchestratorServiceTest {
     ResponseEntity<RecordResponse> response =
         recordOrchestratorService.upsertSingleRecord(
             INSTANCE, VERSION, TEST_TYPE, "1", Optional.of("id"), recordRequest);
+
+    assertAttributes(Set.of("id", "attr1", "attr2"));
   }
 
   private void assertAttributes(Set<String> expectedAttributeNames) {
