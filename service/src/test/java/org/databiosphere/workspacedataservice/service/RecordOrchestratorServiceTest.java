@@ -7,9 +7,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.service.model.exception.DeleteAttributeRequestException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
@@ -125,6 +128,70 @@ class RecordOrchestratorServiceTest {
         MissingObjectException.class,
         () -> recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE),
         "describeRecordType should have thrown an error");
+  }
+
+  @Test
+  void deleteAttribute() {
+    // Arrange
+    setUpDeleteAttributeTest();
+
+    // Act
+    recordOrchestratorService.deleteAttribute(INSTANCE, VERSION, TEST_TYPE, "attr2");
+
+    // Assert
+    assertAttributes(Set.of("id", "attr1"));
+  }
+
+  @Test
+  void deletePrimaryKeyAttribute() {
+    // Arrange
+    setUpDeleteAttributeTest();
+
+    // Act/Assert
+    DeleteAttributeRequestException e =
+        assertThrows(
+            DeleteAttributeRequestException.class,
+            () -> recordOrchestratorService.deleteAttribute(INSTANCE, VERSION, TEST_TYPE, "id"),
+            "deleteAttribute should have thrown an error");
+    assertEquals(e.getMessage(), "Unable to delete ID attribute");
+    assertAttributes(Set.of("id", "attr1", "attr2"));
+  }
+
+  @Test
+  void deleteNonexistentAttribute() {
+    // Arrange
+    setUpDeleteAttributeTest();
+
+    // Act/Assert
+    MissingObjectException e =
+        assertThrows(
+            MissingObjectException.class,
+            () ->
+                recordOrchestratorService.deleteAttribute(
+                    INSTANCE, VERSION, TEST_TYPE, "doesnotexist"),
+            "deleteAttribute should have thrown an error");
+    assertEquals(e.getMessage(), "Attribute does not exist");
+    assertAttributes(Set.of("id", "attr1", "attr2"));
+  }
+
+  private void setUpDeleteAttributeTest() {
+    RecordRequest recordRequest =
+        new RecordRequest(
+            RecordAttributes.empty().putAttribute("attr1", "foo").putAttribute("attr2", "bar"));
+
+    ResponseEntity<RecordResponse> response =
+        recordOrchestratorService.upsertSingleRecord(
+            INSTANCE, VERSION, TEST_TYPE, "1", Optional.of("id"), recordRequest);
+
+    assertAttributes(Set.of("id", "attr1", "attr2"));
+  }
+
+  private void assertAttributes(Set<String> expectedAttributeNames) {
+    RecordTypeSchema schema =
+        recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE);
+    Set<String> actualAttributeNames =
+        Set.copyOf(schema.attributes().stream().map(AttributeSchema::name).toList());
+    assertEquals(actualAttributeNames, expectedAttributeNames);
   }
 
   @Test

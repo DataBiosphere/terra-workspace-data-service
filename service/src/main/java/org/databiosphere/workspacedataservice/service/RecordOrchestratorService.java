@@ -20,6 +20,7 @@ import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
+import org.databiosphere.workspacedataservice.service.model.exception.DeleteAttributeRequestException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
@@ -229,6 +230,29 @@ public class RecordOrchestratorService { // TODO give me a better name
     recordService.deleteRecordType(instanceId, recordType);
     activityLogger.saveEventForCurrentUser(
         user -> user.deleted().table().ofQuantity(1).withRecordType(recordType));
+  }
+
+  public void deleteAttribute(
+      UUID instanceId, String version, RecordType recordType, String attribute) {
+    validateAndPermissions(instanceId, version);
+    checkRecordTypeExists(instanceId, recordType);
+    validateAttributeExistsAndIsEditable(instanceId, recordType, attribute);
+    recordService.deleteAttribute(instanceId, recordType, attribute);
+    activityLogger.saveEventForCurrentUser(
+        user -> user.deleted().attribute().withRecordType(recordType).withId(attribute));
+  }
+
+  private void validateAttributeExistsAndIsEditable(
+      UUID instanceId, RecordType recordType, String attribute) {
+    RecordTypeSchema schema = getSchemaDescription(instanceId, recordType);
+
+    if (schema.attributes().stream()
+        .noneMatch(attributeSchema -> attributeSchema.name().equals(attribute))) {
+      throw new MissingObjectException("Attribute");
+    }
+    if (attribute.equals(schema.primaryKey())) {
+      throw new DeleteAttributeRequestException("Unable to delete ID attribute");
+    }
   }
 
   @ReadTransaction
