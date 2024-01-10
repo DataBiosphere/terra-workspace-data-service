@@ -1024,4 +1024,14 @@ public class RecordDao {
       throw e;
     }
   }
+
+  public void deleteAttribute(UUID instanceId, RecordType recordType, String attribute) {
+    namedTemplate
+        .getJdbcTemplate()
+        .update(
+            "alter table "
+                + getQualifiedTableName(recordType, instanceId)
+                + " drop column "
+                + quote(SqlUtils.validateSqlString(attribute, ATTRIBUTE)));
+  }
 }

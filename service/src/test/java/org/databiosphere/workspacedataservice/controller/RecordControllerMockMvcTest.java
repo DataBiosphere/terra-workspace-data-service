@@ -1976,6 +1976,60 @@ class RecordControllerMockMvcTest {
 
   @Test
   @Transactional
+  void deleteAttribute() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    String attributeToDelete = "attr1";
+    mockMvc
+        .perform(
+            delete(
+                "/{instanceId}/types/{v}/{type}/{attribute}",
+                instanceId,
+                versionId,
+                recordType,
+                attributeToDelete))
+        .andExpect(status().isNoContent());
+
+    mockMvc
+        .perform(
+            get("/{instanceId}/types/{version}/{recordType}", instanceId, versionId, recordType))
+        .andExpect(content().string(not(containsString(attributeToDelete))));
+  }
+
+  @Test
+  @Transactional
+  void deleteNonExistentAttribute() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    mockMvc
+        .perform(
+            delete(
+                "/{instanceId}/types/{v}/{type}/{attribute}",
+                instanceId,
+                versionId,
+                recordType,
+                "doesnotexist"))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @Transactional
+  void deletePrimaryKeyAttribute() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    mockMvc
+        .perform(
+            delete(
+                "/{instanceId}/types/{v}/{type}/{attribute}",
+                instanceId,
+                versionId,
+                recordType,
+                "sys_name"))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @Transactional
   void describeType() throws Exception {
     RecordType type = RecordType.valueOf("recordType");
 

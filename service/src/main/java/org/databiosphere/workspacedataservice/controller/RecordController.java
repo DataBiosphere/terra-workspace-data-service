@@ -167,6 +167,17 @@ public class RecordController {
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 
+  @DeleteMapping("{instanceId}/types/{v}/{type}/{attribute}")
+  @RetryableApi
+  public ResponseEntity<Void> deleteAttribute(
+      @PathVariable("instanceId") UUID instanceId,
+      @PathVariable("v") String version,
+      @PathVariable("type") RecordType recordType,
+      @PathVariable("attribute") String attribute) {
+    recordOrchestratorService.deleteAttribute(instanceId, version, recordType, attribute);
+    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+  }
+
   @GetMapping("/{instanceId}/types/{v}/{type}")
   @RetryableApi
   public ResponseEntity<RecordTypeSchema> describeRecordType(
