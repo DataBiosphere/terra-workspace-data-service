@@ -178,6 +178,7 @@ public class WsmSnapshotSupport {
     }
   }
 
+  // TODO: reevaluate moving this method to TdrManifestQuartzJob (see comment on PR #449)
   public Map<RecordType, String> identifyPrimaryKeys(List<TableModel> tables) {
     return tables.stream()
         .collect(
