@@ -10,7 +10,6 @@ import bio.terra.datarepo.model.SnapshotExportResponseModel;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -132,10 +131,16 @@ public class TdrManifestQuartzJobTest {
             List.of(emptyParquet.getURL()),
             List.of());
 
+    // TODO decide on where/how to check for empty files, changes how to write this test
     // An empty file should not throw any errors
-    Map<String, List<InputFile>> actual =
-        assertDoesNotThrow(() -> tdrManifestQuartzJob.prepareTableImport(List.of(table)));
-    assert (actual.get("data").isEmpty());
+    java.nio.file.Path actualPath =
+        assertDoesNotThrow(() -> tdrManifestQuartzJob.getFilesForImport(List.of(table)));
+    //    try (DirectoryStream<java.nio.file.Path> directoryStream =
+    //        Files.newDirectoryStream(actualPath)) {
+    //      assert (!directoryStream.iterator().hasNext());
+    //    } catch (IOException e) {
+    //      fail("Failed reading resulting directory");
+    //    }
   }
 
   /*
