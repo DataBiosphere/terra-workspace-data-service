@@ -153,7 +153,7 @@ class RecordOrchestratorServiceTest {
             DeleteAttributeRequestException.class,
             () -> recordOrchestratorService.deleteAttribute(INSTANCE, VERSION, TEST_TYPE, "id"),
             "deleteAttribute should have thrown an error");
-    assertEquals(e.getMessage(), "Unable to delete ID attribute");
+    assertEquals("Unable to delete ID attribute", e.getMessage());
     assertAttributes(Set.of("id", "attr1", "attr2"));
   }
 
@@ -170,7 +170,7 @@ class RecordOrchestratorServiceTest {
                 recordOrchestratorService.deleteAttribute(
                     INSTANCE, VERSION, TEST_TYPE, "doesnotexist"),
             "deleteAttribute should have thrown an error");
-    assertEquals(e.getMessage(), "Attribute does not exist");
+    assertEquals("Attribute does not exist", e.getMessage());
     assertAttributes(Set.of("id", "attr1", "attr2"));
   }
 
@@ -191,7 +191,7 @@ class RecordOrchestratorServiceTest {
         recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE);
     Set<String> actualAttributeNames =
         Set.copyOf(schema.attributes().stream().map(AttributeSchema::name).toList());
-    assertEquals(actualAttributeNames, expectedAttributeNames);
+    assertEquals(expectedAttributeNames, actualAttributeNames);
   }
 
   @Test

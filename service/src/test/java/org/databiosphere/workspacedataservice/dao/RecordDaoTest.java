@@ -769,7 +769,7 @@ class RecordDaoTest {
     // Assert
     Set<String> attributeNames =
         Set.copyOf(recordDao.getAllAttributeNames(instanceId, recordTypeWithAttributes));
-    assertEquals(attributeNames, Set.of(PRIMARY_KEY, "attr1"));
+    assertEquals(Set.of(PRIMARY_KEY, "attr1"), attributeNames);
   }
 
   @Test
