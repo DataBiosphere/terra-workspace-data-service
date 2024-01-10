@@ -27,7 +27,7 @@ import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerD
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TdrSnapshotSupport {
+public class WsmSnapshotSupport {
 
   private final UUID workspaceId;
   private final WorkspaceManagerDao wsmDao;
@@ -38,7 +38,7 @@ public class TdrSnapshotSupport {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  public TdrSnapshotSupport(
+  public WsmSnapshotSupport(
       UUID workspaceId,
       WorkspaceManagerDao wsmDao,
       RestClientRetry restClientRetry,

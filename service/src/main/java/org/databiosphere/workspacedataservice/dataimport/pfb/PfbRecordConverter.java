@@ -31,7 +31,7 @@ public class PfbRecordConverter extends AvroRecordConverter {
   }
 
   @Override
-  public final Record convertBaseAttributes(GenericRecord genericRecord) {
+  protected final Record convertBaseAttributes(GenericRecord genericRecord) {
     Record record = createEmptyRecord(genericRecord);
     // extract the OBJECT_FIELD sub-record, then find all its attributes
     if (genericRecord.get(OBJECT_FIELD) instanceof GenericRecord objectAttributes) {
@@ -42,7 +42,7 @@ public class PfbRecordConverter extends AvroRecordConverter {
   }
 
   @Override
-  public final Record convertRelations(GenericRecord genericRecord) {
+  protected final Record convertRelations(GenericRecord genericRecord) {
     Record record = createEmptyRecord(genericRecord);
     // get the relations array from the record
     if (genericRecord.get(RELATIONS_FIELD) instanceof Collection<?> relationArray

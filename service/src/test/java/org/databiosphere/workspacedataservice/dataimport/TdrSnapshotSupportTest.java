@@ -35,7 +35,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-class TdrSnapshotSupportTest {
+class WsmSnapshotSupportTest {
 
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;
@@ -75,7 +75,7 @@ class TdrSnapshotSupportTest {
             });
 
     ResourceList actual =
-        new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry, activityLogger)
+        new WsmSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry, activityLogger)
             .listAllSnapshots(testPageSize);
 
     // assert total size of all results
@@ -178,34 +178,34 @@ class TdrSnapshotSupportTest {
 
   @Test
   void defaultPrimaryKey() {
-    TdrSnapshotSupport support = defaultSupport();
+    WsmSnapshotSupport support = defaultSupport();
     assertEquals("datarepo_row_id", support.getDefaultPrimaryKey());
   }
 
   @Test
   void nullPrimaryKey() {
-    TdrSnapshotSupport support = defaultSupport();
+    WsmSnapshotSupport support = defaultSupport();
     String actual = support.identifyPrimaryKey(null);
     assertEquals(support.getDefaultPrimaryKey(), actual);
   }
 
   @Test
   void missingPrimaryKey() {
-    TdrSnapshotSupport support = defaultSupport();
+    WsmSnapshotSupport support = defaultSupport();
     String actual = support.identifyPrimaryKey(List.of());
     assertEquals(support.getDefaultPrimaryKey(), actual);
   }
 
   @Test
   void multiplePrimaryKeys() {
-    TdrSnapshotSupport support = defaultSupport();
+    WsmSnapshotSupport support = defaultSupport();
     String actual = support.identifyPrimaryKey(List.of("one", "two"));
     assertEquals(support.getDefaultPrimaryKey(), actual);
   }
 
   @Test
   void singlePrimaryKey() {
-    TdrSnapshotSupport support = defaultSupport();
+    WsmSnapshotSupport support = defaultSupport();
     String expected = "my_primary_key";
     String actual = support.identifyPrimaryKey(List.of(expected));
     assertEquals(expected, actual);
@@ -213,7 +213,7 @@ class TdrSnapshotSupportTest {
 
   @Test
   void singleRandomPrimaryKey() {
-    TdrSnapshotSupport support = defaultSupport();
+    WsmSnapshotSupport support = defaultSupport();
     String expected = RandomStringUtils.randomPrint(16);
     String actual = support.identifyPrimaryKey(List.of(expected));
     assertEquals(expected, actual);
@@ -221,7 +221,7 @@ class TdrSnapshotSupportTest {
 
   @Test
   void primaryKeysForAllTables() {
-    TdrSnapshotSupport support = defaultSupport();
+    WsmSnapshotSupport support = defaultSupport();
     List<TableModel> input =
         List.of(
             new TableModel().name("table1").primaryKey(List.of()),
@@ -236,8 +236,8 @@ class TdrSnapshotSupportTest {
     assertEquals(expected, actual);
   }
 
-  private TdrSnapshotSupport defaultSupport() {
-    return new TdrSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry, activityLogger);
+  private WsmSnapshotSupport defaultSupport() {
+    return new WsmSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry, activityLogger);
   }
 
   private ResourceDescription createResourceDescription(UUID snapshotId) {

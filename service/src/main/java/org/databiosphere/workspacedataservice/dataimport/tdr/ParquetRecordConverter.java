@@ -32,7 +32,7 @@ public class ParquetRecordConverter extends AvroRecordConverter {
   }
 
   @Override
-  public final Record convertBaseAttributes(GenericRecord genericRecord) {
+  protected final Record convertBaseAttributes(GenericRecord genericRecord) {
     Record record = createEmptyRecord(genericRecord);
     // for base attributes, skip the id field and all relations
     List<String> relationNames =
@@ -47,7 +47,7 @@ public class ParquetRecordConverter extends AvroRecordConverter {
   }
 
   @Override
-  public final Record convertRelations(GenericRecord genericRecord) {
+  protected final Record convertRelations(GenericRecord genericRecord) {
     Record record = createEmptyRecord(genericRecord);
     // find relation columns for this type
     if (relationshipModels.isEmpty()) {

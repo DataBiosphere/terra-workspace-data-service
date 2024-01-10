@@ -30,7 +30,7 @@ import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.InputFile;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
-import org.databiosphere.workspacedataservice.dataimport.TdrSnapshotSupport;
+import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
@@ -233,7 +233,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @param manifestUrl url to the manifest
    * @return parsed object
    */
-  public SnapshotExportResponseModel parseManifest(URL manifestUrl) {
+  @VisibleForTesting
+  SnapshotExportResponseModel parseManifest(URL manifestUrl) {
     // read manifest
     try {
       return mapper.readValue(manifestUrl, SnapshotExportResponseModel.class);
@@ -249,11 +250,12 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @param snapshotExportResponseModel the inbound manifest
    * @return information necessary for the import
    */
-  public List<TdrManifestImportTable> extractTableInfo(
+  @VisibleForTesting
+  List<TdrManifestImportTable> extractTableInfo(
       SnapshotExportResponseModel snapshotExportResponseModel) {
 
-    TdrSnapshotSupport tdrSnapshotSupport =
-        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
+    WsmSnapshotSupport wsmSnapshotSupport =
+        new WsmSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
 
     // find all the exported tables in the manifest.
     // This is the format.parquet.location.tables section in the manifest
@@ -263,13 +265,13 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // find the primary keys for each table.
     // This is the snapshot.tables section in the manifest
     Map<RecordType, String> primaryKeys =
-        tdrSnapshotSupport.identifyPrimaryKeys(
+        wsmSnapshotSupport.identifyPrimaryKeys(
             snapshotExportResponseModel.getSnapshot().getTables());
 
     // find the relations for each table.
     // This is the snapshot.relationships section in the manifest
     Multimap<RecordType, RelationshipModel> relationsByTable =
-        tdrSnapshotSupport.identifyRelations(
+        wsmSnapshotSupport.identifyRelations(
             snapshotExportResponseModel.getSnapshot().getRelationships());
 
     return tables.stream()
@@ -327,8 +329,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
    */
   protected void linkSnapshots(Set<UUID> snapshotIds) {
     // list existing snapshots linked to this workspace
-    TdrSnapshotSupport tdrSnapshotSupport =
-        new TdrSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
-    tdrSnapshotSupport.linkSnapshots(snapshotIds);
+    WsmSnapshotSupport wsmSnapshotSupport =
+        new WsmSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
+    wsmSnapshotSupport.linkSnapshots(snapshotIds);
   }
 }

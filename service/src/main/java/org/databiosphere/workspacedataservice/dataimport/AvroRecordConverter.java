@@ -4,6 +4,7 @@ import static bio.terra.pfb.PfbReader.convertEnum;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -53,7 +54,7 @@ public abstract class AvroRecordConverter {
    * @param genericRecord the inbound Avro GenericRecord to be converted
    * @return the Record containing base (non-relation) WDS attributes
    */
-  public abstract Record convertBaseAttributes(GenericRecord genericRecord);
+  protected abstract Record convertBaseAttributes(GenericRecord genericRecord);
 
   /**
    * When operating in {@see TwoPassStreamingWriteHandler.ImportMode.RELATIONS} mode, what Record -
@@ -62,7 +63,7 @@ public abstract class AvroRecordConverter {
    * @param genericRecord the inbound Avro GenericRecord to be converted
    * @return the Record containing WDS relation attributes
    */
-  public abstract Record convertRelations(GenericRecord genericRecord);
+  protected abstract Record convertRelations(GenericRecord genericRecord);
 
   /**
    * Extract WDS attributes from an Avro GenericRecord, optionally skipping over a set of
@@ -100,6 +101,7 @@ public abstract class AvroRecordConverter {
    * @param attribute the Avro field
    * @return the WDS attribute value
    */
+  @VisibleForTesting
   public Object convertAttributeType(Object attribute) {
 
     if (attribute == null) {
