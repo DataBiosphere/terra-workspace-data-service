@@ -145,6 +145,7 @@ public class TdrManifestQuartzJobTest {
    * the TDR manifest JSON changes not-infrequently. When TDR adds fields, are we resilient to those
    * additions?
    */
+  @Test
   void parseUnknownFieldsInManifest() throws IOException {
     UUID workspaceId = UUID.randomUUID();
     TdrManifestQuartzJob tdrManifestQuartzJob =
