@@ -8,13 +8,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import bio.terra.pfb.PfbReader;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.util.List;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
-import org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter;
 import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -26,9 +26,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest(classes = {JsonConfig.class, PfbRecordConverter.class})
+@SpringBootTest(classes = {JsonConfig.class})
 class PfbStreamWriteHandlerTest {
-  @Autowired private PfbRecordConverter pfbRecordConverter;
+  @Autowired private ObjectMapper objectMapper;
 
   // does PfbStreamWriteHandler properly know how to page through a DataFileStream<GenericRecord>?
   @Test
@@ -208,6 +208,6 @@ class PfbStreamWriteHandlerTest {
 
   private PfbStreamWriteHandler buildHandler(
       DataFileStream<GenericRecord> dataFileStream, ImportMode importMode) {
-    return new PfbStreamWriteHandler(dataFileStream, importMode, pfbRecordConverter);
+    return new PfbStreamWriteHandler(dataFileStream, importMode, objectMapper);
   }
 }
