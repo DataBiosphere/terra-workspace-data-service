@@ -239,7 +239,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     validateAttributeExistsAndIsEditable(instanceId, recordType, attribute);
     recordService.deleteAttribute(instanceId, recordType, attribute);
     activityLogger.saveEventForCurrentUser(
-        user -> user.updated().table().ofQuantity(1).withRecordType(recordType));
+        user -> user.deleted().attribute().withRecordType(recordType).withId(attribute));
   }
 
   private void validateAttributeExistsAndIsEditable(
