@@ -121,7 +121,7 @@ class TsvDownloadTest {
   void batchWriteFollowedByTsvDownload() throws IOException {
     RecordType recordType = RecordType.valueOf("bar");
 
-    InputStream is = TsvDownloadTest.class.getResourceAsStream("/batch_write_tsv_data.json");
+    InputStream is = TsvDownloadTest.class.getResourceAsStream("/batch-write/write-tsv-data.json");
     ResponseEntity<BatchResponse> response =
         recordController.streamingWrite(instanceId, version, recordType, Optional.empty(), is);
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
