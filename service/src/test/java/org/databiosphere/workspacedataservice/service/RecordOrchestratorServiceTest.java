@@ -148,10 +148,12 @@ class RecordOrchestratorServiceTest {
     setUpDeleteAttributeTest();
 
     // Act/Assert
-    assertThrows(
-        DeleteAttributeRequestException.class,
-        () -> recordOrchestratorService.deleteAttribute(INSTANCE, VERSION, TEST_TYPE, "id"),
-        "Unable to delete ID attribute");
+    DeleteAttributeRequestException e =
+        assertThrows(
+            DeleteAttributeRequestException.class,
+            () -> recordOrchestratorService.deleteAttribute(INSTANCE, VERSION, TEST_TYPE, "id"),
+            "deleteAttribute should have thrown an error");
+    assertEquals(e.getMessage(), "Unable to delete ID attribute");
     assertAttributes(Set.of("id", "attr1", "attr2"));
   }
 
@@ -161,11 +163,14 @@ class RecordOrchestratorServiceTest {
     setUpDeleteAttributeTest();
 
     // Act/Assert
-    assertThrows(
-        MissingObjectException.class,
-        () ->
-            recordOrchestratorService.deleteAttribute(INSTANCE, VERSION, TEST_TYPE, "doesnotexist"),
-        "Attribute not found");
+    MissingObjectException e =
+        assertThrows(
+            MissingObjectException.class,
+            () ->
+                recordOrchestratorService.deleteAttribute(
+                    INSTANCE, VERSION, TEST_TYPE, "doesnotexist"),
+            "deleteAttribute should have thrown an error");
+    assertEquals(e.getMessage(), "Attribute does not exist");
     assertAttributes(Set.of("id", "attr1", "attr2"));
   }
 
