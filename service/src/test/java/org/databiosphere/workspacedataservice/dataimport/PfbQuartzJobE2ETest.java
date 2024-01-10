@@ -75,19 +75,19 @@ class PfbQuartzJobE2ETest {
   @MockBean WorkspaceManagerDao wsmDao;
 
   // test resources used below
-  @Value("classpath:four_rows.avro")
+  @Value("classpath:avro/four_rows.avro")
   Resource fourRowsAvroResource;
 
-  @Value("classpath:test.avro")
+  @Value("classpath:avro/test.avro")
   Resource testAvroResource;
 
-  @Value("classpath:precision.avro")
+  @Value("classpath:avro/precision.avro")
   Resource testPrecisionResource;
 
-  @Value("classpath:forward_relations.avro")
+  @Value("classpath:avro/forward_relations.avro")
   Resource forwardRelationsAvroResource;
 
-  @Value("classpath:cyclical.pfb")
+  @Value("classpath:avro/cyclical.avro")
   Resource cyclicalAvroResource;
 
   UUID instanceId;

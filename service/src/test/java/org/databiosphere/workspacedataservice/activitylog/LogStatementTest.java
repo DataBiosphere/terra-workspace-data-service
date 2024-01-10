@@ -173,7 +173,7 @@ public class LogStatementTest {
     RecordType recordType = RecordType.valueOf("mytype");
     instanceService.createInstance(instanceId, VERSION);
 
-    try (InputStream tsvStream = ClassLoader.getSystemResourceAsStream("small-test.tsv")) {
+    try (InputStream tsvStream = ClassLoader.getSystemResourceAsStream("tsv/small-test.tsv")) {
       MultipartFile upload = new MockMultipartFile("myupload", tsvStream);
       recordOrchestratorService.tsvUpload(
           instanceId, VERSION, recordType, Optional.empty(), upload);

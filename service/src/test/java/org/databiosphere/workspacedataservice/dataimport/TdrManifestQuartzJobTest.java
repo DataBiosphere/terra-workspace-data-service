@@ -49,10 +49,10 @@ public class TdrManifestQuartzJobTest {
   @Value("classpath:tdrmanifest/tdr_response_with_cycle.json")
   Resource manifestWithCycle;
 
-  @Value("classpath:empty_parquet.parquet")
+  @Value("classpath:parquet/empty.parquet")
   Resource emptyParquet;
 
-  @Value("classpath:malformed_parquet.parquet")
+  @Value("classpath:parquet/malformed.parquet")
   Resource malformedParquet;
 
   // this one contains properties not defined in the Java models

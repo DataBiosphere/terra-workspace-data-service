@@ -359,8 +359,9 @@ class RecordControllerMockMvcTest {
     RecordResponse recordResponse =
         mapper.readValue(res.getContentAsString(), RecordResponse.class);
     Object attributeValue = recordResponse.recordAttributes().getAttributeValue("json-attr");
-    assertTrue(
-        attributeValue instanceof Map,
+    assertInstanceOf(
+        Map.class,
+        attributeValue,
         "jsonb data should deserialize to a map, "
             + "before getting serialized to json in the final response");
   }
@@ -1031,7 +1032,7 @@ class RecordControllerMockMvcTest {
             "records",
             "test.tsv",
             MediaType.TEXT_PLAIN_VALUE,
-            RecordControllerMockMvcTest.class.getResourceAsStream("/small-test-no-sys.tsv"));
+            RecordControllerMockMvcTest.class.getResourceAsStream("/tsv/small-no-sys.tsv"));
     String recordType = "noPrimaryKeySpecified";
     mockMvc
         .perform(
@@ -1044,7 +1045,7 @@ class RecordControllerMockMvcTest {
             .andReturn();
     RecordTypeSchema schema =
         mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
-    // "greeting" is hardcoded into small-test-no-sys.tsv
+    // "greeting" is hardcoded into small-no-sys.tsv
     assertEquals("greeting", schema.primaryKey());
   }
 
@@ -1057,7 +1058,7 @@ class RecordControllerMockMvcTest {
             "records",
             "test.tsv",
             MediaType.TEXT_PLAIN_VALUE,
-            RecordControllerMockMvcTest.class.getResourceAsStream("/small-test-no-sys.tsv"));
+            RecordControllerMockMvcTest.class.getResourceAsStream("/tsv/small-no-sys.tsv"));
     String recordType = "explicitPrimaryKey";
     mockMvc
         .perform(
@@ -1082,7 +1083,7 @@ class RecordControllerMockMvcTest {
             "records",
             "test.tsv",
             MediaType.TEXT_PLAIN_VALUE,
-            RecordControllerMockMvcTest.class.getResourceAsStream("/small-test.tsv"));
+            RecordControllerMockMvcTest.class.getResourceAsStream("/tsv/small-test.tsv"));
 
     String recordType = "tsv-types";
     mockMvc
@@ -1210,8 +1211,8 @@ class RecordControllerMockMvcTest {
         .andExpect(status().isBadRequest())
         .andExpect(
             result ->
-                assertTrue(
-                    result.getResolvedException() instanceof MethodArgumentTypeMismatchException));
+                assertInstanceOf(
+                    MethodArgumentTypeMismatchException.class, result.getResolvedException()));
   }
 
   @Test
@@ -1233,7 +1234,7 @@ class RecordControllerMockMvcTest {
                 .content(mapper.writeValueAsString(new RecordRequest(illegalAttribute))))
         .andExpect(status().isBadRequest())
         .andExpect(
-            result -> assertTrue(result.getResolvedException() instanceof InvalidNameException));
+            result -> assertInstanceOf(InvalidNameException.class, result.getResolvedException()));
   }
 
   @Test
@@ -1547,7 +1548,8 @@ class RecordControllerMockMvcTest {
                 .content(mapper.writeValueAsString(new RecordRequest(attributes))))
         .andExpect(status().isNotFound())
         .andExpect(
-            result -> assertTrue(result.getResolvedException() instanceof MissingObjectException));
+            result ->
+                assertInstanceOf(MissingObjectException.class, result.getResolvedException()));
   }
 
   @Test
@@ -1573,7 +1575,7 @@ class RecordControllerMockMvcTest {
         .andExpect(status().isForbidden())
         .andExpect(
             result ->
-                assertTrue(result.getResolvedException() instanceof InvalidRelationException));
+                assertInstanceOf(InvalidRelationException.class, result.getResolvedException()));
   }
 
   @Test
@@ -1640,7 +1642,8 @@ class RecordControllerMockMvcTest {
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound())
         .andExpect(
-            result -> assertTrue(result.getResolvedException() instanceof MissingObjectException));
+            result ->
+                assertInstanceOf(MissingObjectException.class, result.getResolvedException()));
   }
 
   @Test
