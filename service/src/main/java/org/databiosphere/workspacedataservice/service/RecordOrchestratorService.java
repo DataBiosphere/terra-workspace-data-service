@@ -251,7 +251,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     RecordTypeSchema schema = getSchemaDescription(instanceId, recordType);
 
     if (attribute.equals(schema.primaryKey())) {
-      throw new UpdateAttributeRequestException("Unable to rename ID attribute");
+      throw new UpdateAttributeRequestException("Unable to rename primary key attribute");
     }
     if (schema.attributes().stream()
         .noneMatch(attributeSchema -> attributeSchema.name().equals(attribute))) {
@@ -277,7 +277,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     RecordTypeSchema schema = getSchemaDescription(instanceId, recordType);
 
     if (attribute.equals(schema.primaryKey())) {
-      throw new DeleteAttributeRequestException("Unable to delete ID attribute");
+      throw new DeleteAttributeRequestException("Unable to delete primary key attribute");
     }
     if (schema.attributes().stream()
         .noneMatch(attributeSchema -> attributeSchema.name().equals(attribute))) {

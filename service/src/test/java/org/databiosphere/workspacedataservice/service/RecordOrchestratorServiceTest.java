@@ -158,7 +158,7 @@ class RecordOrchestratorServiceTest {
                 recordOrchestratorService.renameAttribute(
                     INSTANCE, VERSION, TEST_TYPE, "id", "newId"),
             "renameAttribute should have thrown an error");
-    assertEquals("Unable to rename ID attribute", e.getMessage());
+    assertEquals("Unable to rename primary key attribute", e.getMessage());
     assertAttributes(Set.of("id", "attr1", "attr2"));
   }
 
@@ -219,7 +219,7 @@ class RecordOrchestratorServiceTest {
             DeleteAttributeRequestException.class,
             () -> recordOrchestratorService.deleteAttribute(INSTANCE, VERSION, TEST_TYPE, "id"),
             "deleteAttribute should have thrown an error");
-    assertEquals("Unable to delete ID attribute", e.getMessage());
+    assertEquals("Unable to delete primary key attribute", e.getMessage());
     assertAttributes(Set.of("id", "attr1", "attr2"));
   }
 
