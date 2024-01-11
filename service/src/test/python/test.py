@@ -6,6 +6,7 @@ import  wds_client
 from datetime import date, datetime
 import random
 import csv
+import pdb
 
 # generate records for testing
 def generate_record():
@@ -96,6 +97,7 @@ class WdsTests(TestCase):
     generalInfo_client = wds_client.GeneralWDSInformationApi(api_client)
     schema_client = wds_client.SchemaApi(api_client)
     instance_client = wds_client.InstancesApi(api_client)
+    import_client = wds_client.ImportApi(api_client)
     current_workspaceId = instance_client.list_wds_instances(version)[0]
 
     testType1_simple ="s_record_1"
@@ -234,5 +236,24 @@ class WdsTests(TestCase):
 
         # clean up
         response = self.schema_client.delete_record_type(self.current_workspaceId, self.version, self.cvsUpload_test);
+        workspace_ent_type = self.schema_client.describe_all_record_types(self.current_workspaceId, self.version)
+        self.assertTrue(len(workspace_ent_type) == 0)
+
+    # SCENARIO 6
+    # import snapshot from TDR with appropriate permissions
+    def test_import_snapshot(self):
+        import_request = { "type": "TDRMANIFEST", "url": ""}
+        self.import_client.import_v1(self.current_workspaceId, import_request)
+        # should create a tdr-imports table
+        ent_types = self.schema_client.describe_record_type(self.current_workspaceId, self.version, "data")
+        self.assertEqual(ent_types.count, 2)
+        search_request = { "offset": 0, "limit": 10}
+        records = self.records_client.query_records(self.current_workspaceId, self.version, "tdr-imports", search_request)
+        testRecord = records.records[0]
+        self.assertEqual(testRecord.id, "table1")
+        self.assertEqual(testRecord.attributes['Snapshot Id'], "123e4567-e89b-12d3-a456-426614174000")
+        self.assertIsNotNone(testRecord.attributes['Import Time'])
+        # clean up
+        response = self.schema_client.delete_record_type(self.current_workspaceId, self.version, "tdr-imports")
         workspace_ent_type = self.schema_client.describe_all_record_types(self.current_workspaceId, self.version)
         self.assertTrue(len(workspace_ent_type) == 0)

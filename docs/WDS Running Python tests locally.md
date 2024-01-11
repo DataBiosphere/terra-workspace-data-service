@@ -65,4 +65,8 @@ Once you have the wds_client package importing locally with no issues, you are r
 pytest service/src/test/python/test.py
 ```
 
+Note: Make sure your local WDS database does not have data in it before running these tests, as its presence may cause the tests to fail.
+
+To debug tests, you may want to try out python's [pdb debugger](https://realpython.com/python-debugging-pdb/).
+
 In case you get frustrated with python, go [here](https://xkcd.com/1987/) for a quick laugh. 
