@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.service;
+package org.databiosphere.workspacedataservice.recordstream;
 
 /**
  * Marker interface that denotes a StreamingWriteHandler which runs in two passes. The first pass

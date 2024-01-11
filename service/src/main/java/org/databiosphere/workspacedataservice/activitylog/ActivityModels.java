@@ -25,6 +25,7 @@ public class ActivityModels {
   public enum Thing {
     INSTANCE("instance"),
     TABLE("table"),
+    ATTRIBUTE("attribute"),
     RECORD("record"),
     SNAPSHOT_REFERENCE("snapshot reference"),
     BACKUP("backup");

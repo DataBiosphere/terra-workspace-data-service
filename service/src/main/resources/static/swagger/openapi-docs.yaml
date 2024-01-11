@@ -483,6 +483,35 @@ paths:
           description: Success
         409:
           description: at least one of the records to be deleted is a relation target
+  /{instanceid}/types/{v}/{type}/{attribute}:
+    delete:
+      summary: Delete attribute from record type
+      description: Delete attribute from record type. This attribute will be removed from all records of this type.
+      operationId: deleteAttribute
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - Schema
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+        - $ref: '#/components/parameters/attributePathParam'
+      responses:
+        204:
+          description: Success
+        400:
+          description: Attribute is the ID for record type
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Attribute does not exist
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   ##############################
   # General WDS Information APIs

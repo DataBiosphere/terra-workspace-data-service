@@ -101,6 +101,11 @@ public class ActivityEventBuilder {
     return this;
   }
 
+  public ActivityEventBuilder attribute() {
+    this.thing = ActivityModels.Thing.ATTRIBUTE;
+    return this;
+  }
+
   public ActivityEventBuilder record() {
     this.thing = ActivityModels.Thing.RECORD;
     return this;

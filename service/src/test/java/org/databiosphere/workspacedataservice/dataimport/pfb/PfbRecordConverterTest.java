@@ -1,11 +1,11 @@
-package org.databiosphere.workspacedataservice.dataimport;
+package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter.RELATIONS_ID;
-import static org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter.RELATIONS_NAME;
-import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.OBJECT_SCHEMA;
-import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.RELATION_ARRAY_SCHEMA;
-import static org.databiosphere.workspacedataservice.dataimport.PfbTestUtils.RELATION_SCHEMA;
+import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.RELATIONS_ID;
+import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.RELATIONS_NAME;
+import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.OBJECT_SCHEMA;
+import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.RELATION_ARRAY_SCHEMA;
+import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.RELATION_SCHEMA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -24,9 +24,9 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
-import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler.ImportMode;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;

@@ -753,6 +753,27 @@ class RecordDaoTest {
 
   @Test
   @Transactional
+  void testDeleteAttribute() {
+    // Arrange
+    RecordType recordTypeWithAttributes = RecordType.valueOf("withAttributes");
+    recordDao.createRecordType(
+        instanceId,
+        Map.of("attr1", DataTypeMapping.STRING, "attr2", DataTypeMapping.STRING),
+        recordTypeWithAttributes,
+        new RelationCollection(Collections.emptySet(), Collections.emptySet()),
+        PRIMARY_KEY);
+
+    // Act
+    recordDao.deleteAttribute(instanceId, recordTypeWithAttributes, "attr2");
+
+    // Assert
+    Set<String> attributeNames =
+        Set.copyOf(recordDao.getAllAttributeNames(instanceId, recordTypeWithAttributes));
+    assertEquals(attributeNames, Set.of(PRIMARY_KEY, "attr1"));
+  }
+
+  @Test
+  @Transactional
   void testCreateRelationJoinTable() {
     RecordType secondRecordType = RecordType.valueOf("secondRecordType");
     recordDao.createRecordType(

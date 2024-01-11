@@ -1,5 +1,6 @@
 {
   "capabilities": true,
   "dataimport.pfb": true,
-  "dataimport.tdrmanifest": false
+  "dataimport.tdrmanifest": false,
+  "edit.deleteAttribute": true
 }
