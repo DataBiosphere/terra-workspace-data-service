@@ -4,6 +4,7 @@ import static bio.terra.pfb.PfbReader.convertEnum;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -15,7 +16,7 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericFixed;
 import org.apache.avro.generic.GenericRecord;
-import org.databiosphere.workspacedataservice.service.TwoPassStreamingWriteHandler;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.slf4j.Logger;
@@ -53,7 +54,7 @@ public abstract class AvroRecordConverter {
    * @param genericRecord the inbound Avro GenericRecord to be converted
    * @return the Record containing base (non-relation) WDS attributes
    */
-  abstract Record convertBaseAttributes(GenericRecord genericRecord);
+  protected abstract Record convertBaseAttributes(GenericRecord genericRecord);
 
   /**
    * When operating in {@see TwoPassStreamingWriteHandler.ImportMode.RELATIONS} mode, what Record -
@@ -62,7 +63,7 @@ public abstract class AvroRecordConverter {
    * @param genericRecord the inbound Avro GenericRecord to be converted
    * @return the Record containing WDS relation attributes
    */
-  abstract Record convertRelations(GenericRecord genericRecord);
+  protected abstract Record convertRelations(GenericRecord genericRecord);
 
   /**
    * Extract WDS attributes from an Avro GenericRecord, optionally skipping over a set of
@@ -100,7 +101,8 @@ public abstract class AvroRecordConverter {
    * @param attribute the Avro field
    * @return the WDS attribute value
    */
-  Object convertAttributeType(Object attribute) {
+  @VisibleForTesting
+  public Object convertAttributeType(Object attribute) {
 
     if (attribute == null) {
       return null;

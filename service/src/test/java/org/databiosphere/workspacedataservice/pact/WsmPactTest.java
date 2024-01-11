@@ -25,7 +25,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
-import org.databiosphere.workspacedataservice.dataimport.TdrSnapshotSupport;
+import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.BearerTokenFilter;
 import org.databiosphere.workspacedataservice.workspacemanager.HttpWorkspaceManagerClientFactory;
@@ -507,7 +507,7 @@ public class WsmPactTest {
       pactVersion = PactSpecVersion.V3)
   void existingPolicySnapshotIds_noneExist(MockServer mockServer) {
     var snapshotIds =
-        tdrSnapshotSupport(mockServer).existingPolicySnapshotIds(NUM_SNAPSHOTS_REQUESTED);
+        wsmSnapshotSupport(mockServer).existingPolicySnapshotIds(NUM_SNAPSHOTS_REQUESTED);
     assertTrue(snapshotIds.isEmpty());
   }
 
@@ -518,12 +518,12 @@ public class WsmPactTest {
       pactVersion = PactSpecVersion.V3)
   void existingPolicySnapshotIds_someExist(MockServer mockServer) {
     var snapshotIds =
-        tdrSnapshotSupport(mockServer).existingPolicySnapshotIds(NUM_SNAPSHOTS_REQUESTED);
+        wsmSnapshotSupport(mockServer).existingPolicySnapshotIds(NUM_SNAPSHOTS_REQUESTED);
     assertEquals(NUM_SNAPSHOTS_THAT_EXIST, snapshotIds.size());
   }
 
-  private TdrSnapshotSupport tdrSnapshotSupport(MockServer mockServer) {
-    return new TdrSnapshotSupport(
+  private WsmSnapshotSupport wsmSnapshotSupport(MockServer mockServer) {
+    return new WsmSnapshotSupport(
         WORKSPACE_UUID, buildWsmDao(mockServer), new RestClientRetry(), activityLogger);
   }
 

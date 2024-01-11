@@ -27,7 +27,7 @@ import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerD
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TdrSnapshotSupport {
+public class WsmSnapshotSupport {
 
   private final UUID workspaceId;
   private final WorkspaceManagerDao wsmDao;
@@ -38,7 +38,7 @@ public class TdrSnapshotSupport {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  public TdrSnapshotSupport(
+  public WsmSnapshotSupport(
       UUID workspaceId,
       WorkspaceManagerDao wsmDao,
       RestClientRetry restClientRetry,
@@ -151,7 +151,7 @@ public class TdrSnapshotSupport {
    *
    * @param snapshotIds the list of snapshot ids to create or verify references.
    */
-  protected void linkSnapshots(Set<UUID> snapshotIds) {
+  public void linkSnapshots(Set<UUID> snapshotIds) {
     // list existing snapshots linked to this workspace
     Set<UUID> existingSnapshotIds = Set.copyOf(existingPolicySnapshotIds(/* pageSize= */ 50));
     // find the snapshots that are not already linked to this workspace
@@ -178,7 +178,8 @@ public class TdrSnapshotSupport {
     }
   }
 
-  Map<RecordType, String> identifyPrimaryKeys(List<TableModel> tables) {
+  // TODO: reevaluate moving this method to TdrManifestQuartzJob (see comment on PR #449)
+  public Map<RecordType, String> identifyPrimaryKeys(List<TableModel> tables) {
     return tables.stream()
         .collect(
             Collectors.toMap(
@@ -204,7 +205,7 @@ public class TdrSnapshotSupport {
    * @param relationshipModels relationship models from the TDR manifest
    * @return the relationship models, mapped by RecordType
    */
-  Multimap<RecordType, RelationshipModel> identifyRelations(
+  public Multimap<RecordType, RelationshipModel> identifyRelations(
       List<RelationshipModel> relationshipModels) {
     return Multimaps.index(
         relationshipModels,
