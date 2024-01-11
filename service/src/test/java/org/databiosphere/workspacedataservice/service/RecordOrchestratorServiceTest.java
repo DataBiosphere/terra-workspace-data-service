@@ -12,8 +12,10 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.service.model.exception.AttributeExistsException;
 import org.databiosphere.workspacedataservice.service.model.exception.DeleteAttributeRequestException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.service.model.exception.UpdateAttributeRequestException;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -131,9 +133,73 @@ class RecordOrchestratorServiceTest {
   }
 
   @Test
+  void renameAttribute() {
+    // Arrange
+    setUpRenameOrDeleteAttributeTest();
+
+    // Act
+    recordOrchestratorService.renameAttribute(INSTANCE, VERSION, TEST_TYPE, "attr2", "attr3");
+
+    // Assert
+    assertAttributes(Set.of("id", "attr1", "attr3"));
+    testGetRecord(RECORD_ID, "attr3", "bar");
+  }
+
+  @Test
+  void renamePrimaryKeyAttribute() {
+    // Arrange
+    setUpRenameOrDeleteAttributeTest();
+
+    // Act/Assert
+    UpdateAttributeRequestException e =
+        assertThrows(
+            UpdateAttributeRequestException.class,
+            () ->
+                recordOrchestratorService.renameAttribute(
+                    INSTANCE, VERSION, TEST_TYPE, "id", "newId"),
+            "renameAttribute should have thrown an error");
+    assertEquals("Unable to rename ID attribute", e.getMessage());
+    assertAttributes(Set.of("id", "attr1", "attr2"));
+  }
+
+  @Test
+  void renameNonexistentAttribute() {
+    // Arrange
+    setUpRenameOrDeleteAttributeTest();
+
+    // Act/Assert
+    MissingObjectException e =
+        assertThrows(
+            MissingObjectException.class,
+            () ->
+                recordOrchestratorService.renameAttribute(
+                    INSTANCE, VERSION, TEST_TYPE, "doesNotExist", "attr3"),
+            "renameAttribute should have thrown an error");
+    assertEquals("Attribute does not exist", e.getMessage());
+    assertAttributes(Set.of("id", "attr1", "attr2"));
+  }
+
+  @Test
+  void renameAttributeConflictingName() {
+    // Arrange
+    setUpRenameOrDeleteAttributeTest();
+
+    // Act/Assert
+    AttributeExistsException e =
+        assertThrows(
+            AttributeExistsException.class,
+            () ->
+                recordOrchestratorService.renameAttribute(
+                    INSTANCE, VERSION, TEST_TYPE, "attr1", "attr2"),
+            "renameAttribute should have thrown an error");
+    assertEquals("Attribute already exists", e.getMessage());
+    assertAttributes(Set.of("id", "attr1", "attr2"));
+  }
+
+  @Test
   void deleteAttribute() {
     // Arrange
-    setUpDeleteAttributeTest();
+    setUpRenameOrDeleteAttributeTest();
 
     // Act
     recordOrchestratorService.deleteAttribute(INSTANCE, VERSION, TEST_TYPE, "attr2");
@@ -145,7 +211,7 @@ class RecordOrchestratorServiceTest {
   @Test
   void deletePrimaryKeyAttribute() {
     // Arrange
-    setUpDeleteAttributeTest();
+    setUpRenameOrDeleteAttributeTest();
 
     // Act/Assert
     DeleteAttributeRequestException e =
@@ -160,7 +226,7 @@ class RecordOrchestratorServiceTest {
   @Test
   void deleteNonexistentAttribute() {
     // Arrange
-    setUpDeleteAttributeTest();
+    setUpRenameOrDeleteAttributeTest();
 
     // Act/Assert
     MissingObjectException e =
@@ -174,14 +240,14 @@ class RecordOrchestratorServiceTest {
     assertAttributes(Set.of("id", "attr1", "attr2"));
   }
 
-  private void setUpDeleteAttributeTest() {
+  private void setUpRenameOrDeleteAttributeTest() {
     RecordRequest recordRequest =
         new RecordRequest(
             RecordAttributes.empty().putAttribute("attr1", "foo").putAttribute("attr2", "bar"));
 
     ResponseEntity<RecordResponse> response =
         recordOrchestratorService.upsertSingleRecord(
-            INSTANCE, VERSION, TEST_TYPE, "1", Optional.of("id"), recordRequest);
+            INSTANCE, VERSION, TEST_TYPE, RECORD_ID, Optional.of("id"), recordRequest);
 
     assertAttributes(Set.of("id", "attr1", "attr2"));
   }

@@ -26,6 +26,7 @@ import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.shared.model.AttributeUpdateRequest;
 import org.databiosphere.workspacedataservice.shared.model.BatchOperation;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -1971,6 +1972,116 @@ class RecordControllerMockMvcTest {
                 instanceId,
                 versionId,
                 referencedType))
+        .andExpect(status().isConflict());
+  }
+
+  @Test
+  @Transactional
+  void updateAttributeNoUpdate() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    String attributeToUpdate = "attr1";
+
+    mockMvc
+        .perform(
+            patch(
+                    "/{instanceId}/types/{v}/{type}/{attribute}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    attributeToUpdate)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @Transactional
+  void renameAttribute() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    String attributeToRename = "attr1";
+    String newAttributeName = "newAttr";
+
+    mockMvc
+        .perform(
+            patch(
+                    "/{instanceId}/types/{v}/{type}/{attribute}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    attributeToRename)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AttributeUpdateRequest(newAttributeName))))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(
+            get("/{instanceId}/types/{version}/{recordType}", instanceId, versionId, recordType))
+        .andExpect(content().string(not(containsString(attributeToRename))))
+        .andExpect(content().string(containsString(newAttributeName)));
+  }
+
+  @Test
+  @Transactional
+  void renameNonExistentAttribute() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    String attributeToRename = "doesNotExist";
+    String newAttributeName = "newAttr";
+
+    mockMvc
+        .perform(
+            patch(
+                    "/{instanceId}/types/{v}/{type}/{attribute}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    attributeToRename)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AttributeUpdateRequest(newAttributeName))))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @Transactional
+  void renamePrimaryKeyAttribute() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    String attributeToRename = "sys_name";
+    String newAttributeName = "newAttr";
+
+    mockMvc
+        .perform(
+            patch(
+                    "/{instanceId}/types/{v}/{type}/{attribute}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    attributeToRename)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AttributeUpdateRequest(newAttributeName))))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @Transactional
+  void renameAttributeConflict() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    String attributeToRename = "attr1";
+    String newAttributeName = "attr2";
+
+    mockMvc
+        .perform(
+            patch(
+                    "/{instanceId}/types/{v}/{type}/{attribute}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    attributeToRename)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AttributeUpdateRequest(newAttributeName))))
         .andExpect(status().isConflict());
   }
 

@@ -19,9 +19,11 @@ import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.service.model.exception.AttributeExistsException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.DeleteAttributeRequestException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.service.model.exception.UpdateAttributeRequestException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -232,18 +234,46 @@ public class RecordOrchestratorService { // TODO give me a better name
         user -> user.deleted().table().ofQuantity(1).withRecordType(recordType));
   }
 
+  public void renameAttribute(
+      UUID instanceId,
+      String version,
+      RecordType recordType,
+      String attribute,
+      String newAttributeName) {
+    validateAndPermissions(instanceId, version);
+    checkRecordTypeExists(instanceId, recordType);
+    validateRenameAttribute(instanceId, recordType, attribute, newAttributeName);
+    recordService.renameAttribute(instanceId, recordType, attribute, newAttributeName);
+  }
+
+  private void validateRenameAttribute(
+      UUID instanceId, RecordType recordType, String attribute, String newAttributeName) {
+    RecordTypeSchema schema = getSchemaDescription(instanceId, recordType);
+
+    if (schema.attributes().stream()
+        .noneMatch(attributeSchema -> attributeSchema.name().equals(attribute))) {
+      throw new MissingObjectException("Attribute");
+    }
+    if (attribute.equals(schema.primaryKey())) {
+      throw new UpdateAttributeRequestException("Unable to rename ID attribute");
+    }
+    if (schema.attributes().stream()
+        .anyMatch(attributeSchema -> attributeSchema.name().equals(newAttributeName))) {
+      throw new AttributeExistsException("Attribute already exists");
+    }
+  }
+
   public void deleteAttribute(
       UUID instanceId, String version, RecordType recordType, String attribute) {
     validateAndPermissions(instanceId, version);
     checkRecordTypeExists(instanceId, recordType);
-    validateAttributeExistsAndIsEditable(instanceId, recordType, attribute);
+    validateDeleteAttribute(instanceId, recordType, attribute);
     recordService.deleteAttribute(instanceId, recordType, attribute);
     activityLogger.saveEventForCurrentUser(
         user -> user.deleted().attribute().withRecordType(recordType).withId(attribute));
   }
 
-  private void validateAttributeExistsAndIsEditable(
-      UUID instanceId, RecordType recordType, String attribute) {
+  private void validateDeleteAttribute(UUID instanceId, RecordType recordType, String attribute) {
     RecordTypeSchema schema = getSchemaDescription(instanceId, recordType);
 
     if (schema.attributes().stream()
