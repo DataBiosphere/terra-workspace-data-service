@@ -250,12 +250,12 @@ public class RecordOrchestratorService { // TODO give me a better name
       UUID instanceId, RecordType recordType, String attribute, String newAttributeName) {
     RecordTypeSchema schema = getSchemaDescription(instanceId, recordType);
 
+    if (attribute.equals(schema.primaryKey())) {
+      throw new UpdateAttributeRequestException("Unable to rename ID attribute");
+    }
     if (schema.attributes().stream()
         .noneMatch(attributeSchema -> attributeSchema.name().equals(attribute))) {
       throw new MissingObjectException("Attribute");
-    }
-    if (attribute.equals(schema.primaryKey())) {
-      throw new UpdateAttributeRequestException("Unable to rename ID attribute");
     }
     if (schema.attributes().stream()
         .anyMatch(attributeSchema -> attributeSchema.name().equals(newAttributeName))) {
@@ -276,12 +276,12 @@ public class RecordOrchestratorService { // TODO give me a better name
   private void validateDeleteAttribute(UUID instanceId, RecordType recordType, String attribute) {
     RecordTypeSchema schema = getSchemaDescription(instanceId, recordType);
 
+    if (attribute.equals(schema.primaryKey())) {
+      throw new DeleteAttributeRequestException("Unable to delete ID attribute");
+    }
     if (schema.attributes().stream()
         .noneMatch(attributeSchema -> attributeSchema.name().equals(attribute))) {
       throw new MissingObjectException("Attribute");
-    }
-    if (attribute.equals(schema.primaryKey())) {
-      throw new DeleteAttributeRequestException("Unable to delete ID attribute");
     }
   }
 
