@@ -503,7 +503,7 @@ paths:
         204:
           description: Success
         400:
-          description: Attribute is the ID for record type
+          description: Attribute is the primary key for record type
           content:
             'application/json':
               schema:
