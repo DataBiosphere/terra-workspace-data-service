@@ -239,8 +239,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
     try {
       return mapper.readValue(manifestUrl, SnapshotExportResponseModel.class);
     } catch (IOException e) {
+      // Sanitize potential null characters that caused the mapper to fail
       throw new JobExecutionException(
-          "Error reading TDR snapshot manifest: %s".formatted(e.getMessage()), e);
+          "Error reading TDR snapshot manifest: %s".formatted(e.getMessage().replace("\0", "")), e);
     }
   }
 

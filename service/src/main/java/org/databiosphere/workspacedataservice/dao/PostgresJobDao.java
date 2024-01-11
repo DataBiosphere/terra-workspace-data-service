@@ -162,8 +162,7 @@ public class PostgresJobDao implements JobDao {
 
     // if an error message is supplied, also update that
     if (errorMessage != null) {
-      // Sanitize potential null characters in error message
-      params.addValue("error", errorMessage.replace("\0", ""));
+      params.addValue("error", errorMessage);
       sb.append(", error = :error");
     }
 
