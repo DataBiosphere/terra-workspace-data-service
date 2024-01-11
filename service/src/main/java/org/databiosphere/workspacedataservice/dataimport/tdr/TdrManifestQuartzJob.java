@@ -9,8 +9,11 @@ import bio.terra.datarepo.model.SnapshotExportResponseModelFormatParquetLocation
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Multimap;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
@@ -170,18 +173,33 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
       // generate the HadoopInputFile
       InputFile inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
+      HttpURLConnection connection = (HttpURLConnection) path.openConnection();
 
-      // upsert this parquet file's contents
-      try (ParquetReader<GenericRecord> avroParquetReader =
-          AvroParquetReader.<GenericRecord>builder(inputFile).build()) {
-        logger.info("batch-writing records for file ...");
+      try (InputStream inputStream = connection.getInputStream()) {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        byte[] buffer = new byte[4096];
+        int bytesRead;
 
-        BatchWriteResult result =
-            batchWriteService.batchWriteParquetStream(
-                avroParquetReader, targetInstance, table, importMode);
+        while ((bytesRead = inputStream.read(buffer)) != -1) {
+          byteArrayOutputStream.write(buffer, 0, bytesRead);
+        }
 
-        return result;
+        ParquetStream parquetStream = new ParquetStream("test", byteArrayOutputStream);
+        // upsert this parquet file's contents
+        try (ParquetReader<GenericRecord> avroParquetReader =
+            AvroParquetReader.<GenericRecord>builder(parquetStream).build()) {
+          logger.info("batch-writing records for file ...");
+
+          BatchWriteResult result =
+              batchWriteService.batchWriteParquetStream(
+                  avroParquetReader, targetInstance, table, importMode);
+
+          return result;
+        }
+      } finally {
+        connection.disconnect();
       }
+
     } catch (Throwable t) {
       logger.error("Hit an error on file: {}", t.getMessage());
       throw new TdrManifestImportException(t.getMessage());
