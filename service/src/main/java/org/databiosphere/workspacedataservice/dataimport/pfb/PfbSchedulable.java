@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.dataimport;
+package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum.PFB;
 

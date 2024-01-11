@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.service;
+package org.databiosphere.workspacedataservice.recordstream;
 
 import com.fasterxml.jackson.core.FormatSchema;
 import com.fasterxml.jackson.databind.MappingIterator;

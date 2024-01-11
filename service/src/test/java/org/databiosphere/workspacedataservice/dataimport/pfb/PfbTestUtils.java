@@ -1,7 +1,7 @@
-package org.databiosphere.workspacedataservice.dataimport;
+package org.databiosphere.workspacedataservice.dataimport.pfb;
 
-import static org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter.RELATIONS_ID;
-import static org.databiosphere.workspacedataservice.dataimport.PfbRecordConverter.RELATIONS_NAME;
+import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.RELATIONS_ID;
+import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.RELATIONS_NAME;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;

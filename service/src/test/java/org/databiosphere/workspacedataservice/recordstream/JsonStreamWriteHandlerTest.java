@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.service;
+package org.databiosphere.workspacedataservice.recordstream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.stream.Stream;
+import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;

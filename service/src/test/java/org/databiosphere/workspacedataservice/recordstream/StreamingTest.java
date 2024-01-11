@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.service;
+package org.databiosphere.workspacedataservice.recordstream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.shared.model.OperationType.DELETE;
@@ -7,6 +7,7 @@ import static org.databiosphere.workspacedataservice.shared.model.OperationType.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.List;
+import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

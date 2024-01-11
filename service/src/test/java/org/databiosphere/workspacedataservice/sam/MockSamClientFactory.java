@@ -18,7 +18,7 @@ public class MockSamClientFactory implements SamClientFactory {
 
   @Override
   public UsersApi getUsersApi(String token) {
-    return null;
+    return new MockSamUsersApi();
   }
 
   @Override
