@@ -11,6 +11,8 @@ import java.sql.SQLException;
 import java.time.ZoneOffset;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
+import org.databiosphere.workspacedataservice.generated.GenericJobServerModel.JobTypeEnum;
+import org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
@@ -162,7 +164,8 @@ public class PostgresJobDao implements JobDao {
 
     // if an error message is supplied, also update that
     if (errorMessage != null) {
-      params.addValue("error", errorMessage);
+      // Sanitize potential null characters in error message
+      params.addValue("error", errorMessage.replace("\0", ""));
       sb.append(", error = :error");
     }
 
