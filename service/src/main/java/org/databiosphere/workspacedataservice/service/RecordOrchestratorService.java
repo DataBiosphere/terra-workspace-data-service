@@ -244,6 +244,12 @@ public class RecordOrchestratorService { // TODO give me a better name
     checkRecordTypeExists(instanceId, recordType);
     validateRenameAttribute(instanceId, recordType, attribute, newAttributeName);
     recordService.renameAttribute(instanceId, recordType, attribute, newAttributeName);
+    activityLogger.saveEventForCurrentUser(
+        user ->
+            user.renamed()
+                .attribute()
+                .withRecordType(recordType)
+                .withIds(new String[] {attribute, newAttributeName}));
   }
 
   private void validateRenameAttribute(

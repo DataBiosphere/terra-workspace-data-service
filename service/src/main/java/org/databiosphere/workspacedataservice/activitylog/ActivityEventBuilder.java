@@ -84,6 +84,11 @@ public class ActivityEventBuilder {
     return this;
   }
 
+  public ActivityEventBuilder renamed() {
+    this.action = ActivityModels.Action.RENAME;
+    return this;
+  }
+
   public ActivityEventBuilder restored() {
     this.action = ActivityModels.Action.RESTORE;
     return this;
@@ -141,6 +146,11 @@ public class ActivityEventBuilder {
 
   public ActivityEventBuilder withId(String id) {
     this.ids = new String[] {id};
+    return this;
+  }
+
+  public ActivityEventBuilder withIds(String[] ids) {
+    this.ids = ids;
     return this;
   }
 
