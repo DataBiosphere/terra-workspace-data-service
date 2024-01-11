@@ -41,6 +41,7 @@ public class TdrManifestQuartzJobTest {
   @MockBean ActivityLogger activityLogger;
   @Autowired RestClientRetry restClientRetry;
   @Autowired ObjectMapper objectMapper;
+  @Autowired TdrTestSupport testSupport;
 
   // test resources used below
   @Value("classpath:tdrmanifest/azure_small.json")
@@ -62,16 +63,7 @@ public class TdrManifestQuartzJobTest {
   @Test
   void extractSnapshotInfo() throws IOException {
     UUID workspaceId = UUID.randomUUID();
-    TdrManifestQuartzJob tdrManifestQuartzJob =
-        new TdrManifestQuartzJob(
-            jobDao,
-            wsmDao,
-            restClientRetry,
-            batchWriteService,
-            activityLogger,
-            workspaceId,
-            objectMapper);
-
+    TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob(workspaceId);
     SnapshotExportResponseModel snapshotExportResponseModel =
         tdrManifestQuartzJob.parseManifest(manifestAzure.getURL());
 
@@ -112,16 +104,7 @@ public class TdrManifestQuartzJobTest {
   @Test
   void parseEmptyParquet() throws IOException {
     UUID workspaceId = UUID.randomUUID();
-    TdrManifestQuartzJob tdrManifestQuartzJob =
-        new TdrManifestQuartzJob(
-            jobDao,
-            wsmDao,
-            restClientRetry,
-            batchWriteService,
-            activityLogger,
-            workspaceId,
-            objectMapper);
-
+    TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob(workspaceId);
     TdrManifestImportTable table =
         new TdrManifestImportTable(
             RecordType.valueOf("data"),
@@ -148,23 +131,7 @@ public class TdrManifestQuartzJobTest {
   @Test
   void parseUnknownFieldsInManifest() throws IOException {
     UUID workspaceId = UUID.randomUUID();
-    TdrManifestQuartzJob tdrManifestQuartzJob =
-        new TdrManifestQuartzJob(
-            jobDao,
-            wsmDao,
-            restClientRetry,
-            batchWriteService,
-            activityLogger,
-            workspaceId,
-            objectMapper);
-
-    TdrManifestImportTable table =
-        new TdrManifestImportTable(
-            RecordType.valueOf("data"),
-            "datarepo_row_id",
-            List.of(emptyParquet.getURL()),
-            List.of());
-
+    TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob(workspaceId);
     SnapshotExportResponseModel snapshotExportResponseModel =
         assertDoesNotThrow(
             () -> tdrManifestQuartzJob.parseManifest(manifestWithUnknownProperties.getURL()));
@@ -178,17 +145,7 @@ public class TdrManifestQuartzJobTest {
   @Test
   void parseMalformedParquet() throws IOException {
     UUID workspaceId = UUID.randomUUID();
-
-    TdrManifestQuartzJob tdrManifestQuartzJob =
-        new TdrManifestQuartzJob(
-            jobDao,
-            wsmDao,
-            restClientRetry,
-            batchWriteService,
-            activityLogger,
-            workspaceId,
-            objectMapper);
-
+    TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob(workspaceId);
     TdrManifestImportTable table =
         new TdrManifestImportTable(
             RecordType.valueOf("data"),
