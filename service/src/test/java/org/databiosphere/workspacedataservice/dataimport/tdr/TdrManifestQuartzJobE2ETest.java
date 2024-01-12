@@ -112,12 +112,93 @@ public class TdrManifestQuartzJobE2ETest {
         recordOrchestratorService.describeAllRecordTypes(instanceId, "v0.2");
 
     // spot-check some column data types to see if they are good
-    assertDataType(allTypes, "ancestry_specific_meta_analysis", "ancestry", DataTypeMapping.STRING);
-    assertDataType(allTypes, "ancestry_specific_meta_analysis", "beta", DataTypeMapping.NUMBER);
+    assertDataType(allTypes, "all_data_types", "bool_column", DataTypeMapping.BOOLEAN);
     assertDataType(
-        allTypes, "ancestry_specific_meta_analysis", "datarepo_row_id", DataTypeMapping.STRING);
+        allTypes,
+        "all_data_types",
+        "date_column",
+        DataTypeMapping.NUMBER); // actual data: 19174 (days since epoch)
 
-    // TODO: beef up test coverage on the various types represented by the fixture
+    assertDataType(
+        allTypes,
+        "all_data_types",
+        "date_array_column",
+        DataTypeMapping
+            .STRING); // actual data is string: "[\"2022-7-02\",\"2022-7-03\",\"2022-7-04\"]"
+    assertDataType(
+        allTypes,
+        "all_data_types",
+        "date_time_column",
+        DataTypeMapping.STRING); // actual data is string: "2022-07-05T12:00:01Z[UTC]"
+    assertDataType(
+        allTypes,
+        "all_data_types",
+        "date_time_array_column",
+        DataTypeMapping.STRING); // actual data is string: "[\"2022-07-05 12:00:01\"]"
+    assertDataType(
+        allTypes,
+        "all_data_types",
+        "dir_ref_column",
+        DataTypeMapping.STRING); // actual data is null
+    assertDataType(
+        allTypes,
+        "all_data_types",
+        "file_ref_column",
+        DataTypeMapping.STRING); // actual data is null
+    assertDataType(allTypes, "all_data_types", "float_column", DataTypeMapping.NUMBER);
+    assertDataType(
+        allTypes,
+        "all_data_types",
+        "float_array_column",
+        DataTypeMapping.STRING); // actual data is string: "[1.232,123.0]"
+    assertDataType(allTypes, "all_data_types", "float64_column", DataTypeMapping.NUMBER);
+    assertDataType(
+        allTypes,
+        "all_data_types",
+        "float64_array_column",
+        DataTypeMapping.STRING); // actual data is string: "[1.232,123.0]"
+    assertDataType(allTypes, "all_data_types", "int_column", DataTypeMapping.NUMBER);
+    assertDataType(
+        allTypes,
+        "all_data_types",
+        "int_array_column",
+        DataTypeMapping.STRING); // actual data is string: "[245,3325,2343]"
+    assertDataType(
+        allTypes,
+        "all_data_types",
+        "int64_column",
+        DataTypeMapping.STRING); // actual data is number: 234235 (???)
+    assertDataType(
+        allTypes,
+        "all_data_types",
+        "int64_array_column",
+        DataTypeMapping.STRING); // actual data is string: "[1,234235]"
+    assertDataType(allTypes, "all_data_types", "numeric_column", DataTypeMapping.NUMBER);
+    assertDataType(
+        allTypes,
+        "all_data_types",
+        "numeric_array_column",
+        DataTypeMapping.STRING); // actual data is string: "[2,2,3]"
+    assertDataType(
+        allTypes,
+        "all_data_types",
+        "time_column",
+        DataTypeMapping.STRING); // actual data is string: "1970-01-02T23:59:59.999Z[UTC]"
+    assertDataType(
+        allTypes,
+        "all_data_types",
+        "time_array_column",
+        DataTypeMapping.STRING); // actual data is string: "[\"1:34:01\",\"12:34:01.0908\"]"
+    assertDataType(
+        allTypes,
+        "all_data_types",
+        "timestamp_column",
+        DataTypeMapping.STRING); // actual data is string: "2023-06-01T01:02:40Z[UTC]"
+    assertDataType(
+        allTypes,
+        "all_data_types",
+        "timestamp_array_column",
+        DataTypeMapping.STRING); // actual data is string: "[\"2023-06-02 01:04:40\"]"
 
     Map<String, Integer> actualCounts =
         allTypes.stream()
