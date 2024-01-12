@@ -165,8 +165,14 @@ class PfbRecordConverterTest {
     assertEquals(BigDecimal.valueOf(3.14159), actual.getAttributeValue("pi"));
     assertEquals(Boolean.TRUE, actual.getAttributeValue("booly"));
     assertEquals("enumValue2", actual.getAttributeValue("enum"));
-    assertEquals("some bytes", actual.getAttributeValue("bytesOfStuff"));
-    assertEquals("fixedBytes", actual.getAttributeValue("tenFixedBytesOfStuff"));
+    assertEquals(
+        "[115, 111, 109, 101, 32, 98, 121, 116, 101, 115]",
+        actual.getAttributeValue("bytesOfStuff"),
+        "\"some bytes\" displayed as the array of bytes");
+    assertEquals(
+        "[102, 105, 120, 101, 100, 66, 121, 116, 101, 115]",
+        actual.getAttributeValue("tenFixedBytesOfStuff"),
+        "\"fixedBytes\" displayed as the array of bytes");
     assertEquals(
         List.of(BigDecimal.valueOf(1.2), BigDecimal.valueOf(3.4)),
         actual.getAttributeValue("arrayOfNumbers"));
