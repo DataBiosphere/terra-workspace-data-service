@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
@@ -251,7 +253,10 @@ class RecordOrchestratorServiceTest {
         recordOrchestratorService.upsertSingleRecord(
             INSTANCE, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
 
-    assertAttributes(Set.of("id", "attr1", "attr2"));
+    Set<String> expectedAttributes = Stream.of(attributeNames).collect(Collectors.toSet());
+    expectedAttributes.add(PRIMARY_KEY);
+
+    assertAttributes(expectedAttributes);
   }
 
   private void assertAttributes(Set<String> expectedAttributeNames) {
