@@ -10,27 +10,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Multimap;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.commons.io.FileUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.hadoop.ParquetReader;
-import org.apache.parquet.hadoop.util.HadoopInputFile;
-import org.apache.parquet.io.InputFile;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
@@ -150,30 +142,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
     try {
-      // download the file from the URL to a temp file on the local filesystem
-      // Azure urls, with SAS tokens, don't need any particular auth.
-      // TODO AJ-1517 can we access the URL directly, no temp file?
-      File tempFile = File.createTempFile("tdr-", "download");
-      logger.info("downloading to temp file {} ...", tempFile.getPath());
-      FileUtils.copyURLToFile(path, tempFile);
-      Path hadoopFilePath = new Path(tempFile.getPath());
-      // do we need any other config here?
-      Configuration configuration = new Configuration();
-
-      // In the TDR manifest, for Azure snapshots only,
-      // the first file in the list will always be a directory. Attempting to import that directory
-      // will fail; it has no content. To avoid those failures,
-      // check files for length and ignore any that are empty
-      FileSystem fileSystem = FileSystem.get(configuration);
-      FileStatus fileStatus = fileSystem.getFileStatus(hadoopFilePath);
-      if (fileStatus.getLen() == 0) {
-        logger.info("Empty file in parquet, skipping");
-        return BatchWriteResult.empty();
-      }
-
-      // generate the HadoopInputFile
-      InputFile inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
-      HttpURLConnection connection = (HttpURLConnection) path.openConnection();
+      URLConnection connection = path.openConnection();
 
       try (InputStream inputStream = connection.getInputStream()) {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -182,6 +151,17 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
         while ((bytesRead = inputStream.read(buffer)) != -1) {
           byteArrayOutputStream.write(buffer, 0, bytesRead);
+        }
+
+        // In the TDR manifest, for Azure snapshots only,
+        // the first file in the list will always be a directory. Attempting to import that
+        // directory
+        // will fail; it has no content. To avoid those failures,
+        // check files for length and ignore any that are empty
+        byte[] byteArray = byteArrayOutputStream.toByteArray();
+        if (byteArray.length == 0) {
+          logger.info("Empty file in parquet, skipping");
+          return BatchWriteResult.empty();
         }
 
         ParquetStream parquetStream = new ParquetStream("test", byteArrayOutputStream);
@@ -196,8 +176,10 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
           return result;
         }
-      } finally {
-        connection.disconnect();
+        //      } finally {
+        // TODO URLConnection doesn't seem to have a way to disconnect?  does it do it
+        // automatically?
+        //        connection.disconnect();
       }
 
     } catch (Throwable t) {
