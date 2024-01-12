@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.hamcrest.Matchers.*;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -2014,11 +2016,24 @@ class RecordControllerMockMvcTest {
                 .content(mapper.writeValueAsString(new AttributeUpdateRequest(newAttributeName))))
         .andExpect(status().isOk());
 
-    mockMvc
-        .perform(
-            get("/{instanceId}/types/{version}/{recordType}", instanceId, versionId, recordType))
-        .andExpect(content().string(not(containsString(attributeToRename))))
-        .andExpect(content().string(containsString(newAttributeName)));
+    MvcResult mvcResult =
+        mockMvc
+            .perform(
+                get(
+                    "/{instanceId}/types/{version}/{recordType}",
+                    instanceId,
+                    versionId,
+                    recordType))
+            .andReturn();
+
+    RecordTypeSchema actual =
+        mapper.readValue(mvcResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+
+    Set<String> attributeNames =
+        actual.attributes().stream().map(AttributeSchema::name).collect(Collectors.toSet());
+
+    assertThat(attributeNames).doesNotContain(attributeToRename);
+    assertThat(attributeNames).contains(newAttributeName);
   }
 
   @Test
