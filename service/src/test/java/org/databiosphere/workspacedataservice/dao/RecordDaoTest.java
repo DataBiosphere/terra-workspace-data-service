@@ -753,6 +753,27 @@ class RecordDaoTest {
 
   @Test
   @Transactional
+  void testRenameAttribute() {
+    // Arrange
+    RecordType recordTypeWithAttributes = RecordType.valueOf("withAttributes");
+    recordDao.createRecordType(
+        instanceId,
+        Map.of("foo", DataTypeMapping.STRING, "bar", DataTypeMapping.STRING),
+        recordTypeWithAttributes,
+        new RelationCollection(Collections.emptySet(), Collections.emptySet()),
+        PRIMARY_KEY);
+
+    // Act
+    recordDao.renameAttribute(instanceId, recordTypeWithAttributes, "bar", "baz");
+
+    // Assert
+    Set<String> attributeNames =
+        Set.copyOf(recordDao.getAllAttributeNames(instanceId, recordTypeWithAttributes));
+    assertEquals(Set.of(PRIMARY_KEY, "foo", "baz"), attributeNames);
+  }
+
+  @Test
+  @Transactional
   void testDeleteAttribute() {
     // Arrange
     RecordType recordTypeWithAttributes = RecordType.valueOf("withAttributes");
@@ -769,7 +790,7 @@ class RecordDaoTest {
     // Assert
     Set<String> attributeNames =
         Set.copyOf(recordDao.getAllAttributeNames(instanceId, recordTypeWithAttributes));
-    assertEquals(attributeNames, Set.of(PRIMARY_KEY, "attr1"));
+    assertEquals(Set.of(PRIMARY_KEY, "attr1"), attributeNames);
   }
 
   @Test
