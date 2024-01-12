@@ -28,7 +28,6 @@ import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
-import org.databiosphere.workspacedataservice.shared.model.AttributeSchemaUpdate;
 import org.databiosphere.workspacedataservice.shared.model.BatchOperation;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -2013,7 +2012,8 @@ class RecordControllerMockMvcTest {
                     recordType,
                     attributeToRename)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new AttributeSchemaUpdate(newAttributeName))))
+                .content(
+                    mapper.writeValueAsString(new AttributeSchema(newAttributeName, null, null))))
         .andExpect(status().isOk());
 
     MvcResult mvcResult =
@@ -2050,7 +2050,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     "doesNotExist")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new AttributeSchemaUpdate("newAttr"))))
+                .content(mapper.writeValueAsString(new AttributeSchema("newAttr", null, null))))
         .andExpect(status().isNotFound());
   }
 
@@ -2071,7 +2071,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     attributeToRename)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new AttributeSchemaUpdate("newAttr"))))
+                .content(mapper.writeValueAsString(new AttributeSchema("newAttr", null, null))))
         .andExpect(status().isBadRequest());
   }
 
@@ -2093,7 +2093,8 @@ class RecordControllerMockMvcTest {
                     recordType,
                     attributeToRename)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new AttributeSchemaUpdate(newAttributeName))))
+                .content(
+                    mapper.writeValueAsString(new AttributeSchema(newAttributeName, null, null))))
         .andExpect(status().isConflict());
   }
 
