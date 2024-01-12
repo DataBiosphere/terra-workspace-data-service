@@ -10,7 +10,7 @@ import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
-import org.databiosphere.workspacedataservice.shared.model.AttributeUpdateRequest;
+import org.databiosphere.workspacedataservice.shared.model.AttributeSchemaUpdate;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -176,8 +176,8 @@ public class RecordController {
       @PathVariable("v") String version,
       @PathVariable("type") RecordType recordType,
       @PathVariable("attribute") String attribute,
-      @RequestBody AttributeUpdateRequest attributeUpdateRequest) {
-    String newAttributeName = attributeUpdateRequest.name();
+      @RequestBody AttributeSchemaUpdate attributeSchemaUpdate) {
+    String newAttributeName = attributeSchemaUpdate.name();
     recordOrchestratorService.renameAttribute(
         instanceId, version, recordType, attribute, newAttributeName);
 

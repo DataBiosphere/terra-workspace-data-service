@@ -498,7 +498,7 @@ paths:
         - $ref: '#/components/parameters/recordTypePathParam'
         - $ref: '#/components/parameters/attributePathParam'
       requestBody:
-        $ref: '#/components/requestBodies/AttributeUpdateRequestBody'
+        $ref: '#/components/requestBodies/AttributeSchemaUpdateRequestBody'
       responses:
         204:
           description: Success
@@ -666,13 +666,13 @@ components:
           schema:
             $ref: '#/components/schemas/VersionResponse'
   requestBodies:
-    AttributeUpdateRequestBody:
+    AttributeSchemaUpdateRequestBody:
       description: A request to update an attribute
       required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/AttributeUpdateRequest'
+            $ref: '#/components/schemas/AttributeSchemaUpdate'
     BackupRestoreRequestBody:
       description: A backup request
       required: true
@@ -730,7 +730,7 @@ components:
         relatesTo:
           type: string
           description: Name of type to which this attribute relates. Only present if this is a relation attribute.
-    AttributeUpdateRequest:
+    AttributeSchemaUpdate:
       type: object
       required:
         - name
