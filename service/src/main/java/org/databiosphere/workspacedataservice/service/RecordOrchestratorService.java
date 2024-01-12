@@ -19,11 +19,10 @@ import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.Relation;
-import org.databiosphere.workspacedataservice.service.model.exception.AttributeExistsException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
-import org.databiosphere.workspacedataservice.service.model.exception.DeleteAttributeRequestException;
+import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
-import org.databiosphere.workspacedataservice.service.model.exception.UpdateAttributeRequestException;
+import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -257,7 +256,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     RecordTypeSchema schema = getSchemaDescription(instanceId, recordType);
 
     if (attribute.equals(schema.primaryKey())) {
-      throw new UpdateAttributeRequestException("Unable to rename primary key attribute");
+      throw new ValidationException("Unable to rename primary key attribute");
     }
     if (schema.attributes().stream()
         .noneMatch(attributeSchema -> attributeSchema.name().equals(attribute))) {
@@ -265,7 +264,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     }
     if (schema.attributes().stream()
         .anyMatch(attributeSchema -> attributeSchema.name().equals(newAttributeName))) {
-      throw new AttributeExistsException("Attribute already exists");
+      throw new ConflictException("Attribute already exists");
     }
   }
 
@@ -283,7 +282,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     RecordTypeSchema schema = getSchemaDescription(instanceId, recordType);
 
     if (attribute.equals(schema.primaryKey())) {
-      throw new DeleteAttributeRequestException("Unable to delete primary key attribute");
+      throw new ValidationException("Unable to delete primary key attribute");
     }
     if (schema.attributes().stream()
         .noneMatch(attributeSchema -> attributeSchema.name().equals(attribute))) {

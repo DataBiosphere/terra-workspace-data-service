@@ -12,10 +12,9 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
-import org.databiosphere.workspacedataservice.service.model.exception.AttributeExistsException;
-import org.databiosphere.workspacedataservice.service.model.exception.DeleteAttributeRequestException;
+import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
-import org.databiosphere.workspacedataservice.service.model.exception.UpdateAttributeRequestException;
+import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -151,9 +150,9 @@ class RecordOrchestratorServiceTest {
     setUpRenameOrDeleteAttributeTest();
 
     // Act/Assert
-    UpdateAttributeRequestException e =
+    ValidationException e =
         assertThrows(
-            UpdateAttributeRequestException.class,
+            ValidationException.class,
             () ->
                 recordOrchestratorService.renameAttribute(
                     INSTANCE, VERSION, TEST_TYPE, "id", "newId"),
@@ -185,9 +184,9 @@ class RecordOrchestratorServiceTest {
     setUpRenameOrDeleteAttributeTest();
 
     // Act/Assert
-    AttributeExistsException e =
+    ConflictException e =
         assertThrows(
-            AttributeExistsException.class,
+            ConflictException.class,
             () ->
                 recordOrchestratorService.renameAttribute(
                     INSTANCE, VERSION, TEST_TYPE, "attr1", "attr2"),
@@ -214,9 +213,9 @@ class RecordOrchestratorServiceTest {
     setUpRenameOrDeleteAttributeTest();
 
     // Act/Assert
-    DeleteAttributeRequestException e =
+    ValidationException e =
         assertThrows(
-            DeleteAttributeRequestException.class,
+            ValidationException.class,
             () -> recordOrchestratorService.deleteAttribute(INSTANCE, VERSION, TEST_TYPE, "id"),
             "deleteAttribute should have thrown an error");
     assertEquals("Unable to delete primary key attribute", e.getMessage());
