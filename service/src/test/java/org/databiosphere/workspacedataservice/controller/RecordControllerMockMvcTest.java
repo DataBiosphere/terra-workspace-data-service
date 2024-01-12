@@ -1980,7 +1980,6 @@ class RecordControllerMockMvcTest {
   void updateAttributeNoUpdate() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
-    String attributeToUpdate = "attr1";
 
     mockMvc
         .perform(
@@ -1989,7 +1988,7 @@ class RecordControllerMockMvcTest {
                     instanceId,
                     versionId,
                     recordType,
-                    attributeToUpdate)
+                    "attr1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
         .andExpect(status().isBadRequest());
@@ -2027,8 +2026,6 @@ class RecordControllerMockMvcTest {
   void renameNonExistentAttribute() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
-    String attributeToRename = "doesNotExist";
-    String newAttributeName = "newAttr";
 
     mockMvc
         .perform(
@@ -2037,9 +2034,9 @@ class RecordControllerMockMvcTest {
                     instanceId,
                     versionId,
                     recordType,
-                    attributeToRename)
+                    "doesNotExist")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new AttributeUpdateRequest(newAttributeName))))
+                .content(mapper.writeValueAsString(new AttributeUpdateRequest("newAttr"))))
         .andExpect(status().isNotFound());
   }
 
@@ -2048,8 +2045,6 @@ class RecordControllerMockMvcTest {
   void renamePrimaryKeyAttribute() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
-    String attributeToRename = "sys_name";
-    String newAttributeName = "newAttr";
 
     mockMvc
         .perform(
@@ -2058,9 +2053,9 @@ class RecordControllerMockMvcTest {
                     instanceId,
                     versionId,
                     recordType,
-                    attributeToRename)
+                    "sys_name")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new AttributeUpdateRequest(newAttributeName))))
+                .content(mapper.writeValueAsString(new AttributeUpdateRequest("newAttr"))))
         .andExpect(status().isBadRequest());
   }
 
