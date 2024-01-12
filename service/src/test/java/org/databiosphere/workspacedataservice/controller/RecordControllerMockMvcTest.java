@@ -2032,8 +2032,7 @@ class RecordControllerMockMvcTest {
     Set<String> attributeNames =
         actual.attributes().stream().map(AttributeSchema::name).collect(Collectors.toSet());
 
-    assertThat(attributeNames).doesNotContain(attributeToRename);
-    assertThat(attributeNames).contains(newAttributeName);
+    assertThat(attributeNames).doesNotContain(attributeToRename).contains(newAttributeName);
   }
 
   @Test
