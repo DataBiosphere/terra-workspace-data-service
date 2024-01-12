@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +15,6 @@ import java.util.Set;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericEnumSymbol;
-import org.apache.avro.generic.GenericFixed;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -138,8 +138,9 @@ public abstract class AvroRecordConverter {
     }
 
     // Avro fixed
-    if (attribute instanceof GenericFixed fixedAttr) {
-      return new String(fixedAttr.bytes());
+    if (attribute instanceof GenericData.Fixed fixedAttr) {
+      // TODO(AJ-1537): better handle null bytes vs. string bytes
+      return fixedAttr.toString();
     }
 
     // Avro strings
@@ -149,7 +150,10 @@ public abstract class AvroRecordConverter {
 
     // Avro bytes
     if (attribute instanceof ByteBuffer byteBufferAttr) {
-      return new String(byteBufferAttr.array());
+      // TODO(AJ-1537): better handle null bytes vs. string bytes
+      // copy the behavior of GenericData.Fixed.toString()
+      // to protect against null bytes that may be present in the buffer
+      return Arrays.toString(byteBufferAttr.array());
     }
 
     // Avro ints

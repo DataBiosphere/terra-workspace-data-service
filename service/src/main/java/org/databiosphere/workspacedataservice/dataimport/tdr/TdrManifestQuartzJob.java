@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport.tdr;
 
+import static org.apache.parquet.avro.AvroReadSupport.READ_INT96_AS_FIXED;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
@@ -173,7 +174,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
       // upsert this parquet file's contents
       try (ParquetReader<GenericRecord> avroParquetReader =
-          AvroParquetReader.<GenericRecord>builder(inputFile).build()) {
+          AvroParquetReader.<GenericRecord>builder(inputFile)
+              .set(READ_INT96_AS_FIXED, "true")
+              .build()) {
         logger.info("batch-writing records for file ...");
 
         BatchWriteResult result =
@@ -268,6 +271,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
         wsmSnapshotSupport.identifyPrimaryKeys(
             snapshotExportResponseModel.getSnapshot().getTables());
 
+    // TODO(AJ-1536): get the types for each table from the manifest; these will be needed after
+    //   Avro deserialization to convert them to the correct types.
+
     // find the relations for each table.
     // This is the snapshot.relationships section in the manifest
     Multimap<RecordType, RelationshipModel> relationsByTable =
@@ -313,7 +319,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
     return requestedPrimaryKey != null && requestedPrimaryKey.equals(actualPrimaryKey);
   }
 
-  private URL parseUrl(String path) {
+  @VisibleForTesting
+  protected URL parseUrl(String path) {
     try {
       return new URL(path);
     } catch (MalformedURLException e) {

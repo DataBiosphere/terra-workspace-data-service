@@ -174,7 +174,7 @@ public class PfbTestUtils {
     return mockContext;
   }
 
-  public static PfbQuartzJob buildQuartzJob(
+  public static PfbQuartzJob buildPfbQuartzJob(
       JobDao jobDao,
       WorkspaceManagerDao wsmDao,
       RestClientRetry restClientRetry,
