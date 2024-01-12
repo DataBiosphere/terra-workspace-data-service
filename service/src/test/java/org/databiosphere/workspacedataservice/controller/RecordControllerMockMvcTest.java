@@ -2045,6 +2045,8 @@ class RecordControllerMockMvcTest {
   void renamePrimaryKeyAttribute() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
+    // sys_name is the default name for the primary key column used by createSomeRecords.
+    String attributeToRename = "sys_name";
 
     mockMvc
         .perform(
@@ -2053,7 +2055,7 @@ class RecordControllerMockMvcTest {
                     instanceId,
                     versionId,
                     recordType,
-                    "sys_name")
+                    attributeToRename)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(mapper.writeValueAsString(new AttributeUpdateRequest("newAttr"))))
         .andExpect(status().isBadRequest());
@@ -2064,6 +2066,7 @@ class RecordControllerMockMvcTest {
   void renameAttributeConflict() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
+    // createSomeRecords creates records with attributes including "attr1" and "attr2".
     String attributeToRename = "attr1";
     String newAttributeName = "attr2";
 
@@ -2123,6 +2126,9 @@ class RecordControllerMockMvcTest {
   void deletePrimaryKeyAttribute() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
+    // sys_name is the default name for the primary key column used by createSomeRecords.
+    String attributeToDelete = "sys_name";
+
     mockMvc
         .perform(
             delete(
@@ -2130,7 +2136,7 @@ class RecordControllerMockMvcTest {
                 instanceId,
                 versionId,
                 recordType,
-                "sys_name"))
+                attributeToDelete))
         .andExpect(status().isBadRequest());
   }
 
