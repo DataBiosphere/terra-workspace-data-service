@@ -139,6 +139,7 @@ public abstract class AvroRecordConverter {
 
     // Avro fixed
     if (attribute instanceof GenericData.Fixed fixedAttr) {
+      // TODO(AJ-1537): better handle null bytes vs. string bytes
       return fixedAttr.toString();
     }
 
@@ -149,6 +150,7 @@ public abstract class AvroRecordConverter {
 
     // Avro bytes
     if (attribute instanceof ByteBuffer byteBufferAttr) {
+      // TODO(AJ-1537): better handle null bytes vs. string bytes
       // copy the behavior of GenericData.Fixed.toString()
       // to protect against null bytes that may be present in the buffer
       return Arrays.toString(byteBufferAttr.array());
