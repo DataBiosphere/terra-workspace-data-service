@@ -112,6 +112,8 @@ public class TdrManifestQuartzJobE2ETest {
         recordOrchestratorService.describeAllRecordTypes(instanceId, "v0.2");
 
     // spot-check some column data types to see if they are good
+    // TODO (AJ-1536): types aren't correct yet!  Need to respect the schema provided in the
+    //   manifest rather than trusting Parquet/Avro's inferred schema.
     assertDataType(allTypes, "all_data_types", "bool_column", DataTypeMapping.BOOLEAN);
     assertDataType(
         allTypes,
