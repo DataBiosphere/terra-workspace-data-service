@@ -44,6 +44,7 @@ class RecordOrchestratorServiceTest {
   private static final RecordType TEST_TYPE = RecordType.valueOf("test");
 
   private static final String RECORD_ID = "aNewRecord";
+  private static final String PRIMARY_KEY = "id";
   private static final String TEST_KEY = "test_key";
   private static final String TEST_VAL = "val";
 
@@ -134,20 +135,20 @@ class RecordOrchestratorServiceTest {
   @Test
   void renameAttribute() {
     // Arrange
-    setUpRenameOrDeleteAttributeTest();
+    createRecordWithAttributes(new String[] {"attr1", "attr2"});
 
     // Act
     recordOrchestratorService.renameAttribute(INSTANCE, VERSION, TEST_TYPE, "attr2", "attr3");
 
     // Assert
     assertAttributes(Set.of("id", "attr1", "attr3"));
-    testGetRecord(RECORD_ID, "attr3", "bar");
+    testGetRecord(RECORD_ID, "attr3", "attr2");
   }
 
   @Test
   void renamePrimaryKeyAttribute() {
     // Arrange
-    setUpRenameOrDeleteAttributeTest();
+    createRecordWithAttributes(new String[] {"attr1", "attr2"});
 
     // Act/Assert
     ValidationException e =
@@ -164,7 +165,7 @@ class RecordOrchestratorServiceTest {
   @Test
   void renameNonexistentAttribute() {
     // Arrange
-    setUpRenameOrDeleteAttributeTest();
+    createRecordWithAttributes(new String[] {"attr1", "attr2"});
 
     // Act/Assert
     MissingObjectException e =
@@ -181,7 +182,7 @@ class RecordOrchestratorServiceTest {
   @Test
   void renameAttributeConflictingName() {
     // Arrange
-    setUpRenameOrDeleteAttributeTest();
+    createRecordWithAttributes(new String[] {"attr1", "attr2"});
 
     // Act/Assert
     ConflictException e =
@@ -198,7 +199,7 @@ class RecordOrchestratorServiceTest {
   @Test
   void deleteAttribute() {
     // Arrange
-    setUpRenameOrDeleteAttributeTest();
+    createRecordWithAttributes(new String[] {"attr1", "attr2"});
 
     // Act
     recordOrchestratorService.deleteAttribute(INSTANCE, VERSION, TEST_TYPE, "attr2");
@@ -210,7 +211,7 @@ class RecordOrchestratorServiceTest {
   @Test
   void deletePrimaryKeyAttribute() {
     // Arrange
-    setUpRenameOrDeleteAttributeTest();
+    createRecordWithAttributes(new String[] {"attr1", "attr2"});
 
     // Act/Assert
     ValidationException e =
@@ -225,7 +226,7 @@ class RecordOrchestratorServiceTest {
   @Test
   void deleteNonexistentAttribute() {
     // Arrange
-    setUpRenameOrDeleteAttributeTest();
+    createRecordWithAttributes(new String[] {"attr1", "attr2"});
 
     // Act/Assert
     MissingObjectException e =
@@ -239,14 +240,16 @@ class RecordOrchestratorServiceTest {
     assertAttributes(Set.of("id", "attr1", "attr2"));
   }
 
-  private void setUpRenameOrDeleteAttributeTest() {
-    RecordRequest recordRequest =
-        new RecordRequest(
-            RecordAttributes.empty().putAttribute("attr1", "foo").putAttribute("attr2", "bar"));
+  private void createRecordWithAttributes(String[] attributeNames) {
+    RecordAttributes recordAttributes = RecordAttributes.empty();
+    for (String attribute : attributeNames) {
+      recordAttributes.putAttribute(attribute, attribute);
+    }
+    RecordRequest recordRequest = new RecordRequest(recordAttributes);
 
     ResponseEntity<RecordResponse> response =
         recordOrchestratorService.upsertSingleRecord(
-            INSTANCE, VERSION, TEST_TYPE, RECORD_ID, Optional.of("id"), recordRequest);
+            INSTANCE, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
 
     assertAttributes(Set.of("id", "attr1", "attr2"));
   }
