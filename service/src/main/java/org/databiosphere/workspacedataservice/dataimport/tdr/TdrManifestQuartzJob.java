@@ -271,6 +271,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
         wsmSnapshotSupport.identifyPrimaryKeys(
             snapshotExportResponseModel.getSnapshot().getTables());
 
+    // TODO(AJ-1536): get the types for each table from the manifest; these will be needed after
+    //   Avro deserialization to convert them to the correct types.
+
     // find the relations for each table.
     // This is the snapshot.relationships section in the manifest
     Multimap<RecordType, RelationshipModel> relationsByTable =
