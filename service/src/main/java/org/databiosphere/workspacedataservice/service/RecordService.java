@@ -409,6 +409,12 @@ public class RecordService {
   }
 
   @WriteTransaction
+  public void renameAttribute(
+      UUID instanceId, RecordType recordType, String attribute, String newAttributeName) {
+    recordDao.renameAttribute(instanceId, recordType, attribute, newAttributeName);
+  }
+
+  @WriteTransaction
   public void deleteAttribute(UUID instanceId, RecordType recordType, String attribute) {
     recordDao.deleteAttribute(instanceId, recordType, attribute);
   }

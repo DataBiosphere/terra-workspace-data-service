@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.retry.RetryableApi;
 import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
+import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
@@ -165,6 +166,28 @@ public class RecordController {
       @PathVariable("type") RecordType recordType) {
     recordOrchestratorService.deleteRecordType(instanceId, version, recordType);
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+  }
+
+  @PatchMapping("{instanceId}/types/{v}/{type}/{attribute}")
+  @RetryableApi
+  public ResponseEntity<AttributeSchema> updateAttribute(
+      @PathVariable("instanceId") UUID instanceId,
+      @PathVariable("v") String version,
+      @PathVariable("type") RecordType recordType,
+      @PathVariable("attribute") String attribute,
+      @RequestBody AttributeSchema newAttributeSchema) {
+    String newAttributeName = newAttributeSchema.name();
+    recordOrchestratorService.renameAttribute(
+        instanceId, version, recordType, attribute, newAttributeName);
+
+    RecordTypeSchema recordTypeSchema =
+        recordOrchestratorService.describeRecordType(instanceId, version, recordType);
+    AttributeSchema attributeSchema =
+        recordTypeSchema.attributes().stream()
+            .filter(attr -> attr.name().equals(newAttributeName))
+            .findFirst()
+            .orElseThrow();
+    return new ResponseEntity<>(attributeSchema, HttpStatus.OK);
   }
 
   @DeleteMapping("{instanceId}/types/{v}/{type}/{attribute}")

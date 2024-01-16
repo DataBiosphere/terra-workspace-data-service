@@ -1025,6 +1025,19 @@ public class RecordDao {
     }
   }
 
+  public void renameAttribute(
+      UUID instanceId, RecordType recordType, String attribute, String newAttributeName) {
+    namedTemplate
+        .getJdbcTemplate()
+        .update(
+            "alter table "
+                + getQualifiedTableName(recordType, instanceId)
+                + " rename column "
+                + quote(SqlUtils.validateSqlString(attribute, ATTRIBUTE))
+                + " to "
+                + quote(SqlUtils.validateSqlString(newAttributeName, ATTRIBUTE)));
+  }
+
   public void deleteAttribute(UUID instanceId, RecordType recordType, String attribute) {
     namedTemplate
         .getJdbcTemplate()

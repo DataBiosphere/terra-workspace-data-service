@@ -9,6 +9,7 @@ public class ActivityModels {
     UPSERT("upserted"),
     MODIFY("modified"),
     LINK("linked"),
+    RENAME("renamed"),
     RESTORE("restored");
 
     private final String name;
