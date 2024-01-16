@@ -1157,7 +1157,7 @@
           "paths" : [ "classpath:parquet/v2f/feature_consequence.parquet" ]
         } ]
       },
-      "manifest" : "classpath:tdrmanifest/v2f/manifest.json"
+      "manifest" : "classpath:tdrmanifest/v2f.json"
     },
     "workspace" : null
   }
