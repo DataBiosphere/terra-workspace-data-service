@@ -255,15 +255,13 @@ public class RecordOrchestratorService { // TODO give me a better name
       UUID instanceId, RecordType recordType, String attribute, String newAttributeName) {
     RecordTypeSchema schema = getSchemaDescription(instanceId, recordType);
 
-    if (attribute.equals(schema.primaryKey())) {
+    if (schema.isPrimaryKey(attribute)) {
       throw new ValidationException("Unable to rename primary key attribute");
     }
-    if (schema.attributes().stream()
-        .noneMatch(attributeSchema -> attributeSchema.name().equals(attribute))) {
+    if (!schema.containsAttribute(attribute)) {
       throw new MissingObjectException("Attribute");
     }
-    if (schema.attributes().stream()
-        .anyMatch(attributeSchema -> attributeSchema.name().equals(newAttributeName))) {
+    if (schema.containsAttribute(newAttributeName)) {
       throw new ConflictException("Attribute already exists");
     }
   }
@@ -281,11 +279,10 @@ public class RecordOrchestratorService { // TODO give me a better name
   private void validateDeleteAttribute(UUID instanceId, RecordType recordType, String attribute) {
     RecordTypeSchema schema = getSchemaDescription(instanceId, recordType);
 
-    if (attribute.equals(schema.primaryKey())) {
+    if (schema.isPrimaryKey(attribute)) {
       throw new ValidationException("Unable to delete primary key attribute");
     }
-    if (schema.attributes().stream()
-        .noneMatch(attributeSchema -> attributeSchema.name().equals(attribute))) {
+    if (!schema.containsAttribute(attribute)) {
       throw new MissingObjectException("Attribute");
     }
   }
