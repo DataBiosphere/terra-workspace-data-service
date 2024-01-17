@@ -164,7 +164,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
       TwoPassStreamingWriteHandler.ImportMode importMode) {
     // upsert this parquet file's contents
     try (ParquetReader<GenericRecord> avroParquetReader =
-        AvroParquetReader.<GenericRecord>builder(inputFile).set(READ_INT96_AS_FIXED, "true").build()) {
+        AvroParquetReader.<GenericRecord>builder(inputFile)
+            .set(READ_INT96_AS_FIXED, "true")
+            .build()) {
       logger.info("batch-writing records for file ...");
 
       BatchWriteResult result =
