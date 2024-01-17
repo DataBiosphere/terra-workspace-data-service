@@ -484,6 +484,42 @@ paths:
         409:
           description: at least one of the records to be deleted is a relation target
   /{instanceid}/types/{v}/{type}/{attribute}:
+    patch:
+      summary: Update an attribute
+      description: Update an attribute. All records of this type will be updated.
+      operationId: updateAttribute
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - Schema
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+        - $ref: '#/components/parameters/attributePathParam'
+      requestBody:
+        $ref: '#/components/requestBodies/AttributeSchemaUpdateRequestBody'
+      responses:
+        204:
+          description: Success
+        400:
+          description: Attribute is the primary key for record type
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Attribute does not exist
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        409:
+          description: Rename conflicts with another attribute
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       summary: Delete attribute from record type
       description: Delete attribute from record type. This attribute will be removed from all records of this type.
@@ -630,6 +666,13 @@ components:
           schema:
             $ref: '#/components/schemas/VersionResponse'
   requestBodies:
+    AttributeSchemaUpdateRequestBody:
+      description: A request to update an attribute
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AttributeSchemaUpdate'
     BackupRestoreRequestBody:
       description: A backup request
       required: true
@@ -687,6 +730,14 @@ components:
         relatesTo:
           type: string
           description: Name of type to which this attribute relates. Only present if this is a relation attribute.
+    AttributeSchemaUpdate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: new name of this attribute.
     BackupJob:
       x-all-of-name: BackupJob
       allOf:

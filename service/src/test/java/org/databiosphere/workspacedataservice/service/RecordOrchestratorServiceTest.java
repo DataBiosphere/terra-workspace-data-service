@@ -9,11 +9,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
-import org.databiosphere.workspacedataservice.service.model.exception.DeleteAttributeRequestException;
+import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -43,6 +46,7 @@ class RecordOrchestratorServiceTest {
   private static final RecordType TEST_TYPE = RecordType.valueOf("test");
 
   private static final String RECORD_ID = "aNewRecord";
+  private static final String PRIMARY_KEY = "id";
   private static final String TEST_KEY = "test_key";
   private static final String TEST_VAL = "val";
 
@@ -131,9 +135,73 @@ class RecordOrchestratorServiceTest {
   }
 
   @Test
+  void renameAttribute() {
+    // Arrange
+    createRecordWithAttributes(new String[] {"attr1", "attr2"});
+
+    // Act
+    recordOrchestratorService.renameAttribute(INSTANCE, VERSION, TEST_TYPE, "attr2", "attr3");
+
+    // Assert
+    assertAttributes(Set.of("id", "attr1", "attr3"));
+    testGetRecord(RECORD_ID, "attr3", "attr2");
+  }
+
+  @Test
+  void renamePrimaryKeyAttribute() {
+    // Arrange
+    createRecordWithAttributes(new String[] {"attr1", "attr2"});
+
+    // Act/Assert
+    ValidationException e =
+        assertThrows(
+            ValidationException.class,
+            () ->
+                recordOrchestratorService.renameAttribute(
+                    INSTANCE, VERSION, TEST_TYPE, "id", "newId"),
+            "renameAttribute should have thrown an error");
+    assertEquals("Unable to rename primary key attribute", e.getMessage());
+    assertAttributes(Set.of("id", "attr1", "attr2"));
+  }
+
+  @Test
+  void renameNonexistentAttribute() {
+    // Arrange
+    createRecordWithAttributes(new String[] {"attr1", "attr2"});
+
+    // Act/Assert
+    MissingObjectException e =
+        assertThrows(
+            MissingObjectException.class,
+            () ->
+                recordOrchestratorService.renameAttribute(
+                    INSTANCE, VERSION, TEST_TYPE, "doesNotExist", "attr3"),
+            "renameAttribute should have thrown an error");
+    assertEquals("Attribute does not exist", e.getMessage());
+    assertAttributes(Set.of("id", "attr1", "attr2"));
+  }
+
+  @Test
+  void renameAttributeConflictingName() {
+    // Arrange
+    createRecordWithAttributes(new String[] {"attr1", "attr2"});
+
+    // Act/Assert
+    ConflictException e =
+        assertThrows(
+            ConflictException.class,
+            () ->
+                recordOrchestratorService.renameAttribute(
+                    INSTANCE, VERSION, TEST_TYPE, "attr1", "attr2"),
+            "renameAttribute should have thrown an error");
+    assertEquals("Attribute already exists", e.getMessage());
+    assertAttributes(Set.of("id", "attr1", "attr2"));
+  }
+
+  @Test
   void deleteAttribute() {
     // Arrange
-    setUpDeleteAttributeTest();
+    createRecordWithAttributes(new String[] {"attr1", "attr2"});
 
     // Act
     recordOrchestratorService.deleteAttribute(INSTANCE, VERSION, TEST_TYPE, "attr2");
@@ -145,22 +213,22 @@ class RecordOrchestratorServiceTest {
   @Test
   void deletePrimaryKeyAttribute() {
     // Arrange
-    setUpDeleteAttributeTest();
+    createRecordWithAttributes(new String[] {"attr1", "attr2"});
 
     // Act/Assert
-    DeleteAttributeRequestException e =
+    ValidationException e =
         assertThrows(
-            DeleteAttributeRequestException.class,
+            ValidationException.class,
             () -> recordOrchestratorService.deleteAttribute(INSTANCE, VERSION, TEST_TYPE, "id"),
             "deleteAttribute should have thrown an error");
-    assertEquals(e.getMessage(), "Unable to delete ID attribute");
+    assertEquals("Unable to delete primary key attribute", e.getMessage());
     assertAttributes(Set.of("id", "attr1", "attr2"));
   }
 
   @Test
   void deleteNonexistentAttribute() {
     // Arrange
-    setUpDeleteAttributeTest();
+    createRecordWithAttributes(new String[] {"attr1", "attr2"});
 
     // Act/Assert
     MissingObjectException e =
@@ -170,20 +238,25 @@ class RecordOrchestratorServiceTest {
                 recordOrchestratorService.deleteAttribute(
                     INSTANCE, VERSION, TEST_TYPE, "doesnotexist"),
             "deleteAttribute should have thrown an error");
-    assertEquals(e.getMessage(), "Attribute does not exist");
+    assertEquals("Attribute does not exist", e.getMessage());
     assertAttributes(Set.of("id", "attr1", "attr2"));
   }
 
-  private void setUpDeleteAttributeTest() {
-    RecordRequest recordRequest =
-        new RecordRequest(
-            RecordAttributes.empty().putAttribute("attr1", "foo").putAttribute("attr2", "bar"));
+  private void createRecordWithAttributes(String[] attributeNames) {
+    RecordAttributes recordAttributes = RecordAttributes.empty();
+    for (String attribute : attributeNames) {
+      recordAttributes.putAttribute(attribute, attribute);
+    }
+    RecordRequest recordRequest = new RecordRequest(recordAttributes);
 
     ResponseEntity<RecordResponse> response =
         recordOrchestratorService.upsertSingleRecord(
-            INSTANCE, VERSION, TEST_TYPE, "1", Optional.of("id"), recordRequest);
+            INSTANCE, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
 
-    assertAttributes(Set.of("id", "attr1", "attr2"));
+    Set<String> expectedAttributes = Stream.of(attributeNames).collect(Collectors.toSet());
+    expectedAttributes.add(PRIMARY_KEY);
+
+    assertAttributes(expectedAttributes);
   }
 
   private void assertAttributes(Set<String> expectedAttributeNames) {
@@ -191,7 +264,7 @@ class RecordOrchestratorServiceTest {
         recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE);
     Set<String> actualAttributeNames =
         Set.copyOf(schema.attributes().stream().map(AttributeSchema::name).toList());
-    assertEquals(actualAttributeNames, expectedAttributeNames);
+    assertEquals(expectedAttributeNames, actualAttributeNames);
   }
 
   @Test

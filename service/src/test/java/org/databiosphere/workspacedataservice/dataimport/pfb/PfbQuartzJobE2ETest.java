@@ -2,7 +2,7 @@ package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
-import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.buildQuartzJob;
+import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.buildPfbQuartzJob;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -127,7 +127,7 @@ class PfbQuartzJobE2ETest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+    buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
         .execute(mockContext);
 
     /* the testAvroResource should insert:
@@ -184,7 +184,7 @@ class PfbQuartzJobE2ETest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+    buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
         .execute(mockContext);
 
     /* the fourRowsAvroResource should insert:
@@ -231,7 +231,7 @@ class PfbQuartzJobE2ETest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+    buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
         .execute(mockContext);
 
     // this record, within the precision.avro file, is known to have numbers with high decimal
@@ -271,7 +271,7 @@ class PfbQuartzJobE2ETest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+    buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
         .execute(mockContext);
 
     /* the forwardRelationsAvroResource should insert:
@@ -321,7 +321,7 @@ class PfbQuartzJobE2ETest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    buildQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+    buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
         .execute(mockContext);
 
     RecordTypeSchema dataReleaseSchema =

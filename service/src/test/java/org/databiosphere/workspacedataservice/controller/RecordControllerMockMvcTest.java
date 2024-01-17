@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.hamcrest.Matchers.*;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -1976,6 +1978,128 @@ class RecordControllerMockMvcTest {
 
   @Test
   @Transactional
+  void updateAttributeNoUpdate() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+
+    mockMvc
+        .perform(
+            patch(
+                    "/{instanceId}/types/{v}/{type}/{attribute}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    "attr1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @Transactional
+  void renameAttribute() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    String attributeToRename = "attr1";
+    String newAttributeName = "newAttr";
+
+    mockMvc
+        .perform(
+            patch(
+                    "/{instanceId}/types/{v}/{type}/{attribute}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    attributeToRename)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    mapper.writeValueAsString(new AttributeSchema(newAttributeName, null, null))))
+        .andExpect(status().isOk());
+
+    MvcResult mvcResult =
+        mockMvc
+            .perform(
+                get(
+                    "/{instanceId}/types/{version}/{recordType}",
+                    instanceId,
+                    versionId,
+                    recordType))
+            .andReturn();
+
+    RecordTypeSchema actual =
+        mapper.readValue(mvcResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+
+    Set<String> attributeNames =
+        actual.attributes().stream().map(AttributeSchema::name).collect(Collectors.toSet());
+
+    assertThat(attributeNames).doesNotContain(attributeToRename).contains(newAttributeName);
+  }
+
+  @Test
+  @Transactional
+  void renameNonExistentAttribute() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+
+    mockMvc
+        .perform(
+            patch(
+                    "/{instanceId}/types/{v}/{type}/{attribute}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    "doesNotExist")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AttributeSchema("newAttr", null, null))))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @Transactional
+  void renamePrimaryKeyAttribute() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    // sys_name is the default name for the primary key column used by createSomeRecords.
+    String attributeToRename = "sys_name";
+
+    mockMvc
+        .perform(
+            patch(
+                    "/{instanceId}/types/{v}/{type}/{attribute}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    attributeToRename)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AttributeSchema("newAttr", null, null))))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @Transactional
+  void renameAttributeConflict() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    // createSomeRecords creates records with attributes including "attr1" and "attr2".
+    String attributeToRename = "attr1";
+    String newAttributeName = "attr2";
+
+    mockMvc
+        .perform(
+            patch(
+                    "/{instanceId}/types/{v}/{type}/{attribute}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    attributeToRename)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    mapper.writeValueAsString(new AttributeSchema(newAttributeName, null, null))))
+        .andExpect(status().isConflict());
+  }
+
+  @Test
+  @Transactional
   void deleteAttribute() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
@@ -2017,6 +2141,9 @@ class RecordControllerMockMvcTest {
   void deletePrimaryKeyAttribute() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
+    // sys_name is the default name for the primary key column used by createSomeRecords.
+    String attributeToDelete = "sys_name";
+
     mockMvc
         .perform(
             delete(
@@ -2024,7 +2151,7 @@ class RecordControllerMockMvcTest {
                 instanceId,
                 versionId,
                 recordType,
-                "sys_name"))
+                attributeToDelete))
         .andExpect(status().isBadRequest());
   }
 

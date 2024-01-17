@@ -1,0 +1,1164 @@
+{
+  "snapshot" : {
+    "id" : "e3638824-9ed9-408e-b3f5-cba7585658a3",
+    "name" : "V2FByFullView",
+    "description" : "snapshot by full view",
+    "createdDate" : "2023-11-06T01:54:03.563472Z",
+    "consentCode" : null,
+    "source" : [ {
+      "dataset" : {
+        "id" : "bacde22b-fb48-4d64-9863-a09704015d7d",
+        "name" : "Azure_V2F_Stats",
+        "description" : "Summary statistics from V2F datasets",
+        "defaultProfileId" : "e14b3b8a-54a7-4878-969b-fc4c0478cb9c",
+        "createdDate" : "2023-10-20T18:57:30.092860Z",
+        "storage" : [ {
+          "region" : "centralus",
+          "cloudResource" : "application_deployment",
+          "cloudPlatform" : "azure"
+        }, {
+          "region" : "centralus",
+          "cloudResource" : "storage_account",
+          "cloudPlatform" : "azure"
+        }, {
+          "region" : "centralus",
+          "cloudResource" : "synapse_workspace",
+          "cloudPlatform" : "azure"
+        } ],
+        "secureMonitoringEnabled" : false,
+        "cloudPlatform" : "azure",
+        "dataProject" : null,
+        "storageAccount" : "tdrsheagjudbqsygpddezygu",
+        "phsId" : null,
+        "selfHosted" : false,
+        "predictableFileIds" : false,
+        "tags" : [ ],
+        "resourceLocks" : {
+          "exclusive" : null,
+          "shared" : [ ]
+        }
+      },
+      "datasetProperties" : null,
+      "asset" : null
+    } ],
+    "tables" : [ {
+      "name" : "ancestry_specific_meta_analysis",
+      "columns" : [ {
+        "name" : "variant_id",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "phenotype",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "ancestry",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "p_value",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "beta",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "std_err",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "n",
+        "datatype" : "integer",
+        "array_of" : false,
+        "required" : false
+      } ],
+      "primaryKey" : [ ],
+      "partitionMode" : "none",
+      "datePartitionOptions" : null,
+      "intPartitionOptions" : null,
+      "rowCount" : 1000
+    }, {
+      "name" : "frequency_analysis",
+      "columns" : [ {
+        "name" : "variant_id",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "eaf",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "maf",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "ancestry",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "phenotype",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      } ],
+      "primaryKey" : [ ],
+      "partitionMode" : "none",
+      "datePartitionOptions" : null,
+      "intPartitionOptions" : null,
+      "rowCount" : 1003
+    }, {
+      "name" : "trans_ethnic_meta_analysis",
+      "columns" : [ {
+        "name" : "variant_id",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "phenotype",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "p_value",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "beta",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "std_err",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "n",
+        "datatype" : "integer",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "top",
+        "datatype" : "boolean",
+        "array_of" : false,
+        "required" : false
+      } ],
+      "primaryKey" : [ ],
+      "partitionMode" : "none",
+      "datePartitionOptions" : null,
+      "intPartitionOptions" : null,
+      "rowCount" : 0
+    }, {
+      "name" : "dataset_specific_analysis",
+      "columns" : [ {
+        "name" : "variant_id",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "multi_allelic",
+        "datatype" : "boolean",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "dataset",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "phenotype",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "ancestry",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "p_value",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "beta",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "odds_ratio",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "eaf",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "maf",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "std_err",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "z_score",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "n",
+        "datatype" : "integer",
+        "array_of" : false,
+        "required" : false
+      } ],
+      "primaryKey" : [ ],
+      "partitionMode" : "none",
+      "datePartitionOptions" : null,
+      "intPartitionOptions" : null,
+      "rowCount" : 0
+    }, {
+      "name" : "transcript_consequence",
+      "columns" : [ {
+        "name" : "variant_id",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "amino_acids",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "biotype",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "cadd_phred",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "cadd_raw",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "cadd_raw_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "canonical",
+        "datatype" : "boolean",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "ccds",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "cdna_start",
+        "datatype" : "integer",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "cdna_end",
+        "datatype" : "integer",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "cds_start",
+        "datatype" : "integer",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "cds_end",
+        "datatype" : "integer",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "clinvar_clinsig",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "clinvar_golden_stars",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "clinvar_rs",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "clinvar_trait",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "codons",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "consequence_terms",
+        "datatype" : "string",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "dann_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "dann_score",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "distance",
+        "datatype" : "integer",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "eigen_pc_raw",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "eigen_pc_raw_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "eigen_phred",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "eigen_raw",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "fathmm_converted_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "fathmm_pred",
+        "datatype" : "string",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "fathmm_score",
+        "datatype" : "float",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "fathmm_mkl_coding_group",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "fathmm_mkl_coding_pred",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "fathmm_mkl_coding_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "fathmm_mkl_coding_score",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "flags",
+        "datatype" : "string",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "gene_id",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "genocanyon_score",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "genocanyon_score_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "gerp_plus_plus_nr",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "gerp_plus_plus_rs",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "gerp_rs_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "gm_12878_confidence_value",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "gm_12878_fitcons_score",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "gm_12878_fitcons_score_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "gtex_v_6_p_gene",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "gtex_v_6_p_tissue",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "h_1_hesc_confidence_value",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "h_1_hesc_fitcons_score",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "h_1_hesc_fitcons_score_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "huvec_confidence_value",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "huvec_fitcons_score",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "huvec_fitcons_score_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "impact",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "integrated_confidence_value",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "integrated_fitcons_score",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "integrated_fitcons_score_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "interpro_domain",
+        "datatype" : "string",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "lof",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "lof_filter",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "lof_flags",
+        "datatype" : "string",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "lof_info",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "lof_converted_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "lrt_omega",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "lrt_pred",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "lrt_score",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "metalr_pred",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "metalr_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "metalr_score",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "metasvm_pred",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "metasvm_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "metasvm_score",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "mutationaccessor_pred",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "mutationaccessor_score",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "mutationaccessor_score_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "mutationaccessor_uniprot_id",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "mutationaccessor_variant",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "mutationtaster_aae",
+        "datatype" : "string",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "mutationtaster_converted_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "mutationtaster_model",
+        "datatype" : "string",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "mutationtaster_pred",
+        "datatype" : "string",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "mutationtaster_score",
+        "datatype" : "float",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "phastcons_100_way_vertebrate",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "phastcons_100_way_vertebrate_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "phastcons_20_way_mammalian",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "phastcons_20_way_mammalian_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "phylop_100_way_vertebrate",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "phylop_100_way_vertebrate_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "phylop_20_way_mammalian",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "phylop_20_way_mammalian_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "pick",
+        "datatype" : "boolean",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "polyphen_2_hdiv_pred",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "polyphen_2_hdiv_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "polyphen_2_hdiv_score",
+        "datatype" : "float",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "polyphen_2_hvar_pred",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "polyphen_2_hvar_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "polyphen_2_hvar_score",
+        "datatype" : "float",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "polyphen_prediction",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "polyphen_score",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "protein_start",
+        "datatype" : "integer",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "protein_end",
+        "datatype" : "integer",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "provean_converted_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "provean_pred",
+        "datatype" : "string",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "provean_score",
+        "datatype" : "float",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "reliability_index",
+        "datatype" : "integer",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "sift_converted_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "sift_pred",
+        "datatype" : "string",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "sift_prediction",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "sift_score",
+        "datatype" : "float",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "siphy_29_way_logodds",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "siphy_29_way_logodds_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "siphy_29_way_pi",
+        "datatype" : "float",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "strand",
+        "datatype" : "integer",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "transcript_id",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "transcript_id_vest_3",
+        "datatype" : "string",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "transcript_var_vest_3",
+        "datatype" : "string",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "vest_3_rankscore",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "vest_3_score",
+        "datatype" : "float",
+        "array_of" : true,
+        "required" : false
+      } ],
+      "primaryKey" : [ ],
+      "partitionMode" : "none",
+      "datePartitionOptions" : null,
+      "intPartitionOptions" : null,
+      "rowCount" : 1003
+    }, {
+      "name" : "variant",
+      "columns" : [ {
+        "name" : "id",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "alt",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "chromosome",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "position",
+        "datatype" : "integer",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "reference",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      } ],
+      "primaryKey" : [ ],
+      "partitionMode" : "none",
+      "datePartitionOptions" : null,
+      "intPartitionOptions" : null,
+      "rowCount" : 1004
+    }, {
+      "name" : "all_data_types",
+      "columns" : [ {
+        "name" : "variant_id",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : true
+      }, {
+        "name" : "bool_column",
+        "datatype" : "boolean",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "date_column",
+        "datatype" : "date",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "date_array_column",
+        "datatype" : "date",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "date_time_column",
+        "datatype" : "datetime",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "date_time_array_column",
+        "datatype" : "datetime",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "dir_ref_column",
+        "datatype" : "dirref",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "file_ref_column",
+        "datatype" : "dirref",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "float_column",
+        "datatype" : "float",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "float_array_column",
+        "datatype" : "float",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "float64_column",
+        "datatype" : "float64",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "float64_array_column",
+        "datatype" : "float64",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "int_column",
+        "datatype" : "integer",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "int_array_column",
+        "datatype" : "integer",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "int64_column",
+        "datatype" : "int64",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "int64_array_column",
+        "datatype" : "int64",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "numeric_column",
+        "datatype" : "numeric",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "numeric_array_column",
+        "datatype" : "numeric",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "time_column",
+        "datatype" : "time",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "time_array_column",
+        "datatype" : "time",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "timestamp_column",
+        "datatype" : "timestamp",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "timestamp_array_column",
+        "datatype" : "timestamp",
+        "array_of" : true,
+        "required" : false
+      } ],
+      "primaryKey" : [ "variant_id" ],
+      "partitionMode" : "none",
+      "datePartitionOptions" : null,
+      "intPartitionOptions" : null,
+      "rowCount" : 5
+    }, {
+      "name" : "feature_consequence",
+      "columns" : [ {
+        "name" : "variant_id",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "biotype",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "consequence_terms",
+        "datatype" : "string",
+        "array_of" : true,
+        "required" : false
+      }, {
+        "name" : "impact",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "pick",
+        "datatype" : "boolean",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "regulatory_feature_id",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      }, {
+        "name" : "variant_allele",
+        "datatype" : "string",
+        "array_of" : false,
+        "required" : false
+      } ],
+      "primaryKey" : [ ],
+      "partitionMode" : "none",
+      "datePartitionOptions" : null,
+      "intPartitionOptions" : null,
+      "rowCount" : 1003
+    } ],
+    "relationships" : [ {
+      "name" : "transcript_consequence_to_variant",
+      "from" : {
+        "table" : "transcript_consequence",
+        "column" : "variant_id"
+      },
+      "to" : {
+        "table" : "variant",
+        "column" : "id"
+      }
+    }, {
+      "name" : "ancestry_specific_meta_analysis_to_frequency_analysis",
+      "from" : {
+        "table" : "ancestry_specific_meta_analysis",
+        "column" : "phenotype"
+      },
+      "to" : {
+        "table" : "frequency_analysis",
+        "column" : "phenotype"
+      }
+    }, {
+      "name" : "variant_to_feature_consequence",
+      "from" : {
+        "table" : "variant",
+        "column" : "id"
+      },
+      "to" : {
+        "table" : "feature_consequence",
+        "column" : "variant_id"
+      }
+    }, {
+      "name" : "frequency_analysis_to_trans_ethnic_meta_analysis",
+      "from" : {
+        "table" : "frequency_analysis",
+        "column" : "phenotype"
+      },
+      "to" : {
+        "table" : "trans_ethnic_meta_analysis",
+        "column" : "phenotype"
+      }
+    }, {
+      "name" : "trans_ethnic_meta_analysis_to_transcript_consequence",
+      "from" : {
+        "table" : "trans_ethnic_meta_analysis",
+        "column" : "variant_id"
+      },
+      "to" : {
+        "table" : "transcript_consequence",
+        "column" : "variant_id"
+      }
+    }, {
+      "name" : "trans_ethnic_meta_analysis_to_variant",
+      "from" : {
+        "table" : "trans_ethnic_meta_analysis",
+        "column" : "variant_id"
+      },
+      "to" : {
+        "table" : "variant",
+        "column" : "id"
+      }
+    }, {
+      "name" : "frequency_analysis_to_variant",
+      "from" : {
+        "table" : "frequency_analysis",
+        "column" : "variant_id"
+      },
+      "to" : {
+        "table" : "variant",
+        "column" : "id"
+      }
+    }, {
+      "name" : "feature_consequence_to_variant",
+      "from" : {
+        "table" : "feature_consequence",
+        "column" : "variant_id"
+      },
+      "to" : {
+        "table" : "variant",
+        "column" : "id"
+      }
+    }, {
+      "name" : "ancestry_specific_meta_analysis_to_variant",
+      "from" : {
+        "table" : "ancestry_specific_meta_analysis",
+        "column" : "variant_id"
+      },
+      "to" : {
+        "table" : "variant",
+        "column" : "id"
+      }
+    }, {
+      "name" : "dataset_specific_analysis_to_variant",
+      "from" : {
+        "table" : "dataset_specific_analysis",
+        "column" : "variant_id"
+      },
+      "to" : {
+        "table" : "variant",
+        "column" : "id"
+      }
+    } ],
+    "profileId" : "e14b3b8a-54a7-4878-969b-fc4c0478cb9c",
+    "dataProject" : null,
+    "accessInformation" : null,
+    "creationInformation" : null,
+    "cloudPlatform" : "azure",
+    "properties" : null,
+    "duosFirecloudGroup" : null,
+    "globalFileIds" : false,
+    "compactIdPrefix" : null,
+    "tags" : [ ],
+    "resourceLocks" : {
+      "exclusive" : null,
+      "shared" : null
+    }
+  },
+  "validatedPrimaryKeys" : null,
+  "format" : {
+    "parquet" : {
+      "location" : {
+        "tables" : [ {
+          "name" : "ancestry_specific_meta_analysis",
+          "paths" : [ "classpath:parquet/v2f/ancestry_specific_meta_analysis.parquet" ]
+        }, {
+          "name" : "frequency_analysis",
+          "paths" : [ "classpath:parquet/v2f/frequency_analysis.parquet" ]
+        }, {
+          "name" : "trans_ethnic_meta_analysis",
+          "paths" : [ ]
+        }, {
+          "name" : "dataset_specific_analysis",
+          "paths" : [ ]
+        }, {
+          "name" : "transcript_consequence",
+          "paths" : [ "classpath:parquet/v2f/transcript_consequence.parquet" ]
+        }, {
+          "name" : "variant",
+          "paths" : [ "classpath:parquet/v2f/variant.parquet" ]
+        }, {
+          "name" : "all_data_types",
+          "paths" : [ "classpath:parquet/v2f/all_data_types.parquet" ]
+        }, {
+          "name" : "feature_consequence",
+          "paths" : [ "classpath:parquet/v2f/feature_consequence.parquet" ]
+        } ]
+      },
+      "manifest" : "classpath:tdrmanifest/v2f/manifest.json"
+    },
+    "workspace" : null
+  }
+}
