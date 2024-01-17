@@ -243,7 +243,7 @@ class WdsTests(TestCase):
     # SCENARIO 6
     # import snapshot from TDR with appropriate permissions
     def test_import_snapshot(self):
-        import_request = { "type": "TDRMANIFEST", "url": "file:///Users/bmorgan/dev/workbench/terra-workspace-data-service/service/src/test/resources/tdrmanifest/v2f_for_python.json"}
+        import_request = { "type": "TDRMANIFEST", "url": "http://localhost:9889/tdrmanifest/v2f_for_python.json"}
         job_response = self.import_client.import_v1(self.current_workspaceId, import_request)
         job_status_response = self.job_client.job_status_v1(job_response.job_id)
         job_status = job_status_response.status
