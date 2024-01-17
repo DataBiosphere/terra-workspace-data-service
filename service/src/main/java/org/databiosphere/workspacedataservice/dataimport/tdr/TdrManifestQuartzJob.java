@@ -203,32 +203,18 @@ public class TdrManifestQuartzJob extends QuartzJob {
             Files.walk(subDirectory)
                 .forEach(
                     file -> {
-                      // In the TDR manifest, for Azure snapshots only,
-                      // the first file in the list will always be a directory. Attempting to import
-                      // that directory
-                      // will fail; it has no content. To avoid those failures,
-                      // check files for length and ignore any that are empty
                       try {
-                        // TODO Check file size before this point - in getFilesForImport?
-                        // In order to check before downloading the remote file would need an extra
-                        // HTTP connection
-                        // Or could download and then check and remove the file from the directory
-                        // if empty
-                        if (Files.size(file) == 0) {
-                          logger.info("Empty file in parquet, skipping");
-                        } else {
-                          org.apache.hadoop.fs.Path hadoopFilePath =
-                              new org.apache.hadoop.fs.Path(file.toString());
-                          Configuration configuration = new Configuration();
+                        org.apache.hadoop.fs.Path hadoopFilePath =
+                            new org.apache.hadoop.fs.Path(file.toString());
+                        Configuration configuration = new Configuration();
 
-                          // generate the HadoopInputFile
-                          InputFile inputFile =
-                              HadoopInputFile.fromPath(hadoopFilePath, configuration);
-                          var result =
-                              importTable(inputFile, importTable, targetInstance, importMode);
-                          if (result != null) {
-                            combinedResult.merge(result);
-                          }
+                        // generate the HadoopInputFile
+                        InputFile inputFile =
+                            HadoopInputFile.fromPath(hadoopFilePath, configuration);
+                        var result =
+                            importTable(inputFile, importTable, targetInstance, importMode);
+                        if (result != null) {
+                          combinedResult.merge(result);
                         }
                       } catch (IOException e) {
                         throw new TdrManifestImportException(e.getMessage(), e);
@@ -242,23 +228,24 @@ public class TdrManifestQuartzJob extends QuartzJob {
   }
 
   /**
-   * Given the list of tables/data files to be imported, loop through and import each one
+   * Given the list of tables/data files to be imported, loop through and download each one to a
+   * temporary file
    *
    * @param importTables tables to be imported
+   * @return path for the directory where downloaded files are located
    */
   @VisibleForTesting
   java.nio.file.Path getFilesForImport(List<TdrManifestImportTable> importTables) {
     try {
       // create a temporary subdirectory to store download files
       java.nio.file.Path tempDir = Files.createTempDirectory("tempParquetDir");
-      // Set permissions on the directory to make it read-only
+      // Permissions to add to files to make them read-only
       Set<PosixFilePermission> permissions =
           EnumSet.of(
               PosixFilePermission.OWNER_READ,
               PosixFilePermission.GROUP_READ,
               PosixFilePermission.OTHERS_READ);
 
-      //      Multimap<String, InputFile> fileMap = HashMultimap.create();
       // loop through the tables that have data files.
       importTables.forEach(
           importTable -> {
@@ -287,18 +274,22 @@ public class TdrManifestQuartzJob extends QuartzJob {
                               /* prefix= */ "tdr-", /* suffix= */ "download", subDir.toFile());
                       logger.info("downloading to temp file {} ...", tempFile.getPath());
                       FileUtils.copyURLToFile(path, tempFile);
-                      // Once the remote file has been copied to the temp file, make it read-only
-                      Files.setPosixFilePermissions(tempFile.toPath(), permissions);
+                      // In the TDR manifest, for Azure snapshots only,
+                      // the first file in the list will always be a directory. Attempting to import
+                      // that directory
+                      // will fail; it has no content. To avoid those failures,
+                      // check files for length and ignore any that are empty
+                      if (tempFile.length() == 0) {
+                        logger.info("Empty file in parquet, skipping");
+                        tempFile.delete();
+                      } else {
+                        // Once the remote file has been copied to the temp file, make it read-only
+                        Files.setPosixFilePermissions(tempFile.toPath(), permissions);
+                      }
 
                     } catch (IOException e) {
                       throw new TdrManifestImportException(e.getMessage(), e);
                     }
-
-                    //                    }
-                    //
-                    //                  } catch (IOException e) {
-                    //                    throw new TdrManifestImportException(e.getMessage(), e);
-                    //                  }
                   });
             } catch (IOException e) {
               throw new TdrManifestImportException(e.getMessage(), e);

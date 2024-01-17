@@ -2,13 +2,17 @@ package org.databiosphere.workspacedataservice.dataimport.tdr;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import bio.terra.datarepo.model.RelationshipModel;
 import bio.terra.datarepo.model.RelationshipTermModel;
 import bio.terra.datarepo.model.SnapshotExportResponseModel;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.UUID;
 import org.apache.hadoop.conf.Configuration;
@@ -131,16 +135,16 @@ public class TdrManifestQuartzJobTest {
             List.of(emptyParquet.getURL()),
             List.of());
 
-    // TODO decide on where/how to check for empty files, changes how to write this test
     // An empty file should not throw any errors
     java.nio.file.Path actualPath =
         assertDoesNotThrow(() -> tdrManifestQuartzJob.getFilesForImport(List.of(table)));
-    //    try (DirectoryStream<java.nio.file.Path> directoryStream =
-    //        Files.newDirectoryStream(actualPath)) {
-    //      assert (!directoryStream.iterator().hasNext());
-    //    } catch (IOException e) {
-    //      fail("Failed reading resulting directory");
-    //    }
+    java.nio.file.Path subdirectoryPath = actualPath.resolve("data");
+    try (DirectoryStream<java.nio.file.Path> directoryStream =
+        Files.newDirectoryStream(subdirectoryPath)) {
+      assertFalse(directoryStream.iterator().hasNext());
+    } catch (Exception e) {
+      fail("Failed to read subdirectory.");
+    }
   }
 
   /*
