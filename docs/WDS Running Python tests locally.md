@@ -36,7 +36,7 @@ To run tests, WDS uses pytest. Ensure that is installed by running:
 pip install pytest
 ```
 
-Some tests also require a server from which to fetch test files.  For these to work, you'll have to set up the nginx docker cotainer to serve them:
+Some tests also require a server from which to fetch test files.  For these to work, you'll have to set up the nginx docker container to serve them:
 ```bash
 # start the server as a docker container in detached mode
 docker run -v `pwd`/service/src/test/resources/nginx.conf:/etc/nginx/nginx.conf -v `pwd`/service/src/test/resources:/usr/share/nginx/html -p 9889:80 -d nginx:1.23.3
