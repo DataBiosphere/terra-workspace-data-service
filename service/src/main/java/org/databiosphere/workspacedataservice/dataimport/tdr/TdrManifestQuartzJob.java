@@ -142,7 +142,11 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // delete temp files after everything else is completed
     for (String table : fileMap.keySet()) {
       for (File file : fileMap.get(table)) {
-        file.delete();
+        try {
+          Files.delete(file.toPath());
+        } catch (IOException e) {
+          logger.error("Unable to delete temporary file {}", file.getName(), e.getMessage());
+        }
       }
     }
   }
@@ -189,7 +193,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
    */
   private BatchWriteResult importTables(
       List<TdrManifestImportTable> importTables,
-      Multimap fileDir,
+      Multimap<String, File> fileDir,
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
 
@@ -253,11 +257,6 @@ public class TdrManifestQuartzJob extends QuartzJob {
               importTable.recordType().getName(),
               paths.size());
 
-          // Create a subdirectory for the files for this table
-          //              java.nio.file.Path subDir =
-          //
-          // Files.createDirectory(tempDir.resolve(importTable.recordType().getName()));
-
           // loop through each parquet file
           paths.forEach(
               path -> {
@@ -269,13 +268,13 @@ public class TdrManifestQuartzJob extends QuartzJob {
                   logger.info("downloading to temp file {} ...", tempFile.getPath());
                   FileUtils.copyURLToFile(path, tempFile);
                   // In the TDR manifest, for Azure snapshots only,
-                  // the first file in the list will always be a directory. Attempting to import
-                  // that directory
+                  // the first file in the list will always be a directory.
+                  // Attempting to import that directory
                   // will fail; it has no content. To avoid those failures,
                   // check files for length and ignore any that are empty
                   if (tempFile.length() == 0) {
                     logger.info("Empty file in parquet, skipping");
-                    tempFile.delete();
+                    Files.delete(tempFile.toPath());
                   } else {
                     // Once the remote file has been copied to the temp file, make it read-only
                     Files.setPosixFilePermissions(tempFile.toPath(), permissions);
