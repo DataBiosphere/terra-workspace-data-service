@@ -37,7 +37,6 @@ public class MetricsConfig {
           "jvm",
           "logback",
           "process",
-          "quartz",
           "spring",
           "system",
           "tomcat",
