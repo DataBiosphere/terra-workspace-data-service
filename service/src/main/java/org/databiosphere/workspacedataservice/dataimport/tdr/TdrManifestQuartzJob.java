@@ -9,22 +9,16 @@ import bio.terra.datarepo.model.SnapshotExportResponseModel;
 import bio.terra.datarepo.model.SnapshotExportResponseModelFormatParquetLocationTables;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.hadoop.ParquetReader;
@@ -32,6 +26,7 @@ import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.InputFile;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dataimport.FileDownload;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
@@ -108,8 +103,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
         extractTableInfo(snapshotExportResponseModel);
 
     // get all the parquet files from the manifests
-    // TODO do we really want to download them all at once ahead of time?
-    Multimap<String, File> fileMap = getFilesForImport(tdrManifestImportTables);
+
+    FileDownload fileMap = getFilesForImport(tdrManifestImportTables);
 
     // loop through the tables to be imported and upsert base attributes
     var result =
@@ -140,15 +135,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
                           .ofQuantity(entry.getValue()));
             });
     // delete temp files after everything else is completed
-    for (String table : fileMap.keySet()) {
-      for (File file : fileMap.get(table)) {
-        try {
-          Files.delete(file.toPath());
-        } catch (IOException e) {
-          logger.error("Unable to delete temporary file {}", file.getName(), e.getMessage());
-        }
-      }
-    }
+    // Any failed deletions will be removed if/when pod restarts
+    fileMap.deleteFileDirectory();
   }
 
   /**
@@ -193,7 +181,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
    */
   private BatchWriteResult importTables(
       List<TdrManifestImportTable> importTables,
-      Multimap<String, File> fileDir,
+      FileDownload fileDir,
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
 
@@ -235,59 +223,33 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @return path for the directory where downloaded files are located
    */
   @VisibleForTesting
-  Multimap<String, File> getFilesForImport(List<TdrManifestImportTable> importTables) {
-    Multimap<String, File> fileMap = HashMultimap.create();
+  FileDownload getFilesForImport(List<TdrManifestImportTable> importTables) {
+    try {
+      FileDownload fileMap = new FileDownload("tempParquetDir");
 
-    // Permissions to add to files to make them read-only
-    Set<PosixFilePermission> permissions =
-        EnumSet.of(
-            PosixFilePermission.OWNER_READ,
-            PosixFilePermission.GROUP_READ,
-            PosixFilePermission.OTHERS_READ);
+      // loop through the tables that have data files.
+      importTables.forEach(
+          importTable -> {
+            logger.info("Fetching files for table '{}' ...", importTable.recordType().getName());
 
-    // loop through the tables that have data files.
-    importTables.forEach(
-        importTable -> {
-          logger.info("Fetching files for table '{}' ...", importTable.recordType().getName());
+            // find all Parquet files for this table
+            List<URL> paths = importTable.dataFiles();
+            logger.debug(
+                "Table '{}' has {} export file(s) ...",
+                importTable.recordType().getName(),
+                paths.size());
 
-          // find all Parquet files for this table
-          List<URL> paths = importTable.dataFiles();
-          logger.debug(
-              "Table '{}' has {} export file(s) ...",
-              importTable.recordType().getName(),
-              paths.size());
+            // loop through each parquet file
+            paths.forEach(
+                path -> {
+                  fileMap.downloadFileFromURL(importTable.recordType().getName(), path);
+                });
+          });
 
-          // loop through each parquet file
-          paths.forEach(
-              path -> {
-                try {
-                  // download the file from the URL to a temp file on the local filesystem
-                  // Azure urls, with SAS tokens, don't need any particular auth.
-                  File tempFile =
-                      File.createTempFile(/* prefix= */ "tdr-", /* suffix= */ "download");
-                  logger.info("downloading to temp file {} ...", tempFile.getPath());
-                  FileUtils.copyURLToFile(path, tempFile);
-                  // In the TDR manifest, for Azure snapshots only,
-                  // the first file in the list will always be a directory.
-                  // Attempting to import that directory
-                  // will fail; it has no content. To avoid those failures,
-                  // check files for length and ignore any that are empty
-                  if (tempFile.length() == 0) {
-                    logger.info("Empty file in parquet, skipping");
-                    Files.delete(tempFile.toPath());
-                  } else {
-                    // Once the remote file has been copied to the temp file, make it read-only
-                    Files.setPosixFilePermissions(tempFile.toPath(), permissions);
-                    fileMap.put(importTable.recordType().getName(), tempFile);
-                  }
-
-                } catch (IOException e) {
-                  throw new TdrManifestImportException(e.getMessage(), e);
-                }
-              });
-        });
-
-    return fileMap;
+      return fileMap;
+    } catch (IOException e) {
+      throw new TdrManifestImportException("Error downloading temporary files", e);
+    }
   }
 
   /**

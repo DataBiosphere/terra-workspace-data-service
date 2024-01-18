@@ -8,8 +8,6 @@ import bio.terra.datarepo.model.RelationshipModel;
 import bio.terra.datarepo.model.RelationshipTermModel;
 import bio.terra.datarepo.model.SnapshotExportResponseModel;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Multimap;
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
@@ -19,6 +17,7 @@ import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.InputFile;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dataimport.FileDownload;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestExemplarData.AzureSmall;
 import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
@@ -117,7 +116,7 @@ public class TdrManifestQuartzJobTest {
             List.of());
 
     // An empty file should not throw any errors
-    Multimap<String, File> fileMap =
+    FileDownload fileMap =
         assertDoesNotThrow(() -> tdrManifestQuartzJob.getFilesForImport(List.of(table)));
     assert (fileMap.isEmpty());
   }
