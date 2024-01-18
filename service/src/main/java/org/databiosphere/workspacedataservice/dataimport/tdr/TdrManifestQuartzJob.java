@@ -9,13 +9,13 @@ import bio.terra.datarepo.model.SnapshotExportResponseModel;
 import bio.terra.datarepo.model.SnapshotExportResponseModelFormatParquetLocationTables;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -109,20 +109,20 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
     // get all the parquet files from the manifests
     // TODO do we really want to download them all at once ahead of time?
-    java.nio.file.Path fileDir = getFilesForImport(tdrManifestImportTables);
+    Multimap<String, File> fileMap = getFilesForImport(tdrManifestImportTables);
 
     // loop through the tables to be imported and upsert base attributes
     var result =
         importTables(
             tdrManifestImportTables,
-            fileDir,
+            fileMap,
             targetInstance,
             TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
 
     // add relations to the existing base attributes
     importTables(
         tdrManifestImportTables,
-        fileDir,
+        fileMap,
         targetInstance,
         TwoPassStreamingWriteHandler.ImportMode.RELATIONS);
 
@@ -140,10 +140,10 @@ public class TdrManifestQuartzJob extends QuartzJob {
                           .ofQuantity(entry.getValue()));
             });
     // delete temp files after everything else is completed
-    try {
-      FileUtils.deleteDirectory(fileDir.toFile());
-    } catch (IOException e) {
-      logger.error("Unable to delete temporary files", e);
+    for (String table : fileMap.keySet()) {
+      for (File file : fileMap.get(table)) {
+        file.delete();
+      }
     }
   }
 
@@ -189,7 +189,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
    */
   private BatchWriteResult importTables(
       List<TdrManifestImportTable> importTables,
-      Path fileDir,
+      Multimap fileDir,
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
 
@@ -197,35 +197,28 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // loop through the tables that have data files.
     importTables.forEach(
         importTable -> {
-          try {
-            logger.info("Processing table '{}' ...", importTable.recordType().getName());
+          logger.info("Processing table '{}' ...", importTable.recordType().getName());
 
-            Path subDirectory = fileDir.resolve(importTable.recordType().getName());
+          // loop through each parquet file
+          fileDir
+              .get(importTable.recordType().getName())
+              .forEach(
+                  file -> {
+                    try {
+                      org.apache.hadoop.fs.Path hadoopFilePath =
+                          new org.apache.hadoop.fs.Path(file.toString());
+                      Configuration configuration = new Configuration();
 
-            // loop through each parquet file
-            Files.walk(subDirectory)
-                .forEach(
-                    file -> {
-                      try {
-                        org.apache.hadoop.fs.Path hadoopFilePath =
-                            new org.apache.hadoop.fs.Path(file.toString());
-                        Configuration configuration = new Configuration();
-
-                        // generate the HadoopInputFile
-                        InputFile inputFile =
-                            HadoopInputFile.fromPath(hadoopFilePath, configuration);
-                        var result =
-                            importTable(inputFile, importTable, targetInstance, importMode);
-                        if (result != null) {
-                          combinedResult.merge(result);
-                        }
-                      } catch (IOException e) {
-                        throw new TdrManifestImportException(e.getMessage(), e);
+                      // generate the HadoopInputFile
+                      InputFile inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
+                      var result = importTable(inputFile, importTable, targetInstance, importMode);
+                      if (result != null) {
+                        combinedResult.merge(result);
                       }
-                    });
-          } catch (IOException e) {
-            throw new TdrManifestImportException(e.getMessage(), e);
-          }
+                    } catch (IOException e) {
+                      throw new TdrManifestImportException(e.getMessage(), e);
+                    }
+                  });
         });
     return combinedResult;
   }
@@ -238,71 +231,64 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @return path for the directory where downloaded files are located
    */
   @VisibleForTesting
-  java.nio.file.Path getFilesForImport(List<TdrManifestImportTable> importTables) {
-    try {
-      // create a temporary subdirectory to store download files
-      java.nio.file.Path tempDir = Files.createTempDirectory("tempParquetDir");
-      // Permissions to add to files to make them read-only
-      Set<PosixFilePermission> permissions =
-          EnumSet.of(
-              PosixFilePermission.OWNER_READ,
-              PosixFilePermission.GROUP_READ,
-              PosixFilePermission.OTHERS_READ);
+  Multimap<String, File> getFilesForImport(List<TdrManifestImportTable> importTables) {
+    Multimap<String, File> fileMap = HashMultimap.create();
 
-      // loop through the tables that have data files.
-      importTables.forEach(
-          importTable -> {
-            logger.info("Fetching files for table '{}' ...", importTable.recordType().getName());
+    // Permissions to add to files to make them read-only
+    Set<PosixFilePermission> permissions =
+        EnumSet.of(
+            PosixFilePermission.OWNER_READ,
+            PosixFilePermission.GROUP_READ,
+            PosixFilePermission.OTHERS_READ);
 
-            // find all Parquet files for this table
-            List<URL> paths = importTable.dataFiles();
-            logger.debug(
-                "Table '{}' has {} export file(s) ...",
-                importTable.recordType().getName(),
-                paths.size());
+    // loop through the tables that have data files.
+    importTables.forEach(
+        importTable -> {
+          logger.info("Fetching files for table '{}' ...", importTable.recordType().getName());
 
-            try {
-              // Create a subdirectory for the files for this table
-              java.nio.file.Path subDir =
-                  Files.createDirectory(tempDir.resolve(importTable.recordType().getName()));
+          // find all Parquet files for this table
+          List<URL> paths = importTable.dataFiles();
+          logger.debug(
+              "Table '{}' has {} export file(s) ...",
+              importTable.recordType().getName(),
+              paths.size());
 
-              // loop through each parquet file
-              paths.forEach(
-                  path -> {
-                    try {
-                      // download the file from the URL to a temp file on the local filesystem
-                      // Azure urls, with SAS tokens, don't need any particular auth.
-                      File tempFile =
-                          File.createTempFile(
-                              /* prefix= */ "tdr-", /* suffix= */ "download", subDir.toFile());
-                      logger.info("downloading to temp file {} ...", tempFile.getPath());
-                      FileUtils.copyURLToFile(path, tempFile);
-                      // In the TDR manifest, for Azure snapshots only,
-                      // the first file in the list will always be a directory. Attempting to import
-                      // that directory
-                      // will fail; it has no content. To avoid those failures,
-                      // check files for length and ignore any that are empty
-                      if (tempFile.length() == 0) {
-                        logger.info("Empty file in parquet, skipping");
-                        tempFile.delete();
-                      } else {
-                        // Once the remote file has been copied to the temp file, make it read-only
-                        Files.setPosixFilePermissions(tempFile.toPath(), permissions);
-                      }
+          // Create a subdirectory for the files for this table
+          //              java.nio.file.Path subDir =
+          //
+          // Files.createDirectory(tempDir.resolve(importTable.recordType().getName()));
 
-                    } catch (IOException e) {
-                      throw new TdrManifestImportException(e.getMessage(), e);
-                    }
-                  });
-            } catch (IOException e) {
-              throw new TdrManifestImportException(e.getMessage(), e);
-            }
-          });
+          // loop through each parquet file
+          paths.forEach(
+              path -> {
+                try {
+                  // download the file from the URL to a temp file on the local filesystem
+                  // Azure urls, with SAS tokens, don't need any particular auth.
+                  File tempFile =
+                      File.createTempFile(/* prefix= */ "tdr-", /* suffix= */ "download");
+                  logger.info("downloading to temp file {} ...", tempFile.getPath());
+                  FileUtils.copyURLToFile(path, tempFile);
+                  // In the TDR manifest, for Azure snapshots only,
+                  // the first file in the list will always be a directory. Attempting to import
+                  // that directory
+                  // will fail; it has no content. To avoid those failures,
+                  // check files for length and ignore any that are empty
+                  if (tempFile.length() == 0) {
+                    logger.info("Empty file in parquet, skipping");
+                    tempFile.delete();
+                  } else {
+                    // Once the remote file has been copied to the temp file, make it read-only
+                    Files.setPosixFilePermissions(tempFile.toPath(), permissions);
+                    fileMap.put(importTable.recordType().getName(), tempFile);
+                  }
 
-      return tempDir;
-    } catch (IOException e) {
-      throw new TdrManifestImportException(e.getMessage(), e);
-    }
+                } catch (IOException e) {
+                  throw new TdrManifestImportException(e.getMessage(), e);
+                }
+              });
+        });
+
+    return fileMap;
   }
 
   /**
