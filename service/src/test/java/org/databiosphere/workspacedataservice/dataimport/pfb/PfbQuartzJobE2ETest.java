@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import bio.terra.workspace.model.ResourceList;
 import com.google.common.collect.ImmutableMap;
+import io.micrometer.observation.ObservationRegistry;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
@@ -70,6 +71,7 @@ class PfbQuartzJobE2ETest {
   @Autowired RecordOrchestratorService recordOrchestratorService;
   @Autowired ImportService importService;
   @Autowired InstanceService instanceService;
+  @Autowired ObservationRegistry observationRegistry;
 
   @MockBean SchedulerDao schedulerDao;
   @MockBean WorkspaceManagerDao wsmDao;
@@ -127,7 +129,8 @@ class PfbQuartzJobE2ETest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+    buildPfbQuartzJob(
+            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, observationRegistry)
         .execute(mockContext);
 
     /* the testAvroResource should insert:
@@ -184,7 +187,8 @@ class PfbQuartzJobE2ETest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+    buildPfbQuartzJob(
+            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, observationRegistry)
         .execute(mockContext);
 
     /* the fourRowsAvroResource should insert:
@@ -231,7 +235,8 @@ class PfbQuartzJobE2ETest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+    buildPfbQuartzJob(
+            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, observationRegistry)
         .execute(mockContext);
 
     // this record, within the precision.avro file, is known to have numbers with high decimal
@@ -271,7 +276,8 @@ class PfbQuartzJobE2ETest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+    buildPfbQuartzJob(
+            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, observationRegistry)
         .execute(mockContext);
 
     /* the forwardRelationsAvroResource should insert:
@@ -321,7 +327,8 @@ class PfbQuartzJobE2ETest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+    buildPfbQuartzJob(
+            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, observationRegistry)
         .execute(mockContext);
 
     RecordTypeSchema dataReleaseSchema =

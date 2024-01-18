@@ -54,6 +54,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-batch'
     implementation 'org.springframework.boot:spring-boot-starter-quartz'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.springframework.integration:spring-integration-jdbc'
     implementation 'org.aspectj:aspectjweaver' // required by spring-retry, not used directly

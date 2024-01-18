@@ -7,6 +7,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.aop.ObservedAspect;
 import java.util.Set;
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
 import org.springframework.boot.info.BuildProperties;
@@ -35,6 +37,7 @@ public class MetricsConfig {
           "jvm",
           "logback",
           "process",
+          "quartz",
           "spring",
           "system",
           "tomcat",
@@ -58,5 +61,11 @@ public class MetricsConfig {
                 new ImmutableList.Builder<Tag>()
                     .add(Tag.of("wds.version", buildProperties.getVersion()))
                     .build());
+  }
+
+  // Observation support for metrics
+  @Bean
+  ObservedAspect observedAspect(ObservationRegistry observationRegistry) {
+    return new ObservedAspect(observationRegistry);
   }
 }

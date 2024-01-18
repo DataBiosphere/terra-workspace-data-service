@@ -17,6 +17,7 @@ import bio.terra.workspace.model.DataRepoSnapshotAttributes;
 import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceList;
+import io.micrometer.observation.ObservationRegistry;
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;
@@ -51,6 +52,7 @@ class PfbQuartzJobTest {
   @MockBean BatchWriteService batchWriteService;
   @MockBean ActivityLogger activityLogger;
   @Autowired RestClientRetry restClientRetry;
+  @Autowired ObservationRegistry observationRegistry;
 
   // test resources used below
   @Value("classpath:avro/minimal_data.avro")
@@ -72,7 +74,13 @@ class PfbQuartzJobTest {
 
     // call linkSnapshots
     PfbQuartzJob pfbQuartzJob =
-        buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger);
+        buildPfbQuartzJob(
+            jobDao,
+            wsmDao,
+            restClientRetry,
+            batchWriteService,
+            activityLogger,
+            observationRegistry);
     pfbQuartzJob.linkSnapshots(input);
     // capture calls
     ArgumentCaptor<SnapshotModel> argumentCaptor = ArgumentCaptor.forClass(SnapshotModel.class);
@@ -101,7 +109,13 @@ class PfbQuartzJobTest {
 
     // call linkSnapshots
     PfbQuartzJob pfbQuartzJob =
-        buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger);
+        buildPfbQuartzJob(
+            jobDao,
+            wsmDao,
+            restClientRetry,
+            batchWriteService,
+            activityLogger,
+            observationRegistry);
     pfbQuartzJob.linkSnapshots(input);
     // should not call WSM's create-snapshot-reference at all
     verify(wsmDao, times(0)).linkSnapshotForPolicy(any());
@@ -130,7 +144,13 @@ class PfbQuartzJobTest {
 
     // call linkSnapshots
     PfbQuartzJob pfbQuartzJob =
-        buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger);
+        buildPfbQuartzJob(
+            jobDao,
+            wsmDao,
+            restClientRetry,
+            batchWriteService,
+            activityLogger,
+            observationRegistry);
     pfbQuartzJob.linkSnapshots(input);
 
     // should call WSM's create-snapshot-reference only for the references that didn't already exist
@@ -158,7 +178,8 @@ class PfbQuartzJobTest {
     when(batchWriteService.batchWritePfbStream(any(), any(), any(), eq(BASE_ATTRIBUTES)))
         .thenReturn(BatchWriteResult.empty());
 
-    buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+    buildPfbQuartzJob(
+            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, observationRegistry)
         .execute(mockContext);
 
     // Should not call wsm dao
@@ -179,7 +200,8 @@ class PfbQuartzJobTest {
     when(batchWriteService.batchWritePfbStream(any(), any(), any(), eq(BASE_ATTRIBUTES)))
         .thenReturn(BatchWriteResult.empty());
 
-    buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
+    buildPfbQuartzJob(
+            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, observationRegistry)
         .execute(mockContext);
 
     // The "790795c4..." UUID below is the snapshotId found in the "test.avro" resource used

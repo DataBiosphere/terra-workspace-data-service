@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport.tdr;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.observation.ObservationRegistry;
 import java.net.URL;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
@@ -19,6 +20,7 @@ class TdrTestSupport {
   @Autowired private BatchWriteService batchWriteService;
   @Autowired private ActivityLogger activityLogger;
   @Autowired private ObjectMapper objectMapper;
+  @Autowired private ObservationRegistry observationRegistry;
 
   /** Returns a TdrManifestQuartzJob that is capable of pulling parquet files from the classpath. */
   TdrManifestQuartzJob buildTdrManifestQuartzJob(UUID workspaceId) {
@@ -29,7 +31,8 @@ class TdrTestSupport {
         batchWriteService,
         activityLogger,
         workspaceId,
-        objectMapper) {
+        objectMapper,
+        observationRegistry) {
       @Override
       protected URL parseUrl(String path) {
         if (path.startsWith("classpath:")) {

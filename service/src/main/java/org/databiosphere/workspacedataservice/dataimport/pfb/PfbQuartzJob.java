@@ -7,6 +7,7 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
 import bio.terra.pfb.PfbReader;
+import io.micrometer.observation.ObservationRegistry;
 import java.net.URL;
 import java.util.Objects;
 import java.util.Optional;
@@ -58,7 +59,9 @@ public class PfbQuartzJob extends QuartzJob {
       RestClientRetry restClientRetry,
       BatchWriteService batchWriteService,
       ActivityLogger activityLogger,
-      @Value("${twds.instance.workspace-id}") UUID workspaceId) {
+      @Value("${twds.instance.workspace-id}") UUID workspaceId,
+      ObservationRegistry observationRegistry) {
+    super(observationRegistry);
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
     this.restClientRetry = restClientRetry;

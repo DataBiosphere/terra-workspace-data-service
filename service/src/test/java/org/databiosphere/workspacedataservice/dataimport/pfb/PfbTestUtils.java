@@ -8,6 +8,7 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.observation.ObservationRegistry;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -179,8 +180,15 @@ public class PfbTestUtils {
       WorkspaceManagerDao wsmDao,
       RestClientRetry restClientRetry,
       BatchWriteService batchWriteService,
-      ActivityLogger activityLogger) {
+      ActivityLogger activityLogger,
+      ObservationRegistry observationRegistry) {
     return new PfbQuartzJob(
-        jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, UUID.randomUUID());
+        jobDao,
+        wsmDao,
+        restClientRetry,
+        batchWriteService,
+        activityLogger,
+        UUID.randomUUID(),
+        observationRegistry);
   }
 }
