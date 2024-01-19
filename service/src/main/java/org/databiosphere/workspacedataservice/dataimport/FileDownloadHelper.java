@@ -14,6 +14,8 @@ import org.apache.commons.io.FileUtils;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 
 public class FileDownloadHelper {
 
@@ -31,6 +33,7 @@ public class FileDownloadHelper {
     this.fileMap = HashMultimap.create();
   }
 
+  @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
   public void downloadFileFromURL(String tableName, URL pathToRemoteFile) {
     try {
       File tempFile =
