@@ -1,12 +1,11 @@
 package org.databiosphere.workspacedataservice.service.model;
 
+import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import org.apache.commons.lang3.tuple.Pair;
 
 public enum DataTypeMapping {
   NULL(null, "text", false, "?"),
@@ -38,15 +37,18 @@ public enum DataTypeMapping {
 
   private static final Map<String, DataTypeMapping> MAPPING_BY_PG_TYPE = new HashMap<>();
 
-  private static final List<Pair<DataTypeMapping, DataTypeMapping>> TYPES_WITH_ARRAY_TYPES =
-      List.of(
-          Pair.of(STRING, ARRAY_OF_STRING),
-          Pair.of(NUMBER, ARRAY_OF_NUMBER),
-          Pair.of(BOOLEAN, ARRAY_OF_BOOLEAN),
-          Pair.of(DATE, ARRAY_OF_DATE),
-          Pair.of(DATE_TIME, ARRAY_OF_DATE_TIME),
-          Pair.of(FILE, ARRAY_OF_FILE),
-          Pair.of(RELATION, ARRAY_OF_RELATION));
+  private static record BaseTypeAndArrayTypePair(
+      DataTypeMapping baseType, DataTypeMapping arrayType) {}
+
+  private static final ImmutableList<BaseTypeAndArrayTypePair> BASE_TYPE_AND_ARRAY_TYPE_PAIRS =
+      ImmutableList.of(
+          new BaseTypeAndArrayTypePair(STRING, ARRAY_OF_STRING),
+          new BaseTypeAndArrayTypePair(NUMBER, ARRAY_OF_NUMBER),
+          new BaseTypeAndArrayTypePair(BOOLEAN, ARRAY_OF_BOOLEAN),
+          new BaseTypeAndArrayTypePair(DATE, ARRAY_OF_DATE),
+          new BaseTypeAndArrayTypePair(DATE_TIME, ARRAY_OF_DATE_TIME),
+          new BaseTypeAndArrayTypePair(FILE, ARRAY_OF_FILE),
+          new BaseTypeAndArrayTypePair(RELATION, ARRAY_OF_RELATION));
 
   static {
     Arrays.stream(DataTypeMapping.values())
@@ -90,11 +92,11 @@ public enum DataTypeMapping {
     }
 
     try {
-      return TYPES_WITH_ARRAY_TYPES.stream()
-          .filter(types -> types.getLeft().equals(baseType))
+      return BASE_TYPE_AND_ARRAY_TYPE_PAIRS.stream()
+          .filter(types -> types.baseType().equals(baseType))
           .findFirst()
           .orElseThrow()
-          .getRight();
+          .arrayType();
     } catch (NoSuchElementException e) {
       throw new IllegalArgumentException("No supported array type for " + baseType);
     }
@@ -109,11 +111,11 @@ public enum DataTypeMapping {
       return NULL;
     }
 
-    return TYPES_WITH_ARRAY_TYPES.stream()
-        .filter(types -> types.getRight().equals(this))
+    return BASE_TYPE_AND_ARRAY_TYPE_PAIRS.stream()
+        .filter(types -> types.arrayType().equals(this))
         .findFirst()
         .orElseThrow()
-        .getLeft();
+        .baseType();
   }
 
   public String getWritePlaceholder() {
