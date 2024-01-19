@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id:  20240118_number_timestamp_array_conversions
+      author:  nwatts
+      changes:
+        -  sql:
+             dbms:  postgresql
+             splitStatements: false
+             sql:  |
+               create or replace function convert_array_of_numbers_to_timestamps(numeric[])
+                returns timestamp with time zone[] as $$
+                  declare
+                    numbers alias for $1;
+                    timestamps timestamp with time zone[];
+                  begin
+                    for i in array_lower(numbers, 1)..array_upper(numbers, 1) loop
+                      timestamps[i] := to_timestamp(numbers[i]);
+                    end loop;
+                    return timestamps;
+                  end;
+                $$ language plpgsql stable;
+        - sql:
+            dbms: postgresql
+            splitStatements: false
+            sql: |
+              create or replace function convert_array_of_timestamps_to_numbers(timestamp with time zone[])
+               returns numeric[] as $$
+                 declare
+                    timestamps alias for $1;
+                    numbers numeric[];
+                  begin
+                    for i in array_lower(timestamps, 1)..array_upper(timestamps, 1) loop
+                      numbers[i] := extract(epoch from timestamps[i]);
+                    end loop;
+                    return numbers;
+                  end;
+               $$ language plpgsql stable;

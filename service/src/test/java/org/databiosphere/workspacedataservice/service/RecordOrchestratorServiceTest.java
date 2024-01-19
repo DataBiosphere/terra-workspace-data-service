@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -211,7 +213,11 @@ class RecordOrchestratorServiceTest {
     "updateAttributeDataTypeNumberConversions",
     "updateAttributeDataTypeNumberArrayConversions",
     "updateAttributeDataTypeBooleanConversions",
-    "updateAttributeDataTypeBooleanArrayConversions"
+    "updateAttributeDataTypeBooleanArrayConversions",
+    "updateAttributeDataTypeDateConversions",
+    "updateAttributeDataTypeDateArrayConversions",
+    "updateAttributeDataTypeDatetimeConversions",
+    "updateAttributeDataTypeDatetimeArrayConversions"
   })
   void updateAttributeDataType(
       Object attributeValue,
@@ -257,6 +263,15 @@ class RecordOrchestratorServiceTest {
         // Boolean
         Arguments.of("yes", DataTypeMapping.STRING, DataTypeMapping.BOOLEAN, Boolean.TRUE),
         Arguments.of("no", DataTypeMapping.STRING, DataTypeMapping.BOOLEAN, Boolean.FALSE),
+        // Date
+        Arguments.of(
+            "2024/01/24", DataTypeMapping.STRING, DataTypeMapping.DATE, LocalDate.of(2024, 1, 24)),
+        // Datetime
+        Arguments.of(
+            "2024/01/24 02:30:00",
+            DataTypeMapping.STRING,
+            DataTypeMapping.DATE_TIME,
+            LocalDateTime.of(2024, 1, 24, 2, 30, 0)),
         // String array
         Arguments.of(
             "foo", DataTypeMapping.STRING, DataTypeMapping.ARRAY_OF_STRING, new String[] {"foo"}),
@@ -271,7 +286,19 @@ class RecordOrchestratorServiceTest {
             "yes",
             DataTypeMapping.STRING,
             DataTypeMapping.ARRAY_OF_BOOLEAN,
-            new Boolean[] {Boolean.TRUE}));
+            new Boolean[] {Boolean.TRUE}),
+        // Date array
+        Arguments.of(
+            "2024/01/24",
+            DataTypeMapping.STRING,
+            DataTypeMapping.ARRAY_OF_DATE,
+            new LocalDate[] {LocalDate.of(2024, 1, 24)}),
+        // Datetime array
+        Arguments.of(
+            "2024/01/24 02:30:00",
+            DataTypeMapping.STRING,
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            new LocalDateTime[] {LocalDateTime.of(2024, 1, 24, 2, 30, 0)}));
   }
 
   static Stream<Arguments> updateAttributeDataTypeStringArrayConversions() {
@@ -287,7 +314,19 @@ class RecordOrchestratorServiceTest {
             List.of("yes", "no"),
             DataTypeMapping.ARRAY_OF_STRING,
             DataTypeMapping.ARRAY_OF_BOOLEAN,
-            new Boolean[] {Boolean.TRUE, Boolean.FALSE}));
+            new Boolean[] {Boolean.TRUE, Boolean.FALSE}),
+        // Date array
+        Arguments.of(
+            List.of("2024/01/24"),
+            DataTypeMapping.ARRAY_OF_STRING,
+            DataTypeMapping.ARRAY_OF_DATE,
+            new LocalDate[] {LocalDate.of(2024, 1, 24)}),
+        // Datetime array
+        Arguments.of(
+            List.of("2024/01/24 02:30:00"),
+            DataTypeMapping.ARRAY_OF_STRING,
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            new LocalDateTime[] {LocalDateTime.of(2024, 1, 24, 2, 30, 0)}));
   }
 
   static Stream<Arguments> updateAttributeDataTypeNumberConversions() {
@@ -300,6 +339,18 @@ class RecordOrchestratorServiceTest {
             BigDecimal.valueOf(1), DataTypeMapping.NUMBER, DataTypeMapping.BOOLEAN, Boolean.TRUE),
         Arguments.of(
             BigDecimal.valueOf(0), DataTypeMapping.NUMBER, DataTypeMapping.BOOLEAN, Boolean.FALSE),
+        // Date
+        Arguments.of(
+            BigDecimal.valueOf(1706063400L),
+            DataTypeMapping.NUMBER,
+            DataTypeMapping.DATE,
+            LocalDate.of(2024, 1, 24)),
+        // Datetime
+        Arguments.of(
+            BigDecimal.valueOf(1706063400L),
+            DataTypeMapping.NUMBER,
+            DataTypeMapping.DATE_TIME,
+            LocalDateTime.of(2024, 1, 24, 2, 30, 0)),
         // String array
         Arguments.of(
             BigDecimal.valueOf(123),
@@ -317,7 +368,19 @@ class RecordOrchestratorServiceTest {
             BigDecimal.valueOf(1),
             DataTypeMapping.NUMBER,
             DataTypeMapping.ARRAY_OF_BOOLEAN,
-            new Boolean[] {Boolean.TRUE}));
+            new Boolean[] {Boolean.TRUE}),
+        // Date array
+        Arguments.of(
+            BigDecimal.valueOf(1706063400L),
+            DataTypeMapping.NUMBER,
+            DataTypeMapping.ARRAY_OF_DATE,
+            new LocalDate[] {LocalDate.of(2024, 1, 24)}),
+        // Datetime array
+        Arguments.of(
+            BigDecimal.valueOf(1706063400L),
+            DataTypeMapping.NUMBER,
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            new LocalDateTime[] {LocalDateTime.of(2024, 1, 24, 2, 30, 0)}));
   }
 
   static Stream<Arguments> updateAttributeDataTypeNumberArrayConversions() {
@@ -333,7 +396,19 @@ class RecordOrchestratorServiceTest {
             List.of(BigDecimal.valueOf(1), BigDecimal.valueOf(0)),
             DataTypeMapping.ARRAY_OF_NUMBER,
             DataTypeMapping.ARRAY_OF_BOOLEAN,
-            new Boolean[] {Boolean.TRUE, Boolean.FALSE}));
+            new Boolean[] {Boolean.TRUE, Boolean.FALSE}),
+        // Date array
+        Arguments.of(
+            List.of(BigDecimal.valueOf(1706063400L)),
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            DataTypeMapping.ARRAY_OF_DATE,
+            new LocalDate[] {LocalDate.of(2024, 1, 24)}),
+        // Datetime array
+        Arguments.of(
+            List.of(BigDecimal.valueOf(1706063400L)),
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            new LocalDateTime[] {LocalDateTime.of(2024, 1, 24, 2, 30, 0)}));
   }
 
   static Stream<Arguments> updateAttributeDataTypeBooleanConversions() {
@@ -395,6 +470,139 @@ class RecordOrchestratorServiceTest {
             DataTypeMapping.ARRAY_OF_BOOLEAN,
             DataTypeMapping.ARRAY_OF_NUMBER,
             new BigDecimal[] {BigDecimal.valueOf(1), BigDecimal.valueOf(0)}));
+  }
+
+  static Stream<Arguments> updateAttributeDataTypeDateConversions() {
+    return Stream.of(
+        // String
+        Arguments.of(
+            LocalDate.of(2024, 1, 24), DataTypeMapping.DATE, DataTypeMapping.STRING, "2024-01-24"),
+        // Number
+        Arguments.of(
+            LocalDate.of(2024, 1, 24),
+            DataTypeMapping.DATE,
+            DataTypeMapping.NUMBER,
+            BigDecimal.valueOf(1706054400L)),
+        // Datetime
+        Arguments.of(
+            LocalDate.of(2024, 1, 24),
+            DataTypeMapping.DATE,
+            DataTypeMapping.DATE_TIME,
+            LocalDateTime.of(2024, 1, 24, 0, 0, 0)),
+        // String array
+        Arguments.of(
+            LocalDate.of(2024, 1, 24),
+            DataTypeMapping.DATE,
+            DataTypeMapping.ARRAY_OF_STRING,
+            new String[] {"2024-01-24"}),
+        // Number array
+        Arguments.of(
+            LocalDate.of(2024, 1, 24),
+            DataTypeMapping.DATE,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            new BigDecimal[] {BigDecimal.valueOf(1706054400L)}),
+        // Date array
+        Arguments.of(
+            LocalDate.of(2024, 1, 24),
+            DataTypeMapping.DATE,
+            DataTypeMapping.ARRAY_OF_DATE,
+            new LocalDate[] {LocalDate.of(2024, 1, 24)}),
+        // Datetime array
+        Arguments.of(
+            LocalDate.of(2024, 1, 24),
+            DataTypeMapping.DATE,
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            new LocalDateTime[] {LocalDateTime.of(2024, 1, 24, 0, 0, 0)}));
+  }
+
+  static Stream<Arguments> updateAttributeDataTypeDateArrayConversions() {
+    return Stream.of(
+        // String array
+        Arguments.of(
+            List.of(LocalDate.of(2024, 1, 24)),
+            DataTypeMapping.ARRAY_OF_DATE,
+            DataTypeMapping.ARRAY_OF_STRING,
+            new String[] {"2024-01-24"}),
+        // Number array
+        Arguments.of(
+            List.of(LocalDate.of(2024, 1, 24)),
+            DataTypeMapping.ARRAY_OF_DATE,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            new BigDecimal[] {BigDecimal.valueOf(1706054400L)}),
+        // Datetime array
+        Arguments.of(
+            List.of(LocalDate.of(2024, 1, 24)),
+            DataTypeMapping.ARRAY_OF_DATE,
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            new LocalDateTime[] {LocalDateTime.of(2024, 1, 24, 0, 0, 0)}));
+  }
+
+  static Stream<Arguments> updateAttributeDataTypeDatetimeConversions() {
+    return Stream.of(
+        // String
+        Arguments.of(
+            LocalDateTime.of(2024, 1, 24, 2, 30, 0),
+            DataTypeMapping.DATE_TIME,
+            DataTypeMapping.STRING,
+            "2024-01-24 02:30:00+00"),
+        // Number
+        Arguments.of(
+            LocalDateTime.of(2024, 1, 24, 2, 30, 0),
+            DataTypeMapping.DATE_TIME,
+            DataTypeMapping.NUMBER,
+            new BigDecimal("1706063400.000000")),
+        // Datetime
+        Arguments.of(
+            LocalDateTime.of(2024, 1, 24, 2, 30, 0),
+            DataTypeMapping.DATE_TIME,
+            DataTypeMapping.DATE,
+            LocalDate.of(2024, 1, 24)),
+        // String array
+        Arguments.of(
+            LocalDateTime.of(2024, 1, 24, 2, 30, 0),
+            DataTypeMapping.DATE_TIME,
+            DataTypeMapping.ARRAY_OF_STRING,
+            new String[] {"2024-01-24 02:30:00+00"}),
+        // Number array
+        Arguments.of(
+            LocalDateTime.of(2024, 1, 24, 2, 30, 0),
+            DataTypeMapping.DATE_TIME,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            new BigDecimal[] {new BigDecimal("1706063400.000000")}),
+        // Date array
+        Arguments.of(
+            LocalDateTime.of(2024, 1, 24, 2, 30, 0),
+            DataTypeMapping.DATE_TIME,
+            DataTypeMapping.ARRAY_OF_DATE,
+            new LocalDate[] {LocalDate.of(2024, 1, 24)}),
+        // Datetime array
+        Arguments.of(
+            LocalDateTime.of(2024, 1, 24, 2, 30, 0),
+            DataTypeMapping.DATE_TIME,
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            new LocalDateTime[] {LocalDateTime.of(2024, 1, 24, 2, 30, 0)}));
+  }
+
+  static Stream<Arguments> updateAttributeDataTypeDatetimeArrayConversions() {
+    return Stream.of(
+        // String array
+        Arguments.of(
+            List.of(LocalDateTime.of(2024, 1, 24, 2, 30, 0)),
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            DataTypeMapping.ARRAY_OF_STRING,
+            new String[] {"2024-01-24 02:30:00+00"}),
+        // Number array
+        Arguments.of(
+            List.of(LocalDateTime.of(2024, 1, 24, 2, 30, 0)),
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            new BigDecimal[] {new BigDecimal("1706063400.000000")}),
+        // Date array
+        Arguments.of(
+            List.of(LocalDateTime.of(2024, 1, 24, 2, 30, 0)),
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            DataTypeMapping.ARRAY_OF_DATE,
+            new LocalDate[] {LocalDate.of(2024, 1, 24)}));
   }
 
   @Test

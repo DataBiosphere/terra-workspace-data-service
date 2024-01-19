@@ -98,7 +98,11 @@ public class RecordDao {
           DataTypeMapping.NUMBER,
           DataTypeMapping.ARRAY_OF_NUMBER,
           DataTypeMapping.BOOLEAN,
-          DataTypeMapping.ARRAY_OF_BOOLEAN);
+          DataTypeMapping.ARRAY_OF_BOOLEAN,
+          DataTypeMapping.DATE,
+          DataTypeMapping.ARRAY_OF_DATE,
+          DataTypeMapping.DATE_TIME,
+          DataTypeMapping.ARRAY_OF_DATE_TIME);
 
   /**
    * These error codes are expected when a valid update attribute data type request fails because
@@ -1106,6 +1110,39 @@ public class RecordDao {
     }
 
     String expression = quote(SqlUtils.validateSqlString(attribute, ATTRIBUTE));
+
+    // Unable to cast numbers to dates or timestamps.
+    // Convert number to timestamp using to_timestamp.
+    if (dataType.getBaseType() == DataTypeMapping.NUMBER
+        && (newDataType.getBaseType() == DataTypeMapping.DATE
+            || newDataType.getBaseType() == DataTypeMapping.DATE_TIME)) {
+      if (dataType.isArrayType()) {
+        expression = "(convert_array_of_numbers_to_timestamps(" + expression + "))";
+      } else {
+        expression = "to_timestamp(" + expression + ")";
+      }
+    }
+
+    // Unable to cast dates or timestamps to numbers.
+    // Extract epoch from timestamp to get a number.
+    if ((dataType.getBaseType() == DataTypeMapping.DATE
+            || dataType.getBaseType() == DataTypeMapping.DATE_TIME)
+        && newDataType.getBaseType() == DataTypeMapping.NUMBER) {
+      if (dataType.isArrayType()) {
+        expression = "convert_array_of_timestamps_to_numbers(" + expression + ")";
+        // Truncate to an integer for dates.
+        if (dataType.getBaseType() == DataTypeMapping.DATE) {
+          expression += "::bigint[]";
+        }
+        expression = "(" + expression + ")";
+      } else {
+        expression = "extract(epoch from " + expression + ")";
+        // Truncate to an integer for dates.
+        if (dataType.getBaseType() == DataTypeMapping.DATE) {
+          expression += "::bigint";
+        }
+      }
+    }
 
     // When converting from a scalar type to an array type, append value to an empty array.
     if (!dataType.isArrayType() && newDataType.isArrayType()) {
