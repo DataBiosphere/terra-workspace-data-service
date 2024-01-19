@@ -14,4 +14,11 @@ public record RecordTypeSchema(
     return attributes.stream()
         .anyMatch(attributeSchema -> attributeSchema.name().equals(attribute));
   }
+
+  public AttributeSchema getAttributeSchema(String attribute) {
+    return attributes.stream()
+        .filter(attr -> attr.name().equals(attribute))
+        .findFirst()
+        .orElseThrow();
+  }
 }
