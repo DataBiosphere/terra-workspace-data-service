@@ -21,11 +21,6 @@ import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
-import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
-import org.databiosphere.workspacedataservice.dao.JobDao;
-import org.databiosphere.workspacedataservice.retry.RestClientRetry;
-import org.databiosphere.workspacedataservice.service.BatchWriteService;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.mockito.Mockito;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
@@ -173,22 +168,5 @@ public class PfbTestUtils {
     when(mockContext.getJobDetail()).thenReturn(jobDetail);
 
     return mockContext;
-  }
-
-  public static PfbQuartzJob buildPfbQuartzJob(
-      JobDao jobDao,
-      WorkspaceManagerDao wsmDao,
-      RestClientRetry restClientRetry,
-      BatchWriteService batchWriteService,
-      ActivityLogger activityLogger,
-      ObservationRegistry observationRegistry) {
-    return new PfbQuartzJob(
-        jobDao,
-        wsmDao,
-        restClientRetry,
-        batchWriteService,
-        activityLogger,
-        UUID.randomUUID(),
-        observationRegistry);
   }
 }

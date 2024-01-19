@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.dataimport.pfb;
 
-import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.buildPfbQuartzJob;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
 import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,7 +26,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
-import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
@@ -51,8 +49,7 @@ class PfbQuartzJobTest {
   @MockBean WorkspaceManagerDao wsmDao;
   @MockBean BatchWriteService batchWriteService;
   @MockBean ActivityLogger activityLogger;
-  @Autowired RestClientRetry restClientRetry;
-  @Autowired ObservationRegistry observationRegistry;
+  @Autowired PfbTestSupport testSupport;
 
   // test resources used below
   @Value("classpath:avro/minimal_data.avro")
@@ -73,14 +70,7 @@ class PfbQuartzJobTest {
         .thenReturn(new ResourceList());
 
     // call linkSnapshots
-    PfbQuartzJob pfbQuartzJob =
-        buildPfbQuartzJob(
-            jobDao,
-            wsmDao,
-            restClientRetry,
-            batchWriteService,
-            activityLogger,
-            observationRegistry);
+    PfbQuartzJob pfbQuartzJob = testSupport.buildPfbQuartzJob();
     pfbQuartzJob.linkSnapshots(input);
     // capture calls
     ArgumentCaptor<SnapshotModel> argumentCaptor = ArgumentCaptor.forClass(SnapshotModel.class);
@@ -108,14 +98,7 @@ class PfbQuartzJobTest {
         .thenReturn(resourceList);
 
     // call linkSnapshots
-    PfbQuartzJob pfbQuartzJob =
-        buildPfbQuartzJob(
-            jobDao,
-            wsmDao,
-            restClientRetry,
-            batchWriteService,
-            activityLogger,
-            observationRegistry);
+    PfbQuartzJob pfbQuartzJob = testSupport.buildPfbQuartzJob();
     pfbQuartzJob.linkSnapshots(input);
     // should not call WSM's create-snapshot-reference at all
     verify(wsmDao, times(0)).linkSnapshotForPolicy(any());
@@ -143,14 +126,7 @@ class PfbQuartzJobTest {
         .thenReturn(resourceList);
 
     // call linkSnapshots
-    PfbQuartzJob pfbQuartzJob =
-        buildPfbQuartzJob(
-            jobDao,
-            wsmDao,
-            restClientRetry,
-            batchWriteService,
-            activityLogger,
-            observationRegistry);
+    PfbQuartzJob pfbQuartzJob = testSupport.buildPfbQuartzJob();
     pfbQuartzJob.linkSnapshots(input);
 
     // should call WSM's create-snapshot-reference only for the references that didn't already exist
@@ -178,9 +154,7 @@ class PfbQuartzJobTest {
     when(batchWriteService.batchWritePfbStream(any(), any(), any(), eq(BASE_ATTRIBUTES)))
         .thenReturn(BatchWriteResult.empty());
 
-    buildPfbQuartzJob(
-            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, observationRegistry)
-        .execute(mockContext);
+    testSupport.buildPfbQuartzJob().execute(mockContext);
 
     // Should not call wsm dao
     verify(wsmDao, times(0)).linkSnapshotForPolicy(any());
@@ -200,9 +174,7 @@ class PfbQuartzJobTest {
     when(batchWriteService.batchWritePfbStream(any(), any(), any(), eq(BASE_ATTRIBUTES)))
         .thenReturn(BatchWriteResult.empty());
 
-    buildPfbQuartzJob(
-            jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, observationRegistry)
-        .execute(mockContext);
+    testSupport.buildPfbQuartzJob().execute(mockContext);
 
     // The "790795c4..." UUID below is the snapshotId found in the "test.avro" resource used
     // by this unit test
