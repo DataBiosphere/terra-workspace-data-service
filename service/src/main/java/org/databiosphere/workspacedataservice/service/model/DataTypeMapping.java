@@ -5,6 +5,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import org.apache.commons.lang3.tuple.Pair;
 
 public enum DataTypeMapping {
@@ -81,21 +82,22 @@ public enum DataTypeMapping {
     if (baseType == null) {
       return EMPTY_ARRAY;
     }
-    return switch (baseType) {
-      case STRING -> ARRAY_OF_STRING;
-      case FILE -> ARRAY_OF_FILE;
-      case RELATION -> ARRAY_OF_RELATION;
-      case BOOLEAN -> ARRAY_OF_BOOLEAN;
-      case NUMBER -> ARRAY_OF_NUMBER;
-      case DATE -> ARRAY_OF_DATE;
-      case DATE_TIME -> ARRAY_OF_DATE_TIME;
-      case NULL ->
-      // if we only detect nulls in the array, we can't detect the intended type.
-      // treat it as a string in this case.
-      ARRAY_OF_STRING;
 
-      default -> throw new IllegalArgumentException("No supported array type for " + baseType);
-    };
+    // if we only detect nulls in the array, we can't detect the intended type.
+    // treat it as a string in this case.
+    if (baseType == NULL) {
+      return ARRAY_OF_STRING;
+    }
+
+    try {
+      return TYPES_WITH_ARRAY_TYPES.stream()
+          .filter(types -> types.getLeft().equals(baseType))
+          .findFirst()
+          .orElseThrow()
+          .getRight();
+    } catch (NoSuchElementException e) {
+      throw new IllegalArgumentException("No supported array type for " + baseType);
+    }
   }
 
   public DataTypeMapping getBaseType() {
