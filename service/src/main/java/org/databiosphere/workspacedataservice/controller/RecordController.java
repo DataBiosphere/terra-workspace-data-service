@@ -182,11 +182,7 @@ public class RecordController {
 
     RecordTypeSchema recordTypeSchema =
         recordOrchestratorService.describeRecordType(instanceId, version, recordType);
-    AttributeSchema attributeSchema =
-        recordTypeSchema.attributes().stream()
-            .filter(attr -> attr.name().equals(newAttributeName))
-            .findFirst()
-            .orElseThrow();
+    AttributeSchema attributeSchema = recordTypeSchema.getAttributeSchema(newAttributeName);
     return new ResponseEntity<>(attributeSchema, HttpStatus.OK);
   }
 
