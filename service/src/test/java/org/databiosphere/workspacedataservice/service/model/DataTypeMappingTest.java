@@ -1,13 +1,45 @@
 package org.databiosphere.workspacedataservice.service.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class DataTypeMappingTest {
+  @ParameterizedTest
+  @MethodSource("getBaseTypesAndArrayTypes")
+  void testGetArrayTypeForBase(DataTypeMapping baseType, DataTypeMapping expectedArrayType) {
+    DataTypeMapping arrayType = DataTypeMapping.getArrayTypeForBase(baseType);
+    assertEquals(expectedArrayType, arrayType);
+  }
+
+  private static Stream<Arguments> getBaseTypesAndArrayTypes() {
+    return Stream.of(
+        Arguments.of(null, DataTypeMapping.EMPTY_ARRAY),
+        Arguments.of(DataTypeMapping.STRING, DataTypeMapping.ARRAY_OF_STRING),
+        Arguments.of(DataTypeMapping.FILE, DataTypeMapping.ARRAY_OF_FILE),
+        Arguments.of(DataTypeMapping.RELATION, DataTypeMapping.ARRAY_OF_RELATION),
+        Arguments.of(DataTypeMapping.BOOLEAN, DataTypeMapping.ARRAY_OF_BOOLEAN),
+        Arguments.of(DataTypeMapping.NUMBER, DataTypeMapping.ARRAY_OF_NUMBER),
+        Arguments.of(DataTypeMapping.DATE, DataTypeMapping.ARRAY_OF_DATE),
+        Arguments.of(DataTypeMapping.DATE_TIME, DataTypeMapping.ARRAY_OF_DATE_TIME),
+        Arguments.of(DataTypeMapping.NULL, DataTypeMapping.ARRAY_OF_STRING));
+  }
+
+  @Test
+  void testGetArrayTypeForBaseNoArrayType() {
+    IllegalArgumentException e =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> DataTypeMapping.getArrayTypeForBase(DataTypeMapping.EMPTY_ARRAY),
+            "getArrayTypeForBase should have thrown an error");
+    assertEquals("No supported array type for EMPTY_ARRAY", e.getMessage());
+  }
+
   @ParameterizedTest
   @MethodSource("getTypesAndBaseTypes")
   void testGetBaseType(DataTypeMapping type, DataTypeMapping expectedBaseType) {
