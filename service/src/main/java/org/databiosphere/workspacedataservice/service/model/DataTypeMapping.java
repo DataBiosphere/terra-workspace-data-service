@@ -3,7 +3,9 @@ package org.databiosphere.workspacedataservice.service.model;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.tuple.Pair;
 
 public enum DataTypeMapping {
   NULL(null, "text", false, "?"),
@@ -34,6 +36,16 @@ public enum DataTypeMapping {
   private final String writePlaceholder;
 
   private static final Map<String, DataTypeMapping> MAPPING_BY_PG_TYPE = new HashMap<>();
+
+  private static final List<Pair<DataTypeMapping, DataTypeMapping>> TYPES_WITH_ARRAY_TYPES =
+      List.of(
+          Pair.of(STRING, ARRAY_OF_STRING),
+          Pair.of(NUMBER, ARRAY_OF_NUMBER),
+          Pair.of(BOOLEAN, ARRAY_OF_BOOLEAN),
+          Pair.of(DATE, ARRAY_OF_DATE),
+          Pair.of(DATE_TIME, ARRAY_OF_DATE_TIME),
+          Pair.of(FILE, ARRAY_OF_FILE),
+          Pair.of(RELATION, ARRAY_OF_RELATION));
 
   static {
     Arrays.stream(DataTypeMapping.values())
@@ -84,6 +96,22 @@ public enum DataTypeMapping {
 
       default -> throw new IllegalArgumentException("No supported array type for " + baseType);
     };
+  }
+
+  public DataTypeMapping getBaseType() {
+    if (!isArrayType()) {
+      return this;
+    }
+
+    if (this == EMPTY_ARRAY) {
+      return NULL;
+    }
+
+    return TYPES_WITH_ARRAY_TYPES.stream()
+        .filter(types -> types.getRight().equals(this))
+        .findFirst()
+        .orElseThrow()
+        .getLeft();
   }
 
   public String getWritePlaceholder() {
