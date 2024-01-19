@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
-import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.buildPfbQuartzJob;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -19,13 +18,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
-import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
-import org.databiosphere.workspacedataservice.retry.RestClientRetry;
-import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.ImportService;
 import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
@@ -63,14 +58,10 @@ import org.springframework.test.context.ActiveProfiles;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PfbQuartzJobE2ETest {
 
-  @Autowired JobDao jobDao;
-  @Autowired RestClientRetry restClientRetry;
-  @Autowired BatchWriteService batchWriteService;
-  @Autowired ActivityLogger activityLogger;
   @Autowired RecordOrchestratorService recordOrchestratorService;
   @Autowired ImportService importService;
   @Autowired InstanceService instanceService;
-
+  @Autowired private PfbTestSupport testSupport;
   @MockBean SchedulerDao schedulerDao;
   @MockBean WorkspaceManagerDao wsmDao;
 
@@ -127,8 +118,7 @@ class PfbQuartzJobE2ETest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
-        .execute(mockContext);
+    testSupport.buildPfbQuartzJob().execute(mockContext);
 
     /* the testAvroResource should insert:
        - 3202 record(s) of type activities
@@ -184,8 +174,7 @@ class PfbQuartzJobE2ETest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
-        .execute(mockContext);
+    testSupport.buildPfbQuartzJob().execute(mockContext);
 
     /* the fourRowsAvroResource should insert:
        - 3 record(s) of type data_release
@@ -231,8 +220,7 @@ class PfbQuartzJobE2ETest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
-        .execute(mockContext);
+    testSupport.buildPfbQuartzJob().execute(mockContext);
 
     // this record, within the precision.avro file, is known to have numbers with high decimal
     // precision. Retrieve some of them and check for the expected high-precision values.
@@ -271,8 +259,7 @@ class PfbQuartzJobE2ETest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
-        .execute(mockContext);
+    testSupport.buildPfbQuartzJob().execute(mockContext);
 
     /* the forwardRelationsAvroResource should insert:
        - 1 record of type submitted_aligned_reads
@@ -321,8 +308,7 @@ class PfbQuartzJobE2ETest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    buildPfbQuartzJob(jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger)
-        .execute(mockContext);
+    testSupport.buildPfbQuartzJob().execute(mockContext);
 
     RecordTypeSchema dataReleaseSchema =
         recordOrchestratorService.describeRecordType(

@@ -6,6 +6,7 @@ import  wds_client
 from datetime import date, datetime
 import random
 import csv
+import time
 
 # generate records for testing
 def generate_record():
@@ -96,7 +97,11 @@ class WdsTests(TestCase):
     generalInfo_client = wds_client.GeneralWDSInformationApi(api_client)
     schema_client = wds_client.SchemaApi(api_client)
     instance_client = wds_client.InstancesApi(api_client)
+    import_client = wds_client.ImportApi(api_client)
+    job_client = wds_client.JobApi(api_client)
     current_workspaceId = instance_client.list_wds_instances(version)[0]
+
+    local_server_host = 'http://localhost:9889'
 
     testType1_simple ="s_record_1"
     testType1_complex ="c_record_1"
@@ -236,3 +241,33 @@ class WdsTests(TestCase):
         response = self.schema_client.delete_record_type(self.current_workspaceId, self.version, self.cvsUpload_test);
         workspace_ent_type = self.schema_client.describe_all_record_types(self.current_workspaceId, self.version)
         self.assertTrue(len(workspace_ent_type) == 0)
+
+    # SCENARIO 6
+    # import snapshot from TDR with appropriate permissions
+    def test_import_snapshot(self):
+        import_request = { "type": "TDRMANIFEST", "url": self.local_server_host + "/tdrmanifest/v2f_for_python.json"}
+        job_response = self.import_client.import_v1(self.current_workspaceId, import_request)
+        job_status_response = self.job_client.job_status_v1(job_response.job_id)
+        job_status = job_status_response.status
+        while job_status in ['RUNNING', 'QUEUED']:
+            time.sleep(10) #sleep ten seconds then try again
+            job_status_response = self.job_client.job_status_v1(job_response.job_id)
+            job_status = job_status_response.status
+        assert job_status == 'SUCCEEDED'
+
+
+        # should create tables from manifest, spot-check
+        ent_types = self.schema_client.describe_record_type(self.current_workspaceId, self.version, "all_data_types")
+        assert ent_types.count == 5
+        search_request = { "offset": 0, "limit": 2}
+        records = self.records_client.query_records(self.current_workspaceId, self.version, "all_data_types", search_request)
+        testRecord = records.records[0]
+        assert testRecord.id == "12:101976753:T:C"
+        assert len(testRecord.attributes) == 23
+        assert testRecord.attributes['datarepo_row_id'] == "0E369A2D-25E5-4D65-955B-334F894C2883"
+        # clean up
+        all_record_types = self.schema_client.describe_all_record_types(self.current_workspaceId, self.version)
+        for record_type in all_record_types:
+            self.schema_client.delete_record_type(self.current_workspaceId, self.version, record_type.name)
+        workspace_ent_type = self.schema_client.describe_all_record_types(self.current_workspaceId, self.version)
+        assert len(workspace_ent_type) == 0
