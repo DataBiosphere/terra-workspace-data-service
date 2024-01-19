@@ -17,7 +17,7 @@ import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.InputFile;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
-import org.databiosphere.workspacedataservice.dataimport.FileDownload;
+import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestExemplarData.AzureSmall;
 import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
@@ -116,9 +116,9 @@ public class TdrManifestQuartzJobTest {
             List.of());
 
     // An empty file should not throw any errors
-    FileDownload fileMap =
+    FileDownloadHelper files =
         assertDoesNotThrow(() -> tdrManifestQuartzJob.getFilesForImport(List.of(table)));
-    assert (fileMap.isEmpty());
+    assert (files.getFileMap().isEmpty());
   }
 
   /*

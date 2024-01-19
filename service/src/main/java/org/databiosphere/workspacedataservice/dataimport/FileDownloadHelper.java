@@ -8,7 +8,6 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Set;
 import org.apache.commons.io.FileUtils;
@@ -16,7 +15,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.TdrManifes
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FileDownload {
+public class FileDownloadHelper {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private final Path tempFileDir;
@@ -27,14 +26,15 @@ public class FileDownload {
           PosixFilePermission.GROUP_READ,
           PosixFilePermission.OTHERS_READ);
 
-  public FileDownload(String dirName) throws IOException {
+  public FileDownloadHelper(String dirName) throws IOException {
     this.tempFileDir = Files.createTempDirectory(dirName);
     this.fileMap = HashMultimap.create();
   }
 
   public void downloadFileFromURL(String tableName, URL pathToRemoteFile) {
     try {
-      File tempFile = File.createTempFile(/* prefix= */ "tdr-", /* suffix= */ "download");
+      File tempFile =
+          File.createTempFile(/* prefix= */ "tdr-", /* suffix= */ "download", tempFileDir.toFile());
       logger.info("downloading to temp file {} ...", tempFile.getPath());
       FileUtils.copyURLToFile(pathToRemoteFile, tempFile);
       // In the TDR manifest, for Azure snapshots only,
@@ -63,11 +63,7 @@ public class FileDownload {
     }
   }
 
-  public Collection<File> get(String key) {
-    return fileMap.get(key);
-  }
-
-  public boolean isEmpty() {
-    return fileMap.isEmpty();
+  public Multimap<String, File> getFileMap() {
+    return this.fileMap;
   }
 }

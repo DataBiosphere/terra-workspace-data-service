@@ -10,6 +10,7 @@ import bio.terra.datarepo.model.SnapshotExportResponseModelFormatParquetLocation
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Multimap;
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -26,11 +27,11 @@ import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.InputFile;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
-import org.databiosphere.workspacedataservice.dataimport.FileDownload;
+import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
-import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
@@ -103,23 +104,18 @@ public class TdrManifestQuartzJob extends QuartzJob {
         extractTableInfo(snapshotExportResponseModel);
 
     // get all the parquet files from the manifests
-
-    FileDownload fileMap = getFilesForImport(tdrManifestImportTables);
+    FileDownloadHelper files = getFilesForImport(tdrManifestImportTables);
 
     // loop through the tables to be imported and upsert base attributes
     var result =
         importTables(
             tdrManifestImportTables,
-            fileMap,
+            files.getFileMap(),
             targetInstance,
-            TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
+            ImportMode.BASE_ATTRIBUTES);
 
     // add relations to the existing base attributes
-    importTables(
-        tdrManifestImportTables,
-        fileMap,
-        targetInstance,
-        TwoPassStreamingWriteHandler.ImportMode.RELATIONS);
+    importTables(tdrManifestImportTables, files.getFileMap(), targetInstance, ImportMode.RELATIONS);
 
     // activity logging for import status
     // no specific activity logging for relations since main import is a superset
@@ -136,7 +132,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
             });
     // delete temp files after everything else is completed
     // Any failed deletions will be removed if/when pod restarts
-    fileMap.deleteFileDirectory();
+    files.deleteFileDirectory();
   }
 
   /**
@@ -153,7 +149,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       InputFile inputFile,
       TdrManifestImportTable table,
       UUID targetInstance,
-      TwoPassStreamingWriteHandler.ImportMode importMode) {
+      ImportMode importMode) {
     // upsert this parquet file's contents
     try (ParquetReader<GenericRecord> avroParquetReader =
         AvroParquetReader.<GenericRecord>builder(inputFile)
@@ -181,9 +177,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
    */
   private BatchWriteResult importTables(
       List<TdrManifestImportTable> importTables,
-      FileDownload fileDir,
+      Multimap<String, File> fileMap,
       UUID targetInstance,
-      TwoPassStreamingWriteHandler.ImportMode importMode) {
+      ImportMode importMode) {
 
     var combinedResult = BatchWriteResult.empty();
     // loop through the tables that have data files.
@@ -192,7 +188,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
           logger.info("Processing table '{}' ...", importTable.recordType().getName());
 
           // loop through each parquet file
-          fileDir
+          fileMap
               .get(importTable.recordType().getName())
               .forEach(
                   file -> {
@@ -223,9 +219,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @return path for the directory where downloaded files are located
    */
   @VisibleForTesting
-  FileDownload getFilesForImport(List<TdrManifestImportTable> importTables) {
+  FileDownloadHelper getFilesForImport(List<TdrManifestImportTable> importTables) {
     try {
-      FileDownload fileMap = new FileDownload("tempParquetDir");
+      FileDownloadHelper files = new FileDownloadHelper("tempParquetDir");
 
       // loop through the tables that have data files.
       importTables.forEach(
@@ -242,11 +238,11 @@ public class TdrManifestQuartzJob extends QuartzJob {
             // loop through each parquet file
             paths.forEach(
                 path -> {
-                  fileMap.downloadFileFromURL(importTable.recordType().getName(), path);
+                  files.downloadFileFromURL(importTable.recordType().getName(), path);
                 });
           });
 
-      return fileMap;
+      return files;
     } catch (IOException e) {
       throw new TdrManifestImportException("Error downloading temporary files", e);
     }
