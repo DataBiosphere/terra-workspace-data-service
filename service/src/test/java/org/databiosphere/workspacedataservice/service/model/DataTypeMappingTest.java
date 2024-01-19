@@ -10,7 +10,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class DataTypeMappingTest {
-  @ParameterizedTest
+  @ParameterizedTest(name = "getArrayTypeForBase maps {0} to {1}")
   @MethodSource("getBaseTypesAndArrayTypes")
   void testGetArrayTypeForBase(DataTypeMapping baseType, DataTypeMapping expectedArrayType) {
     DataTypeMapping arrayType = DataTypeMapping.getArrayTypeForBase(baseType);
@@ -40,7 +40,7 @@ class DataTypeMappingTest {
     assertEquals("No supported array type for EMPTY_ARRAY", e.getMessage());
   }
 
-  @ParameterizedTest
+  @ParameterizedTest(name = "getBaseType maps {0} to {1}")
   @MethodSource("getTypesAndBaseTypes")
   void testGetBaseType(DataTypeMapping type, DataTypeMapping expectedBaseType) {
     DataTypeMapping baseType = type.getBaseType();
