@@ -1133,10 +1133,10 @@
       "location" : {
         "tables" : [ {
           "name" : "ancestry_specific_meta_analysis",
-          "paths" : [ "classpath:parquet/v2f/ancestry_specific_meta_analysis.parquet" ]
+          "paths" : [ "http://localhost:9889/parquet/v2f/ancestry_specific_meta_analysis.parquet" ]
         }, {
           "name" : "frequency_analysis",
-          "paths" : [ "classpath:parquet/v2f/frequency_analysis.parquet" ]
+          "paths" : [ "http://localhost:9889/parquet/v2f/frequency_analysis.parquet" ]
         }, {
           "name" : "trans_ethnic_meta_analysis",
           "paths" : [ ]
@@ -1145,19 +1145,19 @@
           "paths" : [ ]
         }, {
           "name" : "transcript_consequence",
-          "paths" : [ "classpath:parquet/v2f/transcript_consequence.parquet" ]
+          "paths" : [ "http://localhost:9889/parquet/v2f/transcript_consequence.parquet" ]
         }, {
           "name" : "variant",
-          "paths" : [ "classpath:parquet/v2f/variant.parquet" ]
+          "paths" : [ "http://localhost:9889/parquet/v2f/variant.parquet" ]
         }, {
           "name" : "all_data_types",
-          "paths" : [ "classpath:parquet/v2f/all_data_types.parquet" ]
+          "paths" : [ "http://localhost:9889/parquet/v2f/all_data_types.parquet" ]
         }, {
           "name" : "feature_consequence",
-          "paths" : [ "classpath:parquet/v2f/feature_consequence.parquet" ]
+          "paths" : [ "http://localhost:9889/parquet/v2f/feature_consequence.parquet" ]
         } ]
       },
-      "manifest" : "classpath:tdrmanifest/v2f.json"
+      "manifest" : "http://localhost:9889/tdrmanifest/v2f_for_python.json"
     },
     "workspace" : null
   }
