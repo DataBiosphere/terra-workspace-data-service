@@ -23,8 +23,8 @@ class RecordTypeSchemaTest {
   void setUp() {
     List<AttributeSchema> attributes =
         Arrays.asList(
-            new AttributeSchema("id", "STRING", null),
-            new AttributeSchema("attr1", "STRING", null));
+            new AttributeSchema(/* name */ "id", /* datatype */ "STRING", /* relatesTo */ null),
+            new AttributeSchema(/* name */ "attr1", /* datatype */ "STRING", /* relatesTo */ null));
 
     schema = new RecordTypeSchema(RECORD_TYPE, attributes, 0, PRIMARY_KEY);
   }
@@ -43,7 +43,7 @@ class RecordTypeSchemaTest {
 
   @Test
   void testGetAttributeSchema() {
-    assertEquals(schema.getAttributeSchema("attr1"), new AttributeSchema("attr1", "STRING", null));
+    assertEquals(schema.getAttributeSchema("attr1"), new AttributeSchema(/* name */ "attr1", /* datatype */ "STRING", /* relatesTo */ null));
   }
 
   @Test
