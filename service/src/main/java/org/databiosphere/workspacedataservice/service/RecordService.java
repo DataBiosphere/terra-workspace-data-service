@@ -1,9 +1,5 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.COUNTER_COL_CHANGE;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_ATTRIBUTE_NAME;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_INSTANCE;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_RECORD_TYPE;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 
 import bio.terra.common.db.WriteTransaction;
@@ -220,10 +216,10 @@ public class RecordService {
 
       // update a metrics counter with this schema change
       Counter counter =
-          Counter.builder(COUNTER_COL_CHANGE)
-              .tag(TAG_RECORD_TYPE, recordType.getName())
-              .tag(TAG_ATTRIBUTE_NAME, column)
-              .tag(TAG_INSTANCE, instanceId.toString())
+          Counter.builder("column.change.datatype")
+              .tag("RecordType", recordType.getName())
+              .tag("AttributeName", column)
+              .tag("Instance", instanceId.toString())
               .tag("OldDataType", valueDifference.leftValue().toString())
               .tag("NewDataType", updatedColType.toString())
               .description("Column schema changes")

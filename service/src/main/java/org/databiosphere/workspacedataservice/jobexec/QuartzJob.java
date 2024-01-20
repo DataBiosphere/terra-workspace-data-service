@@ -1,12 +1,5 @@
 package org.databiosphere.workspacedataservice.jobexec;
 
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.EVENT_JOB_FAILED;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.EVENT_JOB_RUNNING;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.EVENT_JOB_SUCCEEDED;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.NAME_JOB_EXECUTION;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.OBSERVE_JOB_EXECUTE;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_JOB_ID;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_JOB_TYPE;
 import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 
@@ -42,7 +35,7 @@ public abstract class QuartzJob implements Job {
 
   private final ObservationRegistry observationRegistry;
 
-  public QuartzJob(ObservationRegistry observationRegistry) {
+  protected QuartzJob(ObservationRegistry observationRegistry) {
     this.observationRegistry = observationRegistry;
   }
 
@@ -58,14 +51,14 @@ public abstract class QuartzJob implements Job {
         .observationConfig()
         .observationHandler(new DefaultMeterObservationHandler(new SimpleMeterRegistry()));
     Observation observation =
-        Observation.start(OBSERVE_JOB_EXECUTE, observationRegistry)
-            .contextualName(NAME_JOB_EXECUTION)
-            .lowCardinalityKeyValue(TAG_JOB_TYPE, getClass().getSimpleName())
-            .highCardinalityKeyValue(TAG_JOB_ID, jobId.toString());
+        Observation.start("wds.job.execute", observationRegistry)
+            .contextualName("job-execution")
+            .lowCardinalityKeyValue("jobType", getClass().getSimpleName())
+            .highCardinalityKeyValue("jobId", jobId.toString());
     try (Observation.Scope scope = observation.openScope()) {
       // mark this job as running
       getJobDao().running(jobId);
-      observation.event(Observation.Event.of(EVENT_JOB_RUNNING));
+      observation.event(Observation.Event.of("job.running"));
       // look for an auth token in the Quartz JobDataMap
       String authToken = getJobDataString(context.getMergedJobDataMap(), ARG_TOKEN);
       // and stash the auth token into job context
@@ -77,12 +70,12 @@ public abstract class QuartzJob implements Job {
       executeInternal(jobId, context);
       // if we reached here, mark this job as successful
       getJobDao().succeeded(jobId);
-      observation.event(Observation.Event.of(EVENT_JOB_SUCCEEDED));
+      observation.event(Observation.Event.of("job.succeeded"));
     } catch (Exception e) {
       // on any otherwise-unhandled exception, mark the job as failed
       getJobDao().fail(jobId, e);
       observation.error(e);
-      observation.event(Observation.Event.of(EVENT_JOB_FAILED));
+      observation.event(Observation.Event.of("job.failed"));
     } finally {
       JobContextHolder.destroy();
       observation.stop();
