@@ -16,7 +16,6 @@ import bio.terra.workspace.model.DataRepoSnapshotAttributes;
 import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceList;
-import io.micrometer.observation.ObservationRegistry;
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;

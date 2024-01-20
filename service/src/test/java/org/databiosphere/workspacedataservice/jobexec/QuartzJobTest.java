@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.observation.ObservationRegistry;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Map;
@@ -24,6 +25,7 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.JobKey;
 import org.quartz.impl.JobDetailImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
@@ -32,6 +34,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 class QuartzJobTest {
 
   @MockBean JobDao jobDao;
+  @Autowired ObservationRegistry observationRegistry;
 
   @BeforeAll
   void beforeAll() {
@@ -62,6 +65,7 @@ class QuartzJobTest {
     private final String expectedToken;
 
     public TestableQuartzJob(String expectedToken) {
+      super(observationRegistry);
       this.expectedToken = expectedToken;
     }
 

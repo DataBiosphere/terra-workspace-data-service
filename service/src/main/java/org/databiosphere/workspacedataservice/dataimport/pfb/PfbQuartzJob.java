@@ -59,8 +59,8 @@ public class PfbQuartzJob extends QuartzJob {
       RestClientRetry restClientRetry,
       BatchWriteService batchWriteService,
       ActivityLogger activityLogger,
-      @Value("${twds.instance.workspace-id}") UUID workspaceId,
-      ObservationRegistry observationRegistry) {
+      ObservationRegistry observationRegistry,
+      @Value("${twds.instance.workspace-id}") UUID workspaceId) {
     super(observationRegistry);
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;

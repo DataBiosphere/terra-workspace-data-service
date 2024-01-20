@@ -8,7 +8,6 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.micrometer.observation.ObservationRegistry;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

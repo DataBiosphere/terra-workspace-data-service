@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.observation.ObservationRegistry;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
@@ -18,10 +19,17 @@ class PfbTestSupport {
   @Autowired private BatchWriteService batchWriteService;
   @Autowired private ActivityLogger activityLogger;
   @Autowired private ObjectMapper objectMapper;
+  @Autowired private ObservationRegistry observationRegistry;
 
   PfbQuartzJob buildPfbQuartzJob(UUID workspaceId) {
     return new PfbQuartzJob(
-        jobDao, wsmDao, restClientRetry, batchWriteService, activityLogger, workspaceId);
+        jobDao,
+        wsmDao,
+        restClientRetry,
+        batchWriteService,
+        activityLogger,
+        observationRegistry,
+        workspaceId);
   }
 
   PfbQuartzJob buildPfbQuartzJob() {

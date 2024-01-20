@@ -11,7 +11,6 @@ import static org.mockito.Mockito.when;
 
 import bio.terra.workspace.model.ResourceList;
 import com.google.common.collect.ImmutableMap;
-import io.micrometer.observation.ObservationRegistry;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
