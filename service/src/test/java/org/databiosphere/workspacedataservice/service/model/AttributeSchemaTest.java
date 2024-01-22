@@ -13,6 +13,9 @@ class AttributeSchemaTest {
         new AttributeSchema("attr", DataTypeMapping.STRING, RecordType.valueOf("otherAttr")));
 
     assertEquals(
+        new AttributeSchema("attr", "STRING", null), new AttributeSchema("attr", "STRING"));
+
+    assertEquals(
         new AttributeSchema("attr", "STRING", null),
         new AttributeSchema("attr", DataTypeMapping.STRING));
 
