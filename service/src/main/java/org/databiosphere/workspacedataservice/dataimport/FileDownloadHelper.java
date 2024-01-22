@@ -22,7 +22,11 @@ public class FileDownloadHelper {
   private final DownloadHelper downloadHelper;
 
   public interface DownloadHelper {
-    void copyURLTOFile(URL sourceUrl, File destinationFile) throws IOException;
+    default void copyURLToFile(URL sourceUrl, File destinationFile) throws IOException {
+      {
+        FileUtils.copyURLToFile(sourceUrl, destinationFile);
+      }
+    }
   }
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -41,7 +45,14 @@ public class FileDownloadHelper {
   }
 
   public FileDownloadHelper(String dirName) throws IOException {
-    this(dirName, FileUtils::copyURLToFile);
+    this(
+        dirName,
+        new DownloadHelper() {
+          @Override
+          public void copyURLToFile(URL sourceUrl, File destinationFile) throws IOException {
+            DownloadHelper.super.copyURLToFile(sourceUrl, destinationFile);
+          }
+        });
   }
 
   @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
@@ -50,7 +61,7 @@ public class FileDownloadHelper {
       File tempFile =
           File.createTempFile(/* prefix= */ "tdr-", /* suffix= */ "download", tempFileDir.toFile());
       logger.info("downloading to temp file {} ...", tempFile.getPath());
-      downloadHelper.copyURLTOFile(pathToRemoteFile, tempFile);
+      downloadHelper.copyURLToFile(pathToRemoteFile, tempFile);
       // In the TDR manifest, for Azure snapshots only,
       // the first file in the list will always be a directory.
       // Attempting to import that directory
