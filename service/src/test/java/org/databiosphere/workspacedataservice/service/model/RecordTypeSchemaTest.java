@@ -44,7 +44,7 @@ class RecordTypeSchemaTest {
   @Test
   void testGetAttributeSchema() {
     assertEquals(
-        schema.getAttributeSchema("attr1"), new AttributeSchema("attr1", DataTypeMapping.STRING));
+        new AttributeSchema("attr1", DataTypeMapping.STRING), schema.getAttributeSchema("attr1"));
   }
 
   @Test
