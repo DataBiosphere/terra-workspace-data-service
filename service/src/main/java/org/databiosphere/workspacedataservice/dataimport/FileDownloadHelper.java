@@ -19,6 +19,12 @@ import org.springframework.retry.annotation.Retryable;
 
 public class FileDownloadHelper {
 
+  private final DownloadHelper downloadHelper;
+
+  public interface DownloadHelper {
+    void copyURLTOFile(URL sourceUrl, File destinationFile) throws IOException;
+  }
+
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private final Path tempFileDir;
   private final Multimap<String, File> fileMap;
@@ -28,9 +34,14 @@ public class FileDownloadHelper {
           PosixFilePermission.GROUP_READ,
           PosixFilePermission.OTHERS_READ);
 
-  public FileDownloadHelper(String dirName) throws IOException {
+  public FileDownloadHelper(String dirName, DownloadHelper downloadHelper) throws IOException {
     this.tempFileDir = Files.createTempDirectory(dirName);
+    this.downloadHelper = downloadHelper;
     this.fileMap = HashMultimap.create();
+  }
+
+  public FileDownloadHelper(String dirName) throws IOException {
+    this(dirName, FileUtils::copyURLToFile);
   }
 
   @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
@@ -39,7 +50,7 @@ public class FileDownloadHelper {
       File tempFile =
           File.createTempFile(/* prefix= */ "tdr-", /* suffix= */ "download", tempFileDir.toFile());
       logger.info("downloading to temp file {} ...", tempFile.getPath());
-      FileUtils.copyURLToFile(pathToRemoteFile, tempFile);
+      downloadHelper.copyURLTOFile(pathToRemoteFile, tempFile);
       // In the TDR manifest, for Azure snapshots only,
       // the first file in the list will always be a directory.
       // Attempting to import that directory
