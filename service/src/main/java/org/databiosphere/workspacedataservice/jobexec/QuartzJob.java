@@ -3,8 +3,6 @@ package org.databiosphere.workspacedataservice.jobexec;
 import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 
-import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import java.net.URL;
@@ -46,10 +44,7 @@ public abstract class QuartzJob implements Job {
   public void execute(JobExecutionContext context) throws org.quartz.JobExecutionException {
     // retrieve jobId
     UUID jobId = UUID.fromString(context.getJobDetail().getKey().getName());
-    // configure observation to collect counter, timer, and longtasktimer metrics
-    observationRegistry
-        .observationConfig()
-        .observationHandler(new DefaultMeterObservationHandler(new SimpleMeterRegistry()));
+
     Observation observation =
         Observation.start("wds.job.execute", observationRegistry)
             .contextualName("job-execution")
