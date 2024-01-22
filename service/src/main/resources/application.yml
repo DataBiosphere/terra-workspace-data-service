@@ -9,7 +9,7 @@ env:
       user: ${WDS_DB_USER:wds}
       # When running on Azure in k8s with workload identity set ADDITIONAL_JDBC_URL_PARAMS to
       # sslmode=require&authenticationPluginClassName=com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticationPlugin
-      additionalUrlParams: ${ADDITIONAL_JDBC_URL_PARAMS:}
+      additionalUrlParams: ${ADDITIONAL_JDBC_URL_PARAMS:prepareThreshold=0}
 
 management:
   endpoint:
