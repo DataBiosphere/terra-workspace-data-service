@@ -14,26 +14,19 @@ import org.apache.commons.io.FileUtils;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 
 public class FileDownloadHelper {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private final Path tempFileDir;
   private final Multimap<String, File> fileMap;
-  private final Set<PosixFilePermission> permissions =
-      EnumSet.of(
-          PosixFilePermission.OWNER_READ,
-          PosixFilePermission.GROUP_READ,
-          PosixFilePermission.OTHERS_READ);
+  private final Set<PosixFilePermission> permissions = EnumSet.of(PosixFilePermission.OWNER_READ);
 
   public FileDownloadHelper(String dirName) throws IOException {
     this.tempFileDir = Files.createTempDirectory(dirName);
     this.fileMap = HashMultimap.create();
   }
 
-  @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
   public void downloadFileFromURL(String tableName, URL pathToRemoteFile) {
     try {
       File tempFile = File.createTempFile(/* prefix= */ "tdr-", /* suffix= */ "download");

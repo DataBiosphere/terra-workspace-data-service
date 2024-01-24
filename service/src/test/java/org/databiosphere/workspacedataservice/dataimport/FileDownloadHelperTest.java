@@ -14,9 +14,6 @@ public class FileDownloadHelperTest {
   @Value("classpath:parquet/empty.parquet")
   Resource emptyParquet;
 
-  @Value("classpath:parquet/v2f/all_data_types.parquet")
-  Resource allDataTypesParquet;
-
   @Test
   void downloadEmptyFile() throws IOException {
     FileDownloadHelper helper = new FileDownloadHelper("test");
