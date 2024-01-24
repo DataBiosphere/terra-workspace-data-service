@@ -45,6 +45,7 @@ import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.service.model.RelationValue;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchDeleteException;
+import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.AttributeComparator;
@@ -1036,6 +1037,80 @@ public class RecordDao {
                 + quote(SqlUtils.validateSqlString(attribute, ATTRIBUTE))
                 + " to "
                 + quote(SqlUtils.validateSqlString(newAttributeName, ATTRIBUTE)));
+  }
+
+  public void updateAttributeDataType(
+      UUID instanceId, RecordType recordType, String attribute, DataTypeMapping newDataType) {
+    Map<String, DataTypeMapping> schema = getExistingTableSchema(instanceId, recordType);
+    DataTypeMapping currentDataType = schema.get(attribute);
+
+    try {
+      namedTemplate
+          .getJdbcTemplate()
+          .update(
+              "alter table "
+                  + getQualifiedTableName(recordType, instanceId)
+                  + " alter column "
+                  + quote(SqlUtils.validateSqlString(attribute, ATTRIBUTE))
+                  + " type "
+                  + newDataType.getPostgresType()
+                  + " using "
+                  + getPostgresTypeConversionExpression(attribute, currentDataType, newDataType));
+    } catch (DataIntegrityViolationException e) {
+      if (e.getRootCause() instanceof SQLException sqlEx
+          && sqlEx.getSQLState() != null
+          && sqlEx.getSQLState().equals("22P02")) {
+        throw new ConflictException(
+            "Unable to convert values for attribute %s to %s"
+                .formatted(attribute, newDataType.name()));
+      }
+      throw e;
+    }
+  }
+
+  private String getPostgresTypeConversionExpression(
+      String attribute, DataTypeMapping dataType, DataTypeMapping newDataType) {
+    // Some data types are not yet supported.
+    Set<DataTypeMapping> unsupportedDataTypes =
+        Set.of(
+            DataTypeMapping.DATE,
+            DataTypeMapping.DATE_TIME,
+            DataTypeMapping.FILE,
+            DataTypeMapping.JSON,
+            DataTypeMapping.RELATION);
+    if (unsupportedDataTypes.contains(dataType.getBaseType())
+        || unsupportedDataTypes.contains((newDataType.getBaseType()))) {
+      throw new IllegalArgumentException(
+          "Unable to convert attribute from %s to %s"
+              .formatted(dataType.name(), newDataType.name()));
+    }
+
+    String expression = quote(SqlUtils.validateSqlString(attribute, ATTRIBUTE));
+
+    // When converting from a scalar type to an array type, append value to an empty array.
+    if (!dataType.isArrayType() && newDataType.isArrayType()) {
+      expression = "array_append('{}', " + expression + ")";
+    }
+    // When converting from an array type to a scalar type, take the first value in the array.
+    else if (dataType.isArrayType() && !newDataType.isArrayType()) {
+      expression = expression + "[1]";
+    }
+
+    // No direct conversion exists between numeric and boolean types, so go through int.
+    if ((dataType.getBaseType() == DataTypeMapping.BOOLEAN
+            && newDataType.getBaseType() == DataTypeMapping.NUMBER)
+        || (dataType.getBaseType() == DataTypeMapping.NUMBER
+            && newDataType.getBaseType() == DataTypeMapping.BOOLEAN)) {
+      expression += "::int";
+      if (newDataType.isArrayType()) {
+        expression += "[]";
+      }
+    }
+
+    // Convert to desired type.
+    expression += "::" + newDataType.getPostgresType();
+
+    return expression;
   }
 
   public void deleteAttribute(UUID instanceId, RecordType recordType, String attribute) {

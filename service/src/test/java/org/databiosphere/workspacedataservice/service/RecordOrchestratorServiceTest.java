@@ -2,9 +2,11 @@ package org.databiosphere.workspacedataservice.service;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -13,6 +15,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -26,6 +29,9 @@ import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
@@ -198,6 +204,288 @@ class RecordOrchestratorServiceTest {
     assertAttributes(Set.of("id", "attr1", "attr2"));
   }
 
+  @ParameterizedTest(name = "update attribute data type from {1} to {2}")
+  @MethodSource("updateAttributeDataTypeArgsProvider")
+  void updateAttributeDataType(
+      Object attributeValue,
+      DataTypeMapping expectedInitialDataType,
+      DataTypeMapping newDataType,
+      Object expectedFinalAttributeValue) {
+    // Arrange
+    String attributeName = "testAttribute";
+    RecordAttributes recordAttributes =
+        RecordAttributes.empty().putAttribute(attributeName, attributeValue);
+    RecordRequest recordRequest = new RecordRequest(recordAttributes);
+    recordOrchestratorService.upsertSingleRecord(
+        INSTANCE, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
+
+    assertAttributeDataType(attributeName, expectedInitialDataType);
+
+    // Act
+    recordOrchestratorService.updateAttributeDataType(
+        INSTANCE, VERSION, TEST_TYPE, attributeName, newDataType.name());
+
+    // Assert
+    assertAttributeDataType(attributeName, newDataType);
+    assertAttributeValue(RECORD_ID, attributeName, expectedFinalAttributeValue);
+  }
+
+  private static Stream<Arguments> updateAttributeDataTypeArgsProvider() {
+    return Stream.of(
+        // String to...
+        // Number
+        Arguments.of(
+            "123", DataTypeMapping.STRING, DataTypeMapping.NUMBER, BigDecimal.valueOf(123)),
+        // Boolean
+        Arguments.of("yes", DataTypeMapping.STRING, DataTypeMapping.BOOLEAN, Boolean.TRUE),
+        Arguments.of("no", DataTypeMapping.STRING, DataTypeMapping.BOOLEAN, Boolean.FALSE),
+        // String array
+        Arguments.of(
+            "foo", DataTypeMapping.STRING, DataTypeMapping.ARRAY_OF_STRING, new String[] {"foo"}),
+        // Number array
+        Arguments.of(
+            "123",
+            DataTypeMapping.STRING,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            new BigDecimal[] {BigDecimal.valueOf(123)}),
+        // Boolean array
+        Arguments.of(
+            "yes",
+            DataTypeMapping.STRING,
+            DataTypeMapping.ARRAY_OF_BOOLEAN,
+            new Boolean[] {Boolean.TRUE}),
+
+        // String array to...
+        // String
+        Arguments.of(
+            List.of("foo"), DataTypeMapping.ARRAY_OF_STRING, DataTypeMapping.STRING, "foo"),
+        // Number
+        Arguments.of(
+            List.of("123"),
+            DataTypeMapping.ARRAY_OF_STRING,
+            DataTypeMapping.NUMBER,
+            BigDecimal.valueOf(123)),
+        // Boolean
+        Arguments.of(
+            List.of("yes"), DataTypeMapping.ARRAY_OF_STRING, DataTypeMapping.BOOLEAN, Boolean.TRUE),
+        // Number array
+        Arguments.of(
+            List.of("123"),
+            DataTypeMapping.ARRAY_OF_STRING,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            new BigDecimal[] {BigDecimal.valueOf(123)}),
+        // Boolean array
+        Arguments.of(
+            List.of("yes", "no"),
+            DataTypeMapping.ARRAY_OF_STRING,
+            DataTypeMapping.ARRAY_OF_BOOLEAN,
+            new Boolean[] {Boolean.TRUE, Boolean.FALSE}),
+
+        // Number to...
+        // String
+        Arguments.of(
+            BigDecimal.valueOf(123), DataTypeMapping.NUMBER, DataTypeMapping.STRING, "123"),
+        // Boolean
+        Arguments.of(
+            BigDecimal.valueOf(1), DataTypeMapping.NUMBER, DataTypeMapping.BOOLEAN, Boolean.TRUE),
+        Arguments.of(
+            BigDecimal.valueOf(0), DataTypeMapping.NUMBER, DataTypeMapping.BOOLEAN, Boolean.FALSE),
+        // String array
+        Arguments.of(
+            BigDecimal.valueOf(123),
+            DataTypeMapping.NUMBER,
+            DataTypeMapping.ARRAY_OF_STRING,
+            new String[] {"123"}),
+        // Number array
+        Arguments.of(
+            BigDecimal.valueOf(123),
+            DataTypeMapping.NUMBER,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            new BigDecimal[] {BigDecimal.valueOf(123)}),
+        // Boolean array
+        Arguments.of(
+            BigDecimal.valueOf(1),
+            DataTypeMapping.NUMBER,
+            DataTypeMapping.ARRAY_OF_BOOLEAN,
+            new Boolean[] {Boolean.TRUE}),
+
+        // Number array to...
+        // String
+        Arguments.of(
+            List.of(BigDecimal.valueOf(123)),
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            DataTypeMapping.STRING,
+            "123"),
+        // Number
+        Arguments.of(
+            List.of(BigDecimal.valueOf(123)),
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            DataTypeMapping.NUMBER,
+            BigDecimal.valueOf(123)),
+        // Boolean
+        Arguments.of(
+            List.of(BigDecimal.valueOf(1)),
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            DataTypeMapping.BOOLEAN,
+            Boolean.TRUE),
+        // String array
+        Arguments.of(
+            List.of(BigDecimal.valueOf(123)),
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            DataTypeMapping.ARRAY_OF_STRING,
+            new String[] {"123"}),
+        // Boolean array
+        Arguments.of(
+            List.of(BigDecimal.valueOf(1), BigDecimal.valueOf(0)),
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            DataTypeMapping.ARRAY_OF_BOOLEAN,
+            new Boolean[] {Boolean.TRUE, Boolean.FALSE}),
+
+        // Boolean to...
+        // String
+        Arguments.of(Boolean.TRUE, DataTypeMapping.BOOLEAN, DataTypeMapping.STRING, "true"),
+        Arguments.of(Boolean.FALSE, DataTypeMapping.BOOLEAN, DataTypeMapping.STRING, "false"),
+        // Number
+        Arguments.of(
+            Boolean.TRUE, DataTypeMapping.BOOLEAN, DataTypeMapping.NUMBER, BigDecimal.valueOf(1)),
+        Arguments.of(
+            Boolean.FALSE, DataTypeMapping.BOOLEAN, DataTypeMapping.NUMBER, BigDecimal.valueOf(0)),
+        // String array
+        Arguments.of(
+            Boolean.TRUE,
+            DataTypeMapping.BOOLEAN,
+            DataTypeMapping.ARRAY_OF_STRING,
+            new String[] {"true"}),
+        Arguments.of(
+            Boolean.FALSE,
+            DataTypeMapping.BOOLEAN,
+            DataTypeMapping.ARRAY_OF_STRING,
+            new String[] {"false"}),
+        // Number array
+        Arguments.of(
+            Boolean.TRUE,
+            DataTypeMapping.BOOLEAN,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            new BigDecimal[] {BigDecimal.valueOf(1)}),
+        Arguments.of(
+            Boolean.FALSE,
+            DataTypeMapping.BOOLEAN,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            new BigDecimal[] {BigDecimal.valueOf(0)}),
+        // Boolean array
+        Arguments.of(
+            Boolean.TRUE,
+            DataTypeMapping.BOOLEAN,
+            DataTypeMapping.ARRAY_OF_BOOLEAN,
+            new Boolean[] {Boolean.TRUE}),
+        Arguments.of(
+            Boolean.FALSE,
+            DataTypeMapping.BOOLEAN,
+            DataTypeMapping.ARRAY_OF_BOOLEAN,
+            new Boolean[] {Boolean.FALSE}),
+
+        // Boolean array to...
+        // String
+        Arguments.of(
+            List.of(Boolean.TRUE),
+            DataTypeMapping.ARRAY_OF_BOOLEAN,
+            DataTypeMapping.STRING,
+            "true"),
+        // Number
+        Arguments.of(
+            List.of(Boolean.TRUE),
+            DataTypeMapping.ARRAY_OF_BOOLEAN,
+            DataTypeMapping.NUMBER,
+            BigDecimal.valueOf(1)),
+        // Boolean
+        Arguments.of(
+            List.of(Boolean.TRUE),
+            DataTypeMapping.ARRAY_OF_BOOLEAN,
+            DataTypeMapping.BOOLEAN,
+            Boolean.TRUE),
+        // String array
+        Arguments.of(
+            List.of(Boolean.TRUE, Boolean.FALSE),
+            DataTypeMapping.ARRAY_OF_BOOLEAN,
+            DataTypeMapping.ARRAY_OF_STRING,
+            new String[] {"true", "false"}),
+        // Number array
+        Arguments.of(
+            List.of(Boolean.TRUE, Boolean.FALSE),
+            DataTypeMapping.ARRAY_OF_BOOLEAN,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            new BigDecimal[] {BigDecimal.valueOf(1), BigDecimal.valueOf(0)}));
+  }
+
+  @Test
+  void updateAttributeDataTypePrimaryKey() {
+    // Arrange
+    createRecordWithAttributes(new String[] {"attr1"});
+
+    // Act/Assert
+    ValidationException e =
+        assertThrows(
+            ValidationException.class,
+            () ->
+                recordOrchestratorService.updateAttributeDataType(
+                    INSTANCE, VERSION, TEST_TYPE, PRIMARY_KEY, "NUMBER"),
+            "updateAttributeDataType should have thrown an error");
+    assertEquals("Unable to update primary key attribute", e.getMessage());
+  }
+
+  @Test
+  void updateAttributeDataTypeInvalidDataType() {
+    // Arrange
+    createRecordWithAttributes(new String[] {"attr1"});
+
+    // Act/Assert
+    ValidationException e =
+        assertThrows(
+            ValidationException.class,
+            () ->
+                recordOrchestratorService.updateAttributeDataType(
+                    INSTANCE, VERSION, TEST_TYPE, "attr1", "INVALID_DATA_TYPE"),
+            "updateAttributeDataType should have thrown an error");
+    assertEquals("Invalid datatype", e.getMessage());
+  }
+
+  @Test
+  void updateAttributeDataTypeUnableToConvertValues() {
+    // Arrange
+    String attributeName = "testAttribute";
+
+    RecordAttributes recordOneAttributes =
+        RecordAttributes.empty().putAttribute(attributeName, "123");
+    RecordRequest recordOneRequest = new RecordRequest(recordOneAttributes);
+    recordOrchestratorService.upsertSingleRecord(
+        INSTANCE, VERSION, TEST_TYPE, "row_1", Optional.of(PRIMARY_KEY), recordOneRequest);
+
+    RecordAttributes recordTwoAttributes =
+        RecordAttributes.empty().putAttribute(attributeName, "foo");
+    RecordRequest recordTwoRequest = new RecordRequest(recordTwoAttributes);
+    recordOrchestratorService.upsertSingleRecord(
+        INSTANCE, VERSION, TEST_TYPE, "row_2", Optional.of(PRIMARY_KEY), recordTwoRequest);
+
+    assertAttributeDataType(attributeName, DataTypeMapping.STRING);
+
+    // Act/Assert
+    ConflictException e =
+        assertThrows(
+            ConflictException.class,
+            () ->
+                recordOrchestratorService.updateAttributeDataType(
+                    INSTANCE, VERSION, TEST_TYPE, attributeName, "NUMBER"),
+            "updateAttributeDataType should have thrown an error");
+
+    assertEquals(
+        "Unable to convert values for attribute %s to NUMBER".formatted(attributeName),
+        e.getMessage());
+
+    assertAttributeDataType(attributeName, DataTypeMapping.STRING);
+    assertAttributeValue("row_1", attributeName, "123");
+    assertAttributeValue("row_2", attributeName, "foo");
+  }
+
   @Test
   void deleteAttribute() {
     // Arrange
@@ -345,5 +633,24 @@ class RecordOrchestratorServiceTest {
                             .getAttributeValue(testKey)
                             .equals(testVal));
     assert (found);
+  }
+
+  private void assertAttributeDataType(String attributeName, DataTypeMapping dataType) {
+    RecordTypeSchema recordTypeSchema =
+        recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE);
+    AttributeSchema attributeSchema = recordTypeSchema.getAttributeSchema(attributeName);
+    assertEquals(dataType.name(), attributeSchema.datatype());
+  }
+
+  private void assertAttributeValue(String recordId, String attributeName, Object expectedValue) {
+    RecordResponse record =
+        recordOrchestratorService.getSingleRecord(INSTANCE, VERSION, TEST_TYPE, recordId);
+    Object attributeValue = record.recordAttributes().getAttributeValue(attributeName);
+
+    if (expectedValue instanceof Object[]) {
+      assertArrayEquals((Object[]) expectedValue, (Object[]) attributeValue);
+    } else {
+      assertEquals(expectedValue, attributeValue);
+    }
   }
 }
