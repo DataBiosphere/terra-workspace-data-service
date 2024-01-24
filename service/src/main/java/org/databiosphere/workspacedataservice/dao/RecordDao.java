@@ -91,6 +91,15 @@ public class RecordDao {
   @Value("${twds.streaming.fetch.size:5000}")
   int fetchSize;
 
+  private static final Set<DataTypeMapping> dataTypesSupportedForTypeConversion =
+      Set.of(
+          DataTypeMapping.STRING,
+          DataTypeMapping.ARRAY_OF_STRING,
+          DataTypeMapping.NUMBER,
+          DataTypeMapping.ARRAY_OF_NUMBER,
+          DataTypeMapping.BOOLEAN,
+          DataTypeMapping.ARRAY_OF_BOOLEAN);
+
   public RecordDao(
       DataSource mainDb,
       NamedParameterJdbcTemplate namedTemplate,
@@ -1070,16 +1079,9 @@ public class RecordDao {
 
   private String getPostgresTypeConversionExpression(
       String attribute, DataTypeMapping dataType, DataTypeMapping newDataType) {
-    // Some data types are not yet supported.
-    Set<DataTypeMapping> unsupportedDataTypes =
-        Set.of(
-            DataTypeMapping.DATE,
-            DataTypeMapping.DATE_TIME,
-            DataTypeMapping.FILE,
-            DataTypeMapping.JSON,
-            DataTypeMapping.RELATION);
-    if (unsupportedDataTypes.contains(dataType.getBaseType())
-        || unsupportedDataTypes.contains((newDataType.getBaseType()))) {
+    // Some data types are not supported.
+    if (!(dataTypesSupportedForTypeConversion.contains(dataType)
+        && dataTypesSupportedForTypeConversion.contains(newDataType))) {
       throw new IllegalArgumentException(
           "Unable to convert attribute from %s to %s"
               .formatted(dataType.name(), newDataType.name()));
