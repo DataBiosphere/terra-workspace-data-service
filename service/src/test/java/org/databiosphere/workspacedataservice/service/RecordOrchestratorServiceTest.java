@@ -457,7 +457,10 @@ class RecordOrchestratorServiceTest {
     RecordTypeSchema recordTypeSchema =
         recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE);
     AttributeSchema attributeSchema = recordTypeSchema.getAttributeSchema(attributeName);
-    assertEquals(dataType.name(), attributeSchema.datatype());
+    String explanation =
+        "assertAttributeDataType expected attribute %s to have data type %s"
+            .formatted(attributeName, dataType.name());
+    assertEquals(dataType.name(), attributeSchema.datatype(), explanation);
   }
 
   private void assertAttributeValue(String recordId, String attributeName, Object expectedValue) {
@@ -465,10 +468,13 @@ class RecordOrchestratorServiceTest {
         recordOrchestratorService.getSingleRecord(INSTANCE, VERSION, TEST_TYPE, recordId);
     Object attributeValue = record.recordAttributes().getAttributeValue(attributeName);
 
+    String explanation =
+        "assertAttributeValue expected attribute %s of record %s to equal %s"
+            .formatted(attributeName, recordId, expectedValue);
     if (expectedValue instanceof Object[]) {
-      assertArrayEquals((Object[]) expectedValue, (Object[]) attributeValue);
+      assertArrayEquals((Object[]) expectedValue, (Object[]) attributeValue, explanation);
     } else {
-      assertEquals(expectedValue, attributeValue);
+      assertEquals(expectedValue, attributeValue, explanation);
     }
   }
 }
