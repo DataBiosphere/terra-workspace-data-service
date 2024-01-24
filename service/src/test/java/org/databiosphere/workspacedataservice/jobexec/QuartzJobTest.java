@@ -147,9 +147,9 @@ class QuartzJobTest {
 
     // metrics provisioned should be longTaskTimer and a Timer, confirm both ran
     LongTaskTimer longTaskTimer = meterRegistry.find("wds.job.execute.active").longTaskTimer();
-    assertNotEquals(longTaskTimer.duration(TimeUnit.SECONDS), 0);
+    assertNotEquals(0, longTaskTimer.duration(TimeUnit.SECONDS));
     Timer timer = meterRegistry.find("wds.job.execute").timer();
-    assertNotEquals(timer.count(), 0);
+    assertNotEquals(0, timer.count());
   }
 
   // sets up a job and returns the job context
