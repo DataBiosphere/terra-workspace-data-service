@@ -19,16 +19,6 @@ import org.springframework.retry.annotation.Retryable;
 
 public class FileDownloadHelper {
 
-  private final DownloadHelper downloadHelper;
-
-  public interface DownloadHelper {
-    default void copyURLToFile(URL sourceUrl, File destinationFile) throws IOException {
-      {
-        FileUtils.copyURLToFile(sourceUrl, destinationFile);
-      }
-    }
-  }
-
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private final Path tempFileDir;
   private final Multimap<String, File> fileMap;
@@ -38,30 +28,17 @@ public class FileDownloadHelper {
           PosixFilePermission.GROUP_READ,
           PosixFilePermission.OTHERS_READ);
 
-  public FileDownloadHelper(String dirName, DownloadHelper downloadHelper) throws IOException {
-    this.tempFileDir = Files.createTempDirectory(dirName);
-    this.downloadHelper = downloadHelper;
-    this.fileMap = HashMultimap.create();
-  }
-
   public FileDownloadHelper(String dirName) throws IOException {
-    this(
-        dirName,
-        new DownloadHelper() {
-          @Override
-          public void copyURLToFile(URL sourceUrl, File destinationFile) throws IOException {
-            DownloadHelper.super.copyURLToFile(sourceUrl, destinationFile);
-          }
-        });
+    this.tempFileDir = Files.createTempDirectory(dirName);
+    this.fileMap = HashMultimap.create();
   }
 
   @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
   public void downloadFileFromURL(String tableName, URL pathToRemoteFile) {
     try {
-      File tempFile =
-          File.createTempFile(/* prefix= */ "tdr-", /* suffix= */ "download", tempFileDir.toFile());
+      File tempFile = File.createTempFile(/* prefix= */ "tdr-", /* suffix= */ "download");
       logger.info("downloading to temp file {} ...", tempFile.getPath());
-      downloadHelper.copyURLToFile(pathToRemoteFile, tempFile);
+      FileUtils.copyURLToFile(pathToRemoteFile, tempFile);
       // In the TDR manifest, for Azure snapshots only,
       // the first file in the list will always be a directory.
       // Attempting to import that directory
@@ -89,6 +66,6 @@ public class FileDownloadHelper {
   }
 
   public Multimap<String, File> getFileMap() {
-    return this.fileMap;
+    return fileMap;
   }
 }

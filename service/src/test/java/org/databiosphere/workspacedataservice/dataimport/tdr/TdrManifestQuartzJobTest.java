@@ -116,9 +116,9 @@ public class TdrManifestQuartzJobTest {
             List.of());
 
     // An empty file should not throw any errors
-    FileDownloadHelper files =
+    FileDownloadHelper fileMap =
         assertDoesNotThrow(() -> tdrManifestQuartzJob.getFilesForImport(List.of(table)));
-    assert (files.getFileMap().isEmpty());
+    assert (fileMap.getFileMap().isEmpty());
   }
 
   /*
