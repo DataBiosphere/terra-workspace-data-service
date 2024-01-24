@@ -50,7 +50,7 @@ public abstract class QuartzJob implements Job {
             .contextualName("job-execution")
             .lowCardinalityKeyValue("jobType", getClass().getSimpleName())
             .highCardinalityKeyValue("jobId", jobId.toString());
-    try (Observation.Scope scope = observation.openScope()) {
+    try {
       // mark this job as running
       getJobDao().running(jobId);
       observation.event(Observation.Event.of("job.running"));
@@ -65,12 +65,12 @@ public abstract class QuartzJob implements Job {
       executeInternal(jobId, context);
       // if we reached here, mark this job as successful
       getJobDao().succeeded(jobId);
-      observation.event(Observation.Event.of("job.succeeded"));
+      observation.lowCardinalityKeyValue("outcome", "success");
     } catch (Exception e) {
       // on any otherwise-unhandled exception, mark the job as failed
       getJobDao().fail(jobId, e);
       observation.error(e);
-      observation.event(Observation.Event.of("job.failed"));
+      observation.lowCardinalityKeyValue("outcome", "failure");
     } finally {
       JobContextHolder.destroy();
       observation.stop();
