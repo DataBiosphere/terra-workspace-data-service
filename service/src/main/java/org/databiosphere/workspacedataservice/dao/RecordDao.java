@@ -1097,10 +1097,10 @@ public class RecordDao {
     }
 
     // No direct conversion exists between numeric and boolean types, so go through int.
-    if ((dataType.getBaseType() == DataTypeMapping.BOOLEAN
-            && newDataType.getBaseType() == DataTypeMapping.NUMBER)
-        || (dataType.getBaseType() == DataTypeMapping.NUMBER
-            && newDataType.getBaseType() == DataTypeMapping.BOOLEAN)) {
+    if ((dataType.getBaseType().equals(DataTypeMapping.BOOLEAN)
+            && newDataType.getBaseType().equals(DataTypeMapping.NUMBER))
+        || (dataType.getBaseType().equals(DataTypeMapping.NUMBER)
+            && newDataType.getBaseType().equals(DataTypeMapping.BOOLEAN))) {
       expression += "::int";
       if (newDataType.isArrayType()) {
         expression += "[]";
