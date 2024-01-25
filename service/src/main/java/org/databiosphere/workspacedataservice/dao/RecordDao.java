@@ -1117,7 +1117,7 @@ public class RecordDao {
         && Set.of(DataTypeMapping.DATE, DataTypeMapping.DATE_TIME)
             .contains(newDataType.getBaseType())) {
       if (dataType.isArrayType()) {
-        expression = "(convert_array_of_numbers_to_timestamps(" + expression + "))";
+        expression = "(sys_wds.convert_array_of_numbers_to_timestamps(" + expression + "))";
       } else {
         expression = "to_timestamp(" + expression + ")";
       }
@@ -1128,7 +1128,7 @@ public class RecordDao {
     if (Set.of(DataTypeMapping.DATE, DataTypeMapping.DATE_TIME).contains(dataType.getBaseType())
         && newDataType.getBaseType().equals(DataTypeMapping.NUMBER)) {
       if (dataType.isArrayType()) {
-        expression = "convert_array_of_timestamps_to_numbers(" + expression + ")";
+        expression = "sys_wds.convert_array_of_timestamps_to_numbers(" + expression + ")";
         // Truncate to an integer for dates.
         if (dataType.getBaseType() == DataTypeMapping.DATE) {
           expression += "::bigint[]";
