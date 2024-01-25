@@ -100,6 +100,13 @@ public class RecordDao {
           DataTypeMapping.BOOLEAN,
           DataTypeMapping.ARRAY_OF_BOOLEAN);
 
+  /**
+   * These error codes are expected when a valid update attribute data type request fails because
+   * attribute values for some records cannot be converted to the new data type.
+   *
+   * @see <a href="https://www.postgresql.org/docs/14/errcodes-appendix.html">PostgreSQL error
+   *     codes</a>
+   */
   private static final Set<String> expectedDataTypeConversionErrorCodes =
       Set.of(
           "22P02", // invalid text representation
