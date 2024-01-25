@@ -104,6 +104,11 @@ public class RecordDao {
           DataTypeMapping.DATE_TIME,
           DataTypeMapping.ARRAY_OF_DATE_TIME);
 
+  private static final Set<Set<DataTypeMapping>> invalidDataTypeConversions =
+      Set.of(
+          Set.of(DataTypeMapping.BOOLEAN, DataTypeMapping.DATE),
+          Set.of(DataTypeMapping.BOOLEAN, DataTypeMapping.DATE_TIME));
+
   /**
    * These error codes are expected when a valid update attribute data type request fails because
    * attribute values for some records cannot be converted to the new data type.
@@ -1101,9 +1106,12 @@ public class RecordDao {
 
   private String getPostgresTypeConversionExpression(
       String attribute, DataTypeMapping dataType, DataTypeMapping newDataType) {
-    // Some data types are not supported.
-    if (!(dataTypesSupportedForTypeConversion.contains(dataType)
-        && dataTypesSupportedForTypeConversion.contains(newDataType))) {
+    // Some data types are not yet supported.
+    // Some conversions don't make sense / are invalid.
+    if (!dataTypesSupportedForTypeConversion.contains(dataType)
+        || !dataTypesSupportedForTypeConversion.contains(newDataType)
+        || invalidDataTypeConversions.contains(
+            Set.copyOf(List.of(dataType.getBaseType(), newDataType.getBaseType())))) {
       throw new IllegalArgumentException(
           "Unable to convert attribute from %s to %s"
               .formatted(dataType.name(), newDataType.name()));

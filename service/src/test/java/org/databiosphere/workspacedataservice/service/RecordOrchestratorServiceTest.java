@@ -705,7 +705,7 @@ class RecordOrchestratorServiceTest {
   }
 
   @ParameterizedTest(name = "gracefully fails to convert {0} to {1}")
-  @MethodSource("invalidConversionTestCases")
+  @MethodSource("unableToConvertValuesTestCases")
   void updateAttributeDataTypeUnableToConvertValues(
       Object attributeValue, DataTypeMapping newDataType) {
     // Arrange
@@ -731,10 +731,52 @@ class RecordOrchestratorServiceTest {
         e.getMessage());
   }
 
-  static Stream<Arguments> invalidConversionTestCases() {
+  static Stream<Arguments> unableToConvertValuesTestCases() {
     return Stream.of(
         Arguments.of("foo", DataTypeMapping.NUMBER),
         Arguments.of(1000000000000000L, DataTypeMapping.DATE_TIME));
+  }
+
+  @ParameterizedTest(name = "rejects requests to convert from {1} to {2}")
+  @MethodSource("invalidConversionTestCases")
+  void updateAttributeDataTypeInvalidConversion(
+      Object attributeValue, DataTypeMapping expectedInitialDataType, DataTypeMapping newDataType) {
+    // Arrange
+    String attributeName = "testAttribute";
+
+    RecordAttributes recordAttributes =
+        RecordAttributes.empty().putAttribute(attributeName, attributeValue);
+    RecordRequest recordRequest = new RecordRequest(recordAttributes);
+    recordOrchestratorService.upsertSingleRecord(
+        INSTANCE, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
+    assertAttributeDataType(
+        attributeName,
+        expectedInitialDataType,
+        "expected initial attribute data type to be %s".formatted(expectedInitialDataType));
+
+    // Act/Assert
+    ValidationException e =
+        assertThrows(
+            ValidationException.class,
+            () ->
+                recordOrchestratorService.updateAttributeDataType(
+                    INSTANCE, VERSION, TEST_TYPE, attributeName, newDataType.name()),
+            "updateAttributeDataType should have thrown an error");
+
+    assertEquals(
+        "Unable to convert attribute from %s to %s".formatted(expectedInitialDataType, newDataType),
+        e.getMessage());
+  }
+
+  static Stream<Arguments> invalidConversionTestCases() {
+    return Stream.of(
+        Arguments.of(Boolean.TRUE, DataTypeMapping.BOOLEAN, DataTypeMapping.DATE),
+        Arguments.of(Boolean.TRUE, DataTypeMapping.BOOLEAN, DataTypeMapping.DATE_TIME),
+        Arguments.of(LocalDate.of(2024, 1, 24), DataTypeMapping.DATE, DataTypeMapping.BOOLEAN),
+        Arguments.of(
+            LocalDateTime.of(2024, 1, 24, 2, 30, 0),
+            DataTypeMapping.DATE_TIME,
+            DataTypeMapping.BOOLEAN));
   }
 
   @Test
