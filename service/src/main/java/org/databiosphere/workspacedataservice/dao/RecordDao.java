@@ -100,6 +100,12 @@ public class RecordDao {
           DataTypeMapping.BOOLEAN,
           DataTypeMapping.ARRAY_OF_BOOLEAN);
 
+  private static final Set<String> expectedDataTypeConversionErrorCodes =
+      Set.of(
+          "22P02", // invalid text representation
+          "22003" // numeric value out of range
+          );
+
   public RecordDao(
       DataSource mainDb,
       NamedParameterJdbcTemplate namedTemplate,
@@ -1068,7 +1074,7 @@ public class RecordDao {
     } catch (DataIntegrityViolationException e) {
       if (e.getRootCause() instanceof SQLException sqlEx
           && sqlEx.getSQLState() != null
-          && sqlEx.getSQLState().equals("22P02")) {
+          && expectedDataTypeConversionErrorCodes.contains(sqlEx.getSQLState())) {
         throw new ConflictException(
             "Unable to convert values for attribute %s to %s"
                 .formatted(attribute, newDataType.name()));
