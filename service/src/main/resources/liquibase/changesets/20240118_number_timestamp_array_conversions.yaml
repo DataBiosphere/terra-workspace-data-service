@@ -18,7 +18,7 @@ databaseChangeLog:
                     end loop;
                     return timestamps;
                   end;
-                $$ language plpgsql stable;
+                $$ language plpgsql immutable;
         - sql:
             dbms: postgresql
             splitStatements: false
@@ -34,4 +34,4 @@ databaseChangeLog:
                     end loop;
                     return numbers;
                   end;
-               $$ language plpgsql stable;
+               $$ language plpgsql immutable;
