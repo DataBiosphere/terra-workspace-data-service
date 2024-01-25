@@ -242,9 +242,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
             // loop through each parquet file
             paths.forEach(
-                path -> {
+                path ->
                   fileDownloadHelper.downloadFileFromURL(importTable.recordType().getName(), path);
-                });
+                );
           });
 
       return fileDownloadHelper;

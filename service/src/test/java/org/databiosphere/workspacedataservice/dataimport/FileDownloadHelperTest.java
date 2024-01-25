@@ -9,7 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
 
 @SpringBootTest
-public class FileDownloadHelperTest {
+class FileDownloadHelperTest {
 
   @Value("classpath:parquet/empty.parquet")
   Resource emptyParquet;

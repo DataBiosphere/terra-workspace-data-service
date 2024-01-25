@@ -34,7 +34,7 @@ public class FileDownloadHelper {
       Path tempFilePath =
           Files.createTempFile(
               tempFileDir, /* prefix= */ "tdr-", /* suffix= */ "download", permissions);
-      logger.info("downloading to temp file {} ...", tempFilePath.toString());
+      logger.info("downloading to temp file {} ...", tempFilePath);
       FileUtils.copyURLToFile(pathToRemoteFile, tempFilePath.toFile());
       // In the TDR manifest, for Azure snapshots only,
       // the first file in the list will always be a directory.
