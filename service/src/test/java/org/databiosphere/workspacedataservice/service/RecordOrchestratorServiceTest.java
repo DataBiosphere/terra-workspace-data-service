@@ -224,15 +224,27 @@ class RecordOrchestratorServiceTest {
     recordOrchestratorService.upsertSingleRecord(
         INSTANCE, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
 
-    assertAttributeDataType(attributeName, expectedInitialDataType);
+    assertAttributeDataType(
+        attributeName,
+        expectedInitialDataType,
+        "expected initial attribute data type to be %s".formatted(expectedInitialDataType));
 
     // Act
     recordOrchestratorService.updateAttributeDataType(
         INSTANCE, VERSION, TEST_TYPE, attributeName, newDataType.name());
 
     // Assert
-    assertAttributeDataType(attributeName, newDataType);
-    assertAttributeValue(RECORD_ID, attributeName, expectedFinalAttributeValue);
+    assertAttributeDataType(
+        attributeName,
+        newDataType,
+        "expected attribute data type to be updated to %s".formatted(newDataType));
+    assertAttributeValue(
+        RECORD_ID,
+        attributeName,
+        expectedFinalAttributeValue,
+        "expected %s %s to be converted to %s %s"
+            .formatted(
+                expectedInitialDataType, attributeValue, newDataType, expectedFinalAttributeValue));
   }
 
   @Test
@@ -284,7 +296,8 @@ class RecordOrchestratorServiceTest {
     recordOrchestratorService.upsertSingleRecord(
         INSTANCE, VERSION, TEST_TYPE, "row_2", Optional.of(PRIMARY_KEY), recordTwoRequest);
 
-    assertAttributeDataType(attributeName, DataTypeMapping.STRING);
+    assertAttributeDataType(
+        attributeName, DataTypeMapping.STRING, "expected initial attribute data type to be STRING");
 
     // Act/Assert
     ConflictException e =
@@ -299,9 +312,12 @@ class RecordOrchestratorServiceTest {
         "Unable to convert values for attribute %s to NUMBER".formatted(attributeName),
         e.getMessage());
 
-    assertAttributeDataType(attributeName, DataTypeMapping.STRING);
-    assertAttributeValue("row_1", attributeName, "123");
-    assertAttributeValue("row_2", attributeName, "foo");
+    assertAttributeDataType(
+        attributeName, DataTypeMapping.STRING, "expected attribute data type to be unchanged");
+    assertAttributeValue(
+        "row_1", attributeName, "123", "expected attribute values to be unchanged");
+    assertAttributeValue(
+        "row_2", attributeName, "foo", "expected attribute values to be unchanged");
   }
 
   @Test
@@ -453,28 +469,24 @@ class RecordOrchestratorServiceTest {
     assert (found);
   }
 
-  private void assertAttributeDataType(String attributeName, DataTypeMapping dataType) {
+  private void assertAttributeDataType(
+      String attributeName, DataTypeMapping dataType, String message) {
     RecordTypeSchema recordTypeSchema =
         recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE);
     AttributeSchema attributeSchema = recordTypeSchema.getAttributeSchema(attributeName);
-    String explanation =
-        "assertAttributeDataType expected attribute %s to have data type %s"
-            .formatted(attributeName, dataType.name());
-    assertEquals(dataType.name(), attributeSchema.datatype(), explanation);
+    assertEquals(dataType.name(), attributeSchema.datatype(), message);
   }
 
-  private void assertAttributeValue(String recordId, String attributeName, Object expectedValue) {
+  private void assertAttributeValue(
+      String recordId, String attributeName, Object expectedValue, String message) {
     RecordResponse record =
         recordOrchestratorService.getSingleRecord(INSTANCE, VERSION, TEST_TYPE, recordId);
     Object attributeValue = record.recordAttributes().getAttributeValue(attributeName);
 
-    String explanation =
-        "assertAttributeValue expected attribute %s of record %s to equal %s"
-            .formatted(attributeName, recordId, expectedValue);
     if (expectedValue instanceof Object[]) {
-      assertArrayEquals((Object[]) expectedValue, (Object[]) attributeValue, explanation);
+      assertArrayEquals((Object[]) expectedValue, (Object[]) attributeValue, message);
     } else {
-      assertEquals(expectedValue, attributeValue, explanation);
+      assertEquals(expectedValue, attributeValue, message);
     }
   }
 }
