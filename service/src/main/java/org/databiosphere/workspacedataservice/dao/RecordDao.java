@@ -114,7 +114,8 @@ public class RecordDao {
   private static final Set<String> expectedDataTypeConversionErrorCodes =
       Set.of(
           "22P02", // invalid text representation
-          "22003" // numeric value out of range
+          "22003", // numeric value out of range
+          "22008" // datetime field overflow
           );
 
   public RecordDao(
@@ -1083,12 +1084,16 @@ public class RecordDao {
                   + " using "
                   + getPostgresTypeConversionExpression(attribute, currentDataType, newDataType));
     } catch (DataIntegrityViolationException e) {
-      if (e.getRootCause() instanceof SQLException sqlEx
-          && sqlEx.getSQLState() != null
-          && expectedDataTypeConversionErrorCodes.contains(sqlEx.getSQLState())) {
-        throw new ConflictException(
-            "Unable to convert values for attribute %s to %s"
-                .formatted(attribute, newDataType.name()));
+      if (e.getRootCause() instanceof SQLException sqlEx && sqlEx.getSQLState() != null) {
+        if (expectedDataTypeConversionErrorCodes.contains(sqlEx.getSQLState())) {
+          throw new ConflictException(
+              "Unable to convert values for attribute %s to %s"
+                  .formatted(attribute, newDataType.name()));
+        } else {
+          LOGGER.warn(
+              "updateAttributeDataType: DataIntegrityViolationException with unexpected error code {}",
+              sqlEx.getSQLState());
+        }
       }
       throw e;
     }

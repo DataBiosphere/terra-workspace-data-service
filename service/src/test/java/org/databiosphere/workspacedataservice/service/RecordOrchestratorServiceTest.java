@@ -664,7 +664,7 @@ class RecordOrchestratorServiceTest {
   }
 
   @Test
-  void updateAttributeDataTypeUnableToConvertValues() {
+  void updateAttributeDataTypeFailureToConvertValueChangesNoData() {
     // Arrange
     String attributeName = "testAttribute";
 
@@ -702,6 +702,39 @@ class RecordOrchestratorServiceTest {
         "row_1", attributeName, "123", "expected attribute values to be unchanged");
     assertAttributeValue(
         "row_2", attributeName, "foo", "expected attribute values to be unchanged");
+  }
+
+  @ParameterizedTest(name = "gracefully fails to convert {0} to {1}")
+  @MethodSource("invalidConversionTestCases")
+  void updateAttributeDataTypeUnableToConvertValues(
+      Object attributeValue, DataTypeMapping newDataType) {
+    // Arrange
+    String attributeName = "testAttribute";
+
+    RecordAttributes recordAttributes =
+        RecordAttributes.empty().putAttribute(attributeName, attributeValue);
+    RecordRequest recordRequest = new RecordRequest(recordAttributes);
+    recordOrchestratorService.upsertSingleRecord(
+        INSTANCE, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
+
+    // Act/Assert
+    ConflictException e =
+        assertThrows(
+            ConflictException.class,
+            () ->
+                recordOrchestratorService.updateAttributeDataType(
+                    INSTANCE, VERSION, TEST_TYPE, attributeName, newDataType.name()),
+            "updateAttributeDataType should have thrown an error");
+
+    assertEquals(
+        "Unable to convert values for attribute %s to %s".formatted(attributeName, newDataType),
+        e.getMessage());
+  }
+
+  static Stream<Arguments> invalidConversionTestCases() {
+    return Stream.of(
+        Arguments.of("foo", DataTypeMapping.NUMBER),
+        Arguments.of(1000000000000000L, DataTypeMapping.DATE_TIME));
   }
 
   @Test
