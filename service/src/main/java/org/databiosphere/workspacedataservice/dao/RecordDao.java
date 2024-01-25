@@ -1113,9 +1113,9 @@ public class RecordDao {
 
     // Unable to cast numbers to dates or timestamps.
     // Convert number to timestamp using to_timestamp.
-    if (dataType.getBaseType() == DataTypeMapping.NUMBER
-        && (newDataType.getBaseType() == DataTypeMapping.DATE
-            || newDataType.getBaseType() == DataTypeMapping.DATE_TIME)) {
+    if (dataType.getBaseType().equals(DataTypeMapping.NUMBER)
+        && Set.of(DataTypeMapping.DATE, DataTypeMapping.DATE_TIME)
+            .contains(newDataType.getBaseType())) {
       if (dataType.isArrayType()) {
         expression = "(convert_array_of_numbers_to_timestamps(" + expression + "))";
       } else {
@@ -1125,9 +1125,8 @@ public class RecordDao {
 
     // Unable to cast dates or timestamps to numbers.
     // Extract epoch from timestamp to get a number.
-    if ((dataType.getBaseType() == DataTypeMapping.DATE
-            || dataType.getBaseType() == DataTypeMapping.DATE_TIME)
-        && newDataType.getBaseType() == DataTypeMapping.NUMBER) {
+    if (Set.of(DataTypeMapping.DATE, DataTypeMapping.DATE_TIME).contains(dataType.getBaseType())
+        && newDataType.getBaseType().equals(DataTypeMapping.NUMBER)) {
       if (dataType.isArrayType()) {
         expression = "convert_array_of_timestamps_to_numbers(" + expression + ")";
         // Truncate to an integer for dates.
