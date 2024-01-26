@@ -9,6 +9,7 @@ public class ActivityModels {
     UPSERT("upserted"),
     MODIFY("modified"),
     LINK("linked"),
+    RENAME("renamed"),
     RESTORE("restored");
 
     private final String name;
@@ -25,6 +26,7 @@ public class ActivityModels {
   public enum Thing {
     INSTANCE("instance"),
     TABLE("table"),
+    ATTRIBUTE("attribute"),
     RECORD("record"),
     SNAPSHOT_REFERENCE("snapshot reference"),
     BACKUP("backup");

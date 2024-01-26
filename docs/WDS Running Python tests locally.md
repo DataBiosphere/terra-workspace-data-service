@@ -36,6 +36,13 @@ To run tests, WDS uses pytest. Ensure that is installed by running:
 pip install pytest
 ```
 
+Some tests also require a server from which to fetch test files.  For these to work, you'll have to set up the nginx docker container to serve them:
+```bash
+# start the server as a docker container in detached mode
+docker run -v `pwd`/service/src/test/resources/nginx.conf:/etc/nginx/nginx.conf -v `pwd`/service/src/test/resources:/usr/share/nginx/html -p 9889:80 -d nginx:1.23.3
+```
+
+
 ## Build wds_client locally
 
 Once you confirm that you have python and openapitools, you will need to build and create a local version of the wds_client package (make sure you are in the right branch that has the changes you want to test). Note that you will need to re-generate the client for each code change you make. To do that, run the following command (from the root of your repo or adjust path accordingly). If this command is generating errors, it is likely because the openapi is set to the wrong version. Note that package version is hard coded since it is not important to track locally - adjust as you se fit if you want to the version to change when you install the package locally. 
@@ -64,5 +71,9 @@ Once you have the wds_client package importing locally with no issues, you are r
 ```
 pytest service/src/test/python/test.py
 ```
+
+Note: Make sure your local WDS database does not have data in it before running these tests, as its presence may cause the tests to fail.
+
+To debug tests, you may want to try out python's [pdb debugger](https://realpython.com/python-debugging-pdb/).
 
 In case you get frustrated with python, go [here](https://xkcd.com/1987/) for a quick laugh. 

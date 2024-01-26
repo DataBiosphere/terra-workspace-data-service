@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.hamcrest.Matchers.*;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -359,8 +361,9 @@ class RecordControllerMockMvcTest {
     RecordResponse recordResponse =
         mapper.readValue(res.getContentAsString(), RecordResponse.class);
     Object attributeValue = recordResponse.recordAttributes().getAttributeValue("json-attr");
-    assertTrue(
-        attributeValue instanceof Map,
+    assertInstanceOf(
+        Map.class,
+        attributeValue,
         "jsonb data should deserialize to a map, "
             + "before getting serialized to json in the final response");
   }
@@ -1031,7 +1034,7 @@ class RecordControllerMockMvcTest {
             "records",
             "test.tsv",
             MediaType.TEXT_PLAIN_VALUE,
-            RecordControllerMockMvcTest.class.getResourceAsStream("/small-test-no-sys.tsv"));
+            RecordControllerMockMvcTest.class.getResourceAsStream("/tsv/small-no-sys.tsv"));
     String recordType = "noPrimaryKeySpecified";
     mockMvc
         .perform(
@@ -1044,7 +1047,7 @@ class RecordControllerMockMvcTest {
             .andReturn();
     RecordTypeSchema schema =
         mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
-    // "greeting" is hardcoded into small-test-no-sys.tsv
+    // "greeting" is hardcoded into small-no-sys.tsv
     assertEquals("greeting", schema.primaryKey());
   }
 
@@ -1057,7 +1060,7 @@ class RecordControllerMockMvcTest {
             "records",
             "test.tsv",
             MediaType.TEXT_PLAIN_VALUE,
-            RecordControllerMockMvcTest.class.getResourceAsStream("/small-test-no-sys.tsv"));
+            RecordControllerMockMvcTest.class.getResourceAsStream("/tsv/small-no-sys.tsv"));
     String recordType = "explicitPrimaryKey";
     mockMvc
         .perform(
@@ -1082,7 +1085,7 @@ class RecordControllerMockMvcTest {
             "records",
             "test.tsv",
             MediaType.TEXT_PLAIN_VALUE,
-            RecordControllerMockMvcTest.class.getResourceAsStream("/small-test.tsv"));
+            RecordControllerMockMvcTest.class.getResourceAsStream("/tsv/small-test.tsv"));
 
     String recordType = "tsv-types";
     mockMvc
@@ -1210,8 +1213,8 @@ class RecordControllerMockMvcTest {
         .andExpect(status().isBadRequest())
         .andExpect(
             result ->
-                assertTrue(
-                    result.getResolvedException() instanceof MethodArgumentTypeMismatchException));
+                assertInstanceOf(
+                    MethodArgumentTypeMismatchException.class, result.getResolvedException()));
   }
 
   @Test
@@ -1233,7 +1236,7 @@ class RecordControllerMockMvcTest {
                 .content(mapper.writeValueAsString(new RecordRequest(illegalAttribute))))
         .andExpect(status().isBadRequest())
         .andExpect(
-            result -> assertTrue(result.getResolvedException() instanceof InvalidNameException));
+            result -> assertInstanceOf(InvalidNameException.class, result.getResolvedException()));
   }
 
   @Test
@@ -1547,7 +1550,8 @@ class RecordControllerMockMvcTest {
                 .content(mapper.writeValueAsString(new RecordRequest(attributes))))
         .andExpect(status().isNotFound())
         .andExpect(
-            result -> assertTrue(result.getResolvedException() instanceof MissingObjectException));
+            result ->
+                assertInstanceOf(MissingObjectException.class, result.getResolvedException()));
   }
 
   @Test
@@ -1573,7 +1577,7 @@ class RecordControllerMockMvcTest {
         .andExpect(status().isForbidden())
         .andExpect(
             result ->
-                assertTrue(result.getResolvedException() instanceof InvalidRelationException));
+                assertInstanceOf(InvalidRelationException.class, result.getResolvedException()));
   }
 
   @Test
@@ -1640,7 +1644,8 @@ class RecordControllerMockMvcTest {
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound())
         .andExpect(
-            result -> assertTrue(result.getResolvedException() instanceof MissingObjectException));
+            result ->
+                assertInstanceOf(MissingObjectException.class, result.getResolvedException()));
   }
 
   @Test
@@ -1973,6 +1978,183 @@ class RecordControllerMockMvcTest {
 
   @Test
   @Transactional
+  void updateAttributeNoUpdate() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+
+    mockMvc
+        .perform(
+            patch(
+                    "/{instanceId}/types/{v}/{type}/{attribute}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    "attr1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @Transactional
+  void renameAttribute() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    String attributeToRename = "attr1";
+    String newAttributeName = "newAttr";
+
+    mockMvc
+        .perform(
+            patch(
+                    "/{instanceId}/types/{v}/{type}/{attribute}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    attributeToRename)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AttributeSchema(newAttributeName))))
+        .andExpect(status().isOk());
+
+    MvcResult mvcResult =
+        mockMvc
+            .perform(
+                get(
+                    "/{instanceId}/types/{version}/{recordType}",
+                    instanceId,
+                    versionId,
+                    recordType))
+            .andReturn();
+
+    RecordTypeSchema actual =
+        mapper.readValue(mvcResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+
+    Set<String> attributeNames =
+        actual.attributes().stream().map(AttributeSchema::name).collect(Collectors.toSet());
+
+    assertThat(attributeNames).doesNotContain(attributeToRename).contains(newAttributeName);
+  }
+
+  @Test
+  @Transactional
+  void renameNonExistentAttribute() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+
+    mockMvc
+        .perform(
+            patch(
+                    "/{instanceId}/types/{v}/{type}/{attribute}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    "doesNotExist")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AttributeSchema("newAttr"))))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @Transactional
+  void renamePrimaryKeyAttribute() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    // sys_name is the default name for the primary key column used by createSomeRecords.
+    String attributeToRename = "sys_name";
+
+    mockMvc
+        .perform(
+            patch(
+                    "/{instanceId}/types/{v}/{type}/{attribute}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    attributeToRename)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AttributeSchema("newAttr"))))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @Transactional
+  void renameAttributeConflict() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    // createSomeRecords creates records with attributes including "attr1" and "attr2".
+    String attributeToRename = "attr1";
+    String newAttributeName = "attr2";
+
+    mockMvc
+        .perform(
+            patch(
+                    "/{instanceId}/types/{v}/{type}/{attribute}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    attributeToRename)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AttributeSchema(newAttributeName))))
+        .andExpect(status().isConflict());
+  }
+
+  @Test
+  @Transactional
+  void deleteAttribute() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    String attributeToDelete = "attr1";
+    mockMvc
+        .perform(
+            delete(
+                "/{instanceId}/types/{v}/{type}/{attribute}",
+                instanceId,
+                versionId,
+                recordType,
+                attributeToDelete))
+        .andExpect(status().isNoContent());
+
+    mockMvc
+        .perform(
+            get("/{instanceId}/types/{version}/{recordType}", instanceId, versionId, recordType))
+        .andExpect(content().string(not(containsString(attributeToDelete))));
+  }
+
+  @Test
+  @Transactional
+  void deleteNonExistentAttribute() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    mockMvc
+        .perform(
+            delete(
+                "/{instanceId}/types/{v}/{type}/{attribute}",
+                instanceId,
+                versionId,
+                recordType,
+                "doesnotexist"))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @Transactional
+  void deletePrimaryKeyAttribute() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    // sys_name is the default name for the primary key column used by createSomeRecords.
+    String attributeToDelete = "sys_name";
+
+    mockMvc
+        .perform(
+            delete(
+                "/{instanceId}/types/{v}/{type}/{attribute}",
+                instanceId,
+                versionId,
+                recordType,
+                attributeToDelete))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @Transactional
   void describeType() throws Exception {
     RecordType type = RecordType.valueOf("recordType");
 
@@ -2004,24 +2186,25 @@ class RecordControllerMockMvcTest {
 
     List<AttributeSchema> expectedAttributes =
         Arrays.asList(
-            new AttributeSchema("array-of-date", "ARRAY_OF_DATE", null),
-            new AttributeSchema("array-of-datetime", "ARRAY_OF_DATE_TIME", null),
-            new AttributeSchema("array-of-relation", "ARRAY_OF_RELATION", referencedType),
-            new AttributeSchema("array-of-string", "ARRAY_OF_STRING", null),
-            new AttributeSchema("attr-boolean", "BOOLEAN", null),
-            new AttributeSchema("attr-dt", "DATE_TIME", null),
-            new AttributeSchema("attr-json", "JSON", null),
-            new AttributeSchema("attr-ref", "RELATION", referencedType),
-            new AttributeSchema("attr1", "STRING", null),
-            new AttributeSchema("attr2", "NUMBER", null),
-            new AttributeSchema("attr3", "DATE", null),
-            new AttributeSchema("attr4", "STRING", null),
-            new AttributeSchema("attr5", "NUMBER", null),
-            new AttributeSchema("sys_name", "STRING", null),
-            new AttributeSchema("z-array-of-boolean", "ARRAY_OF_BOOLEAN", null),
-            new AttributeSchema("z-array-of-number-double", "ARRAY_OF_NUMBER", null),
-            new AttributeSchema("z-array-of-number-long", "ARRAY_OF_NUMBER", null),
-            new AttributeSchema("z-array-of-string", "ARRAY_OF_STRING", null));
+            new AttributeSchema("array-of-date", DataTypeMapping.ARRAY_OF_DATE),
+            new AttributeSchema("array-of-datetime", DataTypeMapping.ARRAY_OF_DATE_TIME),
+            new AttributeSchema(
+                "array-of-relation", DataTypeMapping.ARRAY_OF_RELATION, referencedType),
+            new AttributeSchema("array-of-string", DataTypeMapping.ARRAY_OF_STRING),
+            new AttributeSchema("attr-boolean", DataTypeMapping.BOOLEAN),
+            new AttributeSchema("attr-dt", DataTypeMapping.DATE_TIME),
+            new AttributeSchema("attr-json", DataTypeMapping.JSON),
+            new AttributeSchema("attr-ref", DataTypeMapping.RELATION, referencedType),
+            new AttributeSchema("attr1", DataTypeMapping.STRING),
+            new AttributeSchema("attr2", DataTypeMapping.NUMBER),
+            new AttributeSchema("attr3", DataTypeMapping.DATE),
+            new AttributeSchema("attr4", DataTypeMapping.STRING),
+            new AttributeSchema("attr5", DataTypeMapping.NUMBER),
+            new AttributeSchema("sys_name", DataTypeMapping.STRING),
+            new AttributeSchema("z-array-of-boolean", DataTypeMapping.ARRAY_OF_BOOLEAN),
+            new AttributeSchema("z-array-of-number-double", DataTypeMapping.ARRAY_OF_NUMBER),
+            new AttributeSchema("z-array-of-number-long", DataTypeMapping.ARRAY_OF_NUMBER),
+            new AttributeSchema("z-array-of-string", DataTypeMapping.ARRAY_OF_STRING));
 
     RecordTypeSchema expected = new RecordTypeSchema(type, expectedAttributes, 1, RECORD_ID);
 
@@ -2089,22 +2272,22 @@ class RecordControllerMockMvcTest {
 
     List<AttributeSchema> expectedAttributes =
         Arrays.asList(
-            new AttributeSchema("array-of-date", "ARRAY_OF_DATE", null),
-            new AttributeSchema("array-of-datetime", "ARRAY_OF_DATE_TIME", null),
-            new AttributeSchema("array-of-string", "ARRAY_OF_STRING", null),
-            new AttributeSchema("attr-boolean", "BOOLEAN", null),
-            new AttributeSchema("attr-dt", "DATE_TIME", null),
-            new AttributeSchema("attr-json", "JSON", null),
-            new AttributeSchema("attr1", "STRING", null),
-            new AttributeSchema("attr2", "NUMBER", null),
-            new AttributeSchema("attr3", "DATE", null),
-            new AttributeSchema("attr4", "STRING", null),
-            new AttributeSchema("attr5", "NUMBER", null),
-            new AttributeSchema("sys_name", "STRING", null),
-            new AttributeSchema("z-array-of-boolean", "ARRAY_OF_BOOLEAN", null),
-            new AttributeSchema("z-array-of-number-double", "ARRAY_OF_NUMBER", null),
-            new AttributeSchema("z-array-of-number-long", "ARRAY_OF_NUMBER", null),
-            new AttributeSchema("z-array-of-string", "ARRAY_OF_STRING", null));
+            new AttributeSchema("array-of-date", DataTypeMapping.ARRAY_OF_DATE),
+            new AttributeSchema("array-of-datetime", DataTypeMapping.ARRAY_OF_DATE_TIME),
+            new AttributeSchema("array-of-string", DataTypeMapping.ARRAY_OF_STRING),
+            new AttributeSchema("attr-boolean", DataTypeMapping.BOOLEAN),
+            new AttributeSchema("attr-dt", DataTypeMapping.DATE_TIME),
+            new AttributeSchema("attr-json", DataTypeMapping.JSON),
+            new AttributeSchema("attr1", DataTypeMapping.STRING),
+            new AttributeSchema("attr2", DataTypeMapping.NUMBER),
+            new AttributeSchema("attr3", DataTypeMapping.DATE),
+            new AttributeSchema("attr4", DataTypeMapping.STRING),
+            new AttributeSchema("attr5", DataTypeMapping.NUMBER),
+            new AttributeSchema("sys_name", DataTypeMapping.STRING),
+            new AttributeSchema("z-array-of-boolean", DataTypeMapping.ARRAY_OF_BOOLEAN),
+            new AttributeSchema("z-array-of-number-double", DataTypeMapping.ARRAY_OF_NUMBER),
+            new AttributeSchema("z-array-of-number-long", DataTypeMapping.ARRAY_OF_NUMBER),
+            new AttributeSchema("z-array-of-string", DataTypeMapping.ARRAY_OF_STRING));
 
     List<RecordTypeSchema> expectedSchemas =
         Arrays.asList(

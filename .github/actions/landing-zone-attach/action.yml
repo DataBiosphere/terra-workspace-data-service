@@ -1,0 +1,37 @@
+name: 'create bee'
+description: 'Attaches landing zone to an existing bee'
+inputs:
+  token:
+    description: 'The auth token to use for connecting to bee'
+    required: true
+    type: string
+  bee_name:
+    description: 'The name of the bee to connect to'
+    required: true
+    type: string
+  project_name:
+    description: 'The name of billing project to attach to'
+    required: true
+    type: string
+  run_name:
+    description: 'Specify the run name to fetch the run ID based on the actual run name'
+    required: false
+    type: string
+
+runs:
+  using: 'composite'
+  steps:
+    - name: dispatch to terra-github-workflows
+      uses: broadinstitute/workflow-dispatch@v4.0.0
+      with:
+        workflow: attach-billing-project-to-landing-zone.yaml
+        repo: broadinstitute/terra-github-workflows
+        ref: refs/heads/main
+        token: '${{ inputs.token }}'
+        inputs: >-
+          {
+          "run-name": "${{ inputs.run_name }}",
+          "bee-name": "${{ inputs.bee_name }}",
+          "billing-project": "${{ inputs.project_name }}",
+          "service-account": "firecloud-qa@broad-dsde-qa.iam.gserviceaccount.com"
+          }

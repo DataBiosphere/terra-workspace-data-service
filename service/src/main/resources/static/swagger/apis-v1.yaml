@@ -17,6 +17,8 @@ tags:
     description: Import APIs
   - name: Job
     description: Job APIs
+  - name: Capabilities
+    description: Describes the features of WDS
 
 paths:
   ##############################
@@ -68,14 +70,13 @@ paths:
   ##############################
   # Job APIs
   ##############################
-  /{instanceUuid}/job/v1/{jobId}:
+  /job/v1/{jobId}:
     get:
       summary: Get status of a long-running job.
       operationId: jobStatusV1
       tags:
         - Job
       parameters:
-        - $ref: '#/components/parameters/instanceUuidPathParam'
         - name: jobId
           in: path
           required: true
@@ -95,6 +96,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenericJob'
+
+  ##############################
+  # Capabilities APIs
+  ##############################
+  /capabilities/v1:
+    get:
+      summary: Describes the capabilities of this WDS version.
+      operationId: capabilities
+      tags:
+        - Capabilities
+      responses:
+        200:
+          description: key-value pairs describing capabilities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Capabilities'
 
 components:
   # within each group, components should be listed alphabetically.
@@ -117,6 +135,13 @@ components:
         format: uuid
 
   schemas:
+    Capabilities:
+      type: object
+      properties:
+        capabilities:
+          type: boolean
+      additionalProperties:
+        type: boolean
     GenericJob:
       x-all-of-name: GenericJob
       description: |

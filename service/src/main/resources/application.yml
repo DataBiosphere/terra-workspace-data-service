@@ -9,7 +9,7 @@ env:
       user: ${WDS_DB_USER:wds}
       # When running on Azure in k8s with workload identity set ADDITIONAL_JDBC_URL_PARAMS to
       # sslmode=require&authenticationPluginClassName=com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticationPlugin
-      additionalUrlParams: ${ADDITIONAL_JDBC_URL_PARAMS:}
+      additionalUrlParams: ${ADDITIONAL_JDBC_URL_PARAMS:prepareThreshold=0}
 
 management:
   endpoint:
@@ -23,18 +23,26 @@ management:
       group:
         liveness:
           include: livenessState,db
+    prometheus:
+      enabled: true
   endpoints:
     enabled-by-default: false
     web:
-      exposure.include: info,health
+      exposure:
+        include: "info,health,prometheus"
       base-path: /
       path-mapping:
         info: version
         health: status
+        prometheus: prometheus
   # additional keys to expose in the actuator info endpoint:
   info:
     env:
       enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
 info:
   app:
@@ -53,6 +61,10 @@ spring:
       password: ${env.wds.db.password}
       maximum-pool-size: 7
       minimum-idle: 7
+  mvc:
+    problemdetails:
+      # TODO AJ-1157: can we turn this back on?
+      enabled: false
   servlet:
     multipart.max-request-size: 5GB
     multipart.max-file-size: 5GB
@@ -129,17 +141,18 @@ twds:
 
 sentry:
   dsn: https://e59ecdd940784bd2922f25a0f3197ffd@o54426.ingest.sentry.io/4504299946835968
-  samurl: ${SAM_URL:}
   mrg: ${LZ_MRG:}
   releasename: ${RELEASE_NAME:}
 
-sam:
+# retry configuration for REST clients (Sam, WSM, TDR, Leo, etc)
+rest:
   retry:
     maxAttempts: 5
     backoff:
       delay: 500
       multiplier: 1.5
 
+# retry configuration for WDS APIs
 api:
   retry:
     maxAttempts: 10
@@ -147,6 +160,7 @@ api:
       delay: 150
       multiplier: 1.5
 
+samurl: ${SAM_URL:}
 datarepourl: ${DATA_REPO_URL:}
 workspacemanagerurl: ${WORKSPACE_MANAGER_URL:}
 leoUrl: ${LEONARDO_URL:}

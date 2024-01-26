@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.sam;
 
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,18 +15,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SamConfig {
 
-  @Value("${SAM_URL:}")
+  @Value("${samurl:}")
   private String samUrl;
 
   @Value("${twds.instance.workspace-id:}")
   private String workspaceIdArgument;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SamConfig.class);
-
-  @Bean
-  HttpSamClientSupport getHttpSamClientSupport() {
-    return new HttpSamClientSupport();
-  }
 
   @Bean
   public SamClientFactory getSamClientFactory() {
@@ -43,8 +39,7 @@ public class SamConfig {
   }
 
   @Bean
-  public SamDao samDao(
-      SamClientFactory samClientFactory, HttpSamClientSupport httpSamClientSupport) {
+  public SamDao samDao(SamClientFactory samClientFactory, RestClientRetry restClientRetry) {
     // Try to parse the WORKSPACE_ID env var;
     // return a MisconfiguredSamDao if it can't be parsed.
     try {
@@ -54,7 +49,7 @@ public class SamConfig {
           SamDao.RESOURCE_NAME_WORKSPACE,
           workspaceId,
           SamDao.ACTION_WRITE);
-      return new HttpSamDao(samClientFactory, httpSamClientSupport, workspaceId);
+      return new HttpSamDao(samClientFactory, restClientRetry, workspaceId);
     } catch (IllegalArgumentException e) {
       LOGGER.warn(
           "Workspace id could not be parsed, all Sam permission checks will fail. Provided id: {}",

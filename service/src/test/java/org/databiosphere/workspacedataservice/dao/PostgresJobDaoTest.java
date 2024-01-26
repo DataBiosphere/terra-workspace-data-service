@@ -125,7 +125,7 @@ class PostgresJobDaoTest {
         "should properly update the job");
   }
 
-  // update status with an error message
+  // fail the job with an error message
   @Test
   void failWithErrorMessage() {
     JobType jobType = JobType.DATA_IMPORT;
@@ -154,15 +154,17 @@ class PostgresJobDaoTest {
         "should properly update the job with an error message");
   }
 
-  // update status with an error message and stacktrace
+  // fail the job with an exception
   @Test
-  void failWithErrorMessageAndStackTrace() throws JsonProcessingException {
+  void failWithException() throws JsonProcessingException {
     JobType jobType = JobType.DATA_IMPORT;
     String errorMessage = "my stack trace error message";
     StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+    Exception e = new Exception(errorMessage);
+    e.setStackTrace(stackTrace);
 
     GenericJobServerModel testJob = assertJobCreation(jobType);
-    jobDao.fail(testJob.getJobId(), errorMessage, stackTrace);
+    jobDao.fail(testJob.getJobId(), e);
 
     // after updating the job, there should be exactly one row with:
     // this jobId and type, the new status, the new error message, and the new stack trace
@@ -187,7 +189,70 @@ class PostgresJobDaoTest {
         "should properly update the job with an error message and a stack trace");
   }
 
-  // TODO: get job, does it deserialize correctly?
+  // fail the job with a custom error message and an exception
+  @Test
+  void failWithExceptionAndMessage() throws JsonProcessingException {
+    JobType jobType = JobType.DATA_IMPORT;
+    StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+    Exception e = new Exception("The exception's error message");
+    e.setStackTrace(stackTrace);
+
+    String customErrorMessage = "my override of the error message";
+
+    GenericJobServerModel testJob = assertJobCreation(jobType);
+    jobDao.fail(testJob.getJobId(), customErrorMessage, e);
+
+    // after updating the job, there should be exactly one row with:
+    // this jobId and type, the new status, the new error message, and the new stack trace
+    // and updated timestamp greater than the created timestamp.
+    // input should still be {}, and result should still be null
+    var params = new MapSqlParameterSource("jobId", testJob.getJobId().toString());
+    params.addValue("type", jobType.name());
+    params.addValue("status", StatusEnum.ERROR.name());
+    params.addValue("error", customErrorMessage);
+    params.addValue("stacktrace", mapper.writeValueAsString(stackTrace));
+    assertDoesNotThrow(
+        () ->
+            namedTemplate.queryForObject(
+                "select id from sys_wds.job where id = :jobId and type = :type and status = :status "
+                    + "and error = :error "
+                    + "and stacktrace = :stacktrace::jsonb "
+                    + "and updated > created "
+                    + "and input = '{}'::jsonb "
+                    + "and result is null",
+                params,
+                String.class),
+        "should properly update the job with an error message and a stack trace");
+  }
+
+  @Test
+  void queue() {
+    JobType jobType = JobType.DATA_IMPORT;
+    GenericJobServerModel testJob = assertJobCreation(jobType);
+    jobDao.queued(testJob.getJobId());
+    GenericJobServerModel actualJob = jobDao.getJob(testJob.getJobId());
+    assertEquals(StatusEnum.QUEUED, actualJob.getStatus());
+  }
+
+  @Test
+  void running() {
+    JobType jobType = JobType.DATA_IMPORT;
+    GenericJobServerModel testJob = assertJobCreation(jobType);
+    jobDao.running(testJob.getJobId());
+    GenericJobServerModel actualJob = jobDao.getJob(testJob.getJobId());
+    assertEquals(StatusEnum.RUNNING, actualJob.getStatus());
+  }
+
+  @Test
+  void success() {
+    JobType jobType = JobType.DATA_IMPORT;
+    GenericJobServerModel testJob = assertJobCreation(jobType);
+    jobDao.succeeded(testJob.getJobId());
+    GenericJobServerModel actualJob = jobDao.getJob(testJob.getJobId());
+    assertEquals(StatusEnum.SUCCEEDED, actualJob.getStatus());
+  }
+
+  // TODO: AJ-1011 get job, does it deserialize correctly?
   @Test
   void getJob() {
     JobType jobType = JobType.DATA_IMPORT;
@@ -195,6 +260,6 @@ class PostgresJobDaoTest {
 
     assertEquals(JobTypeEnum.DATA_IMPORT, actual.getJobType());
     assertEquals(StatusEnum.CREATED, actual.getStatus());
-    // TODO: as PostgresJobDao.mapRow evolves, add more assertions here
+    // TODO: AJ-1011 as PostgresJobDao.mapRow evolves, add more assertions here
   }
 }

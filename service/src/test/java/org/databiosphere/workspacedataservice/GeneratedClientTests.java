@@ -56,7 +56,7 @@ class GeneratedClientTests {
     RecordsApi recordsApi = new RecordsApi(apiClient);
     TsvUploadResponse tsvUploadResponse =
         recordsApi.uploadTSV(
-            new File(this.getClass().getResource("/small-test.tsv").toURI()),
+            new File(this.getClass().getResource("/tsv/small-test.tsv").toURI()),
             instanceId.toString(),
             version,
             "foo",
@@ -69,7 +69,7 @@ class GeneratedClientTests {
     RecordsApi recordsApi = new RecordsApi(apiClient);
     TsvUploadResponse tsvUploadResponse =
         recordsApi.uploadTSV(
-            new File(this.getClass().getResource("/small-test-no-sys.tsv").toURI()),
+            new File(this.getClass().getResource("/tsv/small-no-sys.tsv").toURI()),
             instanceId.toString(),
             version,
             "foo",

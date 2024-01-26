@@ -37,9 +37,25 @@ Instead use the `run_postgres.sh` script to set up a docker container running po
 
 #### Environment Variables
 
-For WDS to work properly, several environment variables are expected.
-These should be configured before running WDS.
-You may want to add them to your `~/.zshrc` or similar shell profile.
+For WDS to work properly, a spring profile needs to be set so that several environment variables are populated correctly.
+
+To run WDS locally and therefore use the local application properties, set the profile the following way: 
+
+```bash
+export SPRING_PROFILES_ACTIVE=local
+```
+
+Other profiles that are available are: 
+- alpha
+- staging
+- dev
+- prod
+- bee
+
+You are unlikely to use prod and bee when running locally, those profiles are leveraged when WDS is deployed in Terra. 
+
+If you would like to not use a profile (i.e. not set SPRING_PROFILES_ACTIVE variable), you can set the following environment variables manually. The variables that need to be set are described below. 
+You can also add them to your `~/.zshrc` or similar shell profile.
 
 ##### SAM_URL
 

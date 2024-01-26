@@ -11,8 +11,8 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
-import org.databiosphere.workspacedataservice.dataimport.PfbSchedulable;
-import org.databiosphere.workspacedataservice.dataimport.TdrManifestSchedulable;
+import org.databiosphere.workspacedataservice.dataimport.pfb.PfbSchedulable;
+import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestSchedulable;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;
@@ -54,6 +54,11 @@ public class ImportService {
       throw new AuthorizationException("Caller does not have permission to write to instance.");
     }
 
+    // get a token to execute the job
+    String petToken = samDao.getPetToken();
+
+    // TODO: translate the ImportRequestServerModel into a Job
+    // for now, just make an example job
     logger.debug("Data import of type {} requested", importRequest.getType());
 
     ImportJobInput importJobInput = ImportJobInput.from(importRequest);
@@ -66,20 +71,29 @@ public class ImportService {
         createdJob.getJobId(),
         importRequest.getType());
 
-    // create the arguments for the schedulable job
-    Map<String, Serializable> arguments = new HashMap<>();
-    arguments.put(ARG_TOKEN, "fake-pet-token");
-    arguments.put(ARG_URL, importRequest.getUrl().toString());
-    arguments.put(ARG_INSTANCE, instanceUuid.toString());
+    try {
+      // create the arguments for the schedulable job
+      Map<String, Serializable> arguments = new HashMap<>();
+      arguments.put(ARG_TOKEN, petToken);
+      arguments.put(ARG_URL, importRequest.getUrl().toString());
+      arguments.put(ARG_INSTANCE, instanceUuid.toString());
 
-    // create the executable job to be scheduled
-    Schedulable schedulable =
-        createSchedulable(importRequest.getType(), createdJob.getJobId(), arguments);
+      // create the executable job to be scheduled
+      Schedulable schedulable =
+          createSchedulable(importRequest.getType(), createdJob.getJobId(), arguments);
 
-    // schedule the job. after successfully scheduling, mark the job as queued
-    schedulerDao.schedule(schedulable);
-    logger.debug("Job {} scheduled", createdJob.getJobId());
-    jobDao.updateStatus(job.getJobId(), GenericJobServerModel.StatusEnum.QUEUED);
+      // schedule the job. after successfully scheduling, mark the job as queued
+      schedulerDao.schedule(schedulable);
+      logger.debug("Job {} scheduled", createdJob.getJobId());
+    } catch (Exception e) {
+      // we ran into a problem scheduling the job after we inserted the row in WDS's tracking table.
+      // since this job won't run, mark it as failed.
+      jobDao.fail(job.getJobId(), e);
+      return createdJob;
+    }
+
+    // we successfully scheduled the job; mark it as queued.
+    jobDao.queued(job.getJobId());
 
     // return the queued job
     return createdJob;

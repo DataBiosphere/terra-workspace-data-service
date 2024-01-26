@@ -1,0 +1,6 @@
+{
+  "customDimensions": {
+    "workspaceId": "${WORKSPACE_ID}",
+    "service.version": "${RELEASE_NAME}"
+  }
+}

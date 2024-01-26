@@ -1,14 +1,12 @@
 package org.databiosphere.workspacedataservice.activitylog;
 
-import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
-import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
-
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.sam.SamDao;
+import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.context.request.RequestContextHolder;
 
 /** Builder for ActivityEvent, with many convenience functions */
 public class ActivityEventBuilder {
@@ -39,12 +37,10 @@ public class ActivityEventBuilder {
   public ActivityEventBuilder currentUser() {
     try {
       // grab the current user's bearer token (see BearerTokenFilter)
-      Object token =
-          RequestContextHolder.currentRequestAttributes()
-              .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
-      if (token != null) {
+      BearerToken token = TokenContextUtil.getToken();
+      if (token.nonEmpty()) {
         // resolve the token to a user id via Sam
-        this.subject = samDao.getUserId(token.toString());
+        this.subject = samDao.getUserId(token.getValue());
       } else {
         this.subject = "anonymous";
       }
@@ -88,6 +84,11 @@ public class ActivityEventBuilder {
     return this;
   }
 
+  public ActivityEventBuilder renamed() {
+    this.action = ActivityModels.Action.RENAME;
+    return this;
+  }
+
   public ActivityEventBuilder restored() {
     this.action = ActivityModels.Action.RESTORE;
     return this;
@@ -102,6 +103,11 @@ public class ActivityEventBuilder {
 
   public ActivityEventBuilder table() {
     this.thing = ActivityModels.Thing.TABLE;
+    return this;
+  }
+
+  public ActivityEventBuilder attribute() {
+    this.thing = ActivityModels.Thing.ATTRIBUTE;
     return this;
   }
 
@@ -140,6 +146,11 @@ public class ActivityEventBuilder {
 
   public ActivityEventBuilder withId(String id) {
     this.ids = new String[] {id};
+    return this;
+  }
+
+  public ActivityEventBuilder withIds(String[] ids) {
+    this.ids = ids;
     return this;
   }
 

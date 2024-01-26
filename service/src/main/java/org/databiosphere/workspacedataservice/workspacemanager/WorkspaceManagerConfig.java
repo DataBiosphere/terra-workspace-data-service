@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.workspacemanager;
 
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,7 +26,8 @@ public class WorkspaceManagerConfig {
 
   @Bean
   public WorkspaceManagerDao workspaceManagerDao(
-      WorkspaceManagerClientFactory workspaceManagerClientFactory) {
-    return new WorkspaceManagerDao(workspaceManagerClientFactory, workspaceId);
+      WorkspaceManagerClientFactory workspaceManagerClientFactory,
+      RestClientRetry restClientRetry) {
+    return new WorkspaceManagerDao(workspaceManagerClientFactory, workspaceId, restClientRetry);
   }
 }

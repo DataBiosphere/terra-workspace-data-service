@@ -10,6 +10,7 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
 import org.databiosphere.workspacedataservice.sam.SamConfig;
 import org.databiosphere.workspacedataservice.sam.SamDao;
@@ -29,7 +30,8 @@ import org.springframework.test.context.ActiveProfiles;
       MockInstanceDaoConfig.class,
       SamConfig.class,
       MockSamClientFactoryConfig.class,
-      ActivityLoggerConfig.class
+      ActivityLoggerConfig.class,
+      RestClientRetry.class
     })
 class InstanceServiceTest {
 

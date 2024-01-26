@@ -68,7 +68,7 @@ class DataRepoDaoTest {
         .willThrow(new ApiException(statusCode, "Intentional error thrown for unit test"));
     var exception =
         assertThrows(DataRepoException.class, () -> dataRepoDao.getSnapshot(UUID.randomUUID()));
-    assertEquals(statusCode, exception.getRawStatusCode());
+    assertEquals(statusCode, exception.getStatusCode().value());
     Mockito.clearInvocations(mockRepositoryApi);
   }
 }

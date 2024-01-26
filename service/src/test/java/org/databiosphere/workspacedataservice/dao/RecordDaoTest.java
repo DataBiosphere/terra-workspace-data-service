@@ -1,9 +1,12 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_NUMBER;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_STRING;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,6 +31,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -748,6 +753,48 @@ class RecordDaoTest {
 
   @Test
   @Transactional
+  void testRenameAttribute() {
+    // Arrange
+    RecordType recordTypeWithAttributes = RecordType.valueOf("withAttributes");
+    recordDao.createRecordType(
+        instanceId,
+        Map.of("foo", DataTypeMapping.STRING, "bar", DataTypeMapping.STRING),
+        recordTypeWithAttributes,
+        new RelationCollection(Collections.emptySet(), Collections.emptySet()),
+        PRIMARY_KEY);
+
+    // Act
+    recordDao.renameAttribute(instanceId, recordTypeWithAttributes, "bar", "baz");
+
+    // Assert
+    Set<String> attributeNames =
+        Set.copyOf(recordDao.getAllAttributeNames(instanceId, recordTypeWithAttributes));
+    assertEquals(Set.of(PRIMARY_KEY, "foo", "baz"), attributeNames);
+  }
+
+  @Test
+  @Transactional
+  void testDeleteAttribute() {
+    // Arrange
+    RecordType recordTypeWithAttributes = RecordType.valueOf("withAttributes");
+    recordDao.createRecordType(
+        instanceId,
+        Map.of("attr1", DataTypeMapping.STRING, "attr2", DataTypeMapping.STRING),
+        recordTypeWithAttributes,
+        new RelationCollection(Collections.emptySet(), Collections.emptySet()),
+        PRIMARY_KEY);
+
+    // Act
+    recordDao.deleteAttribute(instanceId, recordTypeWithAttributes, "attr2");
+
+    // Assert
+    Set<String> attributeNames =
+        Set.copyOf(recordDao.getAllAttributeNames(instanceId, recordTypeWithAttributes));
+    assertEquals(Set.of(PRIMARY_KEY, "attr1"), attributeNames);
+  }
+
+  @Test
+  @Transactional
   void testCreateRelationJoinTable() {
     RecordType secondRecordType = RecordType.valueOf("secondRecordType");
     recordDao.createRecordType(
@@ -956,5 +1003,56 @@ class RecordDaoTest {
     // But not other values
     joinVals2 = testDao.getRelationArrayValues(instanceId, "referenceArray", fromRecord2, toType);
     assertIterableEquals(List.of(toRecordId, toRecordId2), joinVals2);
+  }
+
+  @ParameterizedTest(name = "for datatype {0}")
+  @EnumSource(
+      value = DataTypeMapping.class,
+      names = {
+        "ARRAY_OF_STRING",
+        "ARRAY_OF_FILE",
+        "ARRAY_OF_RELATION",
+        "ARRAY_OF_DATE",
+        "ARRAY_OF_DATE_TIME",
+        "ARRAY_OF_NUMBER",
+        "EMPTY_ARRAY"
+      })
+  void testOnlyNullsInList(DataTypeMapping typeMapping) {
+    List<?> input = new ArrayList<>();
+    input.add(null);
+    input.add(null);
+    input.add(null);
+    String[] expected = new String[] {null, null, null};
+    Object[] actual = recordDao.getListAsArray(input, typeMapping);
+
+    assertArrayEquals(expected, actual);
+  }
+
+  @Test
+  void testSomeNullsInStringList() {
+    List<String> input = new ArrayList<>();
+    input.add(null);
+    input.add("foo");
+    input.add(null);
+    input.add("bar");
+    input.add(null);
+    String[] expected = new String[] {null, "foo", null, "bar", null};
+    Object[] actual = recordDao.getListAsArray(input, ARRAY_OF_STRING);
+
+    assertArrayEquals(expected, actual);
+  }
+
+  @Test
+  void testSomeNullsInNumberList() {
+    List<Double> input = new ArrayList<>();
+    input.add(null);
+    input.add(3.14);
+    input.add(null);
+    input.add(789d);
+    input.add(null);
+    String[] expected = new String[] {null, "3.14", null, "789.0", null};
+    Object[] actual = recordDao.getListAsArray(input, ARRAY_OF_NUMBER);
+
+    assertArrayEquals(expected, actual);
   }
 }

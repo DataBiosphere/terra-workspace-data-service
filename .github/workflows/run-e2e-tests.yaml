@@ -1,4 +1,4 @@
-name: run e2e tests
+name: Run WDS e2e tests with BEE
 'on':
   schedule:
     # run twice a day at 10:00 and 22:00 UTC every day of the week
@@ -7,6 +7,7 @@ name: run e2e tests
 env:
   BEE_NAME: 'wds-${{ github.run_id }}-${{ github.run_attempt}}-dev'
   TOKEN: '${{ secrets.BROADBOT_TOKEN }}'
+  ATTACH_BP_TO_LZ_RUN_NAME: 'attach-billing-project-to-landing-zone-${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
   RUN_NAME_SUFFIX: ${{ github.event.repository.name }}-${{ github.run_id }}-${{github.run_attempt }}
 jobs:
   init-github-context:
@@ -26,7 +27,7 @@ jobs:
       project-name: '${{ steps.gen.outputs.project_name }}'
       bee-name: '${{ env.BEE_NAME }}'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Generate a random billing project name
         id: gen
         run: |
@@ -38,37 +39,50 @@ jobs:
       contents: read
       id-token: write
     steps:
+      - name: Get actions
+        uses: actions/checkout@v3
+
       - name: dispatch to terra-github-workflows
-        uses: broadinstitute/workflow-dispatch@v3
+        id: FirstAttemptCreateBee
+        continue-on-error: true
+        uses: ./.github/actions/create-bee
         with:
-          workflow: bee-create
-          repo: broadinstitute/terra-github-workflows
-          ref: refs/heads/main
-          token: '${{ env.TOKEN }}'
-          inputs: >-
-            { 
-            "bee-name": "${{ env.BEE_NAME }}", 
-            "bee-template-name":
-            "rawls-e2e-azure-tests", 
-            "version-template": "dev" 
-            }
+            bee_name: ${{ env.BEE_NAME }}
+            token: '${{ env.TOKEN }}'
+
+      - name: retry dispatch to terra-github-workflows in case of failure
+        if: steps.FirstAttemptCreateBee.outcome == 'failure'
+        uses: ./.github/actions/create-bee
+        with:
+            bee_name: ${{ env.BEE_NAME }},
+            token: ${{ env.TOKEN }}
+
   attach-landing-zone-to-bee-workflow:
     runs-on: ubuntu-latest
-    needs: [init-github-context, create-bee-workflow, params-gen]
+    needs: [ init-github-context, create-bee-workflow, params-gen ]
     steps:
+      - name: Get actions
+        uses: actions/checkout@v3
+
       - name: dispatch to terra-github-workflows
-        uses: broadinstitute/workflow-dispatch@v3
+        id: FirstAttemptLandingZone
+        continue-on-error: true
+        uses: ./.github/actions/landing-zone-attach
         with:
-          workflow: attach-billing-project-to-landing-zone.yaml
-          repo: broadinstitute/terra-github-workflows
-          ref: refs/heads/main
-          token: '${{ env.TOKEN }}'
-          inputs: >-
-            { 
-            "bee-name": "${{ env.BEE_NAME }}", 
-            "billing-project": "${{needs.params-gen.outputs.project-name }}", 
-            "service-account": "firecloud-qa@broad-dsde-qa.iam.gserviceaccount.com" 
-            }
+            run_name: "${{ env.ATTACH_BP_TO_LZ_RUN_NAME }}"
+            bee_name: ${{ env.BEE_NAME }}
+            token: '${{ env.TOKEN }}'
+            project_name: ${{needs.params-gen.outputs.project-name }}
+
+      - name: retry dispatch to terra-github-workflows in case of failure
+        if: steps.FirstAttemptLandingZone.outcome == 'failure'
+        uses: ./.github/actions/landing-zone-attach
+        with:
+            run_name: "${{ env.ATTACH_BP_TO_LZ_RUN_NAME }}-retry"
+            bee_name: ${{ env.BEE_NAME }}
+            token: '${{ env.TOKEN }}'
+            project_name: ${{needs.params-gen.outputs.project-name }}
+
   run-e2e-test-job:
     needs:
       - attach-landing-zone-to-bee-workflow
@@ -99,6 +113,7 @@ jobs:
           inputs: '{ "bee-name": "${{ env.BEE_NAME }}" }'
   report-workflow:
     uses: broadinstitute/sherlock/.github/workflows/client-report-workflow.yaml@main
+    if: github.ref == 'refs/heads/main'
     with:
       notify-slack-channels-upon-workflow-failure: "#dsp-analysis-journeys-alerts"
     permissions:

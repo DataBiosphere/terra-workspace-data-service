@@ -6,7 +6,7 @@ plugins {
     id 'org.sonarqube'
     id 'com.gorylenko.gradle-git-properties'
     id 'org.openapi.generator'
-    id 'com.diffplug.spotless' version '6.21.0'
+    id 'com.diffplug.spotless'
     id 'jacoco'
     id "au.com.dius.pact" version "4.6.1"
     id 'jvm-test-suite'
@@ -36,15 +36,16 @@ jib {
 }
 
 ext {
-    jersey_version = "2.36"
+    parquet_mr_version = "1.13.1"
+    hadoop_version = "3.3.6"
 }
 
 dependencies {
     // Azure libraries
-    implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.14'
-    implementation 'com.azure:azure-storage-blob:12.23.0'
-    implementation 'com.azure:azure-identity:1.9.2' // authentication in azure environment
-    implementation 'com.azure:azure-identity-extensions:1.1.5' // postgres password plugin
+    implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.18'
+    implementation 'com.azure:azure-storage-blob:12.25.0'
+    implementation 'com.azure:azure-identity:1.11.0' // authentication in azure environment
+    implementation 'com.azure:azure-identity-extensions:1.1.10' // postgres password plugin
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
@@ -52,55 +53,85 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'org.springframework.boot:spring-boot-starter-batch'
     implementation 'org.springframework.boot:spring-boot-starter-quartz'
-    implementation 'org.springframework.integration:spring-integration-jdbc'
-    implementation 'org.springframework.retry:spring-retry:1.3.4'
-    implementation 'org.aspectj:aspectjweaver:1.8.9'
-    // required by spring-retry, not used directly by WDS
-    implementation 'org.apache.commons:commons-lang3'
-    implementation 'com.google.guava:guava:32.1.1-jre'
-    implementation 'org.postgresql:postgresql'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.webjars:webjars-locator-core:0.52'
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.13.5'
-    implementation 'io.sentry:sentry-logback:6.12.1'
-    implementation 'org.liquibase:liquibase-core:4.21.1'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'org.springframework.integration:spring-integration-jdbc'
+    implementation 'org.aspectj:aspectjweaver' // required by spring-retry, not used directly
+    implementation 'com.google.guava:guava:32.1.3-jre'
+    implementation 'org.postgresql:postgresql'
+    implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
+    implementation 'io.sentry:sentry-logback:6.34.0'
+    implementation 'org.liquibase:liquibase-core'
     implementation 'javax.cache:cache-api'
-    implementation 'org.ehcache:ehcache:3.10.8'
+    implementation 'org.ehcache:ehcache:3.10.8:jakarta'
     implementation 'org.hashids:hashids:1.0.3'
-    implementation 'javax.ws.rs:javax.ws.rs-api:2.1.1'
+    implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
     implementation 'com.google.mug:mug:6.6'
 
     // required by openapi-generated models and api interfaces
-    implementation 'javax.validation:validation-api'
+    implementation 'jakarta.validation:jakarta.validation-api'
     implementation 'io.swagger.core.v3:swagger-annotations:2.2.16'
 
     // Terra libraries
-    implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-08b6588'
+    implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-752b4f3'
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'leonardo-client_2.13', version: '1.3.6-22ee00b'
-    implementation 'com.squareup.okhttp3:okhttp:4.11.0' // required by Sam client
-    implementation "bio.terra:datarepo-client:1.537.0-SNAPSHOT"
-    implementation "bio.terra:workspace-manager-client:0.254.717-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.5.0"
+    implementation 'com.squareup.okhttp3:okhttp' // required by Sam client
+    implementation "bio.terra:datarepo-jakarta-client:1.570.0-SNAPSHOT"
+    implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
+    implementation "bio.terra:java-pfb-library:0.15.0"
     implementation project(path: ':client')
 
-    // hk2 is required to use WSM client, but not correctly exposed by the client
-    implementation "org.glassfish.jersey.inject:jersey-hk2:$jersey_version"
-    implementation "org.glassfish.jersey.core:jersey-client:$jersey_version"
-    implementation "org.glassfish.jersey.core:jersey-common:$jersey_version"
+    // Parquet, used for TDR snapshot import
+    implementation "org.apache.parquet:parquet-common:$parquet_mr_version"
+    implementation "org.apache.parquet:parquet-avro:$parquet_mr_version"
+    implementation "org.apache.parquet:parquet-hadoop:$parquet_mr_version"
+
+    // we need Hadoop libraries to read Parquet files for TDR import. However, Hadoop brings
+    // a boatload of transitive dependencies we don't need, some of which (e.g. com.sun.xml.bind)
+    // cause conflicts. Exclude a lot of the transitive deps. Inspired by https://stackoverflow.com/a/60067027
+    def withoutHadoopExcludes = {
+        exclude(group: 'log4j')
+        exclude(group: 'org.slf4j')
+        exclude(group: 'io.netty')
+        exclude(group: 'org.mortbay.jetty')
+        exclude(group: 'javax.servlet.jsp')
+        exclude(group: 'com.sun.jersey')
+        exclude(group: 'com.sun.xml.bind')
+        exclude(group: 'org.apache.curator')
+        exclude(group: 'org.apache.zookeeper')
+        exclude(group: 'org.apache.kerby')
+        exclude(group: 'com.google.protobuf')
+    }
+    implementation "org.apache.hadoop:hadoop-common:$hadoop_version", withoutHadoopExcludes
+    implementation "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoop_version", withoutHadoopExcludes
+
+    // Jersey libs, required by WSM client (and maybe other clients?), version managed by Spring
+    implementation "org.glassfish.jersey.inject:jersey-hk2"
+    implementation "org.glassfish.jersey.core:jersey-client"
+    implementation "org.glassfish.jersey.core:jersey-common"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:4.12.0'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.9.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation project(':client')
     testImplementation 'au.com.dius.pact.consumer:junit5:4.6.1'
+    testImplementation 'org.junit-pioneer:junit-pioneer:2.1.0'
 
     constraints {
-        implementation('org.json:json:20230227') {
+        implementation('org.json:json:20231013') {
             because("CVE-2022-45688")
         }
-        implementation('com.squareup.okio:okio:3.4.0') {
-            because("CVE-2023-3635")
+        // commons-compress required by org.apache.avro:avro:1.11.3, required by java-pfb-library:0.14.0
+        implementation('org.apache.commons:commons-compress:1.24.0') {
+            because("CVE-2023-42503")
+        }
+        implementation('org.xerial.snappy:snappy-java:1.1.10.4') {
+            because("CVE-2023-34453, CVE-2023-34454, CVE-2023-34455, CVE-2023-43642")
+        }
+        implementation('org.codehaus.jettison:jettison:1.5.4') {
+            because("CVE-2022-40149, CVE-2022-40150, CVE-2022-45685, CVE-2022-45693, CVE-2023-1436")
         }
     }
 }
@@ -122,10 +153,12 @@ tasks.register('generateApiInterfaces', GenerateTask) {
     supportingFilesConstrainedTo.set([]) // empty array means generate none
     skipOperationExample = true // example responses require the ApiUtil.java supporting file
     configOptions.set([
+        useJakartaEe           : "true", // for Spring Boot 3
         interfaceOnly          : "true", // Java interfaces only; no controllers or implementation classes
         useTags                : "true", // use the OpenAPI tag to classify apis, not the first segment of the api path
         hideGenerationTimestamp: "true"  // hidden to prevent unnecessary diff noise on unrelated changes
     ])
+
 }
 
 
@@ -141,7 +174,7 @@ spotless {
         targetExclude "${buildDir}/**"
         targetExclude "**/swagger-code/**"
         targetExclude "**/generated/**"
-        googleJavaFormat()
+        googleJavaFormat('1.18.1')
         toggleOffOn() // allow spotless:off & spotless:on to protect code from formatting
     }
 }
@@ -165,7 +198,7 @@ compileJava {
     }
 }
 
-sonarqube {
+sonar {
     properties {
         property "sonar.projectName", "terra-workspace-data-service"
         property "sonar.projectKey", "DataBiosphere_workspace-data-service"
@@ -215,10 +248,10 @@ testing {
                 implementation project(':client')
                 implementation 'org.springframework.boot:spring-boot-starter-test'
                 implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-                implementation 'org.liquibase:liquibase-core:4.21.1'
-                implementation "org.glassfish.jersey.core:jersey-client:$jersey_version"
-                implementation "org.glassfish.jersey.core:jersey-common:$jersey_version"
-                implementation "org.glassfish.jersey.inject:jersey-hk2:$jersey_version"
+                implementation 'org.liquibase:liquibase-core'
+                implementation "org.glassfish.jersey.core:jersey-client"
+                implementation "org.glassfish.jersey.core:jersey-common"
+                implementation "org.glassfish.jersey.inject:jersey-hk2"
             }
         }
     }

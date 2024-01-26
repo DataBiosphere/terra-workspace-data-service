@@ -1,0 +1,7 @@
+{
+  "capabilities": true,
+  "dataimport.pfb": true,
+  "dataimport.tdrmanifest": false,
+  "edit.deleteAttribute": true,
+  "edit.renameAttribute": true
+}

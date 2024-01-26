@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -173,6 +174,18 @@ class DataTypeInfererTest {
     assertThat(inferer.inferType("[11, 99, -3.14, 09]")).isEqualTo(DataTypeMapping.STRING);
     assertThat(inferer.inferType("[a]")).isEqualTo(DataTypeMapping.STRING);
     assertThat(inferer.inferType("[11, 99, -3.14, 09]")).isEqualTo(DataTypeMapping.STRING);
+  }
+
+  @Test
+  void inferArraysOfOnlyNulls() {
+    assertThat(inferer.inferType(Arrays.asList(null, null, null)))
+        .isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
+  }
+
+  @Test
+  void inferArraysOfSomeNulls() {
+    assertThat(inferer.inferType(Arrays.asList(null, "foo", null, "bar", null)))
+        .isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
   }
 
   // Test for [AJ-1143]: TSV fails to upload if it has nulls in a relation column

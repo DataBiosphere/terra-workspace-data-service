@@ -1,10 +1,16 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.COUNTER_COL_CHANGE;
+import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_ATTRIBUTE_NAME;
+import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_INSTANCE;
+import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_RECORD_TYPE;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 
 import bio.terra.common.db.WriteTransaction;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,9 +51,12 @@ public class RecordService {
 
   private final DataTypeInferer inferer;
 
-  public RecordService(RecordDao recordDao, DataTypeInferer inferer) {
+  private final MeterRegistry meterRegistry;
+
+  public RecordService(RecordDao recordDao, DataTypeInferer inferer, MeterRegistry meterRegistry) {
     this.recordDao = recordDao;
     this.inferer = inferer;
+    this.meterRegistry = meterRegistry;
   }
 
   public void prepareAndUpsert(
@@ -208,6 +217,18 @@ public class RecordService {
           inferer.selectBestType(valueDifference.leftValue(), valueDifference.rightValue());
       recordDao.changeColumn(instanceId, recordType, column, updatedColType);
       schema.put(column, updatedColType);
+
+      // update a metrics counter with this schema change
+      Counter counter =
+          Counter.builder(COUNTER_COL_CHANGE)
+              .tag(TAG_RECORD_TYPE, recordType.getName())
+              .tag(TAG_ATTRIBUTE_NAME, column)
+              .tag(TAG_INSTANCE, instanceId.toString())
+              .tag("OldDataType", valueDifference.leftValue().toString())
+              .tag("NewDataType", updatedColType.toString())
+              .description("Column schema changes")
+              .register(meterRegistry);
+      counter.increment();
     }
     return schema;
   }
@@ -385,5 +406,16 @@ public class RecordService {
   @WriteTransaction
   public void deleteRecordType(UUID instanceId, RecordType recordType) {
     recordDao.deleteRecordType(instanceId, recordType);
+  }
+
+  @WriteTransaction
+  public void renameAttribute(
+      UUID instanceId, RecordType recordType, String attribute, String newAttributeName) {
+    recordDao.renameAttribute(instanceId, recordType, attribute, newAttributeName);
+  }
+
+  @WriteTransaction
+  public void deleteAttribute(UUID instanceId, RecordType recordType, String attribute) {
+    recordDao.deleteAttribute(instanceId, recordType, attribute);
   }
 }

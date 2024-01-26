@@ -26,12 +26,12 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import javax.annotation.Generated;
+import jakarta.annotation.Generated;
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
 @Validated
@@ -43,9 +43,8 @@ public interface JobApi {
     }
 
     /**
-     * GET /{instanceUuid}/job/v1/{jobId} : Get status of a long-running job.
+     * GET /job/v1/{jobId} : Get status of a long-running job.
      *
-     * @param instanceUuid WDS instance id; by convention equal to workspace id (required)
      * @param jobId  (required)
      * @return Job completed. (status code 200)
      *         or Job still running. (status code 202)
@@ -65,11 +64,10 @@ public interface JobApi {
     )
     @RequestMapping(
         method = RequestMethod.GET,
-        value = "/{instanceUuid}/job/v1/{jobId}",
+        value = "/job/v1/{jobId}",
         produces = { "application/json" }
     )
     default ResponseEntity<GenericJobServerModel> jobStatusV1(
-        @Parameter(name = "instanceUuid", description = "WDS instance id; by convention equal to workspace id", required = true, in = ParameterIn.PATH) @PathVariable("instanceUuid") UUID instanceUuid,
         @Parameter(name = "jobId", description = "", required = true, in = ParameterIn.PATH) @PathVariable("jobId") UUID jobId
     ) {
         return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);

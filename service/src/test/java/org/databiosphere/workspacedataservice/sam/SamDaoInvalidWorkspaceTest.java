@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.sam;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,7 +14,7 @@ import org.springframework.test.annotation.DirtiesContext;
  */
 @DirtiesContext
 @SpringBootTest(
-    classes = {SamConfig.class},
+    classes = {SamConfig.class, RestClientRetry.class},
     properties = {"twds.instance.workspace-id=not-a-real-id"})
 public class SamDaoInvalidWorkspaceTest {
 

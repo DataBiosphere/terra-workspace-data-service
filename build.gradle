@@ -1,15 +1,16 @@
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
-    id 'org.springframework.boot' version '2.7.12' apply false
-    id 'io.spring.dependency-management' version '1.1.0' apply false
+    id 'org.springframework.boot' version '3.2.1' apply false
+    id 'io.spring.dependency-management' version '1.1.4' apply false
     id 'com.google.cloud.tools.jib' version '3.2.1' apply false
-    id "org.sonarqube" version "4.0.0.2929" apply false
+    id "org.sonarqube" version "4.4.1.3373" apply false
     id 'idea'
     id "org.openapi.generator" version "6.6.0" apply false
     id 'java'
     id 'com.gorylenko.gradle-git-properties' version '2.4.1'
     id 'jacoco'
+    id 'com.diffplug.spotless' version '6.23.0' apply false
 }
 
 repositories {
@@ -19,7 +20,7 @@ repositories {
 
 subprojects {
     group = 'org.databiosphere'
-    version = '0.2.100-SNAPSHOT'
+    version = '0.2.113-SNAPSHOT'
 
     apply plugin: 'idea'
     apply plugin: 'java'
@@ -35,10 +36,8 @@ subprojects {
         imports {
             mavenBom(SpringBootPlugin.BOM_COORDINATES)
         }
-
         dependencies {
-            dependency 'org.yaml:snakeyaml:2.0'
-            dependency 'io.netty:netty-handler:4.1.94.Final'
+            dependency 'org.liquibase:liquibase-core:4.25.1'
         }
     }
 }

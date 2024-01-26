@@ -20,7 +20,9 @@ import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
+import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -229,6 +231,60 @@ public class RecordOrchestratorService { // TODO give me a better name
     recordService.deleteRecordType(instanceId, recordType);
     activityLogger.saveEventForCurrentUser(
         user -> user.deleted().table().ofQuantity(1).withRecordType(recordType));
+  }
+
+  public void renameAttribute(
+      UUID instanceId,
+      String version,
+      RecordType recordType,
+      String attribute,
+      String newAttributeName) {
+    validateAndPermissions(instanceId, version);
+    checkRecordTypeExists(instanceId, recordType);
+    validateRenameAttribute(instanceId, recordType, attribute, newAttributeName);
+    recordService.renameAttribute(instanceId, recordType, attribute, newAttributeName);
+    activityLogger.saveEventForCurrentUser(
+        user ->
+            user.renamed()
+                .attribute()
+                .withRecordType(recordType)
+                .withIds(new String[] {attribute, newAttributeName}));
+  }
+
+  private void validateRenameAttribute(
+      UUID instanceId, RecordType recordType, String attribute, String newAttributeName) {
+    RecordTypeSchema schema = getSchemaDescription(instanceId, recordType);
+
+    if (schema.isPrimaryKey(attribute)) {
+      throw new ValidationException("Unable to rename primary key attribute");
+    }
+    if (!schema.containsAttribute(attribute)) {
+      throw new MissingObjectException("Attribute");
+    }
+    if (schema.containsAttribute(newAttributeName)) {
+      throw new ConflictException("Attribute already exists");
+    }
+  }
+
+  public void deleteAttribute(
+      UUID instanceId, String version, RecordType recordType, String attribute) {
+    validateAndPermissions(instanceId, version);
+    checkRecordTypeExists(instanceId, recordType);
+    validateDeleteAttribute(instanceId, recordType, attribute);
+    recordService.deleteAttribute(instanceId, recordType, attribute);
+    activityLogger.saveEventForCurrentUser(
+        user -> user.deleted().attribute().withRecordType(recordType).withId(attribute));
+  }
+
+  private void validateDeleteAttribute(UUID instanceId, RecordType recordType, String attribute) {
+    RecordTypeSchema schema = getSchemaDescription(instanceId, recordType);
+
+    if (schema.isPrimaryKey(attribute)) {
+      throw new ValidationException("Unable to delete primary key attribute");
+    }
+    if (!schema.containsAttribute(attribute)) {
+      throw new MissingObjectException("Attribute");
+    }
   }
 
   @ReadTransaction

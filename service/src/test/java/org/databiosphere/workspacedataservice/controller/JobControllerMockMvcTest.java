@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.junit.jupiter.api.Test;
@@ -22,22 +21,17 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-@ActiveProfiles(profiles = {"mock-instance-dao", "mock-sam"})
+@ActiveProfiles(profiles = {"mock-sam"})
 @DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
 class JobControllerMockMvcTest {
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper mapper;
-  @Autowired private InstanceDao instanceDao;
   @MockBean private JobDao jobDao;
 
   @Test
   void smokeTestGetJob() throws Exception {
-    // create the instance in the MockInstanceDao
-    UUID instanceId = UUID.randomUUID();
-    instanceDao.createSchema(instanceId);
-
     // return a test job from the mocked JobDao
     UUID jobId = UUID.randomUUID();
     GenericJobServerModel expected =
@@ -53,7 +47,7 @@ class JobControllerMockMvcTest {
     // calling the API should result in 202 Accepted
     MvcResult mvcResult =
         mockMvc
-            .perform(get("/{instanceUuid}/job/v1/{jobId}", instanceId, expected.getJobId()))
+            .perform(get("/job/v1/{jobId}", expected.getJobId()))
             .andExpect(status().isAccepted())
             .andReturn();
 
