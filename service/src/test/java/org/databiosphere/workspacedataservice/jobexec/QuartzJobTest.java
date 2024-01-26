@@ -179,7 +179,7 @@ class QuartzJobTest {
 
     // the Timer for wds.job.execute tracks history of completed jobs. We expect its duration
     // to be nonzero and its count to be 1.
-    assertThat(timer.totalTime(TimeUnit.SECONDS)).isGreaterThan(0);
+    assertThat(timer.totalTime(TimeUnit.SECONDS)).isPositive();
     // with one observation, max and total should be the same
     assertEquals(timer.totalTime(TimeUnit.SECONDS), timer.max(TimeUnit.SECONDS));
     assertEquals(1, timer.count());
