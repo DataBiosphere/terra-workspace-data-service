@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
+import org.databiosphere.workspacedataservice.observability.TestObservationRegistryConfig;
 import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,27 +40,18 @@ import org.quartz.JobKey;
 import org.quartz.impl.JobDetailImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Import(TestObservationRegistryConfig.class)
 class QuartzJobTest {
 
   @MockBean JobDao jobDao;
   @Autowired MeterRegistry meterRegistry;
-
+  // overridden with a TestObservationRegistry
   @Autowired private ObservationRegistry observationRegistry;
-
-  // override Spring's standard ObservationRegistry with a TestObservationRegistry
-  @TestConfiguration
-  static class TestObservationConfig {
-    @Bean
-    ObservationRegistry testObservationRegistry() {
-      return TestObservationRegistry.create();
-    }
-  }
 
   @BeforeAll
   void beforeAll() {
