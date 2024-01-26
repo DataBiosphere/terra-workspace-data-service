@@ -1,8 +1,11 @@
 package org.databiosphere.workspacedataservice.jobexec;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -25,8 +28,8 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.quartz.JobDataMap;
@@ -36,16 +39,27 @@ import org.quartz.JobKey;
 import org.quartz.impl.JobDetailImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class QuartzJobTest {
 
   @MockBean JobDao jobDao;
-  @Autowired ObservationRegistry observationRegistry;
   @Autowired MeterRegistry meterRegistry;
-  private TestObservationRegistry testObservationRegistry;
+
+  @Autowired private ObservationRegistry observationRegistry;
+
+  // override Spring's standard ObservationRegistry with a TestObservationRegistry
+  @TestConfiguration
+  static class TestObservationConfig {
+    @Bean
+    ObservationRegistry testObservationRegistry() {
+      return TestObservationRegistry.create();
+    }
+  }
 
   @BeforeAll
   void beforeAll() {
@@ -64,16 +78,14 @@ class QuartzJobTest {
         .thenThrow(new RuntimeException("test failed via jobDao.fail()"));
     when(jobDao.fail(any(), anyString()))
         .thenThrow(new RuntimeException("test failed via jobDao.fail()"));
-    // set up metrics registries
-    testObservationRegistry = TestObservationRegistry.create();
-    Metrics.globalRegistry.add(meterRegistry);
   }
 
-  @AfterAll
-  void afterAll() {
-    testObservationRegistry.clear();
+  /** clear all observations and metrics prior to each test */
+  @BeforeEach
+  void beforeEach() {
     meterRegistry.clear();
     Metrics.globalRegistry.clear();
+    ((TestObservationRegistry) observationRegistry).clear();
   }
 
   /**
@@ -123,6 +135,10 @@ class QuartzJobTest {
     String jobUuid = UUID.randomUUID().toString();
     JobExecutionContext mockContext = setUpTestJob(randomToken, jobUuid);
 
+    // this test requires a TestObservationRegistry
+    TestObservationRegistry testObservationRegistry =
+        assertInstanceOf(TestObservationRegistry.class, observationRegistry);
+
     // execute the TestableQuartzJob, then use testObservationRegistry to confirm observation
     new TestableQuartzJob(randomToken, testObservationRegistry).execute(mockContext);
 
@@ -142,14 +158,35 @@ class QuartzJobTest {
     String randomToken = RandomStringUtils.randomAlphanumeric(10);
     JobExecutionContext mockContext = setUpTestJob(randomToken, UUID.randomUUID().toString());
 
+    // LongTaskTimer and Timer should both be null before we run the job
+    assertNull(meterRegistry.find("wds.job.execute.active").longTaskTimer());
+    assertNull(meterRegistry.find("wds.job.execute").timer());
+
     // execute the TestableQuartzJob, then confirm metrics provisioned correctly
     new TestableQuartzJob(randomToken, observationRegistry).execute(mockContext);
 
     // metrics provisioned should be longTaskTimer and a Timer, confirm both ran
     LongTaskTimer longTaskTimer = meterRegistry.find("wds.job.execute.active").longTaskTimer();
-    assertNotEquals(0, longTaskTimer.duration(TimeUnit.SECONDS));
+    assertNotNull(longTaskTimer);
     Timer timer = meterRegistry.find("wds.job.execute").timer();
-    assertNotEquals(0, timer.count());
+    assertNotNull(timer);
+
+    // the LongTaskTimer for wds.job.execute.active tracks "in-flight long-running tasks".
+    // since the job we just ran is complete, we expect it to show zero active tasks
+    // and zero duration.
+    assertEquals(0, longTaskTimer.activeTasks());
+    assertEquals(0, longTaskTimer.duration(TimeUnit.SECONDS));
+
+    // the Timer for wds.job.execute tracks history of completed jobs. We expect its duration
+    // to be nonzero and its count to be 1.
+    assertThat(timer.totalTime(TimeUnit.SECONDS)).isGreaterThan(0);
+    assertEquals(1, timer.count());
+
+    // execute the TestableQuartzJob a few more times to further increment the timer count
+    for (int i = 2; i < 10; i++) {
+      new TestableQuartzJob(randomToken, observationRegistry).execute(mockContext);
+      assertEquals(i, timer.count());
+    }
   }
 
   // sets up a job and returns the job context
