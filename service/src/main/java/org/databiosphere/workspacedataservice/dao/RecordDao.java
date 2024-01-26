@@ -103,6 +103,25 @@ public class RecordDao {
     this.primaryKeyDao = primaryKeyDao;
   }
 
+  public Integer countMatchingRows(
+      UUID instanceId, RecordType recordType, String attributeName, String filterValue) {
+    Integer theCount =
+        namedTemplate.queryForObject(
+            "select count(1) from "
+                + getQualifiedTableName(recordType, instanceId)
+                + " where "
+                + attributeName
+                + " = '"
+                + filterValue
+                + "';",
+            new MapSqlParameterSource(Map.of()),
+            Integer.class);
+
+    LOGGER.info("found " + theCount + " matching rows.");
+
+    return theCount;
+  }
+
   public boolean recordTypeExists(UUID instanceId, RecordType recordType) {
     return Boolean.TRUE.equals(
         namedTemplate.queryForObject(
