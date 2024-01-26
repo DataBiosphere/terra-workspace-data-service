@@ -67,6 +67,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.server.ResponseStatusException;
@@ -77,6 +78,7 @@ public class RecordDao {
   private static final String INSTANCE_ID = "instanceId";
   private static final String RECORD_ID_PARAM = "recordId";
   private final NamedParameterJdbcTemplate namedTemplate;
+  private final JdbcTemplate jdbcTemplate;
 
   private final DataSource mainDb;
 
@@ -98,6 +100,7 @@ public class RecordDao {
       PrimaryKeyDao primaryKeyDao) {
     this.mainDb = mainDb;
     this.namedTemplate = namedTemplate;
+    this.jdbcTemplate = namedTemplate.getJdbcTemplate();
     this.inferer = inf;
     this.objectMapper = objectMapper;
     this.primaryKeyDao = primaryKeyDao;
@@ -115,8 +118,9 @@ public class RecordDao {
    */
   public int findAndReplace(
       UUID instanceId, RecordType recordType, String attributeName, String find, String replace) {
+
     int theCount =
-        namedTemplate.update(
+        jdbcTemplate.update(
             "update"
                 + getQualifiedTableName(recordType, instanceId)
                 + " set "
@@ -127,8 +131,7 @@ public class RecordDao {
                 + attributeName
                 + " = '"
                 + find
-                + "';",
-            new MapSqlParameterSource(Map.of()));
+                + "';");
 
     LOGGER.info("found " + theCount + " matching rows.");
 
