@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.dataimport.tdr;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -12,13 +11,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.parquet.hadoop.util.HadoopInputFile;
+import org.apache.parquet.io.InputFile;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestExemplarData.AzureSmall;
 import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
-import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -113,15 +116,9 @@ public class TdrManifestQuartzJobTest {
             List.of());
 
     // An empty file should not throw any errors
-    BatchWriteResult actual =
-        assertDoesNotThrow(
-            () ->
-                tdrManifestQuartzJob.importTable(
-                    emptyParquet.getURL(),
-                    table,
-                    workspaceId,
-                    TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES));
-    assertThat(actual.entrySet()).isEmpty();
+    FileDownloadHelper fileMap =
+        assertDoesNotThrow(() -> tdrManifestQuartzJob.getFilesForImport(List.of(table)));
+    assert (fileMap.getFileMap().isEmpty());
   }
 
   /*
@@ -153,12 +150,16 @@ public class TdrManifestQuartzJobTest {
             List.of(malformedParquet.getURL()),
             List.of());
 
+    InputFile malformedFile =
+        HadoopInputFile.fromPath(
+            new Path(malformedParquet.getURL().toString()), new Configuration());
+
     // Make sure real errors on parsing parquets are not swallowed
     assertThrows(
         TdrManifestImportException.class,
         () ->
             tdrManifestQuartzJob.importTable(
-                manifestAzure.getURL(),
+                malformedFile,
                 table,
                 workspaceId,
                 TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES));

@@ -20,17 +20,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.InputFile;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
@@ -106,16 +103,24 @@ public class TdrManifestQuartzJob extends QuartzJob {
     List<TdrManifestImportTable> tdrManifestImportTables =
         extractTableInfo(snapshotExportResponseModel);
 
+    // get all the parquet files from the manifests
+
+    FileDownloadHelper fileDownloadHelper = getFilesForImport(tdrManifestImportTables);
+
     // loop through the tables to be imported and upsert base attributes
     var result =
         importTables(
             tdrManifestImportTables,
+            fileDownloadHelper.getFileMap(),
             targetInstance,
             TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
 
     // add relations to the existing base attributes
     importTables(
-        tdrManifestImportTables, targetInstance, TwoPassStreamingWriteHandler.ImportMode.RELATIONS);
+        tdrManifestImportTables,
+        fileDownloadHelper.getFileMap(),
+        targetInstance,
+        TwoPassStreamingWriteHandler.ImportMode.RELATIONS);
 
     // activity logging for import status
     // no specific activity logging for relations since main import is a superset
@@ -130,12 +135,15 @@ public class TdrManifestQuartzJob extends QuartzJob {
                           .withRecordType(entry.getKey())
                           .ofQuantity(entry.getValue()));
             });
+    // delete temp files after everything else is completed
+    // Any failed deletions will be removed if/when pod restarts
+    fileDownloadHelper.deleteFileDirectory();
   }
 
   /**
    * Given a single Parquet file to be imported, import it
    *
-   * @param path path to Parquet file to be imported.
+   * @param inputFile Parquet file to be imported.
    * @param table info about the table to be imported
    * @param targetInstance instance into which to import
    * @param importMode mode for this invocation
@@ -143,48 +151,22 @@ public class TdrManifestQuartzJob extends QuartzJob {
    */
   @VisibleForTesting
   BatchWriteResult importTable(
-      URL path,
+      InputFile inputFile,
       TdrManifestImportTable table,
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
-    try {
-      // download the file from the URL to a temp file on the local filesystem
-      // Azure urls, with SAS tokens, don't need any particular auth.
-      // TODO AJ-1517 can we access the URL directly, no temp file?
-      File tempFile = File.createTempFile("tdr-", "download");
-      logger.info("downloading to temp file {} ...", tempFile.getPath());
-      FileUtils.copyURLToFile(path, tempFile);
-      Path hadoopFilePath = new Path(tempFile.getPath());
-      // do we need any other config here?
-      Configuration configuration = new Configuration();
+    // upsert this parquet file's contents
+    try (ParquetReader<GenericRecord> avroParquetReader =
+        AvroParquetReader.<GenericRecord>builder(inputFile)
+            .set(READ_INT96_AS_FIXED, "true")
+            .build()) {
+      logger.info("batch-writing records for file ...");
 
-      // In the TDR manifest, for Azure snapshots only,
-      // the first file in the list will always be a directory. Attempting to import that directory
-      // will fail; it has no content. To avoid those failures,
-      // check files for length and ignore any that are empty
-      FileSystem fileSystem = FileSystem.get(configuration);
-      FileStatus fileStatus = fileSystem.getFileStatus(hadoopFilePath);
-      if (fileStatus.getLen() == 0) {
-        logger.info("Empty file in parquet, skipping");
-        return BatchWriteResult.empty();
-      }
+      BatchWriteResult result =
+          batchWriteService.batchWriteParquetStream(
+              avroParquetReader, targetInstance, table, importMode);
 
-      // generate the HadoopInputFile
-      InputFile inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
-
-      // upsert this parquet file's contents
-      try (ParquetReader<GenericRecord> avroParquetReader =
-          AvroParquetReader.<GenericRecord>builder(inputFile)
-              .set(READ_INT96_AS_FIXED, "true")
-              .build()) {
-        logger.info("batch-writing records for file ...");
-
-        BatchWriteResult result =
-            batchWriteService.batchWriteParquetStream(
-                avroParquetReader, targetInstance, table, importMode);
-
-        return result;
-      }
+      return result;
     } catch (Throwable t) {
       logger.error("Hit an error on file: {}", t.getMessage());
       throw new TdrManifestImportException(t.getMessage());
@@ -200,6 +182,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
    */
   private BatchWriteResult importTables(
       List<TdrManifestImportTable> importTables,
+      Multimap<String, File> fileMap,
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
 
@@ -209,25 +192,65 @@ public class TdrManifestQuartzJob extends QuartzJob {
         importTable -> {
           logger.info("Processing table '{}' ...", importTable.recordType().getName());
 
-          // find all Parquet files for this table
-          List<URL> paths = importTable.dataFiles();
-          logger.debug(
-              "Table '{}' has {} export file(s) ...",
-              importTable.recordType().getName(),
-              paths.size());
-
           // loop through each parquet file
-          paths.forEach(
-              path -> {
-                var result = importTable(path, importTable, targetInstance, importMode);
+          fileMap
+              .get(importTable.recordType().getName())
+              .forEach(
+                  file -> {
+                    try {
+                      org.apache.hadoop.fs.Path hadoopFilePath =
+                          new org.apache.hadoop.fs.Path(file.toString());
+                      Configuration configuration = new Configuration();
 
-                if (result != null) {
-                  combinedResult.merge(result);
-                }
-              });
+                      // generate the HadoopInputFile
+                      InputFile inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
+                      var result = importTable(inputFile, importTable, targetInstance, importMode);
+                      if (result != null) {
+                        combinedResult.merge(result);
+                      }
+                    } catch (IOException e) {
+                      throw new TdrManifestImportException(e.getMessage(), e);
+                    }
+                  });
         });
-
     return combinedResult;
+  }
+
+  /**
+   * Given the list of tables/data files to be imported, loop through and download each one to a
+   * temporary file
+   *
+   * @param importTables tables to be imported
+   * @return path for the directory where downloaded files are located
+   */
+  @VisibleForTesting
+  FileDownloadHelper getFilesForImport(List<TdrManifestImportTable> importTables) {
+    try {
+      FileDownloadHelper fileDownloadHelper = new FileDownloadHelper("tempParquetDir");
+
+      // loop through the tables that have data files.
+      importTables.forEach(
+          importTable -> {
+            logger.info("Fetching files for table '{}' ...", importTable.recordType().getName());
+
+            // find all Parquet files for this table
+            List<URL> paths = importTable.dataFiles();
+            logger.debug(
+                "Table '{}' has {} export file(s) ...",
+                importTable.recordType().getName(),
+                paths.size());
+
+            // loop through each parquet file
+            paths.forEach(
+                path ->
+                    fileDownloadHelper.downloadFileFromURL(
+                        importTable.recordType().getName(), path));
+          });
+
+      return fileDownloadHelper;
+    } catch (IOException e) {
+      throw new TdrManifestImportException("Error downloading temporary files", e);
+    }
   }
 
   /**
