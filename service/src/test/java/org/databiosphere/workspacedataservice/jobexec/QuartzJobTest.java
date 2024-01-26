@@ -180,12 +180,19 @@ class QuartzJobTest {
     // the Timer for wds.job.execute tracks history of completed jobs. We expect its duration
     // to be nonzero and its count to be 1.
     assertThat(timer.totalTime(TimeUnit.SECONDS)).isGreaterThan(0);
+    // with one observation, max and total should be the same
+    assertEquals(timer.totalTime(TimeUnit.SECONDS), timer.max(TimeUnit.SECONDS));
     assertEquals(1, timer.count());
 
     // execute the TestableQuartzJob a few more times to further increment the timer count
+    // and the timer total
+    double previousTotal = timer.totalTime(TimeUnit.SECONDS);
     for (int i = 2; i < 10; i++) {
       new TestableQuartzJob(randomToken, observationRegistry).execute(mockContext);
       assertEquals(i, timer.count());
+      // current total should be greater than previous total
+      assertThat(timer.totalTime(TimeUnit.SECONDS)).isGreaterThan(previousTotal);
+      previousTotal = timer.totalTime(TimeUnit.SECONDS);
     }
   }
 
