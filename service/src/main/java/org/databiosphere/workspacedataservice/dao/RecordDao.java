@@ -1100,15 +1100,16 @@ public class RecordDao {
               .formatted(dataType.name(), newDataType.name()));
     }
 
+    // Prevent conversion from array to scalar types.
+    if (dataType.isArrayType() && !newDataType.isArrayType()) {
+      throw new IllegalArgumentException("Unable to convert array type to scalar type");
+    }
+
     String expression = quote(SqlUtils.validateSqlString(attribute, ATTRIBUTE));
 
     // When converting from a scalar type to an array type, append value to an empty array.
     if (!dataType.isArrayType() && newDataType.isArrayType()) {
       expression = "array_append('{}', " + expression + ")";
-    }
-    // When converting from an array type to a scalar type, take the first value in the array.
-    else if (dataType.isArrayType() && !newDataType.isArrayType()) {
-      expression = expression + "[1]";
     }
 
     // No direct conversion exists between numeric and boolean types, so go through int.

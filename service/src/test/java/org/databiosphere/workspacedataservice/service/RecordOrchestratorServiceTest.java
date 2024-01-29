@@ -276,18 +276,6 @@ class RecordOrchestratorServiceTest {
 
   static Stream<Arguments> updateAttributeDataTypeStringArrayConversions() {
     return Stream.of(
-        // String
-        Arguments.of(
-            List.of("foo"), DataTypeMapping.ARRAY_OF_STRING, DataTypeMapping.STRING, "foo"),
-        // Number
-        Arguments.of(
-            List.of("123"),
-            DataTypeMapping.ARRAY_OF_STRING,
-            DataTypeMapping.NUMBER,
-            BigDecimal.valueOf(123)),
-        // Boolean
-        Arguments.of(
-            List.of("yes"), DataTypeMapping.ARRAY_OF_STRING, DataTypeMapping.BOOLEAN, Boolean.TRUE),
         // Number array
         Arguments.of(
             List.of("123"),
@@ -334,24 +322,6 @@ class RecordOrchestratorServiceTest {
 
   static Stream<Arguments> updateAttributeDataTypeNumberArrayConversions() {
     return Stream.of(
-        // String
-        Arguments.of(
-            List.of(BigDecimal.valueOf(123)),
-            DataTypeMapping.ARRAY_OF_NUMBER,
-            DataTypeMapping.STRING,
-            "123"),
-        // Number
-        Arguments.of(
-            List.of(BigDecimal.valueOf(123)),
-            DataTypeMapping.ARRAY_OF_NUMBER,
-            DataTypeMapping.NUMBER,
-            BigDecimal.valueOf(123)),
-        // Boolean
-        Arguments.of(
-            List.of(BigDecimal.valueOf(1)),
-            DataTypeMapping.ARRAY_OF_NUMBER,
-            DataTypeMapping.BOOLEAN,
-            Boolean.TRUE),
         // String array
         Arguments.of(
             List.of(BigDecimal.valueOf(123)),
@@ -413,24 +383,6 @@ class RecordOrchestratorServiceTest {
 
   static Stream<Arguments> updateAttributeDataTypeBooleanArrayConversions() {
     return Stream.of(
-        // String
-        Arguments.of(
-            List.of(Boolean.TRUE),
-            DataTypeMapping.ARRAY_OF_BOOLEAN,
-            DataTypeMapping.STRING,
-            "true"),
-        // Number
-        Arguments.of(
-            List.of(Boolean.TRUE),
-            DataTypeMapping.ARRAY_OF_BOOLEAN,
-            DataTypeMapping.NUMBER,
-            BigDecimal.valueOf(1)),
-        // Boolean
-        Arguments.of(
-            List.of(Boolean.TRUE),
-            DataTypeMapping.ARRAY_OF_BOOLEAN,
-            DataTypeMapping.BOOLEAN,
-            Boolean.TRUE),
         // String array
         Arguments.of(
             List.of(Boolean.TRUE, Boolean.FALSE),
@@ -475,6 +427,32 @@ class RecordOrchestratorServiceTest {
                     INSTANCE, VERSION, TEST_TYPE, "attr1", "INVALID_DATA_TYPE"),
             "updateAttributeDataType should have thrown an error");
     assertEquals("Invalid datatype", e.getMessage());
+  }
+
+  @Test
+  void updateAttributeDataTypeArrayToScalar() {
+    // Arrange
+    String attributeName = "testAttribute";
+    RecordAttributes recordAttributes =
+        RecordAttributes.empty().putAttribute(attributeName, List.of("foo", "bar", "baz"));
+    RecordRequest recordRequest = new RecordRequest(recordAttributes);
+    recordOrchestratorService.upsertSingleRecord(
+        INSTANCE, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
+
+    assertAttributeDataType(
+        attributeName,
+        DataTypeMapping.ARRAY_OF_STRING,
+        "expected initial attribute data type to be ARRAY_OF_STRING");
+
+    // Act/Assert
+    ValidationException e =
+        assertThrows(
+            ValidationException.class,
+            () ->
+                recordOrchestratorService.updateAttributeDataType(
+                    INSTANCE, VERSION, TEST_TYPE, attributeName, "STRING"),
+            "updateAttributeDataType should have thrown an error");
+    assertEquals("Unable to convert array type to scalar type", e.getMessage());
   }
 
   @Test
