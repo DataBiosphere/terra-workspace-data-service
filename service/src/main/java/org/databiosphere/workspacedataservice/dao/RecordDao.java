@@ -45,6 +45,7 @@ import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.service.model.RelationValue;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchDeleteException;
+import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.AttributeComparator;
@@ -89,6 +90,28 @@ public class RecordDao {
 
   @Value("${twds.streaming.fetch.size:5000}")
   int fetchSize;
+
+  private static final Set<DataTypeMapping> dataTypesSupportedForTypeConversion =
+      Set.of(
+          DataTypeMapping.STRING,
+          DataTypeMapping.ARRAY_OF_STRING,
+          DataTypeMapping.NUMBER,
+          DataTypeMapping.ARRAY_OF_NUMBER,
+          DataTypeMapping.BOOLEAN,
+          DataTypeMapping.ARRAY_OF_BOOLEAN);
+
+  /**
+   * These error codes are expected when a valid update attribute data type request fails because
+   * attribute values for some records cannot be converted to the new data type.
+   *
+   * @see <a href="https://www.postgresql.org/docs/14/errcodes-appendix.html">PostgreSQL error
+   *     codes</a>
+   */
+  private static final Set<String> expectedDataTypeConversionErrorCodes =
+      Set.of(
+          "22P02", // invalid text representation
+          "22003" // numeric value out of range
+          );
 
   public RecordDao(
       DataSource mainDb,
@@ -1036,6 +1059,72 @@ public class RecordDao {
                 + quote(SqlUtils.validateSqlString(attribute, ATTRIBUTE))
                 + " to "
                 + quote(SqlUtils.validateSqlString(newAttributeName, ATTRIBUTE)));
+  }
+
+  public void updateAttributeDataType(
+      UUID instanceId, RecordType recordType, String attribute, DataTypeMapping newDataType) {
+    Map<String, DataTypeMapping> schema = getExistingTableSchema(instanceId, recordType);
+    DataTypeMapping currentDataType = schema.get(attribute);
+
+    try {
+      namedTemplate
+          .getJdbcTemplate()
+          .update(
+              "alter table "
+                  + getQualifiedTableName(recordType, instanceId)
+                  + " alter column "
+                  + quote(SqlUtils.validateSqlString(attribute, ATTRIBUTE))
+                  + " type "
+                  + newDataType.getPostgresType()
+                  + " using "
+                  + getPostgresTypeConversionExpression(attribute, currentDataType, newDataType));
+    } catch (DataIntegrityViolationException e) {
+      if (e.getRootCause() instanceof SQLException sqlEx
+          && sqlEx.getSQLState() != null
+          && expectedDataTypeConversionErrorCodes.contains(sqlEx.getSQLState())) {
+        throw new ConflictException(
+            "Unable to convert values for attribute %s to %s"
+                .formatted(attribute, newDataType.name()));
+      }
+      throw e;
+    }
+  }
+
+  private String getPostgresTypeConversionExpression(
+      String attribute, DataTypeMapping dataType, DataTypeMapping newDataType) {
+    // Some data types are not supported.
+    if (!(dataTypesSupportedForTypeConversion.contains(dataType)
+        && dataTypesSupportedForTypeConversion.contains(newDataType))) {
+      throw new IllegalArgumentException(
+          "Unable to convert attribute from %s to %s"
+              .formatted(dataType.name(), newDataType.name()));
+    }
+
+    // Prevent conversion from array to scalar types.
+    if (dataType.isArrayType() && !newDataType.isArrayType()) {
+      throw new IllegalArgumentException("Unable to convert array type to scalar type");
+    }
+
+    String expression = quote(SqlUtils.validateSqlString(attribute, ATTRIBUTE));
+
+    // When converting from a scalar type to an array type, append value to an empty array.
+    if (!dataType.isArrayType() && newDataType.isArrayType()) {
+      expression = "array_append('{}', " + expression + ")";
+    }
+
+    // No direct conversion exists between numeric and boolean types, so go through int.
+    if (Set.copyOf(List.of(dataType.getBaseType(), newDataType.getBaseType()))
+        .equals(Set.of(DataTypeMapping.BOOLEAN, DataTypeMapping.NUMBER))) {
+      expression += "::int";
+      if (newDataType.isArrayType()) {
+        expression += "[]";
+      }
+    }
+
+    // Convert to desired type.
+    expression += "::" + newDataType.getPostgresType();
+
+    return expression;
   }
 
   public void deleteAttribute(UUID instanceId, RecordType recordType, String attribute) {
