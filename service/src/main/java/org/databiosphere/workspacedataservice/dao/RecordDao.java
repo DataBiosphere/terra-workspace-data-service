@@ -98,7 +98,16 @@ public class RecordDao {
           DataTypeMapping.NUMBER,
           DataTypeMapping.ARRAY_OF_NUMBER,
           DataTypeMapping.BOOLEAN,
-          DataTypeMapping.ARRAY_OF_BOOLEAN);
+          DataTypeMapping.ARRAY_OF_BOOLEAN,
+          DataTypeMapping.DATE,
+          DataTypeMapping.ARRAY_OF_DATE,
+          DataTypeMapping.DATE_TIME,
+          DataTypeMapping.ARRAY_OF_DATE_TIME);
+
+  private static final Set<Set<DataTypeMapping>> invalidDataTypeConversions =
+      Set.of(
+          Set.of(DataTypeMapping.BOOLEAN, DataTypeMapping.DATE),
+          Set.of(DataTypeMapping.BOOLEAN, DataTypeMapping.DATE_TIME));
 
   /**
    * These error codes are expected when a valid update attribute data type request fails because
@@ -110,7 +119,8 @@ public class RecordDao {
   private static final Set<String> expectedDataTypeConversionErrorCodes =
       Set.of(
           "22P02", // invalid text representation
-          "22003" // numeric value out of range
+          "22003", // numeric value out of range
+          "22008" // datetime field overflow
           );
 
   public RecordDao(
@@ -1079,12 +1089,16 @@ public class RecordDao {
                   + " using "
                   + getPostgresTypeConversionExpression(attribute, currentDataType, newDataType));
     } catch (DataIntegrityViolationException e) {
-      if (e.getRootCause() instanceof SQLException sqlEx
-          && sqlEx.getSQLState() != null
-          && expectedDataTypeConversionErrorCodes.contains(sqlEx.getSQLState())) {
-        throw new ConflictException(
-            "Unable to convert values for attribute %s to %s"
-                .formatted(attribute, newDataType.name()));
+      if (e.getRootCause() instanceof SQLException sqlEx && sqlEx.getSQLState() != null) {
+        if (expectedDataTypeConversionErrorCodes.contains(sqlEx.getSQLState())) {
+          throw new ConflictException(
+              "Unable to convert values for attribute %s to %s"
+                  .formatted(attribute, newDataType.name()));
+        } else {
+          LOGGER.warn(
+              "updateAttributeDataType: DataIntegrityViolationException with unexpected error code {}",
+              sqlEx.getSQLState());
+        }
       }
       throw e;
     }
@@ -1092,9 +1106,12 @@ public class RecordDao {
 
   private String getPostgresTypeConversionExpression(
       String attribute, DataTypeMapping dataType, DataTypeMapping newDataType) {
-    // Some data types are not supported.
-    if (!(dataTypesSupportedForTypeConversion.contains(dataType)
-        && dataTypesSupportedForTypeConversion.contains(newDataType))) {
+    // Some data types are not yet supported.
+    // Some conversions don't make sense / are invalid.
+    if (!dataTypesSupportedForTypeConversion.contains(dataType)
+        || !dataTypesSupportedForTypeConversion.contains(newDataType)
+        || invalidDataTypeConversions.contains(
+            Set.copyOf(List.of(dataType.getBaseType(), newDataType.getBaseType())))) {
       throw new IllegalArgumentException(
           "Unable to convert attribute from %s to %s"
               .formatted(dataType.name(), newDataType.name()));
@@ -1106,6 +1123,38 @@ public class RecordDao {
     }
 
     String expression = quote(SqlUtils.validateSqlString(attribute, ATTRIBUTE));
+
+    // Unable to cast numbers to dates or timestamps.
+    // Convert number to timestamp using to_timestamp.
+    if (dataType.getBaseType().equals(DataTypeMapping.NUMBER)
+        && Set.of(DataTypeMapping.DATE, DataTypeMapping.DATE_TIME)
+            .contains(newDataType.getBaseType())) {
+      if (dataType.isArrayType()) {
+        expression = "(sys_wds.convert_array_of_numbers_to_timestamps(" + expression + "))";
+      } else {
+        expression = "to_timestamp(" + expression + ")";
+      }
+    }
+
+    // Unable to cast dates or timestamps to numbers.
+    // Extract epoch from timestamp to get a number.
+    if (Set.of(DataTypeMapping.DATE, DataTypeMapping.DATE_TIME).contains(dataType.getBaseType())
+        && newDataType.getBaseType().equals(DataTypeMapping.NUMBER)) {
+      if (dataType.isArrayType()) {
+        expression = "sys_wds.convert_array_of_timestamps_to_numbers(" + expression + ")";
+        // Truncate to an integer for dates.
+        if (dataType.getBaseType() == DataTypeMapping.DATE) {
+          expression += "::bigint[]";
+        }
+        expression = "(" + expression + ")";
+      } else {
+        expression = "extract(epoch from " + expression + ")";
+        // Truncate to an integer for dates.
+        if (dataType.getBaseType() == DataTypeMapping.DATE) {
+          expression += "::bigint";
+        }
+      }
+    }
 
     // When converting from a scalar type to an array type, append value to an empty array.
     if (!dataType.isArrayType() && newDataType.isArrayType()) {
