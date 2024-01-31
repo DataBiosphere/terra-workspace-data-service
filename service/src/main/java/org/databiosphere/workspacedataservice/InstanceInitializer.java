@@ -4,6 +4,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.annotations.CloudPlatform.Azure;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
@@ -31,6 +32,7 @@ import org.springframework.integration.support.locks.LockRegistry;
 import org.springframework.stereotype.Component;
 
 @Component
+@Azure
 @Profile({"!local"})
 public class InstanceInitializer implements ApplicationListener<ContextRefreshedEvent> {
 
