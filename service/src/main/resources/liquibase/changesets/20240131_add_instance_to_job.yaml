@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20240131_add_instance_to_job
+      author: davidan
+      changes:
+        - addColumn:
+            schemaName: sys_wds
+            tableName: job
+            columns:
+              - column:
+                  name: instance_id
+                  type: uuid
+                  # this is not a foreign key to the instance table, to support the ability to
+                  # delete instances without deleting job history, and to support "implicit"
+                  # instances in cWDS
+                  constraints:
+                    # nullable to support jobs that have previously run
+                    nullable: true
