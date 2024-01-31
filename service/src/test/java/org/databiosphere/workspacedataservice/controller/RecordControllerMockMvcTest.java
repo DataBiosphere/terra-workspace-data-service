@@ -2012,8 +2012,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     attributeToRename)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    mapper.writeValueAsString(new AttributeSchema(newAttributeName, null, null))))
+                .content(mapper.writeValueAsString(new AttributeSchema(newAttributeName))))
         .andExpect(status().isOk());
 
     MvcResult mvcResult =
@@ -2050,7 +2049,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     "doesNotExist")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new AttributeSchema("newAttr", null, null))))
+                .content(mapper.writeValueAsString(new AttributeSchema("newAttr"))))
         .andExpect(status().isNotFound());
   }
 
@@ -2071,7 +2070,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     attributeToRename)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new AttributeSchema("newAttr", null, null))))
+                .content(mapper.writeValueAsString(new AttributeSchema("newAttr"))))
         .andExpect(status().isBadRequest());
   }
 
@@ -2093,8 +2092,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     attributeToRename)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    mapper.writeValueAsString(new AttributeSchema(newAttributeName, null, null))))
+                .content(mapper.writeValueAsString(new AttributeSchema(newAttributeName))))
         .andExpect(status().isConflict());
   }
 
@@ -2188,24 +2186,25 @@ class RecordControllerMockMvcTest {
 
     List<AttributeSchema> expectedAttributes =
         Arrays.asList(
-            new AttributeSchema("array-of-date", "ARRAY_OF_DATE", null),
-            new AttributeSchema("array-of-datetime", "ARRAY_OF_DATE_TIME", null),
-            new AttributeSchema("array-of-relation", "ARRAY_OF_RELATION", referencedType),
-            new AttributeSchema("array-of-string", "ARRAY_OF_STRING", null),
-            new AttributeSchema("attr-boolean", "BOOLEAN", null),
-            new AttributeSchema("attr-dt", "DATE_TIME", null),
-            new AttributeSchema("attr-json", "JSON", null),
-            new AttributeSchema("attr-ref", "RELATION", referencedType),
-            new AttributeSchema("attr1", "STRING", null),
-            new AttributeSchema("attr2", "NUMBER", null),
-            new AttributeSchema("attr3", "DATE", null),
-            new AttributeSchema("attr4", "STRING", null),
-            new AttributeSchema("attr5", "NUMBER", null),
-            new AttributeSchema("sys_name", "STRING", null),
-            new AttributeSchema("z-array-of-boolean", "ARRAY_OF_BOOLEAN", null),
-            new AttributeSchema("z-array-of-number-double", "ARRAY_OF_NUMBER", null),
-            new AttributeSchema("z-array-of-number-long", "ARRAY_OF_NUMBER", null),
-            new AttributeSchema("z-array-of-string", "ARRAY_OF_STRING", null));
+            new AttributeSchema("array-of-date", DataTypeMapping.ARRAY_OF_DATE),
+            new AttributeSchema("array-of-datetime", DataTypeMapping.ARRAY_OF_DATE_TIME),
+            new AttributeSchema(
+                "array-of-relation", DataTypeMapping.ARRAY_OF_RELATION, referencedType),
+            new AttributeSchema("array-of-string", DataTypeMapping.ARRAY_OF_STRING),
+            new AttributeSchema("attr-boolean", DataTypeMapping.BOOLEAN),
+            new AttributeSchema("attr-dt", DataTypeMapping.DATE_TIME),
+            new AttributeSchema("attr-json", DataTypeMapping.JSON),
+            new AttributeSchema("attr-ref", DataTypeMapping.RELATION, referencedType),
+            new AttributeSchema("attr1", DataTypeMapping.STRING),
+            new AttributeSchema("attr2", DataTypeMapping.NUMBER),
+            new AttributeSchema("attr3", DataTypeMapping.DATE),
+            new AttributeSchema("attr4", DataTypeMapping.STRING),
+            new AttributeSchema("attr5", DataTypeMapping.NUMBER),
+            new AttributeSchema("sys_name", DataTypeMapping.STRING),
+            new AttributeSchema("z-array-of-boolean", DataTypeMapping.ARRAY_OF_BOOLEAN),
+            new AttributeSchema("z-array-of-number-double", DataTypeMapping.ARRAY_OF_NUMBER),
+            new AttributeSchema("z-array-of-number-long", DataTypeMapping.ARRAY_OF_NUMBER),
+            new AttributeSchema("z-array-of-string", DataTypeMapping.ARRAY_OF_STRING));
 
     RecordTypeSchema expected = new RecordTypeSchema(type, expectedAttributes, 1, RECORD_ID);
 
@@ -2273,22 +2272,22 @@ class RecordControllerMockMvcTest {
 
     List<AttributeSchema> expectedAttributes =
         Arrays.asList(
-            new AttributeSchema("array-of-date", "ARRAY_OF_DATE", null),
-            new AttributeSchema("array-of-datetime", "ARRAY_OF_DATE_TIME", null),
-            new AttributeSchema("array-of-string", "ARRAY_OF_STRING", null),
-            new AttributeSchema("attr-boolean", "BOOLEAN", null),
-            new AttributeSchema("attr-dt", "DATE_TIME", null),
-            new AttributeSchema("attr-json", "JSON", null),
-            new AttributeSchema("attr1", "STRING", null),
-            new AttributeSchema("attr2", "NUMBER", null),
-            new AttributeSchema("attr3", "DATE", null),
-            new AttributeSchema("attr4", "STRING", null),
-            new AttributeSchema("attr5", "NUMBER", null),
-            new AttributeSchema("sys_name", "STRING", null),
-            new AttributeSchema("z-array-of-boolean", "ARRAY_OF_BOOLEAN", null),
-            new AttributeSchema("z-array-of-number-double", "ARRAY_OF_NUMBER", null),
-            new AttributeSchema("z-array-of-number-long", "ARRAY_OF_NUMBER", null),
-            new AttributeSchema("z-array-of-string", "ARRAY_OF_STRING", null));
+            new AttributeSchema("array-of-date", DataTypeMapping.ARRAY_OF_DATE),
+            new AttributeSchema("array-of-datetime", DataTypeMapping.ARRAY_OF_DATE_TIME),
+            new AttributeSchema("array-of-string", DataTypeMapping.ARRAY_OF_STRING),
+            new AttributeSchema("attr-boolean", DataTypeMapping.BOOLEAN),
+            new AttributeSchema("attr-dt", DataTypeMapping.DATE_TIME),
+            new AttributeSchema("attr-json", DataTypeMapping.JSON),
+            new AttributeSchema("attr1", DataTypeMapping.STRING),
+            new AttributeSchema("attr2", DataTypeMapping.NUMBER),
+            new AttributeSchema("attr3", DataTypeMapping.DATE),
+            new AttributeSchema("attr4", DataTypeMapping.STRING),
+            new AttributeSchema("attr5", DataTypeMapping.NUMBER),
+            new AttributeSchema("sys_name", DataTypeMapping.STRING),
+            new AttributeSchema("z-array-of-boolean", DataTypeMapping.ARRAY_OF_BOOLEAN),
+            new AttributeSchema("z-array-of-number-double", DataTypeMapping.ARRAY_OF_NUMBER),
+            new AttributeSchema("z-array-of-number-long", DataTypeMapping.ARRAY_OF_NUMBER),
+            new AttributeSchema("z-array-of-string", DataTypeMapping.ARRAY_OF_STRING));
 
     List<RecordTypeSchema> expectedSchemas =
         Arrays.asList(

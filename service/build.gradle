@@ -230,6 +230,7 @@ jacocoTestReport {
 test {
     systemProperties['pact.rootDir'] = "$buildDir/pacts"
     systemProperties['pact.provider.version'] = "$project.version"
+    systemProperties['user.timezone'] = "UTC";
 }
 
 tasks.register("pactTests", Test) {

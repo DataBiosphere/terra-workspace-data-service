@@ -266,6 +266,37 @@ public class RecordOrchestratorService { // TODO give me a better name
     }
   }
 
+  public void updateAttributeDataType(
+      UUID instanceId,
+      String version,
+      RecordType recordType,
+      String attribute,
+      String newDataType) {
+    validateAndPermissions(instanceId, version);
+    checkRecordTypeExists(instanceId, recordType);
+    RecordTypeSchema schema = getSchemaDescription(instanceId, recordType);
+    if (schema.isPrimaryKey(attribute)) {
+      throw new ValidationException("Unable to update primary key attribute");
+    }
+
+    DataTypeMapping newDataTypeMapping = validateAttributeDataType(newDataType);
+    try {
+      recordService.updateAttributeDataType(instanceId, recordType, attribute, newDataTypeMapping);
+    } catch (IllegalArgumentException e) {
+      throw new ValidationException(e.getMessage());
+    }
+    activityLogger.saveEventForCurrentUser(
+        user -> user.updated().attribute().withRecordType(recordType).withId(attribute));
+  }
+
+  private DataTypeMapping validateAttributeDataType(String dataType) {
+    try {
+      return DataTypeMapping.valueOf(dataType);
+    } catch (IllegalArgumentException e) {
+      throw new ValidationException("Invalid datatype");
+    }
+  }
+
   public void deleteAttribute(
       UUID instanceId, String version, RecordType recordType, String attribute) {
     validateAndPermissions(instanceId, version);

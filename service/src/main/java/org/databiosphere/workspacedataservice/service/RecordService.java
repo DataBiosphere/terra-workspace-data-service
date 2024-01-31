@@ -418,6 +418,12 @@ public class RecordService {
   }
 
   @WriteTransaction
+  public void updateAttributeDataType(
+      UUID instanceId, RecordType recordType, String attribute, DataTypeMapping newDataType) {
+    recordDao.updateAttributeDataType(instanceId, recordType, attribute, newDataType);
+  }
+
+  @WriteTransaction
   public void deleteAttribute(UUID instanceId, RecordType recordType, String attribute) {
     recordDao.deleteAttribute(instanceId, recordType, attribute);
   }
