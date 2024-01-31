@@ -2098,6 +2098,60 @@ class RecordControllerMockMvcTest {
 
   @Test
   @Transactional
+  void updateAttributeDataType() throws Exception {
+    // Arrange
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    // createSomeRecords puts floats in attr2.
+    String attributeToUpdate = "attr2";
+
+    MvcResult initialGetSchemaResult =
+        mockMvc
+            .perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, recordType))
+            .andReturn();
+    RecordTypeSchema initialRecordTypeSchema =
+        mapper.readValue(
+            initialGetSchemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+    AttributeSchema initialAttributeSchema =
+        initialRecordTypeSchema.getAttributeSchema(attributeToUpdate);
+    assertEquals("NUMBER", initialAttributeSchema.datatype());
+
+    // Act
+    MvcResult updateAttributeDataTypeResult =
+        mockMvc
+            .perform(
+                patch(
+                        "/{instanceId}/types/{v}/{type}/{attribute}",
+                        instanceId,
+                        versionId,
+                        recordType,
+                        attributeToUpdate)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(mapper.writeValueAsString(new AttributeSchema(null, "STRING"))))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    // Assert
+    AttributeSchema updatedAttributeSchema =
+        mapper.readValue(
+            updateAttributeDataTypeResult.getResponse().getContentAsString(),
+            AttributeSchema.class);
+    assertEquals("STRING", updatedAttributeSchema.datatype());
+
+    MvcResult finalGetSchemaResult =
+        mockMvc
+            .perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, recordType))
+            .andReturn();
+    RecordTypeSchema finalRecordTypeSchema =
+        mapper.readValue(
+            finalGetSchemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+    AttributeSchema finalAttributeSchema =
+        finalRecordTypeSchema.getAttributeSchema(attributeToUpdate);
+    assertEquals("STRING", finalAttributeSchema.datatype());
+  }
+
+  @Test
+  @Transactional
   void updateAttributeDataTypePrimaryKey() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
