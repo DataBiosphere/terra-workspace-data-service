@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice;
 
+import static org.databiosphere.workspacedataservice.annotations.CloudPlatform.*;
+
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
@@ -12,6 +14,7 @@ import org.springframework.integration.support.locks.LockRegistry;
 @Configuration
 public class InstanceInitializerConfig {
 
+  @Azure
   @Bean
   public InstanceInitializerBean instanceInitializerBean(
       InstanceDao instanceDao,
