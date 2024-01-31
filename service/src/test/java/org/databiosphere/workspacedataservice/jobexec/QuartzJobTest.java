@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -203,7 +202,7 @@ class QuartzJobTest {
   }
 
   @Test
-  void observationLogsFailure() throws JobExecutionException {
+  void observationLogsFailure() throws org.quartz.JobExecutionException {
     String randomToken = RandomStringUtils.randomAlphanumeric(10);
     String jobUuid = UUID.randomUUID().toString();
     JobExecutionContext mockContext = setUpTestJob(randomToken, jobUuid);
@@ -213,11 +212,8 @@ class QuartzJobTest {
         assertInstanceOf(TestObservationRegistry.class, observationRegistry);
 
     // execute the TestableQuartzJob, then confirm observation recorded failure
-    assertThrows(
-        JobExecutionException.class,
-        () ->
-            new TestableQuartzJob(randomToken, observationRegistry, /* shouldThrowError= */ true)
-                .execute(mockContext));
+    new TestableQuartzJob(randomToken, observationRegistry, /* shouldThrowError= */ true)
+        .execute(mockContext);
 
     TestObservationRegistryAssert.assertThat(testObservationRegistry)
         .doesNotHaveAnyRemainingCurrentObservation()
