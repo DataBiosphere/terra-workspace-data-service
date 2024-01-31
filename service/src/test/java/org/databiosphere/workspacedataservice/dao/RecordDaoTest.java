@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -32,7 +33,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -770,6 +773,289 @@ class RecordDaoTest {
     Set<String> attributeNames =
         Set.copyOf(recordDao.getAllAttributeNames(instanceId, recordTypeWithAttributes));
     assertEquals(Set.of(PRIMARY_KEY, "foo", "baz"), attributeNames);
+  }
+
+  @ParameterizedTest(name = "returns expression for converting {0} to {1}")
+  @MethodSource({
+    "stringConversionExpressions",
+    "stringArrayConversionExpressions",
+    "numberConversionExpressions",
+    "numberArrayConversionExpressions",
+    "booleanConversionExpressions",
+    "booleanArrayConversionExpressions",
+    "dateConversionExpressions",
+    "dateArrayConversionExpressions",
+    "datetimeConversionExpressions",
+    "datetimeArrayConversionExpressions"
+  })
+  void testGetPostgresTypeConversionExpression(
+      DataTypeMapping dataType, DataTypeMapping newDataType, String expectedExpression) {
+    // Act
+    String actualExpression =
+        recordDao.getPostgresTypeConversionExpression("attr", dataType, newDataType);
+
+    // Assert
+    assertEquals(expectedExpression, actualExpression);
+  }
+
+  static Stream<Arguments> stringConversionExpressions() {
+    return Stream.of(
+        // Number
+        Arguments.of(DataTypeMapping.STRING, DataTypeMapping.NUMBER, "\"attr\"::numeric"),
+        // Boolean
+        Arguments.of(DataTypeMapping.STRING, DataTypeMapping.BOOLEAN, "\"attr\"::boolean"),
+        // Date
+        Arguments.of(DataTypeMapping.STRING, DataTypeMapping.DATE, "\"attr\"::date"),
+        // Datetime
+        Arguments.of(
+            DataTypeMapping.STRING,
+            DataTypeMapping.DATE_TIME,
+            "\"attr\"::timestamp with time zone"),
+        // String array
+        Arguments.of(
+            DataTypeMapping.STRING,
+            DataTypeMapping.ARRAY_OF_STRING,
+            "array_append('{}', \"attr\")::text[]"),
+        // Number array
+        Arguments.of(
+            DataTypeMapping.STRING,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            "array_append('{}', \"attr\")::numeric[]"),
+        // Boolean array
+        Arguments.of(
+            DataTypeMapping.STRING,
+            DataTypeMapping.ARRAY_OF_BOOLEAN,
+            "array_append('{}', \"attr\")::boolean[]"),
+        // Date array
+        Arguments.of(
+            DataTypeMapping.STRING,
+            DataTypeMapping.ARRAY_OF_DATE,
+            "array_append('{}', \"attr\")::date[]"),
+        // Datetime array
+        Arguments.of(
+            DataTypeMapping.STRING,
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            "array_append('{}', \"attr\")::timestamp with time zone[]"));
+  }
+
+  static Stream<Arguments> stringArrayConversionExpressions() {
+    return Stream.of(
+        // Number array
+        Arguments.of(
+            DataTypeMapping.ARRAY_OF_STRING,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            "\"attr\"::numeric[]"),
+        // Boolean array
+        Arguments.of(
+            DataTypeMapping.ARRAY_OF_STRING,
+            DataTypeMapping.ARRAY_OF_BOOLEAN,
+            "\"attr\"::boolean[]"),
+        // Date array
+        Arguments.of(
+            DataTypeMapping.ARRAY_OF_STRING, DataTypeMapping.ARRAY_OF_DATE, "\"attr\"::date[]"),
+        // Datetime array
+        Arguments.of(
+            DataTypeMapping.ARRAY_OF_STRING,
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            "\"attr\"::timestamp with time zone[]"));
+  }
+
+  static Stream<Arguments> numberConversionExpressions() {
+    return Stream.of(
+        // String
+        Arguments.of(DataTypeMapping.NUMBER, DataTypeMapping.STRING, "\"attr\"::text"),
+        // Boolean
+        Arguments.of(DataTypeMapping.NUMBER, DataTypeMapping.BOOLEAN, "\"attr\"::int::boolean"),
+        // Date
+        Arguments.of(DataTypeMapping.NUMBER, DataTypeMapping.DATE, "to_timestamp(\"attr\")::date"),
+        // Datetime
+        Arguments.of(
+            DataTypeMapping.NUMBER,
+            DataTypeMapping.DATE_TIME,
+            "to_timestamp(\"attr\")::timestamp with time zone"),
+        // String array
+        Arguments.of(
+            DataTypeMapping.NUMBER,
+            DataTypeMapping.ARRAY_OF_STRING,
+            "array_append('{}', \"attr\")::text[]"),
+        // Number array
+        Arguments.of(
+            DataTypeMapping.NUMBER,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            "array_append('{}', \"attr\")::numeric[]"),
+        // Boolean array
+        Arguments.of(
+            DataTypeMapping.NUMBER,
+            DataTypeMapping.ARRAY_OF_BOOLEAN,
+            "array_append('{}', \"attr\")::int[]::boolean[]"),
+        // Date array
+        Arguments.of(
+            DataTypeMapping.NUMBER,
+            DataTypeMapping.ARRAY_OF_DATE,
+            "array_append('{}', to_timestamp(\"attr\"))::date[]"),
+        // Datetime array
+        Arguments.of(
+            DataTypeMapping.NUMBER,
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            "array_append('{}', to_timestamp(\"attr\"))::timestamp with time zone[]"));
+  }
+
+  static Stream<Arguments> numberArrayConversionExpressions() {
+    return Stream.of(
+        // String array
+        Arguments.of(
+            DataTypeMapping.ARRAY_OF_NUMBER, DataTypeMapping.ARRAY_OF_STRING, "\"attr\"::text[]"),
+        // Boolean array
+        Arguments.of(
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            DataTypeMapping.ARRAY_OF_BOOLEAN,
+            "\"attr\"::int[]::boolean[]"),
+        // Date array
+        Arguments.of(
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            DataTypeMapping.ARRAY_OF_DATE,
+            "(sys_wds.convert_array_of_numbers_to_timestamps(\"attr\"))::date[]"),
+        // Datetime array
+        Arguments.of(
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            "(sys_wds.convert_array_of_numbers_to_timestamps(\"attr\"))::timestamp with time zone[]"));
+  }
+
+  static Stream<Arguments> booleanConversionExpressions() {
+    return Stream.of(
+        // String
+        Arguments.of(DataTypeMapping.BOOLEAN, DataTypeMapping.STRING, "\"attr\"::text"),
+        // Number
+        Arguments.of(DataTypeMapping.BOOLEAN, DataTypeMapping.NUMBER, "\"attr\"::int::numeric"),
+        // String array
+        Arguments.of(
+            DataTypeMapping.BOOLEAN,
+            DataTypeMapping.ARRAY_OF_STRING,
+            "array_append('{}', \"attr\")::text[]"),
+        // Number array
+        Arguments.of(
+            DataTypeMapping.BOOLEAN,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            "array_append('{}', \"attr\")::int[]::numeric[]"),
+        // Boolean array
+        Arguments.of(
+            DataTypeMapping.BOOLEAN,
+            DataTypeMapping.ARRAY_OF_BOOLEAN,
+            "array_append('{}', \"attr\")::boolean[]"));
+  }
+
+  static Stream<Arguments> booleanArrayConversionExpressions() {
+    return Stream.of(
+        // String array
+        Arguments.of(
+            DataTypeMapping.ARRAY_OF_BOOLEAN, DataTypeMapping.ARRAY_OF_STRING, "\"attr\"::text[]"),
+        // Number array
+        Arguments.of(
+            DataTypeMapping.ARRAY_OF_BOOLEAN,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            "\"attr\"::int[]::numeric[]"));
+  }
+
+  static Stream<Arguments> dateConversionExpressions() {
+    return Stream.of(
+        // String
+        Arguments.of(DataTypeMapping.DATE, DataTypeMapping.STRING, "\"attr\"::text"),
+        // Number
+        Arguments.of(
+            DataTypeMapping.DATE,
+            DataTypeMapping.NUMBER,
+            "extract(epoch from \"attr\")::bigint::numeric"),
+        // Datetime
+        Arguments.of(
+            DataTypeMapping.DATE, DataTypeMapping.DATE_TIME, "\"attr\"::timestamp with time zone"),
+        // String array
+        Arguments.of(
+            DataTypeMapping.DATE,
+            DataTypeMapping.ARRAY_OF_STRING,
+            "array_append('{}', \"attr\")::text[]"),
+        // Number array
+        Arguments.of(
+            DataTypeMapping.DATE,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            "array_append('{}', extract(epoch from \"attr\")::bigint)::numeric[]"),
+        // Date array
+        Arguments.of(
+            DataTypeMapping.DATE,
+            DataTypeMapping.ARRAY_OF_DATE,
+            "array_append('{}', \"attr\")::date[]"),
+        // Datetime array
+        Arguments.of(
+            DataTypeMapping.DATE,
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            "array_append('{}', \"attr\")::timestamp with time zone[]"));
+  }
+
+  static Stream<Arguments> dateArrayConversionExpressions() {
+    return Stream.of(
+        // String array
+        Arguments.of(
+            DataTypeMapping.ARRAY_OF_DATE, DataTypeMapping.ARRAY_OF_STRING, "\"attr\"::text[]"),
+        // Number array
+        Arguments.of(
+            DataTypeMapping.ARRAY_OF_DATE,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            "(sys_wds.convert_array_of_timestamps_to_numbers(\"attr\")::bigint[])::numeric[]"),
+        // Datetime array
+        Arguments.of(
+            DataTypeMapping.ARRAY_OF_DATE,
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            "\"attr\"::timestamp with time zone[]"));
+  }
+
+  static Stream<Arguments> datetimeConversionExpressions() {
+    return Stream.of(
+        // String
+        Arguments.of(DataTypeMapping.DATE_TIME, DataTypeMapping.STRING, "\"attr\"::text"),
+        // Number
+        Arguments.of(
+            DataTypeMapping.DATE_TIME,
+            DataTypeMapping.NUMBER,
+            "extract(epoch from \"attr\")::numeric"),
+        // Date
+        Arguments.of(DataTypeMapping.DATE_TIME, DataTypeMapping.DATE, "\"attr\"::date"),
+        // String array
+        Arguments.of(
+            DataTypeMapping.DATE_TIME,
+            DataTypeMapping.ARRAY_OF_STRING,
+            "array_append('{}', \"attr\")::text[]"),
+        // Number array
+        Arguments.of(
+            DataTypeMapping.DATE_TIME,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            "array_append('{}', extract(epoch from \"attr\"))::numeric[]"),
+        // Date array
+        Arguments.of(
+            DataTypeMapping.DATE_TIME,
+            DataTypeMapping.ARRAY_OF_DATE,
+            "array_append('{}', \"attr\")::date[]"),
+        // Datetime array
+        Arguments.of(
+            DataTypeMapping.DATE_TIME,
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            "array_append('{}', \"attr\")::timestamp with time zone[]"));
+  }
+
+  static Stream<Arguments> datetimeArrayConversionExpressions() {
+    return Stream.of(
+        // String array
+        Arguments.of(
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            DataTypeMapping.ARRAY_OF_STRING,
+            "\"attr\"::text[]"),
+        // Number array
+        Arguments.of(
+            DataTypeMapping.ARRAY_OF_DATE_TIME,
+            DataTypeMapping.ARRAY_OF_NUMBER,
+            "(sys_wds.convert_array_of_timestamps_to_numbers(\"attr\"))::numeric[]"),
+        // Date array
+        Arguments.of(
+            DataTypeMapping.ARRAY_OF_DATE_TIME, DataTypeMapping.ARRAY_OF_DATE, "\"attr\"::date[]"));
   }
 
   @Test

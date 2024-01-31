@@ -1104,7 +1104,8 @@ public class RecordDao {
     }
   }
 
-  private String getPostgresTypeConversionExpression(
+  @VisibleForTesting
+  String getPostgresTypeConversionExpression(
       String attribute, DataTypeMapping dataType, DataTypeMapping newDataType) {
     // Some data types are not yet supported.
     // Some conversions don't make sense / are invalid.
