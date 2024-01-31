@@ -42,7 +42,7 @@ import org.springframework.test.context.TestPropertySource;
 @DirtiesContext
 @SpringBootTest(
     classes = {
-      InstanceInitializerConfig.class,
+      InstanceInitializer.class,
       MockInstanceDaoConfig.class,
       MockRestoreDaoConfig.class,
       MockBackupDaoConfig.class,
@@ -59,7 +59,7 @@ import org.springframework.test.context.TestPropertySource;
     })
 class InstanceInitializerNoWorkspaceIdTest {
 
-  @Autowired InstanceInitializerBean instanceInitializerBean;
+  @Autowired InstanceInitializer instanceInitializer;
   @MockBean JdbcLockRegistry registry;
   @SpyBean InstanceDao instanceDao;
 
@@ -73,7 +73,7 @@ class InstanceInitializerNoWorkspaceIdTest {
 
   @Test
   void workspaceIDNotProvidedNoExceptionThrown() {
-    assertDoesNotThrow(() -> instanceInitializerBean.initializeInstance());
+    assertDoesNotThrow(() -> instanceInitializer.initializeInstance());
     // verify that method to create instance was NOT called
     verify(instanceDao, times(0)).createSchema(any());
   }

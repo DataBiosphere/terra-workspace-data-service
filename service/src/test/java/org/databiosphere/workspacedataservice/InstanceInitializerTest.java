@@ -48,7 +48,7 @@ import org.springframework.test.context.TestPropertySource;
 @DirtiesContext
 @SpringBootTest(
     classes = {
-      InstanceInitializerConfig.class,
+      InstanceInitializer.class,
       MockInstanceDaoConfig.class,
       MockRestoreDaoConfig.class,
       MockBackupDaoConfig.class,
@@ -63,9 +63,9 @@ import org.springframework.test.context.TestPropertySource;
       MockSamClientFactoryConfig.class,
       RestClientRetry.class
     })
-class InstanceInitializerBeanTest {
+class InstanceInitializerTest {
 
-  @Autowired InstanceInitializerBean instanceInitializerBean;
+  @Autowired InstanceInitializer instanceInitializer;
   @MockBean JdbcLockRegistry registry;
   @SpyBean InstanceDao instanceDao;
   @SpyBean CloneDao cloneDao;
@@ -85,21 +85,21 @@ class InstanceInitializerBeanTest {
   void setUp() throws InterruptedException {
     when(mockLock.tryLock(anyLong(), any())).thenReturn(true);
     when(registry.obtain(anyString())).thenReturn(mockLock);
+
+    cleanupInstanceSchemas();
   }
 
   @AfterEach
   void tearDown() {
-    // clean up any instances left in the db
-    List<UUID> allInstances = instanceDao.listInstanceSchemas();
-    allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
+    cleanupInstanceSchemas();
   }
 
   @Test
   void testHappyPath() {
     // instance does not exist
     assertFalse(instanceDao.instanceSchemaExists(instanceID));
-    assertDoesNotThrow(() -> instanceInitializerBean.initializeInstance());
-    assert (instanceDao.instanceSchemaExists(instanceID));
+    assertDoesNotThrow(() -> instanceInitializer.initializeInstance());
+    assertTrue(instanceDao.instanceSchemaExists(instanceID));
   }
 
   @Test
@@ -110,7 +110,7 @@ class InstanceInitializerBeanTest {
     instanceDao.createSchema(instanceID);
     assertTrue(instanceDao.instanceSchemaExists(instanceID));
     // now run the initializer
-    instanceInitializerBean.initializeInstance();
+    instanceInitializer.initializeInstance();
     // verify that method to create instance was NOT called again. We expect one call from the setup
     // above.
     verify(instanceDao, times(1)).createSchema(any());
@@ -123,7 +123,7 @@ class InstanceInitializerBeanTest {
     // instance does not exist
     assertFalse(instanceDao.instanceSchemaExists(instanceID));
     // enter clone mode
-    instanceInitializerBean.initCloneMode(sourceWorkspaceId);
+    instanceInitializer.initCloneMode(sourceWorkspaceId);
     // confirm we have moved forward with cloning
     assertTrue(cloneDao.cloneExistsForWorkspace(UUID.fromString(sourceWorkspaceId)));
   }
@@ -135,7 +135,7 @@ class InstanceInitializerBeanTest {
     // instance does not exist
     assertFalse(instanceDao.instanceSchemaExists(instanceID));
     // enter clone mode
-    boolean cleanExit = instanceInitializerBean.initCloneMode(sourceWorkspaceId);
+    boolean cleanExit = instanceInitializer.initCloneMode(sourceWorkspaceId);
     // initCloneMode() should have returned true since we did not enter a situation
     // where we'd have to create the default schema.
     assertTrue(cleanExit);
@@ -151,7 +151,7 @@ class InstanceInitializerBeanTest {
     instanceDao.createSchema(instanceID);
     cloneDao.createCloneEntry(UUID.randomUUID(), UUID.fromString(sourceWorkspaceId));
     // enter clone mode
-    boolean cleanExit = instanceInitializerBean.initCloneMode(sourceWorkspaceId);
+    boolean cleanExit = instanceInitializer.initCloneMode(sourceWorkspaceId);
     // initCloneMode() should have returned true since we did not enter a situation
     // where we'd have to create the default schema.
     assertTrue(cleanExit);
@@ -166,7 +166,7 @@ class InstanceInitializerBeanTest {
     // instance does not exist
     assertFalse(instanceDao.instanceSchemaExists(instanceID));
     // enter clone mode
-    boolean cleanExit = instanceInitializerBean.initCloneMode(sourceWorkspaceId);
+    boolean cleanExit = instanceInitializer.initCloneMode(sourceWorkspaceId);
     // initCloneMode() should have returned false since we encountered a situation
     // where we'd have to create the default schema.
     assertFalse(cleanExit);
@@ -174,34 +174,39 @@ class InstanceInitializerBeanTest {
 
   @Test
   void sourceWorkspaceIDNotProvided() {
-    boolean cloneMode = instanceInitializerBean.isInCloneMode(null);
+    boolean cloneMode = instanceInitializer.isInCloneMode(null);
     assertFalse(cloneMode);
   }
 
   @Test
   void blankSourceWorkspaceID() {
-    boolean cloneMode = instanceInitializerBean.isInCloneMode("");
+    boolean cloneMode = instanceInitializer.isInCloneMode("");
     assertFalse(cloneMode);
 
-    cloneMode = instanceInitializerBean.isInCloneMode(" ");
+    cloneMode = instanceInitializer.isInCloneMode(" ");
     assertFalse(cloneMode);
   }
 
   @Test
   void sourceWorkspaceIDCorrect() {
-    boolean cloneMode = instanceInitializerBean.isInCloneMode(UUID.randomUUID().toString());
-    assert (cloneMode);
+    boolean cloneMode = instanceInitializer.isInCloneMode(UUID.randomUUID().toString());
+    assertTrue(cloneMode);
   }
 
   @Test
   void sourceWorkspaceIDInvalid() {
-    boolean cloneMode = instanceInitializerBean.isInCloneMode("invalidUUID");
+    boolean cloneMode = instanceInitializer.isInCloneMode("invalidUUID");
     assertFalse(cloneMode);
   }
 
   @Test
   void sourceAndCurrentWorkspaceIdsMatch() {
-    boolean cloneMode = instanceInitializerBean.isInCloneMode(workspaceId);
+    boolean cloneMode = instanceInitializer.isInCloneMode(workspaceId);
     assertFalse(cloneMode);
+  }
+
+  private void cleanupInstanceSchemas() {
+    List<UUID> allInstances = instanceDao.listInstanceSchemas();
+    allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
   }
 }

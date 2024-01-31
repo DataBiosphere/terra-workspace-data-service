@@ -37,7 +37,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
-// "local" profile prevents InstanceInitializerBean from running at Spring startup;
+// "local" profile prevents InstanceInitializer from running at Spring startup;
 // that way, we can run it when we want to inside our tests.
 @ActiveProfiles({"mock-storage", "local-cors", "mock-sam", "local"})
 @TestPropertySource(
@@ -52,7 +52,7 @@ import org.springframework.test.context.TestPropertySource;
 class InstanceInitializerCloneTest {
 
   // standard beans
-  @Autowired InstanceInitializerBean instanceInitializerBean;
+  @Autowired InstanceInitializer instanceInitializer;
   @Autowired InstanceDao instanceDao;
   @Autowired RecordDao recordDao;
   @Autowired CloneDao cloneDao;
@@ -102,7 +102,7 @@ class InstanceInitializerCloneTest {
         .willReturn(mockCloningApi);
 
     // attempt to clone
-    instanceInitializerBean.initializeInstance();
+    instanceInitializer.initializeInstance();
 
     // clone job should have errored, with friendly error message
     Job<JobInput, CloneResponse> cloneStatus = cloneDao.getCloneStatus();
@@ -145,7 +145,7 @@ class InstanceInitializerCloneTest {
         .willReturn(mockCloningApi);
 
     // attempt to clone
-    instanceInitializerBean.initializeInstance();
+    instanceInitializer.initializeInstance();
 
     // clone job should have succeeded
     Job<JobInput, CloneResponse> cloneStatus = cloneDao.getCloneStatus();
