@@ -42,6 +42,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class RecordService {
+  // strings used for metrics
+  public static final String COUNTER_COL_CHANGE = "column.change.datatype";
+  public static final String TAG_RECORD_TYPE = "RecordType";
+  public static final String TAG_INSTANCE = "Instance";
+  public static final String TAG_ATTRIBUTE_NAME = "AttributeName";
+  public static final String TAG_OLD_DATATYPE = "OldDataType";
+  public static final String TAG_NEW_DATATYPE = "NewDataType";
 
   private final RecordDao recordDao;
 
@@ -216,10 +223,10 @@ public class RecordService {
 
       // update a metrics counter with this schema change
       Counter counter =
-          Counter.builder("column.change.datatype")
-              .tag("RecordType", recordType.getName())
+          Counter.builder(COUNTER_COL_CHANGE)
+              .tag(TAG_RECORD_TYPE, recordType.getName())
               .tag("AttributeName", column)
-              .tag("Instance", instanceId.toString())
+              .tag(TAG_INSTANCE, instanceId.toString())
               .tag("OldDataType", valueDifference.leftValue().toString())
               .tag("NewDataType", updatedColType.toString())
               .description("Column schema changes")

@@ -1,11 +1,13 @@
 package org.databiosphere.workspacedataservice.jobexec;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -35,7 +37,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
 import org.quartz.JobKey;
 import org.quartz.impl.JobDetailImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,8 +67,6 @@ class QuartzJobTest {
     when(jobDao.createJob(any())).thenReturn(genericJobServerModel);
     when(jobDao.getJob(any())).thenReturn(genericJobServerModel);
     when(jobDao.updateStatus(any(), any())).thenReturn(genericJobServerModel);
-    when(jobDao.fail(any(), any(Exception.class)))
-        .thenThrow(new RuntimeException("test failed via jobDao.fail()"));
     when(jobDao.fail(any(), anyString()))
         .thenThrow(new RuntimeException("test failed via jobDao.fail()"));
   }
@@ -88,10 +87,17 @@ class QuartzJobTest {
   class TestableQuartzJob extends QuartzJob {
 
     private final String expectedToken;
+    private boolean shouldThrowError = false;
 
     public TestableQuartzJob(String expectedToken, ObservationRegistry registry) {
       super(registry);
       this.expectedToken = expectedToken;
+    }
+
+    public TestableQuartzJob(
+        String expectedToken, ObservationRegistry registry, boolean shouldThrowError) {
+      this(expectedToken, registry);
+      this.shouldThrowError = shouldThrowError;
     }
 
     @Override
@@ -102,11 +108,18 @@ class QuartzJobTest {
     @Override
     protected void executeInternal(UUID jobId, JobExecutionContext context) {
       assertEquals(expectedToken, TokenContextUtil.getToken().getValue());
+      try {
+        if (shouldThrowError) {
+          throw new JobExecutionException("Forced job to fail");
+        }
+      } catch (Exception e) {
+        throw new JobExecutionException("Forced job to fail", e);
+      }
     }
   }
 
   @Test
-  void tokenIsStashedAndCleaned() throws JobExecutionException {
+  void tokenIsStashedAndCleaned() throws org.quartz.JobExecutionException {
     // set an example token, via mock, into the Quartz JobDataMap
     String expectedToken = RandomStringUtils.randomAlphanumeric(10);
     JobExecutionContext mockContext = setUpTestJob(expectedToken, UUID.randomUUID().toString());
@@ -122,7 +135,7 @@ class QuartzJobTest {
   }
 
   @Test
-  void correctObservation() throws JobExecutionException {
+  void correctObservation() throws org.quartz.JobExecutionException {
     String randomToken = RandomStringUtils.randomAlphanumeric(10);
     String jobUuid = UUID.randomUUID().toString();
     JobExecutionContext mockContext = setUpTestJob(randomToken, jobUuid);
@@ -136,17 +149,18 @@ class QuartzJobTest {
 
     TestObservationRegistryAssert.assertThat(testObservationRegistry)
         .doesNotHaveAnyRemainingCurrentObservation()
+        .hasNumberOfObservationsWithNameEqualTo("wds.job.execute", 1)
         .hasObservationWithNameEqualTo("wds.job.execute")
         .that()
         .hasHighCardinalityKeyValue("jobId", jobUuid)
         .hasLowCardinalityKeyValue("jobType", "TestableQuartzJob")
-        .hasLowCardinalityKeyValue("outcome", "success")
+        .hasLowCardinalityKeyValue("outcome", StatusEnum.SUCCEEDED.getValue())
         .hasBeenStarted()
         .hasBeenStopped();
   }
 
   @Test
-  void correctMetrics() throws JobExecutionException {
+  void correctMetrics() throws org.quartz.JobExecutionException {
     String randomToken = RandomStringUtils.randomAlphanumeric(10);
     JobExecutionContext mockContext = setUpTestJob(randomToken, UUID.randomUUID().toString());
 
@@ -186,6 +200,36 @@ class QuartzJobTest {
       assertThat(timer.totalTime(TimeUnit.SECONDS)).isGreaterThan(previousTotal);
       previousTotal = timer.totalTime(TimeUnit.SECONDS);
     }
+  }
+
+  @Test
+  void observationLogsFailure() throws JobExecutionException {
+    String randomToken = RandomStringUtils.randomAlphanumeric(10);
+    String jobUuid = UUID.randomUUID().toString();
+    JobExecutionContext mockContext = setUpTestJob(randomToken, jobUuid);
+
+    // this test requires a TestObservationRegistry
+    TestObservationRegistry testObservationRegistry =
+        assertInstanceOf(TestObservationRegistry.class, observationRegistry);
+
+    // execute the TestableQuartzJob, then confirm observation recorded failure
+    assertThrows(
+        JobExecutionException.class,
+        () ->
+            new TestableQuartzJob(randomToken, observationRegistry, /* shouldThrowError= */ true)
+                .execute(mockContext));
+
+    TestObservationRegistryAssert.assertThat(testObservationRegistry)
+        .doesNotHaveAnyRemainingCurrentObservation()
+        .hasNumberOfObservationsWithNameEqualTo("wds.job.execute", 1)
+        .hasObservationWithNameEqualTo("wds.job.execute")
+        .that()
+        .hasHighCardinalityKeyValue("jobId", jobUuid)
+        .hasLowCardinalityKeyValue("jobType", "TestableQuartzJob")
+        .hasLowCardinalityKeyValue("outcome", StatusEnum.ERROR.getValue())
+        .hasLowCardinalityKeyValue("error", "Forced job to fail")
+        .hasBeenStarted()
+        .hasBeenStopped();
   }
 
   // sets up a job and returns the job context

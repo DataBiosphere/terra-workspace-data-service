@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.jobexec;
 
+import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 
@@ -65,12 +66,12 @@ public abstract class QuartzJob implements Job {
       executeInternal(jobId, context);
       // if we reached here, mark this job as successful
       getJobDao().succeeded(jobId);
-      observation.lowCardinalityKeyValue("outcome", "success");
+      observation.lowCardinalityKeyValue("outcome", StatusEnum.SUCCEEDED.getValue());
     } catch (Exception e) {
       // on any otherwise-unhandled exception, mark the job as failed
       getJobDao().fail(jobId, e);
       observation.error(e);
-      observation.lowCardinalityKeyValue("outcome", "failure");
+      observation.lowCardinalityKeyValue("outcome", StatusEnum.ERROR.getValue());
     } finally {
       JobContextHolder.destroy();
       observation.stop();
