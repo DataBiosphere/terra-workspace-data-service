@@ -223,9 +223,11 @@ class QuartzJobTest {
         .hasHighCardinalityKeyValue("jobId", jobUuid)
         .hasLowCardinalityKeyValue("jobType", "TestableQuartzJob")
         .hasLowCardinalityKeyValue("outcome", StatusEnum.ERROR.getValue())
-        .hasLowCardinalityKeyValue("error", "Forced job to fail")
         .hasBeenStarted()
-        .hasBeenStopped();
+        .hasBeenStopped()
+        .hasError()
+        .thenError()
+        .hasMessage("Forced job to fail");
   }
 
   // sets up a job and returns the job context
