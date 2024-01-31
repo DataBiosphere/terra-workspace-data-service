@@ -2098,6 +2098,50 @@ class RecordControllerMockMvcTest {
 
   @Test
   @Transactional
+  void updateAttributeDataTypePrimaryKey() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    // sys_name is the default name for the primary key column used by createSomeRecords.
+    String attributeToUpdate = "sys_name";
+
+    mockMvc
+        .perform(
+            patch(
+                    "/{instanceId}/types/{v}/{type}/{attribute}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    attributeToUpdate)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AttributeSchema(null, "NUMBER", null))))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @Transactional
+  void updateAttributeDataTypeInvalidDataType() throws Exception {
+    String recordType = "recordType";
+    createSomeRecords(recordType, 3);
+    // createSomeRecords creates records with attributes including "attr1".
+    String attributeToUpdate = "attr1";
+
+    mockMvc
+        .perform(
+            patch(
+                    "/{instanceId}/types/{v}/{type}/{attribute}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    attributeToUpdate)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    mapper.writeValueAsString(
+                        new AttributeSchema(null, "INVALID_DATA_TYPE", null))))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @Transactional
   void deleteAttribute() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);

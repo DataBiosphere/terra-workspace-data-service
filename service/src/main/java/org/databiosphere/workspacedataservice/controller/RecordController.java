@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 @RestController
@@ -177,12 +178,27 @@ public class RecordController {
       @PathVariable("attribute") String attribute,
       @RequestBody AttributeSchema newAttributeSchema) {
     String newAttributeName = newAttributeSchema.name();
-    recordOrchestratorService.renameAttribute(
-        instanceId, version, recordType, attribute, newAttributeName);
+    String newDataType = newAttributeSchema.datatype();
+
+    if (newAttributeName == null && newDataType == null) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "At least one of name or datatype is required");
+    }
+
+    if (newAttributeName != null) {
+      recordOrchestratorService.renameAttribute(
+          instanceId, version, recordType, attribute, newAttributeName);
+    }
+    String finalAttributeName = newAttributeName != null ? newAttributeName : attribute;
+
+    if (newDataType != null) {
+      recordOrchestratorService.updateAttributeDataType(
+          instanceId, version, recordType, finalAttributeName, newDataType);
+    }
 
     RecordTypeSchema recordTypeSchema =
         recordOrchestratorService.describeRecordType(instanceId, version, recordType);
-    AttributeSchema attributeSchema = recordTypeSchema.getAttributeSchema(newAttributeName);
+    AttributeSchema attributeSchema = recordTypeSchema.getAttributeSchema(finalAttributeName);
     return new ResponseEntity<>(attributeSchema, HttpStatus.OK);
   }
 
