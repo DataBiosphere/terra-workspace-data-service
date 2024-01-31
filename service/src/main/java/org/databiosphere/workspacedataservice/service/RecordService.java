@@ -225,10 +225,10 @@ public class RecordService {
       Counter counter =
           Counter.builder(COUNTER_COL_CHANGE)
               .tag(TAG_RECORD_TYPE, recordType.getName())
-              .tag("AttributeName", column)
+              .tag(TAG_ATTRIBUTE_NAME, column)
               .tag(TAG_INSTANCE, instanceId.toString())
-              .tag("OldDataType", valueDifference.leftValue().toString())
-              .tag("NewDataType", updatedColType.toString())
+              .tag(TAG_OLD_DATATYPE, valueDifference.leftValue().toString())
+              .tag(TAG_NEW_DATATYPE, updatedColType.toString())
               .description("Column schema changes")
               .register(meterRegistry);
       counter.increment();
