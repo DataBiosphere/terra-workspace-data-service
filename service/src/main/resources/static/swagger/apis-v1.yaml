@@ -74,6 +74,7 @@ paths:
   ##############################
   /job/v2/{instanceUuid}:
     # TODO davidan: add runningOnly=(true|false) param
+    # TODO davidan: add pagination?
     get:
       summary: List jobs in this instance
       operationId: listJobsV2

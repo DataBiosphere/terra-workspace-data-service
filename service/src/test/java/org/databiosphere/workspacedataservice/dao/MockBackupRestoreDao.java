@@ -46,6 +46,7 @@ public class MockBackupRestoreDao<T extends JobResult> implements BackupRestoreD
           new Job<>(
               trackingId,
               SYNC_BACKUP,
+              UUID.randomUUID(), // TODO davidan: don't use random UUID!
               JobStatus.QUEUED,
               "",
               now.toLocalDateTime(),
@@ -59,6 +60,7 @@ public class MockBackupRestoreDao<T extends JobResult> implements BackupRestoreD
           new Job<>(
               trackingId,
               SYNC_RESTORE,
+              UUID.randomUUID(), // TODO davidan: don't use random UUID!
               JobStatus.QUEUED,
               "",
               now.toLocalDateTime(),
