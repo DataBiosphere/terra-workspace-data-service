@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
@@ -45,7 +46,8 @@ class PostgresJobDaoTest {
 
   // helper method to get a job into the db and verify it was written correctly
   private GenericJobServerModel assertJobCreation(JobType jobType) {
-    Job<JobInput, JobResult> testJob = Job.newJob(jobType, JobInput.empty());
+    // TODO davidan: use of a random UUID here for instanceid is WRONG and will break tests
+    Job<JobInput, JobResult> testJob = Job.newJob(UUID.randomUUID(), jobType, JobInput.empty());
     jobDao.createJob(testJob);
 
     var params = new MapSqlParameterSource("jobId", testJob.getJobId().toString());

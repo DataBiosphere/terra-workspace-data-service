@@ -20,6 +20,7 @@ public class DbMigration {
     this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
   }
 
+  // TODO davidan: can this be done purely in liquibase somehow?
   @PostConstruct
   @WriteTransaction
   void migrateInstances() {

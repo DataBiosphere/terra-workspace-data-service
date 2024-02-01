@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
+import org.databiosphere.workspacedataservice.model.InstanceId;
+import org.databiosphere.workspacedataservice.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -89,5 +92,30 @@ public class InstanceService {
     if (!instanceDao.instanceSchemaExists(instanceId)) {
       throw new MissingObjectException("Instance");
     }
+  }
+
+  /**
+   * retrieves the workspace id associated with a given instance. Supports "virtual instances".
+   *
+   * @param instanceId the instance to query
+   * @return the workspace id for this instance
+   */
+  public WorkspaceId getWorkspaceId(InstanceId instanceId) {
+    CollectionServerModel coll = instanceDao.getCollection(instanceId.id());
+    if (coll == null) {
+      LOGGER.info(
+          "InstanceId {} not found in db; defaulting to workspaceId of the same value",
+          instanceId.id());
+      return new WorkspaceId(instanceId.id());
+    }
+    LOGGER.info(
+        "InstanceId {} found and associated with WorkspaceId {}",
+        instanceId.id(),
+        coll.getWorkspaceId());
+    return new WorkspaceId(coll.getWorkspaceId());
+  }
+
+  public List<CollectionServerModel> getCollections(WorkspaceId workspaceId) {
+    return instanceDao.getCollections(workspaceId);
   }
 }

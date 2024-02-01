@@ -1,7 +1,9 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
+import org.databiosphere.workspacedataservice.model.InstanceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
@@ -26,5 +28,11 @@ public interface JobDao {
 
   GenericJobServerModel fail(UUID jobId, Exception e);
 
+  @Deprecated
+  // use getJob(InstanceId instanceId, UUID jobId) instead
   GenericJobServerModel getJob(UUID jobId);
+
+  GenericJobServerModel getJob(InstanceId instanceId, UUID jobId);
+
+  List<GenericJobServerModel> listJobs(InstanceId instanceId);
 }

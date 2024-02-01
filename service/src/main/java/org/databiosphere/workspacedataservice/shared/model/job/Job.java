@@ -21,6 +21,8 @@ public class Job<T extends JobInput, U extends JobResult> {
   /** type of this job, e.g. PFB import vs. database backup; {@link JobType} */
   private final JobType jobType;
 
+  private final UUID instanceId;
+
   /** status of the job; {@link JobStatus} */
   private JobStatus status;
 
@@ -52,6 +54,7 @@ public class Job<T extends JobInput, U extends JobResult> {
   public Job(
       UUID jobId,
       JobType jobType,
+      UUID instanceId,
       JobStatus status,
       String errorMessage,
       LocalDateTime created,
@@ -60,6 +63,7 @@ public class Job<T extends JobInput, U extends JobResult> {
       U result) {
     this.jobId = jobId;
     this.jobType = jobType;
+    this.instanceId = instanceId;
     this.status = status;
     this.errorMessage = errorMessage;
     this.created = created;
@@ -76,11 +80,12 @@ public class Job<T extends JobInput, U extends JobResult> {
    * @param input input arguments for the job
    * @return the job, after creation
    */
-  public static Job<JobInput, JobResult> newJob(JobType jobType, JobInput input) {
+  public static Job<JobInput, JobResult> newJob(UUID instanceId, JobType jobType, JobInput input) {
     LocalDateTime now = LocalDateTime.now();
     return new Job<>(
         UUID.randomUUID(),
         jobType,
+        instanceId,
         JobStatus.CREATED,
         /* errorMessage= */ null,
         /* created= */ now,
@@ -105,6 +110,10 @@ public class Job<T extends JobInput, U extends JobResult> {
 
   public JobType getJobType() {
     return jobType;
+  }
+
+  public UUID getInstanceId() {
+    return instanceId;
   }
 
   public String getErrorMessage() {

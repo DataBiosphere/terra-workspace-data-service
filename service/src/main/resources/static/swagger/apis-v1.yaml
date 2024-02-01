@@ -17,6 +17,8 @@ tags:
     description: Import APIs
   - name: Job
     description: Job APIs
+  - name: Collections
+    description: Collection APIs
   - name: Capabilities
     description: Describes the features of WDS
 
@@ -70,9 +72,62 @@ paths:
   ##############################
   # Job APIs
   ##############################
+  /job/v2/{instanceUuid}:
+    # TODO davidan: add runningOnly=(true|false) param
+    get:
+      summary: List jobs in this instance
+      operationId: listJobsV2
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - Job
+      parameters:
+        - $ref: '#/components/parameters/instanceUuidPathParam'
+      responses:
+        200:
+          description: Job listing.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GenericJob'
+
+  /job/v2/{instanceUuid}/{jobId}:
+    # TODO davidan: awkward to have two uuids right after another; clean up signature?
+    get:
+      summary: Get status of a long-running job.
+      operationId: jobStatusV2
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - Job
+      parameters:
+        - $ref: '#/components/parameters/instanceUuidPathParam'
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Job completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericJob'
+        202:
+          description: Job still running.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericJob'
+
   /job/v1/{jobId}:
     get:
       summary: Get status of a long-running job.
+      deprecated: true
       operationId: jobStatusV1
       tags:
         - Job
@@ -98,6 +153,35 @@ paths:
                 $ref: '#/components/schemas/GenericJob'
 
   ##############################
+  # Collection APIs
+  ##############################
+  /collection/v1/{workspaceId}:
+    get:
+      summary: List all collections in the given workspace.
+      description: Collection f/k/a instance. Requires read permission on the workspace.
+      operationId: listCollectionsV1
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - Collections
+      parameters:
+        - $ref: '#/components/parameters/workspaceIdPathParam'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Collection'
+  #    post:
+  #  /collection/v1/{collectionIdentifier}:
+  #    get:
+  #    delete:
+
+
+  ##############################
   # Capabilities APIs
   ##############################
   /capabilities/v1:
@@ -113,6 +197,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Capabilities'
+
 
 components:
   # within each group, components should be listed alphabetically.
@@ -133,6 +218,14 @@ components:
       schema:
         type: string
         format: uuid
+    workspaceIdPathParam:
+      name: workspaceId
+      in: path
+      description: Workspace id
+      required: true
+      schema:
+        type: string
+        format: uuid
 
   schemas:
     Capabilities:
@@ -142,6 +235,25 @@ components:
           type: boolean
       additionalProperties:
         type: boolean
+    Collection:
+      type: object
+      required:
+        - id
+        - workspaceId
+        - name
+        - description
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspaceId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          # TODO davidan: syntax restrictions, e.g. no colon
+        description:
+          type: string
     GenericJob:
       x-all-of-name: GenericJob
       description: |

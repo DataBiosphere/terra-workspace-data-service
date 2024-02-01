@@ -3,8 +3,14 @@ package org.databiosphere.workspacedataservice.dao;
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 
 import bio.terra.common.db.WriteTransaction;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
+import org.databiosphere.workspacedataservice.model.WorkspaceId;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -82,5 +88,40 @@ public class PostgresInstanceDao implements InstanceDao {
         .getJdbcTemplate()
         .update(
             "insert into sys_wds.instance(id) values (?) on conflict(id) do nothing", newSchemaId);
+  }
+
+  @Override
+  public CollectionServerModel getCollection(UUID collectionId) {
+    return namedTemplate.queryForObject(
+        "select id, workspace_id, name, description from sys_wds.instance where id = :id",
+        new MapSqlParameterSource("id", collectionId),
+        new CollectionServerModelRowMapper());
+  }
+
+  @Override
+  public CollectionServerModel getCollection(WorkspaceId workspaceId, UUID collectionId) {
+    return namedTemplate.queryForObject(
+        "select id, workspace_id, name, description from sys_wds.instance where id = :id and workspace_id = :workspaceId",
+        new MapSqlParameterSource(Map.of("id", collectionId, "workspaceId", workspaceId.id())),
+        new CollectionServerModelRowMapper());
+  }
+
+  public List<CollectionServerModel> getCollections(WorkspaceId workspaceId) {
+    return namedTemplate.query(
+        "select id, workspace_id, name, description from sys_wds.instance where workspace_id = :workspaceId order by name desc",
+        new MapSqlParameterSource("workspaceId", workspaceId.id()),
+        new CollectionServerModelRowMapper());
+  }
+
+  private static class CollectionServerModelRowMapper implements RowMapper<CollectionServerModel> {
+    @Override
+    public CollectionServerModel mapRow(ResultSet rs, int rowNum) throws SQLException {
+      UUID id = UUID.fromString(rs.getString("id"));
+      UUID workspaceId = UUID.fromString(rs.getString("workspace_id"));
+      String name = rs.getString("name");
+      String description = rs.getString("description");
+
+      return new CollectionServerModel(id, workspaceId, name, description);
+    }
   }
 }

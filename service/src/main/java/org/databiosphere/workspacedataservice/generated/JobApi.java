@@ -48,7 +48,9 @@ public interface JobApi {
      * @param jobId  (required)
      * @return Job completed. (status code 200)
      *         or Job still running. (status code 202)
+     * @deprecated
      */
+    @Deprecated
     @Operation(
         operationId = "jobStatusV1",
         summary = "Get status of a long-running job.",
@@ -69,6 +71,76 @@ public interface JobApi {
     )
     default ResponseEntity<GenericJobServerModel> jobStatusV1(
         @Parameter(name = "jobId", description = "", required = true, in = ParameterIn.PATH) @PathVariable("jobId") UUID jobId
+    ) {
+        return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
+
+    }
+
+
+    /**
+     * GET /job/v2/{instanceUuid}/{jobId} : Get status of a long-running job.
+     *
+     * @param instanceUuid WDS instance id; by convention equal to workspace id (required)
+     * @param jobId  (required)
+     * @return Job completed. (status code 200)
+     *         or Job still running. (status code 202)
+     */
+    @Operation(
+        operationId = "jobStatusV2",
+        summary = "Get status of a long-running job.",
+        tags = { "Job" },
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Job completed.", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = GenericJobServerModel.class))
+            }),
+            @ApiResponse(responseCode = "202", description = "Job still running.", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = GenericJobServerModel.class))
+            })
+        },
+        security = {
+            @SecurityRequirement(name = "bearerAuth")
+        }
+    )
+    @RequestMapping(
+        method = RequestMethod.GET,
+        value = "/job/v2/{instanceUuid}/{jobId}",
+        produces = { "application/json" }
+    )
+    default ResponseEntity<GenericJobServerModel> jobStatusV2(
+        @Parameter(name = "instanceUuid", description = "WDS instance id; by convention equal to workspace id", required = true, in = ParameterIn.PATH) @PathVariable("instanceUuid") UUID instanceUuid,
+        @Parameter(name = "jobId", description = "", required = true, in = ParameterIn.PATH) @PathVariable("jobId") UUID jobId
+    ) {
+        return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
+
+    }
+
+
+    /**
+     * GET /job/v2/{instanceUuid} : List jobs in this instance
+     *
+     * @param instanceUuid WDS instance id; by convention equal to workspace id (required)
+     * @return Job listing. (status code 200)
+     */
+    @Operation(
+        operationId = "listJobsV2",
+        summary = "List jobs in this instance",
+        tags = { "Job" },
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Job listing.", content = {
+                @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = GenericJobServerModel.class)))
+            })
+        },
+        security = {
+            @SecurityRequirement(name = "bearerAuth")
+        }
+    )
+    @RequestMapping(
+        method = RequestMethod.GET,
+        value = "/job/v2/{instanceUuid}",
+        produces = { "application/json" }
+    )
+    default ResponseEntity<List<GenericJobServerModel>> listJobsV2(
+        @Parameter(name = "instanceUuid", description = "WDS instance id; by convention equal to workspace id", required = true, in = ParameterIn.PATH) @PathVariable("instanceUuid") UUID instanceUuid
     ) {
         return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
 

@@ -1,8 +1,10 @@
 package org.databiosphere.workspacedataservice.sam;
 
 import java.util.List;
+import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserStatusInfo;
+import org.databiosphere.workspacedataservice.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
 import org.slf4j.Logger;
@@ -18,13 +20,13 @@ public class HttpSamDao implements SamDao {
   protected final SamClientFactory samClientFactory;
   private static final Logger LOGGER = LoggerFactory.getLogger(HttpSamDao.class);
   private final RestClientRetry restClientRetry;
-  private final String workspaceId;
+  private final WorkspaceId workspaceId;
 
   public HttpSamDao(
       SamClientFactory samClientFactory, RestClientRetry restClientRetry, String workspaceId) {
     this.samClientFactory = samClientFactory;
     this.restClientRetry = restClientRetry;
-    this.workspaceId = workspaceId;
+    this.workspaceId = new WorkspaceId(UUID.fromString(workspaceId));
   }
 
   /**
@@ -40,7 +42,7 @@ public class HttpSamDao implements SamDao {
 
   @Override
   public boolean hasCreateInstancePermission(String token) {
-    return hasPermission(ACTION_WRITE, "Sam.hasCreateInstancePermission", token);
+    return hasPermission(workspaceId, ACTION_WRITE, "Sam.hasCreateInstancePermission", token);
   }
 
   /**
@@ -56,11 +58,12 @@ public class HttpSamDao implements SamDao {
 
   @Override
   public boolean hasDeleteInstancePermission(String token) {
-    return hasPermission(ACTION_DELETE, "Sam.hasDeleteInstancePermission", token);
+    return hasPermission(workspaceId, ACTION_DELETE, "Sam.hasDeleteInstancePermission", token);
   }
 
   // helper implementation for permission checks
-  private boolean hasPermission(String action, String loggerHint, String token) {
+  private boolean hasPermission(
+      WorkspaceId workspaceId, String action, String loggerHint, String token) {
     LOGGER.debug(
         "Checking Sam permission for {}/{}/{} ...",
         SamDao.RESOURCE_NAME_WORKSPACE,
@@ -70,7 +73,8 @@ public class HttpSamDao implements SamDao {
         () ->
             samClientFactory
                 .getResourcesApi(token)
-                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, workspaceId, action);
+                .resourcePermissionV2(
+                    SamDao.RESOURCE_NAME_WORKSPACE, workspaceId.id().toString(), action);
     return restClientRetry.withRetryAndErrorHandling(samFunction, loggerHint);
   }
 
@@ -87,7 +91,17 @@ public class HttpSamDao implements SamDao {
 
   @Override
   public boolean hasWriteInstancePermission(String token) {
-    return hasPermission(ACTION_WRITE, "Sam.hasWriteInstancePermission", token);
+    return hasPermission(workspaceId, ACTION_WRITE, "Sam.hasWriteInstancePermission", token);
+  }
+
+  @Override
+  public boolean hasReadWorkspacePermission(WorkspaceId workspaceId, String token) {
+    return hasPermission(workspaceId, ACTION_READ, "Sam.hasReadWorkspacePermission", token);
+  }
+
+  @Override
+  public boolean hasWriteWorkspacePermission(WorkspaceId workspaceId, String token) {
+    return hasPermission(workspaceId, ACTION_WRITE, "Sam.hasWriteWorkspacePermission", token);
   }
 
   // this cache uses token.hashCode as its key. This prevents any logging such as

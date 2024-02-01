@@ -10,7 +10,7 @@ databaseChangeLog:
               - column:
                   name: workspace_id
                   type: uuid
-                  # TODO: need custom logic to handle existing non-default instances
+                  # TODO davidan: need custom logic to handle existing non-default instances
                   #       or, use env-var substitution here, but that can cause liquibase
                   #       changesets to vary in their hashes, which is problematic
                   constraints:

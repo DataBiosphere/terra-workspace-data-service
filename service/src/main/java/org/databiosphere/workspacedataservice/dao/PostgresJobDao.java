@@ -9,8 +9,11 @@ import com.google.common.base.Preconditions;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
+import org.databiosphere.workspacedataservice.model.InstanceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
@@ -36,6 +39,7 @@ public class PostgresJobDao implements JobDao {
 
   @Override
   public GenericJobServerModel createJob(Job<JobInput, JobResult> job) {
+
     // save the input arguments as a jsonb packet, being resilient to nulls
     String inputJsonb = null;
     if (job.getInput() != null) {
@@ -56,9 +60,11 @@ public class PostgresJobDao implements JobDao {
     namedTemplate
         .getJdbcTemplate()
         .update(
-            "insert into sys_wds.job(id, type, status, input) " + "values (?, ?, ?, ?::jsonb)",
+            "insert into sys_wds.job(id, type, instance_id, status, input) "
+                + "values (?, ?, ?, ?, ?::jsonb)",
             job.getJobId().toString(),
             job.getJobType().name(),
+            job.getInstanceId() == null ? null : job.getInstanceId(),
             StatusEnum.CREATED.name(),
             inputJsonb);
 
@@ -205,6 +211,30 @@ public class PostgresJobDao implements JobDao {
             + "from sys_wds.job "
             + "where id = :jobId",
         new MapSqlParameterSource("jobId", jobId.toString()),
+        new AsyncJobRowMapper());
+  }
+
+  @Override
+  public GenericJobServerModel getJob(InstanceId instanceId, UUID jobId) {
+    return namedTemplate.queryForObject(
+        "select id, type, status, created, updated, "
+            + "input, result, error, stacktrace "
+            + "from sys_wds.job "
+            + "where id = :jobId"
+            + " and instance_id = :instanceId",
+        new MapSqlParameterSource(Map.of("jobId", jobId.toString(), "instanceId", instanceId.id())),
+        new AsyncJobRowMapper());
+  }
+
+  @Override
+  public List<GenericJobServerModel> listJobs(InstanceId instanceId) {
+    return namedTemplate.query(
+        "select id, type, status, created, updated, "
+            + "input, result, error, stacktrace "
+            + "from sys_wds.job "
+            + "where instance_id = :instanceId"
+            + " order by updated desc",
+        new MapSqlParameterSource("instanceId", instanceId.id()),
         new AsyncJobRowMapper());
   }
 
