@@ -66,6 +66,8 @@ public class JobV1ServerModel {
 
   private JobTypeEnum jobType;
 
+  private UUID instanceId;
+
   /**
    * Gets or Sets status
    */
@@ -181,6 +183,26 @@ public class JobV1ServerModel {
     this.jobType = jobType;
   }
 
+  public JobV1ServerModel instanceId(UUID instanceId) {
+    this.instanceId = instanceId;
+    return this;
+  }
+
+  /**
+   * Get instanceId
+   * @return instanceId
+  */
+  @Valid 
+  @Schema(name = "instanceId", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("instanceId")
+  public UUID getInstanceId() {
+    return instanceId;
+  }
+
+  public void setInstanceId(UUID instanceId) {
+    this.instanceId = instanceId;
+  }
+
   public JobV1ServerModel status(StatusEnum status) {
     this.status = status;
     return this;
@@ -272,6 +294,7 @@ public class JobV1ServerModel {
     JobV1ServerModel jobV1 = (JobV1ServerModel) o;
     return Objects.equals(this.jobId, jobV1.jobId) &&
         Objects.equals(this.jobType, jobV1.jobType) &&
+        Objects.equals(this.instanceId, jobV1.instanceId) &&
         Objects.equals(this.status, jobV1.status) &&
         Objects.equals(this.created, jobV1.created) &&
         Objects.equals(this.updated, jobV1.updated) &&
@@ -280,7 +303,7 @@ public class JobV1ServerModel {
 
   @Override
   public int hashCode() {
-    return Objects.hash(jobId, jobType, status, created, updated, errorMessage);
+    return Objects.hash(jobId, jobType, instanceId, status, created, updated, errorMessage);
   }
 
   @Override
@@ -289,6 +312,7 @@ public class JobV1ServerModel {
     sb.append("class JobV1ServerModel {\n");
     sb.append("    jobId: ").append(toIndentedString(jobId)).append("\n");
     sb.append("    jobType: ").append(toIndentedString(jobType)).append("\n");
+    sb.append("    instanceId: ").append(toIndentedString(instanceId)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    created: ").append(toIndentedString(created)).append("\n");
     sb.append("    updated: ").append(toIndentedString(updated)).append("\n");
