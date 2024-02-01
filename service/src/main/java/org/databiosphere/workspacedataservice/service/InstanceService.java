@@ -14,6 +14,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.Authorizat
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -101,7 +102,12 @@ public class InstanceService {
    * @return the workspace id for this instance
    */
   public WorkspaceId getWorkspaceId(InstanceId instanceId) {
-    CollectionServerModel coll = instanceDao.getCollection(instanceId.id());
+    CollectionServerModel coll = null;
+    try {
+      coll = instanceDao.getCollection(instanceId.id());
+    } catch (EmptyResultDataAccessException e) {
+      // collection not found; swallow error
+    }
     if (coll == null) {
       LOGGER.info(
           "InstanceId {} not found in db; defaulting to workspaceId of the same value",
