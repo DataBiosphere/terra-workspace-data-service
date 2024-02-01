@@ -38,6 +38,7 @@ jib {
 ext {
     parquet_mr_version = "1.13.1"
     hadoop_version = "3.3.6"
+    prometheus_rsocket_version = "1.5.3"
 }
 
 dependencies {
@@ -55,6 +56,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-quartz'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation "io.micrometer.prometheus:prometheus-rsocket-spring:$prometheus_rsocket_version"
     implementation 'org.springframework.integration:spring-integration-jdbc'
     implementation 'org.aspectj:aspectjweaver' // required by spring-retry, not used directly
     implementation 'com.google.guava:guava:32.1.3-jre'
@@ -230,7 +232,7 @@ jacocoTestReport {
 test {
     systemProperties['pact.rootDir'] = "$buildDir/pacts"
     systemProperties['pact.provider.version'] = "$project.version"
-    systemProperties['user.timezone'] = "UTC";
+    systemProperties['user.timezone'] = "UTC"
 }
 
 tasks.register("pactTests", Test) {
