@@ -1,8 +1,10 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_ATTRIBUTE_NAME;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_INSTANCE;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_RECORD_TYPE;
+import static org.databiosphere.workspacedataservice.service.RecordService.TAG_ATTRIBUTE_NAME;
+import static org.databiosphere.workspacedataservice.service.RecordService.TAG_INSTANCE;
+import static org.databiosphere.workspacedataservice.service.RecordService.TAG_NEW_DATATYPE;
+import static org.databiosphere.workspacedataservice.service.RecordService.TAG_OLD_DATATYPE;
+import static org.databiosphere.workspacedataservice.service.RecordService.TAG_RECORD_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
@@ -96,7 +98,7 @@ class RecordServiceTest {
     assertEquals(recordType.getName(), counter.getId().getTag(TAG_RECORD_TYPE));
     assertEquals("myAttr", counter.getId().getTag(TAG_ATTRIBUTE_NAME));
     assertEquals(instanceId.toString(), counter.getId().getTag(TAG_INSTANCE));
-    assertEquals(DataTypeMapping.NUMBER.toString(), counter.getId().getTag("OldDataType"));
-    assertEquals(DataTypeMapping.STRING.toString(), counter.getId().getTag("NewDataType"));
+    assertEquals(DataTypeMapping.NUMBER.toString(), counter.getId().getTag(TAG_OLD_DATATYPE));
+    assertEquals(DataTypeMapping.STRING.toString(), counter.getId().getTag(TAG_NEW_DATATYPE));
   }
 }

@@ -1,9 +1,5 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.COUNTER_COL_CHANGE;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_ATTRIBUTE_NAME;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_INSTANCE;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_RECORD_TYPE;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 
 import bio.terra.common.db.WriteTransaction;
@@ -46,6 +42,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class RecordService {
+  // strings used for metrics
+  public static final String COUNTER_COL_CHANGE = "column.change.datatype";
+  public static final String TAG_RECORD_TYPE = "RecordType";
+  public static final String TAG_INSTANCE = "Instance";
+  public static final String TAG_ATTRIBUTE_NAME = "AttributeName";
+  public static final String TAG_OLD_DATATYPE = "OldDataType";
+  public static final String TAG_NEW_DATATYPE = "NewDataType";
 
   private final RecordDao recordDao;
 
@@ -224,8 +227,8 @@ public class RecordService {
               .tag(TAG_RECORD_TYPE, recordType.getName())
               .tag(TAG_ATTRIBUTE_NAME, column)
               .tag(TAG_INSTANCE, instanceId.toString())
-              .tag("OldDataType", valueDifference.leftValue().toString())
-              .tag("NewDataType", updatedColType.toString())
+              .tag(TAG_OLD_DATATYPE, valueDifference.leftValue().toString())
+              .tag(TAG_NEW_DATATYPE, updatedColType.toString())
               .description("Column schema changes")
               .register(meterRegistry);
       counter.increment();

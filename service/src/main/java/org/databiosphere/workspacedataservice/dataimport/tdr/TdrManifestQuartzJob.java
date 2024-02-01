@@ -10,6 +10,7 @@ import bio.terra.datarepo.model.SnapshotExportResponseModelFormatParquetLocation
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Multimap;
+import io.micrometer.observation.ObservationRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -66,7 +67,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
       BatchWriteService batchWriteService,
       ActivityLogger activityLogger,
       @Value("${twds.instance.workspace-id}") UUID workspaceId,
-      ObjectMapper mapper) {
+      ObjectMapper mapper,
+      ObservationRegistry observationRegistry) {
+    super(observationRegistry);
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
     this.restClientRetry = restClientRetry;
