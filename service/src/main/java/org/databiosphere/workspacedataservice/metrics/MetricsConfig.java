@@ -56,7 +56,8 @@ public class MetricsConfig {
             .config()
             .commonTags(
                 new ImmutableList.Builder<Tag>()
-                    .add(Tag.of("wds.version", buildProperties.getVersion()))
+                    .add(Tag.of("service", "wds"))
+                    .add(Tag.of("version", buildProperties.getVersion()))
                     .build());
   }
 }
