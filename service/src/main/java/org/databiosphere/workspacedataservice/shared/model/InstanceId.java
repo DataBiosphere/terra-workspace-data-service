@@ -10,6 +10,13 @@ import java.util.UUID;
  */
 public record InstanceId(UUID id) {
 
+  // disallow nulls
+  public InstanceId {
+    if (id == null) {
+      throw new IllegalArgumentException("Id cannot be null");
+    }
+  }
+
   /**
    * Create a new InstanceId using the given id
    *
@@ -22,6 +29,6 @@ public record InstanceId(UUID id) {
 
   @Override
   public String toString() {
-    return this.id() == null ? "null" : this.id().toString();
+    return this.id().toString();
   }
 }
