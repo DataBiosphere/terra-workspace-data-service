@@ -95,6 +95,7 @@ public class PostgresRestoreDao extends AbstractBackupRestoreDao<RestoreResponse
       return new Job<>(
           jobId,
           SYNC_RESTORE,
+          /* instanceId= */ null, // restore jobs do not execute within a single instance
           status,
           errorMessage,
           created,

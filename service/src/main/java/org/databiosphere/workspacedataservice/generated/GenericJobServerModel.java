@@ -67,6 +67,8 @@ public class GenericJobServerModel {
 
   private JobTypeEnum jobType;
 
+  private UUID instanceId;
+
   /**
    * Gets or Sets status
    */
@@ -184,6 +186,26 @@ public class GenericJobServerModel {
 
   public void setJobType(JobTypeEnum jobType) {
     this.jobType = jobType;
+  }
+
+  public GenericJobServerModel instanceId(UUID instanceId) {
+    this.instanceId = instanceId;
+    return this;
+  }
+
+  /**
+   * Get instanceId
+   * @return instanceId
+  */
+  @Valid 
+  @Schema(name = "instanceId", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("instanceId")
+  public UUID getInstanceId() {
+    return instanceId;
+  }
+
+  public void setInstanceId(UUID instanceId) {
+    this.instanceId = instanceId;
   }
 
   public GenericJobServerModel status(StatusEnum status) {
@@ -317,6 +339,7 @@ public class GenericJobServerModel {
     GenericJobServerModel genericJob = (GenericJobServerModel) o;
     return Objects.equals(this.jobId, genericJob.jobId) &&
         Objects.equals(this.jobType, genericJob.jobType) &&
+        Objects.equals(this.instanceId, genericJob.instanceId) &&
         Objects.equals(this.status, genericJob.status) &&
         Objects.equals(this.created, genericJob.created) &&
         Objects.equals(this.updated, genericJob.updated) &&
@@ -327,7 +350,7 @@ public class GenericJobServerModel {
 
   @Override
   public int hashCode() {
-    return Objects.hash(jobId, jobType, status, created, updated, errorMessage, input, result);
+    return Objects.hash(jobId, jobType, instanceId, status, created, updated, errorMessage, input, result);
   }
 
   @Override
@@ -336,6 +359,7 @@ public class GenericJobServerModel {
     sb.append("class GenericJobServerModel {\n");
     sb.append("    jobId: ").append(toIndentedString(jobId)).append("\n");
     sb.append("    jobType: ").append(toIndentedString(jobType)).append("\n");
+    sb.append("    instanceId: ").append(toIndentedString(instanceId)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    created: ").append(toIndentedString(created)).append("\n");
     sb.append("    updated: ").append(toIndentedString(updated)).append("\n");

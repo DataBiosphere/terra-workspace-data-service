@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.shared.model.job;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.shared.model.InstanceId;
 
 /**
  * Represents a long-running, probably asynchronous, process which moves through multiple states
@@ -20,6 +21,9 @@ public class Job<T extends JobInput, U extends JobResult> {
 
   /** type of this job, e.g. PFB import vs. database backup; {@link JobType} */
   private final JobType jobType;
+
+  /** Instance in which this job ran */
+  private final InstanceId instanceId;
 
   /** status of the job; {@link JobStatus} */
   private JobStatus status;
@@ -52,6 +56,7 @@ public class Job<T extends JobInput, U extends JobResult> {
   public Job(
       UUID jobId,
       JobType jobType,
+      InstanceId instanceId,
       JobStatus status,
       String errorMessage,
       LocalDateTime created,
@@ -60,6 +65,7 @@ public class Job<T extends JobInput, U extends JobResult> {
       U result) {
     this.jobId = jobId;
     this.jobType = jobType;
+    this.instanceId = instanceId;
     this.status = status;
     this.errorMessage = errorMessage;
     this.created = created;
@@ -76,11 +82,13 @@ public class Job<T extends JobInput, U extends JobResult> {
    * @param input input arguments for the job
    * @return the job, after creation
    */
-  public static Job<JobInput, JobResult> newJob(JobType jobType, JobInput input) {
+  public static Job<JobInput, JobResult> newJob(
+      InstanceId instanceId, JobType jobType, JobInput input) {
     LocalDateTime now = LocalDateTime.now();
     return new Job<>(
         UUID.randomUUID(),
         jobType,
+        instanceId,
         JobStatus.CREATED,
         /* errorMessage= */ null,
         /* created= */ now,
@@ -105,6 +113,10 @@ public class Job<T extends JobInput, U extends JobResult> {
 
   public JobType getJobType() {
     return jobType;
+  }
+
+  public InstanceId getInstanceId() {
+    return instanceId;
   }
 
   public String getErrorMessage() {
