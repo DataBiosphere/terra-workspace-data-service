@@ -107,12 +107,8 @@ class QuartzJobTest {
     @Override
     protected void executeInternal(UUID jobId, JobExecutionContext context) {
       assertEquals(expectedToken, TokenContextUtil.getToken().getValue());
-      try {
-        if (shouldThrowError) {
-          throw new JobExecutionException("Forced job to fail");
-        }
-      } catch (Exception e) {
-        throw new JobExecutionException("Forced job to fail", e);
+      if (shouldThrowError) {
+        throw new JobExecutionException("Forced job to fail");
       }
     }
   }
