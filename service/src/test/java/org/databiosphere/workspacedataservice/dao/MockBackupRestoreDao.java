@@ -46,6 +46,7 @@ public class MockBackupRestoreDao<T extends JobResult> implements BackupRestoreD
           new Job<>(
               trackingId,
               SYNC_BACKUP,
+              /* instanceId= */ null, // backup jobs do not execute within a single instance
               JobStatus.QUEUED,
               "",
               now.toLocalDateTime(),
@@ -59,6 +60,7 @@ public class MockBackupRestoreDao<T extends JobResult> implements BackupRestoreD
           new Job<>(
               trackingId,
               SYNC_RESTORE,
+              /* instanceId= */ null, // restore jobs do not execute within a single instance
               JobStatus.QUEUED,
               "",
               now.toLocalDateTime(),

@@ -37,7 +37,15 @@ public class MockCloneDao implements CloneDao {
     var cloneEntry = new CloneResponse(sourceWorkspaceId, CloneStatus.BACKUPQUEUED);
     Job<JobInput, CloneResponse> jobEntry =
         new Job<>(
-            trackingId, SYNC_CLONE, JobStatus.QUEUED, "", now, now, JobInput.empty(), cloneEntry);
+            trackingId,
+            SYNC_CLONE,
+            /* instanceId= */ null, // backup jobs do not execute within a single instance
+            JobStatus.QUEUED,
+            "",
+            now,
+            now,
+            JobInput.empty(),
+            cloneEntry);
     clone.add(jobEntry);
   }
 

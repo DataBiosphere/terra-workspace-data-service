@@ -56,9 +56,11 @@ public class PostgresJobDao implements JobDao {
     namedTemplate
         .getJdbcTemplate()
         .update(
-            "insert into sys_wds.job(id, type, status, input) " + "values (?, ?, ?, ?::jsonb)",
+            "insert into sys_wds.job(id, type, instance_id, status, input) "
+                + "values (?, ?, ?, ?, ?::jsonb)",
             job.getJobId().toString(),
             job.getJobType().name(),
+            job.getInstanceId().id(),
             StatusEnum.CREATED.name(),
             inputJsonb);
 
