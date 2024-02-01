@@ -19,6 +19,16 @@ import org.springframework.core.env.StandardEnvironment;
 
 @SpringBootTest
 class CloudPlatformTest {
+  /* This is a minimal configuration for testing just the beans annotated with GCP & Azure. */
+  @TestConfiguration
+  @ComponentScan(
+      basePackages = "org.databiosphere.workspacedataservice",
+      includeFilters = {
+        @Filter(type = ANNOTATION, classes = GCP.class),
+        @Filter(type = ANNOTATION, classes = Azure.class)
+      })
+  static class MinimalTestConfiguration {}
+
   @Test
   void instanceInitializerEnabledForAzure() {
     var context = loadApplicationContext("env.wds.cloudPlatform=azure");
@@ -30,16 +40,6 @@ class CloudPlatformTest {
     var context = loadApplicationContext("env.wds.cloudPlatform=gcp");
     assertThat(context.containsBean("instanceInitializerBean")).isFalse();
   }
-
-  /* This is a minimal configuration for testing just the beans annotated with GCP & Azure. */
-  @TestConfiguration
-  @ComponentScan(
-      basePackages = "org.databiosphere.workspacedataservice",
-      includeFilters = {
-        @Filter(type = ANNOTATION, classes = GCP.class),
-        @Filter(type = ANNOTATION, classes = Azure.class)
-      })
-  static class MinimalTestConfiguration {}
 
   private ConfigurableApplicationContext loadApplicationContext(String... properties) {
     ConfigurableEnvironment environment = new StandardEnvironment();
