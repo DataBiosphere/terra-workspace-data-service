@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedata.api.CloningApi;
 import org.databiosphere.workspacedata.client.ApiException;
@@ -32,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -159,6 +161,18 @@ class InstanceInitializerCloneTest {
     assertEquals(List.of(workspaceUuid), actualInstances);
     List<RecordType> actualTypes = recordDao.getAllRecordTypes(workspaceUuid);
     assertEquals(List.of(RecordType.valueOf("thing")), actualTypes);
+
+    // the restored instance should be associated with the current workspace, and should
+    // have its name and description populated correctly
+    Map<String, Object> rowMap =
+        namedTemplate.queryForMap(
+            "select id, workspace_id, name, description from sys_wds.instance where id = :id",
+            new MapSqlParameterSource("id", workspaceUuid));
+
+    assertEquals(workspaceUuid, rowMap.get("id"));
+    assertEquals(workspaceUuid, rowMap.get("workspace_id"));
+    assertEquals("default", rowMap.get("name"));
+    assertEquals("default", rowMap.get("description"));
   }
 
   // TODO: if a clone entry already exists, initializeInstance won't do anything
