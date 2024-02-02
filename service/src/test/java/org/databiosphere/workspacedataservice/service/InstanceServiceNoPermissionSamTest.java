@@ -9,12 +9,8 @@ import java.util.List;
 import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
-import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
-import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
-import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
-import org.databiosphere.workspacedataservice.sam.SamConfig;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -27,13 +23,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(profiles = "mock-instance-dao")
 @DirtiesContext
-@SpringBootTest(
-    classes = {
-      MockInstanceDaoConfig.class,
-      SamConfig.class,
-      ActivityLoggerConfig.class,
-      RestClientRetry.class
-    })
+@SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InstanceServiceNoPermissionSamTest {
 
