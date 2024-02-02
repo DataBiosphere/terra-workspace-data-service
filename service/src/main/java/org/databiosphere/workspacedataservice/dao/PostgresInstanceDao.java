@@ -47,21 +47,9 @@ public class PostgresInstanceDao implements InstanceDao {
   @WriteTransaction
   @SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
   public void createSchema(UUID instanceId) {
-    // auto-generate the name for this instance
-    String name = instanceId.toString();
-    if (instanceId.equals(workspaceId)) {
-      name = "default";
-    }
-
-    MapSqlParameterSource params = new MapSqlParameterSource("id", instanceId);
-    params.addValue("workspace_id", workspaceId);
-    params.addValue("name", name);
-    params.addValue("description", name);
-
-    namedTemplate.update(
-        "insert into sys_wds.instance(id, workspace_id, name, description) values (:id, :workspace_id, :name, :description)",
-        params);
-
+    // insert to instance table
+    insertInstanceRow(instanceId, false);
+    // create the postgres schema
     namedTemplate.getJdbcTemplate().update("create schema " + quote(instanceId.toString()));
   }
 
@@ -90,13 +78,38 @@ public class PostgresInstanceDao implements InstanceDao {
     // rename any rows in sys_wds.instance from old to new
     namedTemplate
         .getJdbcTemplate()
-        .update("update sys_wds.instance set id = ? where id = ?", newSchemaId, oldSchemaId);
+        .update(
+            "update sys_wds.instance set id = ?, workspace_id = ? where id = ?",
+            newSchemaId,
+            workspaceId,
+            oldSchemaId);
     // ensure new exists in sys_wds.instance. When this alterSchema() method is called after
     // restoring from a pg_dump,
     // the oldSchema doesn't exist, so is not renamed in the previous statement.
-    namedTemplate
-        .getJdbcTemplate()
-        .update(
-            "insert into sys_wds.instance(id) values (?) on conflict(id) do nothing", newSchemaId);
+    insertInstanceRow(newSchemaId, true);
+  }
+
+  private void insertInstanceRow(UUID instanceId, boolean ignoreConflict) {
+    // auto-generate the name for this instance
+    String name = instanceId.toString();
+    if (instanceId.equals(workspaceId)) {
+      name = "default";
+    }
+
+    MapSqlParameterSource params = new MapSqlParameterSource("id", instanceId);
+    params.addValue("workspace_id", workspaceId);
+    params.addValue("name", name);
+    params.addValue("description", name);
+
+    String onConflictClause = "";
+    if (ignoreConflict) {
+      onConflictClause = " on conflict(id) do nothing";
+    }
+
+    namedTemplate.update(
+        "insert into sys_wds.instance(id, workspace_id, name, description)"
+            + " values (:id, :workspace_id, :name, :description)"
+            + onConflictClause,
+        params);
   }
 }
