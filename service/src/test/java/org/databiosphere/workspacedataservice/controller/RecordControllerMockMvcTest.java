@@ -8,7 +8,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -2110,8 +2112,7 @@ class RecordControllerMockMvcTest {
             .perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, recordType))
             .andReturn();
     RecordTypeSchema initialRecordTypeSchema =
-        mapper.readValue(
-            initialGetSchemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+        deserialize(initialGetSchemaResult, RecordTypeSchema.class);
     AttributeSchema initialAttributeSchema =
         initialRecordTypeSchema.getAttributeSchema(attributeToUpdate);
     assertEquals("NUMBER", initialAttributeSchema.datatype());
@@ -2133,9 +2134,7 @@ class RecordControllerMockMvcTest {
 
     // Assert
     AttributeSchema updatedAttributeSchema =
-        mapper.readValue(
-            updateAttributeDataTypeResult.getResponse().getContentAsString(),
-            AttributeSchema.class);
+        deserialize(updateAttributeDataTypeResult, AttributeSchema.class);
     assertEquals("STRING", updatedAttributeSchema.datatype());
 
     MvcResult finalGetSchemaResult =
@@ -2143,8 +2142,7 @@ class RecordControllerMockMvcTest {
             .perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, recordType))
             .andReturn();
     RecordTypeSchema finalRecordTypeSchema =
-        mapper.readValue(
-            finalGetSchemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+        deserialize(finalGetSchemaResult, RecordTypeSchema.class);
     AttributeSchema finalAttributeSchema =
         finalRecordTypeSchema.getAttributeSchema(attributeToUpdate);
     assertEquals("STRING", finalAttributeSchema.datatype());
@@ -3112,4 +3110,16 @@ class RecordControllerMockMvcTest {
             instanceId, "relArrAttr", recordWithRelationArray, recordType);
     assertIterableEquals(List.of("record_0", "record_1"), joinVals);
   }
+
+  private <T> T deserialize(MvcResult result, Class<T> valueType)
+      throws UnsupportedEncodingException, JsonProcessingException {
+    return mapper.readValue(result.getResponse().getContentAsString(), valueType);
+  }
+
+  // uncomment only if needed for deserializing generic types:
+  // eg: List<UUID> result = deserialize(result, new TypeReference<List<UUID>>()
+  //  private <T> T deserialize(MvcResult result, TypeReference<T> valueTypeRef)
+  //      throws UnsupportedEncodingException, JsonProcessingException {
+  //    return mapper.readValue(result.getResponse().getContentAsString(), valueTypeRef);
+  //  }
 }
