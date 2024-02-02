@@ -4,6 +4,7 @@ import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 
 import bio.terra.common.db.WriteTransaction;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -90,14 +91,18 @@ public class PostgresInstanceDao implements InstanceDao {
   }
 
   private void insertInstanceRow(UUID instanceId, boolean ignoreConflict) {
+    // if workspaceId as configured by the $WORKSPACE_ID is null, use
+    // instanceId instead
+    UUID nonNullWorkspaceId = Objects.requireNonNullElse(workspaceId, instanceId);
+
     // auto-generate the name for this instance
     String name = instanceId.toString();
-    if (instanceId.equals(workspaceId)) {
+    if (instanceId.equals(nonNullWorkspaceId)) {
       name = "default";
     }
 
     MapSqlParameterSource params = new MapSqlParameterSource("id", instanceId);
-    params.addValue("workspace_id", workspaceId);
+    params.addValue("workspace_id", nonNullWorkspaceId);
     params.addValue("name", name);
     params.addValue("description", name);
 
