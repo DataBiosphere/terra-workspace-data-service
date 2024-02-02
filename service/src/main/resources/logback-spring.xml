@@ -10,9 +10,7 @@
   <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
   <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
 
-  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
-  </appender>
+
 
   <appender name="Sentry" class="io.sentry.logback.SentryAppender">
     <!-- Optionally change minimum Event level. Default for Events is ERROR -->
@@ -22,6 +20,9 @@
   </appender>
 
   <springProfile name="!local">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+    </appender>
     <!-- log everything at INFO level -->
     <root level="info">
       <appender-ref ref="CONSOLE"/>
@@ -48,16 +49,21 @@
   </springProfile>
 
   <springProfile name="local">
+    <appender name="CONSOLE_LOCAL" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>${WDS_LOG_PATTERN}</pattern>
+    </encoder>
+    </appender>
     <root level="info">
-      <appender-ref ref="CONSOLE"/>
+      <appender-ref ref="CONSOLE_LOCAL"/>
     </root>
 
     <logger name="org.databiosphere.workspacedataservice" level="debug" additivity="false">
-      <appender-ref ref="CONSOLE"/>
+      <appender-ref ref="CONSOLE_LOCAL"/>
     </logger>
 
     <logger name="org.springframework.web" level="debug" additivity="false">
-      <appender-ref ref="CONSOLE"/>
+      <appender-ref ref="CONSOLE_LOCAL"/>
     </logger>
   </springProfile>
 
