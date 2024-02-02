@@ -3,20 +3,27 @@ package org.databiosphere.workspacedataservice.dao;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
+@DirtiesContext
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestPropertySource(
     properties = {
-      "twds.instance.workspace-id=80000000-4000-4000-4000-11000000000",
+      "twds.instance.workspace-id=80000000-4000-4000-4000-120000000000",
     })
 class PostgresInstanceDaoTest {
 
@@ -25,6 +32,20 @@ class PostgresInstanceDaoTest {
 
   @Value("${twds.instance.workspace-id}")
   UUID workspaceId;
+
+  // clean up all instances before each test to ensure tests start from a clean slate
+  @BeforeEach
+  void beforeEach() {
+    List<UUID> allInstances = instanceDao.listInstanceSchemas();
+    allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
+  }
+
+  // clean up all instances after all tests to ensure tests in other files start from a clean slate
+  @AfterAll
+  void afterAll() {
+    List<UUID> allInstances = instanceDao.listInstanceSchemas();
+    allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
+  }
 
   // is this test set up correctly?
   @Test
@@ -40,6 +61,10 @@ class PostgresInstanceDaoTest {
   // do we populate all db columns correctly?
   @Test
   void insertPopulatesAllColumns() {
+
+    List<UUID> allInstances = instanceDao.listInstanceSchemas();
+    assertEquals(0, allInstances.size());
+
     UUID instanceId = UUID.randomUUID();
     instanceDao.createSchema(instanceId);
 
@@ -58,7 +83,12 @@ class PostgresInstanceDaoTest {
   // do we populate all db columns correctly?
   @Test
   void defaultPopulatesAllColumns() {
+
+    List<UUID> allInstances = instanceDao.listInstanceSchemas();
+    assertEquals(0, allInstances.size());
+
     UUID instanceId = workspaceId;
+
     instanceDao.createSchema(instanceId);
 
     Map<String, Object> rowMap =
