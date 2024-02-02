@@ -2127,7 +2127,7 @@ class RecordControllerMockMvcTest {
                         recordType,
                         attributeToUpdate)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(mapper.writeValueAsString(new AttributeSchema(null, "STRING"))))
+                    .content("{\"datatype\": \"STRING\"}"))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -2167,7 +2167,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     attributeToUpdate)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new AttributeSchema(null, "NUMBER", null))))
+                .content("{\"datatype\": \"NUMBER\"}"))
         .andExpect(status().isBadRequest());
   }
 
@@ -2188,9 +2188,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     attributeToUpdate)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    mapper.writeValueAsString(
-                        new AttributeSchema(null, "INVALID_DATA_TYPE", null))))
+                .content("{\"datatype\": \"INVALID_DATA_TYPE\"}"))
         .andExpect(status().isBadRequest());
   }
 
