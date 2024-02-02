@@ -34,8 +34,8 @@ class MetricsConfigTest {
     mockMvc
         .perform(get("/prometheus"))
         .andExpect(status().isOk())
-        .andExpect(
-            content().string(containsString("wds_version=\"%s\"".formatted(expectedVersion))));
+        .andExpect(content().string(containsString("version=\"%s\"".formatted(expectedVersion))))
+        .andExpect(content().string(containsString("service=\"wds\"")));
   }
 
   private static Set<String> allowedPrefixes() {
