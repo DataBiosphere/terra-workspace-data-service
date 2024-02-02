@@ -177,24 +177,25 @@ public class RecordController {
       @PathVariable("type") RecordType recordType,
       @PathVariable("attribute") String attribute,
       @RequestBody AttributeSchema newAttributeSchema) {
-    String newAttributeName = newAttributeSchema.name();
-    String newDataType = newAttributeSchema.datatype();
+    Optional<String> optionalNewAttributeName = Optional.ofNullable(newAttributeSchema.name());
+    Optional<String> optionalNewDataType = Optional.ofNullable(newAttributeSchema.datatype());
 
-    if (newAttributeName == null && newDataType == null) {
+    if (optionalNewAttributeName.isEmpty() && optionalNewDataType.isEmpty()) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "At least one of name or datatype is required");
     }
 
-    if (newAttributeName != null) {
-      recordOrchestratorService.renameAttribute(
-          instanceId, version, recordType, attribute, newAttributeName);
-    }
-    String finalAttributeName = newAttributeName != null ? newAttributeName : attribute;
+    optionalNewAttributeName.ifPresent(
+        newAttributeName ->
+            recordOrchestratorService.renameAttribute(
+                instanceId, version, recordType, attribute, newAttributeName));
 
-    if (newDataType != null) {
-      recordOrchestratorService.updateAttributeDataType(
-          instanceId, version, recordType, finalAttributeName, newDataType);
-    }
+    String finalAttributeName = optionalNewAttributeName.orElse(attribute);
+
+    optionalNewDataType.ifPresent(
+        newDataType ->
+            recordOrchestratorService.updateAttributeDataType(
+                instanceId, version, recordType, finalAttributeName, newDataType));
 
     RecordTypeSchema recordTypeSchema =
         recordOrchestratorService.describeRecordType(instanceId, version, recordType);
