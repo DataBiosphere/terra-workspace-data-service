@@ -69,7 +69,7 @@ import org.springframework.test.context.TestPropertySource;
     }) // example uuid from https://en.wikipedia.org/wiki/Universally_unique_identifier
 class InstanceServiceSamExceptionTest {
 
-  private InstanceService instanceService;
+  @Autowired private InstanceService instanceService;
 
   @Autowired private InstanceDao instanceDao;
   @Autowired private SamDao samDao;
@@ -87,8 +87,6 @@ class InstanceServiceSamExceptionTest {
 
   @BeforeEach
   void setUp() {
-    instanceService = new InstanceService(instanceDao, samDao, activityLogger);
-
     // return the mock ResourcesApi from the mock SamClientFactory
     given(mockSamClientFactory.getResourcesApi(null)).willReturn(mockResourcesApi);
   }

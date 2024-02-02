@@ -45,7 +45,7 @@ import org.springframework.test.context.TestPropertySource;
     }) // example uuid from https://en.wikipedia.org/wiki/Universally_unique_identifier
 class InstanceServiceSamTest {
 
-  private InstanceService instanceService;
+  @Autowired private InstanceService instanceService;
 
   @Autowired private InstanceDao instanceDao;
   @Autowired private SamDao samDao;
@@ -63,8 +63,6 @@ class InstanceServiceSamTest {
 
   @BeforeEach
   void setUp() throws ApiException {
-    instanceService = new InstanceService(instanceDao, samDao, activityLogger);
-
     // return the mock ResourcesApi from the mock SamClientFactory
     given(mockSamClientFactory.getResourcesApi(null)).willReturn(mockResourcesApi);
     // Sam permission check will always return true

@@ -9,16 +9,13 @@ import java.util.List;
 import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
-import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.sam.SamConfig;
-import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.Mockito;
@@ -40,11 +37,9 @@ import org.springframework.test.context.ActiveProfiles;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InstanceServiceNoPermissionSamTest {
 
-  private InstanceService instanceService;
+  @Autowired private InstanceService instanceService;
 
   @Autowired private InstanceDao instanceDao;
-  @Autowired private SamDao samDao;
-  @Autowired private ActivityLogger activityLogger;
 
   // mock for the SamClientFactory; since this is a Spring bean we can use @MockBean
   @MockBean SamClientFactory mockSamClientFactory;
@@ -52,11 +47,6 @@ class InstanceServiceNoPermissionSamTest {
   // mock for the ResourcesApi class inside the Sam client; since this is not a Spring bean we have
   // to mock it manually
   final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
-
-  @BeforeEach
-  void setUp() {
-    instanceService = new InstanceService(instanceDao, samDao, activityLogger);
-  }
 
   @Test
   void testCreateInstanceNoPermission() throws ApiException {
