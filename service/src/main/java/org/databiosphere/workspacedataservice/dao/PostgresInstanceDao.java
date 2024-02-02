@@ -5,6 +5,7 @@ import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 import bio.terra.common.db.WriteTransaction;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -13,6 +14,9 @@ import org.springframework.stereotype.Repository;
 public class PostgresInstanceDao implements InstanceDao {
 
   private final NamedParameterJdbcTemplate namedTemplate;
+
+  @Value("${twds.instance.workspace-id}")
+  private UUID workspaceId;
 
   /*
   PostgresInstanceDao is used to interact with sys_wds instance table in postgres.
@@ -43,9 +47,21 @@ public class PostgresInstanceDao implements InstanceDao {
   @WriteTransaction
   @SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
   public void createSchema(UUID instanceId) {
-    namedTemplate
-        .getJdbcTemplate()
-        .update("insert into sys_wds.instance(id) values (?)", instanceId);
+    // auto-generate the name for this instance
+    String name = instanceId.toString();
+    if (instanceId.equals(workspaceId)) {
+      name = "default";
+    }
+
+    MapSqlParameterSource params = new MapSqlParameterSource("id", instanceId);
+    params.addValue("workspace_id", workspaceId);
+    params.addValue("name", name);
+    params.addValue("description", name);
+
+    namedTemplate.update(
+        "insert into sys_wds.instance(id, workspace_id, name, description) values (:id, :workspace_id, :name, :description)",
+        params);
+
     namedTemplate.getJdbcTemplate().update("create schema " + quote(instanceId.toString()));
   }
 
