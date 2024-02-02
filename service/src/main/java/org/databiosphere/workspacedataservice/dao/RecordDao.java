@@ -91,23 +91,16 @@ public class RecordDao {
   @Value("${twds.streaming.fetch.size:5000}")
   int fetchSize;
 
-  private static final Set<DataTypeMapping> dataTypesSupportedForTypeConversion =
+  private static final Set<Set<DataTypeMapping>> supportedDataTypeConversions =
       Set.of(
-          DataTypeMapping.STRING,
-          DataTypeMapping.ARRAY_OF_STRING,
-          DataTypeMapping.NUMBER,
-          DataTypeMapping.ARRAY_OF_NUMBER,
-          DataTypeMapping.BOOLEAN,
-          DataTypeMapping.ARRAY_OF_BOOLEAN,
-          DataTypeMapping.DATE,
-          DataTypeMapping.ARRAY_OF_DATE,
-          DataTypeMapping.DATE_TIME,
-          DataTypeMapping.ARRAY_OF_DATE_TIME);
-
-  private static final Set<Set<DataTypeMapping>> invalidDataTypeConversions =
-      Set.of(
-          Set.of(DataTypeMapping.BOOLEAN, DataTypeMapping.DATE),
-          Set.of(DataTypeMapping.BOOLEAN, DataTypeMapping.DATE_TIME));
+          Set.of(DataTypeMapping.STRING, DataTypeMapping.NUMBER),
+          Set.of(DataTypeMapping.STRING, DataTypeMapping.BOOLEAN),
+          Set.of(DataTypeMapping.STRING, DataTypeMapping.DATE),
+          Set.of(DataTypeMapping.STRING, DataTypeMapping.DATE_TIME),
+          Set.of(DataTypeMapping.NUMBER, DataTypeMapping.BOOLEAN),
+          Set.of(DataTypeMapping.NUMBER, DataTypeMapping.DATE),
+          Set.of(DataTypeMapping.NUMBER, DataTypeMapping.DATE_TIME),
+          Set.of(DataTypeMapping.DATE, DataTypeMapping.DATE_TIME));
 
   /**
    * These error codes are expected when a valid update attribute data type request fails because
@@ -1104,15 +1097,20 @@ public class RecordDao {
     }
   }
 
+  private boolean isDataTypeConversionSupported(
+      DataTypeMapping dataType, DataTypeMapping newDataType) {
+    DataTypeMapping baseType = dataType.getBaseType();
+    DataTypeMapping newBaseType = newDataType.getBaseType();
+    return baseType.equals(newBaseType)
+        || supportedDataTypeConversions.contains(Set.of(baseType, newBaseType));
+  }
+
   @VisibleForTesting
   String getPostgresTypeConversionExpression(
       String attribute, DataTypeMapping dataType, DataTypeMapping newDataType) {
     // Some data types are not yet supported.
     // Some conversions don't make sense / are invalid.
-    if (!dataTypesSupportedForTypeConversion.contains(dataType)
-        || !dataTypesSupportedForTypeConversion.contains(newDataType)
-        || invalidDataTypeConversions.contains(
-            Set.copyOf(List.of(dataType.getBaseType(), newDataType.getBaseType())))) {
+    if (!isDataTypeConversionSupported(dataType, newDataType)) {
       throw new IllegalArgumentException(
           "Unable to convert attribute from %s to %s"
               .formatted(dataType.name(), newDataType.name()));
