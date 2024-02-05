@@ -6,19 +6,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
 import org.databiosphere.workspacedataservice.sam.SamConfig;
-import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.shared.model.InstanceId;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -27,6 +26,7 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @SpringBootTest(
     classes = {
+      InstanceService.class,
       MockInstanceDaoConfig.class,
       SamConfig.class,
       MockSamClientFactoryConfig.class,
@@ -35,17 +35,13 @@ import org.springframework.test.context.ActiveProfiles;
     })
 class InstanceServiceTest {
 
-  private InstanceService instanceService;
+  @Autowired private InstanceService instanceService;
   @Autowired private InstanceDao instanceDao;
-  @Autowired private SamDao samDao;
-  @Autowired private ActivityLogger activityLogger;
+
+  @Value("${twds.instance.workspace-id:}")
+  private String workspaceIdProperty;
 
   private static final UUID INSTANCE = UUID.fromString("111e9999-e89b-12d3-a456-426614174000");
-
-  @BeforeEach
-  void setUp() {
-    instanceService = new InstanceService(instanceDao, samDao, activityLogger);
-  }
 
   @AfterEach
   void tearDown() {
@@ -95,5 +91,12 @@ class InstanceServiceTest {
         MissingObjectException.class,
         () -> instanceService.validateInstance(INSTANCE),
         "validateInstance should have thrown an error");
+  }
+
+  @Test
+  void getWorkspaceId() {
+    assertEquals(
+        workspaceIdProperty,
+        instanceService.getWorkspaceId(InstanceId.of(UUID.randomUUID())).toString());
   }
 }

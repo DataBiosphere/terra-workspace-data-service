@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -43,26 +42,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @ActiveProfiles(profiles = "mock-sam")
 @DirtiesContext
-@SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@AutoConfigureMockMvc
-class RecordControllerMockMvcTest {
-  @Autowired private ObjectMapper mapper;
-  @Autowired private MockMvc mockMvc;
+class RecordControllerMockMvcTest extends MockMvcTestBase {
 
   private UUID instanceId;
 
@@ -92,8 +83,7 @@ class RecordControllerMockMvcTest {
   @AfterAll
   void deleteAllInstances() throws Exception {
     MvcResult response = mockMvc.perform(get("/instances/{v}", versionId)).andReturn();
-    UUID[] allInstances =
-        mapper.readValue(response.getResponse().getContentAsString(), UUID[].class);
+    UUID[] allInstances = fromJson(response, UUID[].class);
     for (UUID id : allInstances) {
       mockMvc.perform(delete("/instances/{v}/{instanceid}", versionId, id).content(""));
     }
@@ -119,8 +109,7 @@ class RecordControllerMockMvcTest {
             .perform(get("/instances/{version}", versionId))
             .andExpect(status().isOk())
             .andReturn();
-    UUID[] initialInstances =
-        mapper.readValue(initialResult.getResponse().getContentAsString(), UUID[].class);
+    UUID[] initialInstances = fromJson(initialResult, UUID[].class);
     // create new uuid; new uuid should not be in our initial instance list
     UUID uuid = UUID.randomUUID();
     assertFalse(
@@ -136,8 +125,7 @@ class RecordControllerMockMvcTest {
             .perform(get("/instances/{version}", versionId))
             .andExpect(status().isOk())
             .andReturn();
-    UUID[] afterCreationInstances =
-        mapper.readValue(afterCreationResult.getResponse().getContentAsString(), UUID[].class);
+    UUID[] afterCreationInstances = fromJson(afterCreationResult, UUID[].class);
     // new uuid should be in our initial instance list
     assertTrue(
         Arrays.asList(afterCreationInstances).contains(uuid),
@@ -164,7 +152,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     "new_id",
                     "new_pk")
-                .content(mapper.writeValueAsString(recordRequest))
+                .content(toJson(recordRequest))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isBadRequest());
   }
@@ -187,7 +175,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     newBatchRecordType,
                     "pk1")
-                .content(mapper.writeValueAsString(List.of(op)))
+                .content(toJson(List.of(op)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk());
     Record record2 =
@@ -203,9 +191,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     newBatchRecordType,
                     "pkUpdated")
-                .content(
-                    mapper.writeValueAsString(
-                        List.of(new BatchOperation(record2, OperationType.UPSERT))))
+                .content(toJson(List.of(new BatchOperation(record2, OperationType.UPSERT))))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isBadRequest());
   }
@@ -249,7 +235,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     "to",
                     "1")
-                .content(mapper.writeValueAsString(new RecordRequest(attributes)))
+                .content(toJson(new RecordRequest(attributes)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isCreated());
     // create "from" record, with a relation to "to"
@@ -262,7 +248,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     "from",
                     "2")
-                .content(mapper.writeValueAsString(new RecordRequest(attributes2)))
+                .content(toJson(new RecordRequest(attributes2)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isCreated());
     // delete existing instance should 200
@@ -318,8 +304,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     "1"))
             .andReturn();
-    RecordResponse recordResponse =
-        mapper.readValue(mvcResult.getResponse().getContentAsString(), RecordResponse.class);
+    RecordResponse recordResponse = fromJson(mvcResult, RecordResponse.class);
     assertEquals(
         new BigInteger(bigIntValue), recordResponse.recordAttributes().getAttributeValue("bigint"));
     assertEquals(
@@ -343,10 +328,10 @@ class RecordControllerMockMvcTest {
                     versionId,
                     rt,
                     rId)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes)))
+                .content(toJson(new RecordRequest(attributes)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isCreated());
-    MockHttpServletResponse res =
+    MvcResult result =
         mockMvc
             .perform(
                 get(
@@ -356,10 +341,8 @@ class RecordControllerMockMvcTest {
                     rt,
                     rId))
             .andExpect(jsonPath("$.attributes.json-attr.age_in_months", is(8)))
-            .andReturn()
-            .getResponse();
-    RecordResponse recordResponse =
-        mapper.readValue(res.getContentAsString(), RecordResponse.class);
+            .andReturn();
+    RecordResponse recordResponse = fromJson(result, RecordResponse.class);
     Object attributeValue = recordResponse.recordAttributes().getAttributeValue("json-attr");
     assertInstanceOf(
         Map.class,
@@ -386,7 +369,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     rt,
                     rId)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes)))
+                .content(toJson(new RecordRequest(attributes)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isCreated());
     String jsonRes =
@@ -708,8 +691,7 @@ class RecordControllerMockMvcTest {
         mockMvc
             .perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType))
             .andReturn();
-    RecordTypeSchema schema =
-        mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+    RecordTypeSchema schema = fromJson(schemaResult, RecordTypeSchema.class);
     assertEquals(1, schema.attributes().size());
   }
 
@@ -790,7 +772,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     "new_id",
                     "attr1")
-                .content(mapper.writeValueAsString(recordRequest))
+                .content(toJson(recordRequest))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isCreated());
   }
@@ -865,8 +847,7 @@ class RecordControllerMockMvcTest {
             .andExpect(status().isOk())
             .andReturn();
 
-    RecordQueryResponse response =
-        mapper.readValue(result.getResponse().getContentAsString(), RecordQueryResponse.class);
+    RecordQueryResponse response = fromJson(result, RecordQueryResponse.class);
     assertEquals(6, response.totalRecords());
     RecordAttributes exampleAttributes = response.records().get(0).recordAttributes();
     assertEquals(singleRel, exampleAttributes.getAttributeValue("rel"));
@@ -905,8 +886,7 @@ class RecordControllerMockMvcTest {
             .andExpect(status().isOk())
             .andReturn();
 
-    RecordTypeSchema actual =
-        mapper.readValue(mvcResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+    RecordTypeSchema actual = fromJson(mvcResult, RecordTypeSchema.class);
     assertEquals("ARRAY_OF_NUMBER", actual.attributes().get(0).datatype());
 
     // upload a second time, this time with array of double
@@ -932,7 +912,7 @@ class RecordControllerMockMvcTest {
             .andExpect(status().isOk())
             .andReturn();
 
-    actual = mapper.readValue(mvcResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+    actual = fromJson(mvcResult, RecordTypeSchema.class);
     assertEquals("ARRAY_OF_NUMBER", actual.attributes().get(0).datatype());
   }
 
@@ -956,7 +936,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     type,
                     id)
-                .content(mapper.writeValueAsString(new RecordRequest(firstPayload)))
+                .content(toJson(new RecordRequest(firstPayload)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().is2xxSuccessful());
 
@@ -970,8 +950,7 @@ class RecordControllerMockMvcTest {
                     type,
                     id))
             .andReturn();
-    RecordResponse firstRecord =
-        mapper.readValue(firstResult.getResponse().getContentAsString(), RecordResponse.class);
+    RecordResponse firstRecord = fromJson(firstResult, RecordResponse.class);
     assertEquals("simple string", firstRecord.recordAttributes().getAttributeValue(attrName));
 
     // upload the string array into the same attribute, should also be success
@@ -983,7 +962,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     type,
                     id)
-                .content(mapper.writeValueAsString(new RecordRequest(secondPayload)))
+                .content(toJson(new RecordRequest(secondPayload)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().is2xxSuccessful());
 
@@ -997,8 +976,7 @@ class RecordControllerMockMvcTest {
                     type,
                     id))
             .andReturn();
-    RecordResponse secondRecord =
-        mapper.readValue(secondResult.getResponse().getContentAsString(), RecordResponse.class);
+    RecordResponse secondRecord = fromJson(secondResult, RecordResponse.class);
     assertEquals("{array,of,strings}", secondRecord.recordAttributes().getAttributeValue(attrName));
   }
 
@@ -1045,8 +1023,7 @@ class RecordControllerMockMvcTest {
         mockMvc
             .perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType))
             .andReturn();
-    RecordTypeSchema schema =
-        mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+    RecordTypeSchema schema = fromJson(schemaResult, RecordTypeSchema.class);
     // "greeting" is hardcoded into small-no-sys.tsv
     assertEquals("greeting", schema.primaryKey());
   }
@@ -1072,8 +1049,7 @@ class RecordControllerMockMvcTest {
         mockMvc
             .perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType))
             .andReturn();
-    RecordTypeSchema schema =
-        mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+    RecordTypeSchema schema = fromJson(schemaResult, RecordTypeSchema.class);
     assertEquals(pk, schema.primaryKey());
   }
 
@@ -1097,8 +1073,7 @@ class RecordControllerMockMvcTest {
         mockMvc
             .perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType))
             .andReturn();
-    RecordTypeSchema schema =
-        mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+    RecordTypeSchema schema = fromJson(schemaResult, RecordTypeSchema.class);
     assertEquals("date", schema.attributes().get(0).name());
     assertEquals("DATE", schema.attributes().get(0).datatype());
     assertEquals("NUMBER", schema.attributes().get(1).datatype());
@@ -1134,8 +1109,7 @@ class RecordControllerMockMvcTest {
         mockMvc
             .perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType))
             .andReturn();
-    schema =
-        mapper.readValue(schemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+    schema = fromJson(schemaResult, RecordTypeSchema.class);
     assertEquals("json", schema.attributes().get(4).name());
     // data type should downgrade to STRING
     assertEquals("STRING", schema.attributes().get(4).datatype());
@@ -1208,7 +1182,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     recordType,
                     "recordId")
-                .content(mapper.writeValueAsString(new RecordRequest(attributes)))
+                .content(toJson(new RecordRequest(attributes)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isBadRequest())
         .andExpect(
@@ -1233,7 +1207,7 @@ class RecordControllerMockMvcTest {
                     recordType1,
                     "record_0")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(illegalAttribute))))
+                .content(toJson(new RecordRequest(illegalAttribute))))
         .andExpect(status().isBadRequest())
         .andExpect(
             result -> assertInstanceOf(InvalidNameException.class, result.getResolvedException()));
@@ -1253,7 +1227,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     newRecordType,
                     "newRecordId")
-                .content(mapper.writeValueAsString(new RecordRequest(attributes)))
+                .content(toJson(new RecordRequest(attributes)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isCreated());
 
@@ -1266,7 +1240,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     newRecordType,
                     "newRecordId2")
-                .content(mapper.writeValueAsString(new RecordRequest(attributes2)))
+                .content(toJson(new RecordRequest(attributes2)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isCreated());
 
@@ -1280,7 +1254,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     newRecordType,
                     "newRecordId2")
-                .content(mapper.writeValueAsString(new RecordRequest(attributes3)))
+                .content(toJson(new RecordRequest(attributes3)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk());
   }
@@ -1301,7 +1275,7 @@ class RecordControllerMockMvcTest {
                     recordType1,
                     "record_0")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(newAttributes))))
+                .content(toJson(new RecordRequest(newAttributes))))
         .andExpect(content().string(containsString("\"attr3\":null")))
         .andExpect(content().string(containsString("\"attr-dt\":null")))
         .andExpect(status().isOk());
@@ -1323,7 +1297,7 @@ class RecordControllerMockMvcTest {
                     recordType1,
                     "record_0")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(newAttributes))))
+                .content(toJson(new RecordRequest(newAttributes))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.attributes.new-attr", is("some_val")));
   }
@@ -1333,7 +1307,7 @@ class RecordControllerMockMvcTest {
   void createAndRetrieveRecord() throws Exception {
     RecordType recordType = RecordType.valueOf("samples");
     createSomeRecords(recordType, 1);
-    MockHttpServletResponse res =
+    MvcResult result =
         mockMvc
             .perform(
                 get(
@@ -1343,10 +1317,8 @@ class RecordControllerMockMvcTest {
                     recordType,
                     "record_0"))
             .andExpect(status().isOk())
-            .andReturn()
-            .getResponse();
-    RecordResponse recordResponse =
-        mapper.readValue(res.getContentAsString(), RecordResponse.class);
+            .andReturn();
+    RecordResponse recordResponse = fromJson(result, RecordResponse.class);
     assertEquals("record_0", recordResponse.recordId());
     assertEquals(
         "[1776-07-04, 1999-12-31]",
@@ -1375,7 +1347,7 @@ class RecordControllerMockMvcTest {
                     referringType,
                     "record_0")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes))))
+                .content(toJson(new RecordRequest(attributes))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.attributes.sample-ref", is(ref)));
   }
@@ -1402,7 +1374,7 @@ class RecordControllerMockMvcTest {
                     referringType,
                     "record_0")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes))))
+                .content(toJson(new RecordRequest(attributes))))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.attributes.rel-arr", is(relArr)));
   }
@@ -1422,7 +1394,7 @@ class RecordControllerMockMvcTest {
                     referringType,
                     "record_0")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(RecordAttributes.empty()))))
+                .content(toJson(new RecordRequest(RecordAttributes.empty()))))
         .andExpect(status().isCreated());
     RecordAttributes attributes = RecordAttributes.empty();
     List<String> relArr =
@@ -1440,7 +1412,7 @@ class RecordControllerMockMvcTest {
                     referringType,
                     "record_1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes))))
+                .content(toJson(new RecordRequest(attributes))))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.attributes.rel-arr", is(relArr)));
   }
@@ -1468,7 +1440,7 @@ class RecordControllerMockMvcTest {
                     referringType,
                     "record_0")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes))))
+                .content(toJson(new RecordRequest(attributes))))
         .andExpect(status().isNotFound());
   }
 
@@ -1495,7 +1467,7 @@ class RecordControllerMockMvcTest {
                     referringType,
                     "record_0")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes))))
+                .content(toJson(new RecordRequest(attributes))))
         .andExpect(status().isForbidden());
   }
 
@@ -1525,7 +1497,7 @@ class RecordControllerMockMvcTest {
                     referringType,
                     "record_0")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes))))
+                .content(toJson(new RecordRequest(attributes))))
         .andExpect(status().isForbidden());
   }
 
@@ -1547,7 +1519,7 @@ class RecordControllerMockMvcTest {
                     referringType,
                     "record_0")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes))))
+                .content(toJson(new RecordRequest(attributes))))
         .andExpect(status().isNotFound())
         .andExpect(
             result ->
@@ -1573,7 +1545,7 @@ class RecordControllerMockMvcTest {
                     referringType,
                     "record_0")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes))))
+                .content(toJson(new RecordRequest(attributes))))
         .andExpect(status().isForbidden())
         .andExpect(
             result ->
@@ -1597,7 +1569,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     "record_1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes))))
+                .content(toJson(new RecordRequest(attributes))))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.attributes.attr3", is(newTextValue)));
   }
@@ -1618,7 +1590,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     recordType,
                     recordId)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes)))
+                .content(toJson(new RecordRequest(attributes)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound());
   }
@@ -1640,7 +1612,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     recordType,
                     recordId)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes)))
+                .content(toJson(new RecordRequest(attributes)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound())
         .andExpect(
@@ -1668,7 +1640,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     referringType,
                     recordId)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes)))
+                .content(toJson(new RecordRequest(attributes)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk());
     // Create a new referring_Type that puts a reference to a non-existent
@@ -1686,7 +1658,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     referringType,
                     "new_record")
-                .content(mapper.writeValueAsString(new RecordRequest(new_attributes)))
+                .content(toJson(new RecordRequest(new_attributes)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isBadRequest());
   }
@@ -1707,7 +1679,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     recordType,
                     "record_0")
-                .content(mapper.writeValueAsString(new RecordRequest(attributes)))
+                .content(toJson(new RecordRequest(attributes)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isForbidden())
         .andExpect(
@@ -1780,7 +1752,7 @@ class RecordControllerMockMvcTest {
                     referringType,
                     "record_0")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes))))
+                .content(toJson(new RecordRequest(attributes))))
         .andExpect(status().isOk())
         .andExpect(content().string(containsString(ref)));
     mockMvc
@@ -1816,7 +1788,7 @@ class RecordControllerMockMvcTest {
                     referringType,
                     "record_0")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes))))
+                .content(toJson(new RecordRequest(attributes))))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.attributes.rel-arr", is(relArr)));
 
@@ -1882,7 +1854,7 @@ class RecordControllerMockMvcTest {
                     referringType,
                     "record_0")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes))))
+                .content(toJson(new RecordRequest(attributes))))
         .andExpect(status().isOk())
         .andExpect(content().string(containsString(ref)));
 
@@ -1918,7 +1890,7 @@ class RecordControllerMockMvcTest {
                     referringType,
                     "record_0")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes))))
+                .content(toJson(new RecordRequest(attributes))))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.attributes.rel-arr", is(relArr)));
 
@@ -1950,7 +1922,7 @@ class RecordControllerMockMvcTest {
                     referringType,
                     "record_0")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes))))
+                .content(toJson(new RecordRequest(attributes))))
         .andExpect(status().isOk())
         .andExpect(content().string(containsString(ref)));
 
@@ -2012,7 +1984,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     attributeToRename)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new AttributeSchema(newAttributeName))))
+                .content(toJson(new AttributeSchema(newAttributeName))))
         .andExpect(status().isOk());
 
     MvcResult mvcResult =
@@ -2025,8 +1997,7 @@ class RecordControllerMockMvcTest {
                     recordType))
             .andReturn();
 
-    RecordTypeSchema actual =
-        mapper.readValue(mvcResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+    RecordTypeSchema actual = fromJson(mvcResult, RecordTypeSchema.class);
 
     Set<String> attributeNames =
         actual.attributes().stream().map(AttributeSchema::name).collect(Collectors.toSet());
@@ -2049,7 +2020,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     "doesNotExist")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new AttributeSchema("newAttr"))))
+                .content(toJson(new AttributeSchema("newAttr"))))
         .andExpect(status().isNotFound());
   }
 
@@ -2070,7 +2041,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     attributeToRename)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new AttributeSchema("newAttr"))))
+                .content(toJson(new AttributeSchema("newAttr"))))
         .andExpect(status().isBadRequest());
   }
 
@@ -2092,7 +2063,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     attributeToRename)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new AttributeSchema(newAttributeName))))
+                .content(toJson(new AttributeSchema(newAttributeName))))
         .andExpect(status().isConflict());
   }
 
@@ -2110,8 +2081,7 @@ class RecordControllerMockMvcTest {
             .perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, recordType))
             .andReturn();
     RecordTypeSchema initialRecordTypeSchema =
-        mapper.readValue(
-            initialGetSchemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+        fromJson(initialGetSchemaResult, RecordTypeSchema.class);
     AttributeSchema initialAttributeSchema =
         initialRecordTypeSchema.getAttributeSchema(attributeToUpdate);
     assertEquals("NUMBER", initialAttributeSchema.datatype());
@@ -2127,24 +2097,20 @@ class RecordControllerMockMvcTest {
                         recordType,
                         attributeToUpdate)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(mapper.writeValueAsString(new AttributeSchema(null, "STRING"))))
+                    .content(toJson(new AttributeSchema(null, "STRING"))))
             .andExpect(status().isOk())
             .andReturn();
 
     // Assert
     AttributeSchema updatedAttributeSchema =
-        mapper.readValue(
-            updateAttributeDataTypeResult.getResponse().getContentAsString(),
-            AttributeSchema.class);
+        fromJson(updateAttributeDataTypeResult, AttributeSchema.class);
     assertEquals("STRING", updatedAttributeSchema.datatype());
 
     MvcResult finalGetSchemaResult =
         mockMvc
             .perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, recordType))
             .andReturn();
-    RecordTypeSchema finalRecordTypeSchema =
-        mapper.readValue(
-            finalGetSchemaResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+    RecordTypeSchema finalRecordTypeSchema = fromJson(finalGetSchemaResult, RecordTypeSchema.class);
     AttributeSchema finalAttributeSchema =
         finalRecordTypeSchema.getAttributeSchema(attributeToUpdate);
     assertEquals("STRING", finalAttributeSchema.datatype());
@@ -2167,7 +2133,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     attributeToUpdate)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new AttributeSchema(null, "NUMBER", null))))
+                .content(toJson(new AttributeSchema(null, "NUMBER", null))))
         .andExpect(status().isBadRequest());
   }
 
@@ -2188,9 +2154,7 @@ class RecordControllerMockMvcTest {
                     recordType,
                     attributeToUpdate)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    mapper.writeValueAsString(
-                        new AttributeSchema(null, "INVALID_DATA_TYPE", null))))
+                .content(toJson(new AttributeSchema(null, "INVALID_DATA_TYPE", null))))
         .andExpect(status().isBadRequest());
   }
 
@@ -2278,7 +2242,7 @@ class RecordControllerMockMvcTest {
                     type,
                     "record_0")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(attributes))))
+                .content(toJson(new RecordRequest(attributes))))
         .andExpect(status().isOk())
         .andExpect(content().string(containsString(ref)));
 
@@ -2312,8 +2276,7 @@ class RecordControllerMockMvcTest {
             .andExpect(status().isOk())
             .andReturn();
 
-    RecordTypeSchema actual =
-        mapper.readValue(mvcResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+    RecordTypeSchema actual = fromJson(mvcResult, RecordTypeSchema.class);
 
     assertEquals(expected, actual);
   }
@@ -2337,7 +2300,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     recordType,
                     "new_id")
-                .content(mapper.writeValueAsString(recordRequest))
+                .content(toJson(recordRequest))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().is2xxSuccessful());
     MvcResult mvcResult =
@@ -2345,8 +2308,7 @@ class RecordControllerMockMvcTest {
             .perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, recordType))
             .andExpect(status().isOk())
             .andReturn();
-    RecordTypeSchema actual =
-        mapper.readValue(mvcResult.getResponse().getContentAsString(), RecordTypeSchema.class);
+    RecordTypeSchema actual = fromJson(mvcResult, RecordTypeSchema.class);
     assertEquals("ARRAY_OF_STRING", actual.attributes().get(0).datatype());
   }
 
@@ -2399,10 +2361,7 @@ class RecordControllerMockMvcTest {
             .andExpect(status().isOk())
             .andReturn();
 
-    List<RecordTypeSchema> actual =
-        Arrays.asList(
-            mapper.readValue(
-                mvcResult.getResponse().getContentAsString(), RecordTypeSchema[].class));
+    List<RecordTypeSchema> actual = Arrays.asList(fromJson(mvcResult, RecordTypeSchema[].class));
 
     assertEquals(expectedSchemas, actual);
   }
@@ -2438,7 +2397,7 @@ class RecordControllerMockMvcTest {
                       versionId,
                       recordType,
                       recordId)
-                  .content(mapper.writeValueAsString(recordRequest))
+                  .content(toJson(recordRequest))
                   .contentType(MediaType.APPLICATION_JSON))
           .andExpect(status().is2xxSuccessful());
       result.add(new Record(recordId, recordType, recordRequest));
@@ -2465,9 +2424,7 @@ class RecordControllerMockMvcTest {
     mockMvc
         .perform(
             post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, newBatchRecordType)
-                .content(
-                    mapper.writeValueAsString(
-                        List.of(op, new BatchOperation(record2, OperationType.UPSERT))))
+                .content(toJson(List.of(op, new BatchOperation(record2, OperationType.UPSERT))))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.recordsModified", is(2)))
         .andExpect(jsonPath("$.message", is("Huzzah")))
@@ -2485,9 +2442,7 @@ class RecordControllerMockMvcTest {
     mockMvc
         .perform(
             post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, newBatchRecordType)
-                .content(
-                    mapper.writeValueAsString(
-                        List.of(new BatchOperation(record, OperationType.DELETE))))
+                .content(toJson(List.of(new BatchOperation(record, OperationType.DELETE))))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk());
     mockMvc
@@ -2520,7 +2475,7 @@ class RecordControllerMockMvcTest {
     mockMvc
         .perform(
             post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, newBatchRecordType)
-                .content(mapper.writeValueAsString(ops))
+                .content(toJson(ops))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.recordsModified", is(totalRecords)))
         .andExpect(jsonPath("$.message", is("Huzzah")))
@@ -2551,7 +2506,7 @@ class RecordControllerMockMvcTest {
     mockMvc
         .perform(
             post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, newBatchRecordType)
-                .content(mapper.writeValueAsString(ops))
+                .content(toJson(ops))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.recordsModified", is(3)))
         .andExpect(jsonPath("$.message", is("Huzzah")))
@@ -2568,8 +2523,7 @@ class RecordControllerMockMvcTest {
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
             .andReturn();
-    RecordResponse actualSingle =
-        mapper.readValue(mvcResult.getResponse().getContentAsString(), RecordResponse.class);
+    RecordResponse actualSingle = fromJson(mvcResult, RecordResponse.class);
     assertEquals(2, actualSingle.recordAttributes().attributeSet().size());
     assertTrue(
         actualSingle
@@ -2608,7 +2562,7 @@ class RecordControllerMockMvcTest {
     mockMvc
         .perform(
             post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, recordType)
-                .content(mapper.writeValueAsString(batchOperations))
+                .content(toJson(batchOperations))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound());
   }
@@ -2643,7 +2597,7 @@ class RecordControllerMockMvcTest {
     mockMvc
         .perform(
             post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, recordType)
-                .content(mapper.writeValueAsString(batchOperations))
+                .content(toJson(batchOperations))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound());
   }
@@ -2662,7 +2616,7 @@ class RecordControllerMockMvcTest {
     mockMvc
         .perform(
             post("/{instanceid}/batch/{v}/{type}", instanceId, versionId, recordType)
-                .content(mapper.writeValueAsString(ops))
+                .content(toJson(ops))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk());
     mockMvc
@@ -2707,7 +2661,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     recordType,
                     "recordId")
-                .content(mapper.writeValueAsString(new RecordRequest(attributes)))
+                .content(toJson(new RecordRequest(attributes)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isCreated());
     // retrieve as single record
@@ -2723,8 +2677,7 @@ class RecordControllerMockMvcTest {
             .andExpect(status().isOk())
             .andReturn();
     // assert single-record response is human-readable
-    RecordResponse actualSingle =
-        mapper.readValue(mvcSingleResult.getResponse().getContentAsString(), RecordResponse.class);
+    RecordResponse actualSingle = fromJson(mvcSingleResult, RecordResponse.class);
     assertEquals(dateString, actualSingle.recordAttributes().getAttributeValue("dateAttr"));
 
     // retrieve as a page of records
@@ -2739,9 +2692,7 @@ class RecordControllerMockMvcTest {
             .andExpect(status().isOk())
             .andReturn();
 
-    RecordQueryResponse actualMulti =
-        mapper.readValue(
-            mvcMultiResult.getResponse().getContentAsString(), RecordQueryResponse.class);
+    RecordQueryResponse actualMulti = fromJson(mvcMultiResult, RecordQueryResponse.class);
     assertEquals(
         dateString, actualMulti.records().get(0).recordAttributes().getAttributeValue("dateAttr"));
   }
@@ -2765,7 +2716,7 @@ class RecordControllerMockMvcTest {
                     versionId,
                     recordType,
                     "recordId")
-                .content(mapper.writeValueAsString(new RecordRequest(attributes)))
+                .content(toJson(new RecordRequest(attributes)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isCreated());
     // retrieve as single record
@@ -2781,8 +2732,7 @@ class RecordControllerMockMvcTest {
             .andExpect(status().isOk())
             .andReturn();
     // assert single-record response is human-readable
-    RecordResponse actualSingle =
-        mapper.readValue(mvcSingleResult.getResponse().getContentAsString(), RecordResponse.class);
+    RecordResponse actualSingle = fromJson(mvcSingleResult, RecordResponse.class);
     assertEquals(datetimeString, actualSingle.recordAttributes().getAttributeValue("datetimeAttr"));
 
     // retrieve as a page of records
@@ -2797,9 +2747,7 @@ class RecordControllerMockMvcTest {
             .andExpect(status().isOk())
             .andReturn();
 
-    RecordQueryResponse actualMulti =
-        mapper.readValue(
-            mvcMultiResult.getResponse().getContentAsString(), RecordQueryResponse.class);
+    RecordQueryResponse actualMulti = fromJson(mvcMultiResult, RecordQueryResponse.class);
     assertEquals(
         datetimeString,
         actualMulti.records().get(0).recordAttributes().getAttributeValue("datetimeAttr"));
@@ -2831,7 +2779,7 @@ class RecordControllerMockMvcTest {
                     relationArrayType,
                     relArrId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(relAttr))))
+                .content(toJson(new RecordRequest(relAttr))))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.attributes.relArrAttr", is(relArr)));
 
@@ -2850,7 +2798,7 @@ class RecordControllerMockMvcTest {
                     relationArrayType,
                     relArrId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(relAttr))))
+                .content(toJson(new RecordRequest(relAttr))))
         .andExpect(
             content()
                 .string(containsString(RelationUtils.createRelationString(recordType, "record_2"))))
@@ -2862,7 +2810,7 @@ class RecordControllerMockMvcTest {
                             RelationUtils.createRelationString(recordType, "record_1")))))
         .andExpect(status().isOk());
 
-    MockHttpServletResponse res =
+    MvcResult result =
         mockMvc
             .perform(
                 get(
@@ -2872,10 +2820,8 @@ class RecordControllerMockMvcTest {
                     relationArrayType,
                     relArrId))
             .andExpect(status().isOk())
-            .andReturn()
-            .getResponse();
-    RecordResponse recordResponse =
-        mapper.readValue(res.getContentAsString(), RecordResponse.class);
+            .andReturn();
+    RecordResponse recordResponse = fromJson(result, RecordResponse.class);
     List<String> actualAttrValue =
         assertInstanceOf(
             List.class, recordResponse.recordAttributes().getAttributeValue("relArrAttr"));
@@ -2916,7 +2862,7 @@ class RecordControllerMockMvcTest {
                     relationArrayType,
                     relArrId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(relAttr))))
+                .content(toJson(new RecordRequest(relAttr))))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.attributes.relArrAttr", is(relArr)));
 
@@ -2935,11 +2881,11 @@ class RecordControllerMockMvcTest {
                     relationArrayType,
                     relArrId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(incorrectRelAttr))))
+                .content(toJson(new RecordRequest(incorrectRelAttr))))
         .andExpect(status().isForbidden());
 
     // Record should not have been updated
-    MockHttpServletResponse res =
+    MvcResult result =
         mockMvc
             .perform(
                 get(
@@ -2949,10 +2895,8 @@ class RecordControllerMockMvcTest {
                     relationArrayType,
                     relArrId))
             .andExpect(status().isOk())
-            .andReturn()
-            .getResponse();
-    RecordResponse recordResponse =
-        mapper.readValue(res.getContentAsString(), RecordResponse.class);
+            .andReturn();
+    RecordResponse recordResponse = fromJson(result, RecordResponse.class);
     List<String> actualAttrValue =
         assertInstanceOf(
             List.class, recordResponse.recordAttributes().getAttributeValue("relArrAttr"));
@@ -2994,7 +2938,7 @@ class RecordControllerMockMvcTest {
                     relationArrayType,
                     relArrId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(relAttr))))
+                .content(toJson(new RecordRequest(relAttr))))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.attributes.relArrAttr", is(relArr)));
 
@@ -3013,11 +2957,11 @@ class RecordControllerMockMvcTest {
                     relationArrayType,
                     relArrId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(incorrectRelAttr))))
+                .content(toJson(new RecordRequest(incorrectRelAttr))))
         .andExpect(status().isForbidden());
 
     // Record should not have been updated
-    MockHttpServletResponse res =
+    MvcResult result =
         mockMvc
             .perform(
                 get(
@@ -3027,10 +2971,8 @@ class RecordControllerMockMvcTest {
                     relationArrayType,
                     relArrId))
             .andExpect(status().isOk())
-            .andReturn()
-            .getResponse();
-    RecordResponse recordResponse =
-        mapper.readValue(res.getContentAsString(), RecordResponse.class);
+            .andReturn();
+    RecordResponse recordResponse = fromJson(result, RecordResponse.class);
     List<String> actualAttrValue =
         assertInstanceOf(
             List.class, recordResponse.recordAttributes().getAttributeValue("relArrAttr"));
@@ -3067,7 +3009,7 @@ class RecordControllerMockMvcTest {
                     relationArrayType,
                     relArrId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(relAttr))))
+                .content(toJson(new RecordRequest(relAttr))))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.attributes.relArrAttr", is(relArr)));
 
@@ -3083,11 +3025,11 @@ class RecordControllerMockMvcTest {
                     relationArrayType,
                     relArrId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new RecordRequest(incorrectRelAttr))))
+                .content(toJson(new RecordRequest(incorrectRelAttr))))
         .andExpect(status().isForbidden());
 
     // Record should not have been updated
-    MockHttpServletResponse res =
+    MvcResult result =
         mockMvc
             .perform(
                 get(
@@ -3097,10 +3039,8 @@ class RecordControllerMockMvcTest {
                     relationArrayType,
                     relArrId))
             .andExpect(status().isOk())
-            .andReturn()
-            .getResponse();
-    RecordResponse recordResponse =
-        mapper.readValue(res.getContentAsString(), RecordResponse.class);
+            .andReturn();
+    RecordResponse recordResponse = fromJson(result, RecordResponse.class);
     List<String> actualAttrValue =
         assertInstanceOf(
             List.class, recordResponse.recordAttributes().getAttributeValue("relArrAttr"));
