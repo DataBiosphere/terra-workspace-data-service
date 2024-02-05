@@ -11,7 +11,7 @@ public interface DeploymentMode {
 
   /**
    * The annotated type or method is conditionally enabled when the deployment mode is
-   * control-plane.
+   * control-plane. As of this writing, this equates to cWDS in GCP.
    */
   @Target({ElementType.TYPE, ElementType.METHOD})
   @Retention(RetentionPolicy.RUNTIME)
@@ -20,6 +20,8 @@ public interface DeploymentMode {
 
   /**
    * The annotated type or method is conditionally enabled when the deployment mode is data-plane.
+   * As of this writing, this equates to a WDS associated with a workspace running as an Azure app
+   * in a customer Landing Zone.
    */
   @Target({ElementType.TYPE, ElementType.METHOD})
   @Retention(RetentionPolicy.RUNTIME)
