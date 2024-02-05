@@ -1,7 +1,7 @@
 # These values are used more than once, so we'll set them here with appropriate defaults
 env:
   wds:
-    cloudPlatform: ${CLOUD_PLATFORM:azure}
+    deploymentMode: ${DEPLOYMENT_MODE:data-plane}
     db:
       host: ${WDS_DB_HOST:localhost}
       port: ${WDS_DB_PORT:5432}
