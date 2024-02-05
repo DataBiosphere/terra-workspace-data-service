@@ -6,7 +6,7 @@
   <!-- inspired by Spring default ${FILE_LOG_PATTERN} from defaults.xml, modified to include requestId -->
   <property name="WDS_LOG_PATTERN"
             value="%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}} ${LOG_LEVEL_PATTERN:-%5p} [%X{requestId}] [%t] %-40.40logger{39} : %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
-
+  
   <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
   <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
 
@@ -21,7 +21,17 @@
 
   <springProfile name="!local">
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-      <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+<!--      <encoder class="net.logstash.logback.encoder.LogstashEncoder" />-->
+      <if condition='isDefined("deploymentMode") &amp;&amp; property("deploymentMode").equals("control-plane")'>
+        <then>
+          <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        </then>
+        <else>
+          <encoder>
+            <pattern>${WDS_LOG_PATTERN}</pattern>
+          </encoder>
+        </else>
+      </if>
     </appender>
     <!-- log everything at INFO level -->
     <root level="info">
@@ -49,21 +59,16 @@
   </springProfile>
 
   <springProfile name="local">
-    <appender name="CONSOLE_LOCAL" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>${WDS_LOG_PATTERN}</pattern>
-    </encoder>
-    </appender>
     <root level="info">
-      <appender-ref ref="CONSOLE_LOCAL"/>
+      <appender-ref ref="CONSOLE"/>
     </root>
 
     <logger name="org.databiosphere.workspacedataservice" level="debug" additivity="false">
-      <appender-ref ref="CONSOLE_LOCAL"/>
+      <appender-ref ref="CONSOLE"/>
     </logger>
 
     <logger name="org.springframework.web" level="debug" additivity="false">
-      <appender-ref ref="CONSOLE_LOCAL"/>
+      <appender-ref ref="CONSOLE"/>
     </logger>
   </springProfile>
 

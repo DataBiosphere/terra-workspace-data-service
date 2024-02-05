@@ -65,6 +65,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
     implementation 'io.sentry:sentry-logback:6.34.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:7.3'
+    implementation 'org.codehaus.janino:janino:3.1.11'
     implementation 'org.liquibase:liquibase-core'
     implementation 'javax.cache:cache-api'
     implementation 'org.ehcache:ehcache:3.10.8:jakarta'
