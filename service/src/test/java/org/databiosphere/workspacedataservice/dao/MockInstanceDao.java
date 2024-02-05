@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.databiosphere.workspacedataservice.shared.model.InstanceId;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.postgresql.util.ServerErrorMessage;
 
 /** Mock implementation of InstanceDao that is in-memory instead of requiring Postgres */
@@ -63,5 +65,10 @@ public class MockInstanceDao implements InstanceDao {
     }
     instances.remove(sourceWorkspaceId);
     instances.add(workspaceId);
+  }
+
+  @Override
+  public WorkspaceId getWorkspaceId(InstanceId instanceId) {
+    return WorkspaceId.of(instanceId.id());
   }
 }

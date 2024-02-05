@@ -13,11 +13,9 @@ import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
 import org.databiosphere.workspacedataservice.sam.SamConfig;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
-import org.databiosphere.workspacedataservice.shared.model.InstanceId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -37,9 +35,6 @@ class InstanceServiceTest {
 
   @Autowired private InstanceService instanceService;
   @Autowired private InstanceDao instanceDao;
-
-  @Value("${twds.instance.workspace-id:}")
-  private String workspaceIdProperty;
 
   private static final UUID INSTANCE = UUID.fromString("111e9999-e89b-12d3-a456-426614174000");
 
@@ -91,12 +86,5 @@ class InstanceServiceTest {
         MissingObjectException.class,
         () -> instanceService.validateInstance(INSTANCE),
         "validateInstance should have thrown an error");
-  }
-
-  @Test
-  void getWorkspaceId() {
-    assertEquals(
-        workspaceIdProperty,
-        instanceService.getWorkspaceId(InstanceId.of(UUID.randomUUID())).toString());
   }
 }

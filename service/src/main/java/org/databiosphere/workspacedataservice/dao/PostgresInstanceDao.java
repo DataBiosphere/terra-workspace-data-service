@@ -6,6 +6,8 @@ import bio.terra.common.db.WriteTransaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.shared.model.InstanceId;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -88,6 +90,16 @@ public class PostgresInstanceDao implements InstanceDao {
     // restoring from a pg_dump,
     // the oldSchema doesn't exist, so is not renamed in the previous statement.
     insertInstanceRow(newSchemaId, true);
+  }
+
+  @Override
+  public WorkspaceId getWorkspaceId(InstanceId instanceId) {
+    UUID workspaceUuid =
+        namedTemplate.queryForObject(
+            "select workspace_id from sys_wds.instance where id = :instanceId",
+            new MapSqlParameterSource("instanceId", instanceId.id()),
+            UUID.class);
+    return WorkspaceId.of(workspaceUuid);
   }
 
   private void insertInstanceRow(UUID instanceId, boolean ignoreConflict) {

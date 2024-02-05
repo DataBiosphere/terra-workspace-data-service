@@ -15,6 +15,7 @@ import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -129,6 +130,25 @@ public class InstanceService {
    * @return the workspace containing the given instance.
    */
   public WorkspaceId getWorkspaceId(InstanceId instanceId) {
-    return Objects.requireNonNullElseGet(workspaceId, () -> WorkspaceId.of(instanceId.id()));
+    // look up the workspaceId for this instance in the instance table
+    WorkspaceId rowWorkspaceId = null;
+    try {
+      rowWorkspaceId = instanceDao.getWorkspaceId(instanceId);
+    } catch (EmptyResultDataAccessException e) {
+      // swallow not-found errors; it's valid for rows to not exist in the case of
+      // virtual instances
+    }
+
+    // safety check: if we found a workspace id in the db, it indicates we are in a data-plane
+    // single-tenant WDS. Verify the workspace matches the $WORKSPACE_ID env var.
+    // we must remove this check in a future multi-tenant WDS.
+    if (rowWorkspaceId != null && !rowWorkspaceId.equals(workspaceId)) {
+      // TODO davidan: use a better exception
+      throw new RuntimeException(
+          "Found unexpected workspaceId for instance %s. Expected %s, got %s."
+              .formatted(instanceId, workspaceId, rowWorkspaceId));
+    }
+
+    return Objects.requireNonNullElseGet(rowWorkspaceId, () -> WorkspaceId.of(instanceId.id()));
   }
 }

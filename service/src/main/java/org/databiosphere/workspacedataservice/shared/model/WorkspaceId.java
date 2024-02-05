@@ -30,6 +30,16 @@ public record WorkspaceId(UUID id) {
   /**
    * Create a new WorkspaceId using the given id
    *
+   * @param id the workspace's id
+   * @return new WorkspaceId
+   */
+  public static WorkspaceId fromString(String id) {
+    return WorkspaceId.of(UUID.fromString(id));
+  }
+
+  /**
+   * Create a new WorkspaceId using the given id
+   *
    * @par public static WorkspaceId fromString(String id) { return
    *     WorkspaceId.of(UUID.fromString(id)); }am id the workspace's id
    * @return new WorkspaceId
