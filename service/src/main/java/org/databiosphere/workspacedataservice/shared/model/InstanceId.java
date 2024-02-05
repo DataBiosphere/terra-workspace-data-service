@@ -27,6 +27,16 @@ public record InstanceId(UUID id) {
     return new InstanceId(id);
   }
 
+  /**
+   * Create a new InstanceId using the given id
+   *
+   * @param id the instance's id
+   * @return new InstanceId
+   */
+  public static InstanceId fromString(String id) {
+    return InstanceId.of(UUID.fromString(id));
+  }
+
   @Override
   public String toString() {
     return this.id().toString();
