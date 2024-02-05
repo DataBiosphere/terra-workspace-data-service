@@ -6,12 +6,10 @@
   <!-- inspired by Spring default ${FILE_LOG_PATTERN} from defaults.xml, modified to include requestId -->
   <property name="WDS_LOG_PATTERN"
             value="%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}} ${LOG_LEVEL_PATTERN:-%5p} [%X{requestId}] [%t] %-40.40logger{39} : %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
-  
+
   <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
   <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
-
-
-
+  
   <appender name="Sentry" class="io.sentry.logback.SentryAppender">
     <!-- Optionally change minimum Event level. Default for Events is ERROR -->
     <minimumEventLevel>ERROR</minimumEventLevel>
@@ -21,7 +19,6 @@
 
   <springProfile name="!local">
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-<!--      <encoder class="net.logstash.logback.encoder.LogstashEncoder" />-->
       <if condition='isDefined("deploymentMode") &amp;&amp; property("deploymentMode").equals("control-plane")'>
         <then>
           <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
