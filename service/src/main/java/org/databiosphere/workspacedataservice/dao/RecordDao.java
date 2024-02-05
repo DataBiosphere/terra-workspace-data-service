@@ -91,6 +91,13 @@ public class RecordDao {
   @Value("${twds.streaming.fetch.size:5000}")
   int fetchSize;
 
+  /**
+   * Each member of this set is expected to be a set of two data types. The presence of a set of
+   * types in this set implies that conversions between the types are supported (in either
+   * direction). Note that arrays do not need to be listed separately here. For example, a set of
+   * STRING and NUMBER implies that all the following conversions are supported: STRING to NUMBER,
+   * NUMBER to STRING, ARRAY_OF_STRING to ARRAY_OF_NUMBER, and ARRAY_OF_NUMBER to ARRAY_OF_STRING.
+   */
   private static final Set<Set<DataTypeMapping>> supportedDataTypeConversions =
       Set.of(
           Set.of(DataTypeMapping.STRING, DataTypeMapping.NUMBER),
