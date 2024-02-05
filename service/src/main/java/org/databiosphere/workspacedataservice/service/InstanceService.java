@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
@@ -128,9 +129,6 @@ public class InstanceService {
    * @return the workspace containing the given instance.
    */
   public WorkspaceId getWorkspaceId(InstanceId instanceId) {
-    if (workspaceId == null) {
-      return WorkspaceId.of(instanceId.id());
-    }
-    return workspaceId;
+    return Objects.requireNonNullElseGet(workspaceId, () -> WorkspaceId.of(instanceId.id()));
   }
 }
