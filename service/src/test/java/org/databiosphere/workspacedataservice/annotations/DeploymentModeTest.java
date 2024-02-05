@@ -30,15 +30,15 @@ class DeploymentModeTest {
   static class MinimalTestConfiguration {}
 
   @Test
-  void instanceInitializerEnabledForAzure() {
+  void instanceInitializerEnabledForDataPlane() {
     var context = loadApplicationContext("env.wds.deploymentMode=data-plane");
-    assertThat(context.containsBean("instanceInitializerBean")).isTrue();
+    assertThat(context.containsBean("instanceInitializer")).isTrue();
   }
 
   @Test
-  void instanceInitializerDisabledForGcp() {
+  void instanceInitializerDisabledForControlPlane() {
     var context = loadApplicationContext("env.wds.deploymentMode=control-plane");
-    assertThat(context.containsBean("instanceInitializerBean")).isFalse();
+    assertThat(context.containsBean("instanceInitializer")).isFalse();
   }
 
   private ConfigurableApplicationContext loadApplicationContext(String... properties) {
