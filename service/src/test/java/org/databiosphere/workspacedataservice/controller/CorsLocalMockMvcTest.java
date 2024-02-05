@@ -8,12 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.UUID;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 /**
@@ -25,12 +21,7 @@ import org.springframework.test.web.servlet.MvcResult;
  */
 @ActiveProfiles(profiles = {"local-cors"})
 @DirtiesContext
-@SpringBootTest
-@AutoConfigureMockMvc
-class CorsLocalMockMvcTest {
-
-  @Autowired MockMvc mockMvc;
-
+class CorsLocalMockMvcTest extends MockMvcTestBase {
   private static final String versionId = "v0.2";
 
   @ParameterizedTest(name = "CORS response headers for the local profile {0} should be correct")
