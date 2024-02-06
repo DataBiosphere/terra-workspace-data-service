@@ -308,6 +308,7 @@ public class DataTypeInferer {
     }
   }
 
+  /** Changes to this function should also be reflected in the sys_wds.is_file_url SQL function. */
   private boolean isFileType(String possibleFile) {
     URI fileUri;
     try {

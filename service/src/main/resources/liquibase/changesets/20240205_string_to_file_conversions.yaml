@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id:  20240205_string_to_file_conversions
+      author:  nwatts
+      changes:
+        - sql:
+            dbms:  postgresql
+            splitStatements: false
+            sql:  |
+              create or replace function sys_wds.parse_token(str text, token_alias text) returns text as $$
+              begin
+                return token from ts_parse('default', str) natural join ts_token_type('default') tokens where tokens.alias = token_alias;
+              end
+              $$ language plpgsql immutable;
+        - sql:
+            dbms: postgresql
+            splitStatements: false
+            sql: |
+              create or replace function sys_wds.is_file_url(str text) returns boolean as $$
+              declare
+                protocol text;
+                host text;
+              begin
+                protocol := lower(sys_wds.parse_token(str, 'protocol'));
+                host := lower(sys_wds.parse_token(str, 'host'));
+
+                if protocol = 'drs://' or (protocol = 'https://' and host like '%.blob.core.windows.net') then
+                  return true;
+                else
+                  return false;
+                end if;
+              end
+              $$ language plpgsql immutable;
+        - sql:
+            dbms: postgresql
+            splitStatements: false
+            sql: |
+              create or replace function sys_wds.validate_file_url(str text) returns text as $$
+              begin
+                if sys_wds.is_file_url(str) then
+                  return str;
+                else
+                  raise invalid_text_representation;
+                end if;
+              end
+              $$ language plpgsql immutable;
+        - sql:
+            dbms: postgresql
+            splitStatements: false
+            sql: |
+              create or replace function sys_wds.validate_file_urls(strings text[]) returns text as $$
+              begin
+                for i in array_lower(strings, 1)..array_upper(strings, 1) loop
+                  if not sys_wds.is_file_url(strings[i]) then
+                    raise invalid_text_representation;
+                  end if;
+                end loop;
+                return strings;
+              end
+              $$ language plpgsql immutable;

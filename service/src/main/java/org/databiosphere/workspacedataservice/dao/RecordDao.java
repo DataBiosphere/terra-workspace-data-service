@@ -104,6 +104,7 @@ public class RecordDao {
           Set.of(DataTypeMapping.STRING, DataTypeMapping.BOOLEAN),
           Set.of(DataTypeMapping.STRING, DataTypeMapping.DATE),
           Set.of(DataTypeMapping.STRING, DataTypeMapping.DATE_TIME),
+          Set.of(DataTypeMapping.STRING, DataTypeMapping.FILE),
           Set.of(DataTypeMapping.NUMBER, DataTypeMapping.BOOLEAN),
           Set.of(DataTypeMapping.NUMBER, DataTypeMapping.DATE),
           Set.of(DataTypeMapping.NUMBER, DataTypeMapping.DATE_TIME),
@@ -1159,6 +1160,16 @@ public class RecordDao {
         if (dataType.getBaseType() == DataTypeMapping.DATE) {
           expression += "::bigint";
         }
+      }
+    }
+
+    // Validate URLs when converting strings to files.
+    if (dataType.getBaseType().equals(DataTypeMapping.STRING)
+        && newDataType.getBaseType().equals(DataTypeMapping.FILE)) {
+      if (dataType.isArrayType()) {
+        expression = "sys_wds.validate_file_urls(" + expression + ")";
+      } else {
+        expression = "sys_wds.validate_file_url(" + expression + ")";
       }
     }
 
