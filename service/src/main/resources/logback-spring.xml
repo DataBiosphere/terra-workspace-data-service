@@ -20,10 +20,11 @@
   </appender>
 
   <springProfile name="!local">
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-      <if condition='isDefined("deploymentMode") &amp;&amp; property("deploymentMode").equals("control-plane")'>
-        <then>
+    <if condition='isDefined("deploymentMode") &amp;&amp; property("deploymentMode").equals("control-plane")'>
+      <then>
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
           <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        </appender>
         </then>
         <else>
           <encoder>
@@ -31,7 +32,6 @@
           </encoder>
         </else>
       </if>
-    </appender>
     <!-- log everything at INFO level -->
     <root level="info">
       <appender-ref ref="CONSOLE"/>
