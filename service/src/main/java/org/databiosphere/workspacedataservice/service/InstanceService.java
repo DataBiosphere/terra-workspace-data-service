@@ -9,6 +9,7 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
+import org.databiosphere.workspacedataservice.service.model.exception.InstanceException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.InstanceId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -143,10 +144,15 @@ public class InstanceService {
     // single-tenant WDS. Verify the workspace matches the $WORKSPACE_ID env var.
     // we must remove this check in a future multi-tenant WDS.
     if (rowWorkspaceId != null && !rowWorkspaceId.equals(workspaceId)) {
-      // TODO davidan: use a better exception
-      throw new RuntimeException(
-          "Found unexpected workspaceId for instance %s. Expected %s, got %s."
-              .formatted(instanceId, workspaceId, rowWorkspaceId));
+      // log the details, including expected/actual workspace ids
+      LOGGER.error(
+          "Found unexpected workspaceId for instance {}. Expected {}, got {}.",
+          instanceId,
+          workspaceId,
+          rowWorkspaceId);
+      // but, don't include workspace ids when throwing a user-facing error
+      throw new InstanceException(
+          "Found unexpected workspaceId for instance %s.".formatted(instanceId));
     }
 
     return Objects.requireNonNullElseGet(rowWorkspaceId, () -> WorkspaceId.of(instanceId.id()));
