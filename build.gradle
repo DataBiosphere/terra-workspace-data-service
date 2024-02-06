@@ -38,6 +38,7 @@ subprojects {
         }
         dependencies {
             dependency 'org.liquibase:liquibase-core:4.25.1'
+            dependency 'com.jayway.jsonpath:json-path:2.9.0' // CVE-2023-51074
         }
     }
 }
