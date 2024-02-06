@@ -73,6 +73,6 @@ class InstanceServiceGetWorkspaceIdTest {
 
     InstanceId instanceId = InstanceId.of(UUID.randomUUID());
     // expect getWorkspaceId to throw, since it found an unexpected workspace id
-    assertThrows(RuntimeException.class, () -> instanceService.getWorkspaceId(instanceId).id());
+    assertThrows(RuntimeException.class, () -> instanceService.getWorkspaceId(instanceId));
   }
 }
