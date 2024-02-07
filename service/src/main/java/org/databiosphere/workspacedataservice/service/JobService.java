@@ -25,7 +25,7 @@ public class JobService {
   public GenericJobServerModel getJob(UUID jobId) {
     try {
       GenericJobServerModel result = jobDao.getJob(jobId);
-      if (!samDao.hasReadInstancePermission()) {
+      if (!samDao.hasReadInstancePermission(result.getInstanceId().toString())) {
         throw new AuthorizationException("Caller does not have permission to view this job.");
       }
       return result;

@@ -43,9 +43,9 @@ public interface SamDao {
    *
    * @return true if the user has permission
    */
-  boolean hasReadInstancePermission();
+  boolean hasReadInstancePermission(String instanceId);
 
-  boolean hasReadInstancePermission(String token);
+  boolean hasReadInstancePermission(String instanceId, String token);
 
   /**
    * Check if the current user has permission to write to a "wds-instance" resource from Sam
