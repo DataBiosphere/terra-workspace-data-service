@@ -65,7 +65,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -78,7 +77,6 @@ public class RecordDao {
   private static final String INSTANCE_ID = "instanceId";
   private static final String RECORD_ID_PARAM = "recordId";
   private final NamedParameterJdbcTemplate namedTemplate;
-  private final JdbcTemplate jdbcTemplate;
 
   private final DataSource mainDb;
 
@@ -104,38 +102,6 @@ public class RecordDao {
     this.inferer = inf;
     this.objectMapper = objectMapper;
     this.primaryKeyDao = primaryKeyDao;
-  }
-
-  /**
-   * Naive implementation of find and replace within a single column.
-   *
-   * @param instanceId the instance
-   * @param recordType table in which to replace
-   * @param attributeName column in which to replace
-   * @param find the value to be replaced
-   * @param replace the replacement value
-   * @return count of updated rows
-   */
-  public int findAndReplace(
-      UUID instanceId, RecordType recordType, String attributeName, String find, String replace) {
-
-    int theCount =
-        jdbcTemplate.update(
-            "update"
-                + getQualifiedTableName(recordType, instanceId)
-                + " set "
-                + attributeName
-                + " = '"
-                + replace
-                + "' where "
-                + attributeName
-                + " = '"
-                + find
-                + "';");
-
-    LOGGER.info("found " + theCount + " matching rows.");
-
-    return theCount;
   }
 
   public boolean recordTypeExists(UUID instanceId, RecordType recordType) {
@@ -752,23 +718,24 @@ public class RecordDao {
   Object[] getListAsArray(List<?> attVal, DataTypeMapping typeMapping) {
     return switch (typeMapping) {
       case ARRAY_OF_STRING,
-          ARRAY_OF_FILE,
-          ARRAY_OF_RELATION,
-          ARRAY_OF_DATE,
-          ARRAY_OF_DATE_TIME,
-          ARRAY_OF_NUMBER,
-          EMPTY_ARRAY -> attVal.stream()
-          .map(e -> Objects.toString(e, null)) // .toString() non-nulls, else return null
-          .toList()
-          .toArray(new String[0]);
+              ARRAY_OF_FILE,
+              ARRAY_OF_RELATION,
+              ARRAY_OF_DATE,
+              ARRAY_OF_DATE_TIME,
+              ARRAY_OF_NUMBER,
+              EMPTY_ARRAY ->
+          attVal.stream()
+              .map(e -> Objects.toString(e, null)) // .toString() non-nulls, else return null
+              .toList()
+              .toArray(new String[0]);
       case ARRAY_OF_BOOLEAN ->
-      // accept all casings of True and False if they're strings
-      attVal.stream()
-          .map(Object::toString)
-          .map(String::toLowerCase)
-          .map(Boolean::parseBoolean)
-          .toList()
-          .toArray(new Boolean[0]);
+          // accept all casings of True and False if they're strings
+          attVal.stream()
+              .map(Object::toString)
+              .map(String::toLowerCase)
+              .map(Boolean::parseBoolean)
+              .toList()
+              .toArray(new Boolean[0]);
       default -> throw new IllegalArgumentException("Unhandled array type " + typeMapping);
     };
   }
