@@ -74,4 +74,35 @@ public interface JobApi {
 
     }
 
+
+    /**
+     * GET /job/v1/{instanceUuid}/{status} : Get all jobs with a certain status under a particular instance.
+     *
+     * @param instanceUuid WDS instance id; by convention equal to workspace id (required)
+     * @param status  (required)
+     * @return A list of jobs with specified status for Instance Id. (status code 200)
+     */
+    @Operation(
+        operationId = "jobsInInstanceV1",
+        summary = "Get all jobs with a certain status under a particular instance.",
+        tags = { "Job" },
+        responses = {
+            @ApiResponse(responseCode = "200", description = "A list of jobs with specified status for Instance Id.", content = {
+                @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = GenericJobServerModel.class)))
+            })
+        }
+    )
+    @RequestMapping(
+        method = RequestMethod.GET,
+        value = "/job/v1/{instanceUuid}/{status}",
+        produces = { "application/json" }
+    )
+    default ResponseEntity<List<GenericJobServerModel>> jobsInInstanceV1(
+        @Parameter(name = "instanceUuid", description = "WDS instance id; by convention equal to workspace id", required = true, in = ParameterIn.PATH) @PathVariable("instanceUuid") UUID instanceUuid,
+        @Parameter(name = "status", description = "", required = true, in = ParameterIn.PATH) @PathVariable("status") String status
+    ) {
+        return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
+
+    }
+
 }

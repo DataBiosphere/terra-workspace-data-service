@@ -9,8 +9,10 @@ import com.google.common.base.Preconditions;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
+import org.databiosphere.workspacedataservice.shared.model.InstanceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
@@ -203,10 +205,24 @@ public class PostgresJobDao implements JobDao {
   public GenericJobServerModel getJob(UUID jobId) {
     return namedTemplate.queryForObject(
         "select id, type, status, created, updated, "
-            + "input, result, error, stacktrace "
+            + "input, result, error, stacktrace, instance_id "
             + "from sys_wds.job "
             + "where id = :jobId",
         new MapSqlParameterSource("jobId", jobId.toString()),
+        new AsyncJobRowMapper());
+  }
+
+  @Override
+  public List<GenericJobServerModel> getJobsForInstance(InstanceId instanceId, StatusEnum status) {
+    MapSqlParameterSource params = new MapSqlParameterSource("instance_id", instanceId.id());
+    params.addValue("status", status.name());
+    return namedTemplate.query(
+        "select id, type, status, created, updated, "
+            + "input, result, error, stacktrace, instance_id "
+            + "from sys_wds.job "
+            + "where instance_id = :instance_id "
+            + "and status = :status",
+        params,
         new AsyncJobRowMapper());
   }
 
@@ -239,6 +255,7 @@ public class PostgresJobDao implements JobDao {
           new GenericJobServerModel(jobId, jobType, status, created, updated);
 
       job.errorMessage(rs.getString("error"));
+      job.instanceId(rs.getObject("instance_id", UUID.class));
 
       // TODO: AJ-1011 also return stacktrace, input, result.
       return job;
