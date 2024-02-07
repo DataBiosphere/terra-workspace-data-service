@@ -7,9 +7,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
+import org.databiosphere.workspacedataservice.shared.model.InstanceId;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
@@ -47,5 +51,57 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
 
     // which is equal to the expected job
     assertEquals(expected, actual);
+  }
+
+  @Test
+  void smokeTestJobsInInstanceV1() throws Exception {
+    // return a test job from the mocked JobDao
+    UUID jobId1 = UUID.randomUUID();
+    UUID jobId2 = UUID.randomUUID();
+    InstanceId instanceId = new InstanceId(UUID.randomUUID());
+    // set created and updated to now, but in UTC because that's how Postgres stores it
+    OffsetDateTime time = OffsetDateTime.now(ZoneId.of("Z"));
+
+    List<GenericJobServerModel> expected = new ArrayList<GenericJobServerModel>(2);
+    expected.add(
+        new GenericJobServerModel(
+                jobId1,
+                GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
+                GenericJobServerModel.StatusEnum.RUNNING,
+                time,
+                time)
+            .instanceId(instanceId.id()));
+    expected.add(
+        new GenericJobServerModel(
+                jobId2,
+                GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
+                GenericJobServerModel.StatusEnum.RUNNING,
+                time,
+                time)
+            .instanceId(instanceId.id()));
+    when(jobDao.getJobsForInstance(instanceId, GenericJobServerModel.StatusEnum.RUNNING))
+        .thenReturn(expected);
+
+    // calling the API should result in 200 OK
+    MvcResult mvcResult =
+        mockMvc
+            .perform(
+                get(
+                    "/job/v1/{instanceUuid}/{status}",
+                    instanceId,
+                    GenericJobServerModel.StatusEnum.RUNNING))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    // and the API response should be a valid GenericJobServerModel list (array)
+    GenericJobServerModel[] actual = fromJson(mvcResult, GenericJobServerModel[].class);
+
+    // which is equal to the expected job list
+    assertEquals(expected, Arrays.asList(actual));
+    // a quick check to make sure the values are what we expect
+    assertEquals(expected.get(0).jobId(jobId1), actual[0].jobId(jobId1));
+    // all jobs in both lists should have the same instanceId
+    assertEquals(
+        expected.get(0).instanceId(instanceId.id()), actual[1].instanceId(instanceId.id()));
   }
 }
