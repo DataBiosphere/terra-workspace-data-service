@@ -17,6 +17,9 @@ public interface SamDao {
   /** Sam action name for delete permission */
   String ACTION_DELETE = "delete";
 
+  /** Sam action name for read permission */
+  String ACTION_READ = "read";
+
   /**
    * Check if the current user has permission to create a "wds-instance" resource in Sam
    *
@@ -34,6 +37,15 @@ public interface SamDao {
   boolean hasDeleteInstancePermission();
 
   boolean hasDeleteInstancePermission(String token);
+
+  /**
+   * Check if the current user has permission to read the workspace resource from Sam
+   *
+   * @return true if the user has permission
+   */
+  boolean hasReadInstancePermission();
+
+  boolean hasReadInstancePermission(String token);
 
   /**
    * Check if the current user has permission to write to a "wds-instance" resource from Sam
