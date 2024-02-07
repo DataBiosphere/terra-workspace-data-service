@@ -33,6 +33,7 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
             // set created and updated to now, but in UTC because that's how Postgres stores it
             OffsetDateTime.now(ZoneId.of("Z")),
             OffsetDateTime.now(ZoneId.of("Z")));
+    expected.instanceId(UUID.randomUUID());
     when(jobDao.getJob(jobId)).thenReturn(expected);
 
     // calling the API should result in 202 Accepted
