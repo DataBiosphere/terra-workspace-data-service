@@ -768,7 +768,9 @@ class RecordDaoTest {
     "dateConversionExpressions",
     "dateArrayConversionExpressions",
     "datetimeConversionExpressions",
-    "datetimeArrayConversionExpressions"
+    "datetimeArrayConversionExpressions",
+    "fileConversionExpressions",
+    "fileArrayConversionExpressions"
   })
   void testGetPostgresTypeConversionExpression(
       DataTypeMapping dataType, DataTypeMapping newDataType, String expectedExpression) {
@@ -790,6 +792,8 @@ class RecordDaoTest {
         args(STRING, DATE, "\"attr\"::date"),
         // Datetime
         args(STRING, DATE_TIME, "\"attr\"::timestamp with time zone"),
+        // File
+        args(STRING, FILE, "\"attr\"::file"),
         // String array
         args(STRING, ARRAY_OF_STRING, "array_append('{}', \"attr\")::text[]"),
         // Number array
@@ -800,9 +804,9 @@ class RecordDaoTest {
         args(STRING, ARRAY_OF_DATE, "array_append('{}', \"attr\")::date[]"),
         // Datetime array
         args(
-            STRING,
-            ARRAY_OF_DATE_TIME,
-            "array_append('{}', \"attr\")::timestamp with time zone[]"));
+            STRING, ARRAY_OF_DATE_TIME, "array_append('{}', \"attr\")::timestamp with time zone[]"),
+        // File array
+        args(STRING, ARRAY_OF_FILE, "array_append('{}', \"attr\")::array_of_file"));
   }
 
   static Stream<Arguments> stringArrayConversionExpressions() {
@@ -814,7 +818,9 @@ class RecordDaoTest {
         // Date array
         args(ARRAY_OF_STRING, ARRAY_OF_DATE, "\"attr\"::date[]"),
         // Datetime array
-        args(ARRAY_OF_STRING, ARRAY_OF_DATE_TIME, "\"attr\"::timestamp with time zone[]"));
+        args(ARRAY_OF_STRING, ARRAY_OF_DATE_TIME, "\"attr\"::timestamp with time zone[]"),
+        // File array
+        args(ARRAY_OF_STRING, ARRAY_OF_FILE, "\"attr\"::array_of_file"));
   }
 
   static Stream<Arguments> numberConversionExpressions() {
@@ -951,6 +957,22 @@ class RecordDaoTest {
             "(sys_wds.convert_array_of_timestamps_to_numbers(\"attr\"))::numeric[]"),
         // Date array
         args(ARRAY_OF_DATE_TIME, ARRAY_OF_DATE, "\"attr\"::date[]"));
+  }
+
+  static Stream<Arguments> fileConversionExpressions() {
+    return Stream.of(
+        // String
+        args(FILE, STRING, "\"attr\"::text"),
+        // String array
+        args(FILE, ARRAY_OF_STRING, "array_append('{}', \"attr\")::text[]"),
+        // File array
+        args(FILE, ARRAY_OF_FILE, "array_append('{}', \"attr\")::array_of_file"));
+  }
+
+  static Stream<Arguments> fileArrayConversionExpressions() {
+    return Stream.of(
+        // String array
+        args(ARRAY_OF_FILE, ARRAY_OF_STRING, "\"attr\"::text[]"));
   }
 
   /** Simple helper to provide an even terser shorthand */

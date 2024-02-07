@@ -9,16 +9,20 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
@@ -48,6 +52,7 @@ import org.springframework.web.server.ResponseStatusException;
 class RecordOrchestratorServiceTest {
 
   @Autowired private InstanceDao instanceDao;
+  @Autowired private RecordDao recordDao;
   @Autowired private RecordOrchestratorService recordOrchestratorService;
 
   private static final UUID INSTANCE = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
@@ -217,7 +222,9 @@ class RecordOrchestratorServiceTest {
     "updateAttributeDataTypeDateConversions",
     "updateAttributeDataTypeDateArrayConversions",
     "updateAttributeDataTypeDatetimeConversions",
-    "updateAttributeDataTypeDatetimeArrayConversions"
+    "updateAttributeDataTypeDatetimeArrayConversions",
+    "updateAttributeDataTypeFileConversions",
+    "updateAttributeDataTypeFileArrayConversions"
   })
   void updateAttributeDataType(
       Object attributeValue,
@@ -226,6 +233,17 @@ class RecordOrchestratorServiceTest {
       Object expectedFinalAttributeValue) {
     // Arrange
     String attributeName = "testAttribute";
+
+    // Create the record type before adding any data.
+    // This is necessary for the string to file tests because it prevents
+    // the initial data type from being inferred as file.
+    recordDao.createRecordType(
+        INSTANCE,
+        Map.of(attributeName, expectedInitialDataType),
+        TEST_TYPE,
+        new RelationCollection(Collections.emptySet(), Collections.emptySet()),
+        PRIMARY_KEY);
+
     RecordAttributes recordAttributes =
         RecordAttributes.empty().putAttribute(attributeName, attributeValue);
     RecordRequest recordRequest = new RecordRequest(recordAttributes);
@@ -272,6 +290,12 @@ class RecordOrchestratorServiceTest {
             DataTypeMapping.STRING,
             DataTypeMapping.DATE_TIME,
             LocalDateTime.of(2024, 1, 24, 2, 30, 0)),
+        // File
+        Arguments.of(
+            "https://lz813a3d637adefec2c6e88f.blob.core.windows.net/sc-e18cfbc3-7115-4a37-add7-1d95d3ecfa14/file.txt",
+            DataTypeMapping.STRING,
+            DataTypeMapping.FILE,
+            "https://lz813a3d637adefec2c6e88f.blob.core.windows.net/sc-e18cfbc3-7115-4a37-add7-1d95d3ecfa14/file.txt"),
         // String array
         Arguments.of(
             "foo", DataTypeMapping.STRING, DataTypeMapping.ARRAY_OF_STRING, new String[] {"foo"}),
@@ -298,7 +322,15 @@ class RecordOrchestratorServiceTest {
             "2024/01/24 02:30:00",
             DataTypeMapping.STRING,
             DataTypeMapping.ARRAY_OF_DATE_TIME,
-            new LocalDateTime[] {LocalDateTime.of(2024, 1, 24, 2, 30, 0)}));
+            new LocalDateTime[] {LocalDateTime.of(2024, 1, 24, 2, 30, 0)}),
+        // File array
+        Arguments.of(
+            "https://lz813a3d637adefec2c6e88f.blob.core.windows.net/sc-e18cfbc3-7115-4a37-add7-1d95d3ecfa14/file.txt",
+            DataTypeMapping.STRING,
+            DataTypeMapping.ARRAY_OF_FILE,
+            new String[] {
+              "https://lz813a3d637adefec2c6e88f.blob.core.windows.net/sc-e18cfbc3-7115-4a37-add7-1d95d3ecfa14/file.txt"
+            }));
   }
 
   static Stream<Arguments> updateAttributeDataTypeStringArrayConversions() {
@@ -326,7 +358,16 @@ class RecordOrchestratorServiceTest {
             List.of("2024/01/24 02:30:00"),
             DataTypeMapping.ARRAY_OF_STRING,
             DataTypeMapping.ARRAY_OF_DATE_TIME,
-            new LocalDateTime[] {LocalDateTime.of(2024, 1, 24, 2, 30, 0)}));
+            new LocalDateTime[] {LocalDateTime.of(2024, 1, 24, 2, 30, 0)}),
+        // File array
+        Arguments.of(
+            List.of(
+                "https://lz813a3d637adefec2c6e88f.blob.core.windows.net/sc-e18cfbc3-7115-4a37-add7-1d95d3ecfa14/file.txt"),
+            DataTypeMapping.ARRAY_OF_STRING,
+            DataTypeMapping.ARRAY_OF_FILE,
+            new String[] {
+              "https://lz813a3d637adefec2c6e88f.blob.core.windows.net/sc-e18cfbc3-7115-4a37-add7-1d95d3ecfa14/file.txt"
+            }));
   }
 
   static Stream<Arguments> updateAttributeDataTypeNumberConversions() {
@@ -603,6 +644,45 @@ class RecordOrchestratorServiceTest {
             DataTypeMapping.ARRAY_OF_DATE_TIME,
             DataTypeMapping.ARRAY_OF_DATE,
             new LocalDate[] {LocalDate.of(2024, 1, 24)}));
+  }
+
+  static Stream<Arguments> updateAttributeDataTypeFileConversions() {
+    return Stream.of(
+        // String
+        Arguments.of(
+            "https://lz813a3d637adefec2c6e88f.blob.core.windows.net/sc-e18cfbc3-7115-4a37-add7-1d95d3ecfa14/file.txt",
+            DataTypeMapping.FILE,
+            DataTypeMapping.STRING,
+            "https://lz813a3d637adefec2c6e88f.blob.core.windows.net/sc-e18cfbc3-7115-4a37-add7-1d95d3ecfa14/file.txt"),
+        // String array
+        Arguments.of(
+            "https://lz813a3d637adefec2c6e88f.blob.core.windows.net/sc-e18cfbc3-7115-4a37-add7-1d95d3ecfa14/file.txt",
+            DataTypeMapping.FILE,
+            DataTypeMapping.ARRAY_OF_STRING,
+            new String[] {
+              "https://lz813a3d637adefec2c6e88f.blob.core.windows.net/sc-e18cfbc3-7115-4a37-add7-1d95d3ecfa14/file.txt"
+            }),
+        // File array
+        Arguments.of(
+            "https://lz813a3d637adefec2c6e88f.blob.core.windows.net/sc-e18cfbc3-7115-4a37-add7-1d95d3ecfa14/file.txt",
+            DataTypeMapping.FILE,
+            DataTypeMapping.ARRAY_OF_FILE,
+            new String[] {
+              "https://lz813a3d637adefec2c6e88f.blob.core.windows.net/sc-e18cfbc3-7115-4a37-add7-1d95d3ecfa14/file.txt"
+            }));
+  }
+
+  static Stream<Arguments> updateAttributeDataTypeFileArrayConversions() {
+    return Stream.of(
+        // String array
+        Arguments.of(
+            List.of(
+                "https://lz813a3d637adefec2c6e88f.blob.core.windows.net/sc-e18cfbc3-7115-4a37-add7-1d95d3ecfa14/file.txt"),
+            DataTypeMapping.ARRAY_OF_FILE,
+            DataTypeMapping.ARRAY_OF_STRING,
+            new String[] {
+              "https://lz813a3d637adefec2c6e88f.blob.core.windows.net/sc-e18cfbc3-7115-4a37-add7-1d95d3ecfa14/file.txt"
+            }));
   }
 
   @Test

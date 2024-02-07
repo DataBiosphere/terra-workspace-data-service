@@ -104,6 +104,7 @@ public class RecordDao {
           Set.of(DataTypeMapping.STRING, DataTypeMapping.BOOLEAN),
           Set.of(DataTypeMapping.STRING, DataTypeMapping.DATE),
           Set.of(DataTypeMapping.STRING, DataTypeMapping.DATE_TIME),
+          Set.of(DataTypeMapping.STRING, DataTypeMapping.FILE),
           Set.of(DataTypeMapping.NUMBER, DataTypeMapping.BOOLEAN),
           Set.of(DataTypeMapping.NUMBER, DataTypeMapping.DATE),
           Set.of(DataTypeMapping.NUMBER, DataTypeMapping.DATE_TIME),
