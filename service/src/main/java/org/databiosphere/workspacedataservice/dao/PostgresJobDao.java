@@ -203,7 +203,7 @@ public class PostgresJobDao implements JobDao {
   public GenericJobServerModel getJob(UUID jobId) {
     return namedTemplate.queryForObject(
         "select id, type, status, created, updated, "
-            + "input, result, error, stacktrace "
+            + "input, result, error, stacktrace, instance_id "
             + "from sys_wds.job "
             + "where id = :jobId",
         new MapSqlParameterSource("jobId", jobId.toString()),
@@ -239,6 +239,7 @@ public class PostgresJobDao implements JobDao {
           new GenericJobServerModel(jobId, jobType, status, created, updated);
 
       job.errorMessage(rs.getString("error"));
+      job.instanceId(rs.getObject("instance_id", UUID.class));
 
       // TODO: AJ-1011 also return stacktrace, input, result.
       return job;
