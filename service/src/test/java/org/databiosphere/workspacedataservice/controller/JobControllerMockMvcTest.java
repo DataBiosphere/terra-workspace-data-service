@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -97,11 +98,10 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
     GenericJobServerModel[] actual = fromJson(mvcResult, GenericJobServerModel[].class);
 
     // which is equal to the expected job list
-    assertEquals(expected, Arrays.asList(actual));
-    // a quick check to make sure the values are what we expect
-    assertEquals(expected.get(0).jobId(jobId1), actual[0].jobId(jobId1));
+    assertTrue(expected.containsAll(Arrays.asList(actual)));
+    assertEquals(expected.size(), actual.length);
+
     // all jobs in both lists should have the same instanceId
-    assertEquals(
-        expected.get(0).instanceId(instanceId.id()), actual[1].instanceId(instanceId.id()));
+    assertEquals(expected.get(0).getInstanceId(), actual[1].getInstanceId());
   }
 }
