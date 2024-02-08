@@ -14,6 +14,7 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.sam.SamDao;
+import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -81,6 +82,6 @@ public class JobServiceTest {
 
     given(jobDao.getJob(any())).willReturn(expectedJob);
     // Ask jobService to get it
-    assertThrows(Exception.class, () -> jobService.getJob(jobId));
+    assertThrows(AuthorizationException.class, () -> jobService.getJob(jobId));
   }
 }
