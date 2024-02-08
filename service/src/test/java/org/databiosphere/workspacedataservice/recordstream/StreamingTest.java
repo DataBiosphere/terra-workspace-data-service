@@ -7,6 +7,7 @@ import static org.databiosphere.workspacedataservice.shared.model.OperationType.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.List;
+import org.databiosphere.workspacedataservice.service.BatchWriteService.WriteStreamInfo;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.junit.jupiter.api.Test;
@@ -43,7 +44,7 @@ class StreamingTest {
     StreamingWriteHandler handler =
         new JsonStreamWriteHandler(
             StreamingTest.class.getResourceAsStream("/batch-write/mix.json"), objectMapper);
-    StreamingWriteHandler.WriteStreamInfo res = handler.readRecords(500);
+    WriteStreamInfo res = handler.readRecords(500);
     assertThat(res.records()).as("Should read 1 record").hasSize(1);
     assertThat(res.operationType()).isEqualTo(UPSERT);
     res = handler.readRecords(500);

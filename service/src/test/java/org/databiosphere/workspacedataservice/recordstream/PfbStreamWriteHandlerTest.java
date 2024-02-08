@@ -16,6 +16,7 @@ import java.util.List;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode;
+import org.databiosphere.workspacedataservice.service.BatchWriteService.WriteStreamInfo;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -38,7 +39,7 @@ class PfbStreamWriteHandlerTest {
         buildHandler(
             mockPfbStream(10, "someType"), TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
 
-    StreamingWriteHandler.WriteStreamInfo batch; // used in assertions below
+    WriteStreamInfo batch; // used in assertions below
 
     // ask for the first 2/10 rows, should get those two back
     batch = pfbStreamWriteHandler.readRecords(2);
@@ -72,8 +73,7 @@ class PfbStreamWriteHandlerTest {
 
     assertDoesNotThrow(
         () -> {
-          for (StreamingWriteHandler.WriteStreamInfo info =
-                  pfbStreamWriteHandler.readRecords(batchSize);
+          for (WriteStreamInfo info = pfbStreamWriteHandler.readRecords(batchSize);
               !info.records().isEmpty();
               info = pfbStreamWriteHandler.readRecords(batchSize)) {
             assertThat(info.records()).hasSizeLessThanOrEqualTo(batchSize);
@@ -88,7 +88,7 @@ class PfbStreamWriteHandlerTest {
     try (DataFileStream<GenericRecord> dataFileStream =
         streamRecordsFromFile("/avro/two_tables.avro")) {
       PfbStreamWriteHandler pswh = buildHandler(dataFileStream, ImportMode.BASE_ATTRIBUTES);
-      StreamingWriteHandler.WriteStreamInfo streamInfo = pswh.readRecords(2);
+      WriteStreamInfo streamInfo = pswh.readRecords(2);
       /*
         Expected records:
         {
@@ -161,7 +161,7 @@ class PfbStreamWriteHandlerTest {
   void relationsAreParsedCorrectly() {
     try (DataFileStream<GenericRecord> dataFileStream = streamRecordsFromFile("/avro/test.avro")) {
 
-      StreamingWriteHandler.WriteStreamInfo streamInfo =
+      WriteStreamInfo streamInfo =
           buildHandler(dataFileStream, ImportMode.RELATIONS).readRecords(5);
 
       List<Record> result = streamInfo.records();

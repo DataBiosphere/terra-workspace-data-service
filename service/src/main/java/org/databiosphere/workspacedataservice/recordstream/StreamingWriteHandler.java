@@ -2,9 +2,7 @@ package org.databiosphere.workspacedataservice.recordstream;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.List;
-import org.databiosphere.workspacedataservice.shared.model.OperationType;
-import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.service.BatchWriteService.WriteStreamInfo;
 
 public interface StreamingWriteHandler extends Closeable {
 
@@ -18,6 +16,4 @@ public interface StreamingWriteHandler extends Closeable {
    * @throws IOException on error
    */
   WriteStreamInfo readRecords(int numRecords) throws IOException;
-
-  record WriteStreamInfo(List<Record> records, OperationType operationType) {}
 }

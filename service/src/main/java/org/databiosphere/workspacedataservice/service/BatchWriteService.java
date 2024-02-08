@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.recordstream.StreamingWriteHandler;
-import org.databiosphere.workspacedataservice.recordstream.StreamingWriteHandler.WriteStreamInfo;
 import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
@@ -170,4 +169,6 @@ public class BatchWriteService {
     }
     return result;
   }
+
+  public record WriteStreamInfo(List<Record> records, OperationType operationType) {}
 }
