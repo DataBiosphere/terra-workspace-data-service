@@ -64,6 +64,8 @@ dependencies {
     implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
     implementation 'io.sentry:sentry-logback:6.34.0'
+    implementation 'net.logstash.logback:logstash-logback-encoder:7.3'
+    implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
     implementation 'javax.cache:cache-api'
     implementation 'org.ehcache:ehcache:3.10.8:jakarta'
@@ -135,6 +137,14 @@ dependencies {
         }
         implementation('org.codehaus.jettison:jettison:1.5.4') {
             because("CVE-2022-40149, CVE-2022-40150, CVE-2022-45685, CVE-2022-45693, CVE-2023-1436")
+        }
+
+        // TODO: remove when upgrading to a version of spring that has a fixed version of json-path
+        //   json-path required by spring-boot-starter-test:3.2.2
+        //   this is redundant (and ineffective) without an explicit override in the parent project
+        //   build.gradle dependencyManagement, but is included here for documentation purposes
+        testImplementation('com.jayway.jsonpath:json-path:2.9.0') {
+            because("CVE-2023-51074")
         }
     }
 }

@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-
-  <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
-
+  
   <!-- inspired by Spring default ${FILE_LOG_PATTERN} from defaults.xml, modified to include requestId -->
   <property name="WDS_LOG_PATTERN"
             value="%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}} ${LOG_LEVEL_PATTERN:-%5p} [%X{requestId}] [%t] %-40.40logger{39} : %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
 
+  <springProperty scope="context" name="deploymentMode" source="env.wds.deploymentMode" defaultValue="data-plane" />
+
   <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
   <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+  <!-- Quiet down logback during startup. If you are trying to change or debug logging setup,
+           you may want to comment out this line during your development efforts. -->
+  <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
 
   <appender name="Sentry" class="io.sentry.logback.SentryAppender">
     <!-- Optionally change minimum Event level. Default for Events is ERROR -->
@@ -18,6 +22,28 @@
   </appender>
 
   <springProfile name="!local">
+    <if condition='isDefined("deploymentMode") &amp;&amp; property("deploymentMode").equals("control-plane")'>
+      <then>
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+          <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${CONSOLE_LOG_THRESHOLD}</level>
+          </filter>
+          <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+          <charset>${CONSOLE_LOG_CHARSET}</charset>
+        </appender>
+        </then>
+        <else>
+          <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+              <level>${CONSOLE_LOG_THRESHOLD}</level>
+            </filter>
+            <encoder>
+              <pattern>${WDS_LOG_PATTERN}</pattern>
+              <charset>${CONSOLE_LOG_CHARSET}</charset>
+            </encoder>
+          </appender>
+        </else>
+      </if>
     <!-- log everything at INFO level -->
     <root level="info">
       <appender-ref ref="CONSOLE"/>
