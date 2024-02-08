@@ -906,8 +906,22 @@ public class RecordDao {
 
     @Override
     public Record mapRow(ResultSet rs, int rowNum) throws SQLException {
+      ResultSetMetaData metaData = rs.getMetaData();
+
+      int primaryKeyColumnIndex = -1;
+      for (int i = 1; i <= metaData.getColumnCount(); i++) {
+        String columnName = metaData.getColumnName(i);
+        if (columnName.equals(primaryKeyColumn)) {
+          primaryKeyColumnIndex = i;
+          break;
+        }
+      }
+      if (primaryKeyColumnIndex == -1) {
+        throw new RuntimeException("Primary key column not found");
+      }
+
       try {
-        return new Record(rs.getString(primaryKeyColumn), recordType, getAttributes(rs));
+        return new Record(rs.getString(primaryKeyColumnIndex), recordType, getAttributes(rs));
       } catch (JsonProcessingException e) {
         throw new RuntimeException(e);
       }
@@ -921,7 +935,7 @@ public class RecordDao {
         for (int j = 1; j <= metaData.getColumnCount(); j++) {
           String columnName = metaData.getColumnName(j);
           if (columnName.equals(primaryKeyColumn)) {
-            attributes.putAttribute(primaryKeyColumn, rs.getString(primaryKeyColumn));
+            attributes.putAttribute(primaryKeyColumn, rs.getString(j));
             continue;
           }
           if (referenceColToTable.size() > 0
@@ -930,11 +944,10 @@ public class RecordDao {
             attributes.putAttribute(
                 columnName,
                 RelationUtils.createRelationString(
-                    referenceColToTable.get(columnName), rs.getString(columnName)));
+                    referenceColToTable.get(columnName), rs.getString(j)));
           } else {
             attributes.putAttribute(
-                columnName,
-                getAttributeValueForType(rs.getObject(columnName), schema.get(columnName)));
+                columnName, getAttributeValueForType(rs.getObject(j), schema.get(columnName)));
           }
         }
         return attributes;
