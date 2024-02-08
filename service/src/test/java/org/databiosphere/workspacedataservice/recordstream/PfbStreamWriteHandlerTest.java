@@ -42,21 +42,21 @@ class PfbStreamWriteHandlerTest {
 
     // ask for the first 2/10 rows, should get those two back
     batch = pfbStreamWriteHandler.readRecords(2);
-    assertEquals(2, batch.getRecords().size());
-    assertEquals(List.of("0", "1"), batch.getRecords().stream().map(Record::getId).toList());
+    assertEquals(2, batch.records().size());
+    assertEquals(List.of("0", "1"), batch.records().stream().map(Record::getId).toList());
 
     // ask for the next 6/10, should skip the first two that have already been consumed and
     // return the next 6
     batch = pfbStreamWriteHandler.readRecords(6);
-    assertEquals(6, batch.getRecords().size());
+    assertEquals(6, batch.records().size());
     assertEquals(
         List.of("2", "3", "4", "5", "6", "7"),
-        batch.getRecords().stream().map(Record::getId).toList());
+        batch.records().stream().map(Record::getId).toList());
 
     // ask for 12 more. But since there are only 2 remaining in the source, we'll just get 2 back
     batch = pfbStreamWriteHandler.readRecords(12);
-    assertEquals(2, batch.getRecords().size());
-    assertEquals(List.of("8", "9"), batch.getRecords().stream().map(Record::getId).toList());
+    assertEquals(2, batch.records().size());
+    assertEquals(List.of("8", "9"), batch.records().stream().map(Record::getId).toList());
   }
 
   // does PfbStreamWriteHandler handle inputs of various sizes correctly?
@@ -74,9 +74,9 @@ class PfbStreamWriteHandlerTest {
         () -> {
           for (StreamingWriteHandler.WriteStreamInfo info =
                   pfbStreamWriteHandler.readRecords(batchSize);
-              !info.getRecords().isEmpty();
+              !info.records().isEmpty();
               info = pfbStreamWriteHandler.readRecords(batchSize)) {
-            assertThat(info.getRecords()).hasSizeLessThanOrEqualTo(batchSize);
+            assertThat(info.records()).hasSizeLessThanOrEqualTo(batchSize);
           }
         });
   }
@@ -132,7 +132,7 @@ class PfbStreamWriteHandlerTest {
         "relations": []
       }
       */
-      List<Record> result = streamInfo.getRecords();
+      List<Record> result = streamInfo.records();
       assertEquals(2, result.size());
       Record firstRecord = result.get(0);
       assertNotNull(firstRecord);
@@ -164,7 +164,7 @@ class PfbStreamWriteHandlerTest {
       StreamingWriteHandler.WriteStreamInfo streamInfo =
           buildHandler(dataFileStream, ImportMode.RELATIONS).readRecords(5);
 
-      List<Record> result = streamInfo.getRecords();
+      List<Record> result = streamInfo.records();
       assertEquals(5, result.size());
       Record firstRecord = result.get(0);
       // The first record does not have any relations

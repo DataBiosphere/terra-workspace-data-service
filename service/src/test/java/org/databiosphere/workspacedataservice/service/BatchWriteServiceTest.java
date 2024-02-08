@@ -125,7 +125,7 @@ class BatchWriteServiceTest {
 
     // we should write three batches
     verify(recordService, times(3))
-        .batchUpsertWithErrorCapture(eq(INSTANCE), eq(recordType), any(), any(), eq(primaryKey));
+        .batchUpsert(eq(INSTANCE), eq(recordType), any(), any(), eq(primaryKey));
 
     // but we should only have inferred the schema once
     verify(inferer, times(1)).inferTypes(ArgumentMatchers.<List<Record>>any());
@@ -158,14 +158,11 @@ class BatchWriteServiceTest {
 
       // verify calls to batchUpsertWithErrorCapture
       verify(recordService, times(3))
-          .batchUpsertWithErrorCapture(
-              eq(INSTANCE), eq(RecordType.valueOf("thing")), any(), any(), eq(ID_FIELD));
+          .batchUpsert(eq(INSTANCE), eq(RecordType.valueOf("thing")), any(), any(), eq(ID_FIELD));
       verify(recordService, times(5))
-          .batchUpsertWithErrorCapture(
-              eq(INSTANCE), eq(RecordType.valueOf("item")), any(), any(), eq(ID_FIELD));
+          .batchUpsert(eq(INSTANCE), eq(RecordType.valueOf("item")), any(), any(), eq(ID_FIELD));
       verify(recordService, times(8))
-          .batchUpsertWithErrorCapture(
-              eq(INSTANCE), eq(RecordType.valueOf("widget")), any(), any(), eq(ID_FIELD));
+          .batchUpsert(eq(INSTANCE), eq(RecordType.valueOf("widget")), any(), any(), eq(ID_FIELD));
 
       // but we should only have inferred schemas three times - once for each record Type
       @SuppressWarnings("unchecked")

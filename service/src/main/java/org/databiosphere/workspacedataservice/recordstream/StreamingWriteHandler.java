@@ -10,7 +10,7 @@ public interface StreamingWriteHandler extends Closeable {
 
   /**
    * Reads numRecords from the stream unless the operation type changes during the stream in which
-   * case we return early and keep the last record read in memory so it can be returned in a
+   * case we return early and keep the last record read in memory, so it can be returned in a
    * subsequent call.
    *
    * @param numRecords max number of records to read
@@ -19,23 +19,5 @@ public interface StreamingWriteHandler extends Closeable {
    */
   WriteStreamInfo readRecords(int numRecords) throws IOException;
 
-  class WriteStreamInfo {
-
-    private final List<Record> records;
-
-    private final OperationType operationType;
-
-    public WriteStreamInfo(List<Record> records, OperationType operationType) {
-      this.records = records;
-      this.operationType = operationType;
-    }
-
-    public List<Record> getRecords() {
-      return records;
-    }
-
-    public OperationType getOperationType() {
-      return operationType;
-    }
-  }
+  record WriteStreamInfo(List<Record> records, OperationType operationType) {}
 }
