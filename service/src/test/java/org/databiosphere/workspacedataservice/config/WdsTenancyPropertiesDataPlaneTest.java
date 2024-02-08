@@ -10,7 +10,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("data-plane")
-public class WdsTenancyPropertiesDataPlaneTest {
+class WdsTenancyPropertiesDataPlaneTest {
 
   @Autowired WdsTenancyProperties wdsTenancyProperties;
 

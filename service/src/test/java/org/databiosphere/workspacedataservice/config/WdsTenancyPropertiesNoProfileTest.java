@@ -13,7 +13,7 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @SpringBootTest
 @ActiveProfiles("neither-data-plane-nor-control-plane")
-public class WdsTenancyPropertiesNoProfileTest {
+class WdsTenancyPropertiesNoProfileTest {
 
   @Autowired WdsTenancyProperties wdsTenancyProperties;
 
