@@ -4,31 +4,21 @@ import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreami
 import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode.RELATIONS;
 
 import bio.terra.common.db.WriteTransaction;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimaps;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.avro.file.DataFileStream;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.parquet.hadoop.ParquetReader;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.recordstream.JsonStreamWriteHandler;
-import org.databiosphere.workspacedataservice.recordstream.ParquetStreamWriteHandler;
-import org.databiosphere.workspacedataservice.recordstream.PfbStreamWriteHandler;
 import org.databiosphere.workspacedataservice.recordstream.StreamingWriteHandler;
-import org.databiosphere.workspacedataservice.recordstream.TsvStreamWriteHandler;
+import org.databiosphere.workspacedataservice.recordstream.StreamingWriteHandler.WriteStreamInfo;
 import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
@@ -41,60 +31,54 @@ import org.springframework.stereotype.Service;
 public class BatchWriteService {
 
   private final RecordDao recordDao;
-
   private final DataTypeInferer inferer;
-
   private final int batchSize;
-
-  private final ObjectMapper objectMapper;
-
-  private final ObjectReader tsvReader;
-
   private final RecordService recordService;
 
   public BatchWriteService(
       RecordDao recordDao,
       @Value("${twds.write.batch.size:5000}") int batchSize,
       DataTypeInferer inf,
-      ObjectMapper objectMapper,
-      ObjectReader tsvReader,
       RecordService recordService) {
     this.recordDao = recordDao;
     this.batchSize = batchSize;
     this.inferer = inf;
-    this.objectMapper = objectMapper;
-    this.tsvReader = tsvReader;
     this.recordService = recordService;
+  }
+
+  /**
+   * Responsible for looping over and upserting batches of Records found in the provided {@link
+   * StreamingWriteHandler}.
+   *
+   * @param streamingWriteHandler the source of the records to be upserted
+   * @param instanceId instance to which records are upserted
+   * @param recordType record type of records contained in the write handler
+   * @param primaryKey primaryKey column for the record type
+   * @return a {@link BatchWriteResult} with metadata about the written records
+   */
+  @WriteTransaction
+  public BatchWriteResult batchWrite(
+      StreamingWriteHandler streamingWriteHandler,
+      UUID instanceId,
+      RecordType recordType,
+      String primaryKey,
+      ImportMode importMode) {
+    try (streamingWriteHandler) {
+      return consumeWriteStream(
+          streamingWriteHandler, instanceId, recordType, primaryKey, importMode);
+    } catch (IOException e) {
+      throw new BadStreamingWriteRequestException(e);
+    }
   }
 
   private BatchWriteResult consumeWriteStream(
       StreamingWriteHandler streamingWriteHandler,
       UUID instanceId,
-      RecordType recordType,
-      String primaryKey) {
-    return consumeWriteStreamWithRelations(
-        streamingWriteHandler, instanceId, recordType, primaryKey, BASE_ATTRIBUTES);
-  }
-
-  /**
-   * Responsible for accepting either a JsonStreamWriteHandler or a TsvStreamWriteHandler, looping
-   * over the batches of Records found in the handler, and upserting those records.
-   *
-   * @param streamingWriteHandler the JsonStreamWriteHandler or a TsvStreamWriteHandler
-   * @param instanceId instance to which records are upserted
-   * @param recordType record type of records contained in the write handler
-   * @param primaryKey PK for the record type
-   * @return the number of records written
-   */
-  private BatchWriteResult consumeWriteStreamWithRelations(
-      StreamingWriteHandler streamingWriteHandler,
-      UUID instanceId,
-      RecordType recordType,
+      RecordType recordType, // nullable
       String primaryKey,
-      TwoPassStreamingWriteHandler.ImportMode importMode) {
+      ImportMode importMode) {
     BatchWriteResult result = BatchWriteResult.empty();
     try {
-      // Verify relationsOnly is only for pfbstreamingwriteHandler
       if (importMode == RELATIONS
           && !(streamingWriteHandler instanceof TwoPassStreamingWriteHandler)) {
         throw new BadStreamingWriteRequestException(
@@ -107,8 +91,7 @@ public class BatchWriteService {
 
       // loop through, in batches, the records provided by the StreamingWriteHandler. This loops
       // until the StreamingWriteHandler returns an empty batch.
-      for (StreamingWriteHandler.WriteStreamInfo info =
-              streamingWriteHandler.readRecords(batchSize);
+      for (WriteStreamInfo info = streamingWriteHandler.readRecords(batchSize);
           !info.getRecords().isEmpty();
           info = streamingWriteHandler.readRecords(batchSize)) {
         // get the records for this batch
@@ -166,83 +149,6 @@ public class BatchWriteService {
       throw new BadStreamingWriteRequestException(e);
     }
     return result;
-  }
-
-  // try-with-resources wrapper for JsonStreamWriteHandler; calls consumeWriteStream.
-  @WriteTransaction
-  public int batchWriteJsonStream(
-      InputStream is, UUID instanceId, RecordType recordType, String primaryKey) {
-    try (StreamingWriteHandler streamingWriteHandler =
-        new JsonStreamWriteHandler(is, objectMapper)) {
-      return consumeWriteStream(streamingWriteHandler, instanceId, recordType, primaryKey)
-          .getUpdatedCount(recordType);
-    } catch (IOException e) {
-      throw new BadStreamingWriteRequestException(e);
-    }
-  }
-
-  // try-with-resources wrapper for TsvStreamWriteHandler; calls consumeWriteStream.
-  @WriteTransaction
-  public int batchWriteTsvStream(
-      InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
-    try (TsvStreamWriteHandler streamingWriteHandler =
-        new TsvStreamWriteHandler(is, tsvReader, recordType, primaryKey)) {
-      return consumeWriteStream(
-              streamingWriteHandler, instanceId, recordType, streamingWriteHandler.getPrimaryKey())
-          .getUpdatedCount(recordType);
-    } catch (IOException e) {
-      throw new BadStreamingWriteRequestException(e);
-    }
-  }
-
-  /**
-   * Persist records from a PFB into WDS's database.
-   *
-   * <p>As of this writing, the only caller of this method is PfbQuartzJob, and the only use case is
-   * import from the UCSC AnVIL Data Browser. In this single use case, the `primaryKey` argument
-   * will always be `Optional.of("id")`. However, as we add use cases and import PFBs from other
-   * providers, this may change, and we will encounter different `primaryKey` argument values.
-   *
-   * @param is the PFB/Avro stream
-   * @param instanceId WDS instance into which to import
-   * @param primaryKey where to find the primary key for records in the PFB/Avro stream
-   * @return counts of updated records, grouped by record type
-   */
-  /*
-   *
-   */
-  @WriteTransaction
-  public BatchWriteResult batchWritePfbStream(
-      DataFileStream<GenericRecord> is,
-      UUID instanceId,
-      String primaryKey,
-      TwoPassStreamingWriteHandler.ImportMode importMode) {
-    try (PfbStreamWriteHandler streamingWriteHandler =
-        new PfbStreamWriteHandler(is, importMode, objectMapper)) {
-      return consumeWriteStreamWithRelations(
-          streamingWriteHandler, instanceId, null, primaryKey, importMode);
-    } catch (IOException e) {
-      throw new BadStreamingWriteRequestException(e);
-    } catch (Exception e) {
-      System.err.println("ERROR IN batchWritePfbStream: " + e.getMessage());
-      return new BatchWriteResult(Map.of());
-    }
-  }
-
-  @WriteTransaction
-  public BatchWriteResult batchWriteParquetStream(
-      ParquetReader<GenericRecord> avroParquetReader,
-      UUID instanceId,
-      TdrManifestImportTable table,
-      TwoPassStreamingWriteHandler.ImportMode importMode) {
-    // record type and primary key for this
-    try (ParquetStreamWriteHandler streamingWriteHandler =
-        new ParquetStreamWriteHandler(avroParquetReader, importMode, table, objectMapper)) {
-      return consumeWriteStreamWithRelations(
-          streamingWriteHandler, instanceId, table.recordType(), table.primaryKey(), importMode);
-    } catch (IOException e) {
-      throw new BadStreamingWriteRequestException(e);
-    }
   }
 
   private Map<String, DataTypeMapping> createOrModifyRecordType(

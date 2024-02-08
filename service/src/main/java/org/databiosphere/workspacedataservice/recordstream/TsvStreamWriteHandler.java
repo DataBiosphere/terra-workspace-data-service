@@ -26,7 +26,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
  * Stream-reads inbound TSV data using a Jackson CsvMapper; returns a WriteStreamInfo containing a
  * batch of Records.
  */
-public class TsvStreamWriteHandler implements StreamingWriteHandler {
+public class TsvStreamWriteHandler implements StreamingWriteHandler, PrimaryKeyResolver {
 
   private final Spliterator<Record> recordSpliterator;
   private final InputStream inputStream;
@@ -37,8 +37,7 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
       InputStream inputStream,
       ObjectReader tsvReader,
       RecordType recordType,
-      Optional<String> optionalPrimaryKey)
-      throws IOException {
+      Optional<String> optionalPrimaryKey) {
     this.inputStream = inputStream;
     try {
       this.tsvIterator = tsvReader.readValues(inputStream);

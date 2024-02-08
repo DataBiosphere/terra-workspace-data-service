@@ -32,6 +32,7 @@ import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.recordstream.StreamingWriteHandlerFactory;
 import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
@@ -57,6 +58,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
   private final BatchWriteService batchWriteService;
   private final ActivityLogger activityLogger;
   private final ObjectMapper mapper;
+  private final StreamingWriteHandlerFactory streamingWriteHandlerFactory;
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -64,6 +66,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       JobDao jobDao,
       WorkspaceManagerDao wsmDao,
       RestClientRetry restClientRetry,
+      StreamingWriteHandlerFactory streamingWriteHandlerFactory,
       BatchWriteService batchWriteService,
       ActivityLogger activityLogger,
       @Value("${twds.instance.workspace-id}") UUID workspaceId,
@@ -74,6 +77,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     this.wsmDao = wsmDao;
     this.restClientRetry = restClientRetry;
     this.workspaceId = workspaceId;
+    this.streamingWriteHandlerFactory = streamingWriteHandlerFactory;
     this.batchWriteService = batchWriteService;
     this.activityLogger = activityLogger;
     this.mapper = mapper;
@@ -164,15 +168,14 @@ public class TdrManifestQuartzJob extends QuartzJob {
             .set(READ_INT96_AS_FIXED, "true")
             .build()) {
       logger.info("batch-writing records for file ...");
-
-      BatchWriteResult result =
-          batchWriteService.batchWriteParquetStream(
-              avroParquetReader, targetInstance, table, importMode);
-
-      return result;
+      return batchWriteService.batchWrite(
+          streamingWriteHandlerFactory.forTdrImport(avroParquetReader, table, importMode),
+          targetInstance,
+          table.recordType(),
+          table.primaryKey(),
+          importMode);
     } catch (Throwable t) {
-      logger.error("Hit an error on file: {}", t.getMessage());
-      throw new TdrManifestImportException(t.getMessage());
+      throw new TdrManifestImportException(t.getMessage(), t);
     }
   }
 
