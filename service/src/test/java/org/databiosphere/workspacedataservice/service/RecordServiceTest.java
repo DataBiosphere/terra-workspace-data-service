@@ -1,18 +1,23 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_ATTRIBUTE_NAME;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_INSTANCE;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_RECORD_TYPE;
+import static io.micrometer.observation.tck.TestObservationRegistryAssert.assertThat;
+import static org.databiosphere.workspacedataservice.service.RecordService.METRIC_COL_CHANGE;
+import static org.databiosphere.workspacedataservice.service.RecordService.TAG_ATTRIBUTE_NAME;
+import static org.databiosphere.workspacedataservice.service.RecordService.TAG_INSTANCE;
+import static org.databiosphere.workspacedataservice.service.RecordService.TAG_NEW_DATATYPE;
+import static org.databiosphere.workspacedataservice.service.RecordService.TAG_OLD_DATATYPE;
+import static org.databiosphere.workspacedataservice.service.RecordService.TAG_RECORD_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistry;
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.observability.TestObservationRegistryConfig;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -22,15 +27,19 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles(profiles = {"mock-sam"})
+@Import(TestObservationRegistryConfig.class)
 class RecordServiceTest {
 
   @Autowired DataTypeInferer inferer;
   @Autowired InstanceService instanceService;
   @Autowired RecordDao recordDao;
+  // overridden by TestObservationRegistryConfig with a TestObservationRegistry
+  @Autowired private ObservationRegistry observationRegistry;
 
   private UUID instanceId;
 
@@ -47,13 +56,13 @@ class RecordServiceTest {
 
   @Test
   void schemaChangesIncrementMetricsCounter() {
-    // in-memory meter registry for unit-testing
-    SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    TestObservationRegistry testObservationRegistry =
+        assertInstanceOf(TestObservationRegistry.class, observationRegistry);
     // create record service that uses the simple meter registry
-    RecordService recordService = new RecordService(recordDao, inferer, meterRegistry);
+    RecordService recordService = new RecordService(recordDao, inferer, testObservationRegistry);
 
-    // assert the meter registry has no counters yet
-    assertEquals(0, meterRegistry.getMeters().size());
+    // assert the observation registry has no observations
+    assertThat(testObservationRegistry).hasNumberOfObservationsEqualTo(0);
 
     // insert a simple record; this will create "myAttr" as numeric
     RecordType recordType = RecordType.valueOf("myType");
@@ -69,9 +78,9 @@ class RecordServiceTest {
         Map.of("pk", DataTypeMapping.STRING, "myAttr", DataTypeMapping.NUMBER),
         recordDao.getExistingTableSchema(instanceId, recordType));
 
-    // assert the meter registry still has no counters; we only create the counter when altering
-    // a column, and we just created a table but didn't issue any alters
-    assertEquals(0, meterRegistry.getMeters().size());
+    // assert the observation registry still has no counters; we only create an observation when
+    // altering a column, and we just created a table but didn't issue any alters
+    assertThat(testObservationRegistry).hasNumberOfObservationsEqualTo(0);
 
     // insert another record, which will update the "myAttr" to be a string
     recordService.upsertSingleRecord(
@@ -86,17 +95,18 @@ class RecordServiceTest {
         Map.of("pk", DataTypeMapping.STRING, "myAttr", DataTypeMapping.STRING),
         recordDao.getExistingTableSchema(instanceId, recordType));
 
-    // we should have created a counter
-    assertEquals(1, meterRegistry.getMeters().size());
-    // get that counter
-    Counter counter = assertInstanceOf(Counter.class, meterRegistry.getMeters().get(0));
-    // assert the counter has been incremented once
-    assertEquals(1, counter.count());
-    // validate the tags for that counter
-    assertEquals(recordType.getName(), counter.getId().getTag(TAG_RECORD_TYPE));
-    assertEquals("myAttr", counter.getId().getTag(TAG_ATTRIBUTE_NAME));
-    assertEquals(instanceId.toString(), counter.getId().getTag(TAG_INSTANCE));
-    assertEquals(DataTypeMapping.NUMBER.toString(), counter.getId().getTag("OldDataType"));
-    assertEquals(DataTypeMapping.STRING.toString(), counter.getId().getTag("NewDataType"));
+    // we should have created an observation
+    assertThat(testObservationRegistry)
+        .doesNotHaveAnyRemainingCurrentObservation()
+        .hasNumberOfObservationsWithNameEqualTo(METRIC_COL_CHANGE, 1)
+        .hasObservationWithNameEqualTo(METRIC_COL_CHANGE)
+        .that()
+        .hasLowCardinalityKeyValue(TAG_OLD_DATATYPE, DataTypeMapping.NUMBER.toString())
+        .hasLowCardinalityKeyValue(TAG_NEW_DATATYPE, DataTypeMapping.STRING.toString())
+        .hasHighCardinalityKeyValue(TAG_RECORD_TYPE, recordType.getName())
+        .hasHighCardinalityKeyValue(TAG_ATTRIBUTE_NAME, "myAttr")
+        .hasHighCardinalityKeyValue(TAG_INSTANCE, instanceId.toString())
+        .hasBeenStarted()
+        .hasBeenStopped();
   }
 }

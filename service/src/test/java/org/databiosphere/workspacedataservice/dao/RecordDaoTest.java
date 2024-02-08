@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import static java.util.Collections.emptyMap;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_NUMBER;
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_STRING;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
@@ -9,7 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,6 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -32,7 +34,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -75,7 +79,7 @@ class RecordDaoTest {
     instanceDao.createSchema(instanceId);
     recordDao.createRecordType(
         instanceId,
-        Collections.emptyMap(),
+        emptyMap(),
         recordType,
         new RelationCollection(Collections.emptySet(), Collections.emptySet()),
         PRIMARY_KEY);
@@ -157,7 +161,7 @@ class RecordDaoTest {
     String recordId = "testRecord";
     Record testRecord = new Record(recordId, recordType, RecordAttributes.empty());
     recordDao.batchUpsert(
-        instanceId, recordType, Collections.singletonList(testRecord), new HashMap<>());
+        instanceId, recordType, Collections.singletonList(testRecord), emptyMap());
 
     // make sure record is fetched
     Record search = recordDao.getSingleRecord(instanceId, recordType, recordId).get();
@@ -176,16 +180,12 @@ class RecordDaoTest {
     Record testRecord = new Record(recordId, funkyPk, RecordAttributes.empty());
     recordDao.createRecordType(
         instanceId,
-        Map.of("attr1", DataTypeMapping.STRING),
+        Map.of("attr1", STRING),
         funkyPk,
         new RelationCollection(Collections.emptySet(), Collections.emptySet()),
         sample_id);
     recordDao.batchUpsert(
-        instanceId,
-        funkyPk,
-        Collections.singletonList(testRecord),
-        Collections.emptyMap(),
-        sample_id);
+        instanceId, funkyPk, Collections.singletonList(testRecord), emptyMap(), sample_id);
     List<Record> queryRes = recordDao.queryForRecords(funkyPk, 10, 0, "ASC", null, instanceId);
     assertEquals(1, queryRes.size());
     assertTrue(recordDao.recordExists(instanceId, funkyPk, recordId));
@@ -199,7 +199,7 @@ class RecordDaoTest {
     String sample_id = "Sample ID";
     String recordId = "1199";
     Record testRecord = new Record(recordId, referencedRt, RecordAttributes.empty());
-    Map<String, DataTypeMapping> schema = Map.of("attr1", DataTypeMapping.RELATION);
+    Map<String, DataTypeMapping> schema = Map.of("attr1", RELATION);
     recordDao.createRecordType(
         instanceId,
         schema,
@@ -207,11 +207,7 @@ class RecordDaoTest {
         new RelationCollection(Collections.emptySet(), Collections.emptySet()),
         sample_id);
     recordDao.batchUpsert(
-        instanceId,
-        referencedRt,
-        Collections.singletonList(testRecord),
-        Collections.emptyMap(),
-        sample_id);
+        instanceId, referencedRt, Collections.singletonList(testRecord), emptyMap(), sample_id);
     RecordType referencer = RecordType.valueOf("referencer");
     recordDao.createRecordType(
         instanceId,
@@ -244,14 +240,14 @@ class RecordDaoTest {
             .collect(Collectors.toList());
     recordDao.createRecordType(
         instanceId,
-        Collections.emptyMap(),
+        emptyMap(),
         referencedRt,
         new RelationCollection(Collections.emptySet(), Collections.emptySet()),
         RECORD_ID);
-    recordDao.batchUpsert(instanceId, referencedRt, referencedRecords, Collections.emptyMap());
+    recordDao.batchUpsert(instanceId, referencedRt, referencedRecords, emptyMap());
 
     // Create records to do the referencing
-    Map<String, DataTypeMapping> schema = Map.of("attr1", DataTypeMapping.ARRAY_OF_RELATION);
+    Map<String, DataTypeMapping> schema = Map.of("attr1", ARRAY_OF_RELATION);
     RecordType referencer = RecordType.valueOf("referencer");
     Relation arrayRel = new Relation("attr1", referencedRt);
     recordDao.createRecordType(
@@ -300,8 +296,8 @@ class RecordDaoTest {
   void testGetRecordsWithRelations() {
     // Create two records of the same type, one with a value for a relation
     // attribute, the other without
-    recordDao.addColumn(instanceId, recordType, "foo", DataTypeMapping.STRING);
-    recordDao.addColumn(instanceId, recordType, "relationAttr", DataTypeMapping.RELATION);
+    recordDao.addColumn(instanceId, recordType, "foo", STRING);
+    recordDao.addColumn(instanceId, recordType, "relationAttr", RELATION);
     recordDao.addForeignKeyForReference(recordType, recordType, instanceId, "relationAttr");
 
     String refRecordId = "referencedRecord";
@@ -316,13 +312,12 @@ class RecordDaoTest {
         new Record(recordId, recordType, new RecordAttributes(Map.of("relationAttr", reference)));
 
     recordDao.batchUpsert(
-        instanceId, recordType, Collections.singletonList(referencedRecord), new HashMap<>());
+        instanceId, recordType, Collections.singletonList(referencedRecord), emptyMap());
     recordDao.batchUpsert(
         instanceId,
         recordType,
         List.of(referencedRecord, testRecord),
-        new HashMap<>(
-            Map.of("foo", DataTypeMapping.STRING, "relationAttr", DataTypeMapping.RELATION)));
+        Map.of("foo", STRING, "relationAttr", RELATION));
 
     List<Relation> relations = recordDao.getRelationCols(instanceId, recordType);
 
@@ -341,13 +336,13 @@ class RecordDaoTest {
   @Test
   @Transactional
   void testCreateSingleRecord() throws InvalidRelationException {
-    recordDao.addColumn(instanceId, recordType, "foo", DataTypeMapping.STRING);
+    recordDao.addColumn(instanceId, recordType, "foo", STRING);
 
     // create record with no attributes
     String recordId = "testRecord";
     Record testRecord = new Record(recordId, recordType, RecordAttributes.empty());
     recordDao.batchUpsert(
-        instanceId, recordType, Collections.singletonList(testRecord), new HashMap<>());
+        instanceId, recordType, Collections.singletonList(testRecord), emptyMap());
 
     Record search = recordDao.getSingleRecord(instanceId, recordType, recordId).get();
     assertEquals(testRecord, search, "Created record should match entered record");
@@ -357,10 +352,7 @@ class RecordDaoTest {
     Record recordWithAttr =
         new Record(attrId, recordType, new RecordAttributes(Map.of("foo", "bar")));
     recordDao.batchUpsert(
-        instanceId,
-        recordType,
-        Collections.singletonList(recordWithAttr),
-        new HashMap<>(Map.of("foo", DataTypeMapping.STRING)));
+        instanceId, recordType, Collections.singletonList(recordWithAttr), Map.of("foo", STRING));
 
     search = recordDao.getSingleRecord(instanceId, recordType, attrId).get();
     assertEquals(
@@ -372,16 +364,16 @@ class RecordDaoTest {
   void testCreateRecordWithRelations() {
     // make sure columns are in recordType, as this will be taken care of before we
     // get to the dao
-    recordDao.addColumn(instanceId, recordType, "foo", DataTypeMapping.STRING);
+    recordDao.addColumn(instanceId, recordType, "foo", STRING);
 
-    recordDao.addColumn(instanceId, recordType, "testRecordType", DataTypeMapping.RELATION);
+    recordDao.addColumn(instanceId, recordType, "testRecordType", RELATION);
     recordDao.addForeignKeyForReference(recordType, recordType, instanceId, "testRecordType");
 
     String refRecordId = "referencedRecord";
     Record referencedRecord =
         new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
     recordDao.batchUpsert(
-        instanceId, recordType, Collections.singletonList(referencedRecord), new HashMap<>());
+        instanceId, recordType, Collections.singletonList(referencedRecord), emptyMap());
 
     String recordId = "testRecord";
     String reference =
@@ -393,8 +385,7 @@ class RecordDaoTest {
         instanceId,
         recordType,
         Collections.singletonList(testRecord),
-        new HashMap<>(
-            Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.RELATION)));
+        Map.of("foo", STRING, "testRecordType", RELATION));
 
     Record search = recordDao.getSingleRecord(instanceId, recordType, recordId).get();
     assertEquals(testRecord, search, "Created record with references should match entered record");
@@ -403,7 +394,7 @@ class RecordDaoTest {
   @Test
   @Transactional
   void testGetReferenceCols() {
-    recordDao.addColumn(instanceId, recordType, "referenceCol", DataTypeMapping.STRING);
+    recordDao.addColumn(instanceId, recordType, "referenceCol", STRING);
     recordDao.addForeignKeyForReference(recordType, recordType, instanceId, "referenceCol");
 
     List<Relation> refCols = recordDao.getRelationCols(instanceId, recordType);
@@ -421,7 +412,7 @@ class RecordDaoTest {
     String recordId = "testRecord";
     Record testRecord = new Record(recordId, recordType, RecordAttributes.empty());
     recordDao.batchUpsert(
-        instanceId, recordType, Collections.singletonList(testRecord), new HashMap<>());
+        instanceId, recordType, Collections.singletonList(testRecord), emptyMap());
 
     recordDao.deleteSingleRecord(instanceId, recordType, "testRecord");
 
@@ -434,20 +425,16 @@ class RecordDaoTest {
   void testDeleteRelatedRecord() {
     // make sure columns are in recordType, as this will be taken care of before we
     // get to the dao
-    recordDao.addColumn(instanceId, recordType, "foo", DataTypeMapping.STRING);
+    recordDao.addColumn(instanceId, recordType, "foo", STRING);
 
     recordDao.addColumn(
-        instanceId,
-        recordType,
-        "testRecordType",
-        DataTypeMapping.RELATION,
-        RecordType.valueOf("testRecordType"));
+        instanceId, recordType, "testRecordType", RELATION, RecordType.valueOf("testRecordType"));
 
     String refRecordId = "referencedRecord";
     Record referencedRecord =
         new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
     recordDao.batchUpsert(
-        instanceId, recordType, Collections.singletonList(referencedRecord), new HashMap<>());
+        instanceId, recordType, Collections.singletonList(referencedRecord), emptyMap());
 
     String recordId = "testRecord";
     String reference =
@@ -459,8 +446,7 @@ class RecordDaoTest {
         instanceId,
         recordType,
         Collections.singletonList(testRecord),
-        new HashMap<>(
-            Map.of("foo", DataTypeMapping.STRING, "testRecordType", DataTypeMapping.RELATION)));
+        Map.of("foo", STRING, "testRecordType", RELATION));
 
     // Should throw an error
     assertThrows(
@@ -481,12 +467,12 @@ class RecordDaoTest {
     Record referencedRecord2 =
         new Record(refRecordId2, recordType, new RecordAttributes(Map.of("foo", "bar2")));
     recordDao.batchUpsert(
-        instanceId, recordType, List.of(referencedRecord, referencedRecord2), new HashMap<>());
+        instanceId, recordType, List.of(referencedRecord, referencedRecord2), emptyMap());
 
     // Create record type
     RecordType relationArrayType = RecordType.valueOf("relationArrayType");
     Relation arrayRelation = new Relation("relArrAttr", recordType);
-    Map<String, DataTypeMapping> schema = Map.of("relArrAttr", DataTypeMapping.ARRAY_OF_RELATION);
+    Map<String, DataTypeMapping> schema = Map.of("relArrAttr", ARRAY_OF_RELATION);
     recordDao.createRecordType(
         instanceId,
         schema,
@@ -534,12 +520,12 @@ class RecordDaoTest {
     Record referencedRecord2 =
         new Record(refRecordId2, recordType, new RecordAttributes(Map.of("foo", "bar2")));
     recordDao.batchUpsert(
-        instanceId, recordType, List.of(referencedRecord, referencedRecord2), new HashMap<>());
+        instanceId, recordType, List.of(referencedRecord, referencedRecord2), emptyMap());
 
     // Create record type
     RecordType relationArrayType = RecordType.valueOf("relationArrayType");
     Relation arrayRelation = new Relation("relArrAttr", recordType);
-    Map<String, DataTypeMapping> schema = Map.of("relArrAttr", DataTypeMapping.ARRAY_OF_RELATION);
+    Map<String, DataTypeMapping> schema = Map.of("relArrAttr", ARRAY_OF_RELATION);
     recordDao.createRecordType(
         instanceId,
         schema,
@@ -589,7 +575,7 @@ class RecordDaoTest {
     RecordType newRecordType = RecordType.valueOf("newRecordType");
     recordDao.createRecordType(
         instanceId,
-        Collections.emptyMap(),
+        emptyMap(),
         newRecordType,
         new RelationCollection(Collections.emptySet(), Collections.emptySet()),
         RECORD_ID);
@@ -611,7 +597,7 @@ class RecordDaoTest {
     Relation arrayRelation = new Relation("relArrAttr", recordType);
     recordDao.createRecordType(
         instanceId,
-        Map.of("relArrAttr", DataTypeMapping.ARRAY_OF_RELATION),
+        Map.of("relArrAttr", ARRAY_OF_RELATION),
         relationArrayType,
         new RelationCollection(Collections.emptySet(), Set.of(arrayRelation)),
         RECORD_ID);
@@ -631,7 +617,7 @@ class RecordDaoTest {
     for (int i = 0; i < 10; i++) {
       Record testRecord = new Record("record" + i, recordType, RecordAttributes.empty());
       recordDao.batchUpsert(
-          instanceId, recordType, Collections.singletonList(testRecord), new HashMap<>());
+          instanceId, recordType, Collections.singletonList(testRecord), emptyMap());
       assertEquals(
           i + 1,
           recordDao.countRecords(instanceId, recordType),
@@ -647,7 +633,7 @@ class RecordDaoTest {
         instanceId,
         recordType,
         Collections.singletonList(new Record("aRecord", recordType, RecordAttributes.empty())),
-        new HashMap<>());
+        emptyMap());
     assertTrue(recordDao.recordExists(instanceId, recordType, "aRecord"));
   }
 
@@ -667,18 +653,17 @@ class RecordDaoTest {
     RecordType referencedType = RecordType.valueOf("referencedType");
     recordDao.createRecordType(
         instanceId,
-        Collections.emptyMap(),
+        emptyMap(),
         referencedType,
         new RelationCollection(Collections.emptySet(), Collections.emptySet()),
         RECORD_ID);
 
-    recordDao.addColumn(
-        instanceId, recordTypeName, "relation", DataTypeMapping.RELATION, referencedType);
+    recordDao.addColumn(instanceId, recordTypeName, "relation", RELATION, referencedType);
 
     String refRecordId = "referencedRecord";
     Record referencedRecord = new Record(refRecordId, referencedType, RecordAttributes.empty());
     recordDao.batchUpsert(
-        instanceId, referencedType, Collections.singletonList(referencedRecord), new HashMap<>());
+        instanceId, referencedType, Collections.singletonList(referencedRecord), emptyMap());
 
     String recordId = "testRecord";
     String reference = RelationUtils.createRelationString(referencedType, refRecordId);
@@ -688,7 +673,7 @@ class RecordDaoTest {
         instanceId,
         recordTypeName,
         Collections.singletonList(testRecord),
-        new HashMap<>(Map.of("relation", DataTypeMapping.RELATION)));
+        Map.of("relation", RELATION));
 
     // Should throw an error
     assertThrows(
@@ -707,12 +692,12 @@ class RecordDaoTest {
     Record referencedRecord2 =
         new Record(refRecordId2, recordType, new RecordAttributes(Map.of("foo", "bar2")));
     recordDao.batchUpsert(
-        instanceId, recordType, List.of(referencedRecord, referencedRecord2), new HashMap<>());
+        instanceId, recordType, List.of(referencedRecord, referencedRecord2), emptyMap());
 
     // Create referencing record type
     RecordType relationArrayType = RecordType.valueOf("relationArrayType");
     Relation arrayRelation = new Relation("relArrAttr", recordType);
-    Map<String, DataTypeMapping> schema = Map.of("relArrAttr", DataTypeMapping.ARRAY_OF_RELATION);
+    Map<String, DataTypeMapping> schema = Map.of("relArrAttr", ARRAY_OF_RELATION);
     recordDao.createRecordType(
         instanceId,
         schema,
@@ -758,7 +743,7 @@ class RecordDaoTest {
     RecordType recordTypeWithAttributes = RecordType.valueOf("withAttributes");
     recordDao.createRecordType(
         instanceId,
-        Map.of("foo", DataTypeMapping.STRING, "bar", DataTypeMapping.STRING),
+        Map.of("foo", STRING, "bar", STRING),
         recordTypeWithAttributes,
         new RelationCollection(Collections.emptySet(), Collections.emptySet()),
         PRIMARY_KEY);
@@ -772,6 +757,207 @@ class RecordDaoTest {
     assertEquals(Set.of(PRIMARY_KEY, "foo", "baz"), attributeNames);
   }
 
+  @ParameterizedTest(name = "returns expression for converting {0} to {1}")
+  @MethodSource({
+    "stringConversionExpressions",
+    "stringArrayConversionExpressions",
+    "numberConversionExpressions",
+    "numberArrayConversionExpressions",
+    "booleanConversionExpressions",
+    "booleanArrayConversionExpressions",
+    "dateConversionExpressions",
+    "dateArrayConversionExpressions",
+    "datetimeConversionExpressions",
+    "datetimeArrayConversionExpressions"
+  })
+  void testGetPostgresTypeConversionExpression(
+      DataTypeMapping dataType, DataTypeMapping newDataType, String expectedExpression) {
+    // Act
+    String actualExpression =
+        recordDao.getPostgresTypeConversionExpression("attr", dataType, newDataType);
+
+    // Assert
+    assertEquals(expectedExpression, actualExpression);
+  }
+
+  static Stream<Arguments> stringConversionExpressions() {
+    return Stream.of(
+        // Number
+        args(STRING, NUMBER, "\"attr\"::numeric"),
+        // Boolean
+        args(STRING, BOOLEAN, "\"attr\"::boolean"),
+        // Date
+        args(STRING, DATE, "\"attr\"::date"),
+        // Datetime
+        args(STRING, DATE_TIME, "\"attr\"::timestamp with time zone"),
+        // String array
+        args(STRING, ARRAY_OF_STRING, "array_append('{}', \"attr\")::text[]"),
+        // Number array
+        args(STRING, ARRAY_OF_NUMBER, "array_append('{}', \"attr\")::numeric[]"),
+        // Boolean array
+        args(STRING, ARRAY_OF_BOOLEAN, "array_append('{}', \"attr\")::boolean[]"),
+        // Date array
+        args(STRING, ARRAY_OF_DATE, "array_append('{}', \"attr\")::date[]"),
+        // Datetime array
+        args(
+            STRING,
+            ARRAY_OF_DATE_TIME,
+            "array_append('{}', \"attr\")::timestamp with time zone[]"));
+  }
+
+  static Stream<Arguments> stringArrayConversionExpressions() {
+    return Stream.of(
+        // Number array
+        args(ARRAY_OF_STRING, ARRAY_OF_NUMBER, "\"attr\"::numeric[]"),
+        // Boolean array
+        args(ARRAY_OF_STRING, ARRAY_OF_BOOLEAN, "\"attr\"::boolean[]"),
+        // Date array
+        args(ARRAY_OF_STRING, ARRAY_OF_DATE, "\"attr\"::date[]"),
+        // Datetime array
+        args(ARRAY_OF_STRING, ARRAY_OF_DATE_TIME, "\"attr\"::timestamp with time zone[]"));
+  }
+
+  static Stream<Arguments> numberConversionExpressions() {
+    return Stream.of(
+        // String
+        args(NUMBER, STRING, "\"attr\"::text"),
+        // Boolean
+        args(NUMBER, BOOLEAN, "\"attr\"::int::boolean"),
+        // Date
+        args(NUMBER, DATE, "to_timestamp(\"attr\")::date"),
+        // Datetime
+        args(NUMBER, DATE_TIME, "to_timestamp(\"attr\")::timestamp with time zone"),
+        // String array
+        args(NUMBER, ARRAY_OF_STRING, "array_append('{}', \"attr\")::text[]"),
+        // Number array
+        args(NUMBER, ARRAY_OF_NUMBER, "array_append('{}', \"attr\")::numeric[]"),
+        // Boolean array
+        args(NUMBER, ARRAY_OF_BOOLEAN, "array_append('{}', \"attr\")::int[]::boolean[]"),
+        // Date array
+        args(NUMBER, ARRAY_OF_DATE, "array_append('{}', to_timestamp(\"attr\"))::date[]"),
+        // Datetime array
+        args(
+            NUMBER,
+            ARRAY_OF_DATE_TIME,
+            "array_append('{}', to_timestamp(\"attr\"))::timestamp with time zone[]"));
+  }
+
+  static Stream<Arguments> numberArrayConversionExpressions() {
+    return Stream.of(
+        // String array
+        args(ARRAY_OF_NUMBER, ARRAY_OF_STRING, "\"attr\"::text[]"),
+        // Boolean array
+        args(ARRAY_OF_NUMBER, ARRAY_OF_BOOLEAN, "\"attr\"::int[]::boolean[]"),
+        // Date array
+        args(
+            ARRAY_OF_NUMBER,
+            ARRAY_OF_DATE,
+            "(sys_wds.convert_array_of_numbers_to_timestamps(\"attr\"))::date[]"),
+        // Datetime array
+        args(
+            ARRAY_OF_NUMBER,
+            ARRAY_OF_DATE_TIME,
+            "(sys_wds.convert_array_of_numbers_to_timestamps(\"attr\"))::timestamp with time zone[]"));
+  }
+
+  static Stream<Arguments> booleanConversionExpressions() {
+    return Stream.of(
+        // String
+        args(BOOLEAN, STRING, "\"attr\"::text"),
+        // Number
+        args(BOOLEAN, NUMBER, "\"attr\"::int::numeric"),
+        // String array
+        args(BOOLEAN, ARRAY_OF_STRING, "array_append('{}', \"attr\")::text[]"),
+        // Number array
+        args(BOOLEAN, ARRAY_OF_NUMBER, "array_append('{}', \"attr\")::int[]::numeric[]"),
+        // Boolean array
+        args(BOOLEAN, ARRAY_OF_BOOLEAN, "array_append('{}', \"attr\")::boolean[]"));
+  }
+
+  static Stream<Arguments> booleanArrayConversionExpressions() {
+    return Stream.of(
+        // String array
+        args(ARRAY_OF_BOOLEAN, ARRAY_OF_STRING, "\"attr\"::text[]"),
+        // Number array
+        args(ARRAY_OF_BOOLEAN, ARRAY_OF_NUMBER, "\"attr\"::int[]::numeric[]"));
+  }
+
+  static Stream<Arguments> dateConversionExpressions() {
+    return Stream.of(
+        // String
+        args(DATE, STRING, "\"attr\"::text"),
+        // Number
+        args(DATE, NUMBER, "extract(epoch from \"attr\")::bigint::numeric"),
+        // Datetime
+        args(DATE, DATE_TIME, "\"attr\"::timestamp with time zone"),
+        // String array
+        args(DATE, ARRAY_OF_STRING, "array_append('{}', \"attr\")::text[]"),
+        // Number array
+        args(
+            DATE,
+            ARRAY_OF_NUMBER,
+            "array_append('{}', extract(epoch from \"attr\")::bigint)::numeric[]"),
+        // Date array
+        args(DATE, ARRAY_OF_DATE, "array_append('{}', \"attr\")::date[]"),
+        // Datetime array
+        args(DATE, ARRAY_OF_DATE_TIME, "array_append('{}', \"attr\")::timestamp with time zone[]"));
+  }
+
+  static Stream<Arguments> dateArrayConversionExpressions() {
+    return Stream.of(
+        // String array
+        args(ARRAY_OF_DATE, ARRAY_OF_STRING, "\"attr\"::text[]"),
+        // Number array
+        args(
+            ARRAY_OF_DATE,
+            ARRAY_OF_NUMBER,
+            "(sys_wds.convert_array_of_timestamps_to_numbers(\"attr\")::bigint[])::numeric[]"),
+        // Datetime array
+        args(ARRAY_OF_DATE, ARRAY_OF_DATE_TIME, "\"attr\"::timestamp with time zone[]"));
+  }
+
+  static Stream<Arguments> datetimeConversionExpressions() {
+    return Stream.of(
+        // String
+        args(DATE_TIME, STRING, "\"attr\"::text"),
+        // Number
+        args(DATE_TIME, NUMBER, "extract(epoch from \"attr\")::numeric"),
+        // Date
+        args(DATE_TIME, DATE, "\"attr\"::date"),
+        // String array
+        args(DATE_TIME, ARRAY_OF_STRING, "array_append('{}', \"attr\")::text[]"),
+        // Number array
+        args(
+            DATE_TIME,
+            ARRAY_OF_NUMBER,
+            "array_append('{}', extract(epoch from \"attr\"))::numeric[]"),
+        // Date array
+        args(DATE_TIME, ARRAY_OF_DATE, "array_append('{}', \"attr\")::date[]"),
+        // Datetime array
+        args(
+            DATE_TIME,
+            ARRAY_OF_DATE_TIME,
+            "array_append('{}', \"attr\")::timestamp with time zone[]"));
+  }
+
+  static Stream<Arguments> datetimeArrayConversionExpressions() {
+    return Stream.of(
+        // String array
+        args(ARRAY_OF_DATE_TIME, ARRAY_OF_STRING, "\"attr\"::text[]"),
+        // Number array
+        args(
+            ARRAY_OF_DATE_TIME,
+            ARRAY_OF_NUMBER,
+            "(sys_wds.convert_array_of_timestamps_to_numbers(\"attr\"))::numeric[]"),
+        // Date array
+        args(ARRAY_OF_DATE_TIME, ARRAY_OF_DATE, "\"attr\"::date[]"));
+  }
+
+  /** Simple helper to provide an even terser shorthand */
+  private static Arguments args(Object... arguments) {
+    return Arguments.of(arguments);
+  }
+
   @Test
   @Transactional
   void testDeleteAttribute() {
@@ -779,7 +965,7 @@ class RecordDaoTest {
     RecordType recordTypeWithAttributes = RecordType.valueOf("withAttributes");
     recordDao.createRecordType(
         instanceId,
-        Map.of("attr1", DataTypeMapping.STRING, "attr2", DataTypeMapping.STRING),
+        Map.of("attr1", STRING, "attr2", STRING),
         recordTypeWithAttributes,
         new RelationCollection(Collections.emptySet(), Collections.emptySet()),
         PRIMARY_KEY);
@@ -799,7 +985,7 @@ class RecordDaoTest {
     RecordType secondRecordType = RecordType.valueOf("secondRecordType");
     recordDao.createRecordType(
         instanceId,
-        Collections.emptyMap(),
+        emptyMap(),
         secondRecordType,
         new RelationCollection(Collections.emptySet(), Collections.emptySet()),
         RECORD_ID);
@@ -820,13 +1006,7 @@ class RecordDaoTest {
     Relation arrayRelation = new Relation("relArrAttr", recordType);
     recordDao.createRecordType(
         instanceId,
-        Map.of(
-            "stringAttr",
-            DataTypeMapping.STRING,
-            "refAttr",
-            DataTypeMapping.RELATION,
-            "relArrAttr",
-            DataTypeMapping.ARRAY_OF_RELATION),
+        Map.of("stringAttr", STRING, "refAttr", RELATION, "relArrAttr", ARRAY_OF_RELATION),
         relationarrayType,
         new RelationCollection(Set.of(singleRelation), Set.of(arrayRelation)),
         RECORD_ID);
@@ -834,9 +1014,9 @@ class RecordDaoTest {
     Map<String, DataTypeMapping> schema =
         recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, relationarrayType);
     assertEquals(3, schema.size());
-    assertEquals(DataTypeMapping.STRING, schema.get("stringAttr"));
-    assertEquals(DataTypeMapping.RELATION, schema.get("refAttr"));
-    assertEquals(DataTypeMapping.ARRAY_OF_RELATION, schema.get("relArrAttr"));
+    assertEquals(STRING, schema.get("stringAttr"));
+    assertEquals(RELATION, schema.get("refAttr"));
+    assertEquals(ARRAY_OF_RELATION, schema.get("relArrAttr"));
     List<Relation> relationCols = recordDao.getRelationCols(instanceId, relationarrayType);
     assertEquals(List.of(singleRelation), relationCols);
     List<Relation> relationArrayCols =
@@ -856,19 +1036,13 @@ class RecordDaoTest {
     Record referencedRecord2 =
         new Record(refRecordId2, recordType, new RecordAttributes(Map.of("foo", "bar2")));
     recordDao.batchUpsert(
-        instanceId, recordType, List.of(referencedRecord, referencedRecord2), new HashMap<>());
+        instanceId, recordType, List.of(referencedRecord, referencedRecord2), emptyMap());
 
     // Create record type
     RecordType relationArrayType = RecordType.valueOf("relationArrayType");
     Relation arrayRelation = new Relation("relArrAttr", recordType);
     Map<String, DataTypeMapping> schema =
-        Map.of(
-            "stringAttr",
-            DataTypeMapping.STRING,
-            "refAttr",
-            DataTypeMapping.RELATION,
-            "relArrAttr",
-            DataTypeMapping.ARRAY_OF_RELATION);
+        Map.of("stringAttr", STRING, "refAttr", RELATION, "relArrAttr", ARRAY_OF_RELATION);
     recordDao.createRecordType(
         instanceId,
         schema,
@@ -924,11 +1098,7 @@ class RecordDaoTest {
     Relation arrayRelation2 = new Relation("relArr2", recordType);
     recordDao.createRecordType(
         instanceId,
-        Map.of(
-            "relArr1",
-            DataTypeMapping.ARRAY_OF_RELATION,
-            "relArr2",
-            DataTypeMapping.ARRAY_OF_RELATION),
+        Map.of("relArr1", ARRAY_OF_RELATION, "relArr2", ARRAY_OF_RELATION),
         relationarrayType,
         new RelationCollection(Collections.emptySet(), Set.of(arrayRelation1, arrayRelation2)),
         RECORD_ID);
@@ -944,28 +1114,26 @@ class RecordDaoTest {
   void testRemoveFromJoin() {
     // create records to reference in join table
     String fromRecordId = "fromRecord1";
-    Record fromRecord = new Record(fromRecordId, recordType, new RecordAttributes(new HashMap<>()));
+    Record fromRecord = new Record(fromRecordId, recordType, RecordAttributes.empty());
     String fromRecordId2 = "fromRecord2";
-    Record fromRecord2 =
-        new Record(fromRecordId2, recordType, new RecordAttributes(new HashMap<>()));
+    Record fromRecord2 = new Record(fromRecordId2, recordType, RecordAttributes.empty());
     String fromRecordId3 = "fromRecord3";
-    Record fromRecord3 =
-        new Record(fromRecordId3, recordType, new RecordAttributes(new HashMap<>()));
+    Record fromRecord3 = new Record(fromRecordId3, recordType, RecordAttributes.empty());
     recordDao.batchUpsert(
-        instanceId, recordType, List.of(fromRecord, fromRecord2, fromRecord3), new HashMap<>());
+        instanceId, recordType, List.of(fromRecord, fromRecord2, fromRecord3), emptyMap());
 
     RecordType toType = RecordType.valueOf("toType");
     recordDao.createRecordType(
         instanceId,
-        new HashMap<>(),
+        emptyMap(),
         toType,
         new RelationCollection(Collections.emptySet(), Collections.emptySet()),
         RECORD_ID);
     String toRecordId = "toRecord1";
-    Record toRecord = new Record(toRecordId, toType, new RecordAttributes(new HashMap<>()));
+    Record toRecord = new Record(toRecordId, toType, RecordAttributes.empty());
     String toRecordId2 = "toRecord2";
-    Record toRecord2 = new Record(toRecordId2, toType, new RecordAttributes(new HashMap<>()));
-    recordDao.batchUpsert(instanceId, toType, List.of(toRecord, toRecord2), new HashMap<>());
+    Record toRecord2 = new Record(toRecordId2, toType, RecordAttributes.empty());
+    recordDao.batchUpsert(instanceId, toType, List.of(toRecord, toRecord2), emptyMap());
 
     // create join table
     recordDao.createRelationJoinTable(instanceId, "referenceArray", recordType, toType);

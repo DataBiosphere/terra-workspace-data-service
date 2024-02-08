@@ -13,12 +13,8 @@ import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
-import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
-import org.databiosphere.workspacedataservice.dao.MockInstanceDaoConfig;
-import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
-import org.databiosphere.workspacedataservice.sam.SamConfig;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
@@ -55,13 +51,7 @@ import org.springframework.test.context.TestPropertySource;
  */
 @ActiveProfiles(profiles = "mock-instance-dao")
 @DirtiesContext
-@SpringBootTest(
-    classes = {
-      MockInstanceDaoConfig.class,
-      SamConfig.class,
-      ActivityLoggerConfig.class,
-      RestClientRetry.class
-    })
+@SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestPropertySource(
     properties = {
@@ -69,7 +59,7 @@ import org.springframework.test.context.TestPropertySource;
     }) // example uuid from https://en.wikipedia.org/wiki/Universally_unique_identifier
 class InstanceServiceSamExceptionTest {
 
-  private InstanceService instanceService;
+  @Autowired private InstanceService instanceService;
 
   @Autowired private InstanceDao instanceDao;
   @Autowired private SamDao samDao;
@@ -87,8 +77,6 @@ class InstanceServiceSamExceptionTest {
 
   @BeforeEach
   void setUp() {
-    instanceService = new InstanceService(instanceDao, samDao, activityLogger);
-
     // return the mock ResourcesApi from the mock SamClientFactory
     given(mockSamClientFactory.getResourcesApi(null)).willReturn(mockResourcesApi);
   }

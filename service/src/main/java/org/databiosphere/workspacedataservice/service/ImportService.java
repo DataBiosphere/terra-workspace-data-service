@@ -17,6 +17,7 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
+import org.databiosphere.workspacedataservice.shared.model.InstanceId;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
@@ -62,7 +63,8 @@ public class ImportService {
     logger.debug("Data import of type {} requested", importRequest.getType());
 
     ImportJobInput importJobInput = ImportJobInput.from(importRequest);
-    Job<JobInput, JobResult> job = Job.newJob(JobType.DATA_IMPORT, importJobInput);
+    Job<JobInput, JobResult> job =
+        Job.newJob(InstanceId.of(instanceUuid), JobType.DATA_IMPORT, importJobInput);
 
     // persist the full job to WDS's db
     GenericJobServerModel createdJob = jobDao.createJob(job);

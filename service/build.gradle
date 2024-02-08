@@ -38,6 +38,7 @@ jib {
 ext {
     parquet_mr_version = "1.13.1"
     hadoop_version = "3.3.6"
+    prometheus_rsocket_version = "1.5.3"
 }
 
 dependencies {
@@ -55,6 +56,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-quartz'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation "io.micrometer.prometheus:prometheus-rsocket-spring:$prometheus_rsocket_version"
     implementation 'org.springframework.integration:spring-integration-jdbc'
     implementation 'org.aspectj:aspectjweaver' // required by spring-retry, not used directly
     implementation 'com.google.guava:guava:32.1.3-jre'
@@ -62,6 +64,8 @@ dependencies {
     implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
     implementation 'io.sentry:sentry-logback:6.34.0'
+    implementation 'net.logstash.logback:logstash-logback-encoder:7.3'
+    implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
     implementation 'javax.cache:cache-api'
     implementation 'org.ehcache:ehcache:3.10.8:jakarta'
@@ -113,6 +117,7 @@ dependencies {
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.9.0'
+    testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation project(':client')
@@ -132,6 +137,14 @@ dependencies {
         }
         implementation('org.codehaus.jettison:jettison:1.5.4') {
             because("CVE-2022-40149, CVE-2022-40150, CVE-2022-45685, CVE-2022-45693, CVE-2023-1436")
+        }
+
+        // TODO: remove when upgrading to a version of spring that has a fixed version of json-path
+        //   json-path required by spring-boot-starter-test:3.2.2
+        //   this is redundant (and ineffective) without an explicit override in the parent project
+        //   build.gradle dependencyManagement, but is included here for documentation purposes
+        testImplementation('com.jayway.jsonpath:json-path:2.9.0') {
+            because("CVE-2023-51074")
         }
     }
 }
@@ -229,6 +242,7 @@ jacocoTestReport {
 test {
     systemProperties['pact.rootDir'] = "$buildDir/pacts"
     systemProperties['pact.provider.version'] = "$project.version"
+    systemProperties['user.timezone'] = "UTC"
 }
 
 tasks.register("pactTests", Test) {

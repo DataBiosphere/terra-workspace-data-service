@@ -1,8 +1,11 @@
 package org.databiosphere.workspacedataservice.jobexec;
 
+import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import java.net.URL;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
@@ -29,6 +32,12 @@ import org.quartz.JobExecutionContext;
 // note this implements Quartz's `Job`, not WDS's own `Job`
 public abstract class QuartzJob implements Job {
 
+  private final ObservationRegistry observationRegistry;
+
+  protected QuartzJob(ObservationRegistry observationRegistry) {
+    this.observationRegistry = observationRegistry;
+  }
+
   /** implementing classes are expected to be beans that inject a JobDao */
   protected abstract JobDao getJobDao();
 
@@ -36,9 +45,16 @@ public abstract class QuartzJob implements Job {
   public void execute(JobExecutionContext context) throws org.quartz.JobExecutionException {
     // retrieve jobId
     UUID jobId = UUID.fromString(context.getJobDetail().getKey().getName());
+
+    Observation observation =
+        Observation.start("wds.job.execute", observationRegistry)
+            .contextualName("job-execution")
+            .lowCardinalityKeyValue("jobType", getClass().getSimpleName())
+            .highCardinalityKeyValue("jobId", jobId.toString());
     try {
       // mark this job as running
       getJobDao().running(jobId);
+      observation.event(Observation.Event.of("job.running"));
       // look for an auth token in the Quartz JobDataMap
       String authToken = getJobDataString(context.getMergedJobDataMap(), ARG_TOKEN);
       // and stash the auth token into job context
@@ -50,11 +66,15 @@ public abstract class QuartzJob implements Job {
       executeInternal(jobId, context);
       // if we reached here, mark this job as successful
       getJobDao().succeeded(jobId);
+      observation.lowCardinalityKeyValue("outcome", StatusEnum.SUCCEEDED.getValue());
     } catch (Exception e) {
       // on any otherwise-unhandled exception, mark the job as failed
       getJobDao().fail(jobId, e);
+      observation.error(e);
+      observation.lowCardinalityKeyValue("outcome", StatusEnum.ERROR.getValue());
     } finally {
       JobContextHolder.destroy();
+      observation.stop();
     }
   }
 

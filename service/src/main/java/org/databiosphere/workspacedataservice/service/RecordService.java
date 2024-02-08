@@ -1,16 +1,12 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.COUNTER_COL_CHANGE;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_ATTRIBUTE_NAME;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_INSTANCE;
-import static org.databiosphere.workspacedataservice.metrics.MetricsDefinitions.TAG_RECORD_TYPE;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RESERVED_NAME_PREFIX;
 
 import bio.terra.common.db.WriteTransaction;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,17 +42,25 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class RecordService {
+  // strings used for metrics
+  public static final String METRIC_COL_CHANGE = "wds.column.change.datatype";
+  public static final String TAG_RECORD_TYPE = "RecordType";
+  public static final String TAG_INSTANCE = "Instance";
+  public static final String TAG_ATTRIBUTE_NAME = "AttributeName";
+  public static final String TAG_OLD_DATATYPE = "OldDataType";
+  public static final String TAG_NEW_DATATYPE = "NewDataType";
 
   private final RecordDao recordDao;
 
   private final DataTypeInferer inferer;
 
-  private final MeterRegistry meterRegistry;
+  private final ObservationRegistry observationRegistry;
 
-  public RecordService(RecordDao recordDao, DataTypeInferer inferer, MeterRegistry meterRegistry) {
+  public RecordService(
+      RecordDao recordDao, DataTypeInferer inferer, ObservationRegistry observationRegistry) {
     this.recordDao = recordDao;
     this.inferer = inferer;
-    this.meterRegistry = meterRegistry;
+    this.observationRegistry = observationRegistry;
   }
 
   public void prepareAndUpsert(
@@ -215,20 +219,17 @@ public class RecordService {
       }
       DataTypeMapping updatedColType =
           inferer.selectBestType(valueDifference.leftValue(), valueDifference.rightValue());
-      recordDao.changeColumn(instanceId, recordType, column, updatedColType);
-      schema.put(column, updatedColType);
 
-      // update a metrics counter with this schema change
-      Counter counter =
-          Counter.builder(COUNTER_COL_CHANGE)
-              .tag(TAG_RECORD_TYPE, recordType.getName())
-              .tag(TAG_ATTRIBUTE_NAME, column)
-              .tag(TAG_INSTANCE, instanceId.toString())
-              .tag("OldDataType", valueDifference.leftValue().toString())
-              .tag("NewDataType", updatedColType.toString())
-              .description("Column schema changes")
-              .register(meterRegistry);
-      counter.increment();
+      // time the schema change and record some high cardinality tracing details
+      Observation.createNotStarted(METRIC_COL_CHANGE, observationRegistry)
+          .lowCardinalityKeyValue(TAG_OLD_DATATYPE, valueDifference.leftValue().toString())
+          .lowCardinalityKeyValue(TAG_NEW_DATATYPE, updatedColType.toString())
+          .highCardinalityKeyValue(TAG_RECORD_TYPE, recordType.getName())
+          .highCardinalityKeyValue(TAG_ATTRIBUTE_NAME, column)
+          .highCardinalityKeyValue(TAG_INSTANCE, instanceId.toString())
+          .observe(() -> recordDao.changeColumn(instanceId, recordType, column, updatedColType));
+
+      schema.put(column, updatedColType);
     }
     return schema;
   }
@@ -412,6 +413,12 @@ public class RecordService {
   public void renameAttribute(
       UUID instanceId, RecordType recordType, String attribute, String newAttributeName) {
     recordDao.renameAttribute(instanceId, recordType, attribute, newAttributeName);
+  }
+
+  @WriteTransaction
+  public void updateAttributeDataType(
+      UUID instanceId, RecordType recordType, String attribute, DataTypeMapping newDataType) {
+    recordDao.updateAttributeDataType(instanceId, recordType, attribute, newDataType);
   }
 
   @WriteTransaction

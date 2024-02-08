@@ -8,7 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
+import org.databiosphere.workspacedataservice.shared.model.InstanceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
@@ -45,11 +47,13 @@ class PostgresJobDaoTest {
 
   // helper method to get a job into the db and verify it was written correctly
   private GenericJobServerModel assertJobCreation(JobType jobType) {
-    Job<JobInput, JobResult> testJob = Job.newJob(jobType, JobInput.empty());
+    InstanceId instanceId = InstanceId.of(UUID.randomUUID());
+    Job<JobInput, JobResult> testJob = Job.newJob(instanceId, jobType, JobInput.empty());
     jobDao.createJob(testJob);
 
     var params = new MapSqlParameterSource("jobId", testJob.getJobId().toString());
     params.addValue("type", jobType.name());
+    params.addValue("instanceId", instanceId.id());
     params.addValue("status", StatusEnum.CREATED.name());
 
     // after creating a job, there should be exactly one row with:
@@ -61,6 +65,7 @@ class PostgresJobDaoTest {
         () ->
             namedTemplate.queryForObject(
                 "select id from sys_wds.job where id = :jobId and type = :type and status = :status "
+                    + "and instance_id = :instanceId "
                     + "and created is not null and updated is not null "
                     + "and input = '{}'::jsonb "
                     + "and result is null and error is null and stacktrace is null",

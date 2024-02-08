@@ -45,6 +45,7 @@ import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.service.model.RelationValue;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchDeleteException;
+import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.AttributeComparator;
@@ -89,6 +90,38 @@ public class RecordDao {
 
   @Value("${twds.streaming.fetch.size:5000}")
   int fetchSize;
+
+  /**
+   * Each member of this set is expected to be a set of two data types. The presence of a set of
+   * types in this set implies that conversions between the types are supported (in either
+   * direction). Note that arrays do not need to be listed separately here. For example, a set of
+   * STRING and NUMBER implies that all the following conversions are supported: STRING to NUMBER,
+   * NUMBER to STRING, ARRAY_OF_STRING to ARRAY_OF_NUMBER, and ARRAY_OF_NUMBER to ARRAY_OF_STRING.
+   */
+  private static final Set<Set<DataTypeMapping>> supportedDataTypeConversions =
+      Set.of(
+          Set.of(DataTypeMapping.STRING, DataTypeMapping.NUMBER),
+          Set.of(DataTypeMapping.STRING, DataTypeMapping.BOOLEAN),
+          Set.of(DataTypeMapping.STRING, DataTypeMapping.DATE),
+          Set.of(DataTypeMapping.STRING, DataTypeMapping.DATE_TIME),
+          Set.of(DataTypeMapping.NUMBER, DataTypeMapping.BOOLEAN),
+          Set.of(DataTypeMapping.NUMBER, DataTypeMapping.DATE),
+          Set.of(DataTypeMapping.NUMBER, DataTypeMapping.DATE_TIME),
+          Set.of(DataTypeMapping.DATE, DataTypeMapping.DATE_TIME));
+
+  /**
+   * These error codes are expected when a valid update attribute data type request fails because
+   * attribute values for some records cannot be converted to the new data type.
+   *
+   * @see <a href="https://www.postgresql.org/docs/14/errcodes-appendix.html">PostgreSQL error
+   *     codes</a>
+   */
+  private static final Set<String> expectedDataTypeConversionErrorCodes =
+      Set.of(
+          "22P02", // invalid text representation
+          "22003", // numeric value out of range
+          "22008" // datetime field overflow
+          );
 
   public RecordDao(
       DataSource mainDb,
@@ -1038,6 +1071,117 @@ public class RecordDao {
                 + quote(SqlUtils.validateSqlString(attribute, ATTRIBUTE))
                 + " to "
                 + quote(SqlUtils.validateSqlString(newAttributeName, ATTRIBUTE)));
+  }
+
+  public void updateAttributeDataType(
+      UUID instanceId, RecordType recordType, String attribute, DataTypeMapping newDataType) {
+    Map<String, DataTypeMapping> schema = getExistingTableSchema(instanceId, recordType);
+    DataTypeMapping currentDataType = schema.get(attribute);
+
+    try {
+      namedTemplate
+          .getJdbcTemplate()
+          .update(
+              "alter table "
+                  + getQualifiedTableName(recordType, instanceId)
+                  + " alter column "
+                  + quote(SqlUtils.validateSqlString(attribute, ATTRIBUTE))
+                  + " type "
+                  + newDataType.getPostgresType()
+                  + " using "
+                  + getPostgresTypeConversionExpression(attribute, currentDataType, newDataType));
+    } catch (DataIntegrityViolationException e) {
+      if (e.getRootCause() instanceof SQLException sqlEx && sqlEx.getSQLState() != null) {
+        if (expectedDataTypeConversionErrorCodes.contains(sqlEx.getSQLState())) {
+          throw new ConflictException(
+              "Unable to convert values for attribute %s to %s"
+                  .formatted(attribute, newDataType.name()));
+        } else {
+          LOGGER.warn(
+              "updateAttributeDataType: DataIntegrityViolationException with unexpected error code {}",
+              sqlEx.getSQLState());
+        }
+      }
+      throw e;
+    }
+  }
+
+  private boolean isDataTypeConversionSupported(
+      DataTypeMapping dataType, DataTypeMapping newDataType) {
+    DataTypeMapping baseType = dataType.getBaseType();
+    DataTypeMapping newBaseType = newDataType.getBaseType();
+    return baseType.equals(newBaseType)
+        || supportedDataTypeConversions.contains(Set.of(baseType, newBaseType));
+  }
+
+  @VisibleForTesting
+  String getPostgresTypeConversionExpression(
+      String attribute, DataTypeMapping dataType, DataTypeMapping newDataType) {
+    // Some data types are not yet supported.
+    // Some conversions don't make sense / are invalid.
+    if (!isDataTypeConversionSupported(dataType, newDataType)) {
+      throw new IllegalArgumentException(
+          "Unable to convert attribute from %s to %s"
+              .formatted(dataType.name(), newDataType.name()));
+    }
+
+    // Prevent conversion from array to scalar types.
+    if (dataType.isArrayType() && !newDataType.isArrayType()) {
+      throw new IllegalArgumentException("Unable to convert array type to scalar type");
+    }
+
+    String expression = quote(SqlUtils.validateSqlString(attribute, ATTRIBUTE));
+
+    // Unable to cast numbers to dates or timestamps.
+    // Convert number to timestamp using to_timestamp.
+    if (dataType.getBaseType().equals(DataTypeMapping.NUMBER)
+        && Set.of(DataTypeMapping.DATE, DataTypeMapping.DATE_TIME)
+            .contains(newDataType.getBaseType())) {
+      if (dataType.isArrayType()) {
+        expression = "(sys_wds.convert_array_of_numbers_to_timestamps(" + expression + "))";
+      } else {
+        expression = "to_timestamp(" + expression + ")";
+      }
+    }
+
+    // Unable to cast dates or timestamps to numbers.
+    // Extract epoch from timestamp to get a number.
+    if (Set.of(DataTypeMapping.DATE, DataTypeMapping.DATE_TIME).contains(dataType.getBaseType())
+        && newDataType.getBaseType().equals(DataTypeMapping.NUMBER)) {
+      if (dataType.isArrayType()) {
+        expression = "sys_wds.convert_array_of_timestamps_to_numbers(" + expression + ")";
+        // Truncate to an integer for dates.
+        if (dataType.getBaseType() == DataTypeMapping.DATE) {
+          expression += "::bigint[]";
+        }
+        expression = "(" + expression + ")";
+      } else {
+        expression = "extract(epoch from " + expression + ")";
+        // Truncate to an integer for dates.
+        if (dataType.getBaseType() == DataTypeMapping.DATE) {
+          expression += "::bigint";
+        }
+      }
+    }
+
+    // When converting from a scalar type to an array type, append value to an empty array.
+    if (!dataType.isArrayType() && newDataType.isArrayType()) {
+      expression = "array_append('{}', " + expression + ")";
+    }
+
+    // No direct conversion exists between numeric and boolean types, so go through int.
+    if (Set.copyOf(List.of(dataType.getBaseType(), newDataType.getBaseType()))
+        .equals(Set.of(DataTypeMapping.BOOLEAN, DataTypeMapping.NUMBER))) {
+      expression += "::int";
+      if (newDataType.isArrayType()) {
+        expression += "[]";
+      }
+    }
+
+    // Convert to desired type.
+    expression += "::" + newDataType.getPostgresType();
+
+    return expression;
   }
 
   public void deleteAttribute(UUID instanceId, RecordType recordType, String attribute) {

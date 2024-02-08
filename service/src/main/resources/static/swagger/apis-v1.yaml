@@ -172,6 +172,9 @@ components:
         jobType:
           type: string
           enum: [ DATA_IMPORT, UNKNOWN ]
+        instanceId:
+          type: string
+          format: uuid
         status:
           type: string
           enum: [ CREATED, QUEUED, RUNNING, SUCCEEDED, ERROR, CANCELLED, UNKNOWN ]

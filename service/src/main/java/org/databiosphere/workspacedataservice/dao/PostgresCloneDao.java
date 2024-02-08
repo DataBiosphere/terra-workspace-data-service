@@ -176,6 +176,7 @@ public class PostgresCloneDao implements CloneDao {
       return new Job<>(
           jobId,
           SYNC_CLONE,
+          /* instanceId= */ null, // clone jobs do not execute within a single instance
           status,
           errorMessage,
           created,
