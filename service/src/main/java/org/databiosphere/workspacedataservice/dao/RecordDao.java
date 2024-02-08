@@ -909,10 +909,10 @@ public class RecordDao {
       ResultSetMetaData metaData = rs.getMetaData();
 
       int primaryKeyColumnIndex = -1;
-      for (int i = 1; i <= metaData.getColumnCount(); i++) {
-        String columnName = metaData.getColumnName(i);
+      for (int columnIndex = 1; columnIndex <= metaData.getColumnCount(); columnIndex++) {
+        String columnName = metaData.getColumnName(columnIndex);
         if (columnName.equals(primaryKeyColumn)) {
-          primaryKeyColumnIndex = i;
+          primaryKeyColumnIndex = columnIndex;
           break;
         }
       }
@@ -932,10 +932,10 @@ public class RecordDao {
         ResultSetMetaData metaData = rs.getMetaData();
         RecordAttributes attributes = RecordAttributes.empty(primaryKeyColumn);
 
-        for (int j = 1; j <= metaData.getColumnCount(); j++) {
-          String columnName = metaData.getColumnName(j);
+        for (int columnIndex = 1; columnIndex <= metaData.getColumnCount(); columnIndex++) {
+          String columnName = metaData.getColumnName(columnIndex);
           if (columnName.equals(primaryKeyColumn)) {
-            attributes.putAttribute(primaryKeyColumn, rs.getString(j));
+            attributes.putAttribute(primaryKeyColumn, rs.getString(columnIndex));
             continue;
           }
           if (referenceColToTable.size() > 0
@@ -944,10 +944,11 @@ public class RecordDao {
             attributes.putAttribute(
                 columnName,
                 RelationUtils.createRelationString(
-                    referenceColToTable.get(columnName), rs.getString(j)));
+                    referenceColToTable.get(columnName), rs.getString(columnIndex)));
           } else {
             attributes.putAttribute(
-                columnName, getAttributeValueForType(rs.getObject(j), schema.get(columnName)));
+                columnName,
+                getAttributeValueForType(rs.getObject(columnIndex), schema.get(columnName)));
           }
         }
         return attributes;
