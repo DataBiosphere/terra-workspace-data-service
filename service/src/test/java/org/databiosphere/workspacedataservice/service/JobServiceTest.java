@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -25,7 +26,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(profiles = {"mock-sam"})
 @SpringBootTest
-public class JobServiceTest {
+class JobServiceTest {
   @MockBean JobDao jobDao;
   @Autowired SamDao samDao;
   @Autowired JobService jobService;
@@ -59,7 +60,7 @@ public class JobServiceTest {
     // Ask jobService to get it
     GenericJobServerModel fetchedJob = jobService.getJob(jobId);
     // Success
-    assert (expectedJob.equals(fetchedJob));
+    assertThat(expectedJob).isEqualTo(fetchedJob);
   }
 
   @Test
