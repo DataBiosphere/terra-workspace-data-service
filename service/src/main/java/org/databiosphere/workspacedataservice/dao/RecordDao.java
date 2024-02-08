@@ -131,7 +131,6 @@ public class RecordDao {
       PrimaryKeyDao primaryKeyDao) {
     this.mainDb = mainDb;
     this.namedTemplate = namedTemplate;
-    this.jdbcTemplate = namedTemplate.getJdbcTemplate();
     this.inferer = inf;
     this.objectMapper = objectMapper;
     this.primaryKeyDao = primaryKeyDao;
@@ -751,24 +750,23 @@ public class RecordDao {
   Object[] getListAsArray(List<?> attVal, DataTypeMapping typeMapping) {
     return switch (typeMapping) {
       case ARRAY_OF_STRING,
-              ARRAY_OF_FILE,
-              ARRAY_OF_RELATION,
-              ARRAY_OF_DATE,
-              ARRAY_OF_DATE_TIME,
-              ARRAY_OF_NUMBER,
-              EMPTY_ARRAY ->
-          attVal.stream()
-              .map(e -> Objects.toString(e, null)) // .toString() non-nulls, else return null
-              .toList()
-              .toArray(new String[0]);
+          ARRAY_OF_FILE,
+          ARRAY_OF_RELATION,
+          ARRAY_OF_DATE,
+          ARRAY_OF_DATE_TIME,
+          ARRAY_OF_NUMBER,
+          EMPTY_ARRAY -> attVal.stream()
+          .map(e -> Objects.toString(e, null)) // .toString() non-nulls, else return null
+          .toList()
+          .toArray(new String[0]);
       case ARRAY_OF_BOOLEAN ->
-          // accept all casings of True and False if they're strings
-          attVal.stream()
-              .map(Object::toString)
-              .map(String::toLowerCase)
-              .map(Boolean::parseBoolean)
-              .toList()
-              .toArray(new Boolean[0]);
+      // accept all casings of True and False if they're strings
+      attVal.stream()
+          .map(Object::toString)
+          .map(String::toLowerCase)
+          .map(Boolean::parseBoolean)
+          .toList()
+          .toArray(new Boolean[0]);
       default -> throw new IllegalArgumentException("Unhandled array type " + typeMapping);
     };
   }
