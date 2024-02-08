@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class BatchWriteServiceConfig {
   @Bean
-  BatchWriteService.WriteSink writeSink(RecordService recordService) {
+  BatchWriteService.RecordSink recordSink(RecordService recordService) {
     return recordService;
   }
 }

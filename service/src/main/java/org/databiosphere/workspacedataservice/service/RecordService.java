@@ -42,7 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
-public class RecordService implements BatchWriteService.WriteSink {
+public class RecordService implements BatchWriteService.RecordSink {
   // strings used for metrics
   public static final String METRIC_COL_CHANGE = "wds.column.change.datatype";
   public static final String TAG_RECORD_TYPE = "RecordType";

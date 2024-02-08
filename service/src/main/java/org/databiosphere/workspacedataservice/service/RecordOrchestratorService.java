@@ -16,10 +16,9 @@ import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.recordstream.PrimaryKeyResolver;
-import org.databiosphere.workspacedataservice.recordstream.StreamingWriteHandler;
-import org.databiosphere.workspacedataservice.recordstream.StreamingWriteHandlerFactory;
-import org.databiosphere.workspacedataservice.recordstream.TsvStreamWriteHandler;
-import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode;
+import org.databiosphere.workspacedataservice.recordstream.RecordSourceFactory;
+import org.databiosphere.workspacedataservice.recordstream.TsvRecordSource;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
@@ -53,7 +52,7 @@ public class RecordOrchestratorService { // TODO give me a better name
   private static final int MAX_RECORDS = 1_000;
 
   private final RecordDao recordDao;
-  private final StreamingWriteHandlerFactory streamingWriteHandlerFactory;
+  private final RecordSourceFactory recordSourceFactory;
   private final BatchWriteService batchWriteService;
   private final RecordService recordService;
   private final InstanceService instanceService;
@@ -64,7 +63,7 @@ public class RecordOrchestratorService { // TODO give me a better name
 
   public RecordOrchestratorService(
       RecordDao recordDao,
-      StreamingWriteHandlerFactory streamingWriteHandlerFactory,
+      RecordSourceFactory recordSourceFactory,
       BatchWriteService batchWriteService,
       RecordService recordService,
       InstanceService instanceService,
@@ -72,7 +71,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       ActivityLogger activityLogger,
       TsvSupport tsvSupport) {
     this.recordDao = recordDao;
-    this.streamingWriteHandlerFactory = streamingWriteHandlerFactory;
+    this.recordSourceFactory = recordSourceFactory;
     this.batchWriteService = batchWriteService;
     this.recordService = recordService;
     this.instanceService = instanceService;
@@ -135,17 +134,17 @@ public class RecordOrchestratorService { // TODO give me a better name
           Optional.of(recordService.validatePrimaryKey(instanceId, recordType, primaryKey));
     }
 
-    TsvStreamWriteHandler streamingWriteHandler =
-        streamingWriteHandlerFactory.forTsv(records.getInputStream(), recordType, primaryKey);
+    TsvRecordSource recordSource =
+        recordSourceFactory.forTsv(records.getInputStream(), recordType, primaryKey);
     BatchWriteResult result =
         batchWriteService.batchWrite(
-            streamingWriteHandler,
+            recordSource,
             instanceId,
             recordType,
             // the extra cast here isn't exactly necessary, but left here to call out the additional
-            // tangential responsibility of the TsvStreamWriteHandler; this can be removed if we
+            // tangential responsibility of the TsvRecordSource; this can be removed if we
             // can converge on using PrimaryKeyResolver more generally across all formats.
-            ((PrimaryKeyResolver) streamingWriteHandler).getPrimaryKey(),
+            ((PrimaryKeyResolver) recordSource).getPrimaryKey(),
             ImportMode.BASE_ATTRIBUTES);
     int qty = result.getUpdatedCount(recordType);
     activityLogger.saveEventForCurrentUser(
@@ -370,16 +369,16 @@ public class RecordOrchestratorService { // TODO give me a better name
       recordService.validatePrimaryKey(instanceId, recordType, primaryKey);
     }
 
-    StreamingWriteHandler streamingWriteHandler = null;
+    BatchWriteService.RecordSource recordSource = null;
     try {
-      streamingWriteHandler = streamingWriteHandlerFactory.forJson(is);
+      recordSource = recordSourceFactory.forJson(is);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
 
     BatchWriteResult result =
         batchWriteService.batchWrite(
-            streamingWriteHandler,
+            recordSource,
             instanceId,
             recordType,
             primaryKey.orElse(RECORD_ID),

@@ -16,7 +16,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericRecord;
-import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.slf4j.Logger;
@@ -33,14 +33,13 @@ public abstract class AvroRecordConverter {
   }
 
   /**
-   * Converts an Avro record to a WDS record. In {@link
-   * TwoPassStreamingWriteHandler.ImportMode#BASE_ATTRIBUTES} mode, this will call {@link
-   * #convertBaseAttributes(GenericRecord)} with the intention of creating a Record containing all
-   * non-relation attributes. In {@link TwoPassStreamingWriteHandler.ImportMode#RELATIONS} mode,
-   * this will call {@link #convertRelations(GenericRecord)} with the intention of creating a Record
-   * containing only relation attributes.
+   * Converts an Avro record to a WDS record. In {@link ImportMode#BASE_ATTRIBUTES} mode, this will
+   * call {@link #convertBaseAttributes(GenericRecord)} with the intention of creating a Record
+   * containing all non-relation attributes. In {@link ImportMode#RELATIONS} mode, this will call
+   * {@link #convertRelations(GenericRecord)} with the intention of creating a Record containing
+   * only relation attributes.
    */
-  public Record convert(GenericRecord genRec, TwoPassStreamingWriteHandler.ImportMode importMode) {
+  public Record convert(GenericRecord genRec, ImportMode importMode) {
     return switch (importMode) {
       case RELATIONS -> convertRelations(genRec);
       case BASE_ATTRIBUTES -> convertBaseAttributes(genRec);
@@ -48,8 +47,8 @@ public abstract class AvroRecordConverter {
   }
 
   /**
-   * When operating in {@see TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES} mode, what
-   * Record - and its attributes - should be upserted?
+   * When operating in {@see ImportMode.BASE_ATTRIBUTES} mode, what Record - and its attributes -
+   * should be upserted?
    *
    * @param genericRecord the inbound Avro GenericRecord to be converted
    * @return the Record containing base (non-relation) WDS attributes
@@ -57,8 +56,8 @@ public abstract class AvroRecordConverter {
   protected abstract Record convertBaseAttributes(GenericRecord genericRecord);
 
   /**
-   * When operating in {@see TwoPassStreamingWriteHandler.ImportMode.RELATIONS} mode, what Record -
-   * and its attributes - should be upserted?
+   * When operating in {@see ImportMode.RELATIONS} mode, what Record - and its attributes - should
+   * be upserted?
    *
    * @param genericRecord the inbound Avro GenericRecord to be converted
    * @return the Record containing WDS relation attributes

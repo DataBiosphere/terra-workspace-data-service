@@ -16,6 +16,7 @@ import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.service.BatchWriteService.RecordSource;
 import org.databiosphere.workspacedataservice.service.BatchWriteService.WriteStreamInfo;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidTsvException;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
@@ -27,14 +28,14 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
  * Stream-reads inbound TSV data using a Jackson CsvMapper; returns a WriteStreamInfo containing a
  * batch of Records.
  */
-public class TsvStreamWriteHandler implements StreamingWriteHandler, PrimaryKeyResolver {
+public class TsvRecordSource implements RecordSource, PrimaryKeyResolver {
 
   private final Spliterator<Record> recordSpliterator;
   private final InputStream inputStream;
   private final MappingIterator<RecordAttributes> tsvIterator;
   private final String primaryKey;
 
-  public TsvStreamWriteHandler(
+  public TsvRecordSource(
       InputStream inputStream,
       ObjectReader tsvReader,
       RecordType recordType,

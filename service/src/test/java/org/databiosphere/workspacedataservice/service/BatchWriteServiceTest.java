@@ -28,9 +28,9 @@ import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dao.InstanceDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils;
-import org.databiosphere.workspacedataservice.recordstream.StreamingWriteHandlerFactory;
-import org.databiosphere.workspacedataservice.recordstream.TsvStreamWriteHandler;
-import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode;
+import org.databiosphere.workspacedataservice.recordstream.RecordSourceFactory;
+import org.databiosphere.workspacedataservice.recordstream.TsvRecordSource;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -54,7 +54,7 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = {"twds.write.batch.size=2"})
 class BatchWriteServiceTest {
 
-  @Autowired private StreamingWriteHandlerFactory streamingWriteHandlerFactory;
+  @Autowired private RecordSourceFactory recordSourceFactory;
   @Autowired private BatchWriteService batchWriteService;
   @Autowired private InstanceDao instanceDao;
   @MockBean RecordDao recordDao;
@@ -87,7 +87,7 @@ class BatchWriteServiceTest {
             BadStreamingWriteRequestException.class,
             () ->
                 batchWriteService.batchWrite(
-                    streamingWriteHandlerFactory.forJson(is),
+                    recordSourceFactory.forJson(is),
                     INSTANCE,
                     THING_TYPE,
                     RECORD_ID,
@@ -117,11 +117,10 @@ class BatchWriteServiceTest {
     // call the BatchWriteService. Since this test specifies a batch size of 2, the 5 TSV rows will
     // execute in 3 batches.
     // Note that this call to batchWriteTsvStream specifies a non-null RecordType.
-    TsvStreamWriteHandler streamWriteHandler =
-        streamingWriteHandlerFactory.forTsv(
-            file.getInputStream(), recordType, Optional.of(primaryKey));
+    TsvRecordSource recordSource =
+        recordSourceFactory.forTsv(file.getInputStream(), recordType, Optional.of(primaryKey));
     batchWriteService.batchWrite(
-        streamWriteHandler, INSTANCE, recordType, primaryKey, ImportMode.BASE_ATTRIBUTES);
+        recordSource, INSTANCE, recordType, primaryKey, ImportMode.BASE_ATTRIBUTES);
 
     // we should write three batches
     verify(recordService, times(3))
@@ -134,7 +133,7 @@ class BatchWriteServiceTest {
   // when batchWritePfbStream is called and the input contains multiple record types, we should
   // infer each type's table schema only once even if we insert multiple batches.
   @Test
-  void schemaInferredOnceForEachRecordType() throws IOException {
+  void schemaInferredOnceForEachRecordType() {
     // create a stream with 5 "things", 10 "items", and 15 "widgets"
     // use a TreeMap, so we can control the order in which the record types appear in the stream.
     Map<String, Integer> counts = new TreeMap<>();
@@ -189,7 +188,7 @@ class BatchWriteServiceTest {
 
   // Do we get the right counts back when importing from a mock PFB stream?
   @Test
-  void batchWriteResultCountsFromMock() throws IOException {
+  void batchWriteResultCountsFromMock() {
     // create a stream with 5 "things", 10 "items", and 15 "widgets"
     Map<String, Integer> counts = Map.of("thing", 5, "item", 10, "widget", 15);
     try (DataFileStream<GenericRecord> pfbStream = PfbTestUtils.mockPfbStream(counts)) {
@@ -260,7 +259,7 @@ class BatchWriteServiceTest {
   private BatchWriteResult batchWritePfbStream(
       DataFileStream<GenericRecord> pfbStream, String primaryKey, ImportMode importMode) {
     return batchWriteService.batchWrite(
-        streamingWriteHandlerFactory.forPfb(pfbStream, importMode),
+        recordSourceFactory.forPfb(pfbStream, importMode),
         INSTANCE,
         /* recordType= */ null,
         primaryKey,

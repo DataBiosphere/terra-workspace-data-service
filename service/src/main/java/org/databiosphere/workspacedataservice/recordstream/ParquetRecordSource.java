@@ -12,7 +12,7 @@ import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTab
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 
-public class ParquetStreamWriteHandler implements TwoPassStreamingWriteHandler {
+public class ParquetRecordSource implements TwoPassRecordSource {
 
   private final ParquetReader<GenericRecord> parquetReader;
   private final ImportMode importMode;
@@ -20,7 +20,7 @@ public class ParquetStreamWriteHandler implements TwoPassStreamingWriteHandler {
   private final TdrManifestImportTable table;
   private final ObjectMapper objectMapper;
 
-  public ParquetStreamWriteHandler(
+  public ParquetRecordSource(
       ParquetReader<GenericRecord> parquetReader,
       ImportMode importMode,
       TdrManifestImportTable table,

@@ -14,20 +14,20 @@ import org.databiosphere.workspacedataservice.service.BatchWriteService.WriteStr
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 
-public class PfbStreamWriteHandler implements TwoPassStreamingWriteHandler {
+public class PfbRecordSource implements TwoPassRecordSource {
 
   private final DataFileStream<GenericRecord> inputStream;
   private final ImportMode importMode;
   private final ObjectMapper objectMapper;
 
   /**
-   * Create a new PfbStreamWriteHandler and specify the expected schemas for the PFB.
+   * Create a new PfbRecordSource and specify the expected schemas for the PFB.
    *
    * @param inputStream the PFB stream
    * @param importMode the mode to use when importing the PFB
    * @param objectMapper the object mapper to use when converting PFB records to WDS records
    */
-  public PfbStreamWriteHandler(
+  public PfbRecordSource(
       DataFileStream<GenericRecord> inputStream, ImportMode importMode, ObjectMapper objectMapper) {
     this.inputStream = inputStream;
     this.importMode = importMode;

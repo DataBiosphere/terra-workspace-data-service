@@ -14,7 +14,7 @@ public class SmallBatchWriteTestConfig {
 
   @Bean
   public BatchWriteService batchWriteService(
-      DataTypeInferer dataTypeInferer, BatchWriteService.WriteSink writeSink) {
-    return new BatchWriteService(/* batchSize= */ 1, dataTypeInferer, writeSink);
+      DataTypeInferer dataTypeInferer, BatchWriteService.RecordSink recordSink) {
+    return new BatchWriteService(/* batchSize= */ 1, dataTypeInferer, recordSink);
   }
 }

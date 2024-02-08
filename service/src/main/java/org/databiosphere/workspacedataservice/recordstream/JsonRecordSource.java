@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.recordstream;
 
+import static org.databiosphere.workspacedataservice.service.BatchWriteService.*;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,7 +18,7 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
  * Stream-reads inbound json using a JsonParser; returns a WriteStreamInfo containing a batch of
  * Records.
  */
-public class JsonStreamWriteHandler implements StreamingWriteHandler {
+public class JsonRecordSource implements RecordSource {
 
   private final JsonParser parser;
 
@@ -24,8 +26,7 @@ public class JsonStreamWriteHandler implements StreamingWriteHandler {
 
   private final InputStream inputStream;
 
-  public JsonStreamWriteHandler(InputStream inputStream, ObjectMapper objectMapper)
-      throws IOException {
+  public JsonRecordSource(InputStream inputStream, ObjectMapper objectMapper) throws IOException {
     this.inputStream = inputStream;
     parser = objectMapper.copy().tokenStreamFactory().createParser(inputStream);
     if (parser.nextToken() != JsonToken.START_ARRAY) {

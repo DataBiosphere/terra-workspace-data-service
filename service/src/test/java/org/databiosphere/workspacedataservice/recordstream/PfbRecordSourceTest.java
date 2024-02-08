@@ -15,7 +15,7 @@ import java.net.URL;
 import java.util.List;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
-import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.service.BatchWriteService.WriteStreamInfo;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -28,66 +28,63 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(classes = {JsonConfig.class})
-class PfbStreamWriteHandlerTest {
+class PfbRecordSourceTest {
   @Autowired private ObjectMapper objectMapper;
 
-  // does PfbStreamWriteHandler properly know how to page through a DataFileStream<GenericRecord>?
+  // does PfbRecordSource properly know how to page through a DataFileStream<GenericRecord>?
   @Test
   void testBatching() {
-    // create a mock PFB stream with 10 rows in it and a PfbStreamWriteHandler for that stream
-    PfbStreamWriteHandler pfbStreamWriteHandler =
-        buildHandler(
-            mockPfbStream(10, "someType"), TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
+    // create a mock PFB stream with 10 rows in it and a PfbRecordSource for that stream
+    PfbRecordSource recordSource =
+        buildRecordSource(mockPfbStream(10, "someType"), ImportMode.BASE_ATTRIBUTES);
 
     WriteStreamInfo batch; // used in assertions below
 
     // ask for the first 2/10 rows, should get those two back
-    batch = pfbStreamWriteHandler.readRecords(2);
+    batch = recordSource.readRecords(2);
     assertEquals(2, batch.records().size());
     assertEquals(List.of("0", "1"), batch.records().stream().map(Record::getId).toList());
 
     // ask for the next 6/10, should skip the first two that have already been consumed and
     // return the next 6
-    batch = pfbStreamWriteHandler.readRecords(6);
+    batch = recordSource.readRecords(6);
     assertEquals(6, batch.records().size());
     assertEquals(
         List.of("2", "3", "4", "5", "6", "7"),
         batch.records().stream().map(Record::getId).toList());
 
     // ask for 12 more. But since there are only 2 remaining in the source, we'll just get 2 back
-    batch = pfbStreamWriteHandler.readRecords(12);
+    batch = recordSource.readRecords(12);
     assertEquals(2, batch.records().size());
     assertEquals(List.of("8", "9"), batch.records().stream().map(Record::getId).toList());
   }
 
-  // does PfbStreamWriteHandler handle inputs of various sizes correctly?
+  // does PfbRecordSource handle inputs of various sizes correctly?
   @ParameterizedTest(name = "dont error if input has {0} row(s)")
   @ValueSource(ints = {0, 1, 49, 50, 51, 99, 100, 101})
   void inputStreamOfCount(Integer numRows) {
-    PfbStreamWriteHandler pfbStreamWriteHandler =
-        buildHandler(
-            mockPfbStream(numRows, "someType"),
-            TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
+    PfbRecordSource recordSource =
+        buildRecordSource(mockPfbStream(numRows, "someType"), ImportMode.BASE_ATTRIBUTES);
 
     int batchSize = 50;
 
     assertDoesNotThrow(
         () -> {
-          for (WriteStreamInfo info = pfbStreamWriteHandler.readRecords(batchSize);
+          for (WriteStreamInfo info = recordSource.readRecords(batchSize);
               !info.records().isEmpty();
-              info = pfbStreamWriteHandler.readRecords(batchSize)) {
+              info = recordSource.readRecords(batchSize)) {
             assertThat(info.records()).hasSizeLessThanOrEqualTo(batchSize);
           }
         });
   }
 
   @Test
-  // Given a real PFB file, does PfbStreamWriteHandler faithfully return the records inside that
+  // Given a real PFB file, does PfbRecordSource faithfully return the records inside that
   // PFB?
   void pfbTablesAreParsedCorrectly() {
     try (DataFileStream<GenericRecord> dataFileStream =
         streamRecordsFromFile("/avro/two_tables.avro")) {
-      PfbStreamWriteHandler pswh = buildHandler(dataFileStream, ImportMode.BASE_ATTRIBUTES);
+      PfbRecordSource pswh = buildRecordSource(dataFileStream, ImportMode.BASE_ATTRIBUTES);
       WriteStreamInfo streamInfo = pswh.readRecords(2);
       /*
         Expected records:
@@ -162,7 +159,7 @@ class PfbStreamWriteHandlerTest {
     try (DataFileStream<GenericRecord> dataFileStream = streamRecordsFromFile("/avro/test.avro")) {
 
       WriteStreamInfo streamInfo =
-          buildHandler(dataFileStream, ImportMode.RELATIONS).readRecords(5);
+          buildRecordSource(dataFileStream, ImportMode.RELATIONS).readRecords(5);
 
       List<Record> result = streamInfo.records();
       assertEquals(5, result.size());
@@ -207,8 +204,8 @@ class PfbStreamWriteHandlerTest {
     return PfbReader.getGenericRecordsStream(url.toString());
   }
 
-  private PfbStreamWriteHandler buildHandler(
+  private PfbRecordSource buildRecordSource(
       DataFileStream<GenericRecord> dataFileStream, ImportMode importMode) {
-    return new PfbStreamWriteHandler(dataFileStream, importMode, objectMapper);
+    return new PfbRecordSource(dataFileStream, importMode, objectMapper);
   }
 }
