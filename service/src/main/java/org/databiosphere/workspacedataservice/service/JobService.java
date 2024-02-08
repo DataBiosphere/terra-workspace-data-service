@@ -31,10 +31,6 @@ public class JobService {
   }
 
   public List<GenericJobServerModel> getJobsForInstance(InstanceId instanceId, StatusEnum status) {
-    try {
-      return jobDao.getJobsForInstance(instanceId, status);
-    } catch (EmptyResultDataAccessException e) {
-      throw new MissingObjectException("Jobs for InstanceId: " + instanceId);
-    }
+    return jobDao.getJobsForInstance(instanceId, status);
   }
 }
