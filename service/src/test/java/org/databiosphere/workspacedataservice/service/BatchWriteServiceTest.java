@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.ID_FIELD;
 import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES;
 import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode.RELATIONS;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -78,12 +79,11 @@ class BatchWriteServiceTest {
     String streamContents =
         "[{\"operation\": \"upsert\", \"record\": {\"id\": \"1\", \"type\": \"thing\", \"attributes\": {\"key\": \"value1\", \"key\": \"value2\"}}}]";
     InputStream is = new ByteArrayInputStream(streamContents.getBytes());
-    Optional<String> primaryKey = Optional.empty();
 
     Exception ex =
         assertThrows(
             BadStreamingWriteRequestException.class,
-            () -> batchWriteService.batchWriteJsonStream(is, INSTANCE, THING_TYPE, primaryKey));
+            () -> batchWriteService.batchWriteJsonStream(is, INSTANCE, THING_TYPE, RECORD_ID));
 
     String errorMessage = ex.getMessage();
     assertEquals("Duplicate field 'key'", errorMessage);
@@ -124,9 +124,6 @@ class BatchWriteServiceTest {
   // infer each type's table schema only once even if we insert multiple batches.
   @Test
   void schemaInferredOnceForEachRecordType() throws IOException {
-
-    Optional<String> primaryKey = Optional.of(ID_FIELD);
-
     // create a stream with 5 "things", 10 "items", and 15 "widgets"
     // use a TreeMap, so we can control the order in which the record types appear in the stream.
     Map<String, Integer> counts = new TreeMap<>();
@@ -146,19 +143,19 @@ class BatchWriteServiceTest {
       //    - 1 call for batch #8 which will be (item, widget)
       //    - 7 more calls for batches #9-15 which will be (widget, widget)
       // * inferTypes once for each of "thing", "item", and "widget"
-      batchWriteService.batchWritePfbStream(
-          pfbStream, INSTANCE, Optional.of(ID_FIELD), BASE_ATTRIBUTES);
+      String primaryKey = ID_FIELD;
+      batchWriteService.batchWritePfbStream(pfbStream, INSTANCE, primaryKey, BASE_ATTRIBUTES);
 
       // verify calls to batchUpsertWithErrorCapture
       verify(recordService, times(3))
           .batchUpsertWithErrorCapture(
-              eq(INSTANCE), eq(RecordType.valueOf("thing")), any(), any(), eq(primaryKey.get()));
+              eq(INSTANCE), eq(RecordType.valueOf("thing")), any(), any(), eq(primaryKey));
       verify(recordService, times(5))
           .batchUpsertWithErrorCapture(
-              eq(INSTANCE), eq(RecordType.valueOf("item")), any(), any(), eq(primaryKey.get()));
+              eq(INSTANCE), eq(RecordType.valueOf("item")), any(), any(), eq(primaryKey));
       verify(recordService, times(8))
           .batchUpsertWithErrorCapture(
-              eq(INSTANCE), eq(RecordType.valueOf("widget")), any(), any(), eq(primaryKey.get()));
+              eq(INSTANCE), eq(RecordType.valueOf("widget")), any(), any(), eq(primaryKey));
 
       // but we should only have inferred schemas three times - once for each record Type
       @SuppressWarnings("unchecked")
@@ -190,8 +187,7 @@ class BatchWriteServiceTest {
     Map<String, Integer> counts = Map.of("thing", 5, "item", 10, "widget", 15);
     try (DataFileStream<GenericRecord> pfbStream = PfbTestUtils.mockPfbStream(counts)) {
       BatchWriteResult result =
-          batchWriteService.batchWritePfbStream(
-              pfbStream, INSTANCE, Optional.of(ID_FIELD), BASE_ATTRIBUTES);
+          batchWriteService.batchWritePfbStream(pfbStream, INSTANCE, ID_FIELD, BASE_ATTRIBUTES);
       assertEquals(3, result.entrySet().size());
       assertEquals(5, result.getUpdatedCount(RecordType.valueOf("thing")));
       assertEquals(10, result.getUpdatedCount(RecordType.valueOf("item")));
@@ -210,8 +206,7 @@ class BatchWriteServiceTest {
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
       BatchWriteResult result =
-          batchWriteService.batchWritePfbStream(
-              dataStream, INSTANCE, Optional.of(ID_FIELD), BASE_ATTRIBUTES);
+          batchWriteService.batchWritePfbStream(dataStream, INSTANCE, ID_FIELD, BASE_ATTRIBUTES);
 
       assertEquals(2, result.entrySet().size());
       assertEquals(3, result.getUpdatedCount(RecordType.valueOf("data_release")));
@@ -228,8 +223,7 @@ class BatchWriteServiceTest {
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
       BatchWriteResult result =
-          batchWriteService.batchWritePfbStream(
-              dataStream, INSTANCE, Optional.of(ID_FIELD), RELATIONS);
+          batchWriteService.batchWritePfbStream(dataStream, INSTANCE, ID_FIELD, RELATIONS);
 
       assertEquals(1, result.entrySet().size());
       // The 'files' record type has relations, so it should have been updated
@@ -246,8 +240,7 @@ class BatchWriteServiceTest {
     try (DataFileStream<GenericRecord> dataStream =
         PfbReader.getGenericRecordsStream(url.toString())) {
       BatchWriteResult result =
-          batchWriteService.batchWritePfbStream(
-              dataStream, INSTANCE, Optional.of(ID_FIELD), RELATIONS);
+          batchWriteService.batchWritePfbStream(dataStream, INSTANCE, ID_FIELD, RELATIONS);
 
       assertEquals(1, result.entrySet().size());
       // Only one of the data_release records had any relations present
