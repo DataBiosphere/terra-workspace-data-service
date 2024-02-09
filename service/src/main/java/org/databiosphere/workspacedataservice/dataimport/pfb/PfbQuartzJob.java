@@ -10,7 +10,6 @@ import bio.terra.pfb.PfbReader;
 import io.micrometer.observation.ObservationRegistry;
 import java.net.URL;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -144,7 +143,7 @@ public class PfbQuartzJob extends QuartzJob {
       TwoPassStreamingWriteHandler.ImportMode importMode) {
     BatchWriteResult result =
         batchWriteService.batchWritePfbStream(
-            dataStream, targetInstance, Optional.of(ID_FIELD), importMode);
+            dataStream, targetInstance, /* primaryKey= */ ID_FIELD, importMode);
 
     if (result != null) {
       result

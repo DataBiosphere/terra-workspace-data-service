@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.service;
 
 import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES;
 import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode.RELATIONS;
-import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 
 import bio.terra.common.db.WriteTransaction;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -72,7 +71,7 @@ public class BatchWriteService {
       StreamingWriteHandler streamingWriteHandler,
       UUID instanceId,
       RecordType recordType,
-      Optional<String> primaryKey) {
+      String primaryKey) {
     return consumeWriteStreamWithRelations(
         streamingWriteHandler, instanceId, recordType, primaryKey, BASE_ATTRIBUTES);
   }
@@ -91,7 +90,7 @@ public class BatchWriteService {
       StreamingWriteHandler streamingWriteHandler,
       UUID instanceId,
       RecordType recordType,
-      Optional<String> primaryKey,
+      String primaryKey,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
     BatchWriteResult result = BatchWriteResult.empty();
     try {
@@ -141,8 +140,7 @@ public class BatchWriteService {
           if (!isTypeAlreadySeen && info.getOperationType() == OperationType.UPSERT) {
             Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(rList);
             Map<String, DataTypeMapping> finalSchema =
-                createOrModifyRecordType(
-                    instanceId, recType, inferredSchema, rList, primaryKey.orElse(RECORD_ID));
+                createOrModifyRecordType(instanceId, recType, inferredSchema, rList, primaryKey);
             typesSeen.put(recType, finalSchema);
           }
           // when updating relations only, do not update if there are no relations
@@ -173,7 +171,7 @@ public class BatchWriteService {
   // try-with-resources wrapper for JsonStreamWriteHandler; calls consumeWriteStream.
   @WriteTransaction
   public int batchWriteJsonStream(
-      InputStream is, UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
+      InputStream is, UUID instanceId, RecordType recordType, String primaryKey) {
     try (StreamingWriteHandler streamingWriteHandler =
         new JsonStreamWriteHandler(is, objectMapper)) {
       return consumeWriteStream(streamingWriteHandler, instanceId, recordType, primaryKey)
@@ -190,10 +188,7 @@ public class BatchWriteService {
     try (TsvStreamWriteHandler streamingWriteHandler =
         new TsvStreamWriteHandler(is, tsvReader, recordType, primaryKey)) {
       return consumeWriteStream(
-              streamingWriteHandler,
-              instanceId,
-              recordType,
-              Optional.of(streamingWriteHandler.getResolvedPrimaryKey()))
+              streamingWriteHandler, instanceId, recordType, streamingWriteHandler.getPrimaryKey())
           .getUpdatedCount(recordType);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
@@ -220,7 +215,7 @@ public class BatchWriteService {
   public BatchWriteResult batchWritePfbStream(
       DataFileStream<GenericRecord> is,
       UUID instanceId,
-      Optional<String> primaryKey,
+      String primaryKey,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
     try (PfbStreamWriteHandler streamingWriteHandler =
         new PfbStreamWriteHandler(is, importMode, objectMapper)) {
@@ -244,11 +239,7 @@ public class BatchWriteService {
     try (ParquetStreamWriteHandler streamingWriteHandler =
         new ParquetStreamWriteHandler(avroParquetReader, importMode, table, objectMapper)) {
       return consumeWriteStreamWithRelations(
-          streamingWriteHandler,
-          instanceId,
-          table.recordType(),
-          Optional.of(table.primaryKey()),
-          importMode);
+          streamingWriteHandler, instanceId, table.recordType(), table.primaryKey(), importMode);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
@@ -284,11 +275,11 @@ public class BatchWriteService {
       Map<String, DataTypeMapping> schema,
       OperationType opType,
       List<Record> records,
-      Optional<String> primaryKey)
+      String primaryKey)
       throws BatchWriteException {
     if (opType == OperationType.UPSERT) {
       recordService.batchUpsertWithErrorCapture(
-          instanceId, recordType, records, schema, primaryKey.orElse(RECORD_ID));
+          instanceId, recordType, records, schema, primaryKey);
     } else if (opType == OperationType.DELETE) {
       recordDao.batchDelete(instanceId, recordType, records);
     }
