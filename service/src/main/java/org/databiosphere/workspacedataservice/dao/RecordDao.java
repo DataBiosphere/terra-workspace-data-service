@@ -922,7 +922,8 @@ public class RecordDao {
         }
       }
       if (primaryKeyColumnIndex == -1) {
-        throw new RuntimeException("Primary key column not found");
+        throw new RuntimeException(
+            "Primary key column \"%s\" not found".formatted(primaryKeyColumn));
       }
 
       try {
