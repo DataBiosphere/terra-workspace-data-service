@@ -23,6 +23,7 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.recordstream.StreamingWriteHandlerFactory;
 import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
@@ -49,6 +50,7 @@ public class PfbQuartzJob extends QuartzJob {
   private final WorkspaceManagerDao wsmDao;
   private final BatchWriteService batchWriteService;
   private final ActivityLogger activityLogger;
+  private final StreamingWriteHandlerFactory streamingWriteHandlerFactory;
   private final UUID workspaceId;
   private final RestClientRetry restClientRetry;
 
@@ -56,6 +58,7 @@ public class PfbQuartzJob extends QuartzJob {
       JobDao jobDao,
       WorkspaceManagerDao wsmDao,
       RestClientRetry restClientRetry,
+      StreamingWriteHandlerFactory streamingWriteHandlerFactory,
       BatchWriteService batchWriteService,
       ActivityLogger activityLogger,
       ObservationRegistry observationRegistry,
@@ -64,6 +67,7 @@ public class PfbQuartzJob extends QuartzJob {
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
     this.restClientRetry = restClientRetry;
+    this.streamingWriteHandlerFactory = streamingWriteHandlerFactory;
     this.workspaceId = workspaceId;
     this.batchWriteService = batchWriteService;
     this.activityLogger = activityLogger;
@@ -141,9 +145,19 @@ public class PfbQuartzJob extends QuartzJob {
       DataFileStream<GenericRecord> dataStream,
       UUID targetInstance,
       TwoPassStreamingWriteHandler.ImportMode importMode) {
+
+    // As of this writing, the only use case is import from the UCSC AnVIL Data Browser. In this
+    // single use case, the `primaryKey` argument will always be "id".  However, as we add use cases
+    // and import PFBs from other providers, this may change, and we will encounter different
+    // `primaryKey` argument values.
+    String primaryKey = ID_FIELD;
     BatchWriteResult result =
-        batchWriteService.batchWritePfbStream(
-            dataStream, targetInstance, /* primaryKey= */ ID_FIELD, importMode);
+        batchWriteService.batchWrite(
+            streamingWriteHandlerFactory.forPfb(dataStream, importMode),
+            targetInstance,
+            /* recordType= */ null, // record type is determined later
+            primaryKey,
+            importMode);
 
     if (result != null) {
       result
