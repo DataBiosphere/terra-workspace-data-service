@@ -197,7 +197,7 @@ class BatchWriteServiceTest {
     Map<String, Integer> counts = Map.of("thing", 5, "item", 10, "widget", 15);
     try (DataFileStream<GenericRecord> pfbStream = PfbTestUtils.mockPfbStream(counts)) {
       BatchWriteResult result =
-          batchWritePfbStream(pfbStream, ID_FIELD, ImportMode.BASE_ATTRIBUTES);
+          batchWritePfbStream(pfbStream, /* primaryKey= */ ID_FIELD, ImportMode.BASE_ATTRIBUTES);
       assertEquals(3, result.entrySet().size());
       assertEquals(5, result.getUpdatedCount(RecordType.valueOf("thing")));
       assertEquals(10, result.getUpdatedCount(RecordType.valueOf("item")));
