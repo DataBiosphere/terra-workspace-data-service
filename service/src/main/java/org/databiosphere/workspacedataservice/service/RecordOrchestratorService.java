@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 
 import bio.terra.common.db.ReadTransaction;
 import java.io.IOException;
@@ -348,7 +349,9 @@ public class RecordOrchestratorService { // TODO give me a better name
       recordService.validatePrimaryKey(instanceId, recordType, primaryKey);
     }
 
-    int qty = batchWriteService.batchWriteJsonStream(is, instanceId, recordType, primaryKey);
+    int qty =
+        batchWriteService.batchWriteJsonStream(
+            is, instanceId, recordType, primaryKey.orElse(RECORD_ID));
     activityLogger.saveEventForCurrentUser(
         user -> user.modified().record().withRecordType(recordType).ofQuantity(qty));
     return qty;
