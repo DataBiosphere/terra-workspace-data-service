@@ -105,12 +105,13 @@ paths:
       parameters:
         - $ref: '#/components/parameters/instanceUuidPathParam'
         - name: status
-          in: path
-          required: true
+          in: query
+          required: false
           schema:
-            type: string
-            enum: [ CREATED, QUEUED, RUNNING, SUCCEEDED, ERROR, CANCELLED, UNKNOWN ]
-            default: RUNNING
+            type: array
+            items:
+              type: string
+              enum: [ CREATED, QUEUED, RUNNING, SUCCEEDED, ERROR, CANCELLED, UNKNOWN ]
       responses:
         200:
           description: A list of jobs with specified status for Instance Id.

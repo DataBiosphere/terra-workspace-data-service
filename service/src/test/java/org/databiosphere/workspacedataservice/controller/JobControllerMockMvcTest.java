@@ -80,17 +80,12 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
                 time,
                 time)
             .instanceId(instanceId.id()));
-    when(jobDao.getJobsForInstance(instanceId, GenericJobServerModel.StatusEnum.RUNNING))
-        .thenReturn(expected);
+    when(jobDao.getJobsForInstance(instanceId, Arrays.asList("RUNNING"))).thenReturn(expected);
 
     // calling the API should result in 200 OK
     MvcResult mvcResult =
         mockMvc
-            .perform(
-                get(
-                    "/job/v1/{instanceUuid}/{status}",
-                    instanceId,
-                    GenericJobServerModel.StatusEnum.RUNNING))
+            .perform(get("/job/v1/{instanceUuid}/{status}", instanceId, Arrays.asList("RUNNING")))
             .andExpect(status().isOk())
             .andReturn();
 

@@ -1,7 +1,5 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
-
 import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
@@ -30,7 +28,8 @@ public class JobService {
     }
   }
 
-  public List<GenericJobServerModel> getJobsForInstance(InstanceId instanceId, StatusEnum status) {
-    return jobDao.getJobsForInstance(instanceId, status);
+  public List<GenericJobServerModel> getJobsForInstance(
+      InstanceId instanceId, List<String> statuses) {
+    return jobDao.getJobsForInstance(instanceId, statuses);
   }
 }

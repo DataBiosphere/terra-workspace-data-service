@@ -213,17 +213,23 @@ public class PostgresJobDao implements JobDao {
   }
 
   @Override
-  public List<GenericJobServerModel> getJobsForInstance(InstanceId instanceId, StatusEnum status) {
+  public List<GenericJobServerModel> getJobsForInstance(
+      InstanceId instanceId, List<String> statuses) {
+    // start our sql statement and map of params
+    StringBuilder sb =
+        new StringBuilder(
+            "select id, type, status, created, updated, "
+                + "input, result, error, stacktrace, instance_id "
+                + "from sys_wds.job "
+                + "where instance_id = :instance_id");
     MapSqlParameterSource params = new MapSqlParameterSource("instance_id", instanceId.id());
-    params.addValue("status", status.name());
-    return namedTemplate.query(
-        "select id, type, status, created, updated, "
-            + "input, result, error, stacktrace, instance_id "
-            + "from sys_wds.job "
-            + "where instance_id = :instance_id "
-            + "and status = :status",
-        params,
-        new AsyncJobRowMapper());
+
+    // if status is supplied, filter by that
+    if (!statuses.isEmpty()) {
+      sb.append(" and status in (:statuses)");
+      params.addValue("statuses", statuses);
+    }
+    return namedTemplate.query(sb.toString(), params, new AsyncJobRowMapper());
   }
 
   // rowmapper for retrieving Job objects from the db

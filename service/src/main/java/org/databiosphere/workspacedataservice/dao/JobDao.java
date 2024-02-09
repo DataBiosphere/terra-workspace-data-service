@@ -1,7 +1,5 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
-
 import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
@@ -32,5 +30,5 @@ public interface JobDao {
 
   GenericJobServerModel getJob(UUID jobId);
 
-  List<GenericJobServerModel> getJobsForInstance(InstanceId instanceId, StatusEnum status);
+  List<GenericJobServerModel> getJobsForInstance(InstanceId instanceId, List<String> statuses);
 }
