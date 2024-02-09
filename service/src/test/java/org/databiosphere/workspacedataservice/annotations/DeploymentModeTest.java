@@ -3,9 +3,12 @@ package org.databiosphere.workspacedataservice.annotations;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.springframework.context.annotation.FilterType.ANNOTATION;
 
+import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,16 +32,21 @@ class DeploymentModeTest {
       })
   static class MinimalTestConfiguration {}
 
-  @Test
-  void instanceInitializerEnabledForDataPlane() {
-    var context = loadApplicationContext("env.wds.deploymentMode=data-plane");
-    assertThat(context.containsBean("instanceInitializer")).isTrue();
+  private static Stream<Arguments> conditionalBeans() {
+    return Stream.of(Arguments.of("instanceInitializer", "data-plane"));
   }
 
-  @Test
-  void instanceInitializerDisabledForControlPlane() {
-    var context = loadApplicationContext("env.wds.deploymentMode=control-plane");
-    assertThat(context.containsBean("instanceInitializer")).isFalse();
+  @ParameterizedTest(name = "{0} is enabled for DeploymentMode {1} only")
+  @MethodSource("conditionalBeans")
+  void beansEnabledForDataPlaneOnly(String beanName, String deploymentMode) {
+    assertThat(loadApplicationContext("env.wds.deploymentMode=" + deploymentMode).getBean(beanName))
+        .isNotNull();
+
+    assertThat(
+            loadApplicationContext(
+                    "env.wds.deploymentMode=" + differentDeploymentMode(deploymentMode))
+                .containsBean(beanName))
+        .isFalse();
   }
 
   private ConfigurableApplicationContext loadApplicationContext(String... properties) {
@@ -49,5 +57,13 @@ class DeploymentModeTest {
         .environment(environment)
         .web(WebApplicationType.NONE)
         .run();
+  }
+
+  private static String differentDeploymentMode(String deploymentMode) {
+    return switch (deploymentMode) {
+      case "control-plane" -> "data-plane";
+      case "data-plane" -> "control-plane";
+      default -> throw new IllegalArgumentException("Unknown deployment mode: " + deploymentMode);
+    };
   }
 }
