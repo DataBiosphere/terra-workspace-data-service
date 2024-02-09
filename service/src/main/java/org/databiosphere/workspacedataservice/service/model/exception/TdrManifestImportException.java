@@ -10,7 +10,7 @@ public class TdrManifestImportException extends DataImportException {
     super(message);
   }
 
-  public TdrManifestImportException(String message, Exception e) {
-    super(message, e);
+  public TdrManifestImportException(String message, Throwable t) {
+    super(message, t);
   }
 }
