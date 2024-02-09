@@ -29,6 +29,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.InvalidNam
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.NewPrimaryKeyException;
+import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -41,7 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
-public class RecordService {
+public class RecordService implements BatchWriteService.RecordSink {
   // strings used for metrics
   public static final String METRIC_COL_CHANGE = "wds.column.change.datatype";
   public static final String TAG_RECORD_TYPE = "RecordType";
@@ -63,7 +64,7 @@ public class RecordService {
     this.observationRegistry = observationRegistry;
   }
 
-  public void prepareAndUpsert(
+  private void prepareAndUpsert(
       UUID instanceId,
       RecordType recordType,
       List<Record> records,
@@ -99,7 +100,7 @@ public class RecordService {
                   entry -> entry.getValue() != null && relationArrays.containsKey(entry.getKey()))
               .toList();
       for (Map.Entry<String, Object> attribute : arrayAttributesForThisRecord) {
-        // How to read relation list depends on its source, which we don't know here so we have to
+        // How to read relation list depends on its source, which we don't know here, so we have to
         // check
         List<String> rels;
         if (attribute.getValue() instanceof List<?>) {
@@ -128,7 +129,7 @@ public class RecordService {
             new RecordAttributes(Collections.emptyMap())));
   }
 
-  public void batchUpsertWithErrorCapture(
+  public void batchUpsert(
       UUID instanceId,
       RecordType recordType,
       List<Record> records,
@@ -309,9 +310,9 @@ public class RecordService {
         recordDao
             .getSingleRecord(instanceId, recordType, recordId)
             .orElseThrow(() -> new MissingObjectException("Record"));
-    RecordAttributes incomingAtts = recordRequest.recordAttributes();
-    RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAtts).getAttributes();
-    Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAtts);
+    RecordAttributes incomingAttrs = recordRequest.recordAttributes();
+    RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAttrs).getAttributes();
+    Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAttrs);
     Map<String, DataTypeMapping> existingTableSchema =
         recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
     singleRecord.setAttributes(allAttrs);
@@ -424,5 +425,46 @@ public class RecordService {
   @WriteTransaction
   public void deleteAttribute(UUID instanceId, RecordType recordType, String attribute) {
     recordDao.deleteAttribute(instanceId, recordType, attribute);
+  }
+
+  @Override
+  public Map<String, DataTypeMapping> createOrModifyRecordType(
+      UUID instanceId,
+      RecordType recordType,
+      Map<String, DataTypeMapping> schema,
+      List<Record> records,
+      String recordTypePrimaryKey) {
+    if (!recordDao.recordTypeExists(instanceId, recordType)) {
+      recordDao.createRecordType(
+          instanceId,
+          schema,
+          recordType,
+          inferer.findRelations(records, schema),
+          recordTypePrimaryKey);
+    } else {
+      return addOrUpdateColumnIfNeeded(
+          instanceId,
+          recordType,
+          schema,
+          recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType),
+          records);
+    }
+    return schema;
+  }
+
+  @Override
+  public void writeBatch(
+      UUID instanceId,
+      RecordType recordType,
+      Map<String, DataTypeMapping> schema,
+      OperationType opType,
+      List<Record> records,
+      String primaryKey)
+      throws BatchWriteException {
+    if (opType == OperationType.UPSERT) {
+      batchUpsert(instanceId, recordType, records, schema, primaryKey);
+    } else if (opType == OperationType.DELETE) {
+      recordDao.batchDelete(instanceId, recordType, records);
+    }
   }
 }

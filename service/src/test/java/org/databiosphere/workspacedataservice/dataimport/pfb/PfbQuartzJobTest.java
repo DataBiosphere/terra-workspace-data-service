@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
-import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode.BASE_ATTRIBUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;

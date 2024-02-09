@@ -32,8 +32,8 @@ import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
-import org.databiosphere.workspacedataservice.recordstream.StreamingWriteHandlerFactory;
-import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
+import org.databiosphere.workspacedataservice.recordstream.RecordSourceFactory;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
@@ -58,7 +58,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
   private final BatchWriteService batchWriteService;
   private final ActivityLogger activityLogger;
   private final ObjectMapper mapper;
-  private final StreamingWriteHandlerFactory streamingWriteHandlerFactory;
+  private final RecordSourceFactory recordSourceFactory;
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -66,7 +66,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       JobDao jobDao,
       WorkspaceManagerDao wsmDao,
       RestClientRetry restClientRetry,
-      StreamingWriteHandlerFactory streamingWriteHandlerFactory,
+      RecordSourceFactory recordSourceFactory,
       BatchWriteService batchWriteService,
       ActivityLogger activityLogger,
       @Value("${twds.instance.workspace-id}") UUID workspaceId,
@@ -77,7 +77,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     this.wsmDao = wsmDao;
     this.restClientRetry = restClientRetry;
     this.workspaceId = workspaceId;
-    this.streamingWriteHandlerFactory = streamingWriteHandlerFactory;
+    this.recordSourceFactory = recordSourceFactory;
     this.batchWriteService = batchWriteService;
     this.activityLogger = activityLogger;
     this.mapper = mapper;
@@ -120,14 +120,14 @@ public class TdrManifestQuartzJob extends QuartzJob {
             tdrManifestImportTables,
             fileDownloadHelper.getFileMap(),
             targetInstance,
-            TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES);
+            ImportMode.BASE_ATTRIBUTES);
 
     // add relations to the existing base attributes
     importTables(
         tdrManifestImportTables,
         fileDownloadHelper.getFileMap(),
         targetInstance,
-        TwoPassStreamingWriteHandler.ImportMode.RELATIONS);
+        ImportMode.RELATIONS);
 
     // activity logging for import status
     // no specific activity logging for relations since main import is a superset
@@ -161,7 +161,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       InputFile inputFile,
       TdrManifestImportTable table,
       UUID targetInstance,
-      TwoPassStreamingWriteHandler.ImportMode importMode) {
+      ImportMode importMode) {
     // upsert this parquet file's contents
     try (ParquetReader<GenericRecord> avroParquetReader =
         AvroParquetReader.<GenericRecord>builder(inputFile)
@@ -169,7 +169,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
             .build()) {
       logger.info("batch-writing records for file ...");
       return batchWriteService.batchWrite(
-          streamingWriteHandlerFactory.forTdrImport(avroParquetReader, table, importMode),
+          recordSourceFactory.forTdrImport(avroParquetReader, table, importMode),
           targetInstance,
           table.recordType(),
           table.primaryKey(),
@@ -190,7 +190,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       List<TdrManifestImportTable> importTables,
       Multimap<String, File> fileMap,
       UUID targetInstance,
-      TwoPassStreamingWriteHandler.ImportMode importMode) {
+      ImportMode importMode) {
 
     var combinedResult = BatchWriteResult.empty();
     // loop through the tables that have data files.

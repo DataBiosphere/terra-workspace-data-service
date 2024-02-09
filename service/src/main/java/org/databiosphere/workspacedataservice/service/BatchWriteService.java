@@ -1,22 +1,20 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES;
-import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode.RELATIONS;
+import static org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode.RELATIONS;
 
 import bio.terra.common.db.WriteTransaction;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimaps;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.recordstream.StreamingWriteHandler;
-import org.databiosphere.workspacedataservice.recordstream.StreamingWriteHandler.WriteStreamInfo;
-import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
-import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
@@ -30,27 +28,64 @@ import org.springframework.stereotype.Service;
 @Service
 public class BatchWriteService {
 
-  private final RecordDao recordDao;
+  public record WriteStreamInfo(List<Record> records, OperationType operationType) {}
+
+  public interface RecordSource extends Closeable {
+
+    /**
+     * Reads numRecords from the stream unless the operation type changes during the stream in which
+     * case we return early and keep the last record read in memory, so it can be returned in a
+     * subsequent call.
+     *
+     * @param numRecords max number of records to read
+     * @return info about the records that were read
+     * @throws IOException on error
+     */
+    WriteStreamInfo readRecords(int numRecords) throws IOException;
+  }
+
+  /**
+   * Implementations of this interface are responsible for modifying the schema and writing/deleting
+   * batches of records.
+   */
+  public interface RecordSink {
+    /** Create or modify the schema for a record type and write the records. */
+    Map<String, DataTypeMapping> createOrModifyRecordType(
+        UUID instanceId,
+        RecordType recordType,
+        Map<String, DataTypeMapping> schema,
+        List<Record> records,
+        String recordTypePrimaryKey);
+
+    /** Perform the given {@link OperationType} on the batch of records. */
+    void writeBatch(
+        UUID instanceId,
+        RecordType recordType,
+        Map<String, DataTypeMapping> schema,
+        OperationType opType,
+        List<Record> records,
+        String primaryKey)
+        throws BatchWriteException;
+  }
+
   private final DataTypeInferer inferer;
   private final int batchSize;
-  private final RecordService recordService;
+  private final RecordSink recordSink;
 
   public BatchWriteService(
-      RecordDao recordDao,
       @Value("${twds.write.batch.size:5000}") int batchSize,
       DataTypeInferer inf,
-      RecordService recordService) {
-    this.recordDao = recordDao;
+      RecordSink recordSink) {
     this.batchSize = batchSize;
     this.inferer = inf;
-    this.recordService = recordService;
+    this.recordSink = recordSink;
   }
 
   /**
    * Responsible for looping over and upserting batches of Records found in the provided {@link
-   * StreamingWriteHandler}.
+   * RecordSource}.
    *
-   * @param streamingWriteHandler the source of the records to be upserted
+   * @param recordSource the source of the records to be upserted
    * @param instanceId instance to which records are upserted
    * @param recordType record type of records contained in the write handler
    * @param primaryKey primaryKey column for the record type
@@ -58,29 +93,27 @@ public class BatchWriteService {
    */
   @WriteTransaction
   public BatchWriteResult batchWrite(
-      StreamingWriteHandler streamingWriteHandler,
+      RecordSource recordSource,
       UUID instanceId,
       RecordType recordType,
       String primaryKey,
       ImportMode importMode) {
-    try (streamingWriteHandler) {
-      return consumeWriteStream(
-          streamingWriteHandler, instanceId, recordType, primaryKey, importMode);
+    try (recordSource) {
+      return consumeWriteStream(recordSource, instanceId, recordType, primaryKey, importMode);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
   }
 
   private BatchWriteResult consumeWriteStream(
-      StreamingWriteHandler streamingWriteHandler,
+      RecordSource recordSource,
       UUID instanceId,
       RecordType recordType, // nullable
       String primaryKey,
       ImportMode importMode) {
     BatchWriteResult result = BatchWriteResult.empty();
     try {
-      if (importMode == RELATIONS
-          && !(streamingWriteHandler instanceof TwoPassStreamingWriteHandler)) {
+      if (importMode == RELATIONS && !(recordSource instanceof TwoPassRecordSource)) {
         throw new BadStreamingWriteRequestException(
             "BatchWriteService attempted to re-read input data, but this input is not configured "
                 + "as re-readable. Cannot continue.");
@@ -89,13 +122,13 @@ public class BatchWriteService {
       // tracker to stash the schemas for the record types seen while processing this stream
       Map<RecordType, Map<String, DataTypeMapping>> typesSeen = new HashMap<>();
 
-      // loop through, in batches, the records provided by the StreamingWriteHandler. This loops
-      // until the StreamingWriteHandler returns an empty batch.
-      for (WriteStreamInfo info = streamingWriteHandler.readRecords(batchSize);
-          !info.getRecords().isEmpty();
-          info = streamingWriteHandler.readRecords(batchSize)) {
+      // loop through, in batches, the records provided by the RecordSource. This loops
+      // until the RecordSource returns an empty batch.
+      for (WriteStreamInfo info = recordSource.readRecords(batchSize);
+          !info.records().isEmpty();
+          info = recordSource.readRecords(batchSize)) {
         // get the records for this batch
-        List<Record> records = info.getRecords();
+        List<Record> records = info.records();
 
         // Group the incoming records by their record types. PFB inputs expect to have multiple
         // types within the same input stream. TSV and JSON are expected to have a single record
@@ -120,10 +153,11 @@ public class BatchWriteService {
           boolean isTypeAlreadySeen = typesSeen.containsKey(recType);
           // if this is the first time we've seen this record type, infer and update this record
           // type's schema, then save that schema back to the `typesSeen` map
-          if (!isTypeAlreadySeen && info.getOperationType() == OperationType.UPSERT) {
+          if (!isTypeAlreadySeen && info.operationType() == OperationType.UPSERT) {
             Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(rList);
             Map<String, DataTypeMapping> finalSchema =
-                createOrModifyRecordType(instanceId, recType, inferredSchema, rList, primaryKey);
+                recordSink.createOrModifyRecordType(
+                    instanceId, recType, inferredSchema, rList, primaryKey);
             typesSeen.put(recType, finalSchema);
           }
           // when updating relations only, do not update if there are no relations
@@ -133,11 +167,11 @@ public class BatchWriteService {
               rList = rList.stream().filter(rec -> !rec.attributeSet().isEmpty()).toList();
             }
             // write these records to the db, using the schema from the `typesSeen` map
-            writeBatch(
+            recordSink.writeBatch(
                 instanceId,
                 recType,
                 typesSeen.get(recType),
-                info.getOperationType(),
+                info.operationType(),
                 rList,
                 primaryKey);
             // update the result counts
@@ -149,45 +183,5 @@ public class BatchWriteService {
       throw new BadStreamingWriteRequestException(e);
     }
     return result;
-  }
-
-  private Map<String, DataTypeMapping> createOrModifyRecordType(
-      UUID instanceId,
-      RecordType recordType,
-      Map<String, DataTypeMapping> schema,
-      List<Record> records,
-      String recordTypePrimaryKey) {
-    if (!recordDao.recordTypeExists(instanceId, recordType)) {
-      recordDao.createRecordType(
-          instanceId,
-          schema,
-          recordType,
-          inferer.findRelations(records, schema),
-          recordTypePrimaryKey);
-    } else {
-      return recordService.addOrUpdateColumnIfNeeded(
-          instanceId,
-          recordType,
-          schema,
-          recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType),
-          records);
-    }
-    return schema;
-  }
-
-  private void writeBatch(
-      UUID instanceId,
-      RecordType recordType,
-      Map<String, DataTypeMapping> schema,
-      OperationType opType,
-      List<Record> records,
-      String primaryKey)
-      throws BatchWriteException {
-    if (opType == OperationType.UPSERT) {
-      recordService.batchUpsertWithErrorCapture(
-          instanceId, recordType, records, schema, primaryKey);
-    } else if (opType == OperationType.DELETE) {
-      recordDao.batchDelete(instanceId, recordType, records);
-    }
   }
 }

@@ -19,7 +19,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest(classes = {JsonConfig.class})
-public class JsonStreamWriteHandlerTest {
+public class JsonRecordSourceTest {
 
   @Autowired ObjectMapper objectMapper; // as defined in JsonConfig
 
@@ -27,16 +27,16 @@ public class JsonStreamWriteHandlerTest {
     return Arrays.stream(JsonParser.Feature.values()).map(Arguments::of);
   }
 
-  // test that JsonStreamWriteHandler has the same JsonParser features enabled
+  // test that JsonRecordSource has the same JsonParser features enabled
   // as the main ObjectMapper from JsonConfig
   @ParameterizedTest(name = "JsonParser feature {0} should be same in ObjectMapper and JsonParser")
   @MethodSource("parserFeatures")
   void parserConfig(JsonParser.Feature feature) throws IOException {
-    // fake json input needs to start with "[", or creating the JsonStreamWriteHandler will fail
+    // fake json input needs to start with "[", or creating the JsonRecordSource will fail
     String streamContents = "[]";
     InputStream is = new ByteArrayInputStream(streamContents.getBytes());
 
-    JsonStreamWriteHandler handler = new JsonStreamWriteHandler(is, objectMapper);
+    JsonRecordSource handler = new JsonRecordSource(is, objectMapper);
 
     boolean expected = objectMapper.isEnabled(feature);
     boolean actual = handler.getParser().isEnabled(feature);
