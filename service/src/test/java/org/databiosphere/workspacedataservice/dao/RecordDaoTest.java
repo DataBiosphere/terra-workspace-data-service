@@ -173,6 +173,41 @@ class RecordDaoTest {
   }
 
   @Test
+  void testGetRecordAttributeCaseSensitivity() {
+    // Arrange
+    RecordType recordType = RecordType.valueOf("aRecord");
+    Record upsertedRecord =
+        new Record(
+            "1",
+            recordType,
+            RecordAttributes.empty()
+                .putAttribute("FOO", "FOO")
+                .putAttribute("foo", "foo")
+                .putAttribute("Foo", "Foo"));
+
+    recordDao.createRecordType(
+        instanceId,
+        Map.of("FOO", STRING, "foo", STRING, "Foo", STRING),
+        recordType,
+        new RelationCollection(Collections.emptySet(), Collections.emptySet()),
+        "id");
+    recordDao.batchUpsert(
+        instanceId,
+        recordType,
+        Collections.singletonList(upsertedRecord),
+        Map.of("FOO", STRING, "foo", STRING, "Foo", STRING));
+
+    // Act
+    List<Record> queryRes = recordDao.queryForRecords(recordType, 10, 0, "ASC", null, instanceId);
+
+    // Assert
+    Record returnedRecord = queryRes.get(0);
+    assertEquals("FOO", returnedRecord.getAttributes().getAttributeValue("FOO"));
+    assertEquals("foo", returnedRecord.getAttributes().getAttributeValue("foo"));
+    assertEquals("Foo", returnedRecord.getAttributes().getAttributeValue("Foo"));
+  }
+
+  @Test
   void deleteAndQueryFunkyPrimaryKeyValues() {
     RecordType funkyPk = RecordType.valueOf("funkyPk");
     String sample_id = "Sample ID";

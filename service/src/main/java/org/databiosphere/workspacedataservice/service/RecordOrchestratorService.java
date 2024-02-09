@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
+import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 
 import bio.terra.common.db.ReadTransaction;
 import java.io.IOException;
@@ -14,12 +15,18 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.recordstream.PrimaryKeyResolver;
+import org.databiosphere.workspacedataservice.recordstream.RecordSourceFactory;
+import org.databiosphere.workspacedataservice.recordstream.TsvRecordSource;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
+import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
+import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
@@ -45,6 +52,7 @@ public class RecordOrchestratorService { // TODO give me a better name
   private static final int MAX_RECORDS = 1_000;
 
   private final RecordDao recordDao;
+  private final RecordSourceFactory recordSourceFactory;
   private final BatchWriteService batchWriteService;
   private final RecordService recordService;
   private final InstanceService instanceService;
@@ -55,6 +63,7 @@ public class RecordOrchestratorService { // TODO give me a better name
 
   public RecordOrchestratorService(
       RecordDao recordDao,
+      RecordSourceFactory recordSourceFactory,
       BatchWriteService batchWriteService,
       RecordService recordService,
       InstanceService instanceService,
@@ -62,6 +71,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       ActivityLogger activityLogger,
       TsvSupport tsvSupport) {
     this.recordDao = recordDao;
+    this.recordSourceFactory = recordSourceFactory;
     this.batchWriteService = batchWriteService;
     this.recordService = recordService;
     this.instanceService = instanceService;
@@ -110,7 +120,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     return new RecordResponse(recordId, recordType, result.getAttributes());
   }
 
-  // N.B. transaction annotated in batchWriteService.batchWriteTsvStream
+  // N.B. transaction annotated in batchWriteService.batchWrite
   public int tsvUpload(
       UUID instanceId,
       String version,
@@ -123,9 +133,20 @@ public class RecordOrchestratorService { // TODO give me a better name
       primaryKey =
           Optional.of(recordService.validatePrimaryKey(instanceId, recordType, primaryKey));
     }
-    int qty =
-        batchWriteService.batchWriteTsvStream(
-            records.getInputStream(), instanceId, recordType, primaryKey);
+
+    TsvRecordSource recordSource =
+        recordSourceFactory.forTsv(records.getInputStream(), recordType, primaryKey);
+    BatchWriteResult result =
+        batchWriteService.batchWrite(
+            recordSource,
+            instanceId,
+            recordType,
+            // the extra cast here isn't exactly necessary, but left here to call out the additional
+            // tangential responsibility of the TsvRecordSource; this can be removed if we
+            // can converge on using PrimaryKeyResolver more generally across all formats.
+            ((PrimaryKeyResolver) recordSource).getPrimaryKey(),
+            ImportMode.BASE_ATTRIBUTES);
+    int qty = result.getUpdatedCount(recordType);
     activityLogger.saveEventForCurrentUser(
         user -> user.upserted().record().withRecordType(recordType).ofQuantity(qty));
     return qty;
@@ -348,7 +369,21 @@ public class RecordOrchestratorService { // TODO give me a better name
       recordService.validatePrimaryKey(instanceId, recordType, primaryKey);
     }
 
-    int qty = batchWriteService.batchWriteJsonStream(is, instanceId, recordType, primaryKey);
+    BatchWriteService.RecordSource recordSource = null;
+    try {
+      recordSource = recordSourceFactory.forJson(is);
+    } catch (IOException e) {
+      throw new BadStreamingWriteRequestException(e);
+    }
+
+    BatchWriteResult result =
+        batchWriteService.batchWrite(
+            recordSource,
+            instanceId,
+            recordType,
+            primaryKey.orElse(RECORD_ID),
+            ImportMode.BASE_ATTRIBUTES);
+    int qty = result.getUpdatedCount(recordType);
     activityLogger.saveEventForCurrentUser(
         user -> user.modified().record().withRecordType(recordType).ofQuantity(qty));
     return qty;

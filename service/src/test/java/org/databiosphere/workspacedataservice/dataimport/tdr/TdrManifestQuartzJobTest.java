@@ -19,7 +19,7 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestExemplarData.AzureSmall;
-import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
@@ -126,7 +126,7 @@ public class TdrManifestQuartzJobTest {
    * additions?
    */
   @Test
-  void parseUnknownFieldsInManifest() throws IOException {
+  void parseUnknownFieldsInManifest() {
     UUID workspaceId = UUID.randomUUID();
     TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob(workspaceId);
     SnapshotExportResponseModel snapshotExportResponseModel =
@@ -159,9 +159,6 @@ public class TdrManifestQuartzJobTest {
         TdrManifestImportException.class,
         () ->
             tdrManifestQuartzJob.importTable(
-                malformedFile,
-                table,
-                workspaceId,
-                TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES));
+                malformedFile, table, workspaceId, ImportMode.BASE_ATTRIBUTES));
   }
 }

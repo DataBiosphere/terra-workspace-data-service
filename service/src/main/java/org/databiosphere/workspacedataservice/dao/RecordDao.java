@@ -906,8 +906,28 @@ public class RecordDao {
 
     @Override
     public Record mapRow(ResultSet rs, int rowNum) throws SQLException {
+      ResultSetMetaData metaData = rs.getMetaData();
+
+      // ResultSet's getter methods (getString, etc.) do not respect case of column names.
+      // If multiple columns have the same name differing only in case (for example, "attr" vs
+      // "Attr"),
+      // then getter methods will return the value of the first matching column.
+      // Because of this, we must get values by column index instead of name.
+      int primaryKeyColumnIndex = -1;
+      for (int columnIndex = 1; columnIndex <= metaData.getColumnCount(); columnIndex++) {
+        String columnName = metaData.getColumnName(columnIndex);
+        if (columnName.equals(primaryKeyColumn)) {
+          primaryKeyColumnIndex = columnIndex;
+          break;
+        }
+      }
+      if (primaryKeyColumnIndex == -1) {
+        throw new RuntimeException(
+            "Primary key column \"%s\" not found".formatted(primaryKeyColumn));
+      }
+
       try {
-        return new Record(rs.getString(primaryKeyColumn), recordType, getAttributes(rs));
+        return new Record(rs.getString(primaryKeyColumnIndex), recordType, getAttributes(rs));
       } catch (JsonProcessingException e) {
         throw new RuntimeException(e);
       }
@@ -918,10 +938,15 @@ public class RecordDao {
         ResultSetMetaData metaData = rs.getMetaData();
         RecordAttributes attributes = RecordAttributes.empty(primaryKeyColumn);
 
-        for (int j = 1; j <= metaData.getColumnCount(); j++) {
-          String columnName = metaData.getColumnName(j);
+        // ResultSet's getter methods (getString, etc.) do not respect case of column names.
+        // If multiple columns have the same name differing only in case (for example, "attr" vs
+        // "Attr"),
+        // then getter methods will return the value of the first matching column.
+        // Because of this, we must get values by column index instead of name.
+        for (int columnIndex = 1; columnIndex <= metaData.getColumnCount(); columnIndex++) {
+          String columnName = metaData.getColumnName(columnIndex);
           if (columnName.equals(primaryKeyColumn)) {
-            attributes.putAttribute(primaryKeyColumn, rs.getString(primaryKeyColumn));
+            attributes.putAttribute(primaryKeyColumn, rs.getString(columnIndex));
             continue;
           }
           if (referenceColToTable.size() > 0
@@ -930,11 +955,11 @@ public class RecordDao {
             attributes.putAttribute(
                 columnName,
                 RelationUtils.createRelationString(
-                    referenceColToTable.get(columnName), rs.getString(columnName)));
+                    referenceColToTable.get(columnName), rs.getString(columnIndex)));
           } else {
             attributes.putAttribute(
                 columnName,
-                getAttributeValueForType(rs.getObject(columnName), schema.get(columnName)));
+                getAttributeValueForType(rs.getObject(columnIndex), schema.get(columnName)));
           }
         }
         return attributes;
