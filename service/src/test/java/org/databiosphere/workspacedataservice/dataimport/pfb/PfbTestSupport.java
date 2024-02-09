@@ -5,7 +5,7 @@ import io.micrometer.observation.ObservationRegistry;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
-import org.databiosphere.workspacedataservice.recordstream.StreamingWriteHandlerFactory;
+import org.databiosphere.workspacedataservice.recordstream.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
@@ -17,7 +17,7 @@ class PfbTestSupport {
   @Autowired private JobDao jobDao;
   @Autowired private WorkspaceManagerDao wsmDao;
   @Autowired private RestClientRetry restClientRetry;
-  @Autowired private StreamingWriteHandlerFactory streamingWriteHandlerFactory;
+  @Autowired private RecordSourceFactory recordSourceFactory;
   @Autowired private BatchWriteService batchWriteService;
   @Autowired private ActivityLogger activityLogger;
   @Autowired private ObjectMapper objectMapper;
@@ -28,7 +28,7 @@ class PfbTestSupport {
         jobDao,
         wsmDao,
         restClientRetry,
-        streamingWriteHandlerFactory,
+        recordSourceFactory,
         batchWriteService,
         activityLogger,
         observationRegistry,

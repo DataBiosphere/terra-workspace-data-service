@@ -1,8 +1,8 @@
 package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.ID_FIELD;
-import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode.BASE_ATTRIBUTES;
-import static org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler.ImportMode.RELATIONS;
+import static org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode.RELATIONS;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
@@ -23,8 +23,8 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
-import org.databiosphere.workspacedataservice.recordstream.StreamingWriteHandlerFactory;
-import org.databiosphere.workspacedataservice.recordstream.TwoPassStreamingWriteHandler;
+import org.databiosphere.workspacedataservice.recordstream.RecordSourceFactory;
+import org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
@@ -50,7 +50,7 @@ public class PfbQuartzJob extends QuartzJob {
   private final WorkspaceManagerDao wsmDao;
   private final BatchWriteService batchWriteService;
   private final ActivityLogger activityLogger;
-  private final StreamingWriteHandlerFactory streamingWriteHandlerFactory;
+  private final RecordSourceFactory recordSourceFactory;
   private final UUID workspaceId;
   private final RestClientRetry restClientRetry;
 
@@ -58,7 +58,7 @@ public class PfbQuartzJob extends QuartzJob {
       JobDao jobDao,
       WorkspaceManagerDao wsmDao,
       RestClientRetry restClientRetry,
-      StreamingWriteHandlerFactory streamingWriteHandlerFactory,
+      RecordSourceFactory recordSourceFactory,
       BatchWriteService batchWriteService,
       ActivityLogger activityLogger,
       ObservationRegistry observationRegistry,
@@ -67,7 +67,7 @@ public class PfbQuartzJob extends QuartzJob {
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
     this.restClientRetry = restClientRetry;
-    this.streamingWriteHandlerFactory = streamingWriteHandlerFactory;
+    this.recordSourceFactory = recordSourceFactory;
     this.workspaceId = workspaceId;
     this.batchWriteService = batchWriteService;
     this.activityLogger = activityLogger;
@@ -142,9 +142,7 @@ public class PfbQuartzJob extends QuartzJob {
    * @param importMode indicating whether to import all data in the tables or only the relations
    */
   BatchWriteResult importTables(
-      DataFileStream<GenericRecord> dataStream,
-      UUID targetInstance,
-      TwoPassStreamingWriteHandler.ImportMode importMode) {
+      DataFileStream<GenericRecord> dataStream, UUID targetInstance, ImportMode importMode) {
 
     // As of this writing, the only use case is import from the UCSC AnVIL Data Browser. In this
     // single use case, the `primaryKey` argument will always be "id".  However, as we add use cases
@@ -153,7 +151,7 @@ public class PfbQuartzJob extends QuartzJob {
     String primaryKey = ID_FIELD;
     BatchWriteResult result =
         batchWriteService.batchWrite(
-            streamingWriteHandlerFactory.forPfb(dataStream, importMode),
+            recordSourceFactory.forPfb(dataStream, importMode),
             targetInstance,
             /* recordType= */ null, // record type is determined later
             primaryKey,
