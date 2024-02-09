@@ -908,6 +908,11 @@ public class RecordDao {
     public Record mapRow(ResultSet rs, int rowNum) throws SQLException {
       ResultSetMetaData metaData = rs.getMetaData();
 
+      // ResultSet's getter methods (getString, etc.) do not respect case of column names.
+      // If multiple columns have the same name differing only in case (for example, "attr" vs
+      // "Attr"),
+      // then getter methods will return the value of the first matching column.
+      // Because of this, we must get values by column index instead of name.
       int primaryKeyColumnIndex = -1;
       for (int columnIndex = 1; columnIndex <= metaData.getColumnCount(); columnIndex++) {
         String columnName = metaData.getColumnName(columnIndex);
@@ -932,6 +937,11 @@ public class RecordDao {
         ResultSetMetaData metaData = rs.getMetaData();
         RecordAttributes attributes = RecordAttributes.empty(primaryKeyColumn);
 
+        // ResultSet's getter methods (getString, etc.) do not respect case of column names.
+        // If multiple columns have the same name differing only in case (for example, "attr" vs
+        // "Attr"),
+        // then getter methods will return the value of the first matching column.
+        // Because of this, we must get values by column index instead of name.
         for (int columnIndex = 1; columnIndex <= metaData.getColumnCount(); columnIndex++) {
           String columnName = metaData.getColumnName(columnIndex);
           if (columnName.equals(primaryKeyColumn)) {
