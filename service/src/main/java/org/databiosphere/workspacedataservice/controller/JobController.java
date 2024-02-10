@@ -37,13 +37,16 @@ public class JobController implements JobApi {
   @Override
   public ResponseEntity<List<GenericJobServerModel>> jobsInInstanceV1(
       UUID instanceUuid, List<String> status) {
-    try {
-      // validate the strings in status are all valid statuses before proceeding
-      for (var statusValue : status) {
-        StatusEnum.fromValue(statusValue);
+    // status is an optional parameter
+    if (status != null) {
+      try {
+        // validate the strings in status are all valid statuses before proceeding
+        for (var statusValue : status) {
+          StatusEnum.fromValue(statusValue);
+        }
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException("Invalid status type provided.", e);
       }
-    } catch (IllegalArgumentException e) {
-      throw new IllegalArgumentException("Invalid status type provided.", e);
     }
     List<GenericJobServerModel> jobList =
         jobService.getJobsForInstance(InstanceId.of(instanceUuid), status);

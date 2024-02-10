@@ -76,7 +76,7 @@ public interface JobApi {
 
 
     /**
-     * GET /job/v1/{instanceUuid}/{status} : Get all jobs with a certain status under a particular instance.
+     * GET /job/v1/all/{instanceUuid} : Get all jobs with a certain status under a particular instance.
      *
      * @param instanceUuid WDS instance id; by convention equal to workspace id (required)
      * @param status  (optional)
@@ -94,7 +94,7 @@ public interface JobApi {
     )
     @RequestMapping(
         method = RequestMethod.GET,
-        value = "/job/v1/{instanceUuid}/{status}",
+        value = "/job/v1/all/{instanceUuid}",
         produces = { "application/json" }
     )
     default ResponseEntity<List<GenericJobServerModel>> jobsInInstanceV1(

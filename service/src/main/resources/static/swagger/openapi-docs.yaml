@@ -344,8 +344,8 @@ paths:
   ##############################
   /job/v1/{jobId}:
     $ref: 'apis-v1.yaml#/paths/~1job~1v1~1{jobId}'
-  /job/v1/{instanceUuid}/{status}:
-    $ref: 'apis-v1.yaml#/paths/~1job~1v1~1{instanceUuid}~1{status}'
+  /job/v1/all/{instanceUuid}:
+    $ref: 'apis-v1.yaml#/paths/~1job~1v1~1all~1{instanceUuid}'
 
   ##############################
   # Instances APIs

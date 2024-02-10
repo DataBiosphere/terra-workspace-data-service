@@ -96,7 +96,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenericJob'
-  /job/v1/{instanceUuid}/{status}:
+  /job/v1/all/{instanceUuid}:
     get:
       summary: Get all jobs with a certain status under a particular instance.
       operationId: jobsInInstanceV1
