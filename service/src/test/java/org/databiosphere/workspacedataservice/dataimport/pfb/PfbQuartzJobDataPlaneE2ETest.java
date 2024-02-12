@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
-import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -19,10 +18,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
-import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
-import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
-import org.databiosphere.workspacedataservice.service.ImportService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -37,7 +33,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,16 +47,14 @@ import org.springframework.test.context.ActiveProfiles;
  * parsing the PFB, creating tables in Postgres, inserting rows, and then reading back the
  * rows/counts/schema from Postgres.
  */
-@ActiveProfiles(profiles = "mock-sam")
+@ActiveProfiles(profiles = {"mock-sam", "data-plane"})
 @DirtiesContext
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class PfbQuartzJobE2ETest {
-
+class PfbQuartzJobDataPlaneE2ETest {
   @Autowired RecordOrchestratorService recordOrchestratorService;
-  @Autowired ImportService importService;
   @Autowired CollectionService collectionService;
-  @Autowired private PfbTestSupport testSupport;
+  @Autowired PfbTestSupport testSupport;
   @MockBean SchedulerDao schedulerDao;
   @MockBean WorkspaceManagerDao wsmDao;
 
@@ -92,6 +85,9 @@ class PfbQuartzJobE2ETest {
   void beforeEach() {
     collectionId = UUID.randomUUID();
     collectionService.createCollection(collectionId, "v0.2");
+    // stub out WSM to report no snapshots already linked to this workspace
+    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
   }
 
   @AfterEach
@@ -103,22 +99,7 @@ class PfbQuartzJobE2ETest {
   @Test
   @Tag(SLOW)
   void importTestResource() throws IOException, JobExecutionException {
-    ImportRequestServerModel importRequest =
-        new ImportRequestServerModel(
-            ImportRequestServerModel.TypeEnum.PFB, testAvroResource.getURI());
-
-    // because we have a mock scheduler dao, this won't trigger Quartz
-    GenericJobServerModel genericJobServerModel =
-        importService.createImport(collectionId, importRequest);
-
-    UUID jobId = genericJobServerModel.getJobId();
-    JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource, collectionId);
-
-    // WSM should report no snapshots already linked to this workspace
-    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new ResourceList());
-
-    testSupport.buildPfbQuartzJob().execute(mockContext);
+    testSupport.executePfbImportQuartzJob(collectionId, testAvroResource);
 
     /* the testAvroResource should insert:
        - 3202 record(s) of type activities
@@ -159,28 +140,12 @@ class PfbQuartzJobE2ETest {
   /* import four_rows.avro, and validate the tables and row counts it imported. */
   @Test
   void importFourRowsResource() throws IOException, JobExecutionException {
-    ImportRequestServerModel importRequest =
-        new ImportRequestServerModel(
-            ImportRequestServerModel.TypeEnum.PFB, fourRowsAvroResource.getURI());
-
-    // because we have a mock scheduler dao, this won't trigger Quartz
-    GenericJobServerModel genericJobServerModel =
-        importService.createImport(collectionId, importRequest);
-
-    UUID jobId = genericJobServerModel.getJobId();
-    JobExecutionContext mockContext = stubJobContext(jobId, fourRowsAvroResource, collectionId);
-
-    // WSM should report no snapshots already linked to this workspace
-    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new ResourceList());
-
-    testSupport.buildPfbQuartzJob().execute(mockContext);
+    testSupport.executePfbImportQuartzJob(collectionId, fourRowsAvroResource);
 
     /* the fourRowsAvroResource should insert:
        - 3 record(s) of type data_release
        - 1 record(s) of type submitted_aligned_reads
     */
-
     List<RecordTypeSchema> allTypes =
         recordOrchestratorService.describeAllRecordTypes(collectionId, "v0.2");
 
@@ -205,22 +170,7 @@ class PfbQuartzJobE2ETest {
   */
   @Test
   void numberPrecision() throws IOException, JobExecutionException {
-    ImportRequestServerModel importRequest =
-        new ImportRequestServerModel(
-            ImportRequestServerModel.TypeEnum.PFB, testPrecisionResource.getURI());
-
-    // because we have a mock scheduler dao, this won't trigger Quartz
-    GenericJobServerModel genericJobServerModel =
-        importService.createImport(collectionId, importRequest);
-
-    UUID jobId = genericJobServerModel.getJobId();
-    JobExecutionContext mockContext = stubJobContext(jobId, testPrecisionResource, collectionId);
-
-    // WSM should report no snapshots already linked to this workspace
-    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new ResourceList());
-
-    testSupport.buildPfbQuartzJob().execute(mockContext);
+    testSupport.executePfbImportQuartzJob(collectionId, testPrecisionResource);
 
     // this record, within the precision.avro file, is known to have numbers with high decimal
     // precision. Retrieve some of them and check for the expected high-precision values.
@@ -243,23 +193,7 @@ class PfbQuartzJobE2ETest {
   @Test
   void importWithForwardRelations() throws IOException, JobExecutionException {
     // The first record in this file relates to the fourth;
-    ImportRequestServerModel importRequest =
-        new ImportRequestServerModel(
-            ImportRequestServerModel.TypeEnum.PFB, forwardRelationsAvroResource.getURI());
-
-    // because we have a mock scheduler dao, this won't trigger Quartz
-    GenericJobServerModel genericJobServerModel =
-        importService.createImport(collectionId, importRequest);
-
-    UUID jobId = genericJobServerModel.getJobId();
-    JobExecutionContext mockContext =
-        stubJobContext(jobId, forwardRelationsAvroResource, collectionId);
-
-    // WSM should report no snapshots already linked to this workspace
-    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new ResourceList());
-
-    testSupport.buildPfbQuartzJob().execute(mockContext);
+    testSupport.executePfbImportQuartzJob(collectionId, forwardRelationsAvroResource);
 
     /* the forwardRelationsAvroResource should insert:
        - 1 record of type submitted_aligned_reads
@@ -293,22 +227,7 @@ class PfbQuartzJobE2ETest {
   @Test
   void importCyclicalRelations() throws IOException, JobExecutionException {
     // submitted_aligned_reads relates to data_release and vice versa
-    ImportRequestServerModel importRequest =
-        new ImportRequestServerModel(
-            ImportRequestServerModel.TypeEnum.PFB, cyclicalAvroResource.getURI());
-
-    // because we have a mock scheduler dao, this won't trigger Quartz
-    GenericJobServerModel genericJobServerModel =
-        importService.createImport(collectionId, importRequest);
-
-    UUID jobId = genericJobServerModel.getJobId();
-    JobExecutionContext mockContext = stubJobContext(jobId, cyclicalAvroResource, collectionId);
-
-    // WSM should report no snapshots already linked to this workspace
-    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new ResourceList());
-
-    testSupport.buildPfbQuartzJob().execute(mockContext);
+    testSupport.executePfbImportQuartzJob(collectionId, cyclicalAvroResource);
 
     RecordTypeSchema dataReleaseSchema =
         recordOrchestratorService.describeRecordType(

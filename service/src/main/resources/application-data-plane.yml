@@ -5,3 +5,5 @@ twds:
     allow-virtual-collections: false
     # Should this WDS deployment require a valid $WORKSPACE_ID env var?
     require-env-workspace: true
+  data-import:
+    batch-write-record-sink: "wds"

@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.service.BatchWriteService.RecordSink;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
@@ -42,7 +43,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
-public class RecordService implements BatchWriteService.RecordSink {
+public class RecordService implements RecordSink {
   // strings used for metrics
   public static final String METRIC_COL_CHANGE = "wds.column.change.datatype";
   public static final String TAG_RECORD_TYPE = "RecordType";

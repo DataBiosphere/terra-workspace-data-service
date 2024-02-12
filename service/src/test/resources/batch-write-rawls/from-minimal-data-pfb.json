@@ -1,0 +1,88 @@
+[
+  {
+    "name": "HG01101_cram",
+    "entityType": "submitted_aligned_reads",
+    "operations": [
+      {
+        "op": "AddUpdateAttribute",
+        "attributeName": "pfb:error_type",
+        "addUpdateAttribute": "file_size"
+      },
+      {
+        "op": "AddUpdateAttribute",
+        "attributeName": "pfb:file_format",
+        "addUpdateAttribute": "BAM"
+      },
+      {
+        "op": "AddUpdateAttribute",
+        "attributeName": "pfb:file_name",
+        "addUpdateAttribute": "foo.bam"
+      },
+      {
+        "op": "AddUpdateAttribute",
+        "attributeName": "pfb:file_size",
+        "addUpdateAttribute": 512
+      },
+      {
+        "op": "AddUpdateAttribute",
+        "attributeName": "pfb:file_state",
+        "addUpdateAttribute": "registered"
+      },
+      {
+        "op": "AddUpdateAttribute",
+        "attributeName": "pfb:ga4gh_drs_uri",
+        "addUpdateAttribute": "drs://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa"
+      },
+      {
+        "op": "AddUpdateAttribute",
+        "attributeName": "pfb:md5sum",
+        "addUpdateAttribute": "bdf121aadba028d57808101cb4455fa7"
+      },
+      {
+        "op": "AddUpdateAttribute",
+        "attributeName": "pfb:object_id",
+        "addUpdateAttribute": "dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa"
+      },
+      {
+        "op": "AddUpdateAttribute",
+        "attributeName": "pfb:participant_id",
+        "addUpdateAttribute": "bbb1234"
+      },
+      {
+        "op": "AddUpdateAttribute",
+        "attributeName": "pfb:project_id",
+        "addUpdateAttribute": "DEV-test"
+      },
+      {
+        "op": "AddUpdateAttribute",
+        "attributeName": "pfb:specimen_id",
+        "addUpdateAttribute": "spec1111"
+      },
+      {
+        "op": "AddUpdateAttribute",
+        "attributeName": "pfb:state",
+        "addUpdateAttribute": "uploading"
+      },
+      {
+        "op": "AddUpdateAttribute",
+        "attributeName": "pfb:study_id",
+        "addUpdateAttribute": "aaa1234"
+      },
+      {
+        "op": "AddUpdateAttribute",
+        "attributeName": "pfb:study_registration",
+        "addUpdateAttribute": "example.com/study_registration"
+      },
+      {
+        "op": "AddUpdateAttribute",
+        "attributeName": "pfb:subject_id",
+        "addUpdateAttribute": "p1011554-9"
+      },
+      {
+        "op": "AddUpdateAttribute",
+        "attributeName": "pfb:submitter_id",
+        "addUpdateAttribute": "HG01101_cram"
+      }
+    ]
+  }
+]
