@@ -80,6 +80,10 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
         // json packet
         Arguments.of(
             "{\"foo\":\"bar\", \"baz\": \"qux\"}", Map.of("foo", "bar", "baz", "qux"), false),
+        Arguments.of(
+            "[{\"value\":\"foo\"},{\"value\":\"bar\"},{\"value\":\"baz\"}]",
+            List.of(Map.of("value", "foo"), Map.of("value", "bar"), Map.of("value", "baz")),
+            false),
 
         // ========== arrays ==========
 
