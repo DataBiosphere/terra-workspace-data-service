@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice;
+package org.databiosphere.workspacedataservice.startup;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -276,7 +276,7 @@ public class InstanceInitializerBean {
    */
   private void restoreFromRemoteBackup(String backupFileName, UUID cloneJobId) {
     LOGGER.info(
-        "Restore from the following path on the source workspace storage container: {}",
+        "Restore from the following path on the destination workspace storage container: {}",
         backupFileName);
     cloneDao.updateCloneEntryStatus(cloneJobId, CloneStatus.RESTOREQUEUED);
     var restoreResponse =

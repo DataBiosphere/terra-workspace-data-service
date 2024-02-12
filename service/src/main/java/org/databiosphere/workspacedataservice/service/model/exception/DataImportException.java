@@ -10,7 +10,7 @@ public class DataImportException extends RuntimeException {
     super(message);
   }
 
-  public DataImportException(String message, Exception e) {
-    super(message, e);
+  public DataImportException(String message, Throwable t) {
+    super(message, t);
   }
 }

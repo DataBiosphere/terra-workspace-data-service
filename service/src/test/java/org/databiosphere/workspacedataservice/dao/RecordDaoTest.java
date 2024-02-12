@@ -78,11 +78,7 @@ class RecordDaoTest {
 
     instanceDao.createSchema(instanceId);
     recordDao.createRecordType(
-        instanceId,
-        emptyMap(),
-        recordType,
-        new RelationCollection(Collections.emptySet(), Collections.emptySet()),
-        PRIMARY_KEY);
+        instanceId, emptyMap(), recordType, RelationCollection.empty(), PRIMARY_KEY);
   }
 
   @AfterEach
@@ -173,17 +169,48 @@ class RecordDaoTest {
   }
 
   @Test
+  void testGetRecordAttributeCaseSensitivity() {
+    // Arrange
+    RecordType recordType = RecordType.valueOf("aRecord");
+    Record upsertedRecord =
+        new Record(
+            "1",
+            recordType,
+            RecordAttributes.empty()
+                .putAttribute("FOO", "FOO")
+                .putAttribute("foo", "foo")
+                .putAttribute("Foo", "Foo"));
+
+    recordDao.createRecordType(
+        instanceId,
+        Map.of("FOO", STRING, "foo", STRING, "Foo", STRING),
+        recordType,
+        RelationCollection.empty(),
+        "id");
+    recordDao.batchUpsert(
+        instanceId,
+        recordType,
+        Collections.singletonList(upsertedRecord),
+        Map.of("FOO", STRING, "foo", STRING, "Foo", STRING));
+
+    // Act
+    List<Record> queryRes = recordDao.queryForRecords(recordType, 10, 0, "ASC", null, instanceId);
+
+    // Assert
+    Record returnedRecord = queryRes.get(0);
+    assertEquals("FOO", returnedRecord.getAttributes().getAttributeValue("FOO"));
+    assertEquals("foo", returnedRecord.getAttributes().getAttributeValue("foo"));
+    assertEquals("Foo", returnedRecord.getAttributes().getAttributeValue("Foo"));
+  }
+
+  @Test
   void deleteAndQueryFunkyPrimaryKeyValues() {
     RecordType funkyPk = RecordType.valueOf("funkyPk");
     String sample_id = "Sample ID";
     String recordId = "1199";
     Record testRecord = new Record(recordId, funkyPk, RecordAttributes.empty());
     recordDao.createRecordType(
-        instanceId,
-        Map.of("attr1", STRING),
-        funkyPk,
-        new RelationCollection(Collections.emptySet(), Collections.emptySet()),
-        sample_id);
+        instanceId, Map.of("attr1", STRING), funkyPk, RelationCollection.empty(), sample_id);
     recordDao.batchUpsert(
         instanceId, funkyPk, Collections.singletonList(testRecord), emptyMap(), sample_id);
     List<Record> queryRes = recordDao.queryForRecords(funkyPk, 10, 0, "ASC", null, instanceId);
@@ -201,11 +228,7 @@ class RecordDaoTest {
     Record testRecord = new Record(recordId, referencedRt, RecordAttributes.empty());
     Map<String, DataTypeMapping> schema = Map.of("attr1", RELATION);
     recordDao.createRecordType(
-        instanceId,
-        schema,
-        referencedRt,
-        new RelationCollection(Collections.emptySet(), Collections.emptySet()),
-        sample_id);
+        instanceId, schema, referencedRt, RelationCollection.empty(), sample_id);
     recordDao.batchUpsert(
         instanceId, referencedRt, Collections.singletonList(testRecord), emptyMap(), sample_id);
     RecordType referencer = RecordType.valueOf("referencer");
@@ -239,11 +262,7 @@ class RecordDaoTest {
             .map(i -> new Record("id" + i, referencedRt, RecordAttributes.empty()))
             .collect(Collectors.toList());
     recordDao.createRecordType(
-        instanceId,
-        emptyMap(),
-        referencedRt,
-        new RelationCollection(Collections.emptySet(), Collections.emptySet()),
-        RECORD_ID);
+        instanceId, emptyMap(), referencedRt, RelationCollection.empty(), RECORD_ID);
     recordDao.batchUpsert(instanceId, referencedRt, referencedRecords, emptyMap());
 
     // Create records to do the referencing
@@ -574,11 +593,7 @@ class RecordDaoTest {
 
     RecordType newRecordType = RecordType.valueOf("newRecordType");
     recordDao.createRecordType(
-        instanceId,
-        emptyMap(),
-        newRecordType,
-        new RelationCollection(Collections.emptySet(), Collections.emptySet()),
-        RECORD_ID);
+        instanceId, emptyMap(), newRecordType, RelationCollection.empty(), RECORD_ID);
 
     List<RecordType> newTypesList = recordDao.getAllRecordTypes(instanceId);
     assertEquals(2, newTypesList.size());
@@ -652,11 +667,7 @@ class RecordDaoTest {
     RecordType recordTypeName = recordType;
     RecordType referencedType = RecordType.valueOf("referencedType");
     recordDao.createRecordType(
-        instanceId,
-        emptyMap(),
-        referencedType,
-        new RelationCollection(Collections.emptySet(), Collections.emptySet()),
-        RECORD_ID);
+        instanceId, emptyMap(), referencedType, RelationCollection.empty(), RECORD_ID);
 
     recordDao.addColumn(instanceId, recordTypeName, "relation", RELATION, referencedType);
 
@@ -745,7 +756,7 @@ class RecordDaoTest {
         instanceId,
         Map.of("foo", STRING, "bar", STRING),
         recordTypeWithAttributes,
-        new RelationCollection(Collections.emptySet(), Collections.emptySet()),
+        RelationCollection.empty(),
         PRIMARY_KEY);
 
     // Act
@@ -967,7 +978,7 @@ class RecordDaoTest {
         instanceId,
         Map.of("attr1", STRING, "attr2", STRING),
         recordTypeWithAttributes,
-        new RelationCollection(Collections.emptySet(), Collections.emptySet()),
+        RelationCollection.empty(),
         PRIMARY_KEY);
 
     // Act
@@ -984,11 +995,7 @@ class RecordDaoTest {
   void testCreateRelationJoinTable() {
     RecordType secondRecordType = RecordType.valueOf("secondRecordType");
     recordDao.createRecordType(
-        instanceId,
-        emptyMap(),
-        secondRecordType,
-        new RelationCollection(Collections.emptySet(), Collections.emptySet()),
-        RECORD_ID);
+        instanceId, emptyMap(), secondRecordType, RelationCollection.empty(), RECORD_ID);
 
     recordDao.createRelationJoinTable(instanceId, "refArray", secondRecordType, recordType);
 
@@ -1124,11 +1131,7 @@ class RecordDaoTest {
 
     RecordType toType = RecordType.valueOf("toType");
     recordDao.createRecordType(
-        instanceId,
-        emptyMap(),
-        toType,
-        new RelationCollection(Collections.emptySet(), Collections.emptySet()),
-        RECORD_ID);
+        instanceId, emptyMap(), toType, RelationCollection.empty(), RECORD_ID);
     String toRecordId = "toRecord1";
     Record toRecord = new Record(toRecordId, toType, RecordAttributes.empty());
     String toRecordId2 = "toRecord2";

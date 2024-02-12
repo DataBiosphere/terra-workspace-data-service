@@ -16,6 +16,8 @@ import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.service.BatchWriteService.RecordSource;
+import org.databiosphere.workspacedataservice.service.BatchWriteService.WriteStreamInfo;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidTsvException;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -26,21 +28,18 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
  * Stream-reads inbound TSV data using a Jackson CsvMapper; returns a WriteStreamInfo containing a
  * batch of Records.
  */
-public class TsvStreamWriteHandler implements StreamingWriteHandler {
+public class TsvRecordSource implements RecordSource, PrimaryKeyResolver {
 
   private final Spliterator<Record> recordSpliterator;
-
   private final InputStream inputStream;
   private final MappingIterator<RecordAttributes> tsvIterator;
+  private final String primaryKey;
 
-  private final String resolvedPrimaryKey;
-
-  public TsvStreamWriteHandler(
+  public TsvRecordSource(
       InputStream inputStream,
       ObjectReader tsvReader,
       RecordType recordType,
-      Optional<String> primaryKey)
-      throws IOException {
+      Optional<String> optionalPrimaryKey) {
     this.inputStream = inputStream;
     try {
       this.tsvIterator = tsvReader.readValues(inputStream);
@@ -84,22 +83,24 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
     }
 
     // if a primary key is specified, check if it is present in the TSV
-    if (primaryKey.isPresent() && !colNames.contains(primaryKey.get())) {
-      throw new InvalidTsvException(
-          "Uploaded TSV is either missing the "
-              + primaryKey.get()
-              + " column or has a null or empty string value in that column");
-    }
+    optionalPrimaryKey.ifPresent(
+        pk -> {
+          if (!colNames.contains(pk)) {
+            throw new InvalidTsvException(
+                "Uploaded TSV is either missing the "
+                    + pk
+                    + " column or has a null or empty string value in that column");
+          }
+        });
 
     // if primary key is not specified, use the leftmost column
-    String resolvedPK = primaryKey.orElseGet(() -> colNames.get(0));
-    resolvedPrimaryKey = resolvedPK;
+    this.primaryKey = optionalPrimaryKey.orElseGet(() -> colNames.get(0));
 
     // convert the tsvIterator, which is a MappingIterator<RecordAttributes>, to a Stream<Record>
     Stream<RecordAttributes> tsvStream =
         StreamSupport.stream(
             Spliterators.spliteratorUnknownSize(tsvIterator, Spliterator.ORDERED), false);
-    recordSpliterator = rowsToRecords(tsvStream, recordType, resolvedPK).spliterator();
+    recordSpliterator = rowsToRecords(tsvStream, recordType).spliterator();
   }
 
   /**
@@ -137,7 +138,7 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
     tsvIterator.close();
   }
 
-  private Record tsvRowToRecord(RecordAttributes row, RecordType recordType, String primaryKey) {
+  private Record tsvRowToRecord(RecordAttributes row, RecordType recordType) {
     Object recordId = row.getAttributeValue(primaryKey);
     if (recordId == null || StringUtils.isBlank(recordId.toString())) {
       throw new InvalidTsvException(
@@ -150,12 +151,11 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
     return new Record(recordId.toString(), recordType, row);
   }
 
-  private Stream<Record> rowsToRecords(
-      Stream<RecordAttributes> rows, RecordType recordType, String primaryKey) {
+  private Stream<Record> rowsToRecords(Stream<RecordAttributes> rows, RecordType recordType) {
     HashSet<String> recordIds = new HashSet<>(); // this set may be slow for very large TSVs
     return rows.map(
         m -> {
-          Record r = tsvRowToRecord(m, recordType, primaryKey);
+          Record r = tsvRowToRecord(m, recordType);
           if (!recordIds.add(r.getId())) {
             throw new InvalidTsvException("TSVs cannot contain duplicate primary key values");
           }
@@ -163,7 +163,7 @@ public class TsvStreamWriteHandler implements StreamingWriteHandler {
         });
   }
 
-  public String getResolvedPrimaryKey() {
-    return resolvedPrimaryKey;
+  public String getPrimaryKey() {
+    return primaryKey;
   }
 }

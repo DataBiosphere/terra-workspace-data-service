@@ -125,7 +125,7 @@ public class JobV1ServerModel {
 
   /**
    * Default constructor
-   * @deprecated Use {@link JobV1ServerModel#JobV1ServerModel(UUID, JobTypeEnum, StatusEnum, OffsetDateTime, OffsetDateTime)}
+   * @deprecated Use {@link JobV1ServerModel#JobV1ServerModel(UUID, JobTypeEnum, UUID, StatusEnum, OffsetDateTime, OffsetDateTime)}
    */
   @Deprecated
   public JobV1ServerModel() {
@@ -135,9 +135,10 @@ public class JobV1ServerModel {
   /**
    * Constructor with only required parameters
    */
-  public JobV1ServerModel(UUID jobId, JobTypeEnum jobType, StatusEnum status, OffsetDateTime created, OffsetDateTime updated) {
+  public JobV1ServerModel(UUID jobId, JobTypeEnum jobType, UUID instanceId, StatusEnum status, OffsetDateTime created, OffsetDateTime updated) {
     this.jobId = jobId;
     this.jobType = jobType;
+    this.instanceId = instanceId;
     this.status = status;
     this.created = created;
     this.updated = updated;
@@ -192,8 +193,8 @@ public class JobV1ServerModel {
    * Get instanceId
    * @return instanceId
   */
-  @Valid 
-  @Schema(name = "instanceId", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @NotNull @Valid 
+  @Schema(name = "instanceId", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("instanceId")
   public UUID getInstanceId() {
     return instanceId;

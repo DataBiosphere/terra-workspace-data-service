@@ -1,11 +1,7 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
-import org.databiosphere.workspacedataservice.service.RecordService;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 
@@ -18,11 +14,7 @@ public class SmallBatchWriteTestConfig {
 
   @Bean
   public BatchWriteService batchWriteService(
-      RecordDao recordDao,
-      DataTypeInferer inf,
-      ObjectMapper objectMapper,
-      ObjectReader tsvReader,
-      RecordService recordService) {
-    return new BatchWriteService(recordDao, 1, inf, objectMapper, tsvReader, recordService);
+      DataTypeInferer dataTypeInferer, BatchWriteService.RecordSink recordSink) {
+    return new BatchWriteService(/* batchSize= */ 1, dataTypeInferer, recordSink);
   }
 }

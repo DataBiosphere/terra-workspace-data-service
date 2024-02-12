@@ -1,13 +1,10 @@
 package org.databiosphere.workspacedataservice.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-
 /**
  * Configuration properties related to multi- or single-tenancy of workspaces within this WDS
  * deployment.
  */
-@ConfigurationProperties(prefix = "twds.tenancy")
-public class WdsTenancyProperties {
+public class TenancyProperties {
   private Boolean allowVirtualCollections;
   private Boolean requireEnvWorkspace;
 

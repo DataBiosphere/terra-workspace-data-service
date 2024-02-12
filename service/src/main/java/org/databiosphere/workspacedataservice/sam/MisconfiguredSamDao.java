@@ -59,6 +59,18 @@ public class MisconfiguredSamDao implements SamDao {
   }
 
   @Override
+  public boolean hasReadInstancePermission(String instanceId) {
+    logWarning();
+    return false;
+  }
+
+  @Override
+  public boolean hasReadInstancePermission(String instanceId, String token) {
+    logWarning();
+    return false;
+  }
+
+  @Override
   public String getUserId(String token) {
     logWarning();
     return "n/a";
