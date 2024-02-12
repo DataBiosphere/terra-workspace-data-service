@@ -3104,13 +3104,25 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
 
   static Stream<Arguments> jsonValues() {
     return Stream.of(
-        Arguments.of(Map.of("value", "foo"), Map.of("value", "foo")),
-        Arguments.of("{\"value\":\"foo\"}", Map.of("value", "foo")),
         Arguments.of(
-            List.of(Map.of("value", "foo"), Map.of("value", "bar")),
-            List.of(Map.of("value", "foo"), Map.of("value", "bar"))),
+            Map.of("string", "foo", "number", 1, "boolean", true),
+            Map.of("string", "foo", "number", BigInteger.valueOf(1), "boolean", Boolean.TRUE)),
         Arguments.of(
-            "[{\"value\":\"foo\"},{\"value\":\"bar\"}]",
-            List.of(Map.of("value", "foo"), Map.of("value", "bar"))));
+            "{\"string\":\"foo\",\"number\":1,\"boolean\":true}",
+            Map.of("string", "foo", "number", BigInteger.valueOf(1), "boolean", Boolean.TRUE)),
+        Arguments.of(
+            List.of(
+                Map.of("string", "foo", "number", 1, "boolean", true),
+                Map.of("string", "bar", "number", 2, "boolean", false)),
+            List.of(
+                Map.of("string", "foo", "number", BigInteger.valueOf(1), "boolean", Boolean.TRUE),
+                Map.of(
+                    "string", "bar", "number", BigInteger.valueOf(2), "boolean", Boolean.FALSE))),
+        Arguments.of(
+            "[{\"string\":\"foo\",\"number\":1,\"boolean\":true},{\"string\":\"bar\",\"number\":2,\"boolean\":false}]",
+            List.of(
+                Map.of("string", "foo", "number", BigInteger.valueOf(1), "boolean", Boolean.TRUE),
+                Map.of(
+                    "string", "bar", "number", BigInteger.valueOf(2), "boolean", Boolean.FALSE))));
   }
 }
