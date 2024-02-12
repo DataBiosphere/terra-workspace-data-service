@@ -21,6 +21,7 @@ import static org.databiosphere.workspacedataservice.service.model.DataTypeMappi
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Streams;
 import com.google.mu.util.stream.BiStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -203,7 +204,13 @@ public class DataTypeInferer {
 
   public boolean isValidJson(String val) {
     JsonNode jsonNode = parseToJsonNode(val);
-    return jsonNode != null && jsonNode.isObject();
+    // Arrays of primitive types should be inferred as ARRAY_OF_STRING, ARRAY_OF_NUMBER, etc.
+    // Arrays should only be inferred as JSON if they contain an object or array.
+    return jsonNode != null
+        && (jsonNode.isObject()
+            || (jsonNode.isArray()
+                && Streams.stream(jsonNode.elements())
+                    .anyMatch(childNode -> childNode.isObject() || childNode.isArray())));
   }
 
   public boolean isArray(String val) {

@@ -3105,6 +3105,12 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   static Stream<Arguments> jsonValues() {
     return Stream.of(
         Arguments.of(Map.of("value", "foo"), Map.of("value", "foo")),
-        Arguments.of("{\"value\":\"foo\"}", Map.of("value", "foo")));
+        Arguments.of("{\"value\":\"foo\"}", Map.of("value", "foo")),
+        Arguments.of(
+            List.of(Map.of("value", "foo"), Map.of("value", "bar")),
+            List.of(Map.of("value", "foo"), Map.of("value", "bar"))),
+        Arguments.of(
+            "[{\"value\":\"foo\"},{\"value\":\"bar\"}]",
+            List.of(Map.of("value", "foo"), Map.of("value", "bar"))));
   }
 }

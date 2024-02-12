@@ -48,7 +48,8 @@ public enum DataTypeMapping {
           new BaseTypeAndArrayTypePair(DATE, ARRAY_OF_DATE),
           new BaseTypeAndArrayTypePair(DATE_TIME, ARRAY_OF_DATE_TIME),
           new BaseTypeAndArrayTypePair(FILE, ARRAY_OF_FILE),
-          new BaseTypeAndArrayTypePair(RELATION, ARRAY_OF_RELATION));
+          new BaseTypeAndArrayTypePair(RELATION, ARRAY_OF_RELATION),
+          new BaseTypeAndArrayTypePair(JSON, JSON));
 
   static {
     Arrays.stream(DataTypeMapping.values())

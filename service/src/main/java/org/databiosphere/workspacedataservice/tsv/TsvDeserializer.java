@@ -128,11 +128,11 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
         return new BigDecimal(val);
       }
     }
-    // JSON objects
+    // JSON objects and arrays
     // TODO: change the "is*" methods in inferer to return their value so we don't parse twice?
     if (inferer.isValidJson(val)) {
       try {
-        return objectMapper.readValue(val, new TypeReference<Map<String, Object>>() {});
+        return objectMapper.readValue(val, new TypeReference<Object>() {});
       } catch (JsonProcessingException jpe) {
         // this shouldn't happen; if inferer.isValidJson(val) passes, so should the .readValue
         return val;

@@ -27,6 +27,7 @@ class DataTypeMappingTest {
         Arguments.of(DataTypeMapping.NUMBER, DataTypeMapping.ARRAY_OF_NUMBER),
         Arguments.of(DataTypeMapping.DATE, DataTypeMapping.ARRAY_OF_DATE),
         Arguments.of(DataTypeMapping.DATE_TIME, DataTypeMapping.ARRAY_OF_DATE_TIME),
+        Arguments.of(DataTypeMapping.JSON, DataTypeMapping.JSON),
         Arguments.of(DataTypeMapping.NULL, DataTypeMapping.ARRAY_OF_STRING));
   }
 

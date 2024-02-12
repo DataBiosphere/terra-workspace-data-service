@@ -722,7 +722,10 @@ public class RecordDao {
         return LocalDateTime.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
       }
     }
-    if (attVal instanceof Map<?, ?>) {
+    // There are two possibilities for JSON data types...
+    // One, the value is a Map or List that needs to be serialized to a JSON string.
+    // Two, the value is a String that's already JSON encoded.
+    if (typeMapping == DataTypeMapping.JSON && !(attVal instanceof String)) {
       try {
         return objectMapper.writeValueAsString(attVal);
       } catch (JsonProcessingException e) {
@@ -983,8 +986,7 @@ public class RecordDao {
         return getArrayValue(pgArray.getArray(), typeMapping);
       }
       if (typeMapping == DataTypeMapping.JSON) {
-        return objectMapper.readValue(
-            object.toString(), new TypeReference<Map<String, Object>>() {});
+        return objectMapper.readValue(object.toString(), new TypeReference<Object>() {});
       }
       return object;
     }

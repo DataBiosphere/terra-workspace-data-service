@@ -42,7 +42,8 @@ class DataTypeInfererTest {
     expected.put("array_of_string", DataTypeMapping.ARRAY_OF_STRING);
     expected.put("string_val", DataTypeMapping.STRING);
     expected.put("int_val", DataTypeMapping.NUMBER);
-    expected.put("json_val", DataTypeMapping.JSON);
+    expected.put("json_object", DataTypeMapping.JSON);
+    expected.put("json_array", DataTypeMapping.JSON);
     expected.put("date_val", DataTypeMapping.DATE);
     expected.put("date_time_val", DataTypeMapping.DATE_TIME);
     expected.put("file_val", DataTypeMapping.FILE);
@@ -96,6 +97,8 @@ class DataTypeInfererTest {
     assertThat(inferer.isValidJson(Boolean.TRUE.toString())).isFalse();
     assertThat(inferer.isValidJson("True")).isFalse();
     assertThat(inferer.isValidJson("{\"foo\":\"bar\"}")).isTrue();
+    assertThat(inferer.isValidJson("[{\"value\":1}, {\"value\":2}, {\"value\":3}]")).isTrue();
+    assertThat(inferer.isValidJson("[\"foo\", \"bar\", \"baz\"]")).isFalse();
   }
 
   @Test
@@ -241,7 +244,8 @@ class DataTypeInfererTest {
         ofEntries(
             entry("int_val", new BigDecimal("4747")),
             entry("string_val", "Abracadabra Open Sesame"),
-            entry("json_val", "{\"list\": [\"a\", \"b\"]}"),
+            entry("json_object", "{\"list\": [\"a\", \"b\"]}"),
+            entry("json_array", "[{\"value\": 1}, {\"value\": 2}, {\"value\": 3}]"),
             entry("date_val", "2001-11-03"),
             entry("date_time_val", "2001-11-03T10:00:00"),
             entry("number_or_string", "47"),
