@@ -6,9 +6,9 @@ import bio.terra.common.db.WriteTransaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.shared.model.InstanceId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -18,7 +18,6 @@ public class PostgresInstanceDao implements InstanceDao {
 
   private final NamedParameterJdbcTemplate namedTemplate;
 
-  @Value("${twds.instance.workspace-id}")
   private UUID workspaceId;
 
   /*
@@ -26,8 +25,14 @@ public class PostgresInstanceDao implements InstanceDao {
   This table tracks activity such as instance creation and deletion, as well as returning existing instances.
   This class will help add entries to the table, check if entries already exist and update them as necessary.
    */
-  public PostgresInstanceDao(NamedParameterJdbcTemplate namedTemplate) {
+  public PostgresInstanceDao(
+      NamedParameterJdbcTemplate namedTemplate, TwdsProperties twdsProperties) {
     this.namedTemplate = namedTemplate;
+    // if we have a valid workspaceId, save it to a local var now
+    if (twdsProperties.getInstance() != null
+        && twdsProperties.getInstance().getWorkspaceUuid() != null) {
+      this.workspaceId = twdsProperties.getInstance().getWorkspaceUuid();
+    }
   }
 
   @Override
@@ -51,7 +56,7 @@ public class PostgresInstanceDao implements InstanceDao {
   @SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
   public void createSchema(UUID instanceId) {
     // insert to instance table
-    insertInstanceRow(instanceId, false);
+    insertInstanceRow(instanceId, /* ignoreConflict= */ false);
     // create the postgres schema
     namedTemplate.getJdbcTemplate().update("create schema " + quote(instanceId.toString()));
   }
@@ -89,7 +94,7 @@ public class PostgresInstanceDao implements InstanceDao {
     // ensure new exists in sys_wds.instance. When this alterSchema() method is called after
     // restoring from a pg_dump,
     // the oldSchema doesn't exist, so is not renamed in the previous statement.
-    insertInstanceRow(newSchemaId, true);
+    insertInstanceRow(newSchemaId, /* ignoreConflict= */ true);
   }
 
   @Override
