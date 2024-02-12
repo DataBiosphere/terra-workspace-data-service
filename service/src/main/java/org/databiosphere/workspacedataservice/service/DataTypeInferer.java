@@ -204,13 +204,21 @@ public class DataTypeInferer {
 
   public boolean isValidJson(String val) {
     JsonNode jsonNode = parseToJsonNode(val);
+
+    if (jsonNode == null) {
+      return false;
+    }
+
+    boolean isObject = jsonNode.isObject();
+
     // Arrays of primitive types should be inferred as ARRAY_OF_STRING, ARRAY_OF_NUMBER, etc.
     // Arrays should only be inferred as JSON if they contain an object or array.
-    return jsonNode != null
-        && (jsonNode.isObject()
-            || (jsonNode.isArray()
-                && Streams.stream(jsonNode.elements())
-                    .anyMatch(childNode -> childNode.isObject() || childNode.isArray())));
+    boolean isValidArray =
+        jsonNode.isArray()
+            && Streams.stream(jsonNode.elements())
+                .anyMatch(childNode -> childNode.isObject() || childNode.isArray());
+
+    return isObject || isValidArray;
   }
 
   public boolean isArray(String val) {
