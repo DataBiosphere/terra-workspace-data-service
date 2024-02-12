@@ -9,18 +9,18 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
-@ActiveProfiles("control-plane")
-class WdsTenancyPropertiesControlPlaneTest {
+@ActiveProfiles("data-plane")
+class TenancyPropertiesDataPlaneTest {
 
-  @Autowired WdsTenancyProperties wdsTenancyProperties;
+  @Autowired TwdsProperties twdsProperties;
 
   @Test
   void allowVirtualCollections() {
-    assertTrue(wdsTenancyProperties.getAllowVirtualCollections());
+    assertFalse(twdsProperties.getTenancy().getAllowVirtualCollections());
   }
 
   @Test
   void requireEnvWorkspace() {
-    assertFalse(wdsTenancyProperties.getRequireEnvWorkspace());
+    assertTrue(twdsProperties.getTenancy().getRequireEnvWorkspace());
   }
 }
