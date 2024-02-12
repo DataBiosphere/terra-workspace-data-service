@@ -68,20 +68,20 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
     List<GenericJobServerModel> expected = new ArrayList<GenericJobServerModel>(2);
     expected.add(
         new GenericJobServerModel(
-                jobId1,
-                GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
-                GenericJobServerModel.StatusEnum.RUNNING,
-                time,
-                time)
-            .instanceId(instanceId.id()));
+            jobId1,
+            GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
+            instanceId.id(),
+            GenericJobServerModel.StatusEnum.RUNNING,
+            time,
+            time));
     expected.add(
         new GenericJobServerModel(
-                jobId2,
-                GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
-                GenericJobServerModel.StatusEnum.RUNNING,
-                time,
-                time)
-            .instanceId(instanceId.id()));
+            jobId2,
+            GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
+            instanceId.id(),
+            GenericJobServerModel.StatusEnum.RUNNING,
+            time,
+            time));
     when(jobDao.getJobsForInstance(instanceId, Arrays.asList("RUNNING"))).thenReturn(expected);
 
     // calling the API should result in 200 OK
