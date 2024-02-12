@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.dao.TestDao;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -40,6 +41,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -3051,5 +3055,56 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
         testDao.getRelationArrayValues(
             instanceId, "relArrAttr", recordWithRelationArray, recordType);
     assertIterableEquals(List.of("record_0", "record_1"), joinVals);
+  }
+
+  @ParameterizedTest
+  @MethodSource("jsonValues")
+  @Transactional
+  void createRecordWithJsonAttributes(Object inputValue, Object expectedValue) throws Exception {
+    RecordType recordType = RecordType.valueOf("test-type");
+    String recordId = "recordId";
+    String attributeName = "jsonValue";
+    RecordAttributes attributes = RecordAttributes.empty().putAttribute(attributeName, inputValue);
+
+    mockMvc
+        .perform(
+            put(
+                    "/{instanceId}/records/{version}/{recordType}/{recordId}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    recordId)
+                .content(toJson(new RecordRequest(attributes)))
+                .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isCreated());
+
+    MvcResult mvcSingleResult =
+        mockMvc
+            .perform(
+                get(
+                    "/{instanceId}/records/{version}/{recordType}/{recordId}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    recordId))
+            .andExpect(status().isOk())
+            .andReturn();
+    RecordResponse record = fromJson(mvcSingleResult, RecordResponse.class);
+
+    assertEquals(expectedValue, record.recordAttributes().getAttributeValue(attributeName));
+
+    MvcResult schemaResult =
+        mockMvc
+            .perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType))
+            .andReturn();
+    RecordTypeSchema schema = fromJson(schemaResult, RecordTypeSchema.class);
+
+    assertEquals("JSON", schema.getAttributeSchema(attributeName).datatype());
+  }
+
+  static Stream<Arguments> jsonValues() {
+    return Stream.of(
+        Arguments.of(Map.of("value", "foo"), Map.of("value", "foo")),
+        Arguments.of("{\"value\":\"foo\"}", Map.of("value", "foo")));
   }
 }
