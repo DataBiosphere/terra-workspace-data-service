@@ -1,12 +1,5 @@
--- we need a function to safely parse uuids, will be used in the next statement
-create or replace function sys_wds.uuid_or_null(str text)
-returns uuid as $$
-begin
-return str::uuid;
-exception when invalid_text_representation then
-  return null;
-end;
-$$ language plpgsql immutable;
+-- this changeset relies on the sys_wds.uuid_or_null function, previously defined in
+-- 20240213_add_workspace_to_instance.yaml
 
 -- insert the WORKSPACE_ID env var as the workspace for all pre-existing instances
 -- if WORKSPACE_ID is empty, in which case it will not parse as a uuid,

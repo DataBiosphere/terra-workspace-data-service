@@ -32,7 +32,7 @@ databaseChangeLog:
         # See https://docs.liquibase.com/concepts/changelogs/property-substitution.html for info.
         - sqlFile:
             dbms: 'postgresql'
-            path: 20240131_add_workspace_to_instance.sql
+            path: 20240213_add_workspace_to_instance.sql
             relativeToChangelogFile: true
             splitStatements: false
             stripComments: true

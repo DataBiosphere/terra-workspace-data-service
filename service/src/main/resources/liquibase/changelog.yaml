@@ -33,5 +33,5 @@ databaseChangeLog:
       file: changesets/20240212_backfill_instanceid_to_job.yaml
       relativeToChangelogFile: true
   - include:
-      file: changesets/20240131_add_workspace_to_instance.yaml
+      file: changesets/20240213_add_workspace_to_instance.yaml
       relativeToChangelogFile: true
