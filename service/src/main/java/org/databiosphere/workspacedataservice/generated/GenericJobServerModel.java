@@ -130,7 +130,7 @@ public class GenericJobServerModel {
 
   /**
    * Default constructor
-   * @deprecated Use {@link GenericJobServerModel#GenericJobServerModel(UUID, JobTypeEnum, StatusEnum, OffsetDateTime, OffsetDateTime)}
+   * @deprecated Use {@link GenericJobServerModel#GenericJobServerModel(UUID, JobTypeEnum, UUID, StatusEnum, OffsetDateTime, OffsetDateTime)}
    */
   @Deprecated
   public GenericJobServerModel() {
@@ -140,9 +140,10 @@ public class GenericJobServerModel {
   /**
    * Constructor with only required parameters
    */
-  public GenericJobServerModel(UUID jobId, JobTypeEnum jobType, StatusEnum status, OffsetDateTime created, OffsetDateTime updated) {
+  public GenericJobServerModel(UUID jobId, JobTypeEnum jobType, UUID instanceId, StatusEnum status, OffsetDateTime created, OffsetDateTime updated) {
     this.jobId = jobId;
     this.jobType = jobType;
+    this.instanceId = instanceId;
     this.status = status;
     this.created = created;
     this.updated = updated;
@@ -197,8 +198,8 @@ public class GenericJobServerModel {
    * Get instanceId
    * @return instanceId
   */
-  @Valid 
-  @Schema(name = "instanceId", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @NotNull @Valid 
+  @Schema(name = "instanceId", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("instanceId")
   public UUID getInstanceId() {
     return instanceId;

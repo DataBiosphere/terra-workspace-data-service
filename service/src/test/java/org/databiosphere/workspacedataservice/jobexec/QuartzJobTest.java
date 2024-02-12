@@ -60,6 +60,7 @@ class QuartzJobTest {
         new GenericJobServerModel(
             UUID.randomUUID(),
             GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
+            UUID.randomUUID(),
             GenericJobServerModel.StatusEnum.QUEUED,
             OffsetDateTime.now(ZoneId.of("Z")),
             OffsetDateTime.now(ZoneId.of("Z")));

@@ -90,6 +90,31 @@ public class HttpSamDao implements SamDao {
     return hasPermission(ACTION_WRITE, "Sam.hasWriteInstancePermission", token);
   }
 
+  /**
+   * Check if the current user has permission to read a workspace resource from Sam.
+   *
+   * @return true if the user has permission
+   */
+  @Override
+  public boolean hasReadInstancePermission(String instanceId) {
+    return hasReadInstancePermission(instanceId, null);
+  }
+
+  @Override
+  public boolean hasReadInstancePermission(String instanceId, String token) {
+    LOGGER.debug(
+        "Checking Sam permission for {}/{}/{} ...",
+        SamDao.RESOURCE_NAME_WORKSPACE,
+        instanceId,
+        ACTION_READ);
+    RestCall<Boolean> samFunction =
+        () ->
+            samClientFactory
+                .getResourcesApi(token)
+                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, instanceId, ACTION_READ);
+    return restClientRetry.withRetryAndErrorHandling(samFunction, "Sam.hasReadInstancePermission");
+  }
+
   // this cache uses token.hashCode as its key. This prevents any logging such as
   // in CacheLogger from logging the raw token.
   @Cacheable(cacheNames = "tokenResolution", key = "#token.hashCode()")
