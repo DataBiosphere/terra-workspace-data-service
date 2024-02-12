@@ -8,22 +8,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
- * when neither the "data-plane" nor "control-plane" profile is active, WdsTenancyProperties are
- * null
+ * when neither the "data-plane" nor "control-plane" profile is active, TenancyProperties are null
  */
 @SpringBootTest
 @ActiveProfiles("neither-data-plane-nor-control-plane")
-class WdsTenancyPropertiesNoProfileTest {
+class TenancyPropertiesNoProfileTest {
 
-  @Autowired WdsTenancyProperties wdsTenancyProperties;
-
-  @Test
-  void allowVirtualCollections() {
-    assertNull(wdsTenancyProperties.getAllowVirtualCollections());
-  }
+  @Autowired TwdsProperties twdsProperties;
 
   @Test
-  void requireEnvWorkspace() {
-    assertNull(wdsTenancyProperties.getRequireEnvWorkspace());
+  void nullTenancy() {
+    assertNull(twdsProperties.getTenancy());
   }
 }
