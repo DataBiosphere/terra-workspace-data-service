@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice;
+package org.databiosphere.workspacedataservice.startup;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;

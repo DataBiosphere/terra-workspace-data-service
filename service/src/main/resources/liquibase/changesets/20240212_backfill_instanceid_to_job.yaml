@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id:  20240212_backfill_instanceid_to_job.yaml
+      author:  bmorgan
+      changes:
+        # Populate null instance_ids in sys_wds.job with the environment variable WORKSPACE_ID.
+        # This change relies on the value of the WORKSPACE_ID env var.
+        # If this change is re-run against the same db, but the WORKSPACE_ID value has changed
+        # since the last run, Liquibase will calculate a different checksum for the change
+        # and fail with a validation error; see https://docs.liquibase.com/concepts/changelogs/changeset-checksums.html.
+        # The only change type that is resilient to changes in env variables is sqlFile ... so,
+        # we use sqlFile here to be resilient to any future changes to WORKSPACE_ID.
+        # See https://docs.liquibase.com/concepts/changelogs/property-substitution.html for info.
+        - sqlFile:
+              dbms: 'postgresql'
+              path: 20240212_backfill_instanceid_to_job.sql
+              relativeToChangelogFile: true
+              splitStatements: false
+              stripComments: true
+        - addNotNullConstraint:
+            schemaName: sys_wds
+            tableName: job
+            columnName: instance_id

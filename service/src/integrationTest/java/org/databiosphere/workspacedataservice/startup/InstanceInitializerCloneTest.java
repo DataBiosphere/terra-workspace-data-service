@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice;
+package org.databiosphere.workspacedataservice.startup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
