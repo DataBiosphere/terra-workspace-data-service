@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.tsv;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -132,7 +131,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
     // TODO: change the "is*" methods in inferer to return their value so we don't parse twice?
     if (inferer.isValidJson(val)) {
       try {
-        return objectMapper.readValue(val, new TypeReference<Object>() {});
+        return objectMapper.readValue(val, Object.class);
       } catch (JsonProcessingException jpe) {
         // this shouldn't happen; if inferer.isValidJson(val) passes, so should the .readValue
         return val;

@@ -7,7 +7,6 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -986,7 +985,7 @@ public class RecordDao {
         return getArrayValue(pgArray.getArray(), typeMapping);
       }
       if (typeMapping == DataTypeMapping.JSON) {
-        return objectMapper.readValue(object.toString(), new TypeReference<Object>() {});
+        return objectMapper.readValue(object.toString(), Object.class);
       }
       return object;
     }
