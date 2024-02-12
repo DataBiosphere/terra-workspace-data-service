@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice;
+package org.databiosphere.workspacedataservice.startup;
 
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.jetbrains.annotations.NotNull;
