@@ -85,7 +85,8 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
     // calling the API should result in 200 OK
     MvcResult mvcResult =
         mockMvc
-            .perform(get("/job/v1/all/{instanceUuid}?status={status}", instanceId, "RUNNING"))
+            .perform(
+                get("/job/v1/instance/{instanceUuid}?statuses={statuses}", instanceId, "RUNNING"))
             .andExpect(status().isOk())
             .andReturn();
 

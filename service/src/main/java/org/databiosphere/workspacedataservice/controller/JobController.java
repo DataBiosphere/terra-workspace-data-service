@@ -36,12 +36,12 @@ public class JobController implements JobApi {
 
   @Override
   public ResponseEntity<List<GenericJobServerModel>> jobsInInstanceV1(
-      UUID instanceUuid, List<String> status) {
+      UUID instanceUuid, List<String> statuses) {
     // status is an optional parameter
-    if (status != null) {
+    if (statuses != null) {
       try {
         // validate the strings in status are all valid statuses before proceeding
-        for (var statusValue : status) {
+        for (var statusValue : statuses) {
           StatusEnum.fromValue(statusValue);
         }
       } catch (IllegalArgumentException e) {
@@ -49,7 +49,7 @@ public class JobController implements JobApi {
       }
     }
     List<GenericJobServerModel> jobList =
-        jobService.getJobsForInstance(InstanceId.of(instanceUuid), status);
+        jobService.getJobsForInstance(InstanceId.of(instanceUuid), statuses);
 
     return new ResponseEntity<>(jobList, HttpStatus.OK);
   }

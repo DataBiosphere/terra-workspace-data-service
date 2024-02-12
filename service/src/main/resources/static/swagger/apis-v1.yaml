@@ -96,7 +96,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenericJob'
-  /job/v1/all/{instanceUuid}:
+  /job/v1/instance/{instanceUuid}:
     get:
       summary: Get all jobs with a certain status under a particular instance.
       operationId: jobsInInstanceV1
@@ -104,7 +104,7 @@ paths:
         - Job
       parameters:
         - $ref: '#/components/parameters/instanceUuidPathParam'
-        - name: status
+        - name: statuses
           in: query
           required: false
           schema:
