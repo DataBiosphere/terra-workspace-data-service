@@ -51,11 +51,11 @@ class JobServiceTest {
         new GenericJobServerModel(
             jobId,
             GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
+            instanceID,
             GenericJobServerModel.StatusEnum.RUNNING,
             // set created and updated to now, but in UTC because that's how Postgres stores it
             OffsetDateTime.now(ZoneId.of("Z")),
             OffsetDateTime.now(ZoneId.of("Z")));
-    expectedJob.instanceId(instanceID);
     given(jobDao.getJob(jobId)).willReturn(expectedJob);
     // Ask jobService to get it
     GenericJobServerModel fetchedJob = jobService.getJob(jobId);
@@ -75,11 +75,11 @@ class JobServiceTest {
         new GenericJobServerModel(
             jobId,
             GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
+            instanceID,
             GenericJobServerModel.StatusEnum.RUNNING,
             // set created and updated to now, but in UTC because that's how Postgres stores it
             OffsetDateTime.now(ZoneId.of("Z")),
             OffsetDateTime.now(ZoneId.of("Z")));
-    expectedJob.instanceId(instanceID);
 
     given(jobDao.getJob(any())).willReturn(expectedJob);
     // Ask jobService to get it

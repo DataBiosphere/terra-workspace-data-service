@@ -25,15 +25,16 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
   void smokeTestGetJob() throws Exception {
     // return a test job from the mocked JobDao
     UUID jobId = UUID.randomUUID();
+    UUID instanceId = UUID.randomUUID();
     GenericJobServerModel expected =
         new GenericJobServerModel(
             jobId,
             GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
+            instanceId,
             GenericJobServerModel.StatusEnum.RUNNING,
             // set created and updated to now, but in UTC because that's how Postgres stores it
             OffsetDateTime.now(ZoneId.of("Z")),
             OffsetDateTime.now(ZoneId.of("Z")));
-    expected.instanceId(UUID.randomUUID());
     when(jobDao.getJob(jobId)).thenReturn(expected);
 
     // calling the API should result in 202 Accepted
