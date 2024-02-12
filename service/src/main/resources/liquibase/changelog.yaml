@@ -31,4 +31,4 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changesets/20240212_backfill_instanceid_to_job.yaml
-      relativeToChangeLogFile: true
+      relativeToChangelogFile: true

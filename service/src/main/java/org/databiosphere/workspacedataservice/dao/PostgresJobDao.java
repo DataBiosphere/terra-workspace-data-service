@@ -235,11 +235,11 @@ public class PostgresJobDao implements JobDao {
       var created = rs.getTimestamp("created").toLocalDateTime().atOffset(ZoneOffset.UTC);
       var updated = rs.getTimestamp("updated").toLocalDateTime().atOffset(ZoneOffset.UTC);
 
+      UUID instanceId = rs.getObject("instance_id", UUID.class);
       GenericJobServerModel job =
-          new GenericJobServerModel(jobId, jobType, status, created, updated);
+          new GenericJobServerModel(jobId, jobType, instanceId, status, created, updated);
 
       job.errorMessage(rs.getString("error"));
-      job.instanceId(rs.getObject("instance_id", UUID.class));
 
       // TODO: AJ-1011 also return stacktrace, input, result.
       return job;
