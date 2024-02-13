@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.config;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -9,18 +10,23 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
-@ActiveProfiles("data-plane")
-class WdsTenancyPropertiesDataPlaneTest {
+@ActiveProfiles("control-plane")
+class TenancyPropertiesControlPlaneTest {
 
-  @Autowired WdsTenancyProperties wdsTenancyProperties;
+  @Autowired TwdsProperties twdsProperties;
+
+  @Test
+  void nonNullTenancy() {
+    assertNotNull(twdsProperties.getTenancy());
+  }
 
   @Test
   void allowVirtualCollections() {
-    assertFalse(wdsTenancyProperties.getAllowVirtualCollections());
+    assertTrue(twdsProperties.getTenancy().getAllowVirtualCollections());
   }
 
   @Test
   void requireEnvWorkspace() {
-    assertTrue(wdsTenancyProperties.getRequireEnvWorkspace());
+    assertFalse(twdsProperties.getTenancy().getRequireEnvWorkspace());
   }
 }
