@@ -9,8 +9,10 @@ import com.google.common.base.Preconditions;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
+import org.databiosphere.workspacedataservice.shared.model.InstanceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
@@ -210,6 +212,26 @@ public class PostgresJobDao implements JobDao {
         new AsyncJobRowMapper());
   }
 
+  @Override
+  public List<GenericJobServerModel> getJobsForInstance(
+      InstanceId instanceId, List<String> statuses) {
+    // start our sql statement and map of params
+    StringBuilder sb =
+        new StringBuilder(
+            "select id, type, status, created, updated, "
+                + "input, result, error, stacktrace, instance_id "
+                + "from sys_wds.job "
+                + "where instance_id = :instance_id");
+    MapSqlParameterSource params = new MapSqlParameterSource("instance_id", instanceId.id());
+
+    // if status is supplied, filter by that
+    if (!statuses.isEmpty()) {
+      sb.append(" and status in (:statuses)");
+      params.addValue("statuses", statuses);
+    }
+    return namedTemplate.query(sb.toString(), params, new AsyncJobRowMapper());
+  }
+
   // rowmapper for retrieving Job objects from the db
   private static class AsyncJobRowMapper implements RowMapper<GenericJobServerModel> {
     @Override
@@ -240,6 +262,7 @@ public class PostgresJobDao implements JobDao {
           new GenericJobServerModel(jobId, jobType, instanceId, status, created, updated);
 
       job.errorMessage(rs.getString("error"));
+      job.instanceId(rs.getObject("instance_id", UUID.class));
 
       // TODO: AJ-1011 also return stacktrace, input, result.
       return job;

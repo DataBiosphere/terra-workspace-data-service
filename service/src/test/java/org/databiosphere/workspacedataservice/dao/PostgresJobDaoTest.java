@@ -4,6 +4,7 @@ import static org.databiosphere.workspacedataservice.generated.GenericJobServerM
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -266,6 +267,7 @@ class PostgresJobDaoTest {
 
     assertEquals(JobTypeEnum.DATA_IMPORT, actual.getJobType());
     assertEquals(StatusEnum.CREATED, actual.getStatus());
+    assertNotNull(actual.getInstanceId());
     // TODO: AJ-1011 as PostgresJobDao.mapRow evolves, add more assertions here
   }
 }
