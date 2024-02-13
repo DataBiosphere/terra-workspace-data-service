@@ -1077,6 +1077,9 @@ public class RecordDao {
               "drop table "
                   + getQualifiedJoinTableName(collectionId, rel.relationColName(), recordType));
     }
+    // TODO: AJ-1624 This line generates a `java:S2077` warning in sonar.  That warning was
+    // suppressed in the
+    // sonar UI but could be moved to a line-level suppression in the code
     try {
       namedTemplate
           .getJdbcTemplate()
