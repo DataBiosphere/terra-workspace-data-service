@@ -146,6 +146,9 @@ dependencies {
         testImplementation('com.jayway.jsonpath:json-path:2.9.0') {
             because("CVE-2023-51074")
         }
+
+        // SEE ALSO:
+        //  - org.liquibase:liquibase-core:4.26.0, configured in build.gradle
     }
 }
 

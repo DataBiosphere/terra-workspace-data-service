@@ -1,0 +1,57 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20240131_add_workspace_to_instance
+      author: davidan
+      changes:
+        # Create new columns as nullable; we will not-null them in a later changeset.
+        - addColumn:
+            schemaName: sys_wds
+            tableName: instance
+            columns:
+              - column:
+                  name: workspace_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+              - column:
+                  name: name
+                  type: varchar(128)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: true
+        # Populate the new columns. This change relies on the value of the WORKSPACE_ID env var.
+        # If this change is re-run against the same db, but the WORKSPACE_ID value has changed
+        # since the last run, Liquibase will calculate a different checksum for the change
+        # and fail with a validation error; see https://docs.liquibase.com/concepts/changelogs/changeset-checksums.html.
+        # The only change type that is resilient to changes in env variables is sqlFile ... so,
+        # we use sqlFile here to be resilient to any future changes to WORKSPACE_ID.
+        # See https://docs.liquibase.com/concepts/changelogs/property-substitution.html for info.
+        - sqlFile:
+            dbms: 'postgresql'
+            path: 20240213_add_workspace_to_instance.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+            stripComments: true
+        # Now that the columns are all populated, set them to non-null
+        - addNotNullConstraint:
+            schemaName: sys_wds
+            tableName: instance
+            columnName: workspace_id
+        - addNotNullConstraint:
+            schemaName: sys_wds
+            tableName: instance
+            columnName: name
+        - addNotNullConstraint:
+            schemaName: sys_wds
+            tableName: instance
+            columnName: description
+        # Finally, add a unique constraint on workspace_id + name to allow the app to use
+        # workspace_id + name as an identifier
+        - addUniqueConstraint:
+            schemaName: sys_wds
+            tableName: instance
+            columnNames: workspace_id, name
