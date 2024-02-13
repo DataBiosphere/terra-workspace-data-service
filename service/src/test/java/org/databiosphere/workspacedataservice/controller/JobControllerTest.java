@@ -50,10 +50,8 @@ class JobControllerTest {
   @BeforeAll
   void beforeAll() {
     // push jobs into the db, one of different instanceId
-    Job<JobInput, JobResult> testJob1 =
-        newJob(instanceId, JobType.DATA_IMPORT, JobInput.empty());
-    Job<JobInput, JobResult> testJob2 =
-        newJob(instanceId, JobType.DATA_IMPORT, JobInput.empty());
+    Job<JobInput, JobResult> testJob1 = newJob(instanceId, JobType.DATA_IMPORT, JobInput.empty());
+    Job<JobInput, JobResult> testJob2 = newJob(instanceId, JobType.DATA_IMPORT, JobInput.empty());
     Job<JobInput, JobResult> testJob3 =
         newJob(InstanceId.of(UUID.randomUUID()), JobType.DATA_IMPORT, JobInput.empty());
 
@@ -111,8 +109,8 @@ class JobControllerTest {
     List<GenericJobServerModel> jobList = result.getBody();
     assertNotNull(jobList);
     // 3 jobs inserted in beforeAll, only 2 for this instanceId
-    assertEquals(2, jobList.size() );
+    assertEquals(2, jobList.size());
     assertEquals(StatusEnum.CREATED, jobList.get(0).getStatus());
-    assertEquals( StatusEnum.CANCELLED, jobList.get(1).getStatus());
+    assertEquals(StatusEnum.CANCELLED, jobList.get(1).getStatus());
   }
 }
