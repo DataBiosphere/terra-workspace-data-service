@@ -96,7 +96,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenericJob'
-
+  /job/v1/instance/{instanceUuid}:
+    get:
+      summary: Get all jobs with a certain status under a particular instance.
+      operationId: jobsInInstanceV1
+      tags:
+        - Job
+      parameters:
+        - $ref: '#/components/parameters/instanceUuidPathParam'
+        - name: statuses
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [ CREATED, QUEUED, RUNNING, SUCCEEDED, ERROR, CANCELLED, UNKNOWN ]
+      responses:
+        200:
+          description: A list of jobs with specified status for Instance Id.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GenericJob'
   ##############################
   # Capabilities APIs
   ##############################

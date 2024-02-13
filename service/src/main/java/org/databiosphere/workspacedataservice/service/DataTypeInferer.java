@@ -21,6 +21,7 @@ import static org.databiosphere.workspacedataservice.service.model.DataTypeMappi
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.mu.util.stream.BiStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -59,7 +60,7 @@ public class DataTypeInferer {
     return result;
   }
 
-  public Map<String, DataTypeMapping> inferTypes(List<Record> records) {
+  Map<String, DataTypeMapping> inferTypes(List<Record> records) {
     Map<String, DataTypeMapping> result = new HashMap<>();
     for (Record rcd : records) {
       if (rcd.getAttributes() == null) {
@@ -144,7 +145,8 @@ public class DataTypeInferer {
    * @param val the value for which to infer a type
    * @return the data type we want to use for this value
    */
-  public DataTypeMapping inferType(Object val) {
+  @VisibleForTesting
+  DataTypeMapping inferType(Object val) {
     // null does not tell us much, this results in a text data type in the db if
     // everything in batch is null
     // if there are non-null values in the batch this return value will let those
