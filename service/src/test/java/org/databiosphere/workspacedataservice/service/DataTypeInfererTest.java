@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice;
+package org.databiosphere.workspacedataservice.service;
 
 import static com.google.common.collect.MoreCollectors.onlyElement;
 import static java.util.Collections.emptyList;
@@ -16,9 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.databiosphere.workspacedataservice.service.DataTypeInferer;
-import org.databiosphere.workspacedataservice.service.DataTypeInfererConfig;
-import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.shared.model.Record;
