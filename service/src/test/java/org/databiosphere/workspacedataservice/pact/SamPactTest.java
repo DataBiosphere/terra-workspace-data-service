@@ -224,7 +224,7 @@ class SamPactTest {
     SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
     SamDao samDao = new HttpSamDao(clientFactory, new RestClientRetry(), dummyResourceId);
 
-    assertFalse(samDao.hasDeleteInstancePermission());
+    assertFalse(samDao.hasDeleteCollectionPermission());
   }
 
   @Test
@@ -233,7 +233,7 @@ class SamPactTest {
     SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
     SamDao samDao = new HttpSamDao(clientFactory, new RestClientRetry(), dummyResourceId);
 
-    assertTrue(samDao.hasDeleteInstancePermission());
+    assertTrue(samDao.hasDeleteCollectionPermission());
   }
 
   @Test
@@ -242,7 +242,7 @@ class SamPactTest {
     SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
     SamDao samDao = new HttpSamDao(clientFactory, new RestClientRetry(), dummyResourceId);
 
-    assertFalse(samDao.hasWriteInstancePermission());
+    assertFalse(samDao.hasWriteCollectionPermission());
   }
 
   @Test
@@ -251,7 +251,7 @@ class SamPactTest {
     SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
     SamDao samDao = new HttpSamDao(clientFactory, new RestClientRetry(), dummyResourceId);
 
-    assertTrue(samDao.hasWriteInstancePermission());
+    assertTrue(samDao.hasWriteCollectionPermission());
   }
 
   @Test

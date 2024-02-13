@@ -12,7 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.BackupRestoreDao;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
-import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -38,7 +38,7 @@ public class BackupRestoreService {
   private final BackupRestoreDao<RestoreResponse> restoreDao;
   private final CloneDao cloneDao;
   private final BackUpFileStorage storage;
-  private final InstanceDao instanceDao;
+  private final CollectionDao collectionDao;
   private final ActivityLogger activityLogger;
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
 
@@ -75,13 +75,13 @@ public class BackupRestoreService {
   public BackupRestoreService(
       BackupRestoreDao<BackupResponse> backupDao,
       BackupRestoreDao<RestoreResponse> restoreDao,
-      InstanceDao instanceDao,
+      CollectionDao collectionDao,
       BackUpFileStorage backUpFileStorage,
       CloneDao cloneDao,
       ActivityLogger activityLogger) {
     this.backupDao = backupDao;
     this.restoreDao = restoreDao;
-    this.instanceDao = instanceDao;
+    this.collectionDao = collectionDao;
     this.cloneDao = cloneDao;
     this.storage = backUpFileStorage;
     this.activityLogger = activityLogger;
@@ -189,7 +189,7 @@ public class BackupRestoreService {
       */
 
       // rename workspace schema from source to dest
-      instanceDao.alterSchema(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId));
+      collectionDao.alterSchema(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId));
 
       activityLogger.saveEventForCurrentUser(
           user -> user.restored().backup().withId(backupFileName));
@@ -231,7 +231,7 @@ public class BackupRestoreService {
       command.put(pgDumpPath, null);
       command.put("-b", null);
       // Grab all workspace instances/schemas in wds
-      for (UUID id : instanceDao.listInstanceSchemas()) {
+      for (UUID id : collectionDao.listCollectionSchemas()) {
         command.put("-n", id.toString());
       }
     } else {

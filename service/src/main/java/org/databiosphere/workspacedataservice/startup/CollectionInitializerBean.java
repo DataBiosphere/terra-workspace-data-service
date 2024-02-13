@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
-import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.service.model.exception.CloningException;
@@ -26,9 +26,9 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.integration.support.locks.LockRegistry;
 
-public class InstanceInitializerBean {
+public class CollectionInitializerBean {
 
-  private final InstanceDao instanceDao;
+  private final CollectionDao collectionDao;
   private final LeonardoDao leoDao;
   private final WorkspaceDataServiceDao wdsDao;
   private final CloneDao cloneDao;
@@ -45,26 +45,26 @@ public class InstanceInitializerBean {
   @Value("${twds.startup-token}")
   private String startupToken;
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(InstanceInitializerBean.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(CollectionInitializerBean.class);
 
   /**
-   * Constructor. Called by {@link InstanceInitializerConfig}.
+   * Constructor. Called by {@link CollectionInitializerConfig}.
    *
-   * @see InstanceInitializerConfig
-   * @param instanceDao InstanceDao
+   * @see CollectionInitializerConfig
+   * @param collectionDao CollectionDao
    * @param leoDao LeonardoDao
    * @param wdsDao WorkspaceDataServiceDao
    * @param cloneDao CloneDao
    * @param restoreService BackupRestoreService
    */
-  public InstanceInitializerBean(
-      InstanceDao instanceDao,
+  public CollectionInitializerBean(
+      CollectionDao collectionDao,
       LeonardoDao leoDao,
       WorkspaceDataServiceDao wdsDao,
       CloneDao cloneDao,
       BackupRestoreService restoreService,
       LockRegistry lockRegistry) {
-    this.instanceDao = instanceDao;
+    this.collectionDao = collectionDao;
     this.leoDao = leoDao;
     this.wdsDao = wdsDao;
     this.cloneDao = cloneDao;
@@ -74,11 +74,11 @@ public class InstanceInitializerBean {
 
   /**
    * Entry point into this bean, called at WDS startup by {@link
-   * InstanceInitializer#onApplicationEvent(ContextRefreshedEvent)}.
+   * CollectionInitializer#onApplicationEvent(ContextRefreshedEvent)}.
    *
-   * @see InstanceInitializer
+   * @see CollectionInitializer
    */
-  public void initializeInstance() {
+  public void initializeCollection() {
     LOGGER.info("Default workspace id loaded as {}.", workspaceId);
     // Enter clone mode if sourceWorkspaceId is specified
     if (isInCloneMode(sourceWorkspaceId)) {
@@ -94,7 +94,7 @@ public class InstanceInitializerBean {
       LOGGER.info("Failed clone state, falling back to initialize default schema.");
     }
 
-    initializeDefaultInstance();
+    initializeDefaultCollection();
   }
 
   /**
@@ -151,9 +151,11 @@ public class InstanceInitializerBean {
       // If there's a clone entry and no default schema, another replica errored before completing.
       // If there's a clone entry and a default schema there's nothing for us to do here.
       if (cloneDao.cloneExistsForWorkspace((UUID.fromString(sourceWorkspaceId)))) {
-        boolean instanceExists = instanceDao.instanceSchemaExists(UUID.fromString(workspaceId));
-        LOGGER.info("Previous clone entry found. Instance schema exists: {}.", instanceExists);
-        return instanceExists;
+        boolean collectionSchemaExists =
+            collectionDao.collectionSchemaExists(UUID.fromString(workspaceId));
+        LOGGER.info(
+            "Previous clone entry found. Collection schema exists: {}.", collectionSchemaExists);
+        return collectionSchemaExists;
       }
 
       // First, create an entry in the clone table to mark cloning has started
@@ -283,7 +285,7 @@ public class InstanceInitializerBean {
         restoreService.restoreAzureWDS("v0.2", backupFileName, cloneJobId, startupToken);
     if (!restoreResponse.getStatus().equals(JobStatus.SUCCEEDED)) {
       LOGGER.error(
-          "Something went wrong with restore: {}. Starting with empty default instance schema.",
+          "Something went wrong with restore: {}. Starting with empty default collection schema.",
           restoreResponse.getErrorMessage());
       cloneDao.terminateCloneToError(
           cloneJobId, restoreResponse.getErrorMessage(), CloneTable.RESTORE);
@@ -296,12 +298,12 @@ public class InstanceInitializerBean {
   /*
      Create the default pg schema for this WDS. The pg schema name is the workspace id.
   */
-  private void initializeDefaultInstance() {
+  private void initializeDefaultCollection() {
     try {
-      UUID instanceId = UUID.fromString(workspaceId);
+      UUID collectionId = UUID.fromString(workspaceId);
 
-      if (!instanceDao.instanceSchemaExists(instanceId)) {
-        instanceDao.createSchema(instanceId);
+      if (!collectionDao.collectionSchemaExists(collectionId)) {
+        collectionDao.createSchema(collectionId);
         LOGGER.info("Creating default schema id succeeded for workspaceId {}.", workspaceId);
       } else {
         LOGGER.debug(

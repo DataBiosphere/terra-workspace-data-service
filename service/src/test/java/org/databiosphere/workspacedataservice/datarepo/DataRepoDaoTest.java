@@ -9,7 +9,7 @@ import bio.terra.datarepo.api.RepositoryApi;
 import bio.terra.datarepo.client.ApiException;
 import bio.terra.datarepo.model.SnapshotModel;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,26 +29,26 @@ class DataRepoDaoTest {
 
   @Autowired RecordDao recordDao;
 
-  @Autowired InstanceDao instanceDao;
+  @Autowired CollectionDao collectionDao;
 
   @MockBean DataRepoClientFactory mockDataRepoClientFactory;
 
   final RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
 
-  private static final UUID INSTANCE = UUID.fromString("111e9999-e89b-12d3-a456-426614174000");
+  private static final UUID COLLECTION = UUID.fromString("111e9999-e89b-12d3-a456-426614174000");
 
   @BeforeEach
   void setUp() {
     given(mockDataRepoClientFactory.getRepositoryApi()).willReturn(mockRepositoryApi);
-    if (!instanceDao.instanceSchemaExists(INSTANCE)) {
-      instanceDao.createSchema(INSTANCE);
+    if (!collectionDao.collectionSchemaExists(COLLECTION)) {
+      collectionDao.createSchema(COLLECTION);
     }
   }
 
   @AfterEach
   void tearDown() {
-    if (instanceDao.instanceSchemaExists(INSTANCE)) {
-      instanceDao.dropSchema(INSTANCE);
+    if (collectionDao.collectionSchemaExists(COLLECTION)) {
+      collectionDao.dropSchema(COLLECTION);
     }
   }
 

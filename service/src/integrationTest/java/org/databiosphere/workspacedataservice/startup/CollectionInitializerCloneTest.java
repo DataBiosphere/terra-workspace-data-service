@@ -14,7 +14,7 @@ import org.databiosphere.workspacedata.client.ApiException;
 import org.databiosphere.workspacedata.model.BackupJob;
 import org.databiosphere.workspacedata.model.BackupResponse;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
-import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
@@ -37,7 +37,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
-// "local" profile prevents InstanceInitializerBean from running at Spring startup;
+// "local" profile prevents CollectionInitializerBean from running at Spring startup;
 // that way, we can run it when we want to inside our tests.
 @ActiveProfiles({"mock-storage", "local-cors", "mock-sam", "local"})
 @TestPropertySource(
@@ -49,11 +49,11 @@ import org.springframework.test.context.TestPropertySource;
     })
 @DirtiesContext
 @SpringBootTest
-class InstanceInitializerCloneTest {
+class CollectionInitializerCloneTest {
 
   // standard beans
-  @Autowired InstanceInitializerBean instanceInitializerBean;
-  @Autowired InstanceDao instanceDao;
+  @Autowired CollectionInitializerBean collectionInitializerBean;
+  @Autowired CollectionDao collectionDao;
   @Autowired RecordDao recordDao;
   @Autowired CloneDao cloneDao;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
@@ -72,12 +72,12 @@ class InstanceInitializerCloneTest {
 
   @AfterEach
   void tearDown() {
-    // clean up any instances left in the db
-    List<UUID> allInstances = instanceDao.listInstanceSchemas();
-    allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
+    // clean up any collections left in the db
+    List<UUID> allCollections = collectionDao.listCollectionSchemas();
+    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
     // clean up any clone entries
     namedTemplate.getJdbcTemplate().update("delete from sys_wds.clone");
-    // TODO: also drop any orphaned pg schemas that don't have an entry in the sys_wds.instances
+    // TODO: also drop any orphaned pg schemas that don't have an entry in the sys_wds.instance
     // table.
     // this can happen when restores fail.
   }
@@ -102,7 +102,7 @@ class InstanceInitializerCloneTest {
         .willReturn(mockCloningApi);
 
     // attempt to clone
-    instanceInitializerBean.initializeInstance();
+    collectionInitializerBean.initializeCollection();
 
     // clone job should have errored, with friendly error message
     Job<JobInput, CloneResponse> cloneStatus = cloneDao.getCloneStatus();
@@ -113,9 +113,9 @@ class InstanceInitializerCloneTest {
             + "Contact the workspace owner to upgrade the version of data tables in that workspace.",
         cloneStatus.getErrorMessage());
 
-    // default instance should exist, with no tables in it
+    // default collection should exist, with no tables in it
     UUID workspaceUuid = UUID.fromString(workspaceId);
-    assertTrue(instanceDao.instanceSchemaExists(workspaceUuid));
+    assertTrue(collectionDao.collectionSchemaExists(workspaceUuid));
     assertThat(recordDao.getAllRecordTypes(workspaceUuid)).isEmpty();
   }
 
@@ -145,23 +145,23 @@ class InstanceInitializerCloneTest {
         .willReturn(mockCloningApi);
 
     // attempt to clone
-    instanceInitializerBean.initializeInstance();
+    collectionInitializerBean.initializeCollection();
 
     // clone job should have succeeded
     Job<JobInput, CloneResponse> cloneStatus = cloneDao.getCloneStatus();
     assertSame(JobStatus.SUCCEEDED, cloneStatus.getStatus());
     assertSame(CloneStatus.RESTORESUCCEEDED, cloneStatus.getResult().status());
 
-    // default instance should exist, with a single table named "thing" in it
+    // default collection should exist, with a single table named "thing" in it
     // the "thing" table is defined in WDS-integrationTest-LocalFileStorage-input.sql.
     UUID workspaceUuid = UUID.fromString(workspaceId);
-    List<UUID> actualInstances = instanceDao.listInstanceSchemas();
-    assertEquals(List.of(workspaceUuid), actualInstances);
+    List<UUID> actualCollections = collectionDao.listCollectionSchemas();
+    assertEquals(List.of(workspaceUuid), actualCollections);
     List<RecordType> actualTypes = recordDao.getAllRecordTypes(workspaceUuid);
     assertEquals(List.of(RecordType.valueOf("thing")), actualTypes);
   }
 
-  // TODO: if a clone entry already exists, initializeInstance won't do anything
+  // TODO: if a clone entry already exists, initializeCollection won't do anything
   // TODO: test if backup succeeds but restore fails
   // TODO: what other coverage?
 

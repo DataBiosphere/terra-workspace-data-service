@@ -57,7 +57,7 @@ class PfbQuartzJobTest {
   @Value("classpath:avro/test.avro")
   Resource testAvroResource;
 
-  private static final String INSTANCE = "aaaabbbb-cccc-dddd-1111-222233334444";
+  private static final String COLLECTION = "aaaabbbb-cccc-dddd-1111-222233334444";
 
   @Test
   void linkAllNewSnapshots() {

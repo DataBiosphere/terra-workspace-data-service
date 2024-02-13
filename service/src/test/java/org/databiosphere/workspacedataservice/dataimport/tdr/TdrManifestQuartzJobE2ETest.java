@@ -20,8 +20,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.ImportService;
-import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -62,7 +62,7 @@ import org.springframework.test.context.ActiveProfiles;
 public class TdrManifestQuartzJobE2ETest {
   @Autowired private RecordOrchestratorService recordOrchestratorService;
   @Autowired private ImportService importService;
-  @Autowired private InstanceService instanceService;
+  @Autowired private CollectionService collectionService;
   @Autowired private TdrTestSupport testSupport;
 
   @MockBean SchedulerDao schedulerDao;
@@ -71,7 +71,7 @@ public class TdrManifestQuartzJobE2ETest {
   @Value("classpath:tdrmanifest/v2f.json")
   Resource v2fManifestResource;
 
-  UUID instanceId;
+  UUID collectionId;
 
   @BeforeAll
   void beforeAll() {
@@ -80,13 +80,13 @@ public class TdrManifestQuartzJobE2ETest {
 
   @BeforeEach
   void beforeEach() {
-    instanceId = UUID.randomUUID();
-    instanceService.createInstance(instanceId, "v0.2");
+    collectionId = UUID.randomUUID();
+    collectionService.createCollection(collectionId, "v0.2");
   }
 
   @AfterEach
   void afterEach() {
-    instanceService.deleteInstance(instanceId, "v0.2");
+    collectionService.deleteCollection(collectionId, "v0.2");
   }
 
   @Test
@@ -95,10 +95,10 @@ public class TdrManifestQuartzJobE2ETest {
     var importRequest = new ImportRequestServerModel(TDRMANIFEST, v2fManifestResource.getURI());
 
     // because we have a mock scheduler dao, this won't trigger Quartz
-    var genericJobServerModel = importService.createImport(instanceId, importRequest);
+    var genericJobServerModel = importService.createImport(collectionId, importRequest);
 
     UUID jobId = genericJobServerModel.getJobId();
-    JobExecutionContext mockContext = stubJobContext(jobId, v2fManifestResource, instanceId);
+    JobExecutionContext mockContext = stubJobContext(jobId, v2fManifestResource, collectionId);
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
@@ -109,7 +109,7 @@ public class TdrManifestQuartzJobE2ETest {
         .execute(mockContext);
 
     List<RecordTypeSchema> allTypes =
-        recordOrchestratorService.describeAllRecordTypes(instanceId, "v0.2");
+        recordOrchestratorService.describeAllRecordTypes(collectionId, "v0.2");
 
     // spot-check some column data types to see if they are good
     // TODO (AJ-1536): types aren't correct yet!  Need to respect the schema provided in the

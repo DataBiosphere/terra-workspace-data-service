@@ -7,7 +7,7 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
-import org.databiosphere.workspacedataservice.shared.model.InstanceId;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
@@ -15,19 +15,19 @@ import org.springframework.stereotype.Service;
 public class JobService {
 
   JobDao jobDao;
-  InstanceService instanceService;
+  CollectionService collectionService;
   SamDao samDao;
 
-  public JobService(JobDao jobDao, InstanceService instanceService, SamDao samDao) {
+  public JobService(JobDao jobDao, CollectionService collectionService, SamDao samDao) {
     this.jobDao = jobDao;
-    this.instanceService = instanceService;
+    this.collectionService = collectionService;
     this.samDao = samDao;
   }
 
   public GenericJobServerModel getJob(UUID jobId) {
     try {
       GenericJobServerModel result = jobDao.getJob(jobId);
-      if (!samDao.hasReadInstancePermission(result.getInstanceId().toString())) {
+      if (!samDao.hasReadCollectionPermission(result.getInstanceId().toString())) {
         throw new AuthorizationException("Caller does not have permission to view this job.");
       }
       return result;
@@ -36,11 +36,11 @@ public class JobService {
     }
   }
 
-  public List<GenericJobServerModel> getJobsForInstance(
-      InstanceId instanceId, List<String> statuses) {
-    if (!samDao.hasReadInstancePermission(instanceId.toString())) {
+  public List<GenericJobServerModel> getJobsForCollection(
+      CollectionId collectionId, List<String> statuses) {
+    if (!samDao.hasReadCollectionPermission(collectionId.toString())) {
       throw new AuthorizationException("Caller does not have permission to view this job.");
     }
-    return jobDao.getJobsForInstance(instanceId, statuses);
+    return jobDao.getJobsForCollection(collectionId, statuses);
   }
 }

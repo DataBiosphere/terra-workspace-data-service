@@ -21,8 +21,8 @@ import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.ImportService;
-import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -60,7 +60,7 @@ class PfbQuartzJobE2ETest {
 
   @Autowired RecordOrchestratorService recordOrchestratorService;
   @Autowired ImportService importService;
-  @Autowired InstanceService instanceService;
+  @Autowired CollectionService collectionService;
   @Autowired private PfbTestSupport testSupport;
   @MockBean SchedulerDao schedulerDao;
   @MockBean WorkspaceManagerDao wsmDao;
@@ -81,7 +81,7 @@ class PfbQuartzJobE2ETest {
   @Value("classpath:avro/cyclical.avro")
   Resource cyclicalAvroResource;
 
-  UUID instanceId;
+  UUID collectionId;
 
   @BeforeAll
   void beforeAll() {
@@ -90,13 +90,13 @@ class PfbQuartzJobE2ETest {
 
   @BeforeEach
   void beforeEach() {
-    instanceId = UUID.randomUUID();
-    instanceService.createInstance(instanceId, "v0.2");
+    collectionId = UUID.randomUUID();
+    collectionService.createCollection(collectionId, "v0.2");
   }
 
   @AfterEach
   void afterEach() {
-    instanceService.deleteInstance(instanceId, "v0.2");
+    collectionService.deleteCollection(collectionId, "v0.2");
   }
 
   /* import test.avro, and validate the tables and row counts it imported. */
@@ -109,10 +109,10 @@ class PfbQuartzJobE2ETest {
 
     // because we have a mock scheduler dao, this won't trigger Quartz
     GenericJobServerModel genericJobServerModel =
-        importService.createImport(instanceId, importRequest);
+        importService.createImport(collectionId, importRequest);
 
     UUID jobId = genericJobServerModel.getJobId();
-    JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource, instanceId);
+    JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource, collectionId);
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
@@ -129,7 +129,7 @@ class PfbQuartzJobE2ETest {
     */
 
     List<RecordTypeSchema> allTypes =
-        recordOrchestratorService.describeAllRecordTypes(instanceId, "v0.2");
+        recordOrchestratorService.describeAllRecordTypes(collectionId, "v0.2");
 
     // spot-check some column data types to see if they are good
     assertDataType(allTypes, "activities", "activity_type", DataTypeMapping.ARRAY_OF_STRING);
@@ -165,10 +165,10 @@ class PfbQuartzJobE2ETest {
 
     // because we have a mock scheduler dao, this won't trigger Quartz
     GenericJobServerModel genericJobServerModel =
-        importService.createImport(instanceId, importRequest);
+        importService.createImport(collectionId, importRequest);
 
     UUID jobId = genericJobServerModel.getJobId();
-    JobExecutionContext mockContext = stubJobContext(jobId, fourRowsAvroResource, instanceId);
+    JobExecutionContext mockContext = stubJobContext(jobId, fourRowsAvroResource, collectionId);
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
@@ -182,7 +182,7 @@ class PfbQuartzJobE2ETest {
     */
 
     List<RecordTypeSchema> allTypes =
-        recordOrchestratorService.describeAllRecordTypes(instanceId, "v0.2");
+        recordOrchestratorService.describeAllRecordTypes(collectionId, "v0.2");
 
     Map<String, Integer> actualCounts =
         allTypes.stream()
@@ -211,10 +211,10 @@ class PfbQuartzJobE2ETest {
 
     // because we have a mock scheduler dao, this won't trigger Quartz
     GenericJobServerModel genericJobServerModel =
-        importService.createImport(instanceId, importRequest);
+        importService.createImport(collectionId, importRequest);
 
     UUID jobId = genericJobServerModel.getJobId();
-    JobExecutionContext mockContext = stubJobContext(jobId, testPrecisionResource, instanceId);
+    JobExecutionContext mockContext = stubJobContext(jobId, testPrecisionResource, collectionId);
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
@@ -226,7 +226,7 @@ class PfbQuartzJobE2ETest {
     // precision. Retrieve some of them and check for the expected high-precision values.
     RecordResponse recordResponse =
         recordOrchestratorService.getSingleRecord(
-            instanceId, "v0.2", RecordType.valueOf("aliquot"), "aliquot_melituria_Khattish");
+            collectionId, "v0.2", RecordType.valueOf("aliquot"), "aliquot_melituria_Khattish");
 
     // the expected values here match what is output by PyPFB
     assertEquals(
@@ -249,11 +249,11 @@ class PfbQuartzJobE2ETest {
 
     // because we have a mock scheduler dao, this won't trigger Quartz
     GenericJobServerModel genericJobServerModel =
-        importService.createImport(instanceId, importRequest);
+        importService.createImport(collectionId, importRequest);
 
     UUID jobId = genericJobServerModel.getJobId();
     JobExecutionContext mockContext =
-        stubJobContext(jobId, forwardRelationsAvroResource, instanceId);
+        stubJobContext(jobId, forwardRelationsAvroResource, collectionId);
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
@@ -268,7 +268,7 @@ class PfbQuartzJobE2ETest {
 
     RecordTypeSchema dataReleaseSchema =
         recordOrchestratorService.describeRecordType(
-            instanceId, "v0.2", RecordType.valueOf("data_release"));
+            collectionId, "v0.2", RecordType.valueOf("data_release"));
 
     assert (dataReleaseSchema
         .attributes()
@@ -279,7 +279,7 @@ class PfbQuartzJobE2ETest {
                 RecordType.valueOf("submitted_aligned_reads"))));
     RecordResponse relatedRecord =
         recordOrchestratorService.getSingleRecord(
-            instanceId,
+            collectionId,
             "v0.2",
             RecordType.valueOf("data_release"),
             "data_release.4622cdbf-9836-64a2-c743-e17b0708cbb6.2");
@@ -299,10 +299,10 @@ class PfbQuartzJobE2ETest {
 
     // because we have a mock scheduler dao, this won't trigger Quartz
     GenericJobServerModel genericJobServerModel =
-        importService.createImport(instanceId, importRequest);
+        importService.createImport(collectionId, importRequest);
 
     UUID jobId = genericJobServerModel.getJobId();
-    JobExecutionContext mockContext = stubJobContext(jobId, cyclicalAvroResource, instanceId);
+    JobExecutionContext mockContext = stubJobContext(jobId, cyclicalAvroResource, collectionId);
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
@@ -312,7 +312,7 @@ class PfbQuartzJobE2ETest {
 
     RecordTypeSchema dataReleaseSchema =
         recordOrchestratorService.describeRecordType(
-            instanceId, "v0.2", RecordType.valueOf("data_release"));
+            collectionId, "v0.2", RecordType.valueOf("data_release"));
 
     assert (dataReleaseSchema
         .attributes()
@@ -323,7 +323,7 @@ class PfbQuartzJobE2ETest {
                 RecordType.valueOf("submitted_aligned_reads"))));
     RecordResponse relatedRecord =
         recordOrchestratorService.getSingleRecord(
-            instanceId,
+            collectionId,
             "v0.2",
             RecordType.valueOf("data_release"),
             "data_release.4622cdbf-9836-64a2-c743-e17b0708cbb6.2");
@@ -335,7 +335,7 @@ class PfbQuartzJobE2ETest {
 
     RecordTypeSchema alignedReadsSchema =
         recordOrchestratorService.describeRecordType(
-            instanceId, "v0.2", RecordType.valueOf("submitted_aligned_reads"));
+            collectionId, "v0.2", RecordType.valueOf("submitted_aligned_reads"));
 
     assert (alignedReadsSchema
         .attributes()
@@ -346,7 +346,7 @@ class PfbQuartzJobE2ETest {
                 RecordType.valueOf("data_release"))));
     RecordResponse relatedRecord2 =
         recordOrchestratorService.getSingleRecord(
-            instanceId, "v0.2", RecordType.valueOf("submitted_aligned_reads"), "HG01102_cram");
+            collectionId, "v0.2", RecordType.valueOf("submitted_aligned_reads"), "HG01102_cram");
 
     assertEquals(
         RelationUtils.createRelationString(

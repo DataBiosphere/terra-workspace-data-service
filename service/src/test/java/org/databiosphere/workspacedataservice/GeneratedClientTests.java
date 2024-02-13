@@ -36,19 +36,19 @@ class GeneratedClientTests {
   private ApiClient apiClient;
   @LocalServerPort int port;
 
-  private final UUID instanceId = UUID.randomUUID();
+  private final UUID collectionId = UUID.randomUUID();
   private final String version = "v0.2";
 
   @BeforeEach
   void init() throws ApiException {
     apiClient = new ApiClient();
     apiClient.setBasePath("http://localhost:" + port);
-    createNewInstance(instanceId);
+    createNewCollection(collectionId);
   }
 
   @AfterEach
   void afterEach() throws ApiException {
-    deleteInstance(instanceId);
+    deleteCollection(collectionId);
   }
 
   @Test
@@ -57,7 +57,7 @@ class GeneratedClientTests {
     TsvUploadResponse tsvUploadResponse =
         recordsApi.uploadTSV(
             new File(this.getClass().getResource("/tsv/small-test.tsv").toURI()),
-            instanceId.toString(),
+            collectionId.toString(),
             version,
             "foo",
             null);
@@ -70,7 +70,7 @@ class GeneratedClientTests {
     TsvUploadResponse tsvUploadResponse =
         recordsApi.uploadTSV(
             new File(this.getClass().getResource("/tsv/small-no-sys.tsv").toURI()),
-            instanceId.toString(),
+            collectionId.toString(),
             version,
             "foo",
             "greeting");
@@ -87,13 +87,13 @@ class GeneratedClientTests {
     recordAttributes.put(attributeName, "Hello");
     recordsApi.createOrReplaceRecord(
         new RecordRequest().attributes(recordAttributes),
-        instanceId.toString(),
+        collectionId.toString(),
         version,
         entityType,
         recordId,
         "row_id");
     RecordResponse record =
-        recordsApi.getRecord(instanceId.toString(), version, entityType, recordId);
+        recordsApi.getRecord(collectionId.toString(), version, entityType, recordId);
     assertThat(record.getAttributes()).containsEntry(attributeName, "Hello");
   }
 
@@ -104,7 +104,7 @@ class GeneratedClientTests {
     String recordType = "FOO";
     createRecord(recordsApi, recordId, recordType);
     RecordResponse record =
-        recordsApi.getRecord(instanceId.toString(), version, recordType, recordId);
+        recordsApi.getRecord(collectionId.toString(), version, recordType, recordId);
     assertThat(record.getId()).isEqualTo(recordId);
   }
 
@@ -115,7 +115,7 @@ class GeneratedClientTests {
     String recordId = "id1";
     createRecord(recordsApi, recordId, recordType);
     RecordQueryResponse response =
-        recordsApi.queryRecords(new SearchRequest(), instanceId.toString(), version, recordType);
+        recordsApi.queryRecords(new SearchRequest(), collectionId.toString(), version, recordType);
     assertThat(response.getTotalRecords()).isEqualTo(1);
     assertThat(response.getRecords().get(0).getId()).isEqualTo(recordId);
   }
@@ -124,7 +124,7 @@ class GeneratedClientTests {
       throws ApiException {
     recordsApi.createOrReplaceRecord(
         new RecordRequest().attributes(new RecordAttributes()),
-        instanceId.toString(),
+        collectionId.toString(),
         version,
         recordType,
         recordId,
@@ -138,10 +138,10 @@ class GeneratedClientTests {
     createRecord(new RecordsApi(apiClient), "id1", recordType + "_new");
     SchemaApi schemaApi = new SchemaApi(apiClient);
     RecordTypeSchema schema =
-        schemaApi.describeRecordType(instanceId.toString(), version, recordType);
+        schemaApi.describeRecordType(collectionId.toString(), version, recordType);
     assertThat(schema.getName()).isEqualTo(recordType);
     List<RecordTypeSchema> schemas =
-        schemaApi.describeAllRecordTypes(instanceId.toString(), version);
+        schemaApi.describeAllRecordTypes(collectionId.toString(), version);
     assertThat(schemas).hasSize(2);
     assertThat(schemas.get(0).getPrimaryKey()).isEqualTo("sys_name");
   }
@@ -156,7 +156,7 @@ class GeneratedClientTests {
     recordAttributes.put(attributeName, "Hello");
     recordsApi.createOrReplaceRecord(
         new RecordRequest().attributes(recordAttributes),
-        instanceId.toString(),
+        collectionId.toString(),
         version,
         entityType,
         recordId,
@@ -164,12 +164,12 @@ class GeneratedClientTests {
     recordAttributes.put(attributeName, "Goodbye");
     recordsApi.updateRecord(
         new RecordRequest().attributes(recordAttributes),
-        instanceId.toString(),
+        collectionId.toString(),
         version,
         entityType,
         recordId);
     RecordResponse record =
-        recordsApi.getRecord(instanceId.toString(), version, entityType, recordId);
+        recordsApi.getRecord(collectionId.toString(), version, entityType, recordId);
     assertThat(record.getAttributes()).containsEntry(attributeName, "Goodbye");
   }
 
@@ -181,13 +181,13 @@ class GeneratedClientTests {
     assertThat(response.getStatus().equals("UP"));
   }
 
-  private void createNewInstance(UUID instanceId) throws ApiException {
+  private void createNewCollection(UUID collectionId) throws ApiException {
     InstancesApi instancesApi = new InstancesApi(apiClient);
-    instancesApi.createWDSInstance(instanceId.toString(), version);
+    instancesApi.createWDSInstance(collectionId.toString(), version);
   }
 
-  private void deleteInstance(UUID instanceId) throws ApiException {
+  private void deleteCollection(UUID collection) throws ApiException {
     InstancesApi instancesApi = new InstancesApi(apiClient);
-    instancesApi.deleteWDSInstance(instanceId.toString(), version);
+    instancesApi.deleteWDSInstance(collection.toString(), version);
   }
 }

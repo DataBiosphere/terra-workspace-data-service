@@ -39,7 +39,7 @@ public class MockCloneDao implements CloneDao {
         new Job<>(
             trackingId,
             SYNC_CLONE,
-            /* instanceId= */ null, // backup jobs do not execute within a single instance
+            /* collectionId= */ null, // backup jobs do not execute within a single collection
             JobStatus.QUEUED,
             "",
             now,

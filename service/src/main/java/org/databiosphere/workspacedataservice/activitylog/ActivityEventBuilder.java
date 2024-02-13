@@ -96,8 +96,8 @@ public class ActivityEventBuilder {
 
   // OBJECT BUILDERS
 
-  public ActivityEventBuilder instance() {
-    this.thing = ActivityModels.Thing.INSTANCE;
+  public ActivityEventBuilder collection() {
+    this.thing = ActivityModels.Thing.COLLECTION;
     return this;
   }
 

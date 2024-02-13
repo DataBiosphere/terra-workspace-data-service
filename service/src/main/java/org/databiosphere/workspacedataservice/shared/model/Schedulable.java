@@ -9,7 +9,7 @@ public class Schedulable {
 
   // keys for job data arguments likely to be used by all/most Schedulables
   public static final String ARG_TOKEN = "authToken";
-  public static final String ARG_INSTANCE = "instanceId";
+  public static final String ARG_COLLECTION = "collectionId";
   public static final String ARG_URL = "url";
 
   // classifier for types of schedulable jobs; feeds into Quartz's JobKey

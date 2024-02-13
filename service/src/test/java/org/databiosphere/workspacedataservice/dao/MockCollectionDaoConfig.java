@@ -6,11 +6,11 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-public class MockInstanceDaoConfig {
+public class MockCollectionDaoConfig {
   @Bean
-  @Profile("mock-instance-dao")
+  @Profile("mock-collection-dao")
   @Primary
-  InstanceDao mockInstanceDao() {
-    return new MockInstanceDao();
+  CollectionDao mockCollectionDao() {
+    return new MockCollectionDao();
   }
 }
