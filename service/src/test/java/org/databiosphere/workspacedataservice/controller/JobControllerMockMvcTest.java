@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
-import org.databiosphere.workspacedataservice.shared.model.InstanceId;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
@@ -30,12 +30,12 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
   void smokeTestGetJob() throws Exception {
     // return a test job from the mocked JobDao
     UUID jobId = UUID.randomUUID();
-    UUID instanceId = UUID.randomUUID();
+    UUID collectionId = UUID.randomUUID();
     GenericJobServerModel expected =
         new GenericJobServerModel(
             jobId,
             GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
-            instanceId,
+            collectionId,
             GenericJobServerModel.StatusEnum.RUNNING,
             // set created and updated to now, but in UTC because that's how Postgres stores it
             OffsetDateTime.now(ZoneId.of("Z")),
@@ -57,11 +57,11 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  void smokeTestJobsInInstanceV1() throws Exception {
+  void smokeTestJobsInCollectionV1() throws Exception {
     // return a test job from the mocked JobDao
     UUID jobId1 = UUID.randomUUID();
     UUID jobId2 = UUID.randomUUID();
-    InstanceId instanceId = new InstanceId(UUID.randomUUID());
+    CollectionId collectionId = new CollectionId(UUID.randomUUID());
     // set created and updated to now, but in UTC because that's how Postgres stores it
     OffsetDateTime time = OffsetDateTime.now(ZoneId.of("Z"));
 
@@ -70,7 +70,7 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
         new GenericJobServerModel(
             jobId1,
             GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
-            instanceId.id(),
+            collectionId.id(),
             GenericJobServerModel.StatusEnum.RUNNING,
             time,
             time));
@@ -78,17 +78,17 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
         new GenericJobServerModel(
             jobId2,
             GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
-            instanceId.id(),
+            collectionId.id(),
             GenericJobServerModel.StatusEnum.RUNNING,
             time,
             time));
-    when(jobDao.getJobsForInstance(instanceId, Arrays.asList("RUNNING"))).thenReturn(expected);
+    when(jobDao.getJobsForCollection(collectionId, List.of("RUNNING"))).thenReturn(expected);
 
     // calling the API should result in 200 OK
     MvcResult mvcResult =
         mockMvc
             .perform(
-                get("/job/v1/instance/{instanceUuid}?statuses={statuses}", instanceId, "RUNNING"))
+                get("/job/v1/instance/{instanceUuid}?statuses={statuses}", collectionId, "RUNNING"))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -99,7 +99,7 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
     assertTrue(expected.containsAll(Arrays.asList(actual)));
     assertEquals(expected.size(), actual.length);
 
-    // all jobs in both lists should have the same instanceId
+    // all jobs in both lists should have the same collectionId
     assertEquals(expected.get(0).getInstanceId(), actual[1].getInstanceId());
   }
 }
