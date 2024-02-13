@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
-import org.databiosphere.workspacedataservice.shared.model.InstanceId;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
@@ -61,7 +61,7 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
     // return a test job from the mocked JobDao
     UUID jobId1 = UUID.randomUUID();
     UUID jobId2 = UUID.randomUUID();
-    InstanceId instanceId = new InstanceId(UUID.randomUUID());
+    CollectionId instanceId = new CollectionId(UUID.randomUUID());
     // set created and updated to now, but in UTC because that's how Postgres stores it
     OffsetDateTime time = OffsetDateTime.now(ZoneId.of("Z"));
 
@@ -100,6 +100,6 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
     assertEquals(expected.size(), actual.length);
 
     // all jobs in both lists should have the same instanceId
-    assertEquals(expected.get(0).getInstanceId(), actual[1].getInstanceId());
+    assertEquals(expected.get(0).getCollectionId(), actual[1].getCollectionId());
   }
 }

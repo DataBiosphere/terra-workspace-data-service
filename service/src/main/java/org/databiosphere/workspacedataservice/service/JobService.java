@@ -7,7 +7,7 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
-import org.databiosphere.workspacedataservice.shared.model.InstanceId;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +27,7 @@ public class JobService {
   public GenericJobServerModel getJob(UUID jobId) {
     try {
       GenericJobServerModel result = jobDao.getJob(jobId);
-      if (!samDao.hasReadCollectionPermission(result.getInstanceId().toString())) {
+      if (!samDao.hasReadCollectionPermission(result.getCollectionId().toString())) {
         throw new AuthorizationException("Caller does not have permission to view this job.");
       }
       return result;
@@ -37,7 +37,7 @@ public class JobService {
   }
 
   public List<GenericJobServerModel> getJobsForInstance(
-      InstanceId instanceId, List<String> statuses) {
+      CollectionId instanceId, List<String> statuses) {
     if (!samDao.hasReadInstancePermission(instanceId.toString())) {
       throw new AuthorizationException("Caller does not have permission to view this job.");
     }

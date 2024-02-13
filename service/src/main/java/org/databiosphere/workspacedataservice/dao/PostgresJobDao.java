@@ -12,7 +12,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
-import org.databiosphere.workspacedataservice.shared.model.InstanceId;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
@@ -62,7 +62,7 @@ public class PostgresJobDao implements JobDao {
                 + "values (?, ?, ?, ?, ?::jsonb)",
             job.getJobId().toString(),
             job.getJobType().name(),
-            job.getInstanceId().id(),
+            job.getCollectionId().id(),
             StatusEnum.CREATED.name(),
             inputJsonb);
 
@@ -214,7 +214,7 @@ public class PostgresJobDao implements JobDao {
 
   @Override
   public List<GenericJobServerModel> getJobsForInstance(
-      InstanceId instanceId, List<String> statuses) {
+      CollectionId instanceId, List<String> statuses) {
     // start our sql statement and map of params
     StringBuilder sb =
         new StringBuilder(

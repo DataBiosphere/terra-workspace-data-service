@@ -267,7 +267,7 @@ class PostgresJobDaoTest {
 
     assertEquals(JobTypeEnum.DATA_IMPORT, actual.getJobType());
     assertEquals(StatusEnum.CREATED, actual.getStatus());
-    assertNotNull(actual.getInstanceId());
+    assertNotNull(actual.getCollectionId());
     // TODO: AJ-1011 as PostgresJobDao.mapRow evolves, add more assertions here
   }
 }

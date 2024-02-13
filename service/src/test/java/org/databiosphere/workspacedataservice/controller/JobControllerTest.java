@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
-import org.databiosphere.workspacedataservice.shared.model.InstanceId;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
@@ -43,7 +43,7 @@ class JobControllerTest {
 
   @Autowired private JobDao jobDao;
 
-  private InstanceId instanceId = InstanceId.of(UUID.randomUUID());
+  private CollectionId instanceId = CollectionId.of(UUID.randomUUID());
 
   private UUID jobId;
 
@@ -53,7 +53,7 @@ class JobControllerTest {
     Job<JobInput, JobResult> testJob1 = newJob(instanceId, JobType.DATA_IMPORT, JobInput.empty());
     Job<JobInput, JobResult> testJob2 = newJob(instanceId, JobType.DATA_IMPORT, JobInput.empty());
     Job<JobInput, JobResult> testJob3 =
-        newJob(InstanceId.of(UUID.randomUUID()), JobType.DATA_IMPORT, JobInput.empty());
+        newJob(CollectionId.of(UUID.randomUUID()), JobType.DATA_IMPORT, JobInput.empty());
 
     // save one of the jobIds
     jobId = testJob1.getJobId();

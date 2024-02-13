@@ -196,11 +196,11 @@ public class JobV1ServerModel {
   @NotNull @Valid 
   @Schema(name = "instanceId", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("instanceId")
-  public UUID getInstanceId() {
+  public UUID getCollectionId() {
     return instanceId;
   }
 
-  public void setInstanceId(UUID instanceId) {
+  public void setCollectionId(UUID instanceId) {
     this.instanceId = instanceId;
   }
 

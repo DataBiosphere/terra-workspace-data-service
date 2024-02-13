@@ -115,7 +115,7 @@ public class Job<T extends JobInput, U extends JobResult> {
     return jobType;
   }
 
-  public CollectionId getInstanceId() {
+  public CollectionId getCollectionId() {
     return collectionId;
   }
 

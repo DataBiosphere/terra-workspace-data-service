@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.JobApi;
 import org.databiosphere.workspacedataservice.service.JobService;
-import org.databiosphere.workspacedataservice.shared.model.InstanceId;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,7 +49,7 @@ public class JobController implements JobApi {
       }
     }
     List<GenericJobServerModel> jobList =
-        jobService.getJobsForInstance(InstanceId.of(instanceUuid), statuses);
+        jobService.getJobsForInstance(CollectionId.of(instanceUuid), statuses);
 
     return new ResponseEntity<>(jobList, HttpStatus.OK);
   }
