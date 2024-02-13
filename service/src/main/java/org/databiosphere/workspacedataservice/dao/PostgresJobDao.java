@@ -214,7 +214,7 @@ public class PostgresJobDao implements JobDao {
 
   @Override
   public List<GenericJobServerModel> getJobsForInstance(
-      CollectionId instanceId, List<String> statuses) {
+      CollectionId collectionId, List<String> statuses) {
     // start our sql statement and map of params
     StringBuilder sb =
         new StringBuilder(
@@ -222,7 +222,7 @@ public class PostgresJobDao implements JobDao {
                 + "input, result, error, stacktrace, instance_id "
                 + "from sys_wds.job "
                 + "where instance_id = :instance_id");
-    MapSqlParameterSource params = new MapSqlParameterSource("instance_id", instanceId.id());
+    MapSqlParameterSource params = new MapSqlParameterSource("instance_id", collectionId.id());
 
     // if status is supplied, filter by that
     if (!statuses.isEmpty()) {
@@ -257,12 +257,12 @@ public class PostgresJobDao implements JobDao {
       var created = rs.getTimestamp("created").toLocalDateTime().atOffset(ZoneOffset.UTC);
       var updated = rs.getTimestamp("updated").toLocalDateTime().atOffset(ZoneOffset.UTC);
 
-      UUID instanceId = rs.getObject("instance_id", UUID.class);
+      UUID collectionId = rs.getObject("instance_id", UUID.class);
       GenericJobServerModel job =
-          new GenericJobServerModel(jobId, jobType, instanceId, status, created, updated);
+          new GenericJobServerModel(jobId, jobType, collectionId, status, created, updated);
 
       job.errorMessage(rs.getString("error"));
-      job.instanceId(rs.getObject("instance_id", UUID.class));
+      job.collectionId(rs.getObject("instance_id", UUID.class));
 
       // TODO: AJ-1011 also return stacktrace, input, result.
       return job;

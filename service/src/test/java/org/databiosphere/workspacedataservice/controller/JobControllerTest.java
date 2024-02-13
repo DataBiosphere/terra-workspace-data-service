@@ -43,15 +43,15 @@ class JobControllerTest {
 
   @Autowired private JobDao jobDao;
 
-  private CollectionId instanceId = CollectionId.of(UUID.randomUUID());
+  private CollectionId collectionId = CollectionId.of(UUID.randomUUID());
 
   private UUID jobId;
 
   @BeforeAll
   void beforeAll() {
     // push jobs into the db, one of different instanceId
-    Job<JobInput, JobResult> testJob1 = newJob(instanceId, JobType.DATA_IMPORT, JobInput.empty());
-    Job<JobInput, JobResult> testJob2 = newJob(instanceId, JobType.DATA_IMPORT, JobInput.empty());
+    Job<JobInput, JobResult> testJob1 = newJob(collectionId, JobType.DATA_IMPORT, JobInput.empty());
+    Job<JobInput, JobResult> testJob2 = newJob(collectionId, JobType.DATA_IMPORT, JobInput.empty());
     Job<JobInput, JobResult> testJob3 =
         newJob(CollectionId.of(UUID.randomUUID()), JobType.DATA_IMPORT, JobInput.empty());
 
@@ -81,11 +81,11 @@ class JobControllerTest {
             HttpMethod.GET,
             new HttpEntity<>(headers),
             new ParameterizedTypeReference<List<GenericJobServerModel>>() {},
-            instanceId,
+            collectionId,
             "");
     List<GenericJobServerModel> jobList = result.getBody();
     assertNotNull(jobList);
-    // 3 jobs inserted in beforeAll, only 2 for this instanceId
+    // 3 jobs inserted in beforeAll, only 2 for this collectionId
     assertEquals(2, jobList.size());
     assertEquals(StatusEnum.CREATED, jobList.get(0).getStatus());
     assertEquals(JobTypeEnum.DATA_IMPORT, jobList.get(0).getJobType());
@@ -103,12 +103,12 @@ class JobControllerTest {
             HttpMethod.GET,
             new HttpEntity<>(headers),
             new ParameterizedTypeReference<List<GenericJobServerModel>>() {},
-            instanceId,
+            collectionId,
             "CREATED",
             "CANCELLED");
     List<GenericJobServerModel> jobList = result.getBody();
     assertNotNull(jobList);
-    // 3 jobs inserted in beforeAll, only 2 for this instanceId
+    // 3 jobs inserted in beforeAll, only 2 for this collectionId
     assertEquals(2, jobList.size());
     assertEquals(StatusEnum.CREATED, jobList.get(0).getStatus());
     assertEquals(StatusEnum.CANCELLED, jobList.get(1).getStatus());

@@ -37,10 +37,10 @@ public class JobService {
   }
 
   public List<GenericJobServerModel> getJobsForInstance(
-      CollectionId instanceId, List<String> statuses) {
-    if (!samDao.hasReadInstancePermission(instanceId.toString())) {
+      CollectionId collectionId, List<String> statuses) {
+    if (!samDao.hasReadCollectionPermission(collectionId.toString())) {
       throw new AuthorizationException("Caller does not have permission to view this job.");
     }
-    return jobDao.getJobsForInstance(instanceId, statuses);
+    return jobDao.getJobsForInstance(collectionId, statuses);
   }
 }

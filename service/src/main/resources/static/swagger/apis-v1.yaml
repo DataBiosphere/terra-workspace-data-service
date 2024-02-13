@@ -189,7 +189,7 @@ components:
         - status
         - created
         - updated
-        - instanceId
+        - collectionId
       properties:
         jobId:
           type: string
@@ -197,7 +197,7 @@ components:
         jobType:
           type: string
           enum: [ DATA_IMPORT, UNKNOWN ]
-        instanceId:
+        collectionId:
           type: string
           format: uuid
         status:

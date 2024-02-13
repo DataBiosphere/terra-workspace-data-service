@@ -61,7 +61,7 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
     // return a test job from the mocked JobDao
     UUID jobId1 = UUID.randomUUID();
     UUID jobId2 = UUID.randomUUID();
-    CollectionId instanceId = new CollectionId(UUID.randomUUID());
+    CollectionId collectionId = new CollectionId(UUID.randomUUID());
     // set created and updated to now, but in UTC because that's how Postgres stores it
     OffsetDateTime time = OffsetDateTime.now(ZoneId.of("Z"));
 
@@ -70,7 +70,7 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
         new GenericJobServerModel(
             jobId1,
             GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
-            instanceId.id(),
+            collectionId.id(),
             GenericJobServerModel.StatusEnum.RUNNING,
             time,
             time));
@@ -78,17 +78,17 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
         new GenericJobServerModel(
             jobId2,
             GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
-            instanceId.id(),
+            collectionId.id(),
             GenericJobServerModel.StatusEnum.RUNNING,
             time,
             time));
-    when(jobDao.getJobsForInstance(instanceId, Arrays.asList("RUNNING"))).thenReturn(expected);
+    when(jobDao.getJobsForInstance(collectionId, Arrays.asList("RUNNING"))).thenReturn(expected);
 
     // calling the API should result in 200 OK
     MvcResult mvcResult =
         mockMvc
             .perform(
-                get("/job/v1/instance/{instanceUuid}?statuses={statuses}", instanceId, "RUNNING"))
+                get("/job/v1/instance/{instanceUuid}?statuses={statuses}", collectionId, "RUNNING"))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -99,7 +99,7 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
     assertTrue(expected.containsAll(Arrays.asList(actual)));
     assertEquals(expected.size(), actual.length);
 
-    // all jobs in both lists should have the same instanceId
+    // all jobs in both lists should have the same collectionId
     assertEquals(expected.get(0).getCollectionId(), actual[1].getCollectionId());
   }
 }

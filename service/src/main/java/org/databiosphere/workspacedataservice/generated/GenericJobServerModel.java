@@ -67,7 +67,7 @@ public class GenericJobServerModel {
 
   private JobTypeEnum jobType;
 
-  private UUID instanceId;
+  private UUID collectionId;
 
   /**
    * Gets or Sets status
@@ -140,10 +140,10 @@ public class GenericJobServerModel {
   /**
    * Constructor with only required parameters
    */
-  public GenericJobServerModel(UUID jobId, JobTypeEnum jobType, UUID instanceId, StatusEnum status, OffsetDateTime created, OffsetDateTime updated) {
+  public GenericJobServerModel(UUID jobId, JobTypeEnum jobType, UUID collectionId, StatusEnum status, OffsetDateTime created, OffsetDateTime updated) {
     this.jobId = jobId;
     this.jobType = jobType;
-    this.instanceId = instanceId;
+    this.collectionId = collectionId;
     this.status = status;
     this.created = created;
     this.updated = updated;
@@ -189,24 +189,24 @@ public class GenericJobServerModel {
     this.jobType = jobType;
   }
 
-  public GenericJobServerModel instanceId(UUID instanceId) {
-    this.instanceId = instanceId;
+  public GenericJobServerModel collectionId(UUID collectionId) {
+    this.collectionId = collectionId;
     return this;
   }
 
   /**
-   * Get instanceId
-   * @return instanceId
+   * Get collectionId
+   * @return collectionId
   */
   @NotNull @Valid 
-  @Schema(name = "instanceId", requiredMode = Schema.RequiredMode.REQUIRED)
-  @JsonProperty("instanceId")
+  @Schema(name = "collectionId", requiredMode = Schema.RequiredMode.REQUIRED)
+  @JsonProperty("collectionId")
   public UUID getCollectionId() {
-    return instanceId;
+    return collectionId;
   }
 
-  public void setCollectionId(UUID instanceId) {
-    this.instanceId = instanceId;
+  public void setCollectionId(UUID collectionId) {
+    this.collectionId = collectionId;
   }
 
   public GenericJobServerModel status(StatusEnum status) {
@@ -340,7 +340,7 @@ public class GenericJobServerModel {
     GenericJobServerModel genericJob = (GenericJobServerModel) o;
     return Objects.equals(this.jobId, genericJob.jobId) &&
         Objects.equals(this.jobType, genericJob.jobType) &&
-        Objects.equals(this.instanceId, genericJob.instanceId) &&
+        Objects.equals(this.collectionId, genericJob.collectionId) &&
         Objects.equals(this.status, genericJob.status) &&
         Objects.equals(this.created, genericJob.created) &&
         Objects.equals(this.updated, genericJob.updated) &&
@@ -351,7 +351,7 @@ public class GenericJobServerModel {
 
   @Override
   public int hashCode() {
-    return Objects.hash(jobId, jobType, instanceId, status, created, updated, errorMessage, input, result);
+    return Objects.hash(jobId, jobType, collectionId, status, created, updated, errorMessage, input, result);
   }
 
   @Override
@@ -360,7 +360,7 @@ public class GenericJobServerModel {
     sb.append("class GenericJobServerModel {\n");
     sb.append("    jobId: ").append(toIndentedString(jobId)).append("\n");
     sb.append("    jobType: ").append(toIndentedString(jobType)).append("\n");
-    sb.append("    instanceId: ").append(toIndentedString(instanceId)).append("\n");
+    sb.append("    collectionId: ").append(toIndentedString(collectionId)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    created: ").append(toIndentedString(created)).append("\n");
     sb.append("    updated: ").append(toIndentedString(updated)).append("\n");

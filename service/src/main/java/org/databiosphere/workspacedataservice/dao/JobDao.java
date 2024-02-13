@@ -30,5 +30,5 @@ public interface JobDao {
 
   GenericJobServerModel getJob(UUID jobId);
 
-  List<GenericJobServerModel> getJobsForInstance(CollectionId instanceId, List<String> statuses);
+  List<GenericJobServerModel> getJobsForInstance(CollectionId collectionId, List<String> statuses);
 }

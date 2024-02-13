@@ -66,7 +66,7 @@ public class JobV1ServerModel {
 
   private JobTypeEnum jobType;
 
-  private UUID instanceId;
+  private UUID collectionId;
 
   /**
    * Gets or Sets status
@@ -135,10 +135,10 @@ public class JobV1ServerModel {
   /**
    * Constructor with only required parameters
    */
-  public JobV1ServerModel(UUID jobId, JobTypeEnum jobType, UUID instanceId, StatusEnum status, OffsetDateTime created, OffsetDateTime updated) {
+  public JobV1ServerModel(UUID jobId, JobTypeEnum jobType, UUID collectionId, StatusEnum status, OffsetDateTime created, OffsetDateTime updated) {
     this.jobId = jobId;
     this.jobType = jobType;
-    this.instanceId = instanceId;
+    this.collectionId = collectionId;
     this.status = status;
     this.created = created;
     this.updated = updated;
@@ -184,24 +184,24 @@ public class JobV1ServerModel {
     this.jobType = jobType;
   }
 
-  public JobV1ServerModel instanceId(UUID instanceId) {
-    this.instanceId = instanceId;
+  public JobV1ServerModel collectionId(UUID collectionId) {
+    this.collectionId = collectionId;
     return this;
   }
 
   /**
-   * Get instanceId
-   * @return instanceId
+   * Get collectionId
+   * @return collectionId
   */
   @NotNull @Valid 
-  @Schema(name = "instanceId", requiredMode = Schema.RequiredMode.REQUIRED)
-  @JsonProperty("instanceId")
+  @Schema(name = "collectionId", requiredMode = Schema.RequiredMode.REQUIRED)
+  @JsonProperty("collectionId")
   public UUID getCollectionId() {
-    return instanceId;
+    return collectionId;
   }
 
-  public void setCollectionId(UUID instanceId) {
-    this.instanceId = instanceId;
+  public void setCollectionId(UUID collectionId) {
+    this.collectionId = collectionId;
   }
 
   public JobV1ServerModel status(StatusEnum status) {
@@ -295,7 +295,7 @@ public class JobV1ServerModel {
     JobV1ServerModel jobV1 = (JobV1ServerModel) o;
     return Objects.equals(this.jobId, jobV1.jobId) &&
         Objects.equals(this.jobType, jobV1.jobType) &&
-        Objects.equals(this.instanceId, jobV1.instanceId) &&
+        Objects.equals(this.collectionId, jobV1.collectionId) &&
         Objects.equals(this.status, jobV1.status) &&
         Objects.equals(this.created, jobV1.created) &&
         Objects.equals(this.updated, jobV1.updated) &&
@@ -304,7 +304,7 @@ public class JobV1ServerModel {
 
   @Override
   public int hashCode() {
-    return Objects.hash(jobId, jobType, instanceId, status, created, updated, errorMessage);
+    return Objects.hash(jobId, jobType, collectionId, status, created, updated, errorMessage);
   }
 
   @Override
@@ -313,7 +313,7 @@ public class JobV1ServerModel {
     sb.append("class JobV1ServerModel {\n");
     sb.append("    jobId: ").append(toIndentedString(jobId)).append("\n");
     sb.append("    jobType: ").append(toIndentedString(jobType)).append("\n");
-    sb.append("    instanceId: ").append(toIndentedString(instanceId)).append("\n");
+    sb.append("    collectionId: ").append(toIndentedString(collectionId)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    created: ").append(toIndentedString(created)).append("\n");
     sb.append("    updated: ").append(toIndentedString(updated)).append("\n");
