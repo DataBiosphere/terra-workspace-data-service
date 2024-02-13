@@ -25,7 +25,7 @@ class CollectionIdTest {
     assertEquals(validId.toString(), CollectionId.of(validId).toString());
   }
 
-  // does the InstanceId.of() static constructor work just like the standard constructor?
+  // does the CollectionId.of() static constructor work just like the standard constructor?
   @Test
   void ofConstructor() {
     UUID validId = UUID.randomUUID();

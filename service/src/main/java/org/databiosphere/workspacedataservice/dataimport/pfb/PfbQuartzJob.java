@@ -3,7 +3,7 @@ package org.databiosphere.workspacedataservice.dataimport.pfb;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.ID_FIELD;
 import static org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode.BASE_ATTRIBUTES;
 import static org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode.RELATIONS;
-import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
 import bio.terra.pfb.PfbReader;
@@ -83,7 +83,7 @@ public class PfbQuartzJob extends QuartzJob {
     // Grab the PFB url from the job's data map
     JobDataMap jobDataMap = context.getMergedJobDataMap();
     URL url = getJobDataUrl(jobDataMap, ARG_URL);
-    UUID targetInstance = getJobDataUUID(jobDataMap, ARG_INSTANCE);
+    UUID targetInstance = getJobDataUUID(jobDataMap, ARG_COLLECTION);
 
     // Find all the snapshot ids in the PFB, then create or verify references from the
     // workspace to the snapshot for each of those snapshot ids.

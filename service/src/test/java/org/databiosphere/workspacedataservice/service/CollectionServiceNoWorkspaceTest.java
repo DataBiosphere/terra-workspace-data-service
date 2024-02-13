@@ -29,8 +29,8 @@ class CollectionServiceNoWorkspaceTest {
     assertThat(workspaceIdProperty).isEmpty();
   }
 
-  // when twds.instance.workspace-id is empty, instanceService.getWorkspaceId will echo the
-  // instanceid back as the workspace id
+  // when twds.instance.workspace-id is empty, collectionService.getWorkspaceId will echo the
+  // collectionId back as the workspace id
   @Test
   void getWorkspaceId() {
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());

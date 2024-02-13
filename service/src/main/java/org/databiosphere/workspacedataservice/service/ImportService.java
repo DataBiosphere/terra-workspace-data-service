@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
@@ -81,7 +81,7 @@ public class ImportService {
       Map<String, Serializable> arguments = new HashMap<>();
       arguments.put(ARG_TOKEN, petToken);
       arguments.put(ARG_URL, importRequest.getUrl().toString());
-      arguments.put(ARG_INSTANCE, instanceUuid.toString());
+      arguments.put(ARG_COLLECTION, instanceUuid.toString());
 
       // create the executable job to be scheduled
       Schedulable schedulable =

@@ -61,19 +61,19 @@ class BatchWriteServiceTest {
   @SpyBean DataTypeInferer inferer;
   @SpyBean RecordService recordService;
 
-  private static final UUID INSTANCE = UUID.fromString("aaaabbbb-cccc-dddd-1111-222233334444");
+  private static final UUID COLLECTION = UUID.fromString("aaaabbbb-cccc-dddd-1111-222233334444");
   private static final RecordType THING_TYPE = RecordType.valueOf("thing");
 
   @BeforeEach
   void setUp() {
-    if (!collectionDao.collectionSchemaExists(INSTANCE)) {
-      collectionDao.createSchema(INSTANCE);
+    if (!collectionDao.collectionSchemaExists(COLLECTION)) {
+      collectionDao.createSchema(COLLECTION);
     }
   }
 
   @AfterEach
   void tearDown() {
-    collectionDao.dropSchema(INSTANCE);
+    collectionDao.dropSchema(COLLECTION);
   }
 
   @Test
@@ -88,7 +88,7 @@ class BatchWriteServiceTest {
             () ->
                 batchWriteService.batchWrite(
                     recordSourceFactory.forJson(is),
-                    INSTANCE,
+                    COLLECTION,
                     THING_TYPE,
                     RECORD_ID,
                     ImportMode.BASE_ATTRIBUTES));
@@ -120,11 +120,11 @@ class BatchWriteServiceTest {
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(file.getInputStream(), recordType, Optional.of(primaryKey));
     batchWriteService.batchWrite(
-        recordSource, INSTANCE, recordType, primaryKey, ImportMode.BASE_ATTRIBUTES);
+        recordSource, COLLECTION, recordType, primaryKey, ImportMode.BASE_ATTRIBUTES);
 
     // we should write three batches
     verify(recordService, times(3))
-        .batchUpsert(eq(INSTANCE), eq(recordType), any(), any(), eq(primaryKey));
+        .batchUpsert(eq(COLLECTION), eq(recordType), any(), any(), eq(primaryKey));
 
     // but we should only have inferred the schema once
     verify(inferer, times(1)).inferTypes(ArgumentMatchers.<List<Record>>any());
@@ -157,11 +157,12 @@ class BatchWriteServiceTest {
 
       // verify calls to batchUpsertWithErrorCapture
       verify(recordService, times(3))
-          .batchUpsert(eq(INSTANCE), eq(RecordType.valueOf("thing")), any(), any(), eq(ID_FIELD));
+          .batchUpsert(eq(COLLECTION), eq(RecordType.valueOf("thing")), any(), any(), eq(ID_FIELD));
       verify(recordService, times(5))
-          .batchUpsert(eq(INSTANCE), eq(RecordType.valueOf("item")), any(), any(), eq(ID_FIELD));
+          .batchUpsert(eq(COLLECTION), eq(RecordType.valueOf("item")), any(), any(), eq(ID_FIELD));
       verify(recordService, times(8))
-          .batchUpsert(eq(INSTANCE), eq(RecordType.valueOf("widget")), any(), any(), eq(ID_FIELD));
+          .batchUpsert(
+              eq(COLLECTION), eq(RecordType.valueOf("widget")), any(), any(), eq(ID_FIELD));
 
       // but we should only have inferred schemas three times - once for each record Type
       @SuppressWarnings("unchecked")
@@ -260,7 +261,7 @@ class BatchWriteServiceTest {
       DataFileStream<GenericRecord> pfbStream, String primaryKey, ImportMode importMode) {
     return batchWriteService.batchWrite(
         recordSourceFactory.forPfb(pfbStream, importMode),
-        INSTANCE,
+        COLLECTION,
         /* recordType= */ null,
         primaryKey,
         importMode);

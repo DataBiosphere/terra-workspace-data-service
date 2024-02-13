@@ -53,7 +53,7 @@ class PostgresJobDaoTest {
 
     var params = new MapSqlParameterSource("jobId", testJob.getJobId().toString());
     params.addValue("type", jobType.name());
-    params.addValue("instanceId", collectionId.id());
+    params.addValue("collectionId", collectionId.id());
     params.addValue("status", StatusEnum.CREATED.name());
 
     // after creating a job, there should be exactly one row with:
@@ -65,7 +65,8 @@ class PostgresJobDaoTest {
         () ->
             namedTemplate.queryForObject(
                 "select id from sys_wds.job where id = :jobId and type = :type and status = :status "
-                    + "and instance_id = :instanceId "
+                    + "and instance_id = :collectionId " // TODO: instance_id will be changed to
+                    // collection_id in a later PR for AJ-1592
                     + "and created is not null and updated is not null "
                     + "and input = '{}'::jsonb "
                     + "and result is null and error is null and stacktrace is null",

@@ -33,20 +33,20 @@ public class TsvErrorMessageTest {
   @Autowired CollectionService collectionService;
   @Autowired RecordOrchestratorService recordOrchestratorService;
 
-  private UUID instanceId;
+  private UUID collectionId;
 
   private static final String VERSION = "v0.2";
 
   @BeforeEach
   void setUp() {
-    instanceId = UUID.randomUUID();
-    collectionService.createCollection(instanceId, VERSION);
+    collectionId = UUID.randomUUID();
+    collectionService.createCollection(collectionId, VERSION);
   }
 
   @AfterEach
   void tearDown() {
-    List<UUID> allInstances = collectionService.listCollections(VERSION);
-    for (UUID id : allInstances) {
+    List<UUID> allCollections = collectionService.listCollections(VERSION);
+    for (UUID id : allCollections) {
       collectionService.deleteCollection(id, VERSION);
     }
   }
@@ -70,7 +70,7 @@ public class TsvErrorMessageTest {
               InvalidTsvException.class,
               () ->
                   recordOrchestratorService.tsvUpload(
-                      instanceId,
+                      collectionId,
                       VERSION,
                       RecordType.valueOf("will_error"),
                       Optional.empty(),

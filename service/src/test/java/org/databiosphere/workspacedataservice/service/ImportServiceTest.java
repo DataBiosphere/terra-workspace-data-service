@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
-import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,7 +46,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles(profiles = {"mock-sam", "mock-instance-dao"})
+@ActiveProfiles(profiles = {"mock-sam", "mock-collection-dao"})
 @SpringBootTest
 class ImportServiceTest {
 
@@ -117,14 +117,14 @@ class ImportServiceTest {
   void persistsJobAsQueued(ImportRequestServerModel.TypeEnum importType) {
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
-    // create instance (in the MockInstanceDao)
-    UUID instanceId = UUID.randomUUID();
-    collectionService.createCollection(instanceId, VERSION);
+    // create collection (in the MockCollectionDao)
+    UUID collectionId = UUID.randomUUID();
+    collectionService.createCollection(collectionId, VERSION);
     // define the import request
     URI importUri = URI.create("http://does/not/matter");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request
-    GenericJobServerModel createdJob = importService.createImport(instanceId, importRequest);
+    GenericJobServerModel createdJob = importService.createImport(collectionId, importRequest);
 
     // re-retrieve the job; this double-checks what's actually in the db, in case the return
     // value of importService.createImport has bugs
@@ -140,14 +140,14 @@ class ImportServiceTest {
   void addsJobToScheduler(ImportRequestServerModel.TypeEnum importType) {
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
-    // create instance (in the MockInstanceDao)
-    UUID instanceId = UUID.randomUUID();
-    collectionService.createCollection(instanceId, VERSION);
+    // create collection (in the MockCollectionDao)
+    UUID collectionId = UUID.randomUUID();
+    collectionService.createCollection(collectionId, VERSION);
     // define the import request
     URI importUri = URI.create("http://does/not/matter");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request
-    GenericJobServerModel createdJob = importService.createImport(instanceId, importRequest);
+    GenericJobServerModel createdJob = importService.createImport(collectionId, importRequest);
     // assert that importService.createImport properly calls schedulerDao
     ArgumentCaptor<Schedulable> argument = ArgumentCaptor.forClass(Schedulable.class);
     verify(schedulerDao).schedule(argument.capture());
@@ -157,9 +157,9 @@ class ImportServiceTest {
 
     Map<String, Serializable> actualArguments = actual.getArguments();
     assertEquals(
-        instanceId.toString(),
-        actualArguments.get(ARG_INSTANCE),
-        "scheduled job had wrong instance argument");
+        collectionId.toString(),
+        actualArguments.get(ARG_COLLECTION),
+        "scheduled job had wrong collection argument");
     assertEquals(
         importUri.toString(), actualArguments.get(ARG_URL), "scheduled job had wrong url argument");
     // The return value of mock sam's get pet token
@@ -174,14 +174,14 @@ class ImportServiceTest {
     doThrow(new RuntimeException("unit test failme"))
         .when(schedulerDao)
         .schedule(any(Schedulable.class));
-    // create instance (in the MockInstanceDao)
-    UUID instanceId = UUID.randomUUID();
-    collectionService.createCollection(instanceId, VERSION);
+    // create collection (in the MockCollectionDao)
+    UUID collectionId = UUID.randomUUID();
+    collectionService.createCollection(collectionId, VERSION);
     // define the import request
     URI importUri = URI.create("http://does/not/matter");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request; this will internally hit the exception from the schedulerDao
-    GenericJobServerModel createdJob = importService.createImport(instanceId, importRequest);
+    GenericJobServerModel createdJob = importService.createImport(collectionId, importRequest);
 
     // re-retrieve the job; this double-checks what's actually in the db, in case the return
     // value of importService.createImport has bugs
@@ -202,14 +202,14 @@ class ImportServiceTest {
 
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
-    // create instance (in the MockInstanceDao)
-    UUID instanceId = UUID.randomUUID();
-    collectionService.createCollection(instanceId, VERSION);
+    // create collection (in the MockCollectionDao)
+    UUID collectionId = UUID.randomUUID();
+    collectionService.createCollection(collectionId, VERSION);
     // define the import request
     URI importUri = URI.create("http://does/not/matter");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // Import will fail without a pet token
-    assertThrows(Exception.class, () -> importService.createImport(instanceId, importRequest));
+    assertThrows(Exception.class, () -> importService.createImport(collectionId, importRequest));
     // Job should not have been created
     verify(jobDao, times(0)).createJob(any());
   }

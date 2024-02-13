@@ -61,7 +61,7 @@ class CollectionInitializerNoWorkspaceIdTest {
 
   @Autowired CollectionInitializerBean collectionInitializerBean;
   @MockBean JdbcLockRegistry registry;
-  @SpyBean CollectionDao instanceDao;
+  @SpyBean CollectionDao collectionDao;
 
   Lock mockLock = mock(Lock.class);
 
@@ -74,7 +74,7 @@ class CollectionInitializerNoWorkspaceIdTest {
   @Test
   void workspaceIDNotProvidedNoExceptionThrown() {
     assertDoesNotThrow(() -> collectionInitializerBean.initializeCollection());
-    // verify that method to create instance was NOT called
-    verify(instanceDao, times(0)).createSchema(any());
+    // verify that method to create collection was NOT called
+    verify(collectionDao, times(0)).createSchema(any());
   }
 }

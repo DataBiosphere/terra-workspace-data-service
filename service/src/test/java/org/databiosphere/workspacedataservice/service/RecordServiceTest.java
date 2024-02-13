@@ -41,17 +41,17 @@ class RecordServiceTest {
   // overridden by TestObservationRegistryConfig with a TestObservationRegistry
   @Autowired private ObservationRegistry observationRegistry;
 
-  private UUID instanceId;
+  private UUID collectionId;
 
   @BeforeEach
   void beforeEach() {
-    instanceId = UUID.randomUUID();
-    collectionService.createCollection(instanceId, "v0.2");
+    collectionId = UUID.randomUUID();
+    collectionService.createCollection(collectionId, "v0.2");
   }
 
   @AfterEach
   void afterEach() {
-    collectionService.deleteCollection(instanceId, "v0.2");
+    collectionService.deleteCollection(collectionId, "v0.2");
   }
 
   @Test
@@ -67,7 +67,7 @@ class RecordServiceTest {
     // insert a simple record; this will create "myAttr" as numeric
     RecordType recordType = RecordType.valueOf("myType");
     recordService.upsertSingleRecord(
-        instanceId,
+        collectionId,
         recordType,
         "111",
         Optional.of("pk"),
@@ -76,7 +76,7 @@ class RecordServiceTest {
     // verify schema
     assertEquals(
         Map.of("pk", DataTypeMapping.STRING, "myAttr", DataTypeMapping.NUMBER),
-        recordDao.getExistingTableSchema(instanceId, recordType));
+        recordDao.getExistingTableSchema(collectionId, recordType));
 
     // assert the observation registry still has no counters; we only create an observation when
     // altering a column, and we just created a table but didn't issue any alters
@@ -84,7 +84,7 @@ class RecordServiceTest {
 
     // insert another record, which will update the "myAttr" to be a string
     recordService.upsertSingleRecord(
-        instanceId,
+        collectionId,
         recordType,
         "111",
         Optional.of("pk"),
@@ -93,7 +93,7 @@ class RecordServiceTest {
     // verify schema
     assertEquals(
         Map.of("pk", DataTypeMapping.STRING, "myAttr", DataTypeMapping.STRING),
-        recordDao.getExistingTableSchema(instanceId, recordType));
+        recordDao.getExistingTableSchema(collectionId, recordType));
 
     // we should have created an observation
     assertThat(testObservationRegistry)
@@ -105,7 +105,7 @@ class RecordServiceTest {
         .hasLowCardinalityKeyValue(TAG_NEW_DATATYPE, DataTypeMapping.STRING.toString())
         .hasHighCardinalityKeyValue(TAG_RECORD_TYPE, recordType.getName())
         .hasHighCardinalityKeyValue(TAG_ATTRIBUTE_NAME, "myAttr")
-        .hasHighCardinalityKeyValue(TAG_COLLECTION, instanceId.toString())
+        .hasHighCardinalityKeyValue(TAG_COLLECTION, collectionId.toString())
         .hasBeenStarted()
         .hasBeenStopped();
   }
