@@ -72,7 +72,7 @@ jobs:
           run_name: "${{ env.ATTACH_BP_TO_LZ_RUN_NAME }}"
           bee_name: ${{ env.BEE_NAME }}
           token: '${{ env.TOKEN }}'
-          project_name: ${{needs.params-gen.outputs.project-name }}
+          project_name: ${{ needs.params-gen.outputs.project-name }}
 
       - name: retry dispatch to terra-github-workflows in case of failure
         if: steps.FirstAttemptLandingZone.outcome == 'failure'
@@ -81,7 +81,7 @@ jobs:
           run_name: "${{ env.ATTACH_BP_TO_LZ_RUN_NAME }}-retry"
           bee_name: ${{ env.BEE_NAME }}
           token: '${{ env.TOKEN }}'
-          project_name: ${{needs.params-gen.outputs.project-name }}
+          project_name: ${{ needs.params-gen.outputs.project-name }}
 
   run-e2e-test-job:
     needs:
