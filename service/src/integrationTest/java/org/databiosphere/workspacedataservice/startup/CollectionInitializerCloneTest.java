@@ -49,10 +49,10 @@ import org.springframework.test.context.TestPropertySource;
     })
 @DirtiesContext
 @SpringBootTest
-class InstanceInitializerCloneTest {
+class CollectionInitializerCloneTest {
 
   // standard beans
-  @Autowired InstanceInitializerBean instanceInitializerBean;
+  @Autowired CollectionInitializerBean collectionInitializerBean;
   @Autowired InstanceDao instanceDao;
   @Autowired RecordDao recordDao;
   @Autowired CloneDao cloneDao;
@@ -102,7 +102,7 @@ class InstanceInitializerCloneTest {
         .willReturn(mockCloningApi);
 
     // attempt to clone
-    instanceInitializerBean.initializeInstance();
+    collectionInitializerBean.initializeCollection();
 
     // clone job should have errored, with friendly error message
     Job<JobInput, CloneResponse> cloneStatus = cloneDao.getCloneStatus();
@@ -145,7 +145,7 @@ class InstanceInitializerCloneTest {
         .willReturn(mockCloningApi);
 
     // attempt to clone
-    instanceInitializerBean.initializeInstance();
+    collectionInitializerBean.initializeCollection();
 
     // clone job should have succeeded
     Job<JobInput, CloneResponse> cloneStatus = cloneDao.getCloneStatus();

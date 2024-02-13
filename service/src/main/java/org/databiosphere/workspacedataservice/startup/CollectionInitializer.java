@@ -10,16 +10,16 @@ import org.springframework.stereotype.Component;
 @Component
 @DataPlane
 @Profile({"!local"})
-public class InstanceInitializer implements ApplicationListener<ContextRefreshedEvent> {
+public class CollectionInitializer implements ApplicationListener<ContextRefreshedEvent> {
 
-  private final InstanceInitializerBean instanceInitializerBean;
+  private final CollectionInitializerBean collectionInitializerBean;
 
-  public InstanceInitializer(InstanceInitializerBean instanceInitializerBean) {
-    this.instanceInitializerBean = instanceInitializerBean;
+  public CollectionInitializer(CollectionInitializerBean collectionInitializerBean) {
+    this.collectionInitializerBean = collectionInitializerBean;
   }
 
   @Override
   public void onApplicationEvent(@NotNull ContextRefreshedEvent event) {
-    instanceInitializerBean.initializeInstance();
+    collectionInitializerBean.initializeCollection();
   }
 }

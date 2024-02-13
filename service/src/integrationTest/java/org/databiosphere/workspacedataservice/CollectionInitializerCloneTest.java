@@ -24,6 +24,7 @@ import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceClientFactory;
+import org.databiosphere.workspacedataservice.startup.CollectionInitializerBean;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;

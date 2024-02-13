@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice;
+package org.databiosphere.workspacedataservice.startup;
 
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;

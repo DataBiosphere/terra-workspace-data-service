@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice;
+package org.databiosphere.workspacedataservice.startup;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -151,10 +151,11 @@ public class CollectionInitializerBean {
       // If there's a clone entry and no default schema, another replica errored before completing.
       // If there's a clone entry and a default schema there's nothing for us to do here.
       if (cloneDao.cloneExistsForWorkspace((UUID.fromString(sourceWorkspaceId)))) {
-        boolean collectionExists =
+        boolean collectionSchemaExists =
             collectionDao.collectionSchemaExists(UUID.fromString(workspaceId));
-        LOGGER.info("Previous clone entry found. Collection schema exists: {}.", collectionExists);
-        return collectionExists;
+        LOGGER.info(
+            "Previous clone entry found. Collection schema exists: {}.", collectionSchemaExists);
+        return collectionSchemaExists;
       }
 
       // First, create an entry in the clone table to mark cloning has started
