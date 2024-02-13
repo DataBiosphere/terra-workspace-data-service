@@ -3,7 +3,7 @@ package org.databiosphere.workspacedataservice.shared.model.job;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.shared.model.InstanceId;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 
 /**
  * Represents a long-running, probably asynchronous, process which moves through multiple states
@@ -23,7 +23,7 @@ public class Job<T extends JobInput, U extends JobResult> {
   private final JobType jobType;
 
   /** Instance in which this job ran */
-  private final InstanceId instanceId;
+  private final CollectionId collectionId;
 
   /** status of the job; {@link JobStatus} */
   private JobStatus status;
@@ -56,7 +56,7 @@ public class Job<T extends JobInput, U extends JobResult> {
   public Job(
       UUID jobId,
       JobType jobType,
-      InstanceId instanceId,
+      CollectionId collectionId,
       JobStatus status,
       String errorMessage,
       LocalDateTime created,
@@ -65,7 +65,7 @@ public class Job<T extends JobInput, U extends JobResult> {
       U result) {
     this.jobId = jobId;
     this.jobType = jobType;
-    this.instanceId = instanceId;
+    this.collectionId = collectionId;
     this.status = status;
     this.errorMessage = errorMessage;
     this.created = created;
@@ -83,12 +83,12 @@ public class Job<T extends JobInput, U extends JobResult> {
    * @return the job, after creation
    */
   public static Job<JobInput, JobResult> newJob(
-      InstanceId instanceId, JobType jobType, JobInput input) {
+      CollectionId collectionId, JobType jobType, JobInput input) {
     LocalDateTime now = LocalDateTime.now();
     return new Job<>(
         UUID.randomUUID(),
         jobType,
-        instanceId,
+        collectionId,
         JobStatus.CREATED,
         /* errorMessage= */ null,
         /* created= */ now,
@@ -115,8 +115,8 @@ public class Job<T extends JobInput, U extends JobResult> {
     return jobType;
   }
 
-  public InstanceId getInstanceId() {
-    return instanceId;
+  public CollectionId getInstanceId() {
+    return collectionId;
   }
 
   public String getErrorMessage() {

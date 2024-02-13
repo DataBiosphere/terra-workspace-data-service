@@ -23,49 +23,49 @@ public class MisconfiguredSamDao implements SamDao {
   }
 
   @Override
-  public boolean hasCreateInstancePermission() {
+  public boolean hasCreateCollectionPermission() {
     logWarning();
     return false;
   }
 
   @Override
-  public boolean hasCreateInstancePermission(String token) {
+  public boolean hasCreateCollectionPermission(String token) {
     logWarning();
     return false;
   }
 
   @Override
-  public boolean hasDeleteInstancePermission() {
+  public boolean hasDeleteCollectionPermission() {
     logWarning();
     return false;
   }
 
   @Override
-  public boolean hasDeleteInstancePermission(String token) {
+  public boolean hasDeleteCollectionPermission(String token) {
     logWarning();
     return false;
   }
 
   @Override
-  public boolean hasWriteInstancePermission() {
+  public boolean hasWriteCollectionPermission() {
     logWarning();
     return false;
   }
 
   @Override
-  public boolean hasWriteInstancePermission(String token) {
+  public boolean hasWriteCollectionPermission(String token) {
     logWarning();
     return false;
   }
 
   @Override
-  public boolean hasReadInstancePermission(String instanceId) {
+  public boolean hasReadCollectionPermission(String collectionId) {
     logWarning();
     return false;
   }
 
   @Override
-  public boolean hasReadInstancePermission(String instanceId, String token) {
+  public boolean hasReadCollectionPermission(String collectionId, String token) {
     logWarning();
     return false;
   }

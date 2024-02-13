@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
-import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.junit.jupiter.api.Test;
@@ -25,11 +25,11 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class InstanceServiceNoPermissionSamTest {
+class CollectionServiceNoPermissionSamTest {
 
-  @Autowired private InstanceService instanceService;
+  @Autowired private CollectionService collectionService;
 
-  @Autowired private InstanceDao instanceDao;
+  @Autowired private CollectionDao collectionDao;
 
   // mock for the SamClientFactory; since this is a Spring bean we can use @MockBean
   @MockBean SamClientFactory mockSamClientFactory;
@@ -52,9 +52,9 @@ class InstanceServiceNoPermissionSamTest {
     UUID instanceId = UUID.randomUUID();
     assertThrows(
         AuthorizationException.class,
-        () -> instanceService.createInstance(instanceId, VERSION),
+        () -> collectionService.createCollection(instanceId, VERSION),
         "createInstance should throw if caller does not have permission to create wds-instance resource in Sam");
-    List<UUID> allInstances = instanceService.listInstances(VERSION);
+    List<UUID> allInstances = collectionService.listCollections(VERSION);
     assertFalse(allInstances.contains(instanceId), "should not have created the instance.");
   }
 
@@ -71,13 +71,13 @@ class InstanceServiceNoPermissionSamTest {
 
     UUID instanceId = UUID.randomUUID();
     // create the instance (directly in the db, bypassing Sam)
-    instanceDao.createSchema(instanceId);
+    collectionDao.createSchema(instanceId);
 
     assertThrows(
         AuthorizationException.class,
-        () -> instanceService.deleteInstance(instanceId, VERSION),
+        () -> collectionService.deleteCollection(instanceId, VERSION),
         "deleteInstance should throw if caller does not have permission to delete wds-instance resource in Sam");
-    List<UUID> allInstances = instanceService.listInstances(VERSION);
+    List<UUID> allInstances = collectionService.listCollections(VERSION);
     assertTrue(allInstances.contains(instanceId), "should not have deleted the instance.");
   }
 }

@@ -14,7 +14,7 @@ import org.databiosphere.workspacedata.client.ApiException;
 import org.databiosphere.workspacedata.model.BackupJob;
 import org.databiosphere.workspacedata.model.BackupResponse;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
-import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
@@ -49,11 +49,11 @@ import org.springframework.test.context.TestPropertySource;
     })
 @DirtiesContext
 @SpringBootTest
-class InstanceInitializerCloneTest {
+class CollectionInitializerCloneTest {
 
   // standard beans
-  @Autowired InstanceInitializerBean instanceInitializerBean;
-  @Autowired InstanceDao instanceDao;
+  @Autowired CollectionInitializerBean collectionInitializerBean;
+  @Autowired CollectionDao collectionDao;
   @Autowired RecordDao recordDao;
   @Autowired CloneDao cloneDao;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
@@ -73,8 +73,8 @@ class InstanceInitializerCloneTest {
   @AfterEach
   void tearDown() {
     // clean up any instances left in the db
-    List<UUID> allInstances = instanceDao.listInstanceSchemas();
-    allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
+    List<UUID> allInstances = collectionDao.listCollectionSchemas();
+    allInstances.forEach(instanceId -> collectionDao.dropSchema(instanceId));
     // clean up any clone entries
     namedTemplate.getJdbcTemplate().update("delete from sys_wds.clone");
     // TODO: also drop any orphaned pg schemas that don't have an entry in the sys_wds.instances
@@ -102,7 +102,7 @@ class InstanceInitializerCloneTest {
         .willReturn(mockCloningApi);
 
     // attempt to clone
-    instanceInitializerBean.initializeInstance();
+    collectionInitializerBean.initializeCollection();
 
     // clone job should have errored, with friendly error message
     Job<JobInput, CloneResponse> cloneStatus = cloneDao.getCloneStatus();
@@ -115,7 +115,7 @@ class InstanceInitializerCloneTest {
 
     // default instance should exist, with no tables in it
     UUID workspaceUuid = UUID.fromString(workspaceId);
-    assertTrue(instanceDao.instanceSchemaExists(workspaceUuid));
+    assertTrue(collectionDao.collectionSchemaExists(workspaceUuid));
     assertThat(recordDao.getAllRecordTypes(workspaceUuid)).isEmpty();
   }
 
@@ -145,7 +145,7 @@ class InstanceInitializerCloneTest {
         .willReturn(mockCloningApi);
 
     // attempt to clone
-    instanceInitializerBean.initializeInstance();
+    collectionInitializerBean.initializeCollection();
 
     // clone job should have succeeded
     Job<JobInput, CloneResponse> cloneStatus = cloneDao.getCloneStatus();
@@ -155,7 +155,7 @@ class InstanceInitializerCloneTest {
     // default instance should exist, with a single table named "thing" in it
     // the "thing" table is defined in WDS-integrationTest-LocalFileStorage-input.sql.
     UUID workspaceUuid = UUID.fromString(workspaceId);
-    List<UUID> actualInstances = instanceDao.listInstanceSchemas();
+    List<UUID> actualInstances = collectionDao.listCollectionSchemas();
     assertEquals(List.of(workspaceUuid), actualInstances);
     List<RecordType> actualTypes = recordDao.getAllRecordTypes(workspaceUuid);
     assertEquals(List.of(RecordType.valueOf("thing")), actualTypes);

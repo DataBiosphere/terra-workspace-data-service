@@ -20,8 +20,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.ImportService;
-import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -62,7 +62,7 @@ import org.springframework.test.context.ActiveProfiles;
 public class TdrManifestQuartzJobE2ETest {
   @Autowired private RecordOrchestratorService recordOrchestratorService;
   @Autowired private ImportService importService;
-  @Autowired private InstanceService instanceService;
+  @Autowired private CollectionService collectionService;
   @Autowired private TdrTestSupport testSupport;
 
   @MockBean SchedulerDao schedulerDao;
@@ -81,12 +81,12 @@ public class TdrManifestQuartzJobE2ETest {
   @BeforeEach
   void beforeEach() {
     instanceId = UUID.randomUUID();
-    instanceService.createInstance(instanceId, "v0.2");
+    collectionService.createCollection(instanceId, "v0.2");
   }
 
   @AfterEach
   void afterEach() {
-    instanceService.deleteInstance(instanceId, "v0.2");
+    collectionService.deleteCollection(instanceId, "v0.2");
   }
 
   @Test

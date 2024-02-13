@@ -9,7 +9,7 @@ import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
-import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +25,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
-@ActiveProfiles(profiles = "mock-instance-dao")
+@ActiveProfiles(profiles = "mock-collection-dao")
 @DirtiesContext
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -33,11 +33,11 @@ import org.springframework.test.context.TestPropertySource;
     properties = {
       "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000"
     }) // example uuid from https://en.wikipedia.org/wiki/Universally_unique_identifier
-class InstanceServiceSamTest {
+class CollectionServiceSamTest {
 
-  @Autowired private InstanceService instanceService;
+  @Autowired private CollectionService collectionService;
 
-  @Autowired private InstanceDao instanceDao;
+  @Autowired private CollectionDao collectionDao;
   @Autowired private SamDao samDao;
   @Autowired private ActivityLogger activityLogger;
 
@@ -63,35 +63,34 @@ class InstanceServiceSamTest {
   }
 
   @Test
-  void createInstanceSamCalls() throws ApiException {
-    UUID instanceId = UUID.randomUUID();
-    doCreateInstanceTest(instanceId);
+  void createCollectionSamCalls() throws ApiException {
+    UUID collectionId = UUID.randomUUID();
+    doCreateCollectionTest(collectionId);
   }
 
   @Test
-  void createInstanceWithWorkspaceIdSamCalls() throws ApiException {
-    UUID instanceId = UUID.randomUUID();
-    UUID workspaceId = UUID.randomUUID();
-    doCreateInstanceTest(instanceId);
+  void createCollectionWithWorkspaceIdSamCalls() throws ApiException {
+    UUID collectionId = UUID.randomUUID();
+    doCreateCollectionTest(collectionId);
   }
 
   @Test
-  void deleteInstanceSamCalls() throws ApiException {
-    UUID instanceId = UUID.randomUUID();
-    doDeleteInstanceTest(instanceId);
+  void deleteCollectionSamCalls() throws ApiException {
+    UUID collectionId = UUID.randomUUID();
+    doDeleteCollectionTest(collectionId);
   }
 
-  void doCreateInstanceTest(UUID instanceId) throws ApiException {
+  void doCreateCollectionTest(UUID collectionId) throws ApiException {
     // setup: capture order of calls to Sam
     InOrder callOrder = inOrder(mockResourcesApi);
 
-    // call createInstance
-    instanceService.createInstance(instanceId, VERSION);
+    // call createCollection
+    collectionService.createCollection(collectionId, VERSION);
 
-    // createInstance should check permission with Sam exactly once:
+    // createCollection should check permission with Sam exactly once:
     verify(mockResourcesApi, times(1)).resourcePermissionV2(anyString(), anyString(), anyString());
 
-    // createInstance should never call Sam's create-resource API:
+    // createCollection should never call Sam's create-resource API:
     verify(mockResourcesApi, times(0))
         .createResourceV2(anyString(), any(CreateResourceRequestV2.class));
 
@@ -107,20 +106,20 @@ class InstanceServiceSamTest {
     verifyNoMoreInteractions(mockResourcesApi);
   }
 
-  void doDeleteInstanceTest(UUID instanceId) throws ApiException {
+  void doDeleteCollectionTest(UUID collectionId) throws ApiException {
     // setup: capture order of calls to Sam
     InOrder callOrder = inOrder(mockResourcesApi);
 
-    // bypass Sam and create the instance directly in the db
-    instanceDao.createSchema(instanceId);
+    // bypass Sam and create the collection directly in the db
+    collectionDao.createSchema(collectionId);
 
-    // call deleteInstance
-    instanceService.deleteInstance(instanceId, VERSION);
+    // call deleteCollection
+    collectionService.deleteCollection(collectionId, VERSION);
 
-    // deleteInstance should check permission with Sam exactly once:
+    // deleteCollection should check permission with Sam exactly once:
     verify(mockResourcesApi, times(1)).resourcePermissionV2(anyString(), anyString(), anyString());
 
-    // deleteInstance should never call Sam's delete-resource API:
+    // deleteCollection should never call Sam's delete-resource API:
     verify(mockResourcesApi, times(0)).deleteResourceV2(anyString(), anyString());
 
     // the permission call should be first,

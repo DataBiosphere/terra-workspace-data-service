@@ -13,7 +13,7 @@ import org.broadinstitute.dsde.workbench.client.sam.api.UsersApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserStatusInfo;
 import org.databiosphere.workspacedataservice.sam.BearerTokenFilter;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
-import org.databiosphere.workspacedataservice.service.InstanceService;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,7 +36,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 @ExtendWith(OutputCaptureExtension.class)
 public class ActivityEventBuilderTest {
 
-  @Autowired InstanceService instanceService;
+  @Autowired CollectionService collectionService;
 
   @MockBean SamClientFactory mockSamClientFactory;
 
@@ -57,8 +57,7 @@ public class ActivityEventBuilderTest {
     when(mockUsersApi.getUserStatusInfo()).thenReturn(userStatusInfo);
     when(mockResourcesApi.resourcePermissionV2(any(), any(), any())).thenReturn(true);
 
-    // instanceId
-    UUID instanceId = UUID.randomUUID();
+    UUID collectionId = UUID.randomUUID();
 
     // ensure we have a token in the current request; else we'll get "anonymous" for our user
     RequestAttributes currentAttributes = RequestContextHolder.currentRequestAttributes();
@@ -66,13 +65,13 @@ public class ActivityEventBuilderTest {
         BearerTokenFilter.ATTRIBUTE_NAME_TOKEN, "fakey-token", SCOPE_REQUEST);
     RequestContextHolder.setRequestAttributes(currentAttributes);
 
-    // create an instance; this will trigger logging
-    instanceService.createInstance(instanceId, "v0.2");
+    // create a collection; this will trigger logging
+    collectionService.createCollection(collectionId, "v0.2");
 
     // did we log the
     assertThat(output.getOut())
         .contains(
-            "user userid-for-unit-tests-hello! created 1 instance(s) with id(s) [%s]"
-                .formatted(instanceId));
+            "user userid-for-unit-tests-hello! created 1 collection(s) with id(s) [%s]"
+                .formatted(collectionId));
   }
 }

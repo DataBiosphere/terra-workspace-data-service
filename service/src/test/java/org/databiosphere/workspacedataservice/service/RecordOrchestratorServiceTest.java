@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
@@ -47,7 +47,7 @@ import org.springframework.web.server.ResponseStatusException;
 @SpringBootTest
 class RecordOrchestratorServiceTest {
 
-  @Autowired private InstanceDao instanceDao;
+  @Autowired private CollectionDao collectionDao;
   @Autowired private RecordOrchestratorService recordOrchestratorService;
 
   private static final UUID INSTANCE = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
@@ -60,14 +60,14 @@ class RecordOrchestratorServiceTest {
 
   @BeforeEach
   void setUp() {
-    if (!instanceDao.instanceSchemaExists(INSTANCE)) {
-      instanceDao.createSchema(INSTANCE);
+    if (!collectionDao.collectionSchemaExists(INSTANCE)) {
+      collectionDao.createSchema(INSTANCE);
     }
   }
 
   @AfterEach
   void tearDown() {
-    instanceDao.dropSchema(INSTANCE);
+    collectionDao.dropSchema(INSTANCE);
   }
 
   @Test

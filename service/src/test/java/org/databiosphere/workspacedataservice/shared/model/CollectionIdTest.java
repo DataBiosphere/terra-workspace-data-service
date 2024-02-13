@@ -6,31 +6,31 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-class InstanceIdTest {
+class CollectionIdTest {
 
   @Test
   void disallowNulls() {
-    assertThrows(IllegalArgumentException.class, () -> InstanceId.of(null));
+    assertThrows(IllegalArgumentException.class, () -> CollectionId.of(null));
   }
 
   @Test
   void disallowNullsStaticConstructor() {
-    assertThrows(IllegalArgumentException.class, () -> new InstanceId(null));
+    assertThrows(IllegalArgumentException.class, () -> new CollectionId(null));
   }
 
   // does .toString() work just like UUID.toString()?
   @Test
   void ValidIdToString() {
     UUID validId = UUID.randomUUID();
-    assertEquals(validId.toString(), InstanceId.of(validId).toString());
+    assertEquals(validId.toString(), CollectionId.of(validId).toString());
   }
 
   // does the InstanceId.of() static constructor work just like the standard constructor?
   @Test
   void ofConstructor() {
     UUID validId = UUID.randomUUID();
-    InstanceId constructed = new InstanceId(validId);
-    InstanceId madeViaOf = InstanceId.of(validId);
+    CollectionId constructed = new CollectionId(validId);
+    CollectionId madeViaOf = CollectionId.of(validId);
     assertEquals(constructed.id(), madeViaOf.id());
     assertEquals(constructed, madeViaOf);
   }

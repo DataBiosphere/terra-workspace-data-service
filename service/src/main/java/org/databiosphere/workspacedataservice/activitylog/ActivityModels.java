@@ -24,7 +24,7 @@ public class ActivityModels {
   }
 
   public enum Thing {
-    INSTANCE("instance"),
+    COLLECTION("collection"),
     TABLE("table"),
     ATTRIBUTE("attribute"),
     RECORD("record"),

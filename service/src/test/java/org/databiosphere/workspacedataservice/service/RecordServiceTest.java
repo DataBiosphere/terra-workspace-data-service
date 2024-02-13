@@ -3,7 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import static io.micrometer.observation.tck.TestObservationRegistryAssert.assertThat;
 import static org.databiosphere.workspacedataservice.service.RecordService.METRIC_COL_CHANGE;
 import static org.databiosphere.workspacedataservice.service.RecordService.TAG_ATTRIBUTE_NAME;
-import static org.databiosphere.workspacedataservice.service.RecordService.TAG_INSTANCE;
+import static org.databiosphere.workspacedataservice.service.RecordService.TAG_COLLECTION;
 import static org.databiosphere.workspacedataservice.service.RecordService.TAG_NEW_DATATYPE;
 import static org.databiosphere.workspacedataservice.service.RecordService.TAG_OLD_DATATYPE;
 import static org.databiosphere.workspacedataservice.service.RecordService.TAG_RECORD_TYPE;
@@ -36,7 +36,7 @@ import org.springframework.test.context.ActiveProfiles;
 class RecordServiceTest {
 
   @Autowired DataTypeInferer inferer;
-  @Autowired InstanceService instanceService;
+  @Autowired CollectionService collectionService;
   @Autowired RecordDao recordDao;
   // overridden by TestObservationRegistryConfig with a TestObservationRegistry
   @Autowired private ObservationRegistry observationRegistry;
@@ -46,12 +46,12 @@ class RecordServiceTest {
   @BeforeEach
   void beforeEach() {
     instanceId = UUID.randomUUID();
-    instanceService.createInstance(instanceId, "v0.2");
+    collectionService.createCollection(instanceId, "v0.2");
   }
 
   @AfterEach
   void afterEach() {
-    instanceService.deleteInstance(instanceId, "v0.2");
+    collectionService.deleteCollection(instanceId, "v0.2");
   }
 
   @Test
@@ -105,7 +105,7 @@ class RecordServiceTest {
         .hasLowCardinalityKeyValue(TAG_NEW_DATATYPE, DataTypeMapping.STRING.toString())
         .hasHighCardinalityKeyValue(TAG_RECORD_TYPE, recordType.getName())
         .hasHighCardinalityKeyValue(TAG_ATTRIBUTE_NAME, "myAttr")
-        .hasHighCardinalityKeyValue(TAG_INSTANCE, instanceId.toString())
+        .hasHighCardinalityKeyValue(TAG_COLLECTION, instanceId.toString())
         .hasBeenStarted()
         .hasBeenStopped();
   }

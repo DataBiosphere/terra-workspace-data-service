@@ -17,7 +17,7 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
-import org.databiosphere.workspacedataservice.shared.model.InstanceId;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
@@ -30,14 +30,17 @@ import org.springframework.stereotype.Service;
 @Service
 public class ImportService {
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
-  private final InstanceService instanceService;
+  private final CollectionService collectionService;
   private final SamDao samDao;
   private final JobDao jobDao;
   private final SchedulerDao schedulerDao;
 
   public ImportService(
-      InstanceService instanceService, SamDao samDao, JobDao jobDao, SchedulerDao schedulerDao) {
-    this.instanceService = instanceService;
+      CollectionService collectionService,
+      SamDao samDao,
+      JobDao jobDao,
+      SchedulerDao schedulerDao) {
+    this.collectionService = collectionService;
     this.samDao = samDao;
     this.jobDao = jobDao;
     this.schedulerDao = schedulerDao;
@@ -46,10 +49,10 @@ public class ImportService {
   public GenericJobServerModel createImport(
       UUID instanceUuid, ImportRequestServerModel importRequest) {
     // validate instance exists
-    instanceService.validateInstance(instanceUuid);
+    collectionService.validateCollection(instanceUuid);
 
     // validate write permission
-    boolean hasWriteInstancePermission = samDao.hasWriteInstancePermission();
+    boolean hasWriteInstancePermission = samDao.hasWriteCollectionPermission();
     logger.debug("hasWriteInstancePermission? {}", hasWriteInstancePermission);
     if (!hasWriteInstancePermission) {
       throw new AuthorizationException("Caller does not have permission to write to instance.");
@@ -64,7 +67,7 @@ public class ImportService {
 
     ImportJobInput importJobInput = ImportJobInput.from(importRequest);
     Job<JobInput, JobResult> job =
-        Job.newJob(InstanceId.of(instanceUuid), JobType.DATA_IMPORT, importJobInput);
+        Job.newJob(CollectionId.of(instanceUuid), JobType.DATA_IMPORT, importJobInput);
 
     // persist the full job to WDS's db
     GenericJobServerModel createdJob = jobDao.createJob(job);

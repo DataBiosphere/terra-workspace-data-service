@@ -10,7 +10,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
-import org.databiosphere.workspacedataservice.shared.model.InstanceId;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
@@ -47,13 +47,13 @@ class PostgresJobDaoTest {
 
   // helper method to get a job into the db and verify it was written correctly
   private GenericJobServerModel assertJobCreation(JobType jobType) {
-    InstanceId instanceId = InstanceId.of(UUID.randomUUID());
-    Job<JobInput, JobResult> testJob = Job.newJob(instanceId, jobType, JobInput.empty());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    Job<JobInput, JobResult> testJob = Job.newJob(collectionId, jobType, JobInput.empty());
     jobDao.createJob(testJob);
 
     var params = new MapSqlParameterSource("jobId", testJob.getJobId().toString());
     params.addValue("type", jobType.name());
-    params.addValue("instanceId", instanceId.id());
+    params.addValue("instanceId", collectionId.id());
     params.addValue("status", StatusEnum.CREATED.name());
 
     // after creating a job, there should be exactly one row with:

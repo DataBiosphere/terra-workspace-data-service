@@ -25,7 +25,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
-import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils;
 import org.databiosphere.workspacedataservice.recordstream.RecordSourceFactory;
@@ -56,7 +56,7 @@ class BatchWriteServiceTest {
 
   @Autowired private RecordSourceFactory recordSourceFactory;
   @Autowired private BatchWriteService batchWriteService;
-  @Autowired private InstanceDao instanceDao;
+  @Autowired private CollectionDao collectionDao;
   @MockBean RecordDao recordDao;
   @SpyBean DataTypeInferer inferer;
   @SpyBean RecordService recordService;
@@ -66,14 +66,14 @@ class BatchWriteServiceTest {
 
   @BeforeEach
   void setUp() {
-    if (!instanceDao.instanceSchemaExists(INSTANCE)) {
-      instanceDao.createSchema(INSTANCE);
+    if (!collectionDao.collectionSchemaExists(INSTANCE)) {
+      collectionDao.createSchema(INSTANCE);
     }
   }
 
   @AfterEach
   void tearDown() {
-    instanceDao.dropSchema(INSTANCE);
+    collectionDao.dropSchema(INSTANCE);
   }
 
   @Test

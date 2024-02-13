@@ -21,40 +21,42 @@ public interface SamDao {
   String ACTION_READ = "read";
 
   /**
-   * Check if the current user has permission to create a "wds-instance" resource in Sam
+   * Check if the current user has permission to create a collection associated with a Sam workspace
+   * resource
    *
    * @return true if the user has permission
    */
-  boolean hasCreateInstancePermission();
+  boolean hasCreateCollectionPermission();
 
-  boolean hasCreateInstancePermission(String token);
+  boolean hasCreateCollectionPermission(String token);
 
   /**
-   * Check if the current user has permission to delete a "wds-instance" resource from Sam
+   * Check if the current user has permission to delete a collection associated with a Sam workspace
+   * resource
    *
    * @return true if the user has permission
    */
-  boolean hasDeleteInstancePermission();
+  boolean hasDeleteCollectionPermission();
 
-  boolean hasDeleteInstancePermission(String token);
+  boolean hasDeleteCollectionPermission(String token);
 
   /**
    * Check if the current user has permission to read the workspace resource from Sam
    *
    * @return true if the user has permission
    */
-  boolean hasReadInstancePermission(String instanceId);
+  boolean hasReadCollectionPermission(String collectionId);
 
-  boolean hasReadInstancePermission(String instanceId, String token);
+  boolean hasReadCollectionPermission(String collectionId, String token);
 
   /**
-   * Check if the current user has permission to write to a "wds-instance" resource from Sam
+   * Check if the current user has permission to write to a workspace resource from Sam
    *
    * @return true if the user has permission
    */
-  boolean hasWriteInstancePermission();
+  boolean hasWriteCollectionPermission();
 
-  boolean hasWriteInstancePermission(String token);
+  boolean hasWriteCollectionPermission(String token);
 
   String getUserId(String token);
 

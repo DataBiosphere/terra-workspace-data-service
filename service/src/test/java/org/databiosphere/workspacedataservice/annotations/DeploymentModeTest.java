@@ -33,7 +33,7 @@ class DeploymentModeTest {
   static class MinimalTestConfiguration {}
 
   private static Stream<Arguments> conditionalBeans() {
-    return Stream.of(Arguments.of("instanceInitializer", "data-plane"));
+    return Stream.of(Arguments.of("collectionInitializer", "data-plane"));
   }
 
   @ParameterizedTest(name = "{0} is enabled for DeploymentMode {1} only")

@@ -51,7 +51,7 @@ import org.springframework.test.context.ActiveProfiles;
 class ImportServiceTest {
 
   @Autowired ImportService importService;
-  @Autowired InstanceService instanceService;
+  @Autowired CollectionService collectionService;
   @SpyBean JobDao jobDao;
   @Autowired SamDao samDao;
   @MockBean SchedulerDao schedulerDao;
@@ -119,7 +119,7 @@ class ImportServiceTest {
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create instance (in the MockInstanceDao)
     UUID instanceId = UUID.randomUUID();
-    instanceService.createInstance(instanceId, VERSION);
+    collectionService.createCollection(instanceId, VERSION);
     // define the import request
     URI importUri = URI.create("http://does/not/matter");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
@@ -142,7 +142,7 @@ class ImportServiceTest {
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create instance (in the MockInstanceDao)
     UUID instanceId = UUID.randomUUID();
-    instanceService.createInstance(instanceId, VERSION);
+    collectionService.createCollection(instanceId, VERSION);
     // define the import request
     URI importUri = URI.create("http://does/not/matter");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
@@ -176,7 +176,7 @@ class ImportServiceTest {
         .schedule(any(Schedulable.class));
     // create instance (in the MockInstanceDao)
     UUID instanceId = UUID.randomUUID();
-    instanceService.createInstance(instanceId, VERSION);
+    collectionService.createCollection(instanceId, VERSION);
     // define the import request
     URI importUri = URI.create("http://does/not/matter");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
@@ -204,7 +204,7 @@ class ImportServiceTest {
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create instance (in the MockInstanceDao)
     UUID instanceId = UUID.randomUUID();
-    instanceService.createInstance(instanceId, VERSION);
+    collectionService.createCollection(instanceId, VERSION);
     // define the import request
     URI importUri = URI.create("http://does/not/matter");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);

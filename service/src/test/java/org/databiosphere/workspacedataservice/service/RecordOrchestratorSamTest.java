@@ -9,7 +9,7 @@ import static org.mockito.BDDMockito.given;
 import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
-import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
@@ -34,7 +34,7 @@ import org.springframework.test.context.ActiveProfiles;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordOrchestratorSamTest {
 
-  @Autowired private InstanceDao instanceDao;
+  @Autowired private CollectionDao collectionDao;
   @Autowired private RecordOrchestratorService recordOrchestratorService;
   // mock for the SamClientFactory; since this is a Spring bean we can use @MockBean
   @MockBean SamClientFactory mockSamClientFactory;
@@ -47,8 +47,8 @@ class RecordOrchestratorSamTest {
 
   @BeforeEach
   void setUp() {
-    if (!instanceDao.instanceSchemaExists(INSTANCE)) {
-      instanceDao.createSchema(INSTANCE);
+    if (!collectionDao.collectionSchemaExists(INSTANCE)) {
+      collectionDao.createSchema(INSTANCE);
     }
     given(mockSamClientFactory.getResourcesApi(null)).willReturn(mockResourcesApi);
 
@@ -58,7 +58,7 @@ class RecordOrchestratorSamTest {
 
   @AfterEach
   void tearDown() {
-    instanceDao.dropSchema(INSTANCE);
+    collectionDao.dropSchema(INSTANCE);
   }
 
   @Test

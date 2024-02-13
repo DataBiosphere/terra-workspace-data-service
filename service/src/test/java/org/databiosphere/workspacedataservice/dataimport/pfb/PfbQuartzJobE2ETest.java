@@ -21,8 +21,8 @@ import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.ImportService;
-import org.databiosphere.workspacedataservice.service.InstanceService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -60,7 +60,7 @@ class PfbQuartzJobE2ETest {
 
   @Autowired RecordOrchestratorService recordOrchestratorService;
   @Autowired ImportService importService;
-  @Autowired InstanceService instanceService;
+  @Autowired CollectionService collectionService;
   @Autowired private PfbTestSupport testSupport;
   @MockBean SchedulerDao schedulerDao;
   @MockBean WorkspaceManagerDao wsmDao;
@@ -91,12 +91,12 @@ class PfbQuartzJobE2ETest {
   @BeforeEach
   void beforeEach() {
     instanceId = UUID.randomUUID();
-    instanceService.createInstance(instanceId, "v0.2");
+    collectionService.createCollection(instanceId, "v0.2");
   }
 
   @AfterEach
   void afterEach() {
-    instanceService.deleteInstance(instanceId, "v0.2");
+    collectionService.deleteCollection(instanceId, "v0.2");
   }
 
   /* import test.avro, and validate the tables and row counts it imported. */

@@ -13,7 +13,7 @@ import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
-import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
@@ -57,11 +57,11 @@ import org.springframework.test.context.TestPropertySource;
     properties = {
       "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000"
     }) // example uuid from https://en.wikipedia.org/wiki/Universally_unique_identifier
-class InstanceServiceSamExceptionTest {
+class CollectionServiceSamExceptionTest {
 
-  @Autowired private InstanceService instanceService;
+  @Autowired private CollectionService collectionService;
 
-  @Autowired private InstanceDao instanceDao;
+  @Autowired private CollectionDao collectionDao;
   @Autowired private SamDao samDao;
   @Autowired private ActivityLogger activityLogger;
 
@@ -84,8 +84,8 @@ class InstanceServiceSamExceptionTest {
   @AfterEach
   void tearDown() {
     // clean up any instances left in the db
-    List<UUID> allInstances = instanceDao.listInstanceSchemas();
-    allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
+    List<UUID> allInstances = collectionDao.listCollectionSchemas();
+    allInstances.forEach(instanceId -> collectionDao.dropSchema(instanceId));
   }
 
   @DisplayName(
@@ -197,9 +197,9 @@ class InstanceServiceSamExceptionTest {
     // attempt to create the instance, which should fail
     assertThrows(
         expectedExceptionClass,
-        () -> instanceService.createInstance(instanceId, VERSION),
+        () -> collectionService.createCollection(instanceId, VERSION),
         "createInstance should throw if caller does not have permission to create wds-instance resource in Sam");
-    List<UUID> allInstances = instanceService.listInstances(VERSION);
+    List<UUID> allInstances = collectionService.listCollections(VERSION);
     assertFalse(
         allInstances.contains(instanceId),
         "instanceService.createInstance should not have created the instances.");
@@ -208,16 +208,16 @@ class InstanceServiceSamExceptionTest {
   private void doAuthnDeleteTest(
       UUID instanceId, Class<? extends Exception> expectedExceptionClass) {
     // create the instance (directly in the db, bypassing Sam)
-    instanceDao.createSchema(instanceId);
-    List<UUID> allInstances = instanceService.listInstances(VERSION);
+    collectionDao.createSchema(instanceId);
+    List<UUID> allInstances = collectionService.listCollections(VERSION);
     assertTrue(allInstances.contains(instanceId), "unit test should have created the instances.");
 
     // attempt to delete the instance, which should fail
     assertThrows(
         expectedExceptionClass,
-        () -> instanceService.deleteInstance(instanceId, VERSION),
+        () -> collectionService.deleteCollection(instanceId, VERSION),
         "deleteInstance should throw if caller does not have permission to create wds-instance resource in Sam");
-    allInstances = instanceService.listInstances(VERSION);
+    allInstances = collectionService.listCollections(VERSION);
     assertTrue(
         allInstances.contains(instanceId),
         "instanceService.deleteInstance should not have deleted the instances.");
@@ -234,33 +234,33 @@ class InstanceServiceSamExceptionTest {
     RestException samException =
         assertThrows(
             RestException.class,
-            () -> instanceService.createInstance(instanceId, VERSION),
+            () -> collectionService.createCollection(instanceId, VERSION),
             "createInstance should throw if caller does not have permission to create wds-instance resource in Sam");
     assertEquals(
         expectedSamExceptionCode,
         samException.getStatusCode().value(),
         "RestException from createInstance should have same status code as the thrown ApiException");
-    List<UUID> allInstances = instanceService.listInstances(VERSION);
+    List<UUID> allInstances = collectionService.listCollections(VERSION);
     assertFalse(allInstances.contains(instanceId), "should not have created the instances.");
   }
 
   private void doSamDeleteTest(UUID instanceId, int expectedSamExceptionCode) {
     // bypass Sam and create the instance directly in the db
-    instanceDao.createSchema(instanceId);
-    List<UUID> allInstances = instanceService.listInstances(VERSION);
+    collectionDao.createSchema(instanceId);
+    List<UUID> allInstances = collectionService.listCollections(VERSION);
     assertTrue(allInstances.contains(instanceId), "unit test should have created the instances.");
 
     // now attempt to delete the instance, which should fail
     RestException samException =
         assertThrows(
             RestException.class,
-            () -> instanceService.deleteInstance(instanceId, VERSION),
+            () -> collectionService.deleteCollection(instanceId, VERSION),
             "deleteInstance should throw if caller does not have permission to create wds-instance resource in Sam");
     assertEquals(
         expectedSamExceptionCode,
         samException.getStatusCode().value(),
         "RestException from deleteInstance should have same status code as the thrown ApiException");
-    allInstances = instanceService.listInstances(VERSION);
+    allInstances = collectionService.listCollections(VERSION);
     assertTrue(
         allInstances.contains(instanceId),
         "instanceService.deleteInstance should not have deleted the instances.");

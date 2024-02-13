@@ -8,7 +8,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.service.InstanceService;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidTsvException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -30,7 +30,7 @@ import org.springframework.test.context.ActiveProfiles;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TsvErrorMessageTest {
 
-  @Autowired InstanceService instanceService;
+  @Autowired CollectionService collectionService;
   @Autowired RecordOrchestratorService recordOrchestratorService;
 
   private UUID instanceId;
@@ -40,14 +40,14 @@ public class TsvErrorMessageTest {
   @BeforeEach
   void setUp() {
     instanceId = UUID.randomUUID();
-    instanceService.createInstance(instanceId, VERSION);
+    collectionService.createCollection(instanceId, VERSION);
   }
 
   @AfterEach
   void tearDown() {
-    List<UUID> allInstances = instanceService.listInstances(VERSION);
+    List<UUID> allInstances = collectionService.listCollections(VERSION);
     for (UUID id : allInstances) {
-      instanceService.deleteInstance(id, VERSION);
+      collectionService.deleteCollection(id, VERSION);
     }
   }
 
