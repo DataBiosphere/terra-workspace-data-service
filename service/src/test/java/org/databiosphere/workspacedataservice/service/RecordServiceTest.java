@@ -3,7 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import static io.micrometer.observation.tck.TestObservationRegistryAssert.assertThat;
 import static org.databiosphere.workspacedataservice.service.RecordService.METRIC_COL_CHANGE;
 import static org.databiosphere.workspacedataservice.service.RecordService.TAG_ATTRIBUTE_NAME;
-import static org.databiosphere.workspacedataservice.service.RecordService.TAG_INSTANCE;
+import static org.databiosphere.workspacedataservice.service.RecordService.TAG_COLLECTION;
 import static org.databiosphere.workspacedataservice.service.RecordService.TAG_NEW_DATATYPE;
 import static org.databiosphere.workspacedataservice.service.RecordService.TAG_OLD_DATATYPE;
 import static org.databiosphere.workspacedataservice.service.RecordService.TAG_RECORD_TYPE;
@@ -36,22 +36,22 @@ import org.springframework.test.context.ActiveProfiles;
 class RecordServiceTest {
 
   @Autowired DataTypeInferer inferer;
-  @Autowired InstanceService instanceService;
+  @Autowired CollectionService collectionService;
   @Autowired RecordDao recordDao;
   // overridden by TestObservationRegistryConfig with a TestObservationRegistry
   @Autowired private ObservationRegistry observationRegistry;
 
-  private UUID instanceId;
+  private UUID collectionId;
 
   @BeforeEach
   void beforeEach() {
-    instanceId = UUID.randomUUID();
-    instanceService.createInstance(instanceId, "v0.2");
+    collectionId = UUID.randomUUID();
+    collectionService.createCollection(collectionId, "v0.2");
   }
 
   @AfterEach
   void afterEach() {
-    instanceService.deleteInstance(instanceId, "v0.2");
+    collectionService.deleteCollection(collectionId, "v0.2");
   }
 
   @Test
@@ -67,7 +67,7 @@ class RecordServiceTest {
     // insert a simple record; this will create "myAttr" as numeric
     RecordType recordType = RecordType.valueOf("myType");
     recordService.upsertSingleRecord(
-        instanceId,
+        collectionId,
         recordType,
         "111",
         Optional.of("pk"),
@@ -76,7 +76,7 @@ class RecordServiceTest {
     // verify schema
     assertEquals(
         Map.of("pk", DataTypeMapping.STRING, "myAttr", DataTypeMapping.NUMBER),
-        recordDao.getExistingTableSchema(instanceId, recordType));
+        recordDao.getExistingTableSchema(collectionId, recordType));
 
     // assert the observation registry still has no counters; we only create an observation when
     // altering a column, and we just created a table but didn't issue any alters
@@ -84,7 +84,7 @@ class RecordServiceTest {
 
     // insert another record, which will update the "myAttr" to be a string
     recordService.upsertSingleRecord(
-        instanceId,
+        collectionId,
         recordType,
         "111",
         Optional.of("pk"),
@@ -93,7 +93,7 @@ class RecordServiceTest {
     // verify schema
     assertEquals(
         Map.of("pk", DataTypeMapping.STRING, "myAttr", DataTypeMapping.STRING),
-        recordDao.getExistingTableSchema(instanceId, recordType));
+        recordDao.getExistingTableSchema(collectionId, recordType));
 
     // we should have created an observation
     assertThat(testObservationRegistry)
@@ -105,7 +105,7 @@ class RecordServiceTest {
         .hasLowCardinalityKeyValue(TAG_NEW_DATATYPE, DataTypeMapping.STRING.toString())
         .hasHighCardinalityKeyValue(TAG_RECORD_TYPE, recordType.getName())
         .hasHighCardinalityKeyValue(TAG_ATTRIBUTE_NAME, "myAttr")
-        .hasHighCardinalityKeyValue(TAG_INSTANCE, instanceId.toString())
+        .hasHighCardinalityKeyValue(TAG_COLLECTION, collectionId.toString())
         .hasBeenStarted()
         .hasBeenStopped();
   }

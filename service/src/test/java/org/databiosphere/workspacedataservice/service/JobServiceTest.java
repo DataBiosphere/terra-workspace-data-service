@@ -45,13 +45,13 @@ class JobServiceTest {
     given(mockSamResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
         .willReturn(true);
     // Tell jobDao to return
-    UUID instanceID = UUID.randomUUID();
+    UUID collectionId = UUID.randomUUID();
     UUID jobId = UUID.randomUUID();
     GenericJobServerModel expectedJob =
         new GenericJobServerModel(
             jobId,
             GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
-            instanceID,
+            collectionId,
             GenericJobServerModel.StatusEnum.RUNNING,
             // set created and updated to now, but in UTC because that's how Postgres stores it
             OffsetDateTime.now(ZoneId.of("Z")),
@@ -69,13 +69,13 @@ class JobServiceTest {
     given(mockSamResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
         .willReturn(false);
     // Tell jobDao to return
-    UUID instanceID = UUID.randomUUID();
+    UUID collectionId = UUID.randomUUID();
     UUID jobId = UUID.randomUUID();
     GenericJobServerModel expectedJob =
         new GenericJobServerModel(
             jobId,
             GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
-            instanceID,
+            collectionId,
             GenericJobServerModel.StatusEnum.RUNNING,
             // set created and updated to now, but in UTC because that's how Postgres stores it
             OffsetDateTime.now(ZoneId.of("Z")),

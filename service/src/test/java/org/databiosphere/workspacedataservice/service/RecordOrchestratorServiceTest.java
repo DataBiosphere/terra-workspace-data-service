@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
@@ -47,10 +47,10 @@ import org.springframework.web.server.ResponseStatusException;
 @SpringBootTest
 class RecordOrchestratorServiceTest {
 
-  @Autowired private InstanceDao instanceDao;
+  @Autowired private CollectionDao collectionDao;
   @Autowired private RecordOrchestratorService recordOrchestratorService;
 
-  private static final UUID INSTANCE = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+  private static final UUID COLLECTION = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
   private static final RecordType TEST_TYPE = RecordType.valueOf("test");
 
   private static final String RECORD_ID = "aNewRecord";
@@ -60,14 +60,14 @@ class RecordOrchestratorServiceTest {
 
   @BeforeEach
   void setUp() {
-    if (!instanceDao.instanceSchemaExists(INSTANCE)) {
-      instanceDao.createSchema(INSTANCE);
+    if (!collectionDao.collectionSchemaExists(COLLECTION)) {
+      collectionDao.createSchema(COLLECTION);
     }
   }
 
   @AfterEach
   void tearDown() {
-    instanceDao.dropSchema(INSTANCE);
+    collectionDao.dropSchema(COLLECTION);
   }
 
   @Test
@@ -82,7 +82,7 @@ class RecordOrchestratorServiceTest {
 
     RecordResponse resp =
         recordOrchestratorService.updateSingleRecord(
-            INSTANCE, VERSION, TEST_TYPE, RECORD_ID, updateRequest);
+            COLLECTION, VERSION, TEST_TYPE, RECORD_ID, updateRequest);
 
     assertEquals(RECORD_ID, resp.recordId());
 
@@ -103,7 +103,7 @@ class RecordOrchestratorServiceTest {
 
     RecordQueryResponse resp =
         recordOrchestratorService.queryForRecords(
-            INSTANCE, TEST_TYPE, VERSION, new SearchRequest());
+            COLLECTION, TEST_TYPE, VERSION, new SearchRequest());
 
     testContainsRecord(RECORD_ID, TEST_KEY, TEST_VAL, resp.records());
     testContainsRecord(secondRecord, TEST_KEY, secondVal, resp.records());
@@ -122,7 +122,7 @@ class RecordOrchestratorServiceTest {
   void deleteSingleRecord() {
     testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
 
-    recordOrchestratorService.deleteSingleRecord(INSTANCE, VERSION, TEST_TYPE, RECORD_ID);
+    recordOrchestratorService.deleteSingleRecord(COLLECTION, VERSION, TEST_TYPE, RECORD_ID);
 
     assertThrows(
         MissingObjectException.class,
@@ -134,11 +134,11 @@ class RecordOrchestratorServiceTest {
   void deleteRecordType() {
     testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
 
-    recordOrchestratorService.deleteRecordType(INSTANCE, VERSION, TEST_TYPE);
+    recordOrchestratorService.deleteRecordType(COLLECTION, VERSION, TEST_TYPE);
 
     assertThrows(
         MissingObjectException.class,
-        () -> recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE),
+        () -> recordOrchestratorService.describeRecordType(COLLECTION, VERSION, TEST_TYPE),
         "describeRecordType should have thrown an error");
   }
 
@@ -148,7 +148,7 @@ class RecordOrchestratorServiceTest {
     createRecordWithAttributes(new String[] {"attr1", "attr2"});
 
     // Act
-    recordOrchestratorService.renameAttribute(INSTANCE, VERSION, TEST_TYPE, "attr2", "attr3");
+    recordOrchestratorService.renameAttribute(COLLECTION, VERSION, TEST_TYPE, "attr2", "attr3");
 
     // Assert
     assertAttributes(Set.of("id", "attr1", "attr3"));
@@ -166,7 +166,7 @@ class RecordOrchestratorServiceTest {
             ValidationException.class,
             () ->
                 recordOrchestratorService.renameAttribute(
-                    INSTANCE, VERSION, TEST_TYPE, "id", "newId"),
+                    COLLECTION, VERSION, TEST_TYPE, "id", "newId"),
             "renameAttribute should have thrown an error");
     assertEquals("Unable to rename primary key attribute", e.getMessage());
     assertAttributes(Set.of("id", "attr1", "attr2"));
@@ -183,7 +183,7 @@ class RecordOrchestratorServiceTest {
             MissingObjectException.class,
             () ->
                 recordOrchestratorService.renameAttribute(
-                    INSTANCE, VERSION, TEST_TYPE, "doesNotExist", "attr3"),
+                    COLLECTION, VERSION, TEST_TYPE, "doesNotExist", "attr3"),
             "renameAttribute should have thrown an error");
     assertEquals("Attribute does not exist", e.getMessage());
     assertAttributes(Set.of("id", "attr1", "attr2"));
@@ -200,7 +200,7 @@ class RecordOrchestratorServiceTest {
             ConflictException.class,
             () ->
                 recordOrchestratorService.renameAttribute(
-                    INSTANCE, VERSION, TEST_TYPE, "attr1", "attr2"),
+                    COLLECTION, VERSION, TEST_TYPE, "attr1", "attr2"),
             "renameAttribute should have thrown an error");
     assertEquals("Attribute already exists", e.getMessage());
     assertAttributes(Set.of("id", "attr1", "attr2"));
@@ -230,7 +230,7 @@ class RecordOrchestratorServiceTest {
         RecordAttributes.empty().putAttribute(attributeName, attributeValue);
     RecordRequest recordRequest = new RecordRequest(recordAttributes);
     recordOrchestratorService.upsertSingleRecord(
-        INSTANCE, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
+        COLLECTION, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
 
     assertAttributeDataType(
         attributeName,
@@ -239,7 +239,7 @@ class RecordOrchestratorServiceTest {
 
     // Act
     recordOrchestratorService.updateAttributeDataType(
-        INSTANCE, VERSION, TEST_TYPE, attributeName, newDataType.name());
+        COLLECTION, VERSION, TEST_TYPE, attributeName, newDataType.name());
 
     // Assert
     assertAttributeDataType(
@@ -616,7 +616,7 @@ class RecordOrchestratorServiceTest {
             ValidationException.class,
             () ->
                 recordOrchestratorService.updateAttributeDataType(
-                    INSTANCE, VERSION, TEST_TYPE, PRIMARY_KEY, "NUMBER"),
+                    COLLECTION, VERSION, TEST_TYPE, PRIMARY_KEY, "NUMBER"),
             "updateAttributeDataType should have thrown an error");
     assertEquals("Unable to update primary key attribute", e.getMessage());
   }
@@ -632,7 +632,7 @@ class RecordOrchestratorServiceTest {
             ValidationException.class,
             () ->
                 recordOrchestratorService.updateAttributeDataType(
-                    INSTANCE, VERSION, TEST_TYPE, "attr1", "INVALID_DATA_TYPE"),
+                    COLLECTION, VERSION, TEST_TYPE, "attr1", "INVALID_DATA_TYPE"),
             "updateAttributeDataType should have thrown an error");
     assertEquals("Invalid datatype", e.getMessage());
   }
@@ -645,7 +645,7 @@ class RecordOrchestratorServiceTest {
         RecordAttributes.empty().putAttribute(attributeName, List.of("foo", "bar", "baz"));
     RecordRequest recordRequest = new RecordRequest(recordAttributes);
     recordOrchestratorService.upsertSingleRecord(
-        INSTANCE, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
+        COLLECTION, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
 
     assertAttributeDataType(
         attributeName,
@@ -658,7 +658,7 @@ class RecordOrchestratorServiceTest {
             ValidationException.class,
             () ->
                 recordOrchestratorService.updateAttributeDataType(
-                    INSTANCE, VERSION, TEST_TYPE, attributeName, "STRING"),
+                    COLLECTION, VERSION, TEST_TYPE, attributeName, "STRING"),
             "updateAttributeDataType should have thrown an error");
     assertEquals("Unable to convert array type to scalar type", e.getMessage());
   }
@@ -672,13 +672,13 @@ class RecordOrchestratorServiceTest {
         RecordAttributes.empty().putAttribute(attributeName, "123");
     RecordRequest recordOneRequest = new RecordRequest(recordOneAttributes);
     recordOrchestratorService.upsertSingleRecord(
-        INSTANCE, VERSION, TEST_TYPE, "row_1", Optional.of(PRIMARY_KEY), recordOneRequest);
+        COLLECTION, VERSION, TEST_TYPE, "row_1", Optional.of(PRIMARY_KEY), recordOneRequest);
 
     RecordAttributes recordTwoAttributes =
         RecordAttributes.empty().putAttribute(attributeName, "foo");
     RecordRequest recordTwoRequest = new RecordRequest(recordTwoAttributes);
     recordOrchestratorService.upsertSingleRecord(
-        INSTANCE, VERSION, TEST_TYPE, "row_2", Optional.of(PRIMARY_KEY), recordTwoRequest);
+        COLLECTION, VERSION, TEST_TYPE, "row_2", Optional.of(PRIMARY_KEY), recordTwoRequest);
 
     assertAttributeDataType(
         attributeName, DataTypeMapping.STRING, "expected initial attribute data type to be STRING");
@@ -689,7 +689,7 @@ class RecordOrchestratorServiceTest {
             ConflictException.class,
             () ->
                 recordOrchestratorService.updateAttributeDataType(
-                    INSTANCE, VERSION, TEST_TYPE, attributeName, "NUMBER"),
+                    COLLECTION, VERSION, TEST_TYPE, attributeName, "NUMBER"),
             "updateAttributeDataType should have thrown an error");
 
     assertEquals(
@@ -715,7 +715,7 @@ class RecordOrchestratorServiceTest {
         RecordAttributes.empty().putAttribute(attributeName, attributeValue);
     RecordRequest recordRequest = new RecordRequest(recordAttributes);
     recordOrchestratorService.upsertSingleRecord(
-        INSTANCE, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
+        COLLECTION, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
 
     // Act/Assert
     ConflictException e =
@@ -723,7 +723,7 @@ class RecordOrchestratorServiceTest {
             ConflictException.class,
             () ->
                 recordOrchestratorService.updateAttributeDataType(
-                    INSTANCE, VERSION, TEST_TYPE, attributeName, newDataType.name()),
+                    COLLECTION, VERSION, TEST_TYPE, attributeName, newDataType.name()),
             "updateAttributeDataType should have thrown an error");
 
     assertEquals(
@@ -748,7 +748,7 @@ class RecordOrchestratorServiceTest {
         RecordAttributes.empty().putAttribute(attributeName, attributeValue);
     RecordRequest recordRequest = new RecordRequest(recordAttributes);
     recordOrchestratorService.upsertSingleRecord(
-        INSTANCE, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
+        COLLECTION, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
     assertAttributeDataType(
         attributeName,
         expectedInitialDataType,
@@ -760,7 +760,7 @@ class RecordOrchestratorServiceTest {
             ValidationException.class,
             () ->
                 recordOrchestratorService.updateAttributeDataType(
-                    INSTANCE, VERSION, TEST_TYPE, attributeName, newDataType.name()),
+                    COLLECTION, VERSION, TEST_TYPE, attributeName, newDataType.name()),
             "updateAttributeDataType should have thrown an error");
 
     assertEquals(
@@ -785,7 +785,7 @@ class RecordOrchestratorServiceTest {
     createRecordWithAttributes(new String[] {"attr1", "attr2"});
 
     // Act
-    recordOrchestratorService.deleteAttribute(INSTANCE, VERSION, TEST_TYPE, "attr2");
+    recordOrchestratorService.deleteAttribute(COLLECTION, VERSION, TEST_TYPE, "attr2");
 
     // Assert
     assertAttributes(Set.of("id", "attr1"));
@@ -800,7 +800,7 @@ class RecordOrchestratorServiceTest {
     ValidationException e =
         assertThrows(
             ValidationException.class,
-            () -> recordOrchestratorService.deleteAttribute(INSTANCE, VERSION, TEST_TYPE, "id"),
+            () -> recordOrchestratorService.deleteAttribute(COLLECTION, VERSION, TEST_TYPE, "id"),
             "deleteAttribute should have thrown an error");
     assertEquals("Unable to delete primary key attribute", e.getMessage());
     assertAttributes(Set.of("id", "attr1", "attr2"));
@@ -817,7 +817,7 @@ class RecordOrchestratorServiceTest {
             MissingObjectException.class,
             () ->
                 recordOrchestratorService.deleteAttribute(
-                    INSTANCE, VERSION, TEST_TYPE, "doesnotexist"),
+                    COLLECTION, VERSION, TEST_TYPE, "doesnotexist"),
             "deleteAttribute should have thrown an error");
     assertEquals("Attribute does not exist", e.getMessage());
     assertAttributes(Set.of("id", "attr1", "attr2"));
@@ -832,7 +832,7 @@ class RecordOrchestratorServiceTest {
 
     ResponseEntity<RecordResponse> response =
         recordOrchestratorService.upsertSingleRecord(
-            INSTANCE, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
+            COLLECTION, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
 
     Set<String> expectedAttributes = Stream.of(attributeNames).collect(Collectors.toSet());
     expectedAttributes.add(PRIMARY_KEY);
@@ -842,7 +842,7 @@ class RecordOrchestratorServiceTest {
 
   private void assertAttributes(Set<String> expectedAttributeNames) {
     RecordTypeSchema schema =
-        recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE);
+        recordOrchestratorService.describeRecordType(COLLECTION, VERSION, TEST_TYPE);
     Set<String> actualAttributeNames =
         Set.copyOf(schema.attributes().stream().map(AttributeSchema::name).toList());
     assertEquals(expectedAttributeNames, actualAttributeNames);
@@ -855,7 +855,7 @@ class RecordOrchestratorServiceTest {
     testCreateRecord("third", TEST_KEY, "a third");
 
     RecordTypeSchema schema =
-        recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE);
+        recordOrchestratorService.describeRecordType(COLLECTION, VERSION, TEST_TYPE);
 
     assertEquals(TEST_TYPE, schema.name());
     assertEquals(3, schema.count());
@@ -871,7 +871,7 @@ class RecordOrchestratorServiceTest {
     testCreateRecord("fourth", TEST_KEY, "a fourth", typeTwo);
 
     List<RecordTypeSchema> schemas =
-        recordOrchestratorService.describeAllRecordTypes(INSTANCE, VERSION);
+        recordOrchestratorService.describeAllRecordTypes(COLLECTION, VERSION);
 
     assert (schemas.stream()
         .anyMatch(schema -> schema.name().equals(TEST_TYPE) && schema.count() == 3));
@@ -903,14 +903,14 @@ class RecordOrchestratorServiceTest {
 
     ResponseEntity<RecordResponse> response =
         recordOrchestratorService.upsertSingleRecord(
-            INSTANCE, VERSION, newRecordType, newRecordId, Optional.empty(), recordRequest);
+            COLLECTION, VERSION, newRecordType, newRecordId, Optional.empty(), recordRequest);
 
     assertEquals(newRecordId, response.getBody().recordId());
   }
 
   private void testGetRecord(String newRecordId, String testKey, String testVal) {
     RecordResponse recordResponse =
-        recordOrchestratorService.getSingleRecord(INSTANCE, VERSION, TEST_TYPE, newRecordId);
+        recordOrchestratorService.getSingleRecord(COLLECTION, VERSION, TEST_TYPE, newRecordId);
     assertEquals(testVal, recordResponse.recordAttributes().getAttributeValue(testKey));
   }
 
@@ -931,7 +931,7 @@ class RecordOrchestratorServiceTest {
   private void assertAttributeDataType(
       String attributeName, DataTypeMapping dataType, String message) {
     RecordTypeSchema recordTypeSchema =
-        recordOrchestratorService.describeRecordType(INSTANCE, VERSION, TEST_TYPE);
+        recordOrchestratorService.describeRecordType(COLLECTION, VERSION, TEST_TYPE);
     AttributeSchema attributeSchema = recordTypeSchema.getAttributeSchema(attributeName);
     assertEquals(dataType.name(), attributeSchema.datatype(), message);
   }
@@ -939,7 +939,7 @@ class RecordOrchestratorServiceTest {
   private void assertAttributeValue(
       String recordId, String attributeName, Object expectedValue, String message) {
     RecordResponse record =
-        recordOrchestratorService.getSingleRecord(INSTANCE, VERSION, TEST_TYPE, recordId);
+        recordOrchestratorService.getSingleRecord(COLLECTION, VERSION, TEST_TYPE, recordId);
     Object attributeValue = record.recordAttributes().getAttributeValue(attributeName);
 
     if (expectedValue instanceof Object[]) {

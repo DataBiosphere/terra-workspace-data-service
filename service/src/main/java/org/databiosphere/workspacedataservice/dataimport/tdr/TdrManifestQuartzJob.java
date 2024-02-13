@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport.tdr;
 
 import static org.apache.parquet.avro.AvroReadSupport.READ_INT96_AS_FIXED;
-import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
 import bio.terra.datarepo.model.RelationshipModel;
@@ -94,7 +94,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // Grab the manifest url from the job's data map
     JobDataMap jobDataMap = context.getMergedJobDataMap();
     URL url = getJobDataUrl(jobDataMap, ARG_URL);
-    UUID targetInstance = getJobDataUUID(jobDataMap, ARG_INSTANCE);
+    UUID targetInstance = getJobDataUUID(jobDataMap, ARG_COLLECTION);
 
     // read manifest
     SnapshotExportResponseModel snapshotExportResponseModel = parseManifest(url);

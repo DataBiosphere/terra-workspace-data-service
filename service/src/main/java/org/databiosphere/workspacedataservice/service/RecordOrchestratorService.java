@@ -55,7 +55,7 @@ public class RecordOrchestratorService { // TODO give me a better name
   private final RecordSourceFactory recordSourceFactory;
   private final BatchWriteService batchWriteService;
   private final RecordService recordService;
-  private final InstanceService instanceService;
+  private final CollectionService collectionService;
   private final SamDao samDao;
   private final ActivityLogger activityLogger;
 
@@ -66,7 +66,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       RecordSourceFactory recordSourceFactory,
       BatchWriteService batchWriteService,
       RecordService recordService,
-      InstanceService instanceService,
+      CollectionService collectionService,
       SamDao samDao,
       ActivityLogger activityLogger,
       TsvSupport tsvSupport) {
@@ -74,64 +74,64 @@ public class RecordOrchestratorService { // TODO give me a better name
     this.recordSourceFactory = recordSourceFactory;
     this.batchWriteService = batchWriteService;
     this.recordService = recordService;
-    this.instanceService = instanceService;
+    this.collectionService = collectionService;
     this.samDao = samDao;
     this.activityLogger = activityLogger;
     this.tsvSupport = tsvSupport;
   }
 
   public RecordResponse updateSingleRecord(
-      UUID instanceId,
+      UUID collectionId,
       String version,
       RecordType recordType,
       String recordId,
       RecordRequest recordRequest) {
-    validateAndPermissions(instanceId, version);
-    checkRecordTypeExists(instanceId, recordType);
+    validateAndPermissions(collectionId, version);
+    checkRecordTypeExists(collectionId, recordType);
     RecordResponse response =
-        recordService.updateSingleRecord(instanceId, recordType, recordId, recordRequest);
+        recordService.updateSingleRecord(collectionId, recordType, recordId, recordRequest);
     activityLogger.saveEventForCurrentUser(
         user -> user.updated().record().withRecordType(recordType).withId(recordId));
     return response;
   }
 
-  public void validateAndPermissions(UUID instanceId, String version) {
+  public void validateAndPermissions(UUID collectionId, String version) {
     validateVersion(version);
-    instanceService.validateInstance(instanceId);
+    collectionService.validateCollection(collectionId);
 
-    boolean hasWriteInstancePermission = samDao.hasWriteInstancePermission();
-    LOGGER.debug("hasWriteInstancePermission? {}", hasWriteInstancePermission);
+    boolean hasWriteCollectionPermission = samDao.hasWriteCollectionPermission();
+    LOGGER.debug("hasWriteCollectionPermission? {}", hasWriteCollectionPermission);
 
-    if (!hasWriteInstancePermission) {
-      throw new AuthorizationException("Caller does not have permission to write to instance.");
+    if (!hasWriteCollectionPermission) {
+      throw new AuthorizationException("Caller does not have permission to write to collection.");
     }
   }
 
   @ReadTransaction
   public RecordResponse getSingleRecord(
-      UUID instanceId, String version, RecordType recordType, String recordId) {
+      UUID collectionId, String version, RecordType recordType, String recordId) {
     validateVersion(version);
-    instanceService.validateInstance(instanceId);
-    checkRecordTypeExists(instanceId, recordType);
+    collectionService.validateCollection(collectionId);
+    checkRecordTypeExists(collectionId, recordType);
     Record result =
         recordDao
-            .getSingleRecord(instanceId, recordType, recordId)
+            .getSingleRecord(collectionId, recordType, recordId)
             .orElseThrow(() -> new MissingObjectException("Record"));
     return new RecordResponse(recordId, recordType, result.getAttributes());
   }
 
   // N.B. transaction annotated in batchWriteService.batchWrite
   public int tsvUpload(
-      UUID instanceId,
+      UUID collectionId,
       String version,
       RecordType recordType,
       Optional<String> primaryKey,
       MultipartFile records)
       throws IOException {
-    validateAndPermissions(instanceId, version);
-    if (recordDao.recordTypeExists(instanceId, recordType)) {
+    validateAndPermissions(collectionId, version);
+    if (recordDao.recordTypeExists(collectionId, recordType)) {
       primaryKey =
-          Optional.of(recordService.validatePrimaryKey(instanceId, recordType, primaryKey));
+          Optional.of(recordService.validatePrimaryKey(collectionId, recordType, primaryKey));
     }
 
     TsvRecordSource recordSource =
@@ -139,7 +139,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSource,
-            instanceId,
+            collectionId,
             recordType,
             // the extra cast here isn't exactly necessary, but left here to call out the additional
             // tangential responsibility of the TsvRecordSource; this can be removed if we
@@ -154,17 +154,18 @@ public class RecordOrchestratorService { // TODO give me a better name
 
   // TODO: enable read transaction
   public StreamingResponseBody streamAllEntities(
-      UUID instanceId, String version, RecordType recordType) {
+      UUID collectionId, String version, RecordType recordType) {
     validateVersion(version);
-    instanceService.validateInstance(instanceId);
-    checkRecordTypeExists(instanceId, recordType);
-    List<String> headers = recordDao.getAllAttributeNames(instanceId, recordType);
+    collectionService.validateCollection(collectionId);
+    checkRecordTypeExists(collectionId, recordType);
+    List<String> headers = recordDao.getAllAttributeNames(collectionId, recordType);
 
     Map<String, DataTypeMapping> typeSchema =
-        recordDao.getExistingTableSchema(instanceId, recordType);
+        recordDao.getExistingTableSchema(collectionId, recordType);
 
     return httpResponseOutputStream -> {
-      try (Stream<Record> allRecords = recordDao.streamAllRecordsForType(instanceId, recordType)) {
+      try (Stream<Record> allRecords =
+          recordDao.streamAllRecordsForType(collectionId, recordType)) {
         tsvSupport.writeTsvToStream(allRecords, typeSchema, httpResponseOutputStream, headers);
       }
     };
@@ -172,10 +173,10 @@ public class RecordOrchestratorService { // TODO give me a better name
 
   @ReadTransaction
   public RecordQueryResponse queryForRecords(
-      UUID instanceId, RecordType recordType, String version, SearchRequest searchRequest) {
+      UUID collectionId, RecordType recordType, String version, SearchRequest searchRequest) {
     validateVersion(version);
-    instanceService.validateInstance(instanceId);
-    checkRecordTypeExists(instanceId, recordType);
+    collectionService.validateCollection(collectionId);
+    checkRecordTypeExists(collectionId, recordType);
     if (null == searchRequest) {
       searchRequest = new SearchRequest();
     }
@@ -190,11 +191,11 @@ public class RecordOrchestratorService { // TODO give me a better name
     }
     if (searchRequest.getSortAttribute() != null
         && !recordDao
-            .getExistingTableSchemaLessPrimaryKey(instanceId, recordType)
+            .getExistingTableSchemaLessPrimaryKey(collectionId, recordType)
             .containsKey(searchRequest.getSortAttribute())) {
       throw new MissingObjectException("Requested sort attribute");
     }
-    int totalRecords = recordDao.countRecords(instanceId, recordType);
+    int totalRecords = recordDao.countRecords(collectionId, recordType);
     if (searchRequest.getOffset() > totalRecords) {
       return new RecordQueryResponse(searchRequest, Collections.emptyList(), totalRecords);
     }
@@ -206,7 +207,7 @@ public class RecordOrchestratorService { // TODO give me a better name
             searchRequest.getOffset(),
             searchRequest.getSort().name().toLowerCase(),
             searchRequest.getSortAttribute(),
-            instanceId);
+            collectionId);
     List<RecordResponse> recordList =
         records.stream()
             .map(r -> new RecordResponse(r.getId(), r.getRecordType(), r.getAttributes()))
@@ -215,16 +216,16 @@ public class RecordOrchestratorService { // TODO give me a better name
   }
 
   public ResponseEntity<RecordResponse> upsertSingleRecord(
-      UUID instanceId,
+      UUID collectionId,
       String version,
       RecordType recordType,
       String recordId,
       Optional<String> primaryKey,
       RecordRequest recordRequest) {
-    validateAndPermissions(instanceId, version);
+    validateAndPermissions(collectionId, version);
     ResponseEntity<RecordResponse> response =
         recordService.upsertSingleRecord(
-            instanceId, recordType, recordId, primaryKey, recordRequest);
+            collectionId, recordType, recordId, primaryKey, recordRequest);
 
     if (response.getStatusCode() == HttpStatus.CREATED) {
       activityLogger.saveEventForCurrentUser(
@@ -237,33 +238,33 @@ public class RecordOrchestratorService { // TODO give me a better name
   }
 
   public boolean deleteSingleRecord(
-      UUID instanceId, String version, RecordType recordType, String recordId) {
-    validateAndPermissions(instanceId, version);
-    checkRecordTypeExists(instanceId, recordType);
-    boolean response = recordService.deleteSingleRecord(instanceId, recordType, recordId);
+      UUID collectionId, String version, RecordType recordType, String recordId) {
+    validateAndPermissions(collectionId, version);
+    checkRecordTypeExists(collectionId, recordType);
+    boolean response = recordService.deleteSingleRecord(collectionId, recordType, recordId);
     activityLogger.saveEventForCurrentUser(
         user -> user.deleted().record().withRecordType(recordType).withId(recordId));
     return response;
   }
 
-  public void deleteRecordType(UUID instanceId, String version, RecordType recordType) {
-    validateAndPermissions(instanceId, version);
-    checkRecordTypeExists(instanceId, recordType);
-    recordService.deleteRecordType(instanceId, recordType);
+  public void deleteRecordType(UUID collectionId, String version, RecordType recordType) {
+    validateAndPermissions(collectionId, version);
+    checkRecordTypeExists(collectionId, recordType);
+    recordService.deleteRecordType(collectionId, recordType);
     activityLogger.saveEventForCurrentUser(
         user -> user.deleted().table().ofQuantity(1).withRecordType(recordType));
   }
 
   public void renameAttribute(
-      UUID instanceId,
+      UUID collectionId,
       String version,
       RecordType recordType,
       String attribute,
       String newAttributeName) {
-    validateAndPermissions(instanceId, version);
-    checkRecordTypeExists(instanceId, recordType);
-    validateRenameAttribute(instanceId, recordType, attribute, newAttributeName);
-    recordService.renameAttribute(instanceId, recordType, attribute, newAttributeName);
+    validateAndPermissions(collectionId, version);
+    checkRecordTypeExists(collectionId, recordType);
+    validateRenameAttribute(collectionId, recordType, attribute, newAttributeName);
+    recordService.renameAttribute(collectionId, recordType, attribute, newAttributeName);
     activityLogger.saveEventForCurrentUser(
         user ->
             user.renamed()
@@ -273,8 +274,8 @@ public class RecordOrchestratorService { // TODO give me a better name
   }
 
   private void validateRenameAttribute(
-      UUID instanceId, RecordType recordType, String attribute, String newAttributeName) {
-    RecordTypeSchema schema = getSchemaDescription(instanceId, recordType);
+      UUID collectionId, RecordType recordType, String attribute, String newAttributeName) {
+    RecordTypeSchema schema = getSchemaDescription(collectionId, recordType);
 
     if (schema.isPrimaryKey(attribute)) {
       throw new ValidationException("Unable to rename primary key attribute");
@@ -288,21 +289,22 @@ public class RecordOrchestratorService { // TODO give me a better name
   }
 
   public void updateAttributeDataType(
-      UUID instanceId,
+      UUID collectionId,
       String version,
       RecordType recordType,
       String attribute,
       String newDataType) {
-    validateAndPermissions(instanceId, version);
-    checkRecordTypeExists(instanceId, recordType);
-    RecordTypeSchema schema = getSchemaDescription(instanceId, recordType);
+    validateAndPermissions(collectionId, version);
+    checkRecordTypeExists(collectionId, recordType);
+    RecordTypeSchema schema = getSchemaDescription(collectionId, recordType);
     if (schema.isPrimaryKey(attribute)) {
       throw new ValidationException("Unable to update primary key attribute");
     }
 
     DataTypeMapping newDataTypeMapping = validateAttributeDataType(newDataType);
     try {
-      recordService.updateAttributeDataType(instanceId, recordType, attribute, newDataTypeMapping);
+      recordService.updateAttributeDataType(
+          collectionId, recordType, attribute, newDataTypeMapping);
     } catch (IllegalArgumentException e) {
       throw new ValidationException(e.getMessage());
     }
@@ -319,17 +321,17 @@ public class RecordOrchestratorService { // TODO give me a better name
   }
 
   public void deleteAttribute(
-      UUID instanceId, String version, RecordType recordType, String attribute) {
-    validateAndPermissions(instanceId, version);
-    checkRecordTypeExists(instanceId, recordType);
-    validateDeleteAttribute(instanceId, recordType, attribute);
-    recordService.deleteAttribute(instanceId, recordType, attribute);
+      UUID collectionId, String version, RecordType recordType, String attribute) {
+    validateAndPermissions(collectionId, version);
+    checkRecordTypeExists(collectionId, recordType);
+    validateDeleteAttribute(collectionId, recordType, attribute);
+    recordService.deleteAttribute(collectionId, recordType, attribute);
     activityLogger.saveEventForCurrentUser(
         user -> user.deleted().attribute().withRecordType(recordType).withId(attribute));
   }
 
-  private void validateDeleteAttribute(UUID instanceId, RecordType recordType, String attribute) {
-    RecordTypeSchema schema = getSchemaDescription(instanceId, recordType);
+  private void validateDeleteAttribute(UUID collectionId, RecordType recordType, String attribute) {
+    RecordTypeSchema schema = getSchemaDescription(collectionId, recordType);
 
     if (schema.isPrimaryKey(attribute)) {
       throw new ValidationException("Unable to delete primary key attribute");
@@ -341,32 +343,32 @@ public class RecordOrchestratorService { // TODO give me a better name
 
   @ReadTransaction
   public RecordTypeSchema describeRecordType(
-      UUID instanceId, String version, RecordType recordType) {
+      UUID collectionId, String version, RecordType recordType) {
     validateVersion(version);
-    instanceService.validateInstance(instanceId);
-    checkRecordTypeExists(instanceId, recordType);
-    return getSchemaDescription(instanceId, recordType);
+    collectionService.validateCollection(collectionId);
+    checkRecordTypeExists(collectionId, recordType);
+    return getSchemaDescription(collectionId, recordType);
   }
 
   @ReadTransaction
-  public List<RecordTypeSchema> describeAllRecordTypes(UUID instanceId, String version) {
+  public List<RecordTypeSchema> describeAllRecordTypes(UUID collectionId, String version) {
     validateVersion(version);
-    instanceService.validateInstance(instanceId);
-    List<RecordType> allRecordTypes = recordDao.getAllRecordTypes(instanceId);
+    collectionService.validateCollection(collectionId);
+    List<RecordType> allRecordTypes = recordDao.getAllRecordTypes(collectionId);
     return allRecordTypes.stream()
-        .map(recordType -> getSchemaDescription(instanceId, recordType))
+        .map(recordType -> getSchemaDescription(collectionId, recordType))
         .toList();
   }
 
   public int streamingWrite(
-      UUID instanceId,
+      UUID collectionId,
       String version,
       RecordType recordType,
       Optional<String> primaryKey,
       InputStream is) {
-    validateAndPermissions(instanceId, version);
-    if (recordDao.recordTypeExists(instanceId, recordType)) {
-      recordService.validatePrimaryKey(instanceId, recordType, primaryKey);
+    validateAndPermissions(collectionId, version);
+    if (recordDao.recordTypeExists(collectionId, recordType)) {
+      recordService.validatePrimaryKey(collectionId, recordType, primaryKey);
     }
 
     BatchWriteService.RecordSource recordSource = null;
@@ -379,7 +381,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSource,
-            instanceId,
+            collectionId,
             recordType,
             primaryKey.orElse(RECORD_ID),
             ImportMode.BASE_ATTRIBUTES);
@@ -389,16 +391,17 @@ public class RecordOrchestratorService { // TODO give me a better name
     return qty;
   }
 
-  private void checkRecordTypeExists(UUID instanceId, RecordType recordType) {
-    if (!recordDao.recordTypeExists(instanceId, recordType)) {
+  private void checkRecordTypeExists(UUID collectionId, RecordType recordType) {
+    if (!recordDao.recordTypeExists(collectionId, recordType)) {
       throw new MissingObjectException("Record type");
     }
   }
 
-  private RecordTypeSchema getSchemaDescription(UUID instanceId, RecordType recordType) {
-    Map<String, DataTypeMapping> schema = recordDao.getExistingTableSchema(instanceId, recordType);
-    List<Relation> relationCols = recordDao.getRelationArrayCols(instanceId, recordType);
-    relationCols.addAll(recordDao.getRelationCols(instanceId, recordType));
+  private RecordTypeSchema getSchemaDescription(UUID collectionId, RecordType recordType) {
+    Map<String, DataTypeMapping> schema =
+        recordDao.getExistingTableSchema(collectionId, recordType);
+    List<Relation> relationCols = recordDao.getRelationArrayCols(collectionId, recordType);
+    relationCols.addAll(recordDao.getRelationCols(collectionId, recordType));
     Map<String, RecordType> relations =
         relationCols.stream()
             .collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
@@ -410,8 +413,11 @@ public class RecordOrchestratorService { // TODO give me a better name
                     new AttributeSchema(
                         entry.getKey(), entry.getValue().toString(), relations.get(entry.getKey())))
             .toList();
-    int recordCount = recordDao.countRecords(instanceId, recordType);
+    int recordCount = recordDao.countRecords(collectionId, recordType);
     return new RecordTypeSchema(
-        recordType, attrSchema, recordCount, recordDao.getPrimaryKeyColumn(recordType, instanceId));
+        recordType,
+        attrSchema,
+        recordCount,
+        recordDao.getPrimaryKeyColumn(recordType, collectionId));
   }
 }

@@ -53,7 +53,7 @@ public class BatchWriteService {
   public interface RecordSink {
     /** Create or modify the schema for a record type and write the records. */
     Map<String, DataTypeMapping> createOrModifyRecordType(
-        UUID instanceId,
+        UUID collectionId,
         RecordType recordType,
         Map<String, DataTypeMapping> schema,
         List<Record> records,
@@ -61,7 +61,7 @@ public class BatchWriteService {
 
     /** Perform the given {@link OperationType} on the batch of records. */
     void writeBatch(
-        UUID instanceId,
+        UUID collectionId,
         RecordType recordType,
         Map<String, DataTypeMapping> schema,
         OperationType opType,
@@ -88,7 +88,7 @@ public class BatchWriteService {
    * RecordSource}.
    *
    * @param recordSource the source of the records to be upserted
-   * @param instanceId instance to which records are upserted
+   * @param collectionId collection to which records are upserted
    * @param recordType record type of records contained in the write handler
    * @param primaryKey primaryKey column for the record type
    * @return a {@link BatchWriteResult} with metadata about the written records
@@ -96,12 +96,12 @@ public class BatchWriteService {
   @WriteTransaction
   public BatchWriteResult batchWrite(
       RecordSource recordSource,
-      UUID instanceId,
+      UUID collectionId,
       RecordType recordType,
       String primaryKey,
       ImportMode importMode) {
     try (recordSource) {
-      return consumeWriteStream(recordSource, instanceId, recordType, primaryKey, importMode);
+      return consumeWriteStream(recordSource, collectionId, recordType, primaryKey, importMode);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
@@ -109,7 +109,7 @@ public class BatchWriteService {
 
   private BatchWriteResult consumeWriteStream(
       RecordSource recordSource,
-      UUID instanceId,
+      UUID collectionId,
       RecordType recordType, // nullable
       String primaryKey,
       ImportMode importMode) {
@@ -164,7 +164,7 @@ public class BatchWriteService {
                         inferer.inferTypes(recordsForType);
                     Map<String, DataTypeMapping> finalSchema =
                         recordSink.createOrModifyRecordType(
-                            instanceId, recType, inferredSchema, recordsForType, primaryKey);
+                            collectionId, recType, inferredSchema, recordsForType, primaryKey);
                     typesSeen.put(recType, finalSchema);
                   }
                   // when updating relations only, do not update if there are no relations
@@ -177,7 +177,7 @@ public class BatchWriteService {
 
                     // write these records to the db, using the schema from the `typesSeen` map
                     recordSink.writeBatch(
-                        instanceId,
+                        collectionId,
                         recType,
                         typesSeen.get(recType),
                         opType,

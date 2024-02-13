@@ -46,7 +46,7 @@ public class RecordService implements BatchWriteService.RecordSink {
   // strings used for metrics
   public static final String METRIC_COL_CHANGE = "wds.column.change.datatype";
   public static final String TAG_RECORD_TYPE = "RecordType";
-  public static final String TAG_INSTANCE = "Instance";
+  public static final String TAG_COLLECTION = "Collection";
   public static final String TAG_ATTRIBUTE_NAME = "AttributeName";
   public static final String TAG_OLD_DATATYPE = "OldDataType";
   public static final String TAG_NEW_DATATYPE = "NewDataType";
@@ -65,7 +65,7 @@ public class RecordService implements BatchWriteService.RecordSink {
   }
 
   private void prepareAndUpsert(
-      UUID instanceId,
+      UUID collectionId,
       RecordType recordType,
       List<Record> records,
       Map<String, DataTypeMapping> requestSchema,
@@ -77,15 +77,15 @@ public class RecordService implements BatchWriteService.RecordSink {
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     Map<Relation, List<RelationValue>> relationArrayValues =
         getAllRelationArrayValues(records, relationArrays);
-    recordDao.batchUpsert(instanceId, recordType, records, requestSchema, primaryKey);
+    recordDao.batchUpsert(collectionId, recordType, records, requestSchema, primaryKey);
     for (Map.Entry<Relation, List<RelationValue>> rel : relationArrayValues.entrySet()) {
       // remove existing values from join table and replace with new ones
       recordDao.removeFromJoin(
-          instanceId,
+          collectionId,
           rel.getKey(),
           recordType,
           rel.getValue().stream().map(relVal -> relVal.fromRecord().getId()).toList());
-      recordDao.insertIntoJoin(instanceId, rel.getKey(), recordType, rel.getValue());
+      recordDao.insertIntoJoin(collectionId, rel.getKey(), recordType, rel.getValue());
     }
   }
 
@@ -130,13 +130,13 @@ public class RecordService implements BatchWriteService.RecordSink {
   }
 
   public void batchUpsert(
-      UUID instanceId,
+      UUID collectionId,
       RecordType recordType,
       List<Record> records,
       Map<String, DataTypeMapping> schema,
       String primaryKey) {
     try {
-      prepareAndUpsert(instanceId, recordType, records, schema, primaryKey);
+      prepareAndUpsert(collectionId, recordType, records, schema, primaryKey);
     } catch (DataAccessException e) {
       if (isDataMismatchException(e)) {
         Map<String, DataTypeMapping> recordTypeSchemaWithoutId = new HashMap<>(schema);
@@ -189,7 +189,7 @@ public class RecordService implements BatchWriteService.RecordSink {
   }
 
   public Map<String, DataTypeMapping> addOrUpdateColumnIfNeeded(
-      UUID instanceId,
+      UUID collectionId,
       RecordType recordType,
       Map<String, DataTypeMapping> schema,
       Map<String, DataTypeMapping> existingTableSchema,
@@ -205,7 +205,7 @@ public class RecordService implements BatchWriteService.RecordSink {
               throw new InvalidNameException(InvalidNameException.NameType.ATTRIBUTE);
             });
     validateRelationsAndAddColumns(
-        instanceId, recordType, schema, records, colsToAdd, existingTableSchema);
+        collectionId, recordType, schema, records, colsToAdd, existingTableSchema);
     Map<String, MapDifference.ValueDifference<DataTypeMapping>> differenceMap =
         difference.entriesDiffering();
     for (Map.Entry<String, MapDifference.ValueDifference<DataTypeMapping>> entry :
@@ -227,8 +227,8 @@ public class RecordService implements BatchWriteService.RecordSink {
           .lowCardinalityKeyValue(TAG_NEW_DATATYPE, updatedColType.toString())
           .highCardinalityKeyValue(TAG_RECORD_TYPE, recordType.getName())
           .highCardinalityKeyValue(TAG_ATTRIBUTE_NAME, column)
-          .highCardinalityKeyValue(TAG_INSTANCE, instanceId.toString())
-          .observe(() -> recordDao.changeColumn(instanceId, recordType, column, updatedColType));
+          .highCardinalityKeyValue(TAG_COLLECTION, collectionId.toString())
+          .observe(() -> recordDao.changeColumn(collectionId, recordType, column, updatedColType));
 
       schema.put(column, updatedColType);
     }
@@ -254,7 +254,7 @@ public class RecordService implements BatchWriteService.RecordSink {
   }
 
   public void validateRelationsAndAddColumns(
-      UUID instanceId,
+      UUID collectionId,
       RecordType recordType,
       Map<String, DataTypeMapping> requestSchema,
       List<Record> records,
@@ -263,8 +263,8 @@ public class RecordService implements BatchWriteService.RecordSink {
     RelationCollection relations = inferer.findRelations(records, requestSchema);
     RelationCollection existingRelations =
         new RelationCollection(
-            Set.copyOf(recordDao.getRelationCols(instanceId, recordType)),
-            Set.copyOf(recordDao.getRelationArrayCols(instanceId, recordType)));
+            Set.copyOf(recordDao.getRelationCols(collectionId, recordType)),
+            Set.copyOf(recordDao.getRelationArrayCols(collectionId, recordType)));
     // look for case where requested relation column already exists as a
     // non-relational column
     validateRelations(existingRelations.relations(), relations.relations(), existingSchema);
@@ -294,10 +294,10 @@ public class RecordService implements BatchWriteService.RecordSink {
       if (allRefCols.containsKey(col)) {
         referencedRecordType = allRefCols.get(col).get(0).relationRecordType();
       }
-      recordDao.addColumn(instanceId, recordType, col, dataType, referencedRecordType);
+      recordDao.addColumn(collectionId, recordType, col, dataType, referencedRecordType);
       if (allRefArrCols.containsKey(col)) {
         referencedRecordType = allRefArrCols.get(col).get(0).relationRecordType();
-        recordDao.createRelationJoinTable(instanceId, col, recordType, referencedRecordType);
+        recordDao.createRelationJoinTable(collectionId, col, recordType, referencedRecordType);
       }
       requestSchema.put(col, dataType);
     }
@@ -305,33 +305,33 @@ public class RecordService implements BatchWriteService.RecordSink {
 
   @WriteTransaction
   public RecordResponse updateSingleRecord(
-      UUID instanceId, RecordType recordType, String recordId, RecordRequest recordRequest) {
+      UUID collectionId, RecordType recordType, String recordId, RecordRequest recordRequest) {
     Record singleRecord =
         recordDao
-            .getSingleRecord(instanceId, recordType, recordId)
+            .getSingleRecord(collectionId, recordType, recordId)
             .orElseThrow(() -> new MissingObjectException("Record"));
     RecordAttributes incomingAttrs = recordRequest.recordAttributes();
     RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAttrs).getAttributes();
     Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAttrs);
     Map<String, DataTypeMapping> existingTableSchema =
-        recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
+        recordDao.getExistingTableSchemaLessPrimaryKey(collectionId, recordType);
     singleRecord.setAttributes(allAttrs);
     List<Record> records = Collections.singletonList(singleRecord);
     Map<String, DataTypeMapping> updatedSchema =
         addOrUpdateColumnIfNeeded(
-            instanceId, recordType, typeMapping, existingTableSchema, records);
+            collectionId, recordType, typeMapping, existingTableSchema, records);
     prepareAndUpsert(
-        instanceId,
+        collectionId,
         recordType,
         records,
         updatedSchema,
-        recordDao.getPrimaryKeyColumn(recordType, instanceId));
+        recordDao.getPrimaryKeyColumn(recordType, collectionId));
     return new RecordResponse(recordId, recordType, singleRecord.getAttributes());
   }
 
   @WriteTransaction
   public ResponseEntity<RecordResponse> upsertSingleRecord(
-      UUID instanceId,
+      UUID collectionId,
       RecordType recordType,
       String recordId,
       Optional<String> primaryKey,
@@ -339,61 +339,65 @@ public class RecordService implements BatchWriteService.RecordSink {
     RecordAttributes attributesInRequest = recordRequest.recordAttributes();
     Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
     HttpStatus status = HttpStatus.CREATED;
-    if (!recordDao.recordTypeExists(instanceId, recordType)) {
+    if (!recordDao.recordTypeExists(collectionId, recordType)) {
       RecordResponse response =
           new RecordResponse(recordId, recordType, recordRequest.recordAttributes());
       Record newRecord = new Record(recordId, recordType, recordRequest);
       createRecordTypeAndInsertRecords(
-          instanceId, newRecord, recordType, requestSchema, primaryKey);
+          collectionId, newRecord, recordType, requestSchema, primaryKey);
       return new ResponseEntity<>(response, status);
     } else {
-      validatePrimaryKey(instanceId, recordType, primaryKey);
+      validatePrimaryKey(collectionId, recordType, primaryKey);
       Map<String, DataTypeMapping> existingTableSchema =
-          recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType);
+          recordDao.getExistingTableSchemaLessPrimaryKey(collectionId, recordType);
       // null out any attributes that already exist but aren't in the request
       existingTableSchema
           .keySet()
           .forEach(attr -> attributesInRequest.putAttributeIfAbsent(attr, null));
-      if (recordDao.recordExists(instanceId, recordType, recordId)) {
+      if (recordDao.recordExists(collectionId, recordType, recordId)) {
         status = HttpStatus.OK;
       }
       Record newRecord = new Record(recordId, recordType, recordRequest.recordAttributes());
       List<Record> records = Collections.singletonList(newRecord);
       addOrUpdateColumnIfNeeded(
-          instanceId, recordType, requestSchema, existingTableSchema, records);
+          collectionId, recordType, requestSchema, existingTableSchema, records);
       Map<String, DataTypeMapping> combinedSchema = new HashMap<>(existingTableSchema);
       combinedSchema.putAll(requestSchema);
       prepareAndUpsert(
-          instanceId,
+          collectionId,
           recordType,
           records,
           combinedSchema,
-          primaryKey.orElseGet(() -> recordDao.getPrimaryKeyColumn(recordType, instanceId)));
+          primaryKey.orElseGet(() -> recordDao.getPrimaryKeyColumn(recordType, collectionId)));
       RecordResponse response = new RecordResponse(recordId, recordType, attributesInRequest);
       return new ResponseEntity<>(response, status);
     }
   }
 
   private void createRecordTypeAndInsertRecords(
-      UUID instanceId,
+      UUID collectionId,
       Record newRecord,
       RecordType recordType,
       Map<String, DataTypeMapping> requestSchema,
       Optional<String> primaryKey) {
     List<Record> records = Collections.singletonList(newRecord);
     recordDao.createRecordType(
-        instanceId,
+        collectionId,
         requestSchema,
         recordType,
         inferer.findRelations(records, requestSchema),
         primaryKey.orElse(ReservedNames.RECORD_ID));
     prepareAndUpsert(
-        instanceId, recordType, records, requestSchema, primaryKey.orElse(ReservedNames.RECORD_ID));
+        collectionId,
+        recordType,
+        records,
+        requestSchema,
+        primaryKey.orElse(ReservedNames.RECORD_ID));
   }
 
   public String validatePrimaryKey(
-      UUID instanceId, RecordType recordType, Optional<String> primaryKey) {
-    String existingKey = recordDao.getPrimaryKeyColumn(recordType, instanceId);
+      UUID collectionId, RecordType recordType, Optional<String> primaryKey) {
+    String existingKey = recordDao.getPrimaryKeyColumn(recordType, collectionId);
     if (primaryKey.isPresent() && !primaryKey.get().equals(existingKey)) {
       throw new NewPrimaryKeyException(primaryKey.get(), recordType);
     }
@@ -401,52 +405,52 @@ public class RecordService implements BatchWriteService.RecordSink {
   }
 
   @WriteTransaction
-  public boolean deleteSingleRecord(UUID instanceId, RecordType recordType, String recordId) {
-    return recordDao.deleteSingleRecord(instanceId, recordType, recordId);
+  public boolean deleteSingleRecord(UUID collectionId, RecordType recordType, String recordId) {
+    return recordDao.deleteSingleRecord(collectionId, recordType, recordId);
   }
 
   @WriteTransaction
-  public void deleteRecordType(UUID instanceId, RecordType recordType) {
-    recordDao.deleteRecordType(instanceId, recordType);
+  public void deleteRecordType(UUID collectionId, RecordType recordType) {
+    recordDao.deleteRecordType(collectionId, recordType);
   }
 
   @WriteTransaction
   public void renameAttribute(
-      UUID instanceId, RecordType recordType, String attribute, String newAttributeName) {
-    recordDao.renameAttribute(instanceId, recordType, attribute, newAttributeName);
+      UUID collectionId, RecordType recordType, String attribute, String newAttributeName) {
+    recordDao.renameAttribute(collectionId, recordType, attribute, newAttributeName);
   }
 
   @WriteTransaction
   public void updateAttributeDataType(
-      UUID instanceId, RecordType recordType, String attribute, DataTypeMapping newDataType) {
-    recordDao.updateAttributeDataType(instanceId, recordType, attribute, newDataType);
+      UUID collectionId, RecordType recordType, String attribute, DataTypeMapping newDataType) {
+    recordDao.updateAttributeDataType(collectionId, recordType, attribute, newDataType);
   }
 
   @WriteTransaction
-  public void deleteAttribute(UUID instanceId, RecordType recordType, String attribute) {
-    recordDao.deleteAttribute(instanceId, recordType, attribute);
+  public void deleteAttribute(UUID collectionId, RecordType recordType, String attribute) {
+    recordDao.deleteAttribute(collectionId, recordType, attribute);
   }
 
   @Override
   public Map<String, DataTypeMapping> createOrModifyRecordType(
-      UUID instanceId,
+      UUID collectionId,
       RecordType recordType,
       Map<String, DataTypeMapping> schema,
       List<Record> records,
       String recordTypePrimaryKey) {
-    if (!recordDao.recordTypeExists(instanceId, recordType)) {
+    if (!recordDao.recordTypeExists(collectionId, recordType)) {
       recordDao.createRecordType(
-          instanceId,
+          collectionId,
           schema,
           recordType,
           inferer.findRelations(records, schema),
           recordTypePrimaryKey);
     } else {
       return addOrUpdateColumnIfNeeded(
-          instanceId,
+          collectionId,
           recordType,
           schema,
-          recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, recordType),
+          recordDao.getExistingTableSchemaLessPrimaryKey(collectionId, recordType),
           records);
     }
     return schema;
@@ -454,7 +458,7 @@ public class RecordService implements BatchWriteService.RecordSink {
 
   @Override
   public void writeBatch(
-      UUID instanceId,
+      UUID collectionId,
       RecordType recordType,
       Map<String, DataTypeMapping> schema,
       OperationType opType,
@@ -462,9 +466,9 @@ public class RecordService implements BatchWriteService.RecordSink {
       String primaryKey)
       throws BatchWriteException {
     if (opType == OperationType.UPSERT) {
-      batchUpsert(instanceId, recordType, records, schema, primaryKey);
+      batchUpsert(collectionId, recordType, records, schema, primaryKey);
     } else if (opType == OperationType.DELETE) {
-      recordDao.batchDelete(instanceId, recordType, records);
+      recordDao.batchDelete(collectionId, recordType, records);
     }
   }
 }

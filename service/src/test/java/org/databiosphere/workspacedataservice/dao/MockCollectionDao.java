@@ -9,53 +9,55 @@ import org.databiosphere.workspacedataservice.shared.model.InstanceId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.postgresql.util.ServerErrorMessage;
 
-/** Mock implementation of InstanceDao that is in-memory instead of requiring Postgres */
-public class MockInstanceDao implements InstanceDao {
+/** Mock implementation of CollectionDao that is in-memory instead of requiring Postgres */
+public class MockCollectionDao implements CollectionDao {
 
   // backing "database" for this mock
-  private final Set<UUID> instances = ConcurrentHashMap.newKeySet();
+  private final Set<UUID> collections = ConcurrentHashMap.newKeySet();
 
-  public MockInstanceDao() {
+  public MockCollectionDao() {
     super();
   }
 
   @Override
-  public boolean instanceSchemaExists(UUID instanceId) {
-    return instances.contains(instanceId);
+  public boolean collectionSchemaExists(UUID collectionId) {
+    return collections.contains(collectionId);
   }
 
   @Override
-  public List<UUID> listInstanceSchemas() {
-    return instances.stream().toList();
+  public List<UUID> listCollectionSchemas() {
+    return collections.stream().toList();
   }
 
   @Override
-  public void createSchema(UUID instanceId) {
-    if (instances.contains(instanceId)) {
+  public void createSchema(UUID collectionId) {
+    if (collections.contains(collectionId)) {
       ServerErrorMessage sqlMsg =
-          new ServerErrorMessage("ERROR: schema \"" + instanceId.toString() + "\" already exists");
+          new ServerErrorMessage(
+              "ERROR: schema \"" + collectionId.toString() + "\" already exists");
       SQLException ex = new org.postgresql.util.PSQLException(sqlMsg);
-      String sql = "create schema \"" + instanceId + "\"";
+      String sql = "create schema \"" + collectionId + "\"";
       throw new org.springframework.jdbc.BadSqlGrammarException("StatementCallback", sql, ex);
     }
-    instances.add(instanceId);
+    collections.add(collectionId);
   }
 
   @Override
-  public void dropSchema(UUID instanceId) {
-    if (!instances.contains(instanceId)) {
+  public void dropSchema(UUID collectionId) {
+    if (!collections.contains(collectionId)) {
       ServerErrorMessage sqlMsg =
-          new ServerErrorMessage("ERROR: schema \"" + instanceId.toString() + "\" does not exist");
+          new ServerErrorMessage(
+              "ERROR: schema \"" + collectionId.toString() + "\" does not exist");
       SQLException ex = new org.postgresql.util.PSQLException(sqlMsg);
-      String sql = "drop schema \"" + instanceId + "\" cascade";
+      String sql = "drop schema \"" + collectionId + "\" cascade";
       throw new org.springframework.jdbc.BadSqlGrammarException("StatementCallback", sql, ex);
     }
-    instances.remove(instanceId);
+    collections.remove(collectionId);
   }
 
   @Override
   public void alterSchema(UUID sourceWorkspaceId, UUID workspaceId) {
-    if (!instances.contains(sourceWorkspaceId)) {
+    if (!collections.contains(sourceWorkspaceId)) {
       ServerErrorMessage sqlMsg =
           new ServerErrorMessage(
               "ERROR: schema \"" + sourceWorkspaceId.toString() + "\" does not exist");
@@ -63,8 +65,8 @@ public class MockInstanceDao implements InstanceDao {
       String sql = "alter schema \"" + sourceWorkspaceId + "\" rename to \"" + workspaceId + "\"";
       throw new org.springframework.jdbc.BadSqlGrammarException("StatementCallback", sql, ex);
     }
-    instances.remove(sourceWorkspaceId);
-    instances.add(workspaceId);
+    collections.remove(sourceWorkspaceId);
+    collections.add(workspaceId);
   }
 
   @Override

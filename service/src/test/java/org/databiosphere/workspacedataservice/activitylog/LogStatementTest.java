@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.datarepo.DataRepoClientFactory;
-import org.databiosphere.workspacedataservice.service.InstanceService;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.shared.model.BatchOperation;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
@@ -43,7 +43,7 @@ public class LogStatementTest {
 
   private final String VERSION = "v0.2";
 
-  @Autowired InstanceService instanceService;
+  @Autowired CollectionService collectionService;
   @Autowired RecordOrchestratorService recordOrchestratorService;
   @Autowired ObjectMapper objectMapper;
 
@@ -58,34 +58,34 @@ public class LogStatementTest {
 
   @AfterEach
   void tearDown() {
-    List<UUID> allInstances = instanceService.listInstances(VERSION);
-    for (UUID id : allInstances) {
-      instanceService.deleteInstance(id, VERSION);
+    List<UUID> allCollections = collectionService.listCollections(VERSION);
+    for (UUID id : allCollections) {
+      collectionService.deleteCollection(id, VERSION);
     }
   }
 
   @Test
-  void createAndDeleteInstanceLogging(CapturedOutput output) {
-    UUID instanceId = UUID.randomUUID();
-    instanceService.createInstance(instanceId, VERSION);
-    instanceService.deleteInstance(instanceId, VERSION);
+  void createAndDeleteCollectionLogging(CapturedOutput output) {
+    UUID collectionId = UUID.randomUUID();
+    collectionService.createCollection(collectionId, VERSION);
+    collectionService.deleteCollection(collectionId, VERSION);
     assertThat(output.getOut())
-        .contains("user anonymous created 1 instance(s) with id(s) [%s]".formatted(instanceId));
+        .contains("user anonymous created 1 collection(s) with id(s) [%s]".formatted(collectionId));
     assertThat(output.getOut())
-        .contains("user anonymous deleted 1 instance(s) with id(s) [%s]".formatted(instanceId));
+        .contains("user anonymous deleted 1 collection(s) with id(s) [%s]".formatted(collectionId));
   }
 
   @Test
   void upsertRecordLogging(CapturedOutput output) {
-    UUID instanceId = UUID.randomUUID();
+    UUID collectionId = UUID.randomUUID();
     RecordType recordType = RecordType.valueOf("mytype");
     String recordId = "my-record-id";
-    instanceService.createInstance(instanceId, VERSION);
+    collectionService.createCollection(collectionId, VERSION);
     // loop twice - this creates the record and then updates it,
     // using the same upsert method.
     for (int i = 0; i <= 1; i++) {
       recordOrchestratorService.upsertSingleRecord(
-          instanceId,
+          collectionId,
           VERSION,
           recordType,
           recordId,
@@ -104,13 +104,13 @@ public class LogStatementTest {
 
   @Test
   void updateRecordLogging(CapturedOutput output) {
-    UUID instanceId = UUID.randomUUID();
+    UUID collectionId = UUID.randomUUID();
     RecordType recordType = RecordType.valueOf("mytype");
     String recordId = "my-record-id";
-    instanceService.createInstance(instanceId, VERSION);
+    collectionService.createCollection(collectionId, VERSION);
     // create the record
     recordOrchestratorService.upsertSingleRecord(
-        instanceId,
+        collectionId,
         VERSION,
         recordType,
         recordId,
@@ -118,7 +118,7 @@ public class LogStatementTest {
         new RecordRequest(RecordAttributes.empty()));
     // now update the record - this is the method under test
     recordOrchestratorService.updateSingleRecord(
-        instanceId, VERSION, recordType, recordId, new RecordRequest(RecordAttributes.empty()));
+        collectionId, VERSION, recordType, recordId, new RecordRequest(RecordAttributes.empty()));
     assertThat(output.getOut())
         .contains(
             "user anonymous updated 1 record(s) of type %s with id(s) [%s]"
@@ -127,20 +127,20 @@ public class LogStatementTest {
 
   @Test
   void deleteRecordLogging(CapturedOutput output) {
-    UUID instanceId = UUID.randomUUID();
+    UUID collectionId = UUID.randomUUID();
     RecordType recordType = RecordType.valueOf("mytype");
     String recordId = "my-record-id";
-    instanceService.createInstance(instanceId, VERSION);
+    collectionService.createCollection(collectionId, VERSION);
     // create the record
     recordOrchestratorService.upsertSingleRecord(
-        instanceId,
+        collectionId,
         VERSION,
         recordType,
         recordId,
         Optional.empty(),
         new RecordRequest(RecordAttributes.empty()));
     // now delete the record - this is the method under test
-    recordOrchestratorService.deleteSingleRecord(instanceId, VERSION, recordType, recordId);
+    recordOrchestratorService.deleteSingleRecord(collectionId, VERSION, recordType, recordId);
     assertThat(output.getOut())
         .contains(
             "user anonymous deleted 1 record(s) of type %s with id(s) [%s]"
@@ -149,34 +149,34 @@ public class LogStatementTest {
 
   @Test
   void deleteRecordTypeLogging(CapturedOutput output) {
-    UUID instanceId = UUID.randomUUID();
+    UUID collectionId = UUID.randomUUID();
     RecordType recordType = RecordType.valueOf("mytype");
     String recordId = "my-record-id";
-    instanceService.createInstance(instanceId, VERSION);
+    collectionService.createCollection(collectionId, VERSION);
     // create the record
     recordOrchestratorService.upsertSingleRecord(
-        instanceId,
+        collectionId,
         VERSION,
         recordType,
         recordId,
         Optional.empty(),
         new RecordRequest(RecordAttributes.empty()));
     // now delete the entire record type - this is the method under test
-    recordOrchestratorService.deleteRecordType(instanceId, VERSION, recordType);
+    recordOrchestratorService.deleteRecordType(collectionId, VERSION, recordType);
     assertThat(output.getOut())
         .contains("user anonymous deleted 1 table(s) of type %s".formatted(recordType.getName()));
   }
 
   @Test
   void tsvUploadLogging(CapturedOutput output) throws IOException {
-    UUID instanceId = UUID.randomUUID();
+    UUID collectionId = UUID.randomUUID();
     RecordType recordType = RecordType.valueOf("mytype");
-    instanceService.createInstance(instanceId, VERSION);
+    collectionService.createCollection(collectionId, VERSION);
 
     try (InputStream tsvStream = ClassLoader.getSystemResourceAsStream("tsv/small-test.tsv")) {
       MultipartFile upload = new MockMultipartFile("myupload", tsvStream);
       recordOrchestratorService.tsvUpload(
-          instanceId, VERSION, recordType, Optional.empty(), upload);
+          collectionId, VERSION, recordType, Optional.empty(), upload);
       assertThat(output.getOut())
           .contains(
               "user anonymous upserted 2 record(s) of type %s".formatted(recordType.getName()));
@@ -185,9 +185,9 @@ public class LogStatementTest {
 
   @Test
   void batchWriteLogging(CapturedOutput output) throws IOException {
-    UUID instanceId = UUID.randomUUID();
+    UUID collectionId = UUID.randomUUID();
     RecordType recordType = RecordType.valueOf("mytype");
-    instanceService.createInstance(instanceId, VERSION);
+    collectionService.createCollection(collectionId, VERSION);
 
     BatchOperation[] ops =
         new BatchOperation[] {
@@ -202,7 +202,7 @@ public class LogStatementTest {
     InputStream upload = new ByteArrayInputStream(objectMapper.writeValueAsBytes(ops));
 
     recordOrchestratorService.streamingWrite(
-        instanceId, VERSION, recordType, Optional.empty(), upload);
+        collectionId, VERSION, recordType, Optional.empty(), upload);
     assertThat(output.getOut())
         .contains("user anonymous modified 3 record(s) of type %s".formatted(recordType.getName()));
   }

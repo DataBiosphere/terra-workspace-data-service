@@ -32,7 +32,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 @ActiveProfiles({
-  "mock-instance-dao",
+  "mock-collection-dao",
   "mock-backup-dao",
   "mock-restore-dao",
   "mock-clone-dao",
@@ -42,8 +42,8 @@ import org.springframework.test.context.TestPropertySource;
 @DirtiesContext
 @SpringBootTest(
     classes = {
-      InstanceInitializerConfig.class,
-      MockInstanceDaoConfig.class,
+      CollectionInitializerConfig.class,
+      MockCollectionDaoConfig.class,
       MockRestoreDaoConfig.class,
       MockBackupDaoConfig.class,
       LeonardoConfig.class,
@@ -57,11 +57,11 @@ import org.springframework.test.context.TestPropertySource;
       MockSamClientFactoryConfig.class,
       RestClientRetry.class
     })
-class InstanceInitializerNoWorkspaceIdTest {
+class CollectionInitializerNoWorkspaceIdTest {
 
-  @Autowired InstanceInitializerBean instanceInitializerBean;
+  @Autowired CollectionInitializerBean collectionInitializerBean;
   @MockBean JdbcLockRegistry registry;
-  @SpyBean InstanceDao instanceDao;
+  @SpyBean CollectionDao collectionDao;
 
   Lock mockLock = mock(Lock.class);
 
@@ -73,8 +73,8 @@ class InstanceInitializerNoWorkspaceIdTest {
 
   @Test
   void workspaceIDNotProvidedNoExceptionThrown() {
-    assertDoesNotThrow(() -> instanceInitializerBean.initializeInstance());
-    // verify that method to create instance was NOT called
-    verify(instanceDao, times(0)).createSchema(any());
+    assertDoesNotThrow(() -> collectionInitializerBean.initializeCollection());
+    // verify that method to create collection was NOT called
+    verify(collectionDao, times(0)).createSchema(any());
   }
 }

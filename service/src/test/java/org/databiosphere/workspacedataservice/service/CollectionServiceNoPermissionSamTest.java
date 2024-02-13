@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
-import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.junit.jupiter.api.Test;
@@ -21,15 +21,15 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles(profiles = "mock-instance-dao")
+@ActiveProfiles(profiles = "mock-collection-dao")
 @DirtiesContext
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class InstanceServiceNoPermissionSamTest {
+class CollectionServiceNoPermissionSamTest {
 
-  @Autowired private InstanceService instanceService;
+  @Autowired private CollectionService collectionService;
 
-  @Autowired private InstanceDao instanceDao;
+  @Autowired private CollectionDao collectionDao;
 
   // mock for the SamClientFactory; since this is a Spring bean we can use @MockBean
   @MockBean SamClientFactory mockSamClientFactory;
@@ -39,7 +39,7 @@ class InstanceServiceNoPermissionSamTest {
   final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
   @Test
-  void testCreateInstanceNoPermission() throws ApiException {
+  void testCreateCollectionNoPermission() throws ApiException {
 
     // return the mock ResourcesApi from the mock SamClientFactory
     given(mockSamClientFactory.getResourcesApi(null)).willReturn(mockResourcesApi);
@@ -49,17 +49,17 @@ class InstanceServiceNoPermissionSamTest {
     given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
         .willReturn(false);
 
-    UUID instanceId = UUID.randomUUID();
+    UUID collectionId = UUID.randomUUID();
     assertThrows(
         AuthorizationException.class,
-        () -> instanceService.createInstance(instanceId, VERSION),
-        "createInstance should throw if caller does not have permission to create wds-instance resource in Sam");
-    List<UUID> allInstances = instanceService.listInstances(VERSION);
-    assertFalse(allInstances.contains(instanceId), "should not have created the instance.");
+        () -> collectionService.createCollection(collectionId, VERSION),
+        "createCollection should throw if caller does not have write permission to the workspace resource in Sam");
+    List<UUID> allCollections = collectionService.listCollections(VERSION);
+    assertFalse(allCollections.contains(collectionId), "should not have created the collection.");
   }
 
   @Test
-  void testDeleteInstanceNoPermission() throws ApiException {
+  void testDeleteCollectionNoPermission() throws ApiException {
 
     // return the mock ResourcesApi from the mock SamClientFactory
     given(mockSamClientFactory.getResourcesApi(null)).willReturn(mockResourcesApi);
@@ -69,15 +69,15 @@ class InstanceServiceNoPermissionSamTest {
     given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
         .willReturn(false);
 
-    UUID instanceId = UUID.randomUUID();
-    // create the instance (directly in the db, bypassing Sam)
-    instanceDao.createSchema(instanceId);
+    UUID collectionId = UUID.randomUUID();
+    // create the collection (directly in the db, bypassing Sam)
+    collectionDao.createSchema(collectionId);
 
     assertThrows(
         AuthorizationException.class,
-        () -> instanceService.deleteInstance(instanceId, VERSION),
-        "deleteInstance should throw if caller does not have permission to delete wds-instance resource in Sam");
-    List<UUID> allInstances = instanceService.listInstances(VERSION);
-    assertTrue(allInstances.contains(instanceId), "should not have deleted the instance.");
+        () -> collectionService.deleteCollection(collectionId, VERSION),
+        "deleteCollection should throw if caller does not have delete permission to the workspace resource in Sam");
+    List<UUID> allCollections = collectionService.listCollections(VERSION);
+    assertTrue(allCollections.contains(collectionId), "should not have deleted the collection.");
   }
 }

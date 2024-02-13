@@ -2,7 +2,7 @@ package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.RELATIONS_ID;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.RELATIONS_NAME;
-import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_INSTANCE;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.mockito.Mockito.mock;
@@ -148,7 +148,7 @@ public class PfbTestUtils {
     return dataFileStream;
   }
 
-  public static JobExecutionContext stubJobContext(UUID jobId, Resource resource, UUID instanceId)
+  public static JobExecutionContext stubJobContext(UUID jobId, Resource resource, UUID collectionId)
       throws IOException {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
     when(mockContext.getMergedJobDataMap())
@@ -159,8 +159,8 @@ public class PfbTestUtils {
                     "expectedToken",
                     ARG_URL,
                     resource.getURL().toString(),
-                    ARG_INSTANCE,
-                    instanceId.toString())));
+                    ARG_COLLECTION,
+                    collectionId.toString())));
 
     JobDetailImpl jobDetail = new JobDetailImpl();
     jobDetail.setKey(new JobKey(jobId.toString(), "bar"));

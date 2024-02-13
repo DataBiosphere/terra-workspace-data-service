@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.retry.RetryableApi;
-import org.databiosphere.workspacedataservice.service.InstanceService;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
@@ -37,12 +37,12 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @RestController
 public class RecordController {
 
-  private final InstanceService instanceService;
+  private final CollectionService collectionService;
   private final RecordOrchestratorService recordOrchestratorService;
 
   public RecordController(
-      InstanceService instanceService, RecordOrchestratorService recordOrchestratorService) {
-    this.instanceService = instanceService;
+      CollectionService collectionService, RecordOrchestratorService recordOrchestratorService) {
+    this.collectionService = collectionService;
     this.recordOrchestratorService = recordOrchestratorService;
   }
 
@@ -127,21 +127,21 @@ public class RecordController {
   @GetMapping("/instances/{version}")
   @RetryableApi
   public ResponseEntity<List<UUID>> listInstances(@PathVariable("version") String version) {
-    List<UUID> schemaList = instanceService.listInstances(version);
+    List<UUID> schemaList = collectionService.listCollections(version);
     return new ResponseEntity<>(schemaList, HttpStatus.OK);
   }
 
   @PostMapping("/instances/{version}/{instanceId}")
   public ResponseEntity<String> createInstance(
       @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {
-    instanceService.createInstance(instanceId, version);
+    collectionService.createCollection(instanceId, version);
     return new ResponseEntity<>(HttpStatus.CREATED);
   }
 
   @DeleteMapping("/instances/{version}/{instanceId}")
   public ResponseEntity<String> deleteInstance(
       @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {
-    instanceService.deleteInstance(instanceId, version);
+    collectionService.deleteCollection(instanceId, version);
     return new ResponseEntity<>(HttpStatus.OK);
   }
 

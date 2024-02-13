@@ -53,9 +53,9 @@ class RecordDaoTest {
   private static final String PRIMARY_KEY = "row_id";
   @Autowired RecordDao recordDao;
 
-  @Autowired InstanceDao instanceDao;
+  @Autowired CollectionDao collectionDao;
 
-  UUID instanceId;
+  UUID collectionId;
   RecordType recordType;
 
   @Autowired TestDao testDao;
@@ -73,63 +73,63 @@ class RecordDaoTest {
 
   @BeforeEach
   void setUp() {
-    instanceId = UUID.randomUUID();
+    collectionId = UUID.randomUUID();
     recordType = RecordType.valueOf("testRecordType");
 
-    instanceDao.createSchema(instanceId);
+    collectionDao.createSchema(collectionId);
     recordDao.createRecordType(
-        instanceId, emptyMap(), recordType, RelationCollection.empty(), PRIMARY_KEY);
+        collectionId, emptyMap(), recordType, RelationCollection.empty(), PRIMARY_KEY);
   }
 
   @AfterEach
   void tearDown() {
-    instanceDao.dropSchema(instanceId);
+    collectionDao.dropSchema(collectionId);
   }
 
   /**
    * This test is somewhat fuzzy. Because we use a persistent db for our unit tests, and because
-   * other tests in this codebase don't properly clean up their instances and/or human users don't
-   * clean up their instances, we can't effectively test the exact value that should be returned
-   * from list-instances. But we can test that the return value changes in the ways we expect when
-   * we create/delete instances.
+   * other tests in this codebase don't properly clean up their collections and/or human users don't
+   * clean up their collections, we can't effectively test the exact value that should be returned
+   * from list-collections. But we can test that the return value changes in the ways we expect when
+   * we create/delete collections.
    */
   @Test
-  void listInstances() {
-    // get the list of instances in this DB
-    List<UUID> actualInitialSchemas = instanceDao.listInstanceSchemas();
+  void listCollections() {
+    // get the list of collections in this DB
+    List<UUID> actualInitialSchemas = collectionDao.listCollectionSchemas();
 
     // generate some new UUIDs
-    List<UUID> someInstancesToCreate =
+    List<UUID> someCollectionsToCreate =
         IntStream.range(0, 5).mapToObj(i -> UUID.randomUUID()).toList();
 
-    // check that the new UUIDs do not exist in our instances list yet.
-    someInstancesToCreate.forEach(
+    // check that the new UUIDs do not exist in our collections list yet.
+    someCollectionsToCreate.forEach(
         inst ->
             assertFalse(
                 actualInitialSchemas.contains(inst),
                 "initial schema list should not contain brand new UUIDs"));
 
-    // create the instances
-    someInstancesToCreate.forEach(inst -> instanceDao.createSchema(inst));
+    // create the collections
+    someCollectionsToCreate.forEach(inst -> collectionDao.createSchema(inst));
 
-    // get the list of instances again
-    List<UUID> actualSchemasAfterCreation = instanceDao.listInstanceSchemas();
+    // get the list of collections again
+    List<UUID> actualSchemasAfterCreation = collectionDao.listCollectionSchemas();
 
-    // check that the new UUIDs do exist in our instances list.
-    someInstancesToCreate.forEach(
+    // check that the new UUIDs do exist in our collections list.
+    someCollectionsToCreate.forEach(
         inst ->
             assertTrue(
                 actualSchemasAfterCreation.contains(inst),
                 "schema list after creation step should contain the new UUIDs"));
 
-    // delete the new instances
-    someInstancesToCreate.forEach(inst -> instanceDao.dropSchema(inst));
+    // delete the new collections
+    someCollectionsToCreate.forEach(inst -> collectionDao.dropSchema(inst));
 
-    // get the list of instances again
-    List<UUID> actualSchemasAfterDeletion = instanceDao.listInstanceSchemas();
+    // get the list of collections again
+    List<UUID> actualSchemasAfterDeletion = collectionDao.listCollectionSchemas();
 
-    // check that the new UUIDs do not exist in our instances list, now that we've deleted them
-    someInstancesToCreate.forEach(
+    // check that the new UUIDs do not exist in our collections list, now that we've deleted them
+    someCollectionsToCreate.forEach(
         inst ->
             assertFalse(
                 actualSchemasAfterDeletion.contains(inst),
@@ -140,12 +140,12 @@ class RecordDaoTest {
   }
 
   @Test
-  void listNonUuidInstances() {
-    List<UUID> initialInstances = instanceDao.listInstanceSchemas();
+  void listNonUuidCollections() {
+    List<UUID> initialCollections = collectionDao.listCollectionSchemas();
     namedTemplate.getJdbcTemplate().update("create schema if not exists notAUuid");
-    List<UUID> testableInstances = instanceDao.listInstanceSchemas(); // should not throw
+    List<UUID> testableCollections = collectionDao.listCollectionSchemas(); // should not throw
     // second call should filter out the non-uuid
-    assertIterableEquals(initialInstances, testableInstances);
+    assertIterableEquals(initialCollections, testableCollections);
     // cleanup
     namedTemplate.getJdbcTemplate().update("drop schema if exists notAUuid");
   }
@@ -157,14 +157,14 @@ class RecordDaoTest {
     String recordId = "testRecord";
     Record testRecord = new Record(recordId, recordType, RecordAttributes.empty());
     recordDao.batchUpsert(
-        instanceId, recordType, Collections.singletonList(testRecord), emptyMap());
+        collectionId, recordType, Collections.singletonList(testRecord), emptyMap());
 
     // make sure record is fetched
-    Record search = recordDao.getSingleRecord(instanceId, recordType, recordId).get();
+    Record search = recordDao.getSingleRecord(collectionId, recordType, recordId).get();
     assertEquals(testRecord, search);
 
     // nonexistent record should be null
-    Optional<Record> none = recordDao.getSingleRecord(instanceId, recordType, "noRecord");
+    Optional<Record> none = recordDao.getSingleRecord(collectionId, recordType, "noRecord");
     assertEquals(none, Optional.empty());
   }
 
@@ -182,19 +182,19 @@ class RecordDaoTest {
                 .putAttribute("Foo", "Foo"));
 
     recordDao.createRecordType(
-        instanceId,
+        collectionId,
         Map.of("FOO", STRING, "foo", STRING, "Foo", STRING),
         recordType,
         RelationCollection.empty(),
         "id");
     recordDao.batchUpsert(
-        instanceId,
+        collectionId,
         recordType,
         Collections.singletonList(upsertedRecord),
         Map.of("FOO", STRING, "foo", STRING, "Foo", STRING));
 
     // Act
-    List<Record> queryRes = recordDao.queryForRecords(recordType, 10, 0, "ASC", null, instanceId);
+    List<Record> queryRes = recordDao.queryForRecords(recordType, 10, 0, "ASC", null, collectionId);
 
     // Assert
     Record returnedRecord = queryRes.get(0);
@@ -210,14 +210,14 @@ class RecordDaoTest {
     String recordId = "1199";
     Record testRecord = new Record(recordId, funkyPk, RecordAttributes.empty());
     recordDao.createRecordType(
-        instanceId, Map.of("attr1", STRING), funkyPk, RelationCollection.empty(), sample_id);
+        collectionId, Map.of("attr1", STRING), funkyPk, RelationCollection.empty(), sample_id);
     recordDao.batchUpsert(
-        instanceId, funkyPk, Collections.singletonList(testRecord), emptyMap(), sample_id);
-    List<Record> queryRes = recordDao.queryForRecords(funkyPk, 10, 0, "ASC", null, instanceId);
+        collectionId, funkyPk, Collections.singletonList(testRecord), emptyMap(), sample_id);
+    List<Record> queryRes = recordDao.queryForRecords(funkyPk, 10, 0, "ASC", null, collectionId);
     assertEquals(1, queryRes.size());
-    assertTrue(recordDao.recordExists(instanceId, funkyPk, recordId));
-    assertTrue(recordDao.getSingleRecord(instanceId, funkyPk, recordId).isPresent());
-    assertTrue(recordDao.deleteSingleRecord(instanceId, funkyPk, recordId));
+    assertTrue(recordDao.recordExists(collectionId, funkyPk, recordId));
+    assertTrue(recordDao.getSingleRecord(collectionId, funkyPk, recordId).isPresent());
+    assertTrue(recordDao.deleteSingleRecord(collectionId, funkyPk, recordId));
   }
 
   @Test
@@ -228,12 +228,12 @@ class RecordDaoTest {
     Record testRecord = new Record(recordId, referencedRt, RecordAttributes.empty());
     Map<String, DataTypeMapping> schema = Map.of("attr1", RELATION);
     recordDao.createRecordType(
-        instanceId, schema, referencedRt, RelationCollection.empty(), sample_id);
+        collectionId, schema, referencedRt, RelationCollection.empty(), sample_id);
     recordDao.batchUpsert(
-        instanceId, referencedRt, Collections.singletonList(testRecord), emptyMap(), sample_id);
+        collectionId, referencedRt, Collections.singletonList(testRecord), emptyMap(), sample_id);
     RecordType referencer = RecordType.valueOf("referencer");
     recordDao.createRecordType(
-        instanceId,
+        collectionId,
         schema,
         referencer,
         new RelationCollection(
@@ -246,10 +246,10 @@ class RecordDaoTest {
             RecordAttributes.empty()
                 .putAttribute("attr1", RelationUtils.createRelationString(referencedRt, recordId)));
     recordDao.batchUpsert(
-        instanceId, referencer, Collections.singletonList(referencerRecord), schema, sample_id);
-    recordDao.batchDelete(instanceId, referencer, Collections.singletonList(referencerRecord));
-    recordDao.batchDelete(instanceId, referencedRt, Collections.singletonList(testRecord));
-    assertTrue(recordDao.getSingleRecord(instanceId, referencer, recordId).isEmpty());
+        collectionId, referencer, Collections.singletonList(referencerRecord), schema, sample_id);
+    recordDao.batchDelete(collectionId, referencer, Collections.singletonList(referencerRecord));
+    recordDao.batchDelete(collectionId, referencedRt, Collections.singletonList(testRecord));
+    assertTrue(recordDao.getSingleRecord(collectionId, referencer, recordId).isEmpty());
   }
 
   @Test
@@ -262,15 +262,15 @@ class RecordDaoTest {
             .map(i -> new Record("id" + i, referencedRt, RecordAttributes.empty()))
             .collect(Collectors.toList());
     recordDao.createRecordType(
-        instanceId, emptyMap(), referencedRt, RelationCollection.empty(), RECORD_ID);
-    recordDao.batchUpsert(instanceId, referencedRt, referencedRecords, emptyMap());
+        collectionId, emptyMap(), referencedRt, RelationCollection.empty(), RECORD_ID);
+    recordDao.batchUpsert(collectionId, referencedRt, referencedRecords, emptyMap());
 
     // Create records to do the referencing
     Map<String, DataTypeMapping> schema = Map.of("attr1", ARRAY_OF_RELATION);
     RecordType referencer = RecordType.valueOf("referencer");
     Relation arrayRel = new Relation("attr1", referencedRt);
     recordDao.createRecordType(
-        instanceId,
+        collectionId,
         schema,
         referencer,
         new RelationCollection(Collections.emptySet(), Collections.singleton(arrayRel)),
@@ -291,22 +291,23 @@ class RecordDaoTest {
                         RecordAttributes.empty().putAttribute("attr1", relArr)))
             .collect(Collectors.toList());
 
-    recordDao.batchUpsert(instanceId, referencer, referencingRecords, schema, RECORD_ID);
+    recordDao.batchUpsert(collectionId, referencer, referencingRecords, schema, RECORD_ID);
     // Normally insert into join is called from the service level, so when working directly with the
     // dao must call it manually
     for (Record rec : referencingRecords) {
       recordDao.insertIntoJoin(
-          instanceId,
+          collectionId,
           arrayRel,
           referencer,
           referencedRecords.stream().map(rel -> new RelationValue(rec, rel)).toList());
     }
 
     // Delete
-    recordDao.batchDelete(instanceId, referencer, referencingRecords);
+    recordDao.batchDelete(collectionId, referencer, referencingRecords);
     for (Record rec : referencingRecords) {
-      assertTrue(recordDao.getSingleRecord(instanceId, referencer, rec.getId()).isEmpty());
-      assertTrue(testDao.getRelationArrayValues(instanceId, "attr1", rec, referencedRt).isEmpty());
+      assertTrue(recordDao.getSingleRecord(collectionId, referencer, rec.getId()).isEmpty());
+      assertTrue(
+          testDao.getRelationArrayValues(collectionId, "attr1", rec, referencedRt).isEmpty());
     }
   }
 
@@ -315,9 +316,9 @@ class RecordDaoTest {
   void testGetRecordsWithRelations() {
     // Create two records of the same type, one with a value for a relation
     // attribute, the other without
-    recordDao.addColumn(instanceId, recordType, "foo", STRING);
-    recordDao.addColumn(instanceId, recordType, "relationAttr", RELATION);
-    recordDao.addForeignKeyForReference(recordType, recordType, instanceId, "relationAttr");
+    recordDao.addColumn(collectionId, recordType, "foo", STRING);
+    recordDao.addColumn(collectionId, recordType, "relationAttr", RELATION);
+    recordDao.addForeignKeyForReference(recordType, recordType, collectionId, "relationAttr");
 
     String refRecordId = "referencedRecord";
     Record referencedRecord =
@@ -331,23 +332,23 @@ class RecordDaoTest {
         new Record(recordId, recordType, new RecordAttributes(Map.of("relationAttr", reference)));
 
     recordDao.batchUpsert(
-        instanceId, recordType, Collections.singletonList(referencedRecord), emptyMap());
+        collectionId, recordType, Collections.singletonList(referencedRecord), emptyMap());
     recordDao.batchUpsert(
-        instanceId,
+        collectionId,
         recordType,
         List.of(referencedRecord, testRecord),
         Map.of("foo", STRING, "relationAttr", RELATION));
 
-    List<Relation> relations = recordDao.getRelationCols(instanceId, recordType);
+    List<Relation> relations = recordDao.getRelationCols(collectionId, recordType);
 
-    Record testRecordFetched = recordDao.getSingleRecord(instanceId, recordType, recordId).get();
+    Record testRecordFetched = recordDao.getSingleRecord(collectionId, recordType, recordId).get();
     // Relation attribute should be in the form of "terra-wds:/recordType/recordId"
     assertEquals(
         RelationUtils.createRelationString(recordType, refRecordId),
         testRecordFetched.getAttributeValue("relationAttr").toString());
 
     Record referencedRecordFetched =
-        recordDao.getSingleRecord(instanceId, recordType, refRecordId).get();
+        recordDao.getSingleRecord(collectionId, recordType, refRecordId).get();
     // Null relation attribute should be null
     assertNull(referencedRecordFetched.getAttributeValue("relationAttr"));
   }
@@ -355,15 +356,15 @@ class RecordDaoTest {
   @Test
   @Transactional
   void testCreateSingleRecord() throws InvalidRelationException {
-    recordDao.addColumn(instanceId, recordType, "foo", STRING);
+    recordDao.addColumn(collectionId, recordType, "foo", STRING);
 
     // create record with no attributes
     String recordId = "testRecord";
     Record testRecord = new Record(recordId, recordType, RecordAttributes.empty());
     recordDao.batchUpsert(
-        instanceId, recordType, Collections.singletonList(testRecord), emptyMap());
+        collectionId, recordType, Collections.singletonList(testRecord), emptyMap());
 
-    Record search = recordDao.getSingleRecord(instanceId, recordType, recordId).get();
+    Record search = recordDao.getSingleRecord(collectionId, recordType, recordId).get();
     assertEquals(testRecord, search, "Created record should match entered record");
 
     // create record with attributes
@@ -371,9 +372,9 @@ class RecordDaoTest {
     Record recordWithAttr =
         new Record(attrId, recordType, new RecordAttributes(Map.of("foo", "bar")));
     recordDao.batchUpsert(
-        instanceId, recordType, Collections.singletonList(recordWithAttr), Map.of("foo", STRING));
+        collectionId, recordType, Collections.singletonList(recordWithAttr), Map.of("foo", STRING));
 
-    search = recordDao.getSingleRecord(instanceId, recordType, attrId).get();
+    search = recordDao.getSingleRecord(collectionId, recordType, attrId).get();
     assertEquals(
         recordWithAttr, search, "Created record with attributes should match entered record");
   }
@@ -383,16 +384,16 @@ class RecordDaoTest {
   void testCreateRecordWithRelations() {
     // make sure columns are in recordType, as this will be taken care of before we
     // get to the dao
-    recordDao.addColumn(instanceId, recordType, "foo", STRING);
+    recordDao.addColumn(collectionId, recordType, "foo", STRING);
 
-    recordDao.addColumn(instanceId, recordType, "testRecordType", RELATION);
-    recordDao.addForeignKeyForReference(recordType, recordType, instanceId, "testRecordType");
+    recordDao.addColumn(collectionId, recordType, "testRecordType", RELATION);
+    recordDao.addForeignKeyForReference(recordType, recordType, collectionId, "testRecordType");
 
     String refRecordId = "referencedRecord";
     Record referencedRecord =
         new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
     recordDao.batchUpsert(
-        instanceId, recordType, Collections.singletonList(referencedRecord), emptyMap());
+        collectionId, recordType, Collections.singletonList(referencedRecord), emptyMap());
 
     String recordId = "testRecord";
     String reference =
@@ -401,22 +402,22 @@ class RecordDaoTest {
     Record testRecord =
         new Record(recordId, recordType, new RecordAttributes(Map.of("testRecordType", reference)));
     recordDao.batchUpsert(
-        instanceId,
+        collectionId,
         recordType,
         Collections.singletonList(testRecord),
         Map.of("foo", STRING, "testRecordType", RELATION));
 
-    Record search = recordDao.getSingleRecord(instanceId, recordType, recordId).get();
+    Record search = recordDao.getSingleRecord(collectionId, recordType, recordId).get();
     assertEquals(testRecord, search, "Created record with references should match entered record");
   }
 
   @Test
   @Transactional
   void testGetReferenceCols() {
-    recordDao.addColumn(instanceId, recordType, "referenceCol", STRING);
-    recordDao.addForeignKeyForReference(recordType, recordType, instanceId, "referenceCol");
+    recordDao.addColumn(collectionId, recordType, "referenceCol", STRING);
+    recordDao.addForeignKeyForReference(recordType, recordType, collectionId, "referenceCol");
 
-    List<Relation> refCols = recordDao.getRelationCols(instanceId, recordType);
+    List<Relation> refCols = recordDao.getRelationCols(collectionId, recordType);
     assertEquals(1, refCols.size(), "There should be one referenced column");
     assertEquals(
         "referenceCol",
@@ -431,12 +432,12 @@ class RecordDaoTest {
     String recordId = "testRecord";
     Record testRecord = new Record(recordId, recordType, RecordAttributes.empty());
     recordDao.batchUpsert(
-        instanceId, recordType, Collections.singletonList(testRecord), emptyMap());
+        collectionId, recordType, Collections.singletonList(testRecord), emptyMap());
 
-    recordDao.deleteSingleRecord(instanceId, recordType, "testRecord");
+    recordDao.deleteSingleRecord(collectionId, recordType, "testRecord");
 
     // make sure record not fetched
-    Optional<Record> none = recordDao.getSingleRecord(instanceId, recordType, "testRecord");
+    Optional<Record> none = recordDao.getSingleRecord(collectionId, recordType, "testRecord");
     assertEquals(Optional.empty(), none, "Deleted record should not be found");
   }
 
@@ -444,16 +445,16 @@ class RecordDaoTest {
   void testDeleteRelatedRecord() {
     // make sure columns are in recordType, as this will be taken care of before we
     // get to the dao
-    recordDao.addColumn(instanceId, recordType, "foo", STRING);
+    recordDao.addColumn(collectionId, recordType, "foo", STRING);
 
     recordDao.addColumn(
-        instanceId, recordType, "testRecordType", RELATION, RecordType.valueOf("testRecordType"));
+        collectionId, recordType, "testRecordType", RELATION, RecordType.valueOf("testRecordType"));
 
     String refRecordId = "referencedRecord";
     Record referencedRecord =
         new Record(refRecordId, recordType, new RecordAttributes(Map.of("foo", "bar")));
     recordDao.batchUpsert(
-        instanceId, recordType, Collections.singletonList(referencedRecord), emptyMap());
+        collectionId, recordType, Collections.singletonList(referencedRecord), emptyMap());
 
     String recordId = "testRecord";
     String reference =
@@ -462,7 +463,7 @@ class RecordDaoTest {
     Record testRecord =
         new Record(recordId, recordType, new RecordAttributes(Map.of("testRecordType", reference)));
     recordDao.batchUpsert(
-        instanceId,
+        collectionId,
         recordType,
         Collections.singletonList(testRecord),
         Map.of("foo", STRING, "testRecordType", RELATION));
@@ -470,11 +471,11 @@ class RecordDaoTest {
     // Should throw an error
     assertThrows(
         ResponseStatusException.class,
-        () -> recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord"),
+        () -> recordDao.deleteSingleRecord(collectionId, recordType, "referencedRecord"),
         "Exception should be thrown when attempting to delete related record");
 
     // Record should not have been deleted
-    assert (recordDao.getSingleRecord(instanceId, recordType, "referencedRecord").isPresent());
+    assert (recordDao.getSingleRecord(collectionId, recordType, "referencedRecord").isPresent());
   }
 
   @Test
@@ -486,14 +487,14 @@ class RecordDaoTest {
     Record referencedRecord2 =
         new Record(refRecordId2, recordType, new RecordAttributes(Map.of("foo", "bar2")));
     recordDao.batchUpsert(
-        instanceId, recordType, List.of(referencedRecord, referencedRecord2), emptyMap());
+        collectionId, recordType, List.of(referencedRecord, referencedRecord2), emptyMap());
 
     // Create record type
     RecordType relationArrayType = RecordType.valueOf("relationArrayType");
     Relation arrayRelation = new Relation("relArrAttr", recordType);
     Map<String, DataTypeMapping> schema = Map.of("relArrAttr", ARRAY_OF_RELATION);
     recordDao.createRecordType(
-        instanceId,
+        collectionId,
         schema,
         relationArrayType,
         new RelationCollection(Collections.emptySet(), Set.of(arrayRelation)),
@@ -508,12 +509,15 @@ class RecordDaoTest {
     Record recordWithRelationArray =
         new Record(relArrId, relationArrayType, new RecordAttributes(Map.of("relArrAttr", relArr)));
     recordDao.batchUpsert(
-        instanceId, relationArrayType, Collections.singletonList(recordWithRelationArray), schema);
+        collectionId,
+        relationArrayType,
+        Collections.singletonList(recordWithRelationArray),
+        schema);
 
     // Normally insert into join is called from the service level, so when working directly with the
     // dao must call it manually
     recordDao.insertIntoJoin(
-        instanceId,
+        collectionId,
         arrayRelation,
         relationArrayType,
         List.of(
@@ -523,11 +527,11 @@ class RecordDaoTest {
     // Should throw an error
     assertThrows(
         ResponseStatusException.class,
-        () -> recordDao.deleteSingleRecord(instanceId, recordType, "referencedRecord1"),
+        () -> recordDao.deleteSingleRecord(collectionId, recordType, "referencedRecord1"),
         "Exception should be thrown when attempting to delete related record");
 
     // Record should not have been deleted
-    assert (recordDao.getSingleRecord(instanceId, recordType, "referencedRecord1").isPresent());
+    assert (recordDao.getSingleRecord(collectionId, recordType, "referencedRecord1").isPresent());
   }
 
   @Test
@@ -539,14 +543,14 @@ class RecordDaoTest {
     Record referencedRecord2 =
         new Record(refRecordId2, recordType, new RecordAttributes(Map.of("foo", "bar2")));
     recordDao.batchUpsert(
-        instanceId, recordType, List.of(referencedRecord, referencedRecord2), emptyMap());
+        collectionId, recordType, List.of(referencedRecord, referencedRecord2), emptyMap());
 
     // Create record type
     RecordType relationArrayType = RecordType.valueOf("relationArrayType");
     Relation arrayRelation = new Relation("relArrAttr", recordType);
     Map<String, DataTypeMapping> schema = Map.of("relArrAttr", ARRAY_OF_RELATION);
     recordDao.createRecordType(
-        instanceId,
+        collectionId,
         schema,
         relationArrayType,
         new RelationCollection(Collections.emptySet(), Set.of(arrayRelation)),
@@ -561,41 +565,44 @@ class RecordDaoTest {
     Record recordWithRelationArray =
         new Record(relArrId, relationArrayType, new RecordAttributes(Map.of("relArrAttr", relArr)));
     recordDao.batchUpsert(
-        instanceId, relationArrayType, Collections.singletonList(recordWithRelationArray), schema);
+        collectionId,
+        relationArrayType,
+        Collections.singletonList(recordWithRelationArray),
+        schema);
 
     // Normally insert into join is called from the service level, so when working directly with the
     // dao must call it manually
     recordDao.insertIntoJoin(
-        instanceId,
+        collectionId,
         arrayRelation,
         relationArrayType,
         List.of(
             new RelationValue(recordWithRelationArray, referencedRecord),
             new RelationValue(recordWithRelationArray, referencedRecord2)));
 
-    recordDao.deleteSingleRecord(instanceId, relationArrayType, "recordWithRelationArr");
+    recordDao.deleteSingleRecord(collectionId, relationArrayType, "recordWithRelationArr");
 
     // Record should have been deleted
-    assert (recordDao.getSingleRecord(instanceId, recordType, "recordWithRelationArr").isEmpty());
+    assert (recordDao.getSingleRecord(collectionId, recordType, "recordWithRelationArr").isEmpty());
     // Check that values are removed from join table
     assertTrue(
         testDao
-            .getRelationArrayValues(instanceId, "relArrAttr", recordWithRelationArray, recordType)
+            .getRelationArrayValues(collectionId, "relArrAttr", recordWithRelationArray, recordType)
             .isEmpty());
   }
 
   @Test
   @Transactional
   void testGetAllRecordTypes() {
-    List<RecordType> typesList = recordDao.getAllRecordTypes(instanceId);
+    List<RecordType> typesList = recordDao.getAllRecordTypes(collectionId);
     assertEquals(1, typesList.size());
     assertTrue(typesList.contains(recordType));
 
     RecordType newRecordType = RecordType.valueOf("newRecordType");
     recordDao.createRecordType(
-        instanceId, emptyMap(), newRecordType, RelationCollection.empty(), RECORD_ID);
+        collectionId, emptyMap(), newRecordType, RelationCollection.empty(), RECORD_ID);
 
-    List<RecordType> newTypesList = recordDao.getAllRecordTypes(instanceId);
+    List<RecordType> newTypesList = recordDao.getAllRecordTypes(collectionId);
     assertEquals(2, newTypesList.size());
     assertTrue(newTypesList.contains(recordType));
     assertTrue(newTypesList.contains(newRecordType));
@@ -604,20 +611,20 @@ class RecordDaoTest {
   @Test
   @Transactional
   void testGetAllRecordTypesNoJoins() {
-    List<RecordType> typesList = recordDao.getAllRecordTypes(instanceId);
+    List<RecordType> typesList = recordDao.getAllRecordTypes(collectionId);
     assertEquals(1, typesList.size());
     assertTrue(typesList.contains(recordType));
 
     RecordType relationArrayType = RecordType.valueOf("relationArrayType");
     Relation arrayRelation = new Relation("relArrAttr", recordType);
     recordDao.createRecordType(
-        instanceId,
+        collectionId,
         Map.of("relArrAttr", ARRAY_OF_RELATION),
         relationArrayType,
         new RelationCollection(Collections.emptySet(), Set.of(arrayRelation)),
         RECORD_ID);
 
-    List<RecordType> newTypesList = recordDao.getAllRecordTypes(instanceId);
+    List<RecordType> newTypesList = recordDao.getAllRecordTypes(collectionId);
     assertEquals(2, newTypesList.size());
     assertTrue(newTypesList.contains(recordType));
     assertTrue(newTypesList.contains(relationArrayType));
@@ -627,15 +634,15 @@ class RecordDaoTest {
   @Transactional
   void testCountRecords() {
     // ensure we start with a count of 0 records
-    assertEquals(0, recordDao.countRecords(instanceId, recordType));
+    assertEquals(0, recordDao.countRecords(collectionId, recordType));
     // insert records and test the count after each insert
     for (int i = 0; i < 10; i++) {
       Record testRecord = new Record("record" + i, recordType, RecordAttributes.empty());
       recordDao.batchUpsert(
-          instanceId, recordType, Collections.singletonList(testRecord), emptyMap());
+          collectionId, recordType, Collections.singletonList(testRecord), emptyMap());
       assertEquals(
           i + 1,
-          recordDao.countRecords(instanceId, recordType),
+          recordDao.countRecords(collectionId, recordType),
           "after inserting " + (i + 1) + " records");
     }
   }
@@ -643,23 +650,23 @@ class RecordDaoTest {
   @Test
   @Transactional
   void testRecordExists() {
-    assertFalse(recordDao.recordExists(instanceId, recordType, "aRecord"));
+    assertFalse(recordDao.recordExists(collectionId, recordType, "aRecord"));
     recordDao.batchUpsert(
-        instanceId,
+        collectionId,
         recordType,
         Collections.singletonList(new Record("aRecord", recordType, RecordAttributes.empty())),
         emptyMap());
-    assertTrue(recordDao.recordExists(instanceId, recordType, "aRecord"));
+    assertTrue(recordDao.recordExists(collectionId, recordType, "aRecord"));
   }
 
   @Test
   @Transactional
   void testDeleteRecordType() {
     // make sure type already exists
-    assertTrue(recordDao.recordTypeExists(instanceId, recordType));
-    recordDao.deleteRecordType(instanceId, recordType);
+    assertTrue(recordDao.recordTypeExists(collectionId, recordType));
+    recordDao.deleteRecordType(collectionId, recordType);
     // make sure type no longer exists
-    assertFalse(recordDao.recordTypeExists(instanceId, recordType));
+    assertFalse(recordDao.recordTypeExists(collectionId, recordType));
   }
 
   @Test
@@ -667,21 +674,21 @@ class RecordDaoTest {
     RecordType recordTypeName = recordType;
     RecordType referencedType = RecordType.valueOf("referencedType");
     recordDao.createRecordType(
-        instanceId, emptyMap(), referencedType, RelationCollection.empty(), RECORD_ID);
+        collectionId, emptyMap(), referencedType, RelationCollection.empty(), RECORD_ID);
 
-    recordDao.addColumn(instanceId, recordTypeName, "relation", RELATION, referencedType);
+    recordDao.addColumn(collectionId, recordTypeName, "relation", RELATION, referencedType);
 
     String refRecordId = "referencedRecord";
     Record referencedRecord = new Record(refRecordId, referencedType, RecordAttributes.empty());
     recordDao.batchUpsert(
-        instanceId, referencedType, Collections.singletonList(referencedRecord), emptyMap());
+        collectionId, referencedType, Collections.singletonList(referencedRecord), emptyMap());
 
     String recordId = "testRecord";
     String reference = RelationUtils.createRelationString(referencedType, refRecordId);
     Record testRecord =
         new Record(recordId, recordType, new RecordAttributes(Map.of("relation", reference)));
     recordDao.batchUpsert(
-        instanceId,
+        collectionId,
         recordTypeName,
         Collections.singletonList(testRecord),
         Map.of("relation", RELATION));
@@ -689,7 +696,7 @@ class RecordDaoTest {
     // Should throw an error
     assertThrows(
         ResponseStatusException.class,
-        () -> recordDao.deleteRecordType(instanceId, referencedType),
+        () -> recordDao.deleteRecordType(collectionId, referencedType),
         "Exception should be thrown when attempting to delete record type with relation");
   }
 
@@ -703,14 +710,14 @@ class RecordDaoTest {
     Record referencedRecord2 =
         new Record(refRecordId2, recordType, new RecordAttributes(Map.of("foo", "bar2")));
     recordDao.batchUpsert(
-        instanceId, recordType, List.of(referencedRecord, referencedRecord2), emptyMap());
+        collectionId, recordType, List.of(referencedRecord, referencedRecord2), emptyMap());
 
     // Create referencing record type
     RecordType relationArrayType = RecordType.valueOf("relationArrayType");
     Relation arrayRelation = new Relation("relArrAttr", recordType);
     Map<String, DataTypeMapping> schema = Map.of("relArrAttr", ARRAY_OF_RELATION);
     recordDao.createRecordType(
-        instanceId,
+        collectionId,
         schema,
         relationArrayType,
         new RelationCollection(Collections.emptySet(), Set.of(arrayRelation)),
@@ -725,12 +732,15 @@ class RecordDaoTest {
     Record recordWithRelationArray =
         new Record(relArrId, relationArrayType, new RecordAttributes(Map.of("relArrAttr", relArr)));
     recordDao.batchUpsert(
-        instanceId, relationArrayType, Collections.singletonList(recordWithRelationArray), schema);
+        collectionId,
+        relationArrayType,
+        Collections.singletonList(recordWithRelationArray),
+        schema);
 
     // Normally insert into join is called from the service level, so when working directly with the
     // dao must call it manually
     recordDao.insertIntoJoin(
-        instanceId,
+        collectionId,
         arrayRelation,
         relationArrayType,
         List.of(
@@ -738,13 +748,13 @@ class RecordDaoTest {
             new RelationValue(recordWithRelationArray, referencedRecord2)));
 
     // Delete record type
-    recordDao.deleteRecordType(instanceId, relationArrayType);
+    recordDao.deleteRecordType(collectionId, relationArrayType);
 
     // Record table should have been deleted
-    assertFalse(recordDao.recordTypeExists(instanceId, relationArrayType));
+    assertFalse(recordDao.recordTypeExists(collectionId, relationArrayType));
 
     // check that join table is gone as well
-    assertFalse(testDao.joinTableExists(instanceId, "relArrAttr", relationArrayType));
+    assertFalse(testDao.joinTableExists(collectionId, "relArrAttr", relationArrayType));
   }
 
   @Test
@@ -753,18 +763,18 @@ class RecordDaoTest {
     // Arrange
     RecordType recordTypeWithAttributes = RecordType.valueOf("withAttributes");
     recordDao.createRecordType(
-        instanceId,
+        collectionId,
         Map.of("foo", STRING, "bar", STRING),
         recordTypeWithAttributes,
         RelationCollection.empty(),
         PRIMARY_KEY);
 
     // Act
-    recordDao.renameAttribute(instanceId, recordTypeWithAttributes, "bar", "baz");
+    recordDao.renameAttribute(collectionId, recordTypeWithAttributes, "bar", "baz");
 
     // Assert
     Set<String> attributeNames =
-        Set.copyOf(recordDao.getAllAttributeNames(instanceId, recordTypeWithAttributes));
+        Set.copyOf(recordDao.getAllAttributeNames(collectionId, recordTypeWithAttributes));
     assertEquals(Set.of(PRIMARY_KEY, "foo", "baz"), attributeNames);
   }
 
@@ -975,18 +985,18 @@ class RecordDaoTest {
     // Arrange
     RecordType recordTypeWithAttributes = RecordType.valueOf("withAttributes");
     recordDao.createRecordType(
-        instanceId,
+        collectionId,
         Map.of("attr1", STRING, "attr2", STRING),
         recordTypeWithAttributes,
         RelationCollection.empty(),
         PRIMARY_KEY);
 
     // Act
-    recordDao.deleteAttribute(instanceId, recordTypeWithAttributes, "attr2");
+    recordDao.deleteAttribute(collectionId, recordTypeWithAttributes, "attr2");
 
     // Assert
     Set<String> attributeNames =
-        Set.copyOf(recordDao.getAllAttributeNames(instanceId, recordTypeWithAttributes));
+        Set.copyOf(recordDao.getAllAttributeNames(collectionId, recordTypeWithAttributes));
     assertEquals(Set.of(PRIMARY_KEY, "attr1"), attributeNames);
   }
 
@@ -995,14 +1005,14 @@ class RecordDaoTest {
   void testCreateRelationJoinTable() {
     RecordType secondRecordType = RecordType.valueOf("secondRecordType");
     recordDao.createRecordType(
-        instanceId, emptyMap(), secondRecordType, RelationCollection.empty(), RECORD_ID);
+        collectionId, emptyMap(), secondRecordType, RelationCollection.empty(), RECORD_ID);
 
-    recordDao.createRelationJoinTable(instanceId, "refArray", secondRecordType, recordType);
+    recordDao.createRelationJoinTable(collectionId, "refArray", secondRecordType, recordType);
 
-    List<Relation> relationArrays = recordDao.getRelationArrayCols(instanceId, secondRecordType);
+    List<Relation> relationArrays = recordDao.getRelationArrayCols(collectionId, secondRecordType);
     assertEquals(1, relationArrays.size());
     assertTrue(relationArrays.contains(new Relation("refArray", recordType)));
-    assertTrue(testDao.joinTableExists(instanceId, "refArray", secondRecordType));
+    assertTrue(testDao.joinTableExists(collectionId, "refArray", secondRecordType));
   }
 
   @Test
@@ -1012,24 +1022,24 @@ class RecordDaoTest {
     Relation singleRelation = new Relation("refAttr", recordType);
     Relation arrayRelation = new Relation("relArrAttr", recordType);
     recordDao.createRecordType(
-        instanceId,
+        collectionId,
         Map.of("stringAttr", STRING, "refAttr", RELATION, "relArrAttr", ARRAY_OF_RELATION),
         relationarrayType,
         new RelationCollection(Set.of(singleRelation), Set.of(arrayRelation)),
         RECORD_ID);
 
     Map<String, DataTypeMapping> schema =
-        recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, relationarrayType);
+        recordDao.getExistingTableSchemaLessPrimaryKey(collectionId, relationarrayType);
     assertEquals(3, schema.size());
     assertEquals(STRING, schema.get("stringAttr"));
     assertEquals(RELATION, schema.get("refAttr"));
     assertEquals(ARRAY_OF_RELATION, schema.get("relArrAttr"));
-    List<Relation> relationCols = recordDao.getRelationCols(instanceId, relationarrayType);
+    List<Relation> relationCols = recordDao.getRelationCols(collectionId, relationarrayType);
     assertEquals(List.of(singleRelation), relationCols);
     List<Relation> relationArrayCols =
-        recordDao.getRelationArrayCols(instanceId, relationarrayType);
+        recordDao.getRelationArrayCols(collectionId, relationarrayType);
     assertEquals(List.of(arrayRelation), relationArrayCols);
-    assertTrue(testDao.joinTableExists(instanceId, "relArrAttr", relationarrayType));
+    assertTrue(testDao.joinTableExists(collectionId, "relArrAttr", relationarrayType));
   }
 
   @Test
@@ -1043,7 +1053,7 @@ class RecordDaoTest {
     Record referencedRecord2 =
         new Record(refRecordId2, recordType, new RecordAttributes(Map.of("foo", "bar2")));
     recordDao.batchUpsert(
-        instanceId, recordType, List.of(referencedRecord, referencedRecord2), emptyMap());
+        collectionId, recordType, List.of(referencedRecord, referencedRecord2), emptyMap());
 
     // Create record type
     RecordType relationArrayType = RecordType.valueOf("relationArrayType");
@@ -1051,7 +1061,7 @@ class RecordDaoTest {
     Map<String, DataTypeMapping> schema =
         Map.of("stringAttr", STRING, "refAttr", RELATION, "relArrAttr", ARRAY_OF_RELATION);
     recordDao.createRecordType(
-        instanceId,
+        collectionId,
         schema,
         relationArrayType,
         new RelationCollection(Collections.emptySet(), Set.of(arrayRelation)),
@@ -1066,15 +1076,18 @@ class RecordDaoTest {
     Record recordWithRelationArray =
         new Record(relArrId, relationArrayType, new RecordAttributes(Map.of("relArrAttr", relArr)));
     recordDao.batchUpsert(
-        instanceId, relationArrayType, Collections.singletonList(recordWithRelationArray), schema);
+        collectionId,
+        relationArrayType,
+        Collections.singletonList(recordWithRelationArray),
+        schema);
 
     Map<String, DataTypeMapping> createdSchema =
-        recordDao.getExistingTableSchemaLessPrimaryKey(instanceId, relationArrayType);
+        recordDao.getExistingTableSchemaLessPrimaryKey(collectionId, relationArrayType);
     assertEquals(3, createdSchema.size());
     List<Relation> relationArrayCols =
-        recordDao.getRelationArrayCols(instanceId, relationArrayType);
+        recordDao.getRelationArrayCols(collectionId, relationArrayType);
     assertEquals(List.of(arrayRelation), relationArrayCols);
-    Record record = recordDao.getSingleRecord(instanceId, relationArrayType, relArrId).get();
+    Record record = recordDao.getSingleRecord(collectionId, relationArrayType, relArrId).get();
     assertNotNull(record);
     String[] actualAttrValue =
         assertInstanceOf(String[].class, record.getAttributeValue("relArrAttr"));
@@ -1085,7 +1098,7 @@ class RecordDaoTest {
     assertDoesNotThrow(
         () ->
             recordDao.insertIntoJoin(
-                instanceId,
+                collectionId,
                 arrayRelation,
                 relationArrayType,
                 List.of(
@@ -1093,7 +1106,7 @@ class RecordDaoTest {
                     new RelationValue(record, referencedRecord2))));
     assertEquals(
         List.of(refRecordId, refRecordId2),
-        testDao.getRelationArrayValues(instanceId, "relArrAttr", record, recordType));
+        testDao.getRelationArrayValues(collectionId, "relArrAttr", record, recordType));
   }
 
   @Test
@@ -1104,13 +1117,13 @@ class RecordDaoTest {
     Relation arrayRelation1 = new Relation("relArr1", recordType);
     Relation arrayRelation2 = new Relation("relArr2", recordType);
     recordDao.createRecordType(
-        instanceId,
+        collectionId,
         Map.of("relArr1", ARRAY_OF_RELATION, "relArr2", ARRAY_OF_RELATION),
         relationarrayType,
         new RelationCollection(Collections.emptySet(), Set.of(arrayRelation1, arrayRelation2)),
         RECORD_ID);
 
-    List<Relation> cols = recordDao.getRelationArrayCols(instanceId, relationarrayType);
+    List<Relation> cols = recordDao.getRelationArrayCols(collectionId, relationarrayType);
     assertEquals(2, cols.size());
     assertTrue(cols.contains(arrayRelation1));
     assertTrue(cols.contains(arrayRelation2));
@@ -1127,24 +1140,24 @@ class RecordDaoTest {
     String fromRecordId3 = "fromRecord3";
     Record fromRecord3 = new Record(fromRecordId3, recordType, RecordAttributes.empty());
     recordDao.batchUpsert(
-        instanceId, recordType, List.of(fromRecord, fromRecord2, fromRecord3), emptyMap());
+        collectionId, recordType, List.of(fromRecord, fromRecord2, fromRecord3), emptyMap());
 
     RecordType toType = RecordType.valueOf("toType");
     recordDao.createRecordType(
-        instanceId, emptyMap(), toType, RelationCollection.empty(), RECORD_ID);
+        collectionId, emptyMap(), toType, RelationCollection.empty(), RECORD_ID);
     String toRecordId = "toRecord1";
     Record toRecord = new Record(toRecordId, toType, RecordAttributes.empty());
     String toRecordId2 = "toRecord2";
     Record toRecord2 = new Record(toRecordId2, toType, RecordAttributes.empty());
-    recordDao.batchUpsert(instanceId, toType, List.of(toRecord, toRecord2), emptyMap());
+    recordDao.batchUpsert(collectionId, toType, List.of(toRecord, toRecord2), emptyMap());
 
     // create join table
-    recordDao.createRelationJoinTable(instanceId, "referenceArray", recordType, toType);
+    recordDao.createRelationJoinTable(collectionId, "referenceArray", recordType, toType);
 
     // insert into join table
     Relation rel = new Relation("referenceArray", toType);
     recordDao.insertIntoJoin(
-        instanceId,
+        collectionId,
         rel,
         recordType,
         List.of(
@@ -1154,25 +1167,25 @@ class RecordDaoTest {
 
     // Check that values are in join table
     List<String> joinVals1 =
-        testDao.getRelationArrayValues(instanceId, "referenceArray", fromRecord, toType);
+        testDao.getRelationArrayValues(collectionId, "referenceArray", fromRecord, toType);
     assertIterableEquals(List.of(toRecordId, toRecordId2), joinVals1);
     List<String> joinVals2 =
-        testDao.getRelationArrayValues(instanceId, "referenceArray", fromRecord2, toType);
+        testDao.getRelationArrayValues(collectionId, "referenceArray", fromRecord2, toType);
     assertIterableEquals(List.of(toRecordId, toRecordId2), joinVals2);
     List<String> joinVals3 =
-        testDao.getRelationArrayValues(instanceId, "referenceArray", fromRecord3, toType);
+        testDao.getRelationArrayValues(collectionId, "referenceArray", fromRecord3, toType);
     assertIterableEquals(List.of(toRecordId, toRecordId2), joinVals3);
 
     // remove from join table
-    recordDao.removeFromJoin(instanceId, rel, recordType, List.of(fromRecordId, fromRecordId3));
+    recordDao.removeFromJoin(collectionId, rel, recordType, List.of(fromRecordId, fromRecordId3));
 
     // Make sure values have been removed
-    joinVals1 = testDao.getRelationArrayValues(instanceId, "referenceArray", fromRecord, toType);
+    joinVals1 = testDao.getRelationArrayValues(collectionId, "referenceArray", fromRecord, toType);
     assert (joinVals1.isEmpty());
-    joinVals3 = testDao.getRelationArrayValues(instanceId, "referenceArray", fromRecord3, toType);
+    joinVals3 = testDao.getRelationArrayValues(collectionId, "referenceArray", fromRecord3, toType);
     assert (joinVals3.isEmpty());
     // But not other values
-    joinVals2 = testDao.getRelationArrayValues(instanceId, "referenceArray", fromRecord2, toType);
+    joinVals2 = testDao.getRelationArrayValues(collectionId, "referenceArray", fromRecord2, toType);
     assertIterableEquals(List.of(toRecordId, toRecordId2), joinVals2);
   }
 

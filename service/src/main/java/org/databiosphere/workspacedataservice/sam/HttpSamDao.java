@@ -28,35 +28,36 @@ public class HttpSamDao implements SamDao {
   }
 
   /**
-   * Check if the current user has permission to create a "wds-instance" resource in Sam.
-   * Implemented as a check for write permission on the workspace which will contain this instance.
+   * Check if the current user has permission to create a collection by writing to the "workspace"
+   * resource in Sam. Implemented as a check for write permission on the workspace which will
+   * contain this collection.
    *
    * @return true if the user has permission
    */
   @Override
-  public boolean hasCreateInstancePermission() {
-    return hasCreateInstancePermission(null);
+  public boolean hasCreateCollectionPermission() {
+    return hasCreateCollectionPermission(null);
   }
 
   @Override
-  public boolean hasCreateInstancePermission(String token) {
-    return hasPermission(ACTION_WRITE, "Sam.hasCreateInstancePermission", token);
+  public boolean hasCreateCollectionPermission(String token) {
+    return hasPermission(ACTION_WRITE, "Sam.hasCreateCollectionPermission", token);
   }
 
   /**
-   * Check if the current user has permission to delete a "wds-instance" resource from Sam.
-   * Implemented as a check for delete permission on the resource.
+   * Check if the current user has permission to delete a collection from the "workspace" resource
+   * in Sam. Implemented as a check for delete permission on the resource.
    *
    * @return true if the user has permission
    */
   @Override
-  public boolean hasDeleteInstancePermission() {
-    return hasDeleteInstancePermission(null);
+  public boolean hasDeleteCollectionPermission() {
+    return hasDeleteCollectionPermission(null);
   }
 
   @Override
-  public boolean hasDeleteInstancePermission(String token) {
-    return hasPermission(ACTION_DELETE, "Sam.hasDeleteInstancePermission", token);
+  public boolean hasDeleteCollectionPermission(String token) {
+    return hasPermission(ACTION_DELETE, "Sam.hasDeleteCollectionPermission", token);
   }
 
   // helper implementation for permission checks
@@ -75,19 +76,19 @@ public class HttpSamDao implements SamDao {
   }
 
   /**
-   * Check if the current user has permission to write to a "wds-instance" resource from Sam.
+   * Check if the current user has permission to write to the "workspace" resource from Sam.
    * Implemented as a check for write permission on the resource.
    *
    * @return true if the user has permission
    */
   @Override
-  public boolean hasWriteInstancePermission() {
-    return hasWriteInstancePermission(null);
+  public boolean hasWriteCollectionPermission() {
+    return hasWriteCollectionPermission(null);
   }
 
   @Override
-  public boolean hasWriteInstancePermission(String token) {
-    return hasPermission(ACTION_WRITE, "Sam.hasWriteInstancePermission", token);
+  public boolean hasWriteCollectionPermission(String token) {
+    return hasPermission(ACTION_WRITE, "Sam.hasWriteCollectionPermission", token);
   }
 
   /**
@@ -96,23 +97,24 @@ public class HttpSamDao implements SamDao {
    * @return true if the user has permission
    */
   @Override
-  public boolean hasReadInstancePermission(String instanceId) {
-    return hasReadInstancePermission(instanceId, null);
+  public boolean hasReadCollectionPermission(String collectionId) {
+    return hasReadCollectionPermission(collectionId, null);
   }
 
   @Override
-  public boolean hasReadInstancePermission(String instanceId, String token) {
+  public boolean hasReadCollectionPermission(String collectionId, String token) {
     LOGGER.debug(
         "Checking Sam permission for {}/{}/{} ...",
         SamDao.RESOURCE_NAME_WORKSPACE,
-        instanceId,
+        collectionId,
         ACTION_READ);
     RestCall<Boolean> samFunction =
         () ->
             samClientFactory
                 .getResourcesApi(token)
-                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, instanceId, ACTION_READ);
-    return restClientRetry.withRetryAndErrorHandling(samFunction, "Sam.hasReadInstancePermission");
+                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, collectionId, ACTION_READ);
+    return restClientRetry.withRetryAndErrorHandling(
+        samFunction, "Sam.hasReadCollectionPermission");
   }
 
   // this cache uses token.hashCode as its key. This prevents any logging such as

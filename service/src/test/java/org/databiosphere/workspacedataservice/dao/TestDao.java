@@ -18,28 +18,28 @@ public class TestDao {
   @Autowired RecordDao recordDao;
 
   public boolean joinTableExists(
-      UUID instanceId, String tableName, RecordType referringRecordType) {
+      UUID collectionId, String tableName, RecordType referringRecordType) {
     // This method gives us the name in quotes, need to be able to strip them off
     String joinTableName = recordDao.getJoinTableName(tableName, referringRecordType);
     return Boolean.TRUE.equals(
         namedTemplate.queryForObject(
-            "select exists(select from pg_tables where schemaname = :instanceId AND tablename  = :joinName)",
+            "select exists(select from pg_tables where schemaname = :collectionId AND tablename  = :joinName)",
             new MapSqlParameterSource(
                 Map.of(
-                    "instanceId",
-                    instanceId.toString(),
+                    "collectionId",
+                    collectionId.toString(),
                     "joinName",
                     joinTableName.substring(1, joinTableName.length() - 1))),
             Boolean.class));
   }
 
   public List<String> getRelationArrayValues(
-      UUID instanceId, String columnName, Record record, RecordType toRecordType) {
+      UUID collectionId, String columnName, Record record, RecordType toRecordType) {
     return namedTemplate.queryForList(
         "select \""
             + recordDao.getToColumnName(toRecordType)
             + "\" from "
-            + recordDao.getQualifiedJoinTableName(instanceId, columnName, record.getRecordType())
+            + recordDao.getQualifiedJoinTableName(collectionId, columnName, record.getRecordType())
             + " where "
             + "\""
             + recordDao.getFromColumnName(record.getRecordType())

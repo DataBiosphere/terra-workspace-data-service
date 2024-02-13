@@ -57,20 +57,20 @@ class TsvDownloadTest {
   @Autowired private RecordController recordController;
   @Autowired private RecordDao recordDao;
   private String version;
-  private UUID instanceId;
+  private UUID collectionId;
 
   @Autowired private ObjectReader tsvReader;
 
   @BeforeEach
   void init() {
     version = "v0.2";
-    instanceId = UUID.randomUUID();
-    recordController.createInstance(instanceId, version);
+    collectionId = UUID.randomUUID();
+    recordController.createInstance(collectionId, version);
   }
 
   @AfterEach
   void tearDown() {
-    recordController.deleteInstance(instanceId, version);
+    recordController.deleteInstance(collectionId, version);
   }
 
   @ParameterizedTest(name = "PK name {0} should be honored")
@@ -94,7 +94,7 @@ class TsvDownloadTest {
                 .getBytes());
     String recordType = primaryKeyName + "_rt";
     recordController.tsvUpload(
-        instanceId, version, RecordType.valueOf(recordType), Optional.of(primaryKeyName), file);
+        collectionId, version, RecordType.valueOf(recordType), Optional.of(primaryKeyName), file);
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<Resource> stream =
         restTemplate.exchange(
@@ -102,7 +102,7 @@ class TsvDownloadTest {
             HttpMethod.GET,
             new HttpEntity<>(headers),
             Resource.class,
-            instanceId,
+            collectionId,
             version,
             recordType);
     InputStream inputStream = Objects.requireNonNull(stream.getBody()).getInputStream();
@@ -123,7 +123,7 @@ class TsvDownloadTest {
 
     InputStream is = TsvDownloadTest.class.getResourceAsStream("/batch-write/write-tsv-data.json");
     ResponseEntity<BatchResponse> response =
-        recordController.streamingWrite(instanceId, version, recordType, Optional.empty(), is);
+        recordController.streamingWrite(collectionId, version, recordType, Optional.empty(), is);
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(Objects.requireNonNull(response.getBody()).recordsModified()).isEqualTo(2);
     HttpHeaders headers = new HttpHeaders();
@@ -133,7 +133,7 @@ class TsvDownloadTest {
             HttpMethod.GET,
             new HttpEntity<>(headers),
             Resource.class,
-            instanceId,
+            collectionId,
             version,
             recordType);
     InputStream inputStream = Objects.requireNonNull(stream.getBody()).getInputStream();
@@ -221,7 +221,7 @@ class TsvDownloadTest {
     RecordRequest targetRequest = new RecordRequest(new RecordAttributes(Map.of()));
     ResponseEntity<RecordResponse> targetResponse =
         recordController.upsertSingleRecord(
-            instanceId,
+            collectionId,
             version,
             RecordType.valueOf("target"),
             "1",
@@ -234,12 +234,12 @@ class TsvDownloadTest {
     RecordRequest recordRequest = new RecordRequest(uploadAttrs);
     ResponseEntity<RecordResponse> response =
         recordController.upsertSingleRecord(
-            instanceId, version, recordType, recordId, Optional.empty(), recordRequest);
+            collectionId, version, recordType, recordId, Optional.empty(), recordRequest);
     assertThat(response.getStatusCodeValue()).isEqualTo(201);
 
     // verify the backend datatype
     Map<String, DataTypeMapping> tableSchema =
-        recordDao.getExistingTableSchema(instanceId, recordType);
+        recordDao.getExistingTableSchema(collectionId, recordType);
     assertThat(tableSchema.keySet()).contains(attrName);
     DataTypeMapping actualDataType = tableSchema.get(attrName);
     assertThat(actualDataType).isEqualTo(expectedDataType);
@@ -252,7 +252,7 @@ class TsvDownloadTest {
             HttpMethod.GET,
             new HttpEntity<>(headers),
             Resource.class,
-            instanceId,
+            collectionId,
             version,
             recordType);
 
@@ -285,7 +285,7 @@ class TsvDownloadTest {
     RecordRequest targetRequest = new RecordRequest(new RecordAttributes(Map.of()));
     ResponseEntity<RecordResponse> targetResponse =
         recordController.upsertSingleRecord(
-            instanceId,
+            collectionId,
             version,
             RecordType.valueOf("target"),
             "1",
@@ -298,12 +298,12 @@ class TsvDownloadTest {
     RecordRequest recordRequest = new RecordRequest(uploadAttrs);
     ResponseEntity<RecordResponse> response =
         recordController.upsertSingleRecord(
-            instanceId, version, recordType, recordId, Optional.empty(), recordRequest);
+            collectionId, version, recordType, recordId, Optional.empty(), recordRequest);
     assertThat(response.getStatusCodeValue()).isEqualTo(201);
 
     // verify the backend datatype
     Map<String, DataTypeMapping> tableSchema =
-        recordDao.getExistingTableSchema(instanceId, recordType);
+        recordDao.getExistingTableSchema(collectionId, recordType);
     assertThat(tableSchema.keySet()).contains(attrName);
     DataTypeMapping actualDataType = tableSchema.get(attrName);
     assertThat(actualDataType).isEqualTo(expectedDataType);
@@ -316,11 +316,11 @@ class TsvDownloadTest {
         new MockMultipartFile(
             "records", "roundTrip.tsv", MediaType.TEXT_PLAIN_VALUE, tsvContents.getBytes());
     ResponseEntity<TsvUploadResponse> uploadResponse =
-        recordController.tsvUpload(instanceId, version, recordType, Optional.empty(), file);
+        recordController.tsvUpload(collectionId, version, recordType, Optional.empty(), file);
     assertThat(uploadResponse.getStatusCodeValue()).isEqualTo(200);
 
     // verify the backend datatype again; it should not have changed
-    tableSchema = recordDao.getExistingTableSchema(instanceId, recordType);
+    tableSchema = recordDao.getExistingTableSchema(collectionId, recordType);
     assertThat(tableSchema.keySet()).contains(attrName);
     actualDataType = tableSchema.get(attrName);
     assertThat(actualDataType).isEqualTo(expectedDataType);

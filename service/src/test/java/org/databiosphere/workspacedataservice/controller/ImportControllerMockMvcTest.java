@@ -6,7 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.net.URI;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.junit.jupiter.api.Test;
@@ -20,12 +20,12 @@ import org.springframework.test.web.servlet.MvcResult;
 @DirtiesContext
 class ImportControllerMockMvcTest extends MockMvcTestBase {
 
-  @Autowired private InstanceDao instanceDao;
+  @Autowired private CollectionDao collectionDao;
 
   @Test
   void smokeTestCreateImport() throws Exception {
     UUID instanceId = UUID.randomUUID();
-    instanceDao.createSchema(instanceId);
+    collectionDao.createSchema(instanceId);
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(
             ImportRequestServerModel.TypeEnum.PFB, new URI("https://terra.bio"));

@@ -3,7 +3,7 @@ package org.databiosphere.workspacedataservice.dao;
 import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
-import org.databiosphere.workspacedataservice.shared.model.InstanceId;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
@@ -30,5 +30,6 @@ public interface JobDao {
 
   GenericJobServerModel getJob(UUID jobId);
 
-  List<GenericJobServerModel> getJobsForInstance(InstanceId instanceId, List<String> statuses);
+  List<GenericJobServerModel> getJobsForCollection(
+      CollectionId collectionId, List<String> statuses);
 }

@@ -9,7 +9,7 @@ import static org.mockito.BDDMockito.given;
 import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
-import org.databiosphere.workspacedataservice.dao.InstanceDao;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
@@ -30,11 +30,11 @@ import org.springframework.test.context.ActiveProfiles;
       "rest.retry.maxAttempts=2",
       "rest.retry.backoff.delay=10"
     }) // aggressive retry settings so unit test doesn't run too long)
-@ActiveProfiles(profiles = {"mock-sam", "mock-instance-dao"})
+@ActiveProfiles(profiles = {"mock-sam", "mock-collection-dao"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordOrchestratorSamTest {
 
-  @Autowired private InstanceDao instanceDao;
+  @Autowired private CollectionDao collectionDao;
   @Autowired private RecordOrchestratorService recordOrchestratorService;
   // mock for the SamClientFactory; since this is a Spring bean we can use @MockBean
   @MockBean SamClientFactory mockSamClientFactory;
@@ -43,12 +43,12 @@ class RecordOrchestratorSamTest {
   // to mock it manually
   final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
-  private static final UUID INSTANCE = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+  private static final UUID COLLECTION = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
 
   @BeforeEach
   void setUp() {
-    if (!instanceDao.instanceSchemaExists(INSTANCE)) {
-      instanceDao.createSchema(INSTANCE);
+    if (!collectionDao.collectionSchemaExists(COLLECTION)) {
+      collectionDao.createSchema(COLLECTION);
     }
     given(mockSamClientFactory.getResourcesApi(null)).willReturn(mockResourcesApi);
 
@@ -58,7 +58,7 @@ class RecordOrchestratorSamTest {
 
   @AfterEach
   void tearDown() {
-    instanceDao.dropSchema(INSTANCE);
+    collectionDao.dropSchema(COLLECTION);
   }
 
   @Test
@@ -71,7 +71,7 @@ class RecordOrchestratorSamTest {
 
     assertThrows(
         AuthorizationException.class,
-        () -> recordOrchestratorService.validateAndPermissions(INSTANCE, VERSION),
+        () -> recordOrchestratorService.validateAndPermissions(COLLECTION, VERSION),
         "validateAndPermissions should throw if caller does not have write permission in Sam");
   }
 
@@ -82,7 +82,7 @@ class RecordOrchestratorSamTest {
         .willReturn(true);
 
     assertDoesNotThrow(
-        () -> recordOrchestratorService.validateAndPermissions(INSTANCE, VERSION),
+        () -> recordOrchestratorService.validateAndPermissions(COLLECTION, VERSION),
         "validateAndPermissions should not throw if caller has write permission in Sam");
   }
 
@@ -94,7 +94,7 @@ class RecordOrchestratorSamTest {
                 0, "intentional failure for unit test")); // 0 indicates a failed connection
     assertThrows(
         RestException.class,
-        () -> recordOrchestratorService.validateAndPermissions(INSTANCE, VERSION),
+        () -> recordOrchestratorService.validateAndPermissions(COLLECTION, VERSION),
         "validateAndPermissions should throw if caller does not have write permission in Sam");
   }
 }
