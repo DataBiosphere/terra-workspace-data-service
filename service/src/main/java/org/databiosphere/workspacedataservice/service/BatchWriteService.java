@@ -4,8 +4,10 @@ import static org.databiosphere.workspacedataservice.recordstream.TwoPassRecordS
 import static org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode.RELATIONS;
 
 import bio.terra.common.db.WriteTransaction;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimaps;
+import com.google.mu.util.stream.BiStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashMap;
@@ -147,41 +149,52 @@ public class BatchWriteService {
         // loop over all record types in this batch. For each record type, iff this is the first
         // time we've seen this type, calculate a schema from its records and update the record type
         // as necessary. Then, write the records into the table.
-        for (RecordType recType : groupedRecords.keySet()) {
-          List<Record> rList = groupedRecords.get(recType).asList();
-          // have we already processed at least one batch of this record type?
-          boolean isTypeAlreadySeen = typesSeen.containsKey(recType);
-          // if this is the first time we've seen this record type, infer and update this record
-          // type's schema, then save that schema back to the `typesSeen` map
-          if (!isTypeAlreadySeen && info.operationType() == OperationType.UPSERT) {
-            Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(rList);
-            Map<String, DataTypeMapping> finalSchema =
-                recordSink.createOrModifyRecordType(
-                    instanceId, recType, inferredSchema, rList, primaryKey);
-            typesSeen.put(recType, finalSchema);
-          }
-          // when updating relations only, do not update if there are no relations
-          if (importMode == BASE_ATTRIBUTES || !typesSeen.get(recType).isEmpty()) {
-            if (importMode == RELATIONS) {
-              // For relations only, remove records that have no relations
-              rList = rList.stream().filter(rec -> !rec.attributeSet().isEmpty()).toList();
-            }
-            // write these records to the db, using the schema from the `typesSeen` map
-            recordSink.writeBatch(
-                instanceId,
-                recType,
-                typesSeen.get(recType),
-                info.operationType(),
-                rList,
-                primaryKey);
-            // update the result counts
-            result.increaseCount(recType, rList.size());
-          }
-        }
+        OperationType opType = info.operationType();
+        BiStream.from(groupedRecords.asMap())
+            .mapValues(ImmutableList::copyOf) // despite its name, copyOf avoids copying if possible
+            .forEach(
+                (recType, recordsForType) -> {
+                  // have we already processed at least one batch of this record type?
+                  boolean isTypeAlreadySeen = typesSeen.containsKey(recType);
+                  // if this is the first time we've seen this record type, infer and update this
+                  // record
+                  // type's schema, then save that schema back to the `typesSeen` map
+                  if (!isTypeAlreadySeen && opType == OperationType.UPSERT) {
+                    Map<String, DataTypeMapping> inferredSchema =
+                        inferer.inferTypes(recordsForType);
+                    Map<String, DataTypeMapping> finalSchema =
+                        recordSink.createOrModifyRecordType(
+                            instanceId, recType, inferredSchema, recordsForType, primaryKey);
+                    typesSeen.put(recType, finalSchema);
+                  }
+                  // when updating relations only, do not update if there are no relations
+                  if (importMode == BASE_ATTRIBUTES || !typesSeen.get(recType).isEmpty()) {
+                    // For relations only, remove records that have no relations
+                    var recordsToWrite =
+                        importMode == RELATIONS
+                            ? excludeEmptyRecords(recordsForType)
+                            : recordsForType;
+
+                    // write these records to the db, using the schema from the `typesSeen` map
+                    recordSink.writeBatch(
+                        instanceId,
+                        recType,
+                        typesSeen.get(recType),
+                        opType,
+                        recordsToWrite,
+                        primaryKey);
+                    // update the result counts
+                    result.increaseCount(recType, recordsToWrite.size());
+                  }
+                });
       }
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
     return result;
+  }
+
+  private static List<Record> excludeEmptyRecords(List<Record> recordsForType) {
+    return recordsForType.stream().filter(rec -> !rec.attributeSet().isEmpty()).toList();
   }
 }
