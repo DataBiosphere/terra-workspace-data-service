@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.controller;
 
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.JobTypeEnum;
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
+import static org.databiosphere.workspacedataservice.shared.model.job.Job.newJob;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -50,11 +51,11 @@ class JobControllerTest {
   void beforeAll() {
     // push jobs into the db, one of different instanceId
     Job<JobInput, JobResult> testJob1 =
-        Job.newJob(instanceId, JobType.DATA_IMPORT, JobInput.empty());
+        newJob(instanceId, JobType.DATA_IMPORT, JobInput.empty());
     Job<JobInput, JobResult> testJob2 =
-        Job.newJob(instanceId, JobType.DATA_IMPORT, JobInput.empty());
+        newJob(instanceId, JobType.DATA_IMPORT, JobInput.empty());
     Job<JobInput, JobResult> testJob3 =
-        Job.newJob(InstanceId.of(UUID.randomUUID()), JobType.DATA_IMPORT, JobInput.empty());
+        newJob(InstanceId.of(UUID.randomUUID()), JobType.DATA_IMPORT, JobInput.empty());
 
     // save one of the jobIds
     jobId = testJob1.getJobId();
@@ -87,9 +88,9 @@ class JobControllerTest {
     List<GenericJobServerModel> jobList = result.getBody();
     assertNotNull(jobList);
     // 3 jobs inserted in beforeAll, only 2 for this instanceId
-    assertEquals(jobList.size(), 2);
-    assertEquals(jobList.get(0).getStatus(), StatusEnum.CREATED);
-    assertEquals(jobList.get(0).getJobType(), JobTypeEnum.DATA_IMPORT);
+    assertEquals(2, jobList.size());
+    assertEquals(StatusEnum.CREATED, jobList.get(0).getStatus());
+    assertEquals(JobTypeEnum.DATA_IMPORT, jobList.get(0).getJobType());
   }
 
   @Test
@@ -110,8 +111,8 @@ class JobControllerTest {
     List<GenericJobServerModel> jobList = result.getBody();
     assertNotNull(jobList);
     // 3 jobs inserted in beforeAll, only 2 for this instanceId
-    assertEquals(jobList.size(), 2);
-    assertEquals(jobList.get(0).getStatus(), StatusEnum.CREATED);
-    assertEquals(jobList.get(1).getStatus(), StatusEnum.CANCELLED);
+    assertEquals(2, jobList.size() );
+    assertEquals(StatusEnum.CREATED, jobList.get(0).getStatus());
+    assertEquals( StatusEnum.CANCELLED, jobList.get(1).getStatus());
   }
 }
