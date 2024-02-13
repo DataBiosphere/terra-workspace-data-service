@@ -33,7 +33,7 @@ import org.springframework.test.annotation.DirtiesContext;
 @DirtiesContext
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class JobControllerUnitTest {
+class JobControllerTest {
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
 
   @Autowired private TestRestTemplate restTemplate;
