@@ -9,12 +9,14 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
+import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -118,8 +120,11 @@ public class CollectionService {
   /**
    * Return the workspace that contains the specified collection. The logic for this method is:
    *
-   * <p>- if the WORKSPACE_ID env var is set, return its value. This will be true for all data plane
-   * WDSes, as long as WDS is deployed per-workspace.
+   * <p>- look up the row for this collection in sys_wds.instance.
+   *
+   * <p>- if the WORKSPACE_ID env var is set and a row exists in sys_wds.instance, confirm the row's
+   * workspace_id column matches the env var. If it does, return its value. If it doesn't match,
+   * throw an error.
    *
    * <p>- else, return the CollectionId value as the WorkspaceId. This perpetuates the assumption
    * that collection and workspace ids are the same. But, this will be true in the GCP control plane
@@ -130,6 +135,30 @@ public class CollectionService {
    * @return the workspace containing the given collection.
    */
   public WorkspaceId getWorkspaceId(CollectionId collectionId) {
-    return Objects.requireNonNullElseGet(workspaceId, () -> WorkspaceId.of(collectionId.id()));
+    // look up the workspaceId for this collection in the instance table
+    WorkspaceId rowWorkspaceId = null;
+    try {
+      rowWorkspaceId = collectionDao.getWorkspaceId(collectionId);
+    } catch (EmptyResultDataAccessException e) {
+      // swallow not-found errors; it's valid for rows to not exist in the case of
+      // virtual collections
+    }
+
+    // safety check: if we found a workspace id in the db, it indicates we are in a data-plane
+    // single-tenant WDS. Verify the workspace matches the $WORKSPACE_ID env var.
+    // we must remove this check in a future multi-tenant WDS.
+    if (rowWorkspaceId != null && !rowWorkspaceId.equals(workspaceId)) {
+      // log the details, including expected/actual workspace ids
+      LOGGER.error(
+          "Found unexpected workspaceId for collection {}. Expected {}, got {}.",
+          collectionId,
+          workspaceId,
+          rowWorkspaceId);
+      // but, don't include workspace ids when throwing a user-facing error
+      throw new CollectionException(
+          "Found unexpected workspaceId for collection %s.".formatted(collectionId));
+    }
+
+    return Objects.requireNonNullElseGet(rowWorkspaceId, () -> WorkspaceId.of(collectionId.id()));
   }
 }

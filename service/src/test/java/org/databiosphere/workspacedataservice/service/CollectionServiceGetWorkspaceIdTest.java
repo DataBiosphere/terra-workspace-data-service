@@ -6,8 +6,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.dao.InstanceDao;
-import org.databiosphere.workspacedataservice.shared.model.InstanceId;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,50 +29,50 @@ import org.springframework.test.context.TestPropertySource;
     properties = {
       "twds.instance.workspace-id=4fbac661-2ea2-4592-af6d-3c3f710b0456",
     })
-class InstanceServiceGetWorkspaceIdTest {
+class CollectionServiceGetWorkspaceIdTest {
 
-  @Autowired private InstanceService instanceService;
-  @MockBean private InstanceDao mockInstanceDao;
+  @Autowired private CollectionService collectionService;
+  @MockBean private CollectionDao mockCollectionDao;
 
   @Value("${twds.instance.workspace-id:}")
   private String workspaceIdProperty;
 
   @BeforeEach
   void beforeEach() {
-    Mockito.reset(mockInstanceDao);
+    Mockito.reset(mockCollectionDao);
   }
 
   @Test
   void expectedWorkspaceId() {
-    // instance dao returns the workspace id set in $WORKSPACE_ID
-    when(mockInstanceDao.getWorkspaceId(any(InstanceId.class)))
+    // collection dao returns the workspace id set in $WORKSPACE_ID
+    when(mockCollectionDao.getWorkspaceId(any(CollectionId.class)))
         .thenReturn(WorkspaceId.fromString(workspaceIdProperty));
 
-    InstanceId instanceId = InstanceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // expect getWorkspaceId to return the same workspace id that the dao returned
-    assertEquals(workspaceIdProperty, instanceService.getWorkspaceId(instanceId).toString());
+    assertEquals(workspaceIdProperty, collectionService.getWorkspaceId(collectionId).toString());
   }
 
   @Test
   void missingWorkspaceId() {
-    // instance dao doesn't find a row and therefore throws EmptyResultDataAccessException
-    when(mockInstanceDao.getWorkspaceId(any(InstanceId.class)))
+    // collection dao doesn't find a row and therefore throws EmptyResultDataAccessException
+    when(mockCollectionDao.getWorkspaceId(any(CollectionId.class)))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional exception", 1));
 
-    InstanceId instanceId = InstanceId.of(UUID.randomUUID());
-    // expect getWorkspaceId to return the instance id as the workspace id; this is a virtual
-    // instance
-    assertEquals(instanceId.id(), instanceService.getWorkspaceId(instanceId).id());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    // expect getWorkspaceId to return the collection id as the workspace id; this is a virtual
+    // collection
+    assertEquals(collectionId.id(), collectionService.getWorkspaceId(collectionId).id());
   }
 
   @Test
   void unexpectedWorkspaceId() {
-    // instance dao returns a value not equal to the workspace id set in $WORKSPACE_ID
-    when(mockInstanceDao.getWorkspaceId(any(InstanceId.class)))
+    // collection dao returns a value not equal to the workspace id set in $WORKSPACE_ID
+    when(mockCollectionDao.getWorkspaceId(any(CollectionId.class)))
         .thenReturn(WorkspaceId.of(UUID.randomUUID()));
 
-    InstanceId instanceId = InstanceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // expect getWorkspaceId to throw, since it found an unexpected workspace id
-    assertThrows(RuntimeException.class, () -> instanceService.getWorkspaceId(instanceId));
+    assertThrows(RuntimeException.class, () -> collectionService.getWorkspaceId(collectionId));
   }
 }

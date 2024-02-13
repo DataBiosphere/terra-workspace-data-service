@@ -25,9 +25,9 @@ import org.springframework.test.context.TestPropertySource;
     properties = {
       "twds.instance.workspace-id=80000000-4000-4000-4000-120000000000",
     })
-class PostgresInstanceDaoTest {
+class PostgresCollectionDaoTest {
 
-  @Autowired InstanceDao instanceDao;
+  @Autowired CollectionDao collectionDao;
   @Autowired NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
   @Value("${twds.instance.workspace-id}")
@@ -36,23 +36,23 @@ class PostgresInstanceDaoTest {
   // clean up all instances before each test to ensure tests start from a clean slate
   @BeforeEach
   void beforeEach() {
-    List<UUID> allInstances = instanceDao.listInstanceSchemas();
-    allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
+    List<UUID> allInstances = collectionDao.listCollectionSchemas();
+    allInstances.forEach(instanceId -> collectionDao.dropSchema(instanceId));
   }
 
   // clean up all instances after all tests to ensure tests in other files start from a clean slate
   @AfterAll
   void afterAll() {
-    List<UUID> allInstances = instanceDao.listInstanceSchemas();
-    allInstances.forEach(instanceId -> instanceDao.dropSchema(instanceId));
+    List<UUID> allInstances = collectionDao.listCollectionSchemas();
+    allInstances.forEach(instanceId -> collectionDao.dropSchema(instanceId));
   }
 
   // is this test set up correctly?
   @Test
   void isPostgresInstanceDao() {
     assertInstanceOf(
-        PostgresInstanceDao.class,
-        instanceDao,
+        PostgresCollectionDao.class,
+        collectionDao,
         "Tests in this file expect InstanceDao to be a PostgresInstanceDao; if this isn't true,"
             + "other test cases could fail.");
   }
@@ -62,11 +62,11 @@ class PostgresInstanceDaoTest {
   @Test
   void insertPopulatesAllColumns() {
 
-    List<UUID> allInstances = instanceDao.listInstanceSchemas();
+    List<UUID> allInstances = collectionDao.listCollectionSchemas();
     assertEquals(0, allInstances.size());
 
     UUID instanceId = UUID.randomUUID();
-    instanceDao.createSchema(instanceId);
+    collectionDao.createSchema(instanceId);
 
     Map<String, Object> rowMap =
         namedParameterJdbcTemplate.queryForMap(
@@ -84,12 +84,12 @@ class PostgresInstanceDaoTest {
   @Test
   void defaultPopulatesAllColumns() {
 
-    List<UUID> allInstances = instanceDao.listInstanceSchemas();
+    List<UUID> allInstances = collectionDao.listCollectionSchemas();
     assertEquals(0, allInstances.size());
 
     UUID instanceId = workspaceId;
 
-    instanceDao.createSchema(instanceId);
+    collectionDao.createSchema(instanceId);
 
     Map<String, Object> rowMap =
         namedParameterJdbcTemplate.queryForMap(

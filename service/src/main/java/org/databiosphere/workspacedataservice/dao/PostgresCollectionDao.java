@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
-import org.databiosphere.workspacedataservice.shared.model.InstanceId;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -57,7 +57,7 @@ public class PostgresCollectionDao implements CollectionDao {
   @SuppressWarnings("squid:S2077") // since collectionId must be a UUID, it is safe to use inline
   public void createSchema(UUID collectionId) {
     // insert to instance table
-    insertInstanceRow(collectionId, /* ignoreConflict= */ false);
+    insertCollectionRow(collectionId, /* ignoreConflict= */ false);
     // create the postgres schema
     namedTemplate.getJdbcTemplate().update("create schema " + quote(collectionId.toString()));
   }
@@ -97,31 +97,31 @@ public class PostgresCollectionDao implements CollectionDao {
     // ensure new exists in sys_wds.instance. When this alterSchema() method is called after
     // restoring from a pg_dump,
     // the oldSchema doesn't exist, so is not renamed in the previous statement.
-    insertInstanceRow(newSchemaId, /* ignoreConflict= */ true);
+    insertCollectionRow(newSchemaId, /* ignoreConflict= */ true);
   }
 
   @Override
-  public WorkspaceId getWorkspaceId(InstanceId instanceId) {
+  public WorkspaceId getWorkspaceId(CollectionId collectionId) {
     UUID workspaceUuid =
         namedTemplate.queryForObject(
-            "select workspace_id from sys_wds.instance where id = :instanceId",
-            new MapSqlParameterSource("instanceId", instanceId.id()),
+            "select workspace_id from sys_wds.instance where id = :collectionId",
+            new MapSqlParameterSource("collectionId", collectionId.id()),
             UUID.class);
     return WorkspaceId.of(workspaceUuid);
   }
 
-  private void insertInstanceRow(UUID instanceId, boolean ignoreConflict) {
+  private void insertCollectionRow(UUID collectionId, boolean ignoreConflict) {
     // if workspaceId as configured by the $WORKSPACE_ID is null, use
     // instanceId instead
-    UUID nonNullWorkspaceId = Objects.requireNonNullElse(workspaceId, instanceId);
+    UUID nonNullWorkspaceId = Objects.requireNonNullElse(workspaceId, collectionId);
 
     // auto-generate the name for this instance
-    String name = instanceId.toString();
-    if (instanceId.equals(nonNullWorkspaceId)) {
+    String name = collectionId.toString();
+    if (collectionId.equals(nonNullWorkspaceId)) {
       name = "default";
     }
 
-    MapSqlParameterSource params = new MapSqlParameterSource("id", instanceId);
+    MapSqlParameterSource params = new MapSqlParameterSource("id", collectionId);
     params.addValue("workspace_id", nonNullWorkspaceId);
     params.addValue("name", name);
     params.addValue("description", name);

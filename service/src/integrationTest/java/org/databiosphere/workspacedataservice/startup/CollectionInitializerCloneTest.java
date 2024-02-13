@@ -162,7 +162,7 @@ class CollectionInitializerCloneTest {
     List<RecordType> actualTypes = recordDao.getAllRecordTypes(workspaceUuid);
     assertEquals(List.of(RecordType.valueOf("thing")), actualTypes);
 
-    // the restored instance should be associated with the current workspace, and should
+    // the restored collection should be associated with the current workspace, and should
     // have its name and description populated correctly
     Map<String, Object> rowMap =
         namedTemplate.queryForMap(

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import org.databiosphere.workspacedataservice.shared.model.InstanceId;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.postgresql.util.ServerErrorMessage;
 
@@ -70,7 +70,7 @@ public class MockCollectionDao implements CollectionDao {
   }
 
   @Override
-  public WorkspaceId getWorkspaceId(InstanceId instanceId) {
+  public WorkspaceId getWorkspaceId(CollectionId instanceId) {
     return WorkspaceId.of(instanceId.id());
   }
 }
