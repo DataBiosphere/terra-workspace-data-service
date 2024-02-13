@@ -15,8 +15,9 @@ public class PostgresCollectionDao implements CollectionDao {
   private final NamedParameterJdbcTemplate namedTemplate;
 
   /*
-  PostgresInstanceDao is used to interact with sys_wds instance table in postgres.
-  This table tracks activity such as instance creation and deletion, as well as returning existing instances.
+  PostgresCollectionDao is used to interact with sys_wds instance table in postgres.
+  NOTE: sys_wds.instance will be renamed to sys_wds.collection in an upcoming PR for AJ-1592
+  This table tracks activity such as collection creation and deletion, as well as returning existing collections.
   This class will help add entries to the table, check if entries already exist and update them as necessary.
    */
   public PostgresCollectionDao(NamedParameterJdbcTemplate namedTemplate) {
@@ -27,8 +28,8 @@ public class PostgresCollectionDao implements CollectionDao {
   public boolean collectionSchemaExists(UUID collectionId) {
     return Boolean.TRUE.equals(
         namedTemplate.queryForObject(
-            "select exists(select from sys_wds.instance WHERE id = :instanceId)",
-            new MapSqlParameterSource("instanceId", collectionId),
+            "select exists(select from sys_wds.instance WHERE id = :collectionId)",
+            new MapSqlParameterSource("collectionId", collectionId),
             Boolean.class));
   }
 
@@ -41,7 +42,7 @@ public class PostgresCollectionDao implements CollectionDao {
 
   @Override
   @WriteTransaction
-  @SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
+  @SuppressWarnings("squid:S2077") // since collectionId must be a UUID, it is safe to use inline
   public void createSchema(UUID collectionId) {
     namedTemplate
         .getJdbcTemplate()
@@ -51,7 +52,7 @@ public class PostgresCollectionDao implements CollectionDao {
 
   @Override
   @WriteTransaction
-  @SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
+  @SuppressWarnings("squid:S2077") // since collectionId must be a UUID, it is safe to use inline
   public void dropSchema(UUID collectionId) {
     namedTemplate
         .getJdbcTemplate()
@@ -63,7 +64,7 @@ public class PostgresCollectionDao implements CollectionDao {
 
   @Override
   @WriteTransaction
-  @SuppressWarnings("squid:S2077") // since instanceId must be a UUID, it is safe to use inline
+  @SuppressWarnings("squid:S2077") // since collectionId must be a UUID, it is safe to use inline
   public void alterSchema(UUID oldSchemaId, UUID newSchemaId) {
     // rename the pg schema from old to new
     namedTemplate
