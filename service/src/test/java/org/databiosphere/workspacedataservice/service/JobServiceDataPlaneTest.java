@@ -53,10 +53,10 @@ class JobServiceDataPlaneTest {
     when(jobDao.getJob(jobId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
 
-    // act / assert
+    // Act / assert
     Exception actual = assertThrows(MissingObjectException.class, () -> jobService.getJob(jobId));
 
-    // assert
+    // Assert
     assertThat(actual.getMessage()).startsWith("Job");
   }
 
@@ -76,7 +76,8 @@ class JobServiceDataPlaneTest {
 
     // Act
     GenericJobServerModel actual = jobService.getJob(jobId);
-    // Success
+
+    // Assert
     assertThat(actual).isEqualTo(expectedJob);
   }
 
@@ -94,10 +95,10 @@ class JobServiceDataPlaneTest {
     // user has permission to that workspace
     when(samDao.hasReadWorkspacePermission(getEnvWorkspaceId().toString())).thenReturn(false);
 
-    // act / assert
+    // Act / assert
     Exception actual = assertThrows(AuthorizationException.class, () -> jobService.getJob(jobId));
 
-    // Success
+    // Assert
     assertThat(actual.getMessage()).endsWith("this job.\"");
   }
 
@@ -117,14 +118,17 @@ class JobServiceDataPlaneTest {
     // user has permission to that workspace
     when(samDao.hasReadWorkspacePermission(workspaceId.toString())).thenReturn(true);
 
-    // act / assert
+    // Act / assert
     Exception actual = assertThrows(CollectionException.class, () -> jobService.getJob(jobId));
 
-    // Success
+    // Assert
     assertThat(actual.getMessage()).startsWith("Found unexpected workspaceId for collection");
   }
 
-  /** requested job exists; its collection does not exist */
+  /**
+   * requested job exists; its collection does not exist. This test relies on the "data-plane"
+   * Spring profile setting twds.tenancy.allow-virtual-collections=false.
+   */
   @Test
   void collectionDoesNotExist() {
     // Arrange
@@ -140,10 +144,10 @@ class JobServiceDataPlaneTest {
     // user has permission to that workspace
     when(samDao.hasReadWorkspacePermission(workspaceId.toString())).thenReturn(true);
 
-    // act / assert
+    // Act / assert
     Exception actual = assertThrows(MissingObjectException.class, () -> jobService.getJob(jobId));
 
-    // Success
+    // Assert
     assertThat(actual.getMessage()).startsWith("Collection");
   }
 
