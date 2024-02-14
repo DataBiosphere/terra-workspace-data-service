@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
-import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -16,18 +15,18 @@ public class JobService {
 
   JobDao jobDao;
   CollectionService collectionService;
-  SamDao samDao;
 
-  public JobService(JobDao jobDao, CollectionService collectionService, SamDao samDao) {
+  public JobService(JobDao jobDao, CollectionService collectionService) {
     this.jobDao = jobDao;
     this.collectionService = collectionService;
-    this.samDao = samDao;
   }
 
   public GenericJobServerModel getJob(UUID jobId) {
     try {
       GenericJobServerModel result = jobDao.getJob(jobId);
-      if (!samDao.hasReadWorkspacePermission(result.getInstanceId().toString())) {
+      if (!collectionService.canReadCollection(CollectionId.of(result.getInstanceId()))) {
+        // TODO: this should return a 404 a la "job does not exist or you do not have permission to
+        // see it"
         throw new AuthorizationException("Caller does not have permission to view this job.");
       }
       return result;
@@ -38,7 +37,9 @@ public class JobService {
 
   public List<GenericJobServerModel> getJobsForCollection(
       CollectionId collectionId, List<String> statuses) {
-    if (!samDao.hasReadWorkspacePermission(collectionId.toString())) {
+    if (!collectionService.canReadCollection(collectionId)) {
+      // TODO: this should return a 404 a la "job does not exist or you do not have permission to
+      // see it"
       throw new AuthorizationException("Caller does not have permission to view this job.");
     }
     return jobDao.getJobsForCollection(collectionId, statuses);
