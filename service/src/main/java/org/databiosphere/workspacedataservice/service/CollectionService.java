@@ -117,6 +117,14 @@ public class CollectionService {
     }
   }
 
+  public boolean canReadCollection(CollectionId collectionId) {
+    return false;
+  }
+
+  public boolean canWriteCollection(CollectionId collectionId) {
+    return false;
+  }
+
   /**
    * Return the workspace that contains the specified collection. The logic for this method is:
    *
