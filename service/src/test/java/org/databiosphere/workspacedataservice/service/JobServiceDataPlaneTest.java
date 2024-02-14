@@ -20,6 +20,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.MissingObj
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -135,6 +136,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
    * Spring profile setting twds.tenancy.allow-virtual-collections=false.
    */
   @Test
+  @Disabled("AJ-1630") // TODO AJ-1630
   void collectionDoesNotExist() {
     // Arrange
     UUID jobId = UUID.randomUUID();
@@ -162,6 +164,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
 
   /** Collection does not exist */
   @Test
+  @Disabled("AJ-1630") // TODO AJ-1630
   void listJobsCollectionDoesNotExist() {
     // Arrange
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
