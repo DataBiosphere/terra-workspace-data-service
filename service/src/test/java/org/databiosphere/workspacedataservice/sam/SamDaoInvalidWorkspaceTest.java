@@ -31,8 +31,8 @@ public class SamDaoInvalidWorkspaceTest {
     assertFalse(samDao.hasCreateCollectionPermission("token"));
     assertFalse(samDao.hasDeleteCollectionPermission());
     assertFalse(samDao.hasDeleteCollectionPermission("token"));
-    assertFalse(samDao.hasWriteCollectionPermission());
-    assertFalse(samDao.hasWriteCollectionPermission("token"));
+    assertFalse(samDao.hasWriteWorkspacePermission());
+    assertFalse(samDao.hasWriteWorkspacePermission("token"));
   }
 
   @Test

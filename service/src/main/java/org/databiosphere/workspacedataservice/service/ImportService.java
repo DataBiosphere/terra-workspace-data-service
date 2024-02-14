@@ -52,7 +52,7 @@ public class ImportService {
     collectionService.validateCollection(instanceUuid);
 
     // validate write permission
-    boolean hasWriteInstancePermission = samDao.hasWriteCollectionPermission();
+    boolean hasWriteInstancePermission = samDao.hasWriteWorkspacePermission();
     logger.debug("hasWriteInstancePermission? {}", hasWriteInstancePermission);
     if (!hasWriteInstancePermission) {
       throw new AuthorizationException("Caller does not have permission to write to instance.");
@@ -109,8 +109,8 @@ public class ImportService {
       UUID jobId,
       Map<String, Serializable> arguments) {
     return switch (importType) {
-      case TDRMANIFEST -> new TdrManifestSchedulable(
-          jobId.toString(), "TDR manifest import", arguments);
+      case TDRMANIFEST ->
+          new TdrManifestSchedulable(jobId.toString(), "TDR manifest import", arguments);
       case PFB -> new PfbSchedulable(jobId.toString(), "TODO: PFB import", arguments);
     };
   }
