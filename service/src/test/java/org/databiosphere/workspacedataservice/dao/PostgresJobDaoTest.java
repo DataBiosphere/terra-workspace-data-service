@@ -66,8 +66,7 @@ class PostgresJobDaoTest {
         () ->
             namedTemplate.queryForObject(
                 "select id from sys_wds.job where id = :jobId and type = :type and status = :status "
-                    + "and instance_id = :collectionId " // TODO: instance_id will be changed to
-                    // collection_id in a later PR for AJ-1592
+                    + "and collection_id = :collectionId "
                     + "and created is not null and updated is not null "
                     + "and input = '{}'::jsonb "
                     + "and result is null and error is null and stacktrace is null",

@@ -120,11 +120,11 @@ public class CollectionService {
   /**
    * Return the workspace that contains the specified collection. The logic for this method is:
    *
-   * <p>- look up the row for this collection in sys_wds.instance.
+   * <p>- look up the row for this collection in sys_wds.collection.
    *
-   * <p>- if the WORKSPACE_ID env var is set and a row exists in sys_wds.instance, confirm the row's
-   * workspace_id column matches the env var. If it does, return its value. If it doesn't match,
-   * throw an error.
+   * <p>- if the WORKSPACE_ID env var is set and a row exists in sys_wds.collection, confirm the
+   * row's workspace_id column matches the env var. If it does, return its value. If it doesn't
+   * match, throw an error.
    *
    * <p>- else, return the CollectionId value as the WorkspaceId. This perpetuates the assumption
    * that collection and workspace ids are the same. But, this will be true in the GCP control plane

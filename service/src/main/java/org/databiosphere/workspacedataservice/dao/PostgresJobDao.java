@@ -58,7 +58,7 @@ public class PostgresJobDao implements JobDao {
     namedTemplate
         .getJdbcTemplate()
         .update(
-            "insert into sys_wds.job(id, type, instance_id, status, input) "
+            "insert into sys_wds.job(id, type, collection_id, status, input) "
                 + "values (?, ?, ?, ?, ?::jsonb)",
             job.getJobId().toString(),
             job.getJobType().name(),
@@ -205,7 +205,7 @@ public class PostgresJobDao implements JobDao {
   public GenericJobServerModel getJob(UUID jobId) {
     return namedTemplate.queryForObject(
         "select id, type, status, created, updated, "
-            + "input, result, error, stacktrace, instance_id "
+            + "input, result, error, stacktrace, collection_id "
             + "from sys_wds.job "
             + "where id = :jobId",
         new MapSqlParameterSource("jobId", jobId.toString()),
@@ -218,10 +218,10 @@ public class PostgresJobDao implements JobDao {
     StringBuilder sb =
         new StringBuilder(
             "select id, type, status, created, updated, "
-                + "input, result, error, stacktrace, instance_id "
+                + "input, result, error, stacktrace, collection_id "
                 + "from sys_wds.job "
-                + "where instance_id = :instance_id");
-    MapSqlParameterSource params = new MapSqlParameterSource("instance_id", collectionId.id());
+                + "where collection_id = :collection_id");
+    MapSqlParameterSource params = new MapSqlParameterSource("collection_id", collectionId.id());
 
     // if status is supplied, filter by that
     if (!statuses.isEmpty()) {
@@ -256,12 +256,12 @@ public class PostgresJobDao implements JobDao {
       var created = rs.getTimestamp("created").toLocalDateTime().atOffset(ZoneOffset.UTC);
       var updated = rs.getTimestamp("updated").toLocalDateTime().atOffset(ZoneOffset.UTC);
 
-      UUID collectionId = rs.getObject("instance_id", UUID.class);
+      UUID collectionId = rs.getObject("collection_id", UUID.class);
       GenericJobServerModel job =
           new GenericJobServerModel(jobId, jobType, collectionId, status, created, updated);
 
       job.errorMessage(rs.getString("error"));
-      job.instanceId(rs.getObject("instance_id", UUID.class));
+      job.instanceId(rs.getObject("collection_id", UUID.class));
 
       // TODO: AJ-1011 also return stacktrace, input, result.
       return job;

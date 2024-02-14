@@ -71,7 +71,7 @@ class PostgresCollectionDaoTest {
 
     Map<String, Object> rowMap =
         namedParameterJdbcTemplate.queryForMap(
-            "select id, workspace_id, name, description from sys_wds.instance where id = :id",
+            "select id, workspace_id, name, description from sys_wds.collection where id = :id",
             new MapSqlParameterSource("id", collectionId));
 
     assertEquals(collectionId, rowMap.get("id"));
@@ -94,7 +94,7 @@ class PostgresCollectionDaoTest {
 
     Map<String, Object> rowMap =
         namedParameterJdbcTemplate.queryForMap(
-            "select id, workspace_id, name, description from sys_wds.instance where id = :id",
+            "select id, workspace_id, name, description from sys_wds.collection where id = :id",
             new MapSqlParameterSource("id", collectionId));
 
     assertEquals(collectionId, rowMap.get("id"));
