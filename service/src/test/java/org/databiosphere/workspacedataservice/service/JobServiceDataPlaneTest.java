@@ -28,7 +28,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles(profiles = {"mock-sam", "data-plane"})
+@ActiveProfiles(profiles = {"data-plane"})
 @SpringBootTest(properties = {"twds.instance.workspace-id=f01dab1e-0000-1111-2222-000011112222"})
 class JobServiceDataPlaneTest extends JobServiceBaseTest {
 

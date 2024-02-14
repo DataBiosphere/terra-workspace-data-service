@@ -28,7 +28,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles(profiles = {"mock-sam", "control-plane"})
+@ActiveProfiles(profiles = {"control-plane"})
 @SpringBootTest
 class JobServiceControlPlaneTest extends JobServiceBaseTest {
 
