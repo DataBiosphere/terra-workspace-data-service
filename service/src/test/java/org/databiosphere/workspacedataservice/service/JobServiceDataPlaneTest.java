@@ -176,7 +176,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     Exception actual =
         assertThrows(
             MissingObjectException.class,
-            () -> jobService.getJobsForCollection(collectionId, allStatuses()));
+            () -> jobService.getJobsForCollection(collectionId, allStatuses));
 
     // Assert
     assertThat(actual.getMessage()).startsWith("Collection");
@@ -196,8 +196,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
         .thenReturn(makeJobList(collectionId, 2));
 
     // Act
-    List<GenericJobServerModel> actual =
-        jobService.getJobsForCollection(collectionId, allStatuses());
+    List<GenericJobServerModel> actual = jobService.getJobsForCollection(collectionId, allStatuses);
 
     // Assert
     // this is verifying permissions only; only smoke-testing correctness of the result
@@ -221,7 +220,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     Exception actual =
         assertThrows(
             AuthorizationException.class,
-            () -> jobService.getJobsForCollection(collectionId, allStatuses()));
+            () -> jobService.getJobsForCollection(collectionId, allStatuses));
 
     // Assert
     assertThat(actual.getMessage()).endsWith("this job.\"");
@@ -245,7 +244,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     Exception actual =
         assertThrows(
             CollectionException.class,
-            () -> jobService.getJobsForCollection(collectionId, allStatuses()));
+            () -> jobService.getJobsForCollection(collectionId, allStatuses));
 
     // Assert
     assertThat(actual.getMessage()).startsWith("Found unexpected workspaceId for collection");

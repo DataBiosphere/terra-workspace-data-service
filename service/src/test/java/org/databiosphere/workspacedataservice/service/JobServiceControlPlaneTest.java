@@ -148,7 +148,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
     Exception actual =
         assertThrows(
             CollectionException.class,
-            () -> jobService.getJobsForCollection(collectionId, allStatuses()));
+            () -> jobService.getJobsForCollection(collectionId, allStatuses));
 
     // Assert
     assertEquals("Expected a virtual collection", actual.getMessage());
@@ -169,8 +169,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
         .thenReturn(makeJobList(collectionId, 2));
 
     // Act
-    List<GenericJobServerModel> actual =
-        jobService.getJobsForCollection(collectionId, allStatuses());
+    List<GenericJobServerModel> actual = jobService.getJobsForCollection(collectionId, allStatuses);
 
     // Assert
     // this is verifying permissions only; only smoke-testing correctness of the result
@@ -195,7 +194,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
     Exception actual =
         assertThrows(
             AuthorizationException.class,
-            () -> jobService.getJobsForCollection(collectionId, allStatuses()));
+            () -> jobService.getJobsForCollection(collectionId, allStatuses));
 
     // Assert
     assertThat(actual.getMessage()).endsWith("this job.\"");

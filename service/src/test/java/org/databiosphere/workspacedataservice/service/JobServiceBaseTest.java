@@ -10,6 +10,12 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 
 public abstract class JobServiceBaseTest {
+
+  List<String> allStatuses =
+      Arrays.stream(GenericJobServerModel.StatusEnum.values())
+          .map(GenericJobServerModel.StatusEnum::toString)
+          .toList();
+
   GenericJobServerModel makeJob(UUID jobId, CollectionId collectionId) {
     return new GenericJobServerModel(
         jobId,
@@ -24,12 +30,6 @@ public abstract class JobServiceBaseTest {
   List<GenericJobServerModel> makeJobList(CollectionId collectionId, int count) {
     return IntStream.range(0, count)
         .mapToObj(idx -> makeJob(UUID.randomUUID(), collectionId))
-        .toList();
-  }
-
-  List<String> allStatuses() {
-    return Arrays.stream(GenericJobServerModel.StatusEnum.values())
-        .map(GenericJobServerModel.StatusEnum::toString)
         .toList();
   }
 }
