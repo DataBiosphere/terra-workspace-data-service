@@ -75,9 +75,9 @@ jobs:
           config-name: release-drafter-config.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  publish-job:
+  publish-app-version-job:
     needs: [tag-job, docker-image-job]
-    uses: ./.github/workflows/publish-version.yml
+    uses: ./.github/workflows/publish-app-version.yml
     with:
       new-tag: ${{ needs.tag-job.outputs.new_tag }}
       jiraId: ${{ inputs.jiraId }}

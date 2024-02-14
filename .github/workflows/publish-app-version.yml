@@ -1,4 +1,4 @@
-name: Publish new version to terra-helmfile
+name: Publish new app version to terra-helmfile
 on:
   workflow_call:
     inputs:
