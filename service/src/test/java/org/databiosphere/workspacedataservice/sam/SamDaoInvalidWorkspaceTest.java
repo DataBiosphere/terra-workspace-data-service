@@ -15,7 +15,7 @@ import org.springframework.test.annotation.DirtiesContext;
 @DirtiesContext
 @SpringBootTest(
     classes = {SamConfig.class, RestClientRetry.class},
-    properties = {"twds.instance.workspace-id=not-a-real-id"})
+    properties = {"twds.collection.workspace-id=not-a-real-id"})
 public class SamDaoInvalidWorkspaceTest {
 
   @Autowired SamDao samDao;

@@ -30,7 +30,7 @@ import org.springframework.test.context.TestPropertySource;
 @DirtiesContext
 @SpringBootTest(classes = {LeonardoConfig.class, RestClientRetry.class})
 @TestPropertySource(
-    properties = {"twds.instance.workspace-id=90e1b179-9f83-4a6f-a8c2-db083df4cd03"})
+    properties = {"twds.collection.workspace-id=90e1b179-9f83-4a6f-a8c2-db083df4cd03"})
 class LeonardoDaoTest {
   @Autowired LeonardoDao leonardoDao;
 

@@ -55,7 +55,7 @@ import org.springframework.test.context.TestPropertySource;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestPropertySource(
     properties = {
-      "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000"
+      "twds.collection.workspace-id=123e4567-e89b-12d3-a456-426614174000"
     }) // example uuid from https://en.wikipedia.org/wiki/Universally_unique_identifier
 class CollectionServiceSamExceptionTest {
 
@@ -72,7 +72,7 @@ class CollectionServiceSamExceptionTest {
   // to mock it manually
   final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
-  @Value("${twds.instance.workspace-id}")
+  @Value("${twds.collection.workspace-id}")
   String containingWorkspaceId;
 
   @BeforeEach

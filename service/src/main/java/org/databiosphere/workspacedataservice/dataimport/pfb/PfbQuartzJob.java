@@ -62,7 +62,7 @@ public class PfbQuartzJob extends QuartzJob {
       BatchWriteService batchWriteService,
       ActivityLogger activityLogger,
       ObservationRegistry observationRegistry,
-      @Value("${twds.instance.workspace-id}") UUID workspaceId) {
+      @Value("${twds.collection.workspace-id}") UUID workspaceId) {
     super(observationRegistry);
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
@@ -83,7 +83,7 @@ public class PfbQuartzJob extends QuartzJob {
     // Grab the PFB url from the job's data map
     JobDataMap jobDataMap = context.getMergedJobDataMap();
     URL url = getJobDataUrl(jobDataMap, ARG_URL);
-    UUID targetInstance = getJobDataUUID(jobDataMap, ARG_COLLECTION);
+    UUID targetCollection = getJobDataUUID(jobDataMap, ARG_COLLECTION);
 
     // Find all the snapshot ids in the PFB, then create or verify references from the
     // workspace to the snapshot for each of those snapshot ids.
@@ -101,11 +101,11 @@ public class PfbQuartzJob extends QuartzJob {
     //
     // This is HTTP connection #2 to the PFB.
     logger.info("Importing tables and rows from this PFB...");
-    withPfbStream(url, stream -> importTables(stream, targetInstance, BASE_ATTRIBUTES));
+    withPfbStream(url, stream -> importTables(stream, targetCollection, BASE_ATTRIBUTES));
 
     // This is HTTP connection #3 to the PFB.
     logger.info("Updating tables and rows from this PFB with relations...");
-    withPfbStream(url, stream -> importTables(stream, targetInstance, RELATIONS));
+    withPfbStream(url, stream -> importTables(stream, targetCollection, RELATIONS));
 
     // TODO AJ-1453: save the result of importTables and persist the to the job
   }
@@ -138,11 +138,11 @@ public class PfbQuartzJob extends QuartzJob {
    * Given a DataFileStream representing a PFB, import all the tables and rows inside that PFB.
    *
    * @param dataStream stream representing the PFB.
-   * @param targetInstance the UUID of the WDS instance being imported to
+   * @param targetCollection the UUID of the WDS collection being imported to
    * @param importMode indicating whether to import all data in the tables or only the relations
    */
   BatchWriteResult importTables(
-      DataFileStream<GenericRecord> dataStream, UUID targetInstance, ImportMode importMode) {
+      DataFileStream<GenericRecord> dataStream, UUID targetCollection, ImportMode importMode) {
 
     // As of this writing, the only use case is import from the UCSC AnVIL Data Browser. In this
     // single use case, the `primaryKey` argument will always be "id".  However, as we add use cases
@@ -152,7 +152,7 @@ public class PfbQuartzJob extends QuartzJob {
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSourceFactory.forPfb(dataStream, importMode),
-            targetInstance,
+            targetCollection,
             /* recordType= */ null, // record type is determined later
             primaryKey,
             importMode);

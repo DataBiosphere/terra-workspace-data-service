@@ -68,7 +68,7 @@ class RecordDaoTest {
 
   @Autowired PrimaryKeyDao primaryKeyDao;
 
-  @Value("${twds.instance.workspace-id}")
+  @Value("${twds.collection.workspace-id}")
   String workspaceId;
 
   @BeforeEach

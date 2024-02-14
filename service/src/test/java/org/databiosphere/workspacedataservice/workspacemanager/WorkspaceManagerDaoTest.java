@@ -40,14 +40,14 @@ import org.springframework.test.context.TestPropertySource;
 @DirtiesContext
 @SpringBootTest(classes = {WorkspaceManagerConfig.class, RestClientRetry.class})
 @TestPropertySource(
-    properties = {"twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000"})
+    properties = {"twds.collection.workspace-id=123e4567-e89b-12d3-a456-426614174000"})
 class WorkspaceManagerDaoTest {
 
   @Autowired WorkspaceManagerDao workspaceManagerDao;
 
   @MockBean WorkspaceManagerClientFactory mockWorkspaceManagerClientFactory;
 
-  @Value("${twds.instance.workspace-id:}")
+  @Value("${twds.collection.workspace-id:}")
   private UUID workspaceId;
 
   final ReferencedGcpResourceApi mockReferencedGcpResourceApi =

@@ -26,14 +26,14 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(
     properties = {
       "twds.pg_dump.useAzureIdentity=false",
-      "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000",
-      "twds.instance.source-workspace-id=123e4567-e89b-12d3-a456-426614174001",
+      "twds.collection.workspace-id=123e4567-e89b-12d3-a456-426614174000",
+      "twds.collection.source-workspace-id=123e4567-e89b-12d3-a456-426614174001",
       "twds.pg_dump.host="
     })
 public class BackupRestoreServiceFailureIntegrationTest {
   @Autowired private BackupRestoreService backupRestoreService;
 
-  @Value("${twds.instance.source-workspace-id}")
+  @Value("${twds.collection.source-workspace-id}")
   private String sourceWorkspaceId;
 
   @Test

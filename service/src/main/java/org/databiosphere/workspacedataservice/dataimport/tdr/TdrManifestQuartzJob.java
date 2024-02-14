@@ -69,7 +69,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       RecordSourceFactory recordSourceFactory,
       BatchWriteService batchWriteService,
       ActivityLogger activityLogger,
-      @Value("${twds.instance.workspace-id}") UUID workspaceId,
+      @Value("${twds.collection.workspace-id}") UUID workspaceId,
       ObjectMapper mapper,
       ObservationRegistry observationRegistry) {
     super(observationRegistry);
@@ -94,14 +94,14 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // Grab the manifest url from the job's data map
     JobDataMap jobDataMap = context.getMergedJobDataMap();
     URL url = getJobDataUrl(jobDataMap, ARG_URL);
-    UUID targetInstance = getJobDataUUID(jobDataMap, ARG_COLLECTION);
+    UUID targetCollection = getJobDataUUID(jobDataMap, ARG_COLLECTION);
 
     // read manifest
     SnapshotExportResponseModel snapshotExportResponseModel = parseManifest(url);
 
     // get the snapshot id from the manifest
     UUID snapshotId = snapshotExportResponseModel.getSnapshot().getId();
-    logger.info("Starting import of snapshot {} to instance {}", snapshotId, targetInstance);
+    logger.info("Starting import of snapshot {} to collection {}", snapshotId, targetCollection);
 
     // Create snapshot reference
     linkSnapshots(Set.of(snapshotId));
@@ -119,14 +119,14 @@ public class TdrManifestQuartzJob extends QuartzJob {
         importTables(
             tdrManifestImportTables,
             fileDownloadHelper.getFileMap(),
-            targetInstance,
+            targetCollection,
             ImportMode.BASE_ATTRIBUTES);
 
     // add relations to the existing base attributes
     importTables(
         tdrManifestImportTables,
         fileDownloadHelper.getFileMap(),
-        targetInstance,
+        targetCollection,
         ImportMode.RELATIONS);
 
     // activity logging for import status
@@ -152,7 +152,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
    *
    * @param inputFile Parquet file to be imported.
    * @param table info about the table to be imported
-   * @param targetInstance instance into which to import
+   * @param targetCollection collection into which to import
    * @param importMode mode for this invocation
    * @return statistics on what was imported
    */
@@ -160,7 +160,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
   BatchWriteResult importTable(
       InputFile inputFile,
       TdrManifestImportTable table,
-      UUID targetInstance,
+      UUID targetCollection,
       ImportMode importMode) {
     // upsert this parquet file's contents
     try (ParquetReader<GenericRecord> avroParquetReader =
@@ -170,7 +170,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       logger.info("batch-writing records for file ...");
       return batchWriteService.batchWrite(
           recordSourceFactory.forTdrImport(avroParquetReader, table, importMode),
-          targetInstance,
+          targetCollection,
           table.recordType(),
           table.primaryKey(),
           importMode);
@@ -183,13 +183,13 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * Given the list of tables/data files to be imported, loop through and import each one
    *
    * @param importTables tables to be imported
-   * @param targetInstance instance into which to import
+   * @param targetCollection collection into which to import
    * @param importMode mode for this invocation
    */
   private BatchWriteResult importTables(
       List<TdrManifestImportTable> importTables,
       Multimap<String, File> fileMap,
-      UUID targetInstance,
+      UUID targetCollection,
       ImportMode importMode) {
 
     var combinedResult = BatchWriteResult.empty();
@@ -210,7 +210,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
                       // generate the HadoopInputFile
                       InputFile inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
-                      var result = importTable(inputFile, importTable, targetInstance, importMode);
+                      var result =
+                          importTable(inputFile, importTable, targetCollection, importMode);
                       if (result != null) {
                         combinedResult.merge(result);
                       }

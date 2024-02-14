@@ -21,20 +21,20 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
-/** Tests for InstanceService.getWorkspaceId() */
+/** Tests for CollectionService.getWorkspaceId() */
 @ActiveProfiles(profiles = {"mock-sam"})
 @DirtiesContext
 @SpringBootTest
 @TestPropertySource(
     properties = {
-      "twds.instance.workspace-id=4fbac661-2ea2-4592-af6d-3c3f710b0456",
+      "twds.collection.workspace-id=4fbac661-2ea2-4592-af6d-3c3f710b0456",
     })
 class CollectionServiceGetWorkspaceIdTest {
 
   @Autowired private CollectionService collectionService;
   @MockBean private CollectionDao mockCollectionDao;
 
-  @Value("${twds.instance.workspace-id:}")
+  @Value("${twds.collection.workspace-id:}")
   private String workspaceIdProperty;
 
   @BeforeEach

@@ -36,10 +36,10 @@ public class CollectionInitializerBean {
 
   private final BackupRestoreService restoreService;
 
-  @Value("${twds.instance.workspace-id}")
+  @Value("${twds.collection.workspace-id}")
   private String workspaceId;
 
-  @Value("${twds.instance.source-workspace-id}")
+  @Value("${twds.collection.source-workspace-id}")
   private String sourceWorkspaceId;
 
   @Value("${twds.startup-token}")

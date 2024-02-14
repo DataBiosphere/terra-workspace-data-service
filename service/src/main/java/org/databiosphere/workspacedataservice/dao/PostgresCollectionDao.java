@@ -30,9 +30,9 @@ public class PostgresCollectionDao implements CollectionDao {
       NamedParameterJdbcTemplate namedTemplate, TwdsProperties twdsProperties) {
     this.namedTemplate = namedTemplate;
     // if we have a valid workspaceId, save it to a local var now
-    if (twdsProperties.getInstance() != null
-        && twdsProperties.getInstance().getWorkspaceUuid() != null) {
-      this.workspaceId = twdsProperties.getInstance().getWorkspaceUuid();
+    if (twdsProperties.getCollection() != null
+        && twdsProperties.getCollection().getWorkspaceUuid() != null) {
+      this.workspaceId = twdsProperties.getCollection().getWorkspaceUuid();
     }
   }
 

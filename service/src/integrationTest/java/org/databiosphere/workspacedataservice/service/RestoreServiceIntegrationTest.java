@@ -26,8 +26,8 @@ import org.springframework.test.context.TestPropertySource;
 @SpringBootTest
 @TestPropertySource(
     properties = {
-      "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000",
-      "twds.instance.source-workspace-id=10000000-0000-0000-0000-000000000111",
+      "twds.collection.workspace-id=123e4567-e89b-12d3-a456-426614174000",
+      "twds.collection.source-workspace-id=10000000-0000-0000-0000-000000000111",
       "twds.pg_dump.useAzureIdentity=false"
     })
 public class RestoreServiceIntegrationTest {
@@ -37,7 +37,7 @@ public class RestoreServiceIntegrationTest {
 
   @Autowired RecordDao recordDao;
 
-  @Value("${twds.instance.workspace-id:}")
+  @Value("${twds.collection.workspace-id:}")
   private String workspaceId;
 
   @AfterEach

@@ -42,10 +42,10 @@ public class BackupRestoreService {
   private final ActivityLogger activityLogger;
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
 
-  @Value("${twds.instance.workspace-id:}")
+  @Value("${twds.collection.workspace-id:}")
   private String workspaceId;
 
-  @Value("${twds.instance.source-workspace-id:}")
+  @Value("${twds.collection.source-workspace-id:}")
   private String sourceWorkspaceId;
 
   @Value("${twds.pg_dump.user:}")
@@ -230,7 +230,7 @@ public class BackupRestoreService {
     if (isBackup) {
       command.put(pgDumpPath, null);
       command.put("-b", null);
-      // Grab all workspace instances/schemas in wds
+      // Grab all workspace collections/schemas in wds
       for (UUID id : collectionDao.listCollectionSchemas()) {
         command.put("-n", id.toString());
       }

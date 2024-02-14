@@ -44,7 +44,7 @@ import org.springframework.test.context.TestPropertySource;
   "mock-sam"
 })
 @TestPropertySource(
-    properties = {"twds.instance.workspace-id=90e1b179-9f83-4a6f-a8c2-db083df4cd03"})
+    properties = {"twds.collection.workspace-id=90e1b179-9f83-4a6f-a8c2-db083df4cd03"})
 @DirtiesContext
 @SpringBootTest(
     classes = {
@@ -70,7 +70,7 @@ class CollectionInitializerBeanTest {
   @SpyBean CollectionDao collectionDao;
   @SpyBean CloneDao cloneDao;
 
-  @Value("${twds.instance.workspace-id}")
+  @Value("${twds.collection.workspace-id}")
   String workspaceId;
 
   // sourceWorkspaceId when we need one

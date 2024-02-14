@@ -44,9 +44,9 @@ import org.springframework.test.context.TestPropertySource;
 @ActiveProfiles({"mock-storage", "local-cors", "mock-sam", "local"})
 @TestPropertySource(
     properties = {
-      "twds.instance.workspace-id=5a9b583c-17ee-4c88-a14c-0edbf31175db",
+      "twds.collection.workspace-id=5a9b583c-17ee-4c88-a14c-0edbf31175db",
       // source id must match value in WDS-integrationTest-LocalFileStorage-input.sql
-      "twds.instance.source-workspace-id=10000000-0000-0000-0000-000000000111",
+      "twds.collection.source-workspace-id=10000000-0000-0000-0000-000000000111",
       "twds.pg_dump.useAzureIdentity=false"
     })
 @DirtiesContext
@@ -66,10 +66,10 @@ class CollectionInitializerCloneTest {
   @MockBean WorkspaceManagerDao workspaceManagerDao;
 
   // values
-  @Value("${twds.instance.workspace-id}")
+  @Value("${twds.collection.workspace-id}")
   String workspaceId;
 
-  @Value("${twds.instance.source-workspace-id}")
+  @Value("${twds.collection.source-workspace-id}")
   String sourceWorkspaceId;
 
   @AfterEach

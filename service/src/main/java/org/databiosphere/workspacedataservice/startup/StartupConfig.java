@@ -47,7 +47,7 @@ public class StartupConfig {
       if (twdsProperties.getTenancy().getRequireEnvWorkspace()) {
         // attempt to parse the workspace id
         try {
-          UUID workspaceUuid = UUID.fromString(twdsProperties.getInstance().getWorkspaceId());
+          UUID workspaceUuid = UUID.fromString(twdsProperties.getCollection().getWorkspaceId());
           logger.info("single-tenant workspace id: {}", workspaceUuid);
         } catch (Exception e) {
           logger.error(

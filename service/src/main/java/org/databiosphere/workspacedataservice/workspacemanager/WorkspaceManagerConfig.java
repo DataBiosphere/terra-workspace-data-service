@@ -13,7 +13,7 @@ public class WorkspaceManagerConfig {
   @Value("${workspacemanagerurl:}")
   private String workspaceManagerUrl;
 
-  @Value("${twds.instance.workspace-id:}")
+  @Value("${twds.collection.workspace-id:}")
   private String workspaceId;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkspaceManagerConfig.class);

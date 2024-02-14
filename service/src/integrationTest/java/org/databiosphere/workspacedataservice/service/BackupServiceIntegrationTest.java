@@ -20,7 +20,7 @@ import org.springframework.test.context.TestPropertySource;
 @SpringBootTest
 @TestPropertySource(
     properties = {
-      "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000",
+      "twds.collection.workspace-id=123e4567-e89b-12d3-a456-426614174000",
       "twds.pg_dump.useAzureIdentity=false"
     })
 class BackupServiceIntegrationTest {

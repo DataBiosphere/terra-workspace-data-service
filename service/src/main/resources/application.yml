@@ -115,8 +115,8 @@ server:
 twds:
   write.batch.size: 5000
   streaming.fetch.size: 5000
-  instance:
-    # Workspace Id for launching instance
+  collection:
+    # Workspace Id for initializing collection
     workspace-id: ${WORKSPACE_ID:}
     source-workspace-id: ${SOURCE_WORKSPACE_ID:}
   # short-lived credentials to use during cloning

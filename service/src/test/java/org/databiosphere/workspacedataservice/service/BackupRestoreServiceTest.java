@@ -13,7 +13,7 @@ import org.springframework.test.context.TestPropertySource;
 @SpringBootTest(properties = "spring.cache.type=NONE")
 @TestPropertySource(
     properties = {
-      "twds.instance.workspace-id=f7c83b8d-53f3-473e-b9b4-2663d13e2752",
+      "twds.collection.workspace-id=f7c83b8d-53f3-473e-b9b4-2663d13e2752",
       "twds.pg_dump.path=/unit/test/pg_dump",
       "twds.pg_dump.psqlPath=/unit/test/psql"
     })

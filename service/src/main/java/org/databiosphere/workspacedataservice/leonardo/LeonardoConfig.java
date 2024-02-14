@@ -13,7 +13,7 @@ public class LeonardoConfig {
   @Value("${leoUrl:}")
   private String leonardoUrl;
 
-  @Value("${twds.instance.source-workspace-id:}")
+  @Value("${twds.collection.source-workspace-id:}")
   private String workspaceId;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LeonardoConfig.class);

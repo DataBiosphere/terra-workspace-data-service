@@ -36,7 +36,7 @@ public class CollectionService {
       CollectionDao collectionDao,
       SamDao samDao,
       ActivityLogger activityLogger,
-      @Value("${twds.instance.workspace-id:}") String workspaceIdProperty) {
+      @Value("${twds.collection.workspace-id:}") String workspaceIdProperty) {
     this.collectionDao = collectionDao;
     this.samDao = samDao;
     this.activityLogger = activityLogger;
@@ -135,7 +135,7 @@ public class CollectionService {
    * @return the workspace containing the given collection.
    */
   public WorkspaceId getWorkspaceId(CollectionId collectionId) {
-    // look up the workspaceId for this collection in the instance table
+    // look up the workspaceId for this collection in the collection table
     WorkspaceId rowWorkspaceId = null;
     try {
       rowWorkspaceId = collectionDao.getWorkspaceId(collectionId);

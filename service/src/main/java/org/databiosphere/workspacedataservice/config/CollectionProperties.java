@@ -4,9 +4,9 @@ import java.util.UUID;
 
 /**
  * ConfigurationProperties class, loaded as a member of TwdsProperties, representing the
- * `twds.instance` property hierarchy
+ * `twds.collection` property hierarchy
  */
-public class InstanceProperties {
+public class CollectionProperties {
 
   private String workspaceId;
   private UUID workspaceUuid;

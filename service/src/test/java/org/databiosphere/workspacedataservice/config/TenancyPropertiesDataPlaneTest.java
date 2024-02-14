@@ -9,8 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-// the "data-plane" profile enforces validity of twds.instance.workspace-id, so we need to set that
-@SpringBootTest(properties = {"twds.instance.workspace-id=00ddba11-0000-0000-0000-000000000000"})
+// the "data-plane" profile enforces validity of twds.collection.workspace-id, so we need to set
+// that
+@SpringBootTest(properties = {"twds.collection.workspace-id=00ddba11-0000-0000-0000-000000000000"})
 @ActiveProfiles("data-plane")
 class TenancyPropertiesDataPlaneTest {
 

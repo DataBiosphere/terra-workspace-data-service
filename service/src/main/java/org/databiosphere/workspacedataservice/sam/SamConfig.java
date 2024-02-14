@@ -18,7 +18,7 @@ public class SamConfig {
   @Value("${samurl:}")
   private String samUrl;
 
-  @Value("${twds.instance.workspace-id:}")
+  @Value("${twds.collection.workspace-id:}")
   private String workspaceIdArgument;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SamConfig.class);

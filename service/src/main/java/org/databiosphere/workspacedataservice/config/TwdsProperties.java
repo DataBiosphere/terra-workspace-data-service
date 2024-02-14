@@ -7,16 +7,16 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "twds")
 public class TwdsProperties {
-  InstanceProperties instance;
+  CollectionProperties collection;
   String startupToken;
   TenancyProperties tenancy;
 
-  public InstanceProperties getInstance() {
-    return instance;
+  public CollectionProperties getCollection() {
+    return collection;
   }
 
-  public void setInstance(InstanceProperties instance) {
-    this.instance = instance;
+  public void setCollection(CollectionProperties collection) {
+    this.collection = collection;
   }
 
   public String getStartupToken() {

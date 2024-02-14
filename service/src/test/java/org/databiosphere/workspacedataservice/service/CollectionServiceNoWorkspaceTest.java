@@ -15,21 +15,21 @@ import org.springframework.test.context.TestPropertySource;
 
 @DirtiesContext
 @SpringBootTest
-@TestPropertySource(properties = {"twds.instance.workspace-id="})
+@TestPropertySource(properties = {"twds.collection.workspace-id="})
 class CollectionServiceNoWorkspaceTest {
 
   @Autowired private CollectionService collectionService;
 
-  @Value("${twds.instance.workspace-id:}")
+  @Value("${twds.collection.workspace-id:}")
   private String workspaceIdProperty;
 
   @Test
   void assumptions() {
-    // ensure the test is set up correctly, with an empty twds.instance.workspace-id property
+    // ensure the test is set up correctly, with an empty twds.collection.workspace-id property
     assertThat(workspaceIdProperty).isEmpty();
   }
 
-  // when twds.instance.workspace-id is empty, collectionService.getWorkspaceId will echo the
+  // when twds.collection.workspace-id is empty, collectionService.getWorkspaceId will echo the
   // collectionId back as the workspace id
   @Test
   void getWorkspaceId() {

@@ -38,7 +38,7 @@ import org.springframework.test.context.TestPropertySource;
   "mock-clone-dao",
   "local-cors"
 })
-@TestPropertySource(properties = {"twds.instance.workspace-id="})
+@TestPropertySource(properties = {"twds.collection.workspace-id="})
 @DirtiesContext
 @SpringBootTest(
     classes = {

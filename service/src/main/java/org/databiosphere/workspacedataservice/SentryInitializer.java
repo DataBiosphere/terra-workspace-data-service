@@ -20,7 +20,7 @@ public class SentryInitializer {
   @Value("${sentry.dsn}")
   String dsn;
 
-  @Value("${twds.instance.workspace-id}")
+  @Value("${twds.collection.workspace-id}")
   String workspaceId;
 
   @Value("${git.commit.id.abbrev}")
