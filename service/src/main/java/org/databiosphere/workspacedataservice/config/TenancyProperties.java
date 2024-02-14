@@ -10,7 +10,7 @@ public class TenancyProperties {
 
   /**
    * Does this WDS deployment allow virtual collections? That is, does it allow for a collection
-   * (f/k/a "instance") which does not have a corresponding row in the sys_wds.instance table? The
+   * (f/k/a "instance") which does not have a corresponding row in the sys_wds.collection table? The
    * primary use case for virtual collections is when running as cWDS for imports only. Virtual
    * collections will always have collection id == workspace id.
    *

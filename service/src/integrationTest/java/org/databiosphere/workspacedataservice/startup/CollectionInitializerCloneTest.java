@@ -79,7 +79,7 @@ class CollectionInitializerCloneTest {
     allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
     // clean up any clone entries
     namedTemplate.getJdbcTemplate().update("delete from sys_wds.clone");
-    // TODO: also drop any orphaned pg schemas that don't have an entry in the sys_wds.instance
+    // TODO: also drop any orphaned pg schemas that don't have an entry in the sys_wds.collection
     // table.
     // this can happen when restores fail.
   }
@@ -166,7 +166,7 @@ class CollectionInitializerCloneTest {
     // have its name and description populated correctly
     Map<String, Object> rowMap =
         namedTemplate.queryForMap(
-            "select id, workspace_id, name, description from sys_wds.instance where id = :id",
+            "select id, workspace_id, name, description from sys_wds.collection where id = :id",
             new MapSqlParameterSource("id", workspaceUuid));
 
     assertEquals(workspaceUuid, rowMap.get("id"));

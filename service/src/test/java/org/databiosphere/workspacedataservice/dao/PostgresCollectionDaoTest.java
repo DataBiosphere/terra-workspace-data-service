@@ -65,18 +65,18 @@ class PostgresCollectionDaoTest {
     List<UUID> allInstances = collectionDao.listCollectionSchemas();
     assertEquals(0, allInstances.size());
 
-    UUID instanceId = UUID.randomUUID();
-    collectionDao.createSchema(instanceId);
+    UUID collectionId = UUID.randomUUID();
+    collectionDao.createSchema(collectionId);
 
     Map<String, Object> rowMap =
         namedParameterJdbcTemplate.queryForMap(
-            "select id, workspace_id, name, description from sys_wds.instance where id = :id",
-            new MapSqlParameterSource("id", instanceId));
+            "select id, workspace_id, name, description from sys_wds.collection where id = :id",
+            new MapSqlParameterSource("id", collectionId));
 
-    assertEquals(instanceId, rowMap.get("id"));
+    assertEquals(collectionId, rowMap.get("id"));
     assertEquals(workspaceId, rowMap.get("workspace_id"));
-    assertEquals(instanceId.toString(), rowMap.get("name"));
-    assertEquals(instanceId.toString(), rowMap.get("description"));
+    assertEquals(collectionId.toString(), rowMap.get("name"));
+    assertEquals(collectionId.toString(), rowMap.get("description"));
   }
 
   // when creating an instance whose id is the same as the containing workspace's id,
@@ -87,16 +87,16 @@ class PostgresCollectionDaoTest {
     List<UUID> allInstances = collectionDao.listCollectionSchemas();
     assertEquals(0, allInstances.size());
 
-    UUID instanceId = workspaceId;
+    UUID collectionId = workspaceId;
 
-    collectionDao.createSchema(instanceId);
+    collectionDao.createSchema(collectionId);
 
     Map<String, Object> rowMap =
         namedParameterJdbcTemplate.queryForMap(
-            "select id, workspace_id, name, description from sys_wds.instance where id = :id",
-            new MapSqlParameterSource("id", instanceId));
+            "select id, workspace_id, name, description from sys_wds.collection where id = :id",
+            new MapSqlParameterSource("id", collectionId));
 
-    assertEquals(instanceId, rowMap.get("id"));
+    assertEquals(collectionId, rowMap.get("id"));
     assertEquals(workspaceId, rowMap.get("workspace_id"));
     assertEquals("default", rowMap.get("name"));
     assertEquals("default", rowMap.get("description"));
