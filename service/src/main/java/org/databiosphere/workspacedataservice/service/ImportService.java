@@ -110,8 +110,8 @@ public class ImportService {
       UUID jobId,
       Map<String, Serializable> arguments) {
     return switch (importType) {
-      case TDRMANIFEST ->
-          new TdrManifestSchedulable(jobId.toString(), "TDR manifest import", arguments);
+      case TDRMANIFEST -> new TdrManifestSchedulable(
+          jobId.toString(), "TDR manifest import", arguments);
       case PFB -> new PfbSchedulable(jobId.toString(), "TODO: PFB import", arguments);
     };
   }
