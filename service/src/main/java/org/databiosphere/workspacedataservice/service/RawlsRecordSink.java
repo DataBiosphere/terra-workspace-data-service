@@ -37,7 +37,8 @@ public class RawlsRecordSink implements RecordSink {
 
   RawlsRecordSink(String attributePrefix) {
     this.attributePrefix = attributePrefix;
-    // TODO: make stateless/threadsafe
+    // TODO: inject an ObjectMapper & consumer of JSON during construction; this will allow tests
+    //  to verify JSON output, and allow AJ-1585 to plug in the appropriate bucket writing logic
     this.entities = new ArrayList<>();
   }
 
@@ -76,7 +77,7 @@ public class RawlsRecordSink implements RecordSink {
 
   private List<? extends AttributeOperation> makeOperations(Record record) {
     return BiStream.from(record.getAttributes().attributeSet())
-        .mapKeys(name -> getAttributeName(record.getRecordType(), name))
+        .mapKeys(attributeName -> getAttributeName(record.getRecordType(), attributeName))
         .filterValues(Objects::nonNull)
         .flatMapToObj(this::toOperations)
         .toList();
@@ -92,8 +93,7 @@ public class RawlsRecordSink implements RecordSink {
     return Stream.of(new AddUpdateAttribute(name, attributeValue));
   }
 
-  @VisibleForTesting
-  String getAttributeName(RecordType recordType, String name) {
+  private String getAttributeName(RecordType recordType, String name) {
     if (name.equals("name")) {
       return String.format("%s:%s_name", attributePrefix, recordType);
     }
