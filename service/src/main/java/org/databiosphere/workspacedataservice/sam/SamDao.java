@@ -45,9 +45,9 @@ public interface SamDao {
    *
    * @return true if the user has permission
    */
-  boolean hasReadWorkspacePermission(String collectionId);
+  boolean hasReadWorkspacePermission(String workspaceId);
 
-  boolean hasReadWorkspacePermission(String collectionId, String token);
+  boolean hasReadWorkspacePermission(String workspaceId, String token);
 
   /**
    * Check if the current user has permission to write to a workspace resource from Sam

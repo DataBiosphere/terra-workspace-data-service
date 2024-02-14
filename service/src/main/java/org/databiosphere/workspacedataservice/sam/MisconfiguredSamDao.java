@@ -59,13 +59,13 @@ public class MisconfiguredSamDao implements SamDao {
   }
 
   @Override
-  public boolean hasReadWorkspacePermission(String collectionId) {
+  public boolean hasReadWorkspacePermission(String workspaceId) {
     logWarning();
     return false;
   }
 
   @Override
-  public boolean hasReadWorkspacePermission(String collectionId, String token) {
+  public boolean hasReadWorkspacePermission(String workspaceId, String token) {
     logWarning();
     return false;
   }
