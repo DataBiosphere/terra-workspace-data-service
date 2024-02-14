@@ -2,11 +2,12 @@ package org.databiosphere.workspacedataservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
+import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
@@ -28,7 +29,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(profiles = {"mock-sam", "data-plane"})
 @SpringBootTest(properties = {"twds.instance.workspace-id=f01dab1e-0000-1111-2222-000011112222"})
-class JobServiceDataPlaneTest {
+class JobServiceDataPlaneTest extends JobServiceBaseTest {
 
   @Autowired JobService jobService;
   @Autowired TwdsProperties twdsProperties;
@@ -43,6 +44,10 @@ class JobServiceDataPlaneTest {
     reset(collectionDao);
     reset(samDao);
   }
+
+  // ==================================================
+  // ========== tests for getJob ======================
+  // ==================================================
 
   /** requested job does not exist */
   @Test
@@ -151,16 +156,101 @@ class JobServiceDataPlaneTest {
     assertThat(actual.getMessage()).startsWith("Collection");
   }
 
-  private GenericJobServerModel makeJob(UUID jobId, CollectionId collectionId) {
-    return new GenericJobServerModel(
-        jobId,
-        GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
-        collectionId.id(),
-        GenericJobServerModel.StatusEnum.RUNNING,
-        // set created and updated to now, but in UTC because that's how Postgres stores it
-        OffsetDateTime.now(ZoneId.of("Z")),
-        OffsetDateTime.now(ZoneId.of("Z")));
+  // ==================================================
+  // ========== tests for getJobsForCollection ========
+  // ==================================================
+
+  /** Collection does not exist */
+  @Test
+  void listJobsCollectionDoesNotExist() {
+    // Arrange
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    // collection for this job does not exist
+    when(collectionDao.getWorkspaceId(collectionId))
+        .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
+
+    // Act / assert
+    Exception actual =
+        assertThrows(
+            MissingObjectException.class,
+            () -> jobService.getJobsForCollection(collectionId, allStatuses()));
+
+    // Assert
+    assertThat(actual.getMessage()).startsWith("Collection");
   }
+
+  /** Collection exists, associated with default workspace, user has permission */
+  @Test
+  void listJobsDefaultCollection() {
+    // Arrange
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    // collection exists and is associated with the $WORKSPACE_ID workspace
+    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
+    // user has permission to that workspace
+    when(samDao.hasReadWorkspacePermission(getEnvWorkspaceId().toString())).thenReturn(true);
+    // return some jobs when listing this collection
+    when(jobDao.getJobsForCollection(eq(collectionId), any()))
+        .thenReturn(makeJobList(collectionId, 2));
+
+    // Act
+    List<GenericJobServerModel> actual =
+        jobService.getJobsForCollection(collectionId, allStatuses());
+
+    // Assert
+    // this is verifying permissions only; only smoke-testing correctness of the result
+    assertThat(actual).hasSize(2);
+  }
+
+  /** Collection exists, associated with default workspace, user does not have permission */
+  @Test
+  void listJobsDefaultCollectionNoPermission() {
+    // Arrange
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    // collection exists and is associated with the $WORKSPACE_ID workspace
+    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
+    // user has permission to that workspace
+    when(samDao.hasReadWorkspacePermission(getEnvWorkspaceId().toString())).thenReturn(false);
+    // return some jobs when listing this collection
+    when(jobDao.getJobsForCollection(eq(collectionId), any()))
+        .thenReturn(makeJobList(collectionId, 3));
+
+    // Act / assert
+    Exception actual =
+        assertThrows(
+            AuthorizationException.class,
+            () -> jobService.getJobsForCollection(collectionId, allStatuses()));
+
+    // Assert
+    assertThat(actual.getMessage()).endsWith("this job.\"");
+  }
+
+  /** Collection exists, associated with a non-default workspace */
+  @Test
+  void listJobsNonDefaultCollection() {
+    // Arrange
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    // collection exists and is associated with a non-default workspace
+    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+    // user has permission to that workspace
+    when(samDao.hasReadWorkspacePermission(workspaceId.toString())).thenReturn(true);
+    // return some jobs when listing this collection
+    when(jobDao.getJobsForCollection(eq(collectionId), any()))
+        .thenReturn(makeJobList(collectionId, 4));
+
+    // Act / assert
+    Exception actual =
+        assertThrows(
+            CollectionException.class,
+            () -> jobService.getJobsForCollection(collectionId, allStatuses()));
+
+    // Assert
+    assertThat(actual.getMessage()).startsWith("Found unexpected workspaceId for collection");
+  }
+
+  // ==================================================
+  // ========== helpers ===============================
+  // ==================================================
 
   private WorkspaceId getEnvWorkspaceId() {
     return WorkspaceId.of(twdsProperties.getInstance().getWorkspaceUuid());

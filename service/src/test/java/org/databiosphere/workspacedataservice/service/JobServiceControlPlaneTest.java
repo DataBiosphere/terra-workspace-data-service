@@ -3,11 +3,12 @@ package org.databiosphere.workspacedataservice.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
+import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
@@ -29,7 +30,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(profiles = {"mock-sam", "control-plane"})
 @SpringBootTest
-class JobServiceControlPlaneTest {
+class JobServiceControlPlaneTest extends JobServiceBaseTest {
 
   @Autowired JobService jobService;
   @Autowired TwdsProperties twdsProperties;
@@ -127,14 +128,76 @@ class JobServiceControlPlaneTest {
     assertThat(actual.getMessage()).endsWith("this job.\"");
   }
 
-  private GenericJobServerModel makeJob(UUID jobId, CollectionId collectionId) {
-    return new GenericJobServerModel(
-        jobId,
-        GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
-        collectionId.id(),
-        GenericJobServerModel.StatusEnum.RUNNING,
-        // set created and updated to now, but in UTC because that's how Postgres stores it
-        OffsetDateTime.now(ZoneId.of("Z")),
-        OffsetDateTime.now(ZoneId.of("Z")));
+  // ==================================================
+  // ========== tests for getJobsForCollection ========
+  // ==================================================
+
+  /** Collection exists. In the control plane, this is an error */
+  @Test
+  void listJobsCollectionExists() {
+    // Arrange
+    UUID jobId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    // collection for this job exists
+    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+    // user has permission to that workspace
+    when(samDao.hasReadWorkspacePermission(workspaceId.toString())).thenReturn(true);
+
+    // Act / assert
+    Exception actual =
+        assertThrows(
+            CollectionException.class,
+            () -> jobService.getJobsForCollection(collectionId, allStatuses()));
+
+    // Assert
+    assertEquals("Expected a virtual collection", actual.getMessage());
+  }
+
+  /** Collection is virtual; user has permission */
+  @Test
+  void listJobsVirtualCollection() {
+    // Arrange
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    // collection for this job does not exist
+    when(collectionDao.getWorkspaceId(collectionId))
+        .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
+    // user has permission to the workspace with the same id as the collection
+    when(samDao.hasReadWorkspacePermission(collectionId.toString())).thenReturn(true);
+    // return some jobs when listing this collection
+    when(jobDao.getJobsForCollection(eq(collectionId), any()))
+        .thenReturn(makeJobList(collectionId, 2));
+
+    // Act
+    List<GenericJobServerModel> actual =
+        jobService.getJobsForCollection(collectionId, allStatuses());
+
+    // Assert
+    // this is verifying permissions only; only smoke-testing correctness of the result
+    assertThat(actual).hasSize(2);
+  }
+
+  /** Collection is virtual; user does not have permission */
+  @Test
+  void listJobsVirtualCollectionNoPermission() {
+    // Arrange
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    // collection for this job does not exist
+    when(collectionDao.getWorkspaceId(collectionId))
+        .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
+    // user has permission to the workspace with the same id as the collection
+    when(samDao.hasReadWorkspacePermission(collectionId.toString())).thenReturn(false);
+    // return some jobs when listing this collection
+    when(jobDao.getJobsForCollection(eq(collectionId), any()))
+        .thenReturn(makeJobList(collectionId, 3));
+
+    // Act / assert
+    Exception actual =
+        assertThrows(
+            AuthorizationException.class,
+            () -> jobService.getJobsForCollection(collectionId, allStatuses()));
+
+    // Assert
+    assertThat(actual.getMessage()).endsWith("this job.\"");
   }
 }
