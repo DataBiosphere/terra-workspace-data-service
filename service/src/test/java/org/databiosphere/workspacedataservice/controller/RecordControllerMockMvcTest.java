@@ -3099,12 +3099,27 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
             .andReturn();
     RecordTypeSchema schema = fromJson(schemaResult, RecordTypeSchema.class);
 
-    assertEquals("JSON", schema.getAttributeSchema(attributeName).datatype());
+    String expectedType = inputValue instanceof List ? "ARRAY_OF_JSON" : "JSON";
+    assertEquals(expectedType, schema.getAttributeSchema(attributeName).datatype());
   }
 
   static Stream<Arguments> jsonValues() {
     return Stream.of(
-        Arguments.of(Map.of("value", "foo"), Map.of("value", "foo")),
-        Arguments.of("{\"value\":\"foo\"}", Map.of("value", "foo")));
+        Arguments.of(
+            Map.of("string", "foo", "number", 1, "boolean", true),
+            Map.of("string", "foo", "number", BigInteger.valueOf(1), "boolean", Boolean.TRUE)),
+        // TODO: Is this case (creating a JSON attribute by passing a JSON encoded string)
+        // intentionally supported?
+        Arguments.of(
+            "{\"string\":\"foo\",\"number\":1,\"boolean\":true}",
+            Map.of("string", "foo", "number", BigInteger.valueOf(1), "boolean", Boolean.TRUE)),
+        Arguments.of(
+            List.of(
+                Map.of("string", "foo", "number", 1, "boolean", true),
+                Map.of("string", "bar", "number", 2, "boolean", false)),
+            List.of(
+                Map.of("string", "foo", "number", BigInteger.valueOf(1), "boolean", Boolean.TRUE),
+                Map.of(
+                    "string", "bar", "number", BigInteger.valueOf(2), "boolean", Boolean.FALSE))));
   }
 }

@@ -767,6 +767,18 @@ public class RecordDao {
           .map(Boolean::parseBoolean)
           .toList()
           .toArray(new Boolean[0]);
+      case ARRAY_OF_JSON -> attVal.stream()
+          .map(
+              el -> {
+                try {
+                  return objectMapper.writeValueAsString(el);
+                } catch (JsonProcessingException e) {
+                  LOGGER.error("Could not serialize array element to json string", e);
+                  throw new RuntimeException(e);
+                }
+              })
+          .toList()
+          .toArray(new String[0]);
       default -> throw new IllegalArgumentException("Unhandled array type " + typeMapping);
     };
   }
@@ -989,11 +1001,14 @@ public class RecordDao {
       return object;
     }
 
-    private Object getArrayValue(Object object, DataTypeMapping typeMapping) {
+    private Object getArrayValue(Object object, DataTypeMapping typeMapping)
+        throws JsonProcessingException {
       if (typeMapping == DataTypeMapping.ARRAY_OF_DATE_TIME) {
         return convertToLocalDateTime(object);
       } else if (typeMapping == DataTypeMapping.ARRAY_OF_DATE) {
         return convertToLocalDate(object);
+      } else if (typeMapping == DataTypeMapping.ARRAY_OF_JSON) {
+        return convertToJson(object);
       }
       return object;
     }
@@ -1012,6 +1027,15 @@ public class RecordDao {
       LocalDate[] result = new LocalDate[tzArray.length];
       for (int i = 0; i < tzArray.length; i++) {
         result[i] = tzArray[i].toLocalDate();
+      }
+      return result;
+    }
+
+    private Object[] convertToJson(Object object) throws JsonProcessingException {
+      String[] jsonArray = (String[]) object;
+      Object[] result = new Object[jsonArray.length];
+      for (int i = 0; i < jsonArray.length; i++) {
+        result[i] = objectMapper.readValue(jsonArray[i], Object.class);
       }
       return result;
     }

@@ -145,6 +145,12 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
             List.of("terra-wds:/type/id", "terra-wds:/type/id2"),
             false),
 
+        // array of JSON objects
+        Arguments.of(
+            "[{\"value\":\"foo\"},{\"value\":\"bar\"},{\"value\":\"baz\"}]",
+            List.of(Map.of("value", "foo"), Map.of("value", "bar"), Map.of("value", "baz")),
+            false),
+
         // mixed array (these deserialize as mixed lists, will be coerced to a single data type
         // later in processing)
         Arguments.of(
