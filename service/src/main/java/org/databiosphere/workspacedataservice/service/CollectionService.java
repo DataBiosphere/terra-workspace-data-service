@@ -142,6 +142,12 @@ public class CollectionService {
     WorkspaceId rowWorkspaceId = null;
     try {
       rowWorkspaceId = collectionDao.getWorkspaceId(collectionId);
+      // as of this writing, if a deployment allows virtual collections, it is an error if the
+      // collection DOES exist.
+      if (twdsProperties.getTenancy() != null
+          && twdsProperties.getTenancy().getAllowVirtualCollections()) {
+        throw new CollectionException("Expected a virtual collection");
+      }
     } catch (EmptyResultDataAccessException e) {
       // does this deployment allow for virtual collections?
       if (twdsProperties.getTenancy() == null
