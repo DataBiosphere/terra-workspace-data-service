@@ -26,7 +26,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(profiles = {"mock-sam"})
 @SpringBootTest
-class JobServiceTest {
+class JobServiceDataPlaneTest {
   @MockBean JobDao jobDao;
   @Autowired SamDao samDao;
   @Autowired JobService jobService;
