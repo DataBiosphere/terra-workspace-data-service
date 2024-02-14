@@ -230,7 +230,7 @@ public class BackupRestoreService {
     if (isBackup) {
       command.put(pgDumpPath, null);
       command.put("-b", null);
-      // Grab all workspace instances/schemas in wds
+      // Grab all workspace collections/schemas in wds
       for (UUID id : collectionDao.listCollectionSchemas()) {
         command.put("-n", id.toString());
       }

@@ -33,37 +33,38 @@ class PostgresCollectionDaoTest {
   @Value("${twds.instance.workspace-id}")
   UUID workspaceId;
 
-  // clean up all instances before each test to ensure tests start from a clean slate
+  // clean up all collections before each test to ensure tests start from a clean slate
   @BeforeEach
   void beforeEach() {
-    List<UUID> allInstances = collectionDao.listCollectionSchemas();
-    allInstances.forEach(instanceId -> collectionDao.dropSchema(instanceId));
+    List<UUID> allCollections = collectionDao.listCollectionSchemas();
+    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
   }
 
-  // clean up all instances after all tests to ensure tests in other files start from a clean slate
+  // clean up all collections after all tests to ensure tests in other files start from a clean
+  // slate
   @AfterAll
   void afterAll() {
-    List<UUID> allInstances = collectionDao.listCollectionSchemas();
-    allInstances.forEach(instanceId -> collectionDao.dropSchema(instanceId));
+    List<UUID> allCollections = collectionDao.listCollectionSchemas();
+    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
   }
 
   // is this test set up correctly?
   @Test
-  void isPostgresInstanceDao() {
+  void isPostgresCollectionDao() {
     assertInstanceOf(
         PostgresCollectionDao.class,
         collectionDao,
-        "Tests in this file expect InstanceDao to be a PostgresInstanceDao; if this isn't true,"
+        "Tests in this file expect CollectionDao to be a PostgresCollectionDao; if this isn't true,"
             + "other test cases could fail.");
   }
 
-  // when creating an instance whose id is different from the containing workspace's id,
+  // when creating a collection whose id is different from the containing workspace's id,
   // do we populate all db columns correctly?
   @Test
   void insertPopulatesAllColumns() {
 
-    List<UUID> allInstances = collectionDao.listCollectionSchemas();
-    assertEquals(0, allInstances.size());
+    List<UUID> allCollections = collectionDao.listCollectionSchemas();
+    assertEquals(0, allCollections.size());
 
     UUID collectionId = UUID.randomUUID();
     collectionDao.createSchema(collectionId);
@@ -79,13 +80,13 @@ class PostgresCollectionDaoTest {
     assertEquals(collectionId.toString(), rowMap.get("description"));
   }
 
-  // when creating an instance whose id is the same as the containing workspace's id,
+  // when creating a collection whose id is the same as the containing workspace's id,
   // do we populate all db columns correctly?
   @Test
   void defaultPopulatesAllColumns() {
 
-    List<UUID> allInstances = collectionDao.listCollectionSchemas();
-    assertEquals(0, allInstances.size());
+    List<UUID> allCollections = collectionDao.listCollectionSchemas();
+    assertEquals(0, allCollections.size());
 
     UUID collectionId = workspaceId;
 

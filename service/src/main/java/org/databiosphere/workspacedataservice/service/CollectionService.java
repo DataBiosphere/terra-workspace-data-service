@@ -135,7 +135,7 @@ public class CollectionService {
    * @return the workspace containing the given collection.
    */
   public WorkspaceId getWorkspaceId(CollectionId collectionId) {
-    // look up the workspaceId for this collection in the instance table
+    // look up the workspaceId for this collection in the collection table
     WorkspaceId rowWorkspaceId = null;
     try {
       rowWorkspaceId = collectionDao.getWorkspaceId(collectionId);
