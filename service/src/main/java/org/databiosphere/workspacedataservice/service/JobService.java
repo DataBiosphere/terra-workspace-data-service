@@ -25,8 +25,8 @@ public class JobService {
     try {
       GenericJobServerModel result = jobDao.getJob(jobId);
       if (!collectionService.canReadCollection(CollectionId.of(result.getInstanceId()))) {
-        // TODO: this should return a 404 a la "job does not exist or you do not have permission to
-        //     see it"
+        // TODO AJ-1632: this should return a 404 a la "job does not exist or you do not have
+        //     permission to see it"
         throw new AuthorizationException("Caller does not have permission to view this job.");
       }
       return result;
@@ -38,9 +38,8 @@ public class JobService {
   public List<GenericJobServerModel> getJobsForCollection(
       CollectionId collectionId, List<String> statuses) {
     if (!collectionService.canReadCollection(collectionId)) {
-      // TODO: this should return a 404 a la "job does not exist or you do not have permission to
-      //     see it"
-      // TODO: the error message here is incorrect w/r/t "this job"
+      // TODO AJ-1632: this should return a 404 a la "job does not exist or you do not have
+      //     permission to see it".
       throw new AuthorizationException("Caller does not have permission to view this job.");
     }
     return jobDao.getJobsForCollection(collectionId, statuses);

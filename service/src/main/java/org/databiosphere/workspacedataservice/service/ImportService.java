@@ -52,7 +52,7 @@ public class ImportService {
     collectionService.validateCollection(instanceUuid);
 
     // validate write permission
-    // TODO: this must use collectionService.canWriteCollection() instead
+    // TODO AJ-1631: this must use collectionService.canWriteCollection() instead
     boolean hasWriteInstancePermission = samDao.hasWriteWorkspacePermission();
     logger.debug("hasWriteInstancePermission? {}", hasWriteInstancePermission);
     if (!hasWriteInstancePermission) {
