@@ -27,7 +27,7 @@ public class JobService {
   public GenericJobServerModel getJob(UUID jobId) {
     try {
       GenericJobServerModel result = jobDao.getJob(jobId);
-      if (!samDao.hasReadCollectionPermission(result.getInstanceId().toString())) {
+      if (!samDao.hasReadWorkspacePermission(result.getInstanceId().toString())) {
         throw new AuthorizationException("Caller does not have permission to view this job.");
       }
       return result;
@@ -38,7 +38,7 @@ public class JobService {
 
   public List<GenericJobServerModel> getJobsForCollection(
       CollectionId collectionId, List<String> statuses) {
-    if (!samDao.hasReadCollectionPermission(collectionId.toString())) {
+    if (!samDao.hasReadWorkspacePermission(collectionId.toString())) {
       throw new AuthorizationException("Caller does not have permission to view this job.");
     }
     return jobDao.getJobsForCollection(collectionId, statuses);

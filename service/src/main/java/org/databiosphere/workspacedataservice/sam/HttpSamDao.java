@@ -82,12 +82,12 @@ public class HttpSamDao implements SamDao {
    * @return true if the user has permission
    */
   @Override
-  public boolean hasWriteCollectionPermission() {
-    return hasWriteCollectionPermission(null);
+  public boolean hasWriteWorkspacePermission() {
+    return hasWriteWorkspacePermission(null);
   }
 
   @Override
-  public boolean hasWriteCollectionPermission(String token) {
+  public boolean hasWriteWorkspacePermission(String token) {
     return hasPermission(ACTION_WRITE, "Sam.hasWriteCollectionPermission", token);
   }
 
@@ -97,12 +97,12 @@ public class HttpSamDao implements SamDao {
    * @return true if the user has permission
    */
   @Override
-  public boolean hasReadCollectionPermission(String collectionId) {
-    return hasReadCollectionPermission(collectionId, null);
+  public boolean hasReadWorkspacePermission(String collectionId) {
+    return hasReadWorkspacePermission(collectionId, null);
   }
 
   @Override
-  public boolean hasReadCollectionPermission(String collectionId, String token) {
+  public boolean hasReadWorkspacePermission(String collectionId, String token) {
     LOGGER.debug(
         "Checking Sam permission for {}/{}/{} ...",
         SamDao.RESOURCE_NAME_WORKSPACE,

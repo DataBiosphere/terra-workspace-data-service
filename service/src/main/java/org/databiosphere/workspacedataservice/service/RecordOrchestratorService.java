@@ -99,7 +99,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     validateVersion(version);
     collectionService.validateCollection(collectionId);
 
-    boolean hasWriteCollectionPermission = samDao.hasWriteCollectionPermission();
+    boolean hasWriteCollectionPermission = samDao.hasWriteWorkspacePermission();
     LOGGER.debug("hasWriteCollectionPermission? {}", hasWriteCollectionPermission);
 
     if (!hasWriteCollectionPermission) {
