@@ -53,11 +53,9 @@ jobs:
     uses: ./.github/workflows/publish-docker.yml
     with:
       new-tag: ${{ needs.tag-job.outputs.new_tag }}
-      jiraId: ${{ inputs.jiraId }}
     secrets:
       ACR_SP_PASSWORD: ${{ secrets.ACR_SP_PASSWORD }}
       ACR_SP_USER: ${{ secrets.ACR_SP_USER }}
-      BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
   release-job:
     needs: tag-job
     permissions:
@@ -77,3 +75,11 @@ jobs:
           config-name: release-drafter-config.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  publish-app-version-job:
+    needs: [tag-job, docker-image-job]
+    uses: ./.github/workflows/publish-app-version.yml
+    with:
+      new-tag: ${{ needs.tag-job.outputs.new_tag }}
+      jiraId: ${{ inputs.jiraId }}
+    secrets:
+      BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
