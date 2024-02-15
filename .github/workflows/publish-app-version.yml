@@ -1,0 +1,57 @@
+name: Publish new app version to terra-helmfile
+on:
+  workflow_call:
+    inputs:
+      new-tag:
+        required: true
+        type: string
+      jiraId:
+        required: true
+        type: string
+    secrets:
+      BROADBOT_TOKEN:
+        required: true
+
+jobs:
+  create-terra-helmfile-pr:
+    name: Create terra-helmfile PR for latest WDS version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Look for AJ (Analysis Journeys) Jira ID in the manual workflow trigger message
+        id: find-jira-id
+        run: |
+          set +e
+          JIRA_ID=$(echo "${{ inputs.jiraId }}" | grep -iEo -m 1 'AJ-[0-9]+' | head -1 || '')
+          if [[ -z "$JIRA_ID" ]]; then
+            echo "JIRA_ID missing, PR to terra-helmfile will not be created" 1>&2
+            exit 1;
+          else
+            echo "JIRA_ID=${JIRA_ID}" >> $GITHUB_OUTPUT
+          fi
+          set -e
+
+      - name: Clone terra-helmfile
+        uses: actions/checkout@v4
+        with:
+          repository: broadinstitute/terra-helmfile
+          token: ${{ secrets.BROADBOT_TOKEN }} # Has to be set at checkout AND later when pushing to work
+          path: terra-helmfile
+
+      - name: Create terra-helmfile PR for latest WDS version
+        env:
+          BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
+          GH_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
+          JIRA_ID: ${{ steps.find-jira-id.outputs.JIRA_ID }}
+          HELM_NEW_TAG: ${{ inputs.new-tag }}
+        run: |
+          set -e
+          cd terra-helmfile
+          HELM_CUR_TAG=$(grep "/terra-workspace-data-service:" charts/wds/values.yaml | sed "s,.*/terra-workspace-data-service:,,")
+          git checkout -b ${JIRA_ID}-auto-update-${HELM_NEW_TAG}
+          [[ -n "$HELM_CUR_TAG" && -n "$HELM_NEW_TAG" ]]
+          sed -i "s/$HELM_CUR_TAG/$HELM_NEW_TAG/" charts/wds/values.yaml
+          git config --global user.name "broadbot"
+          git config --global user.email "broadbot@broadinstitute.org"
+          git commit -am "${JIRA_ID}: Auto update WDS version to $HELM_NEW_TAG"
+          git push -u origin ${JIRA_ID}-auto-update-${HELM_NEW_TAG}
+          gh pr create --title "${JIRA_ID}: auto update WDS version to $HELM_NEW_TAG" --body "${JIRA_ID} helm chart update" --label "automerge"
