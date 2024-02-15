@@ -59,7 +59,7 @@ dependencies {
     implementation "io.micrometer.prometheus:prometheus-rsocket-spring:$prometheus_rsocket_version"
     implementation 'org.springframework.integration:spring-integration-jdbc'
     implementation 'org.aspectj:aspectjweaver' // required by spring-retry, not used directly
-    implementation 'com.google.guava:guava:32.1.3-jre'
+    implementation 'com.google.guava:guava:33.0.0-jre'
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
