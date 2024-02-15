@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20240214_rename_instance_to_collection
+      author: bmorgan
+      changes:
+        - renameColumn:
+            schemaName: sys_wds
+            tableName: job
+            oldColumnName: instance_id
+            newColumnName: collection_id
+        - renameTable:
+            schemaName: sys_wds
+            oldTableName: instance
+            newTableName: collection

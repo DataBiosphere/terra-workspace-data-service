@@ -21,7 +21,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
-/** Tests for InstanceService.getWorkspaceId() */
+/** Tests for CollectionService.getWorkspaceId() */
 @ActiveProfiles(profiles = {"mock-sam"})
 @DirtiesContext
 @SpringBootTest

@@ -47,16 +47,16 @@ public class ImportService {
   }
 
   public GenericJobServerModel createImport(
-      UUID instanceUuid, ImportRequestServerModel importRequest) {
-    // validate instance exists
-    collectionService.validateCollection(instanceUuid);
+      UUID collectionId, ImportRequestServerModel importRequest) {
+    // validate collection exists
+    collectionService.validateCollection(collectionId);
 
     // validate write permission
     // TODO AJ-1631: this must use collectionService.canWriteCollection() instead
     boolean hasWriteWorkspacePermission = samDao.hasWriteWorkspacePermission();
     logger.debug("hasWriteWorkspacePermission? {}", hasWriteWorkspacePermission);
     if (!hasWriteWorkspacePermission) {
-      throw new AuthorizationException("Caller does not have permission to write to instance.");
+      throw new AuthorizationException("Caller does not have permission to write to collection.");
     }
 
     // get a token to execute the job
@@ -68,7 +68,7 @@ public class ImportService {
 
     ImportJobInput importJobInput = ImportJobInput.from(importRequest);
     Job<JobInput, JobResult> job =
-        Job.newJob(CollectionId.of(instanceUuid), JobType.DATA_IMPORT, importJobInput);
+        Job.newJob(CollectionId.of(collectionId), JobType.DATA_IMPORT, importJobInput);
 
     // persist the full job to WDS's db
     GenericJobServerModel createdJob = jobDao.createJob(job);
@@ -82,7 +82,7 @@ public class ImportService {
       Map<String, Serializable> arguments = new HashMap<>();
       arguments.put(ARG_TOKEN, petToken);
       arguments.put(ARG_URL, importRequest.getUrl().toString());
-      arguments.put(ARG_COLLECTION, instanceUuid.toString());
+      arguments.put(ARG_COLLECTION, collectionId.toString());
 
       // create the executable job to be scheduled
       Schedulable schedulable =

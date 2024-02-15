@@ -45,7 +45,7 @@ public class RestoreServiceIntegrationTest {
     // clean up any collection left in the db
     List<UUID> allCollections = collectionDao.listCollectionSchemas();
     allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
-    // TODO: also drop any orphaned pg schemas that don't have an entry in the sys_wds.instance
+    // TODO: also drop any orphaned pg schemas that don't have an entry in the sys_wds.collection
     // table.
     // this can happen when restores fail.
   }

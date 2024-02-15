@@ -33,70 +33,71 @@ class PostgresCollectionDaoTest {
   @Value("${twds.instance.workspace-id}")
   UUID workspaceId;
 
-  // clean up all instances before each test to ensure tests start from a clean slate
+  // clean up all collections before each test to ensure tests start from a clean slate
   @BeforeEach
   void beforeEach() {
-    List<UUID> allInstances = collectionDao.listCollectionSchemas();
-    allInstances.forEach(instanceId -> collectionDao.dropSchema(instanceId));
+    List<UUID> allCollections = collectionDao.listCollectionSchemas();
+    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
   }
 
-  // clean up all instances after all tests to ensure tests in other files start from a clean slate
+  // clean up all collections after all tests to ensure tests in other files start from a clean
+  // slate
   @AfterAll
   void afterAll() {
-    List<UUID> allInstances = collectionDao.listCollectionSchemas();
-    allInstances.forEach(instanceId -> collectionDao.dropSchema(instanceId));
+    List<UUID> allCollections = collectionDao.listCollectionSchemas();
+    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
   }
 
   // is this test set up correctly?
   @Test
-  void isPostgresInstanceDao() {
+  void isPostgresCollectionDao() {
     assertInstanceOf(
         PostgresCollectionDao.class,
         collectionDao,
-        "Tests in this file expect InstanceDao to be a PostgresInstanceDao; if this isn't true,"
+        "Tests in this file expect CollectionDao to be a PostgresCollectionDao; if this isn't true,"
             + "other test cases could fail.");
   }
 
-  // when creating an instance whose id is different from the containing workspace's id,
+  // when creating a collection whose id is different from the containing workspace's id,
   // do we populate all db columns correctly?
   @Test
   void insertPopulatesAllColumns() {
 
-    List<UUID> allInstances = collectionDao.listCollectionSchemas();
-    assertEquals(0, allInstances.size());
+    List<UUID> allCollections = collectionDao.listCollectionSchemas();
+    assertEquals(0, allCollections.size());
 
-    UUID instanceId = UUID.randomUUID();
-    collectionDao.createSchema(instanceId);
+    UUID collectionId = UUID.randomUUID();
+    collectionDao.createSchema(collectionId);
 
     Map<String, Object> rowMap =
         namedParameterJdbcTemplate.queryForMap(
-            "select id, workspace_id, name, description from sys_wds.instance where id = :id",
-            new MapSqlParameterSource("id", instanceId));
+            "select id, workspace_id, name, description from sys_wds.collection where id = :id",
+            new MapSqlParameterSource("id", collectionId));
 
-    assertEquals(instanceId, rowMap.get("id"));
+    assertEquals(collectionId, rowMap.get("id"));
     assertEquals(workspaceId, rowMap.get("workspace_id"));
-    assertEquals(instanceId.toString(), rowMap.get("name"));
-    assertEquals(instanceId.toString(), rowMap.get("description"));
+    assertEquals(collectionId.toString(), rowMap.get("name"));
+    assertEquals(collectionId.toString(), rowMap.get("description"));
   }
 
-  // when creating an instance whose id is the same as the containing workspace's id,
+  // when creating a collection whose id is the same as the containing workspace's id,
   // do we populate all db columns correctly?
   @Test
   void defaultPopulatesAllColumns() {
 
-    List<UUID> allInstances = collectionDao.listCollectionSchemas();
-    assertEquals(0, allInstances.size());
+    List<UUID> allCollections = collectionDao.listCollectionSchemas();
+    assertEquals(0, allCollections.size());
 
-    UUID instanceId = workspaceId;
+    UUID collectionId = workspaceId;
 
-    collectionDao.createSchema(instanceId);
+    collectionDao.createSchema(collectionId);
 
     Map<String, Object> rowMap =
         namedParameterJdbcTemplate.queryForMap(
-            "select id, workspace_id, name, description from sys_wds.instance where id = :id",
-            new MapSqlParameterSource("id", instanceId));
+            "select id, workspace_id, name, description from sys_wds.collection where id = :id",
+            new MapSqlParameterSource("id", collectionId));
 
-    assertEquals(instanceId, rowMap.get("id"));
+    assertEquals(collectionId, rowMap.get("id"));
     assertEquals(workspaceId, rowMap.get("workspace_id"));
     assertEquals("default", rowMap.get("name"));
     assertEquals("default", rowMap.get("description"));
