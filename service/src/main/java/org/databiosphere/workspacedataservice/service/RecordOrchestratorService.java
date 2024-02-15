@@ -99,10 +99,10 @@ public class RecordOrchestratorService { // TODO give me a better name
     validateVersion(version);
     collectionService.validateCollection(collectionId);
 
-    boolean hasWriteCollectionPermission = samDao.hasWriteWorkspacePermission();
-    LOGGER.debug("hasWriteCollectionPermission? {}", hasWriteCollectionPermission);
+    boolean hasWriteWorkspacePermission = samDao.hasWriteWorkspacePermission();
+    LOGGER.debug("hasWriteWorkspacePermission? {}", hasWriteWorkspacePermission);
 
-    if (!hasWriteCollectionPermission) {
+    if (!hasWriteWorkspacePermission) {
       throw new AuthorizationException("Caller does not have permission to write to collection.");
     }
   }
