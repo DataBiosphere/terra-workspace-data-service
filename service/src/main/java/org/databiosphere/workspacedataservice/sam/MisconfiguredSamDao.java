@@ -47,25 +47,25 @@ public class MisconfiguredSamDao implements SamDao {
   }
 
   @Override
-  public boolean hasWriteCollectionPermission() {
+  public boolean hasWriteWorkspacePermission() {
     logWarning();
     return false;
   }
 
   @Override
-  public boolean hasWriteCollectionPermission(String token) {
+  public boolean hasWriteWorkspacePermission(String token) {
     logWarning();
     return false;
   }
 
   @Override
-  public boolean hasReadCollectionPermission(String collectionId) {
+  public boolean hasReadWorkspacePermission(String workspaceId) {
     logWarning();
     return false;
   }
 
   @Override
-  public boolean hasReadCollectionPermission(String collectionId, String token) {
+  public boolean hasReadWorkspacePermission(String workspaceId, String token) {
     logWarning();
     return false;
   }

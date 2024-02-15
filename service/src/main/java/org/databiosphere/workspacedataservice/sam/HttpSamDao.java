@@ -82,13 +82,13 @@ public class HttpSamDao implements SamDao {
    * @return true if the user has permission
    */
   @Override
-  public boolean hasWriteCollectionPermission() {
-    return hasWriteCollectionPermission(null);
+  public boolean hasWriteWorkspacePermission() {
+    return hasWriteWorkspacePermission(null);
   }
 
   @Override
-  public boolean hasWriteCollectionPermission(String token) {
-    return hasPermission(ACTION_WRITE, "Sam.hasWriteCollectionPermission", token);
+  public boolean hasWriteWorkspacePermission(String token) {
+    return hasPermission(ACTION_WRITE, "Sam.hasWriteWorkspacePermission", token);
   }
 
   /**
@@ -97,24 +97,13 @@ public class HttpSamDao implements SamDao {
    * @return true if the user has permission
    */
   @Override
-  public boolean hasReadCollectionPermission(String collectionId) {
-    return hasReadCollectionPermission(collectionId, null);
+  public boolean hasReadWorkspacePermission(String workspaceId) {
+    return hasReadWorkspacePermission(workspaceId, null);
   }
 
   @Override
-  public boolean hasReadCollectionPermission(String collectionId, String token) {
-    LOGGER.debug(
-        "Checking Sam permission for {}/{}/{} ...",
-        SamDao.RESOURCE_NAME_WORKSPACE,
-        collectionId,
-        ACTION_READ);
-    RestCall<Boolean> samFunction =
-        () ->
-            samClientFactory
-                .getResourcesApi(token)
-                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, collectionId, ACTION_READ);
-    return restClientRetry.withRetryAndErrorHandling(
-        samFunction, "Sam.hasReadCollectionPermission");
+  public boolean hasReadWorkspacePermission(String workspaceId, String token) {
+    return hasPermission(ACTION_READ, "Sam.hasReadWorkspacePermission", token);
   }
 
   // this cache uses token.hashCode as its key. This prevents any logging such as
