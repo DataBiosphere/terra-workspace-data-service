@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.recordstream;
+package org.databiosphere.workspacedataservice.recordsource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;

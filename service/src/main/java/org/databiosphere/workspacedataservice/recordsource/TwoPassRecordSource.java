@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.recordstream;
+package org.databiosphere.workspacedataservice.recordsource;
 
 import org.databiosphere.workspacedataservice.service.BatchWriteService.RecordSource;
 
