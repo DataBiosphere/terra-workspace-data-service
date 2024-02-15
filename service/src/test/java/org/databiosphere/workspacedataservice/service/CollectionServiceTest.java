@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.MockCollectionDaoConfig;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
@@ -29,7 +30,8 @@ import org.springframework.test.context.ActiveProfiles;
       SamConfig.class,
       MockSamClientFactoryConfig.class,
       ActivityLoggerConfig.class,
-      RestClientRetry.class
+      RestClientRetry.class,
+      TwdsProperties.class
     })
 class CollectionServiceTest {
 

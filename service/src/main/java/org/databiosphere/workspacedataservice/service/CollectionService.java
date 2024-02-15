@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
@@ -15,7 +16,6 @@ import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,9 @@ public class CollectionService {
   private final SamDao samDao;
   private final ActivityLogger activityLogger;
 
-  private final WorkspaceId workspaceId;
+  private final TwdsProperties twdsProperties;
+
+  private WorkspaceId workspaceId;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CollectionService.class);
 
@@ -36,22 +38,15 @@ public class CollectionService {
       CollectionDao collectionDao,
       SamDao samDao,
       ActivityLogger activityLogger,
-      @Value("${twds.instance.workspace-id:}") String workspaceIdProperty) {
+      TwdsProperties twdsProperties) {
     this.collectionDao = collectionDao;
     this.samDao = samDao;
     this.activityLogger = activityLogger;
-    // jump through a few hoops to initialize workspaceId to ensure validity.
-    // workspaceId will be null if the WORKSPACE_ID env var is unset/not a valid UUID.
-    UUID workspaceUuid = null;
-    try {
-      workspaceUuid = UUID.fromString(workspaceIdProperty);
-    } catch (Exception e) {
-      LOGGER.warn("WORKSPACE_ID could not be parsed into a UUID: {}", workspaceIdProperty);
-    }
-    if (workspaceUuid == null) {
-      workspaceId = null;
-    } else {
-      workspaceId = WorkspaceId.of(workspaceUuid);
+    this.twdsProperties = twdsProperties;
+    // stash the workspace id from config into a member var
+    if (twdsProperties.getInstance() != null
+        && twdsProperties.getInstance().getWorkspaceUuid() != null) {
+      workspaceId = WorkspaceId.of(twdsProperties.getInstance().getWorkspaceUuid());
     }
   }
 
@@ -117,6 +112,14 @@ public class CollectionService {
     }
   }
 
+  public boolean canReadCollection(CollectionId collectionId) {
+    return samDao.hasReadWorkspacePermission(getWorkspaceId(collectionId).toString());
+  }
+
+  public boolean canWriteCollection(CollectionId collectionId) {
+    return samDao.hasWriteWorkspacePermission(getWorkspaceId(collectionId).toString());
+  }
+
   /**
    * Return the workspace that contains the specified collection. The logic for this method is:
    *
@@ -139,9 +142,22 @@ public class CollectionService {
     WorkspaceId rowWorkspaceId = null;
     try {
       rowWorkspaceId = collectionDao.getWorkspaceId(collectionId);
+      // as of this writing, if a deployment allows virtual collections, it is an error if the
+      // collection DOES exist.
+      if (twdsProperties.getTenancy() != null
+          && twdsProperties.getTenancy().getAllowVirtualCollections()) {
+        throw new CollectionException("Expected a virtual collection");
+      }
     } catch (EmptyResultDataAccessException e) {
-      // swallow not-found errors; it's valid for rows to not exist in the case of
-      // virtual collections
+      // does this deployment allow for virtual collections?
+      // TODO AJ-1630: enable this error for data-plane WDS, which does not allow virtual
+      // collections
+      /*
+      if (twdsProperties.getTenancy() == null
+          || !twdsProperties.getTenancy().getAllowVirtualCollections()) {
+        throw new MissingObjectException("Collection");
+      }
+      */
     }
 
     // safety check: if we found a workspace id in the db, it indicates we are in a data-plane
