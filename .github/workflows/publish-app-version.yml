@@ -16,7 +16,6 @@ jobs:
   create-terra-helmfile-pr:
     name: Create terra-helmfile PR for latest WDS version
     runs-on: ubuntu-latest
-    needs: publish-docker-job
     steps:
       - name: Look for AJ (Analysis Journeys) Jira ID in the manual workflow trigger message
         id: find-jira-id
@@ -24,7 +23,8 @@ jobs:
           set +e
           JIRA_ID=$(echo "${{ inputs.jiraId }}" | grep -iEo -m 1 'AJ-[0-9]+' | head -1 || '')
           if [[ -z "$JIRA_ID" ]]; then
-            echo "JIRA_ID=missing" >> $GITHUB_OUTPUT
+            echo "JIRA_ID missing, PR to terra-helmfile will not be created" 1>&2
+            exit 1;
           else
             echo "JIRA_ID=${JIRA_ID}" >> $GITHUB_OUTPUT
           fi
@@ -45,10 +45,6 @@ jobs:
           HELM_NEW_TAG: ${{ inputs.new-tag }}
         run: |
           set -e
-          if [[ $JIRA_ID == "missing" ]]; then
-            echo "JIRA_ID missing, PR to terra-helmfile will not be created"
-            exit 0;
-          fi
           cd terra-helmfile
           HELM_CUR_TAG=$(grep "/terra-workspace-data-service:" charts/wds/values.yaml | sed "s,.*/terra-workspace-data-service:,,")
           git checkout -b ${JIRA_ID}-auto-update-${HELM_NEW_TAG}
