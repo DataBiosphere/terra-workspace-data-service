@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
-import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -25,9 +24,9 @@ public class JobService {
     try {
       GenericJobServerModel result = jobDao.getJob(jobId);
       if (!collectionService.canReadCollection(CollectionId.of(result.getInstanceId()))) {
-        // TODO AJ-1632: this should return a 404 a la "job does not exist or you do not have
-        //     permission to see it"
-        throw new AuthorizationException("Caller does not have permission to view this job.");
+        // if caller lacks permission, throw MissingObjectException, so we don't leak information
+        // about this job's existence or non-existence
+        throw new MissingObjectException("Job");
       }
       return result;
     } catch (EmptyResultDataAccessException e) {
@@ -37,10 +36,13 @@ public class JobService {
 
   public List<GenericJobServerModel> getJobsForCollection(
       CollectionId collectionId, List<String> statuses) {
+    // verify collection exists
+    collectionService.validateCollection(collectionId.id());
+    // check permissions
     if (!collectionService.canReadCollection(collectionId)) {
-      // TODO AJ-1632: this should return a 404 a la "job does not exist or you do not have
-      //     permission to see it".
-      throw new AuthorizationException("Caller does not have permission to view this job.");
+      // if caller lacks permission, throw MissingObjectException, so we don't leak information
+      // about this collection's existence or non-existence
+      throw new MissingObjectException("Collection");
     }
     return jobDao.getJobsForCollection(collectionId, statuses);
   }
