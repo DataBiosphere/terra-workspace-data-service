@@ -187,6 +187,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // Arrange
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // collection exists and is associated with the $WORKSPACE_ID workspace
+    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
     // user has permission to that workspace
     when(samDao.hasReadWorkspacePermission(getEnvWorkspaceId().toString())).thenReturn(true);
@@ -232,6 +233,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     // collection exists and is associated with a non-default workspace
+    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // user has permission to that workspace
     when(samDao.hasReadWorkspacePermission(workspaceId.toString())).thenReturn(true);
