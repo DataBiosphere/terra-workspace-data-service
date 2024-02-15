@@ -14,7 +14,6 @@ import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;
-import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -102,10 +101,10 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     when(samDao.hasReadWorkspacePermission(getEnvWorkspaceId().toString())).thenReturn(false);
 
     // Act / assert
-    Exception actual = assertThrows(AuthorizationException.class, () -> jobService.getJob(jobId));
+    Exception actual = assertThrows(MissingObjectException.class, () -> jobService.getJob(jobId));
 
     // Assert
-    assertThat(actual.getMessage()).endsWith("this job.\"");
+    assertThat(actual.getMessage()).startsWith("Job");
   }
 
   /** requested job exists; its collection does not use the default workspace */
@@ -219,11 +218,11 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // Act / assert
     Exception actual =
         assertThrows(
-            AuthorizationException.class,
+            MissingObjectException.class,
             () -> jobService.getJobsForCollection(collectionId, allStatuses));
 
     // Assert
-    assertThat(actual.getMessage()).endsWith("this job.\"");
+    assertThat(actual.getMessage()).startsWith("Collection");
   }
 
   /** Collection exists, associated with a non-default workspace */
