@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.recordsource.PrimaryKeyResolver;
+import org.databiosphere.workspacedataservice.recordsource.RecordSource;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.recordsource.TsvRecordSource;
 import org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.ImportMode;
@@ -371,7 +372,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       recordService.validatePrimaryKey(collectionId, recordType, primaryKey);
     }
 
-    BatchWriteService.RecordSource recordSource = null;
+    RecordSource recordSource = null;
     try {
       recordSource = recordSourceFactory.forJson(is);
     } catch (IOException e) {

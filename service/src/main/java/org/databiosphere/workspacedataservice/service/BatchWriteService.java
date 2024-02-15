@@ -8,13 +8,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimaps;
 import com.google.mu.util.stream.BiStream;
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.recordsource.RecordSource;
+import org.databiosphere.workspacedataservice.recordsource.RecordSource.WriteStreamInfo;
 import org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource;
 import org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
@@ -29,22 +30,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class BatchWriteService {
-
-  public record WriteStreamInfo(List<Record> records, OperationType operationType) {}
-
-  public interface RecordSource extends Closeable {
-
-    /**
-     * Reads numRecords from the stream unless the operation type changes during the stream in which
-     * case we return early and keep the last record read in memory, so it can be returned in a
-     * subsequent call.
-     *
-     * @param numRecords max number of records to read
-     * @return info about the records that were read
-     * @throws IOException on error
-     */
-    WriteStreamInfo readRecords(int numRecords) throws IOException;
-  }
 
   /**
    * Implementations of this interface are responsible for modifying the schema and writing/deleting

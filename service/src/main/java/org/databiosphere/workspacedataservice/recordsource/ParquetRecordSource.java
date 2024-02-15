@@ -7,7 +7,6 @@ import java.util.List;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.databiosphere.workspacedataservice.dataimport.tdr.ParquetRecordConverter;
-import org.databiosphere.workspacedataservice.service.BatchWriteService.WriteStreamInfo;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
