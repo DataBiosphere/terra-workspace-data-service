@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -30,5 +31,5 @@ public interface RecordSink {
       OperationType opType,
       List<Record> records,
       String primaryKey)
-      throws BatchWriteException;
+      throws BatchWriteException, IOException;
 }

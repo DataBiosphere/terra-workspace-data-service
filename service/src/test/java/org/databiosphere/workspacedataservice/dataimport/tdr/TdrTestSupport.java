@@ -6,6 +6,7 @@ import java.net.URL;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
@@ -19,6 +20,7 @@ class TdrTestSupport {
   @Autowired private WorkspaceManagerDao wsmDao;
   @Autowired private RestClientRetry restClientRetry;
   @Autowired private RecordSourceFactory recordSourceFactory;
+  @Autowired private RecordSinkFactory recordSinkFactory;
   @Autowired private BatchWriteService batchWriteService;
   @Autowired private ActivityLogger activityLogger;
   @Autowired private ObjectMapper objectMapper;
@@ -31,6 +33,7 @@ class TdrTestSupport {
         wsmDao,
         restClientRetry,
         recordSourceFactory,
+        recordSinkFactory,
         batchWriteService,
         activityLogger,
         workspaceId,

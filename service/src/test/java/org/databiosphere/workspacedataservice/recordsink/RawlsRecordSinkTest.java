@@ -7,7 +7,11 @@ import static java.util.stream.Stream.concat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -28,14 +32,19 @@ import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
+@SpringBootTest
 class RawlsRecordSinkTest {
-
-  private RawlsRecordSink recordSink;
+  @Autowired private ObjectMapper mapper;
+  private RecordSink recordSink;
+  private StringWriter recordedJson;
 
   @BeforeEach
   void setUp() {
-    recordSink = RawlsRecordSink.withPrefix("prefix");
+    recordedJson = new StringWriter();
+    recordSink = new RawlsRecordSink("prefix", mapper, json -> recordedJson.append(json));
   }
 
   @Test
@@ -146,16 +155,21 @@ class RawlsRecordSinkTest {
   private List<Entity> doUpsert(Record record, Record... additionalRecords) {
     var recordList = concat(Stream.of(record), stream(additionalRecords)).toList();
     var recordType = recordList.stream().map(Record::getRecordType).collect(onlyElement());
-    recordSink.writeBatch(
-        /* collectionId= */ UUID.randomUUID(), // currently ignored
-        recordType,
-        /* schema= */ Map.of(), // currently ignored
-        OperationType.UPSERT,
-        recordList,
-        /* primaryKey= */ "name" // currently ignored
-        );
+    try {
+      recordSink.writeBatch(
+          /* collectionId= */ UUID.randomUUID(), // currently ignored
+          recordType,
+          /* schema= */ Map.of(), // currently ignored
+          OperationType.UPSERT,
+          recordList,
+          /* primaryKey= */ "name" // currently ignored
+          );
 
-    return recordSink.getRecordedEntities();
+      assertThat(recordedJson.toString()).isNotNull();
+      return mapper.readValue(recordedJson.toString(), new TypeReference<>() {});
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   // assert that the given collection has exactly one item, then return it

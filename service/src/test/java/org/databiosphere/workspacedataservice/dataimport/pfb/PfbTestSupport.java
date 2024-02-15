@@ -9,6 +9,7 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
@@ -25,6 +26,7 @@ class PfbTestSupport {
   @Autowired private JobDao jobDao;
   @Autowired private RestClientRetry restClientRetry;
   @Autowired private RecordSourceFactory recordSourceFactory;
+  @Autowired private RecordSinkFactory recordSinkFactory;
   @Autowired private BatchWriteService batchWriteService;
   @Autowired private ActivityLogger activityLogger;
   @Autowired private ObservationRegistry observationRegistry;
@@ -56,6 +58,7 @@ class PfbTestSupport {
         wsmDao,
         restClientRetry,
         recordSourceFactory,
+        recordSinkFactory,
         batchWriteService,
         activityLogger,
         observationRegistry,

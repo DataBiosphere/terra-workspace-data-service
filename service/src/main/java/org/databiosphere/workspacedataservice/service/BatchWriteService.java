@@ -32,15 +32,11 @@ import org.springframework.stereotype.Service;
 public class BatchWriteService {
   private final DataTypeInferer inferer;
   private final int batchSize;
-  private final RecordSink recordSink;
 
   public BatchWriteService(
-      @Value("${twds.write.batch.size:5000}") int batchSize,
-      DataTypeInferer inf,
-      RecordSink recordSink) {
+      @Value("${twds.write.batch.size:5000}") int batchSize, DataTypeInferer inf) {
     this.batchSize = batchSize;
     this.inferer = inf;
-    this.recordSink = recordSink;
   }
 
   /**
@@ -56,12 +52,14 @@ public class BatchWriteService {
   @WriteTransaction
   public BatchWriteResult batchWrite(
       RecordSource recordSource,
+      RecordSink recordSink,
       UUID collectionId,
       RecordType recordType,
       String primaryKey,
       ImportMode importMode) {
     try (recordSource) {
-      return consumeWriteStream(recordSource, collectionId, recordType, primaryKey, importMode);
+      return consumeWriteStream(
+          recordSource, recordSink, collectionId, recordType, primaryKey, importMode);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
@@ -69,6 +67,7 @@ public class BatchWriteService {
 
   private BatchWriteResult consumeWriteStream(
       RecordSource recordSource,
+      RecordSink recordSink,
       UUID collectionId,
       RecordType recordType, // nullable
       String primaryKey,
@@ -136,15 +135,19 @@ public class BatchWriteService {
                             : recordsForType;
 
                     // write these records to the db, using the schema from the `typesSeen` map
-                    recordSink.writeBatch(
-                        collectionId,
-                        recType,
-                        typesSeen.get(recType),
-                        opType,
-                        recordsToWrite,
-                        primaryKey);
-                    // update the result counts
-                    result.increaseCount(recType, recordsToWrite.size());
+                    try {
+                      recordSink.writeBatch(
+                          collectionId,
+                          recType,
+                          typesSeen.get(recType),
+                          opType,
+                          recordsToWrite,
+                          primaryKey);
+                      // update the result counts
+                      result.increaseCount(recType, recordsToWrite.size());
+                    } catch (IOException e) {
+                      throw new BadStreamingWriteRequestException(e);
+                    }
                   }
                 });
       }
