@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.controller;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.annotations.DeploymentRestController.WdsRestController;
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
@@ -15,9 +16,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
 
-@RestController
+@WdsRestController(deploymentModes = {"data-plane"})
 public class CloningController {
 
   private final BackupRestoreService backupRestoreService;

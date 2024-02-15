@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.annotations.DeploymentRestController.WdsRestController;
 import org.databiosphere.workspacedataservice.retry.RetryableApi;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
@@ -29,12 +30,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-@RestController
+@WdsRestController(deploymentModes = {"data-plane"})
 public class RecordController {
 
   private final CollectionService collectionService;
