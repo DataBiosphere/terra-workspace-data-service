@@ -45,7 +45,7 @@ dependencies {
     // Azure libraries
     implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.18'
     implementation 'com.azure:azure-storage-blob:12.25.0'
-    implementation 'com.azure:azure-identity:1.11.0' // authentication in azure environment
+    implementation 'com.azure:azure-identity:1.11.2' // authentication in azure environment
     implementation 'com.azure:azure-identity-extensions:1.1.10' // postgres password plugin
 
     implementation 'org.springframework.boot:spring-boot-starter'
