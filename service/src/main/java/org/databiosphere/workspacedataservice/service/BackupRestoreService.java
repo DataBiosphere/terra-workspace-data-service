@@ -182,9 +182,9 @@ public class BackupRestoreService {
         return restoreDao.getStatus(trackingId);
       }
 
-      /* TODO: insert rows in sys_wds.instance for all schemas we just inserted.
-         The following call to alterSchema only handles the default instance;
-         if the source had any additional instances, they will not be handled correctly.
+      /* TODO: insert rows in sys_wds.collection for all schemas we just inserted.
+         The following call to alterSchema only handles the default collection;
+         if the source had any additional collections, they will not be handled correctly.
          If we insert rows here, we don't need the additional insert check in alterSchema.
       */
 
@@ -230,7 +230,7 @@ public class BackupRestoreService {
     if (isBackup) {
       command.put(pgDumpPath, null);
       command.put("-b", null);
-      // Grab all workspace instances/schemas in wds
+      // Grab all workspace collections/schemas in wds
       for (UUID id : collectionDao.listCollectionSchemas()) {
         command.put("-n", id.toString());
       }
