@@ -19,6 +19,8 @@ tags:
     description: Job APIs
   - name: Capabilities
     description: Describes the features of WDS
+  - name: Collections #TODO get this to show up in the correct place
+    description: Collection APIs
 
 paths:
   ##############################
@@ -137,6 +139,68 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Capabilities'
+  ##############################
+  # Collection APIs
+  ##############################
+  /collections/v1:
+    get:
+      summary: List collections
+      description: List all collections in this server.
+      operationId: listWDSCollections
+      tags:
+        - Collections
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+  /collections/v1/{collectionId}:
+    post:
+      summary: Create a collection
+      description: Create a collection with the given UUID.
+      operationId: createWDSCollection
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - Collections
+      parameters:
+        - $ref: '#/components/parameters/collectionIdPathParam'
+      responses:
+        201:
+          description: Success
+        409:
+          description: Conflict - schema already exists.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete a collection
+      description: |
+        Delete the collection with the given UUID. This API is liable to change.
+
+        THIS WILL DELETE ALL DATA WITHIN THE COLLECTION. Be certain this is what you want to do.
+      operationId: deleteWDSCollection
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - Collections
+      parameters:
+        - $ref: '#/components/parameters/collectionIdPathParam'
+      responses:
+        200:
+          description: Success
+        404:
+          description: Not Found - collection does not exist.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   # within each group, components should be listed alphabetically.
@@ -157,6 +221,22 @@ components:
       schema:
         type: string
         format: uuid
+    # TODO will likely remove instanceUuidPathParam in favor of collectionUuidPathParam
+    collectionUuidPathParam:
+      name: collectionUuid
+      in: path
+      description: WDS collection id; by convention equal to workspace id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    collectionIdPathParam:
+      name: collectionId
+      in: path
+      description: WDS collection id; by convention equal to workspace id
+      required: true
+      schema:
+        type: string
 
   schemas:
     Capabilities:
@@ -211,3 +291,28 @@ components:
           format: date-time
         errorMessage:
           type: string
+    ErrorResponse: #TODO how to not duplicate this from openapi-docs.yaml
+      required:
+        - status
+        - path
+        - message
+        - error
+        - timestamp
+      type: object
+      properties:
+        status:
+          type: integer
+          description: HTTP status code
+        error:
+          type: string
+          description: error
+        message:
+          type: string
+          description: error message
+        path:
+          type: string
+          description: requested record path
+        timestamp:
+          type: string
+          description: time of error
+      description: ""

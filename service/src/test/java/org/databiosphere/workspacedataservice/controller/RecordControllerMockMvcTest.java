@@ -89,6 +89,9 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
     }
   }
 
+  // TODO the API this is testing has been deprecated and moved to CollectionController and this
+  // test moved to CollectionControllerMockMvcTest.  Should we delete the test or keep until
+  // deprecated APIs are fully removed?
   @Test
   @Transactional
   void createInstanceAndTryToCreateAgain() throws Exception {
@@ -101,6 +104,9 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
         .andExpect(status().isConflict());
   }
 
+  // TODO the API this is testing has been deprecated and moved to CollectionController and this
+  // test moved to CollectionControllerMockMvcTest.  Should we delete the test or keep until
+  // deprecated APIs are fully removed?
   @Test
   void listInstances() throws Exception {
     // get initial instance list
@@ -196,6 +202,9 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
         .andExpect(status().isBadRequest());
   }
 
+  // TODO the API this is testing has been deprecated and moved to CollectionController and this
+  // test moved to CollectionControllerMockMvcTest.  Should we delete the test or keep until
+  // deprecated APIs are fully removed?
   @Test
   @Transactional
   void deleteInstance() throws Exception {
@@ -222,6 +231,9 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
         .andExpect(status().isCreated());
   }
 
+  // TODO the API this is testing has been deprecated and moved to CollectionController and this
+  // test moved to CollectionControllerMockMvcTest.  Should we delete the test or keep until
+  // deprecated APIs are fully removed?
   @Test
   @Transactional
   void deleteInstanceContainingData() throws Exception {

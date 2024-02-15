@@ -124,6 +124,7 @@ public class RecordController {
         instanceId, version, recordType, recordId, primaryKey, recordRequest);
   }
 
+  @Deprecated
   @GetMapping("/instances/{version}")
   @RetryableApi
   public ResponseEntity<List<UUID>> listInstances(@PathVariable("version") String version) {
@@ -131,6 +132,7 @@ public class RecordController {
     return new ResponseEntity<>(schemaList, HttpStatus.OK);
   }
 
+  @Deprecated
   @PostMapping("/instances/{version}/{instanceId}")
   public ResponseEntity<String> createInstance(
       @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {
@@ -138,6 +140,7 @@ public class RecordController {
     return new ResponseEntity<>(HttpStatus.CREATED);
   }
 
+  @Deprecated
   @DeleteMapping("/instances/{version}/{instanceId}")
   public ResponseEntity<String> deleteInstance(
       @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {

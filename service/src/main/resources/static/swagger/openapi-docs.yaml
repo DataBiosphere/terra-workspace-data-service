@@ -24,15 +24,14 @@ tags:
     description: Import APIs
   - name: Job
     description: Job APIs
-  - name: Instances
-    description: Instance APIs
   - name: Schema
     description: Schema Manipulation APIs (coming soon)
   - name: General WDS Information
     description: Information regarding versioning, health, info, etc. for WDS
   - name: Capabilities
     description: Describes the features of WDS
-
+  - name: Instances
+    description: Instance APIs
 paths:
   # Paths should be grouped by their tag, following the order of tags listed above.
   # Within each tag group, paths should be listed alphabetically.
@@ -352,6 +351,7 @@ paths:
   ##############################
   /instances/{v}:
     get:
+      deprecated: true
       summary: List instances
       description: List all instances in this server.
       operationId: listWDSInstances
@@ -371,6 +371,7 @@ paths:
                   format: uuid
   /instances/{v}/{instanceid}:
     post:
+      deprecated: true
       summary: Create an instance
       description: Create an instance with the given UUID.
       operationId: createWDSInstance
@@ -391,6 +392,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
+      deprecated: true
       summary: Delete an instance
       description: |
         Delete the instance with the given UUID. This API is liable to change.
@@ -579,6 +581,14 @@ paths:
   /capabilities/v1:
     # OpenApi requires "/" to be replaced with "~1" in the path being referenced
     $ref: 'apis-v1.yaml#/paths/~1capabilities~1v1'
+
+  ##############################
+  # Collection APIs
+  ##############################
+  /collections/v1:
+    $ref: 'apis-v1.yaml#/paths/~1collections~1v1'
+  /collections/v1/{collectionId}:
+    $ref: 'apis-v1.yaml#/paths/~1collections~1v1~1{collectionId}'
 
 components:
   # within each group, components should be listed alphabetically.
