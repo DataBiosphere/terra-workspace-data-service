@@ -55,3 +55,24 @@ jobs:
           git commit -am "${JIRA_ID}: Auto update WDS version to $HELM_NEW_TAG"
           git push -u origin ${JIRA_ID}-auto-update-${HELM_NEW_TAG}
           gh pr create --title "${JIRA_ID}: auto update WDS version to $HELM_NEW_TAG" --body "${JIRA_ID} helm chart update" --label "automerge"
+
+  cwds-report-to-sherlock:
+    uses: broadinstitute/sherlock/.github/workflows/client-report-app-version.yaml@main
+    with:
+      new-version: ${{ inputs.new-tag }}
+      chart-name: 'cwds'
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+  cwds-set-version-in-dev:
+    uses: broadinstitute/sherlock/.github/workflows/client-set-environment-app-version.yaml@main
+    needs: cwds-report-to-sherlock
+    with:
+      new-version: ${{ inputs.new-tag }}
+      chart-name: 'cwds'
+      environment-name: 'dev'
+    secrets:
+      sync-git-token: ${{ secrets.BROADBOT_TOKEN }}
+    permissions:
+      id-token: 'write'

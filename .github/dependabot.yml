@@ -1,0 +1,15 @@
+version: 2
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/"
+    labels:
+      - "dependencies"
+      - "gradle"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "@DataBiosphere/analysisjourneys"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "America/New_York"
