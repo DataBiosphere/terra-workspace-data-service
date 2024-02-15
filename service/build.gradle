@@ -116,7 +116,7 @@ dependencies {
     implementation "org.glassfish.jersey.core:jersey-common"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.9.0'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.11.6'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
