@@ -7,9 +7,18 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "twds")
 public class TwdsProperties {
+  DataImportProperties dataImport;
   InstanceProperties instance;
   String startupToken;
   TenancyProperties tenancy;
+
+  public DataImportProperties getDataImport() {
+    return dataImport;
+  }
+
+  public void setDataImport(DataImportProperties dataImport) {
+    this.dataImport = dataImport;
+  }
 
   public InstanceProperties getInstance() {
     return instance;
