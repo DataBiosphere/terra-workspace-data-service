@@ -60,6 +60,9 @@ public interface JobApi {
             @ApiResponse(responseCode = "202", description = "Job still running.", content = {
                 @Content(mediaType = "application/json", schema = @Schema(implementation = GenericJobServerModel.class))
             })
+        },
+        security = {
+            @SecurityRequirement(name = "bearerAuth")
         }
     )
     @RequestMapping(
@@ -90,6 +93,9 @@ public interface JobApi {
             @ApiResponse(responseCode = "200", description = "A list of jobs with specified status for Instance Id.", content = {
                 @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = GenericJobServerModel.class)))
             })
+        },
+        security = {
+            @SecurityRequirement(name = "bearerAuth")
         }
     )
     @RequestMapping(

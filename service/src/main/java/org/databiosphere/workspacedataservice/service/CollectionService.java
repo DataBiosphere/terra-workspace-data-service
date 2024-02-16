@@ -105,6 +105,12 @@ public class CollectionService {
   }
 
   public void validateCollection(UUID collectionId) {
+    // if this deployment allows virtual collections, there is nothing to validate
+    if (twdsProperties.getTenancy() != null
+        && twdsProperties.getTenancy().getAllowVirtualCollections()) {
+      return;
+    }
+    // else, check if this collection has a row in the collections table
     if (!collectionDao.collectionSchemaExists(collectionId)) {
       throw new MissingObjectException("Collection");
     }
