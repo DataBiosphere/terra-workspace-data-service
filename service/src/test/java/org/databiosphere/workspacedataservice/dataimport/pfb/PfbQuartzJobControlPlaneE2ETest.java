@@ -2,13 +2,13 @@ package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
-import static org.databiosphere.workspacedataservice.rawls.Model.AttributeOperation;
-import static org.databiosphere.workspacedataservice.rawls.Model.Entity;
-import static org.databiosphere.workspacedataservice.rawls.Model.Op;
-import static org.databiosphere.workspacedataservice.rawls.Model.Op.ADD_LIST_MEMBER;
-import static org.databiosphere.workspacedataservice.rawls.Model.Op.ADD_UPDATE_ATTRIBUTE;
-import static org.databiosphere.workspacedataservice.rawls.Model.Op.CREATE_ATTRIBUTE_VALUE_LIST;
-import static org.databiosphere.workspacedataservice.rawls.Model.Op.REMOVE_ATTRIBUTE;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.ADD_LIST_MEMBER;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.ADD_UPDATE_ATTRIBUTE;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.CREATE_ATTRIBUTE_VALUE_LIST;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.REMOVE_ATTRIBUTE;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -26,14 +26,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
-import org.databiosphere.workspacedataservice.rawls.Model;
-import org.databiosphere.workspacedataservice.rawls.Model.AddListMember;
-import org.databiosphere.workspacedataservice.rawls.Model.AddUpdateAttribute;
-import org.databiosphere.workspacedataservice.rawls.Model.CreateAttributeValueList;
-import org.databiosphere.workspacedataservice.rawls.Model.RemoveAttribute;
-import org.databiosphere.workspacedataservice.service.BatchWriteService.RecordSink;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
+import org.databiosphere.workspacedataservice.recordsink.RawlsRecordSink;
+import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.service.CollectionService;
-import org.databiosphere.workspacedataservice.service.RawlsRecordSink;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -179,7 +178,7 @@ class PfbQuartzJobControlPlaneE2ETest {
   }
 
   // serde == serialize then deserialize; to test the full roundtrip to/from JSON
-  private List<Model.Entity> assertRecordedEntitiesSerde(Resource expectedJsonResource) {
+  private List<Entity> assertRecordedEntitiesSerde(Resource expectedJsonResource) {
     try {
       String actualJson = mapper.writeValueAsString(rawlsRecordSink.getRecordedEntities());
       String expectedJson = new String(expectedJsonResource.getInputStream().readAllBytes());

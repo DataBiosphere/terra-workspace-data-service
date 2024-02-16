@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.service;
+package org.databiosphere.workspacedataservice.recordsink;
 
 import static com.google.common.collect.MoreCollectors.onlyElement;
 import static java.util.Arrays.stream;
@@ -15,13 +15,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.rawls.Model.AddListMember;
-import org.databiosphere.workspacedataservice.rawls.Model.AddUpdateAttribute;
-import org.databiosphere.workspacedataservice.rawls.Model.AttributeOperation;
-import org.databiosphere.workspacedataservice.rawls.Model.CreateAttributeValueList;
-import org.databiosphere.workspacedataservice.rawls.Model.Entity;
-import org.databiosphere.workspacedataservice.rawls.Model.Op;
-import org.databiosphere.workspacedataservice.rawls.Model.RemoveAttribute;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;

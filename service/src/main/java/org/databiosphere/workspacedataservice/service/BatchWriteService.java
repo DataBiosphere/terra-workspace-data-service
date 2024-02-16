@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.WriteStreamInfo;
 import org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource;
@@ -21,7 +22,6 @@ import org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.I
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
-import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -30,31 +30,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class BatchWriteService {
-
-  /**
-   * Implementations of this interface are responsible for modifying the schema and writing/deleting
-   * batches of records.
-   */
-  public interface RecordSink {
-    /** Create or modify the schema for a record type and write the records. */
-    Map<String, DataTypeMapping> createOrModifyRecordType(
-        UUID collectionId,
-        RecordType recordType,
-        Map<String, DataTypeMapping> schema,
-        List<Record> records,
-        String recordTypePrimaryKey);
-
-    /** Perform the given {@link OperationType} on the batch of records. */
-    void writeBatch(
-        UUID collectionId,
-        RecordType recordType,
-        Map<String, DataTypeMapping> schema,
-        OperationType opType,
-        List<Record> records,
-        String primaryKey)
-        throws BatchWriteException;
-  }
-
   private final DataTypeInferer inferer;
   private final int batchSize;
   private final RecordSink recordSink;

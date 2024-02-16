@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.service;
+package org.databiosphere.workspacedataservice.recordsink;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.mu.util.stream.BiStream;
@@ -8,14 +8,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.rawls.Model;
-import org.databiosphere.workspacedataservice.rawls.Model.AddListMember;
-import org.databiosphere.workspacedataservice.rawls.Model.AddUpdateAttribute;
-import org.databiosphere.workspacedataservice.rawls.Model.AttributeOperation;
-import org.databiosphere.workspacedataservice.rawls.Model.CreateAttributeValueList;
-import org.databiosphere.workspacedataservice.rawls.Model.Entity;
-import org.databiosphere.workspacedataservice.rawls.Model.RemoveAttribute;
-import org.databiosphere.workspacedataservice.service.BatchWriteService.RecordSink;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
@@ -23,7 +21,7 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
 /**
- * {@link RecordSink} implementation that produces Rawls-compatible JSON using {@link Model}
+ * {@link RecordSink} implementation that produces Rawls-compatible JSON using {@link RawlsModel}
  * serialization classes.
  *
  * <p>TODO(AJ-1585): integrate with storage to write JSON output to the appropriate bucket
