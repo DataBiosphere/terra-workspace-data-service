@@ -41,6 +41,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
@@ -124,7 +125,7 @@ class TsvDownloadTest {
     InputStream is = TsvDownloadTest.class.getResourceAsStream("/batch-write/write-tsv-data.json");
     ResponseEntity<BatchResponse> response =
         recordController.streamingWrite(collectionId, version, recordType, Optional.empty(), is);
-    assertThat(response.getStatusCodeValue()).isEqualTo(200);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(Objects.requireNonNull(response.getBody()).recordsModified()).isEqualTo(2);
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<Resource> stream =
@@ -227,7 +228,7 @@ class TsvDownloadTest {
             "1",
             Optional.empty(),
             targetRequest);
-    assertThat(targetResponse.getStatusCodeValue()).isEqualTo(201);
+    assertThat(targetResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
     // upload a record containing the attribute in question
     RecordAttributes uploadAttrs = new RecordAttributes(Map.of(attrName, toUpload));
@@ -235,7 +236,7 @@ class TsvDownloadTest {
     ResponseEntity<RecordResponse> response =
         recordController.upsertSingleRecord(
             collectionId, version, recordType, recordId, Optional.empty(), recordRequest);
-    assertThat(response.getStatusCodeValue()).isEqualTo(201);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
     // verify the backend datatype
     Map<String, DataTypeMapping> tableSchema =
@@ -291,7 +292,7 @@ class TsvDownloadTest {
             "1",
             Optional.empty(),
             targetRequest);
-    assertThat(targetResponse.getStatusCodeValue()).isEqualTo(201);
+    assertThat(targetResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
     // upload a record containing the attribute in question
     RecordAttributes uploadAttrs = new RecordAttributes(Map.of(attrName, toUpload));
@@ -299,7 +300,7 @@ class TsvDownloadTest {
     ResponseEntity<RecordResponse> response =
         recordController.upsertSingleRecord(
             collectionId, version, recordType, recordId, Optional.empty(), recordRequest);
-    assertThat(response.getStatusCodeValue()).isEqualTo(201);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
     // verify the backend datatype
     Map<String, DataTypeMapping> tableSchema =
@@ -317,7 +318,7 @@ class TsvDownloadTest {
             "records", "roundTrip.tsv", MediaType.TEXT_PLAIN_VALUE, tsvContents.getBytes());
     ResponseEntity<TsvUploadResponse> uploadResponse =
         recordController.tsvUpload(collectionId, version, recordType, Optional.empty(), file);
-    assertThat(uploadResponse.getStatusCodeValue()).isEqualTo(200);
+    assertThat(uploadResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
     // verify the backend datatype again; it should not have changed
     tableSchema = recordDao.getExistingTableSchema(collectionId, recordType);
