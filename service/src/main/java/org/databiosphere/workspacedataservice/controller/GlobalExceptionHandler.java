@@ -81,7 +81,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
    * @return the desired response
    */
   @ExceptionHandler({MethodArgumentTypeMismatchException.class})
-  public ResponseEntity<Map<String, Object>> handleAllExceptions(
+  public ResponseEntity<Map<String, Object>> handleMethodArgMismatch(
       Exception ex, HttpServletRequest servletRequest) {
 
     String errorMessage = "Unexpected error: " + ex.getClass().getName();
@@ -105,11 +105,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
    */
   @ExceptionHandler({AuthenticationMaskableException.class})
   public ResponseEntity<Map<String, Object>> maskAuthenticationExceptions(
-      Exception ex, HttpServletRequest servletRequest) {
-    // this cast is safe, given the @ExceptionHandler annotation
-    String objectType = ((AuthenticationMaskableException) ex).getObjectType();
+      AuthenticationMaskableException ex, HttpServletRequest servletRequest) {
     // use the same message that MissingObjectException would produce
-    String errorMessage = new MissingObjectException(objectType).getMessage();
+    String errorMessage = new MissingObjectException(ex.getObjectType()).getMessage();
 
     return generateResponse(HttpStatus.NOT_FOUND, errorMessage, servletRequest);
   }
