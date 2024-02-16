@@ -319,7 +319,9 @@ class FullStackRecordControllerTest {
             "sample_1");
     ErrorResponse err = response.getBody();
     assertNotNull(err);
-    assertThat(err.getMessage()).isEqualTo("Record type for relation does not exist");
+    assertThat(err.getMessage())
+        .isEqualTo(
+            "Record type for relation does not exist or you do not have permission to see it");
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
   }
 
@@ -367,7 +369,8 @@ class FullStackRecordControllerTest {
             "sample_1");
     ErrorResponse responseContent = response.getBody();
     assertNotNull(responseContent);
-    assertThat(responseContent.getMessage()).isEqualTo("Record does not exist");
+    assertThat(responseContent.getMessage())
+        .isEqualTo("Record does not exist or you do not have permission to see it");
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
   }
 

@@ -185,7 +185,8 @@ class RecordOrchestratorServiceTest {
                 recordOrchestratorService.renameAttribute(
                     COLLECTION, VERSION, TEST_TYPE, "doesNotExist", "attr3"),
             "renameAttribute should have thrown an error");
-    assertEquals("Attribute does not exist", e.getMessage());
+    assertEquals(
+        "Attribute does not exist or you do not have permission to see it", e.getMessage());
     assertAttributes(Set.of("id", "attr1", "attr2"));
   }
 
@@ -819,7 +820,8 @@ class RecordOrchestratorServiceTest {
                 recordOrchestratorService.deleteAttribute(
                     COLLECTION, VERSION, TEST_TYPE, "doesnotexist"),
             "deleteAttribute should have thrown an error");
-    assertEquals("Attribute does not exist", e.getMessage());
+    assertEquals(
+        "Attribute does not exist or you do not have permission to see it", e.getMessage());
     assertAttributes(Set.of("id", "attr1", "attr2"));
   }
 

@@ -74,6 +74,8 @@ paths:
     get:
       summary: Get status of a long-running job.
       operationId: jobStatusV1
+      security:
+        - bearerAuth: [ ]
       tags:
         - Job
       parameters:
@@ -100,6 +102,8 @@ paths:
     get:
       summary: Get all jobs with a certain status under a particular instance.
       operationId: jobsInInstanceV1
+      security:
+        - bearerAuth: [ ]
       tags:
         - Job
       parameters:

@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -25,6 +26,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @DirtiesContext
 class JobControllerMockMvcTest extends MockMvcTestBase {
   @MockBean private JobDao jobDao;
+  @MockBean private CollectionDao collectionDao;
 
   @Test
   void smokeTestGetJob() throws Exception {
@@ -64,6 +66,8 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
     CollectionId collectionId = new CollectionId(UUID.randomUUID());
     // set created and updated to now, but in UTC because that's how Postgres stores it
     OffsetDateTime time = OffsetDateTime.now(ZoneId.of("Z"));
+
+    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
 
     List<GenericJobServerModel> expected = new ArrayList<GenericJobServerModel>(2);
     expected.add(
