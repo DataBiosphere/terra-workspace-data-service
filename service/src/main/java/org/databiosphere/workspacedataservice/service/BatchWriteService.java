@@ -17,8 +17,6 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.WriteStreamInfo;
-import org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource;
-import org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
@@ -55,11 +53,9 @@ public class BatchWriteService {
       RecordSink recordSink,
       UUID collectionId,
       RecordType recordType,
-      String primaryKey,
-      ImportMode importMode) {
+      String primaryKey) {
     try (recordSource) {
-      return consumeWriteStream(
-          recordSource, recordSink, collectionId, recordType, primaryKey, importMode);
+      return consumeWriteStream(recordSource, recordSink, collectionId, recordType, primaryKey);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
@@ -70,16 +66,9 @@ public class BatchWriteService {
       RecordSink recordSink,
       UUID collectionId,
       RecordType recordType, // nullable
-      String primaryKey,
-      ImportMode importMode) {
+      String primaryKey) {
     BatchWriteResult result = BatchWriteResult.empty();
     try {
-      if (importMode == RELATIONS && !(recordSource instanceof TwoPassRecordSource)) {
-        throw new BadStreamingWriteRequestException(
-            "BatchWriteService attempted to re-read input data, but this input is not configured "
-                + "as re-readable. Cannot continue.");
-      }
-
       // tracker to stash the schemas for the record types seen while processing this stream
       Map<RecordType, Map<String, DataTypeMapping>> typesSeen = new HashMap<>();
 
@@ -127,10 +116,11 @@ public class BatchWriteService {
                     typesSeen.put(recType, finalSchema);
                   }
                   // when updating relations only, do not update if there are no relations
-                  if (importMode == BASE_ATTRIBUTES || !typesSeen.get(recType).isEmpty()) {
+                  if (recordSource.importMode() == BASE_ATTRIBUTES
+                      || !typesSeen.get(recType).isEmpty()) {
                     // For relations only, remove records that have no relations
                     var recordsToWrite =
-                        importMode == RELATIONS
+                        recordSource.importMode() == RELATIONS
                             ? excludeEmptyRecords(recordsForType)
                             : recordsForType;
 

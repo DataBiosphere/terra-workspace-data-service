@@ -177,8 +177,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
           recordSinkFactory.buildRecordSink(/* prefix= */ "tdr"),
           targetCollection,
           table.recordType(),
-          table.primaryKey(),
-          importMode);
+          table.primaryKey());
     } catch (Throwable t) {
       throw new TdrManifestImportException(t.getMessage(), t);
     }
