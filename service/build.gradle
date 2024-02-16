@@ -121,7 +121,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation project(':client')
-    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.1'
+    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.7'
     testImplementation 'org.junit-pioneer:junit-pioneer:2.1.0'
 
     constraints {
