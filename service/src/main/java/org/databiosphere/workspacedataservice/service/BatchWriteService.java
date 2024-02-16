@@ -59,83 +59,80 @@ public class BatchWriteService {
       RecordSource recordSource,
       RecordSink recordSink,
       RecordType recordType, // nullable
-      String primaryKey) {
+      String primaryKey)
+      throws IOException {
     BatchWriteResult result = BatchWriteResult.empty();
-    try {
-      // tracker to stash the schemas for the record types seen while processing this stream
-      Map<RecordType, Map<String, DataTypeMapping>> typesSeen = new HashMap<>();
 
-      // loop through, in batches, the records provided by the RecordSource. This loops
-      // until the RecordSource returns an empty batch.
-      for (WriteStreamInfo info = recordSource.readRecords(batchSize);
-          !info.records().isEmpty();
-          info = recordSource.readRecords(batchSize)) {
-        // get the records for this batch
-        List<Record> records = info.records();
+    // tracker to stash the schemas for the record types seen while processing this stream
+    Map<RecordType, Map<String, DataTypeMapping>> typesSeen = new HashMap<>();
 
-        // Group the incoming records by their record types. PFB inputs expect to have multiple
-        // types within the same input stream. TSV and JSON are expected to have a single record
-        // type, so this will result in a grouping of 1.
-        // TSV and JSON inputs are validated against the recordType argument. PFB inputs pass
-        // a null recordType argument so there is nothing to validate.
-        ImmutableMultimap<RecordType, Record> groupedRecords =
-            Multimaps.index(records, Record::getRecordType);
+    // loop through, in batches, the records provided by the RecordSource. This loops
+    // until the RecordSource returns an empty batch.
+    for (WriteStreamInfo info = recordSource.readRecords(batchSize);
+        !info.records().isEmpty();
+        info = recordSource.readRecords(batchSize)) {
+      // get the records for this batch
+      List<Record> records = info.records();
 
-        if (recordType != null && !Set.of(recordType).equals(groupedRecords.keySet())) {
-          throw new BadStreamingWriteRequestException(
-              "Record Type was specified as argument to BatchWriteService, "
-                  + "but actual records contained different record types. Cannot continue.");
-        }
+      // Group the incoming records by their record types. PFB inputs expect to have multiple
+      // types within the same input stream. TSV and JSON are expected to have a single record
+      // type, so this will result in a grouping of 1.
+      // TSV and JSON inputs are validated against the recordType argument. PFB inputs pass
+      // a null recordType argument so there is nothing to validate.
+      ImmutableMultimap<RecordType, Record> groupedRecords =
+          Multimaps.index(records, Record::getRecordType);
 
-        // loop over all record types in this batch. For each record type, iff this is the first
-        // time we've seen this type, calculate a schema from its records and update the record type
-        // as necessary. Then, write the records into the table.
-        OperationType opType = info.operationType();
-        BiStream.from(groupedRecords.asMap())
-            .mapValues(ImmutableList::copyOf) // despite its name, copyOf avoids copying if possible
-            .forEach(
-                (recType, recordsForType) -> {
-                  // have we already processed at least one batch of this record type?
-                  boolean isTypeAlreadySeen = typesSeen.containsKey(recType);
-                  // if this is the first time we've seen this record type, infer and update this
-                  // record type's schema, then save that schema back to the `typesSeen` map
-                  if (!isTypeAlreadySeen && opType == OperationType.UPSERT) {
-                    Map<String, DataTypeMapping> inferredSchema =
-                        inferer.inferTypes(recordsForType);
-                    Map<String, DataTypeMapping> finalSchema =
-                        recordSink.createOrModifyRecordType(
-                            recType, inferredSchema, recordsForType, primaryKey);
-                    typesSeen.put(recType, finalSchema);
-                  }
-
-                  Map<String, DataTypeMapping> schema = typesSeen.get(recType);
-                  // when updating relations only, do not update if there are no relations
-                  if (recordSource.importMode() == BASE_ATTRIBUTES || !schema.isEmpty()) {
-                    // For relations only, remove records that have no relations
-                    var recordsToWrite =
-                        recordSource.importMode() == RELATIONS
-                            ? excludeEmptyRecords(recordsForType)
-                            : recordsForType;
-
-                    // write these records to the db, using the schema from the `typesSeen` map
-                    try {
-                      switch (opType) {
-                        case UPSERT -> recordSink.upsertBatch(
-                            recType, schema, recordsToWrite, primaryKey);
-                        case DELETE -> recordSink.deleteBatch(recType, recordsToWrite);
-                        default -> throw new BadStreamingWriteRequestException(
-                            "Unsupported operation type: " + opType);
-                      }
-                      // update the result counts
-                      result.increaseCount(recType, recordsToWrite.size());
-                    } catch (IOException e) {
-                      throw new BadStreamingWriteRequestException(e);
-                    }
-                  }
-                });
+      if (recordType != null && !Set.of(recordType).equals(groupedRecords.keySet())) {
+        throw new BadStreamingWriteRequestException(
+            "Record Type was specified as argument to BatchWriteService, "
+                + "but actual records contained different record types. Cannot continue.");
       }
-    } catch (IOException e) {
-      throw new BadStreamingWriteRequestException(e);
+
+      // loop over all record types in this batch. For each record type, iff this is the first
+      // time we've seen this type, calculate a schema from its records and update the record type
+      // as necessary. Then, write the records into the table.
+      OperationType opType = info.operationType();
+      BiStream.from(groupedRecords.asMap())
+          .mapValues(ImmutableList::copyOf) // despite its name, copyOf avoids copying if possible
+          .forEach(
+              (recType, recordsForType) -> {
+                // have we already processed at least one batch of this record type?
+                boolean isTypeAlreadySeen = typesSeen.containsKey(recType);
+                // if this is the first time we've seen this record type, infer and update this
+                // record type's schema, then save that schema back to the `typesSeen` map
+                if (!isTypeAlreadySeen && opType == OperationType.UPSERT) {
+                  Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(recordsForType);
+                  Map<String, DataTypeMapping> finalSchema =
+                      recordSink.createOrModifyRecordType(
+                          recType, inferredSchema, recordsForType, primaryKey);
+                  typesSeen.put(recType, finalSchema);
+                }
+
+                Map<String, DataTypeMapping> schema = typesSeen.get(recType);
+                // when updating relations only, do not update if there are no relations
+                if (recordSource.importMode() == BASE_ATTRIBUTES || !schema.isEmpty()) {
+                  // For relations only, remove records that have no relations
+                  var recordsToWrite =
+                      recordSource.importMode() == RELATIONS
+                          ? excludeEmptyRecords(recordsForType)
+                          : recordsForType;
+
+                  // write these records to the db, using the schema from the `typesSeen` map
+                  try {
+                    switch (opType) {
+                      case UPSERT -> recordSink.upsertBatch(
+                          recType, schema, recordsToWrite, primaryKey);
+                      case DELETE -> recordSink.deleteBatch(recType, recordsToWrite);
+                      default -> throw new UnsupportedOperationException(
+                          "OperationType " + opType + " is not supported");
+                    }
+                    // update the result counts
+                    result.increaseCount(recType, recordsToWrite.size());
+                  } catch (IOException e) {
+                    throw new BadStreamingWriteRequestException(e);
+                  }
+                }
+              });
     }
     return result;
   }
