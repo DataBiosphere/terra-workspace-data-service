@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.recordstream;
+package org.databiosphere.workspacedataservice.recordsource;
 
 /**
  * Simple interface to clarify the additional responsibility that {@link TsvRecordSource} provides.

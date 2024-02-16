@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.recordstream;
+package org.databiosphere.workspacedataservice.recordsource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.mockPfbStream;
@@ -15,8 +15,8 @@ import java.net.URL;
 import java.util.List;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
-import org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode;
-import org.databiosphere.workspacedataservice.service.BatchWriteService.WriteStreamInfo;
+import org.databiosphere.workspacedataservice.recordsource.RecordSource.WriteStreamInfo;
+import org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
