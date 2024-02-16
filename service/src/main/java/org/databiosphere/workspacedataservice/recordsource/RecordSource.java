@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.recordsource;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
+import org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 
@@ -20,4 +21,8 @@ public interface RecordSource extends Closeable {
   WriteStreamInfo readRecords(int numRecords) throws IOException;
 
   record WriteStreamInfo(List<Record> records, OperationType operationType) {}
+
+  default ImportMode importMode() {
+    return ImportMode.BASE_ATTRIBUTES;
+  }
 }

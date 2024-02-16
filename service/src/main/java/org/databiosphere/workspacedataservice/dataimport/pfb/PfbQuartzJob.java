@@ -159,8 +159,7 @@ public class PfbQuartzJob extends QuartzJob {
             recordSinkFactory.buildRecordSink(/* prefix= */ "pfb"),
             targetCollection,
             /* recordType= */ null, // record type is determined later
-            primaryKey,
-            importMode);
+            primaryKey);
 
     if (result != null) {
       result

@@ -94,8 +94,7 @@ class BatchWriteServiceTest {
                     recordSinkFactory.buildRecordSink(/* prefix= */ "json"),
                     COLLECTION,
                     THING_TYPE,
-                    RECORD_ID,
-                    ImportMode.BASE_ATTRIBUTES));
+                    RECORD_ID));
 
     String errorMessage = ex.getMessage();
     assertEquals("Duplicate field 'key'", errorMessage);
@@ -124,8 +123,7 @@ class BatchWriteServiceTest {
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(file.getInputStream(), recordType, Optional.of(primaryKey));
     RecordSink recordSink = recordSinkFactory.buildRecordSink(/* prefix= */ "tsv");
-    batchWriteService.batchWrite(
-        recordSource, recordSink, COLLECTION, recordType, primaryKey, ImportMode.BASE_ATTRIBUTES);
+    batchWriteService.batchWrite(recordSource, recordSink, COLLECTION, recordType, primaryKey);
 
     // we should write three batches
     verify(recordService, times(3))
@@ -269,7 +267,6 @@ class BatchWriteServiceTest {
         recordSinkFactory.buildRecordSink(/* prefix= */ "pfb"),
         COLLECTION,
         /* recordType= */ null,
-        primaryKey,
-        importMode);
+        primaryKey);
   }
 }

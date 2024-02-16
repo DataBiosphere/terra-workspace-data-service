@@ -52,4 +52,9 @@ public class PfbRecordSource implements TwoPassRecordSource {
   public void close() throws IOException {
     inputStream.close();
   }
+
+  @Override
+  public ImportMode importMode() {
+    return importMode;
+  }
 }
