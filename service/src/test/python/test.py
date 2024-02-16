@@ -100,7 +100,7 @@ class WdsTests(TestCase):
     collection_client = wds_client.CollectionsApi(api_client)
     import_client = wds_client.ImportApi(api_client)
     job_client = wds_client.JobApi(api_client)
-    current_workspaceId = collection_client.list_wds_collections()[0]
+    current_workspaceId = collection_client.list_collections_v1()[0]
 
     local_server_host = 'http://localhost:9889'
 
