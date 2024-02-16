@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import org.apache.commons.lang3.StringUtils;
-import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskedException;
+import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpHeaders;
@@ -96,7 +96,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
-   * Handler for AuthenticationMaskedException. Rewrites the response to be a 404, using the same
+   * Handler for AuthenticationMaskableException. Rewrites the response to be a 404, using the same
    * message that MissingObjectException would produce. This prevents auth exceptions from leaking
    * existence/non-existence of resources.
    *
@@ -104,11 +104,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
    * @param servletRequest the request
    * @return the desired response
    */
-  @ExceptionHandler({AuthenticationMaskedException.class})
+  @ExceptionHandler({AuthenticationMaskableException.class})
   public ResponseEntity<Map<String, Object>> maskAuthenticationExceptions(
       Exception ex, HttpServletRequest servletRequest) {
     // this cast is safe, given the @ExceptionHandler annotation
-    String objectType = ((AuthenticationMaskedException) ex).getObjectType();
+    String objectType = ((AuthenticationMaskableException) ex).getObjectType();
     // use the same message that MissingObjectException would produce
     String errorMessage = new MissingObjectException(objectType).getMessage();
 

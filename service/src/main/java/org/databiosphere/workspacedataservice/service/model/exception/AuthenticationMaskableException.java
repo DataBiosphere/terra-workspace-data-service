@@ -11,11 +11,11 @@ import org.databiosphere.workspacedataservice.controller.GlobalExceptionHandler;
  *
  * @see GlobalExceptionHandler
  */
-public class AuthenticationMaskedException extends AuthenticationException {
+public class AuthenticationMaskableException extends AuthenticationException {
 
   private final String objectType;
 
-  public AuthenticationMaskedException(String objectType) {
+  public AuthenticationMaskableException(String objectType) {
     super("Caller does not have permission to view this " + objectType);
     this.objectType = objectType;
   }

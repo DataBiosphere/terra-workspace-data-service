@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
-import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskedException;
+import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -25,7 +25,7 @@ public class JobService {
     try {
       GenericJobServerModel result = jobDao.getJob(jobId);
       if (!collectionService.canReadCollection(CollectionId.of(result.getInstanceId()))) {
-        throw new AuthenticationMaskedException("Job");
+        throw new AuthenticationMaskableException("Job");
       }
       return result;
     } catch (EmptyResultDataAccessException e) {
@@ -39,7 +39,7 @@ public class JobService {
     collectionService.validateCollection(collectionId.id());
     // check permissions
     if (!collectionService.canReadCollection(collectionId)) {
-      throw new AuthenticationMaskedException("Collection");
+      throw new AuthenticationMaskableException("Collection");
     }
     return jobDao.getJobsForCollection(collectionId, statuses);
   }
