@@ -585,10 +585,10 @@ paths:
   ##############################
   # Collection APIs
   ##############################
-  /collections/v1:
-    $ref: 'apis-v1.yaml#/paths/~1collections~1v1'
-  /collections/v1/{collectionId}:
-    $ref: 'apis-v1.yaml#/paths/~1collections~1v1~1{collectionId}'
+  /collections:
+    $ref: 'apis-v1.yaml#/paths/~1collections'
+  /collections/{collectionId}:
+    $ref: 'apis-v1.yaml#/paths/~1collections~1{collectionId}'
 
 components:
   # within each group, components should be listed alphabetically.

@@ -1,7 +1,5 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -51,7 +49,7 @@ public class CollectionService {
   }
 
   public List<UUID> listCollections(String version) {
-    validateVersion(version);
+    //    validateVersion(version); //TODO what to do about this
     return collectionDao.listCollectionSchemas();
   }
 
@@ -66,7 +64,7 @@ public class CollectionService {
    * @param version WDS API version
    */
   public void createCollection(UUID collectionId, String version) {
-    validateVersion(version);
+    //    validateVersion(version); //TODO what to do about this
 
     // check that the current user has permission on the parent workspace
     boolean hasCreateCollectionPermission = samDao.hasCreateCollectionPermission();
@@ -88,7 +86,7 @@ public class CollectionService {
   }
 
   public void deleteCollection(UUID collectionId, String version) {
-    validateVersion(version);
+    //    validateVersion(version); //TODO what to do about this
     validateCollection(collectionId);
 
     // check that the current user has permission to delete the Sam resource

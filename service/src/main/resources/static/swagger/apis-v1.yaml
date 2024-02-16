@@ -142,11 +142,11 @@ paths:
   ##############################
   # Collection APIs
   ##############################
-  /collections/v1:
+  /collections:
     get:
       summary: List collections
       description: List all collections in this server.
-      operationId: listWDSCollections
+      operationId: listCollectionsV1
       tags:
         - Collections
       responses:
@@ -159,17 +159,17 @@ paths:
                 items:
                   type: string
                   format: uuid
-  /collections/v1/{collectionId}:
+  /collections/{collectionId}:
     post:
       summary: Create a collection
       description: Create a collection with the given UUID.
-      operationId: createWDSCollection
+      operationId: createCollectionV1
       security:
         - bearerAuth: [ ]
       tags:
         - Collections
       parameters:
-        - $ref: '#/components/parameters/collectionIdPathParam'
+        - $ref: '#/components/parameters/collectionUuidPathParam'
       responses:
         201:
           description: Success
@@ -185,13 +185,13 @@ paths:
         Delete the collection with the given UUID. This API is liable to change.
 
         THIS WILL DELETE ALL DATA WITHIN THE COLLECTION. Be certain this is what you want to do.
-      operationId: deleteWDSCollection
+      operationId: deleteCollectionV1
       security:
         - bearerAuth: [ ]
       tags:
         - Collections
       parameters:
-        - $ref: '#/components/parameters/collectionIdPathParam'
+        - $ref: '#/components/parameters/collectionUuidPathParam'
       responses:
         200:
           description: Success

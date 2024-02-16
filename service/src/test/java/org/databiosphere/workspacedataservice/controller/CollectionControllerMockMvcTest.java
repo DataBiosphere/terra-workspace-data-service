@@ -25,9 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 @ActiveProfiles(profiles = "mock-sam")
 @DirtiesContext
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class CollectionControllerMockMvcTest extends MockMvcTestBase {
+class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
-  // TODO I think this version will go up
   private static final String versionId = "v0.2";
 
   private final UUID collectionId = UUID.randomUUID();
@@ -36,22 +35,15 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
   @Transactional
   void createCollectionAndTryToCreateAgain() throws Exception {
     UUID uuid = UUID.randomUUID();
-    mockMvc
-        .perform(post("/collections/{version}/{collectionId}", versionId, uuid))
-        .andExpect(status().isCreated());
-    mockMvc
-        .perform(post("/collections/{version}/{collectionId}", versionId, uuid))
-        .andExpect(status().isConflict());
+    mockMvc.perform(post("/collections/{collectionId}", uuid)).andExpect(status().isCreated());
+    mockMvc.perform(post("/collections/{collectionId}", uuid)).andExpect(status().isConflict());
   }
 
   @Test
   void listCollections() throws Exception {
     // get initial collection list
     MvcResult initialResult =
-        mockMvc
-            .perform(get("/collections/{version}", versionId))
-            .andExpect(status().isOk())
-            .andReturn();
+        mockMvc.perform(get("/collections")).andExpect(status().isOk()).andReturn();
     UUID[] initialCollections = fromJson(initialResult, UUID[].class);
     // create new uuid; new uuid should not be in our initial collection list
     UUID uuid = UUID.randomUUID();
@@ -59,15 +51,10 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
         Arrays.asList(initialCollections).contains(uuid),
         "initial collection list should not contain brand new UUID");
     // create a new collection from the new uuid
-    mockMvc
-        .perform(post("/collections/{version}/{collectionId}", versionId, uuid))
-        .andExpect(status().isCreated());
+    mockMvc.perform(post("/collections/{collectionId}", uuid)).andExpect(status().isCreated());
     // get collection list again
     MvcResult afterCreationResult =
-        mockMvc
-            .perform(get("/collections/{version}", versionId))
-            .andExpect(status().isOk())
-            .andReturn();
+        mockMvc.perform(get("/collections")).andExpect(status().isOk()).andReturn();
     UUID[] afterCreationCollections = fromJson(afterCreationResult, UUID[].class);
     // new uuid should be in our initial collection list
     assertTrue(
@@ -85,25 +72,15 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
   void deleteCollection() throws Exception {
     UUID uuid = UUID.randomUUID();
     // delete nonexistent collection should 404
-    mockMvc
-        .perform(delete("/collections/{version}/{collectionId}", versionId, uuid))
-        .andExpect(status().isNotFound());
+    mockMvc.perform(delete("/collections/{collectionId}", uuid)).andExpect(status().isNotFound());
     // creating the collection should 201
-    mockMvc
-        .perform(post("/collections/{version}/{collectionId}", versionId, uuid))
-        .andExpect(status().isCreated());
+    mockMvc.perform(post("/collections/{collectionId}", uuid)).andExpect(status().isCreated());
     // delete existing collection should 200
-    mockMvc
-        .perform(delete("/collections/{version}/{collectionId}", versionId, uuid))
-        .andExpect(status().isOk());
+    mockMvc.perform(delete("/collections/{collectionId}", uuid)).andExpect(status().isOk());
     // deleting again should 404
-    mockMvc
-        .perform(delete("/collections/{version}/{collectionId}", versionId, uuid))
-        .andExpect(status().isNotFound());
+    mockMvc.perform(delete("/collections/{collectionId}", uuid)).andExpect(status().isNotFound());
     // creating again should 201
-    mockMvc
-        .perform(post("/collections/{version}/{collectionId}", versionId, uuid))
-        .andExpect(status().isCreated());
+    mockMvc.perform(post("/collections/{collectionId}", uuid)).andExpect(status().isCreated());
   }
 
   @Test
@@ -111,7 +88,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
   void deleteCollectionContainingData() throws Exception {
     // Create collection
     mockMvc
-        .perform(post("/collections/{v}/{collectionid}", versionId, collectionId).content(""))
+        .perform(post("/collections/{collectionid}", collectionId).content(""))
         .andExpect(status().isCreated());
 
     RecordAttributes attributes = new RecordAttributes(Map.of("foo", "bar", "num", 123));
@@ -141,8 +118,6 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isCreated());
     // delete existing collection should 200
-    mockMvc
-        .perform(delete("/collections/{version}/{collectionId}", versionId, collectionId))
-        .andExpect(status().isOk());
+    mockMvc.perform(delete("/collections/{collectionId}", collectionId)).andExpect(status().isOk());
   }
 }

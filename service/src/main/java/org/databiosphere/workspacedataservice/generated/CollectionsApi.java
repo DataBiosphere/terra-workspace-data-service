@@ -43,15 +43,15 @@ public interface CollectionsApi {
     }
 
     /**
-     * POST /collections/v1/{collectionId} : Create a collection
+     * POST /collections/{collectionId} : Create a collection
      * Create a collection with the given UUID.
      *
-     * @param collectionId WDS collection id; by convention equal to workspace id (required)
+     * @param collectionUuid WDS collection id; by convention equal to workspace id (required)
      * @return Success (status code 201)
      *         or Conflict - schema already exists. (status code 409)
      */
     @Operation(
-        operationId = "createWDSCollection",
+        operationId = "createCollectionV1",
         summary = "Create a collection",
         description = "Create a collection with the given UUID.",
         tags = { "Collections" },
@@ -67,11 +67,11 @@ public interface CollectionsApi {
     )
     @RequestMapping(
         method = RequestMethod.POST,
-        value = "/collections/v1/{collectionId}",
+        value = "/collections/{collectionId}",
         produces = { "application/json" }
     )
-    default ResponseEntity<Void> createWDSCollection(
-        @Parameter(name = "collectionId", description = "WDS collection id; by convention equal to workspace id", required = true, in = ParameterIn.PATH) @PathVariable("collectionId") String collectionId
+    default ResponseEntity<Void> createCollectionV1(
+        @Parameter(name = "collectionUuid", description = "WDS collection id; by convention equal to workspace id", required = true, in = ParameterIn.PATH) @PathVariable("collectionUuid") UUID collectionUuid
     ) {
         return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
 
@@ -79,15 +79,15 @@ public interface CollectionsApi {
 
 
     /**
-     * DELETE /collections/v1/{collectionId} : Delete a collection
+     * DELETE /collections/{collectionId} : Delete a collection
      * Delete the collection with the given UUID. This API is liable to change.  THIS WILL DELETE ALL DATA WITHIN THE COLLECTION. Be certain this is what you want to do. 
      *
-     * @param collectionId WDS collection id; by convention equal to workspace id (required)
+     * @param collectionUuid WDS collection id; by convention equal to workspace id (required)
      * @return Success (status code 200)
      *         or Not Found - collection does not exist. (status code 404)
      */
     @Operation(
-        operationId = "deleteWDSCollection",
+        operationId = "deleteCollectionV1",
         summary = "Delete a collection",
         description = "Delete the collection with the given UUID. This API is liable to change.  THIS WILL DELETE ALL DATA WITHIN THE COLLECTION. Be certain this is what you want to do. ",
         tags = { "Collections" },
@@ -103,11 +103,11 @@ public interface CollectionsApi {
     )
     @RequestMapping(
         method = RequestMethod.DELETE,
-        value = "/collections/v1/{collectionId}",
+        value = "/collections/{collectionId}",
         produces = { "application/json" }
     )
-    default ResponseEntity<Void> deleteWDSCollection(
-        @Parameter(name = "collectionId", description = "WDS collection id; by convention equal to workspace id", required = true, in = ParameterIn.PATH) @PathVariable("collectionId") String collectionId
+    default ResponseEntity<Void> deleteCollectionV1(
+        @Parameter(name = "collectionUuid", description = "WDS collection id; by convention equal to workspace id", required = true, in = ParameterIn.PATH) @PathVariable("collectionUuid") UUID collectionUuid
     ) {
         return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
 
@@ -115,13 +115,13 @@ public interface CollectionsApi {
 
 
     /**
-     * GET /collections/v1 : List collections
+     * GET /collections : List collections
      * List all collections in this server.
      *
      * @return Success (status code 200)
      */
     @Operation(
-        operationId = "listWDSCollections",
+        operationId = "listCollectionsV1",
         summary = "List collections",
         description = "List all collections in this server.",
         tags = { "Collections" },
@@ -133,10 +133,10 @@ public interface CollectionsApi {
     )
     @RequestMapping(
         method = RequestMethod.GET,
-        value = "/collections/v1",
+        value = "/collections",
         produces = { "application/json" }
     )
-    default ResponseEntity<List<UUID>> listWDSCollections(
+    default ResponseEntity<List<UUID>> listCollectionsV1(
         
     ) {
         return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
