@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -14,6 +15,7 @@ import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;
+import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -100,10 +102,11 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     when(samDao.hasReadWorkspacePermission(getEnvWorkspaceId().toString())).thenReturn(false);
 
     // Act / assert
-    Exception actual = assertThrows(MissingObjectException.class, () -> jobService.getJob(jobId));
+    AuthenticationMaskableException actual =
+        assertThrows(AuthenticationMaskableException.class, () -> jobService.getJob(jobId));
 
     // Assert
-    assertThat(actual.getMessage()).startsWith("Job");
+    assertEquals("Job", actual.getObjectType());
   }
 
   /** requested job exists; its collection does not use the default workspace */
@@ -149,10 +152,11 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     when(samDao.hasReadWorkspacePermission(workspaceId.toString())).thenReturn(true);
 
     // Act / assert
-    Exception actual = assertThrows(MissingObjectException.class, () -> jobService.getJob(jobId));
+    AuthenticationMaskableException actual =
+        assertThrows(AuthenticationMaskableException.class, () -> jobService.getJob(jobId));
 
     // Assert
-    assertThat(actual.getMessage()).startsWith("Job");
+    assertEquals("Job", actual.getObjectType());
   }
 
   // ==================================================

@@ -15,6 +15,7 @@ import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;
+import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -121,10 +122,11 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
     when(samDao.hasReadWorkspacePermission(collectionId.toString())).thenReturn(false);
 
     // Act / assert
-    Exception actual = assertThrows(MissingObjectException.class, () -> jobService.getJob(jobId));
+    AuthenticationMaskableException actual =
+        assertThrows(AuthenticationMaskableException.class, () -> jobService.getJob(jobId));
 
     // Assert
-    assertThat(actual.getMessage()).startsWith("Job");
+    assertEquals("Job", actual.getObjectType());
   }
 
   // ==================================================
@@ -190,12 +192,12 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
         .thenReturn(makeJobList(collectionId, 3));
 
     // Act / assert
-    Exception actual =
+    AuthenticationMaskableException actual =
         assertThrows(
-            MissingObjectException.class,
+            AuthenticationMaskableException.class,
             () -> jobService.getJobsForCollection(collectionId, allStatuses));
 
     // Assert
-    assertThat(actual.getMessage()).startsWith("Collection");
+    assertEquals("Collection", actual.getObjectType());
   }
 }
