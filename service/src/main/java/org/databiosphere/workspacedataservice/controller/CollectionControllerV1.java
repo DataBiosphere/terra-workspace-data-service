@@ -11,13 +11,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-public class CollectionController implements CollectionsApi {
+public class CollectionControllerV1 implements CollectionsApi {
 
   private final CollectionService collectionService;
   // TODO is this the correct way to deal with the version
   private final String version = "v1";
 
-  public CollectionController(CollectionService collectionService) {
+  public CollectionControllerV1(CollectionService collectionService) {
     this.collectionService = collectionService;
   }
 

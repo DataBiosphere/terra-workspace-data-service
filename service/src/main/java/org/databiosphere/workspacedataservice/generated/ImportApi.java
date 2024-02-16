@@ -50,7 +50,9 @@ public interface ImportApi {
      * @param instanceUuid WDS instance id; by convention equal to workspace id (required)
      * @param importRequestServerModel A request to import records from a file (required)
      * @return Import accepted. (status code 202)
+     * @deprecated
      */
+    @Deprecated
     @Operation(
         operationId = "importV1",
         summary = "Import from a file",
@@ -73,6 +75,43 @@ public interface ImportApi {
     )
     default ResponseEntity<GenericJobServerModel> importV1(
         @Parameter(name = "instanceUuid", description = "WDS instance id; by convention equal to workspace id", required = true, in = ParameterIn.PATH) @PathVariable("instanceUuid") UUID instanceUuid,
+        @Parameter(name = "ImportRequestServerModel", description = "A request to import records from a file", required = true) @Valid @RequestBody ImportRequestServerModel importRequestServerModel
+    ) {
+        return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
+
+    }
+
+
+    /**
+     * POST /{collectionUuid}/import/v2 : Import from a file
+     * Imports records from the specified URL.
+     *
+     * @param collectionUuid WDS collection id; by convention equal to workspace id (required)
+     * @param importRequestServerModel A request to import records from a file (required)
+     * @return Import accepted. (status code 202)
+     */
+    @Operation(
+        operationId = "importV2",
+        summary = "Import from a file",
+        description = "Imports records from the specified URL.",
+        tags = { "Import" },
+        responses = {
+            @ApiResponse(responseCode = "202", description = "Import accepted.", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = GenericJobServerModel.class))
+            })
+        },
+        security = {
+            @SecurityRequirement(name = "bearerAuth")
+        }
+    )
+    @RequestMapping(
+        method = RequestMethod.POST,
+        value = "/{collectionUuid}/import/v2",
+        produces = { "application/json" },
+        consumes = { "application/json" }
+    )
+    default ResponseEntity<GenericJobServerModel> importV2(
+        @Parameter(name = "collectionUuid", description = "WDS collection id; by convention equal to workspace id", required = true, in = ParameterIn.PATH) @PathVariable("collectionUuid") UUID collectionUuid,
         @Parameter(name = "ImportRequestServerModel", description = "A request to import records from a file", required = true) @Valid @RequestBody ImportRequestServerModel importRequestServerModel
     ) {
         return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);

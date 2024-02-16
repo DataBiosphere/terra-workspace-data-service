@@ -23,4 +23,11 @@ public class ImportController implements ImportApi {
     GenericJobServerModel importJob = importService.createImport(instanceUuid, importRequest);
     return new ResponseEntity<>(importJob, HttpStatus.ACCEPTED);
   }
+
+  @Override
+  public ResponseEntity<GenericJobServerModel> importV2(
+      UUID collectionUuid, ImportRequestServerModel importRequest) {
+    GenericJobServerModel importJob = importService.createImport(collectionUuid, importRequest);
+    return new ResponseEntity<>(importJob, HttpStatus.ACCEPTED);
+  }
 }

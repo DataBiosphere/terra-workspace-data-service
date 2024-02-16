@@ -31,12 +31,55 @@ paths:
       summary: Import from a file
       description: Imports records from the specified URL.
       operationId: importV1
+      deprecated: true
       security:
         - bearerAuth: [ ]
       tags:
         - Import
       parameters:
         - $ref: '#/components/parameters/instanceUuidPathParam'
+      requestBody:
+        description: A request to import records from a file
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              title: ImportRequest
+              required:
+                - type
+                - url
+              properties:
+                type:
+                  type: string
+                  enum: [ PFB, TDRMANIFEST ]
+                  description: format of file to import
+                url:
+                  type: string
+                  format: uri
+                  description: url from which to import
+                options:
+                  type: object
+                  additionalProperties: true
+                  description: key-value pairs to configure this import. Options vary based on the import file type.
+      responses:
+        202:
+          description: Import accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericJob'
+  /{collectionUuid}/import/v2:
+    post:
+      summary: Import from a file
+      description: Imports records from the specified URL.
+      operationId: importV2
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - Import
+      parameters:
+        - $ref: '#/components/parameters/collectionUuidPathParam'
       requestBody:
         description: A request to import records from a file
         required: true

@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @ActiveProfiles(profiles = "mock-sam")
 @DirtiesContext
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class CollectionControllerMockMvcTest extends MockMvcTestBase {
+class CollectionControllerV1MockMvcTest extends MockMvcTestBase {
 
   private static final String versionId = "v0.2";
 
