@@ -16,7 +16,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
@@ -157,7 +156,6 @@ class RawlsRecordSinkTest {
     var recordType = recordList.stream().map(Record::getRecordType).collect(onlyElement());
     try {
       recordSink.writeBatch(
-          /* collectionId= */ UUID.randomUUID(), // currently ignored
           recordType,
           /* schema= */ Map.of(), // currently ignored
           OperationType.UPSERT,

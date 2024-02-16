@@ -141,12 +141,11 @@ public class RecordOrchestratorService { // TODO give me a better name
 
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(records.getInputStream(), recordType, primaryKey);
-    RecordSink recordSink = recordSinkFactory.buildRecordSink(/* prefix= */ "tsv");
+    RecordSink recordSink = recordSinkFactory.buildRecordSink(collectionId, /* prefix= */ "tsv");
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSource,
             recordSink,
-            collectionId,
             recordType,
             // the extra cast here isn't exactly necessary, but left here to call out the additional
             // tangential responsibility of the TsvRecordSource; this can be removed if we
@@ -387,8 +386,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSource,
-            recordSinkFactory.buildRecordSink(/* prefix= */ "json"),
-            collectionId,
+            recordSinkFactory.buildRecordSink(collectionId, /* prefix= */ "json"),
             recordType,
             primaryKey.orElse(RECORD_ID));
     int qty = result.getUpdatedCount(recordType);

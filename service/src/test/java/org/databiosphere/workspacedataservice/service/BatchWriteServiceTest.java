@@ -91,8 +91,7 @@ class BatchWriteServiceTest {
             () ->
                 batchWriteService.batchWrite(
                     recordSourceFactory.forJson(is),
-                    recordSinkFactory.buildRecordSink(/* prefix= */ "json"),
-                    COLLECTION,
+                    recordSinkFactory.buildRecordSink(COLLECTION, /* prefix= */ "json"),
                     THING_TYPE,
                     RECORD_ID));
 
@@ -122,8 +121,8 @@ class BatchWriteServiceTest {
     // Note that this call to batchWriteTsvStream specifies a non-null RecordType.
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(file.getInputStream(), recordType, Optional.of(primaryKey));
-    RecordSink recordSink = recordSinkFactory.buildRecordSink(/* prefix= */ "tsv");
-    batchWriteService.batchWrite(recordSource, recordSink, COLLECTION, recordType, primaryKey);
+    RecordSink recordSink = recordSinkFactory.buildRecordSink(COLLECTION, /* prefix= */ "tsv");
+    batchWriteService.batchWrite(recordSource, recordSink, recordType, primaryKey);
 
     // we should write three batches
     verify(recordService, times(3))
@@ -264,8 +263,7 @@ class BatchWriteServiceTest {
       DataFileStream<GenericRecord> pfbStream, String primaryKey, ImportMode importMode) {
     return batchWriteService.batchWrite(
         recordSourceFactory.forPfb(pfbStream, importMode),
-        recordSinkFactory.buildRecordSink(/* prefix= */ "pfb"),
-        COLLECTION,
+        recordSinkFactory.buildRecordSink(COLLECTION, /* prefix= */ "pfb"),
         /* recordType= */ null,
         primaryKey);
   }

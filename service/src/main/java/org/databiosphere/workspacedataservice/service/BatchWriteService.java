@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.WriteStreamInfo;
@@ -42,20 +41,15 @@ public class BatchWriteService {
    * RecordSource}.
    *
    * @param recordSource the source of the records to be upserted
-   * @param collectionId collection to which records are upserted
    * @param recordType record type of records contained in the write handler
    * @param primaryKey primaryKey column for the record type
    * @return a {@link BatchWriteResult} with metadata about the written records
    */
   @WriteTransaction
   public BatchWriteResult batchWrite(
-      RecordSource recordSource,
-      RecordSink recordSink,
-      UUID collectionId,
-      RecordType recordType,
-      String primaryKey) {
+      RecordSource recordSource, RecordSink recordSink, RecordType recordType, String primaryKey) {
     try (recordSource) {
-      return consumeWriteStream(recordSource, recordSink, collectionId, recordType, primaryKey);
+      return consumeWriteStream(recordSource, recordSink, recordType, primaryKey);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
@@ -64,7 +58,6 @@ public class BatchWriteService {
   private BatchWriteResult consumeWriteStream(
       RecordSource recordSource,
       RecordSink recordSink,
-      UUID collectionId,
       RecordType recordType, // nullable
       String primaryKey) {
     BatchWriteResult result = BatchWriteResult.empty();
@@ -105,14 +98,13 @@ public class BatchWriteService {
                   // have we already processed at least one batch of this record type?
                   boolean isTypeAlreadySeen = typesSeen.containsKey(recType);
                   // if this is the first time we've seen this record type, infer and update this
-                  // record
-                  // type's schema, then save that schema back to the `typesSeen` map
+                  // record type's schema, then save that schema back to the `typesSeen` map
                   if (!isTypeAlreadySeen && opType == OperationType.UPSERT) {
                     Map<String, DataTypeMapping> inferredSchema =
                         inferer.inferTypes(recordsForType);
                     Map<String, DataTypeMapping> finalSchema =
                         recordSink.createOrModifyRecordType(
-                            collectionId, recType, inferredSchema, recordsForType, primaryKey);
+                            recType, inferredSchema, recordsForType, primaryKey);
                     typesSeen.put(recType, finalSchema);
                   }
                   // when updating relations only, do not update if there are no relations
@@ -127,12 +119,7 @@ public class BatchWriteService {
                     // write these records to the db, using the schema from the `typesSeen` map
                     try {
                       recordSink.writeBatch(
-                          collectionId,
-                          recType,
-                          typesSeen.get(recType),
-                          opType,
-                          recordsToWrite,
-                          primaryKey);
+                          recType, typesSeen.get(recType), opType, recordsToWrite, primaryKey);
                       // update the result counts
                       result.increaseCount(recType, recordsToWrite.size());
                     } catch (IOException e) {

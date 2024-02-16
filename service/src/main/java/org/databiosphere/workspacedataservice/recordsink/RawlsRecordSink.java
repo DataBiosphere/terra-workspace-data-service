@@ -11,7 +11,6 @@ import java.lang.annotation.Target;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
@@ -55,7 +54,6 @@ public class RawlsRecordSink implements RecordSink {
 
   @Override
   public Map<String, DataTypeMapping> createOrModifyRecordType(
-      UUID collectionId,
       RecordType recordType,
       Map<String, DataTypeMapping> schema,
       List<Record> records,
@@ -66,7 +64,6 @@ public class RawlsRecordSink implements RecordSink {
 
   @Override
   public void writeBatch(
-      UUID collectionId,
       RecordType recordType,
       Map<String, DataTypeMapping> schema,
       OperationType opType,
