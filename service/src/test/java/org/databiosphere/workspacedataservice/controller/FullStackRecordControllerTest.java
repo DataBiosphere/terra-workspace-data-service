@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestUtils.generateNonRandomAttributes;
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -114,7 +115,8 @@ class FullStackRecordControllerTest {
               versionId,
               badName,
               "sample_1");
-      ErrorResponse err = response.getBody();
+      ErrorResponse err = assertInstanceOf(ErrorResponse.class, response.getBody());
+
       assertThat(err.getMessage())
           .containsPattern("Record Type .* or contain characters besides letters");
       assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -133,39 +135,24 @@ class FullStackRecordControllerTest {
     createSomeRecords(recordType, 26, namesIterator::next);
     int limit = 5;
     int offset = 0;
-    RecordQueryResponse body = executeQuery(recordType, RecordQueryResponse.class).getBody();
+    RecordQueryResponse body = executeExpectedSuccess(recordType);
     assertThat(body.records())
         .as("When no search request POST body is sent, we should use defaults")
         .hasSize(10);
-    body =
-        executeQuery(
-                recordType,
-                RecordQueryResponse.class,
-                new SearchRequest(limit, offset, SortDirection.ASC))
-            .getBody();
+    body = executeExpectedSuccess(recordType, new SearchRequest(limit, offset, SortDirection.ASC));
     assertThat(body.records()).hasSize(limit);
     assertThat(body.records().get(0).recordId())
         .as("A should be the first record id in ascending order")
         .isEqualTo("A");
     assertThat(body.records().get(4).recordId()).isEqualTo("E");
-    body =
-        executeQuery(
-                recordType,
-                RecordQueryResponse.class,
-                new SearchRequest(limit, offset, SortDirection.DESC))
-            .getBody();
+    body = executeExpectedSuccess(recordType, new SearchRequest(limit, offset, SortDirection.DESC));
     assertThat(body.records()).hasSize(limit);
     assertThat(body.records().get(0).recordId())
         .as("Z should be first record id in descending order")
         .isEqualTo("Z");
     assertThat(body.records().get(4).recordId()).isEqualTo("V");
     offset = 10;
-    body =
-        executeQuery(
-                recordType,
-                RecordQueryResponse.class,
-                new SearchRequest(limit, offset, SortDirection.ASC))
-            .getBody();
+    body = executeExpectedSuccess(recordType, new SearchRequest(limit, offset, SortDirection.ASC));
     assertThat(body.records().get(0).recordId())
         .as("K should be first record id in ascending order with offset of 10")
         .isEqualTo("K");
@@ -179,8 +166,7 @@ class FullStackRecordControllerTest {
     int limit = 5;
     int offset = 0;
     SearchRequest sortByAlpha = new SearchRequest(limit, offset, SortDirection.ASC, "attr1");
-    RecordQueryResponse body =
-        executeQuery(recordType, RecordQueryResponse.class, sortByAlpha).getBody();
+    RecordQueryResponse body = executeExpectedSuccess(recordType, sortByAlpha);
     assertThat(body.records()).hasSize(limit);
     assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr1"))
         .as("Record with attr1 'abc' should be first record in ascending order")
@@ -188,7 +174,7 @@ class FullStackRecordControllerTest {
     assertThat(body.records().get(4).recordAttributes().getAttributeValue("attr1"))
         .isEqualTo("mno");
     SearchRequest sortByFloat = new SearchRequest(limit, offset, SortDirection.DESC, "attr2");
-    body = executeQuery(recordType, RecordQueryResponse.class, sortByFloat).getBody();
+    body = executeExpectedSuccess(recordType, sortByFloat);
     assertThat(body.records()).hasSize(limit);
     assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr2"))
         .as("Record with attr2 2.99792448e8f should be first record in descending order")
@@ -196,14 +182,14 @@ class FullStackRecordControllerTest {
     assertThat(body.records().get(4).recordAttributes().getAttributeValue("attr2"))
         .isEqualTo(new BigDecimal("1.4142"));
     SearchRequest sortByInt = new SearchRequest(limit, offset, SortDirection.ASC, "attr3");
-    body = executeQuery(recordType, RecordQueryResponse.class, sortByInt).getBody();
+    body = executeExpectedSuccess(recordType, sortByInt);
     assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr3"))
         .as("Record with attr3 1 should be first record in ascending order")
         .isEqualTo(new BigInteger("1"));
     assertThat(body.records().get(4).recordAttributes().getAttributeValue("attr3"))
         .isEqualTo(new BigInteger("5"));
     SearchRequest sortByDate = new SearchRequest(limit, offset, SortDirection.DESC, "attr-dt");
-    body = executeQuery(recordType, RecordQueryResponse.class, sortByDate).getBody();
+    body = executeExpectedSuccess(recordType, sortByDate);
     assertThat(body.records()).hasSize(limit);
 
     assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr-dt"))
@@ -220,31 +206,26 @@ class FullStackRecordControllerTest {
     int limit = 5;
     int offset = 0;
     ResponseEntity<ErrorResponse> response =
-        executeQuery(
-            recordType, ErrorResponse.class, new SearchRequest(limit, offset, SortDirection.ASC));
+        executeExpectedError(recordType, new SearchRequest(limit, offset, SortDirection.ASC));
     assertThat(response.getStatusCode())
         .as("record type doesn't exist")
         .isEqualTo(HttpStatus.NOT_FOUND);
     createSomeRecords(recordType, 1);
     response =
-        executeQuery(
-            recordType,
-            ErrorResponse.class,
-            new SearchRequest(limit, offset, SortDirection.ASC, "no-attr"));
+        executeExpectedError(
+            recordType, new SearchRequest(limit, offset, SortDirection.ASC, "no-attr"));
     assertThat(response.getStatusCode())
         .as("attribute doesn't exist")
         .isEqualTo(HttpStatus.NOT_FOUND);
     limit = 1001;
     response =
-        executeQuery(
-            recordType, ErrorResponse.class, new SearchRequest(limit, offset, SortDirection.ASC));
+        executeExpectedError(recordType, new SearchRequest(limit, offset, SortDirection.ASC));
     assertThat(response.getStatusCode())
         .as("unsupported limit size")
         .isEqualTo(HttpStatus.BAD_REQUEST);
     limit = 0;
     response =
-        executeQuery(
-            recordType, ErrorResponse.class, new SearchRequest(limit, offset, SortDirection.ASC));
+        executeExpectedError(recordType, new SearchRequest(limit, offset, SortDirection.ASC));
     assertThat(response.getStatusCode())
         .as("unsupported limit size")
         .isEqualTo(HttpStatus.BAD_REQUEST);
@@ -265,6 +246,20 @@ class FullStackRecordControllerTest {
         instanceId,
         versionId,
         recordType);
+  }
+
+  private RecordQueryResponse executeExpectedSuccess(
+      RecordType recordType, SearchRequest... request) throws JsonProcessingException {
+    ResponseEntity<RecordQueryResponse> response =
+        executeQuery(recordType, RecordQueryResponse.class, request);
+    return assertInstanceOf(RecordQueryResponse.class, response.getBody());
+  }
+
+  private ResponseEntity<ErrorResponse> executeExpectedError(
+      RecordType recordType, SearchRequest... request) throws JsonProcessingException {
+    ResponseEntity<ErrorResponse> response = executeQuery(recordType, ErrorResponse.class, request);
+    assertInstanceOf(ErrorResponse.class, response.getBody());
+    return response;
   }
 
   @Test
@@ -387,7 +382,8 @@ class FullStackRecordControllerTest {
             "type",
             "id");
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    assertThat(response.getBody()).containsEntry("message", "Invalid API version specified");
+    var body = assertInstanceOf(LinkedHashMap.class, response.getBody());
+    assertThat(body).containsEntry("message", "Invalid API version specified");
   }
 
   private List<Record> createSomeRecords(RecordType recordType, int numRecords) throws Exception {
@@ -529,7 +525,8 @@ class FullStackRecordControllerTest {
             versionId,
             referencedRT,
             "record_1");
-    assertThat(stillPresentNonReferencedRecord.getBody().recordId()).isEqualTo("record_1");
+    var body = assertInstanceOf(RecordResponse.class, stillPresentNonReferencedRecord.getBody());
+    assertThat(body.recordId()).isEqualTo("record_1");
   }
 
   @Test
@@ -554,7 +551,7 @@ class FullStackRecordControllerTest {
     assertThat(error.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     // record_0 should still be present since the above deletion is transactional
     // and should fail upon 'missing'
-    ResponseEntity<RecordResponse> rresponse =
+    ResponseEntity<RecordResponse> response =
         restTemplate.exchange(
             "/{instanceId}/records/{version}/{recordType}/{recordId}",
             HttpMethod.GET,
@@ -564,6 +561,7 @@ class FullStackRecordControllerTest {
             versionId,
             recordType,
             "record_0");
-    assertThat(rresponse.getBody().recordId()).isEqualTo("record_0");
+    var body = assertInstanceOf(RecordResponse.class, response.getBody());
+    assertThat(body.recordId()).isEqualTo("record_0");
   }
 }
