@@ -1,26 +1,27 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode.BASE_ATTRIBUTES;
-import static org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode.RELATIONS;
+import static org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.ImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.ImportMode.RELATIONS;
 
 import bio.terra.common.db.WriteTransaction;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimaps;
 import com.google.mu.util.stream.BiStream;
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource;
-import org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode;
+import org.databiosphere.workspacedataservice.recordsink.RecordSink;
+import org.databiosphere.workspacedataservice.recordsource.RecordSource;
+import org.databiosphere.workspacedataservice.recordsource.RecordSource.WriteStreamInfo;
+import org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource;
+import org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
-import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -29,58 +30,13 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class BatchWriteService {
-
-  public record WriteStreamInfo(List<Record> records, OperationType operationType) {}
-
-  public interface RecordSource extends Closeable {
-
-    /**
-     * Reads numRecords from the stream unless the operation type changes during the stream in which
-     * case we return early and keep the last record read in memory, so it can be returned in a
-     * subsequent call.
-     *
-     * @param numRecords max number of records to read
-     * @return info about the records that were read
-     * @throws IOException on error
-     */
-    WriteStreamInfo readRecords(int numRecords) throws IOException;
-  }
-
-  /**
-   * Implementations of this interface are responsible for modifying the schema and writing/deleting
-   * batches of records.
-   */
-  public interface RecordSink {
-    /** Create or modify the schema for a record type and write the records. */
-    Map<String, DataTypeMapping> createOrModifyRecordType(
-        UUID collectionId,
-        RecordType recordType,
-        Map<String, DataTypeMapping> schema,
-        List<Record> records,
-        String recordTypePrimaryKey);
-
-    /** Perform the given {@link OperationType} on the batch of records. */
-    void writeBatch(
-        UUID collectionId,
-        RecordType recordType,
-        Map<String, DataTypeMapping> schema,
-        OperationType opType,
-        List<Record> records,
-        String primaryKey)
-        throws BatchWriteException;
-  }
-
   private final DataTypeInferer inferer;
   private final int batchSize;
-  private final RecordSink recordSink;
 
   public BatchWriteService(
-      @Value("${twds.write.batch.size:5000}") int batchSize,
-      DataTypeInferer inf,
-      RecordSink recordSink) {
+      @Value("${twds.write.batch.size:5000}") int batchSize, DataTypeInferer inf) {
     this.batchSize = batchSize;
     this.inferer = inf;
-    this.recordSink = recordSink;
   }
 
   /**
@@ -96,12 +52,14 @@ public class BatchWriteService {
   @WriteTransaction
   public BatchWriteResult batchWrite(
       RecordSource recordSource,
+      RecordSink recordSink,
       UUID collectionId,
       RecordType recordType,
       String primaryKey,
       ImportMode importMode) {
     try (recordSource) {
-      return consumeWriteStream(recordSource, collectionId, recordType, primaryKey, importMode);
+      return consumeWriteStream(
+          recordSource, recordSink, collectionId, recordType, primaryKey, importMode);
     } catch (IOException e) {
       throw new BadStreamingWriteRequestException(e);
     }
@@ -109,6 +67,7 @@ public class BatchWriteService {
 
   private BatchWriteResult consumeWriteStream(
       RecordSource recordSource,
+      RecordSink recordSink,
       UUID collectionId,
       RecordType recordType, // nullable
       String primaryKey,
@@ -176,15 +135,19 @@ public class BatchWriteService {
                             : recordsForType;
 
                     // write these records to the db, using the schema from the `typesSeen` map
-                    recordSink.writeBatch(
-                        collectionId,
-                        recType,
-                        typesSeen.get(recType),
-                        opType,
-                        recordsToWrite,
-                        primaryKey);
-                    // update the result counts
-                    result.increaseCount(recType, recordsToWrite.size());
+                    try {
+                      recordSink.writeBatch(
+                          collectionId,
+                          recType,
+                          typesSeen.get(recType),
+                          opType,
+                          recordsToWrite,
+                          primaryKey);
+                      // update the result counts
+                      result.increaseCount(recType, recordsToWrite.size());
+                    } catch (IOException e) {
+                      throw new BadStreamingWriteRequestException(e);
+                    }
                   }
                 });
       }

@@ -1,11 +1,11 @@
-package org.databiosphere.workspacedataservice.rawls;
+package org.databiosphere.workspacedataservice.recordsink;
 
-import static org.databiosphere.workspacedataservice.rawls.Model.Op.ADD_LIST_MEMBER;
-import static org.databiosphere.workspacedataservice.rawls.Model.Op.ADD_UPDATE_ATTRIBUTE;
-import static org.databiosphere.workspacedataservice.rawls.Model.Op.CREATE_ATTRIBUTE_ENTITY_REFERENCE_LIST;
-import static org.databiosphere.workspacedataservice.rawls.Model.Op.CREATE_ATTRIBUTE_VALUE_LIST;
-import static org.databiosphere.workspacedataservice.rawls.Model.Op.REMOVE_ATTRIBUTE;
-import static org.databiosphere.workspacedataservice.rawls.Model.Op.REMOVE_LIST_MEMBER;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.ADD_LIST_MEMBER;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.ADD_UPDATE_ATTRIBUTE;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.CREATE_ATTRIBUTE_ENTITY_REFERENCE_LIST;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.CREATE_ATTRIBUTE_VALUE_LIST;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.REMOVE_ATTRIBUTE;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.REMOVE_LIST_MEMBER;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -24,7 +24,7 @@ import java.util.List;
  * href="https://github.com/broadinstitute/rawls/blob/develop/model/src/main/scala/org/broadinstitute/dsde/rawls/model/AttributeUpdateOperations.scala">
  * AttributeUpdateOperations.scala</a>
  */
-public class Model {
+public class RawlsModel {
   /**
    * Enum to represent the operation type, with a value to be used in JSON serialization. Each
    * {@link Op} corresponds with a particular subclass of {@link AttributeOperation} and is used to

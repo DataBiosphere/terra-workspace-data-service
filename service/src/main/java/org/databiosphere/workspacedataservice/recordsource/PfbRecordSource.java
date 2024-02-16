@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.recordstream;
+package org.databiosphere.workspacedataservice.recordsource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -10,7 +10,6 @@ import java.util.stream.StreamSupport;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter;
-import org.databiosphere.workspacedataservice.service.BatchWriteService.WriteStreamInfo;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 

@@ -1,6 +1,4 @@
-package org.databiosphere.workspacedataservice.recordstream;
-
-import org.databiosphere.workspacedataservice.service.BatchWriteService.RecordSource;
+package org.databiosphere.workspacedataservice.recordsource;
 
 /**
  * Marker interface that denotes a RecordSource which runs in two passes. The first pass will upsert

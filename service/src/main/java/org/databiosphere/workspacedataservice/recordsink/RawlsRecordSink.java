@@ -1,21 +1,25 @@
-package org.databiosphere.workspacedataservice.service;
+package org.databiosphere.workspacedataservice.recordsink;
 
-import com.google.common.annotations.VisibleForTesting;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import com.google.mu.util.stream.BiStream;
-import java.util.ArrayList;
+import java.io.IOException;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.rawls.Model;
-import org.databiosphere.workspacedataservice.rawls.Model.AddListMember;
-import org.databiosphere.workspacedataservice.rawls.Model.AddUpdateAttribute;
-import org.databiosphere.workspacedataservice.rawls.Model.AttributeOperation;
-import org.databiosphere.workspacedataservice.rawls.Model.CreateAttributeValueList;
-import org.databiosphere.workspacedataservice.rawls.Model.Entity;
-import org.databiosphere.workspacedataservice.rawls.Model.RemoveAttribute;
-import org.databiosphere.workspacedataservice.service.BatchWriteService.RecordSink;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
@@ -23,7 +27,7 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
 /**
- * {@link RecordSink} implementation that produces Rawls-compatible JSON using {@link Model}
+ * {@link RecordSink} implementation that produces Rawls-compatible JSON using {@link RawlsModel}
  * serialization classes.
  *
  * <p>TODO(AJ-1585): integrate with storage to write JSON output to the appropriate bucket
@@ -31,19 +35,22 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
  * <p>TODO(AJ-1586): integrate with pubsub to notify Rawls when JSON is ready to be processed
  */
 public class RawlsRecordSink implements RecordSink {
-
-  private final List<Entity> entities;
   private final String attributePrefix;
+  private final ObjectMapper mapper;
+  private final Consumer<String> jsonConsumer;
 
-  RawlsRecordSink(String attributePrefix) {
+  /** Annotates a String consumer for JSON strings emitted by {@link RawlsRecordSink}. */
+  @Target({ElementType.PARAMETER, ElementType.METHOD})
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface RawlsJsonConsumer {}
+
+  RawlsRecordSink(
+      String attributePrefix,
+      ObjectMapper mapper,
+      @RawlsJsonConsumer Consumer<String> jsonConsumer) {
     this.attributePrefix = attributePrefix;
-    // TODO: inject an ObjectMapper & consumer of JSON during construction; this will allow tests
-    //  to verify JSON output, and allow AJ-1585 to plug in the appropriate bucket writing logic
-    this.entities = new ArrayList<>();
-  }
-
-  public static RawlsRecordSink withPrefix(String prefix) {
-    return new RawlsRecordSink(prefix);
+    this.mapper = mapper;
+    this.jsonConsumer = jsonConsumer;
   }
 
   @Override
@@ -65,10 +72,12 @@ public class RawlsRecordSink implements RecordSink {
       OperationType opType,
       List<Record> records,
       String primaryKey)
-      throws BatchWriteException {
+      throws BatchWriteException, IOException {
     // TODO: this method signature has a lot of unused arguments, can the interface be tidied up to
     //  not require all these?
+    ImmutableList.Builder<Entity> entities = ImmutableList.builder();
     records.stream().map(this::toEntity).forEach(entities::add);
+    jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
   }
 
   private Entity toEntity(Record record) {
@@ -99,10 +108,5 @@ public class RawlsRecordSink implements RecordSink {
     }
 
     return String.format("%s:%s", attributePrefix, name);
-  }
-
-  @VisibleForTesting
-  public List<Entity> getRecordedEntities() {
-    return entities;
   }
 }

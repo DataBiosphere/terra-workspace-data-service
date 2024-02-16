@@ -2,14 +2,13 @@ package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
-import static org.databiosphere.workspacedataservice.rawls.Model.AttributeOperation;
-import static org.databiosphere.workspacedataservice.rawls.Model.Entity;
-import static org.databiosphere.workspacedataservice.rawls.Model.Op;
-import static org.databiosphere.workspacedataservice.rawls.Model.Op.ADD_LIST_MEMBER;
-import static org.databiosphere.workspacedataservice.rawls.Model.Op.ADD_UPDATE_ATTRIBUTE;
-import static org.databiosphere.workspacedataservice.rawls.Model.Op.CREATE_ATTRIBUTE_VALUE_LIST;
-import static org.databiosphere.workspacedataservice.rawls.Model.Op.REMOVE_ATTRIBUTE;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.ADD_LIST_MEMBER;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.ADD_UPDATE_ATTRIBUTE;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.CREATE_ATTRIBUTE_VALUE_LIST;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.REMOVE_ATTRIBUTE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doNothing;
@@ -21,19 +20,19 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
-import org.databiosphere.workspacedataservice.rawls.Model;
-import org.databiosphere.workspacedataservice.rawls.Model.AddListMember;
-import org.databiosphere.workspacedataservice.rawls.Model.AddUpdateAttribute;
-import org.databiosphere.workspacedataservice.rawls.Model.CreateAttributeValueList;
-import org.databiosphere.workspacedataservice.rawls.Model.RemoveAttribute;
-import org.databiosphere.workspacedataservice.service.BatchWriteService.RecordSink;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
+import org.databiosphere.workspacedataservice.recordsink.RawlsRecordSink.RawlsJsonConsumer;
 import org.databiosphere.workspacedataservice.service.CollectionService;
-import org.databiosphere.workspacedataservice.service.RawlsRecordSink;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,7 +44,10 @@ import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -59,15 +61,15 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Import(PfbQuartzJobControlPlaneE2ETest.UseStringWriterForJsonConsumer.class)
 class PfbQuartzJobControlPlaneE2ETest {
   @Autowired ObjectMapper mapper;
   @Autowired CollectionService collectionService;
   @Autowired PfbTestSupport testSupport;
-  @Autowired RecordSink recordSink;
+  @Autowired StringWriter recordedJson; // emitted JSON will be captured in this StringWriter
+
   @MockBean SchedulerDao schedulerDao;
   @MockBean WorkspaceManagerDao wsmDao;
-
-  private RawlsRecordSink rawlsRecordSink;
 
   @Value("classpath:pfb/minimal-data.pfb")
   Resource minimalDataPfb;
@@ -83,6 +85,25 @@ class PfbQuartzJobControlPlaneE2ETest {
 
   private UUID collectionId;
 
+  /**
+   * Overrides the {@link RawlsJsonConsumer} bean to emit JSON into a StringWriter. This
+   * StringWriter is then autowired into the test, which can read its contents to verify the JSON
+   * emitted as a side effect of running the test jobs.
+   */
+  @TestConfiguration
+  static class UseStringWriterForJsonConsumer {
+    @Bean
+    public StringWriter recordedJson() {
+      return new StringWriter();
+    }
+
+    @Bean
+    @RawlsJsonConsumer
+    Consumer<String> jsonConsumer() {
+      return (json) -> recordedJson().append(json);
+    }
+  }
+
   @BeforeAll
   void beforeAll() {
     doNothing().when(schedulerDao).schedule(any());
@@ -93,8 +114,7 @@ class PfbQuartzJobControlPlaneE2ETest {
     collectionId = UUID.randomUUID();
     // TODO(AJ-1591): cWDS should not require instances to exist
     collectionService.createCollection(collectionId, "v0.2");
-    rawlsRecordSink = assertInstanceOf(RawlsRecordSink.class, recordSink);
-    rawlsRecordSink.getRecordedEntities().clear(); // reset the recorded entries each test
+    recordedJson.getBuffer().setLength(0); // clear the buffer before each test
     // stub out WSM to report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
@@ -179,9 +199,9 @@ class PfbQuartzJobControlPlaneE2ETest {
   }
 
   // serde == serialize then deserialize; to test the full roundtrip to/from JSON
-  private List<Model.Entity> assertRecordedEntitiesSerde(Resource expectedJsonResource) {
+  private List<Entity> assertRecordedEntitiesSerde(Resource expectedJsonResource) {
     try {
-      String actualJson = mapper.writeValueAsString(rawlsRecordSink.getRecordedEntities());
+      String actualJson = recordedJson.toString();
       String expectedJson = new String(expectedJsonResource.getInputStream().readAllBytes());
       assertJsonEquals(expectedJson, actualJson);
       return mapper.readValue(actualJson, new TypeReference<>() {});

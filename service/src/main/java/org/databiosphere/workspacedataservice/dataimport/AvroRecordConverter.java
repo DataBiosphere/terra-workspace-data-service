@@ -16,7 +16,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericRecord;
-import org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode;
+import org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.slf4j.Logger;

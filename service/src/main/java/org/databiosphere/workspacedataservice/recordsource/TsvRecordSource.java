@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.recordstream;
+package org.databiosphere.workspacedataservice.recordsource;
 
 import com.fasterxml.jackson.core.FormatSchema;
 import com.fasterxml.jackson.databind.MappingIterator;
@@ -16,8 +16,6 @@ import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.commons.lang3.StringUtils;
-import org.databiosphere.workspacedataservice.service.BatchWriteService.RecordSource;
-import org.databiosphere.workspacedataservice.service.BatchWriteService.WriteStreamInfo;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidTsvException;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
