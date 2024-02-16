@@ -2,10 +2,12 @@ package org.databiosphere.workspacedataservice.recordsink;
 
 import static com.google.common.collect.MoreCollectors.onlyElement;
 import static java.util.Arrays.stream;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Stream.concat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,7 +27,6 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttrib
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
-import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -147,6 +148,15 @@ class RawlsRecordSinkTest {
     assertThat(operation.attributeName()).isEqualTo("prefix:widget_name");
   }
 
+  @Test
+  void batchDeleteNotSupported() {
+    var thrown =
+        assertThrows(
+            UnsupportedOperationException.class,
+            () -> recordSink.deleteBatch(RecordType.valueOf("widget"), emptyList()));
+    assertThat(thrown).hasMessageContaining("does not support deleteBatch");
+  }
+
   private Record makeRecord(String type, String id, Map<String, Object> attributes) {
     return new Record(id, RecordType.valueOf(type), new RecordAttributes(attributes));
   }
@@ -155,10 +165,9 @@ class RawlsRecordSinkTest {
     var recordList = concat(Stream.of(record), stream(additionalRecords)).toList();
     var recordType = recordList.stream().map(Record::getRecordType).collect(onlyElement());
     try {
-      recordSink.writeBatch(
+      recordSink.upsertBatch(
           recordType,
           /* schema= */ Map.of(), // currently ignored
-          OperationType.UPSERT,
           recordList,
           /* primaryKey= */ "name" // currently ignored
           );

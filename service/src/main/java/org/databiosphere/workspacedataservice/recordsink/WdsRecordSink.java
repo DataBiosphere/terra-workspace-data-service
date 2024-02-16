@@ -8,7 +8,6 @@ import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RecordService;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
-import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
@@ -59,17 +58,17 @@ public class WdsRecordSink implements RecordSink {
   }
 
   @Override
-  public void writeBatch(
+  public void upsertBatch(
       RecordType recordType,
       Map<String, DataTypeMapping> schema,
-      OperationType opType,
       List<Record> records,
       String primaryKey)
       throws BatchWriteException {
-    if (opType == OperationType.UPSERT) {
-      recordService.batchUpsert(collectionId, recordType, records, schema, primaryKey);
-    } else if (opType == OperationType.DELETE) {
-      recordDao.batchDelete(collectionId, recordType, records);
-    }
+    recordService.batchUpsert(collectionId, recordType, records, schema, primaryKey);
+  }
+
+  @Override
+  public void deleteBatch(RecordType recordType, List<Record> records) throws BatchWriteException {
+    recordDao.batchDelete(collectionId, recordType, records);
   }
 }

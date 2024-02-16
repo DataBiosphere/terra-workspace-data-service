@@ -107,9 +107,10 @@ public class BatchWriteService {
                             recType, inferredSchema, recordsForType, primaryKey);
                     typesSeen.put(recType, finalSchema);
                   }
+
+                  Map<String, DataTypeMapping> schema = typesSeen.get(recType);
                   // when updating relations only, do not update if there are no relations
-                  if (recordSource.importMode() == BASE_ATTRIBUTES
-                      || !typesSeen.get(recType).isEmpty()) {
+                  if (recordSource.importMode() == BASE_ATTRIBUTES || !schema.isEmpty()) {
                     // For relations only, remove records that have no relations
                     var recordsToWrite =
                         recordSource.importMode() == RELATIONS
@@ -118,8 +119,13 @@ public class BatchWriteService {
 
                     // write these records to the db, using the schema from the `typesSeen` map
                     try {
-                      recordSink.writeBatch(
-                          recType, typesSeen.get(recType), opType, recordsToWrite, primaryKey);
+                      switch (opType) {
+                        case UPSERT -> recordSink.upsertBatch(
+                            recType, schema, recordsToWrite, primaryKey);
+                        case DELETE -> recordSink.deleteBatch(recType, recordsToWrite);
+                        default -> throw new BadStreamingWriteRequestException(
+                            "Unsupported operation type: " + opType);
+                      }
                       // update the result counts
                       result.increaseCount(recType, recordsToWrite.size());
                     } catch (IOException e) {

@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
-import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
@@ -21,12 +20,15 @@ public interface RecordSink {
       List<Record> records,
       String recordTypePrimaryKey);
 
-  /** Perform the given {@link OperationType} on the batch of records. */
-  void writeBatch(
+  /** Upsert the given batch of records. */
+  void upsertBatch(
       RecordType recordType,
       Map<String, DataTypeMapping> schema,
-      OperationType opType,
       List<Record> records,
       String primaryKey)
+      throws BatchWriteException, IOException;
+
+  /** Delete the given batch of records. */
+  void deleteBatch(RecordType recordType, List<Record> records)
       throws BatchWriteException, IOException;
 }
