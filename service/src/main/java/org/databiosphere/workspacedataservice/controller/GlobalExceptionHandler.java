@@ -7,7 +7,10 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskedException;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -54,7 +57,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
       @NotNull HttpStatusCode statusCode,
       @NotNull WebRequest request) {
     if (body instanceof ProblemDetail problemDetail) {
-      Map<String, Object> errorBody = new LinkedHashMap<>();
+      Map<String, Object> errorBody = new TreeMap<>();
       errorBody.put(ERROR, problemDetail.getTitle());
       errorBody.put(MESSAGE, problemDetail.getDetail());
       errorBody.put(STATUS, problemDetail.getStatus());
@@ -81,22 +84,51 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler({MethodArgumentTypeMismatchException.class})
   public ResponseEntity<Map<String, Object>> handleAllExceptions(
       Exception ex, HttpServletRequest servletRequest) {
-    Map<String, Object> errorBody = new LinkedHashMap<>();
-    errorBody.put(ERROR, HttpStatus.BAD_REQUEST.getReasonPhrase());
-    errorBody.put(PATH, servletRequest.getRequestURI());
-    errorBody.put(STATUS, HttpStatus.BAD_REQUEST.value());
-    errorBody.put(TIMESTAMP, new Date());
 
+    String errorMessage = "Unexpected error: " + ex.getClass().getName();
     // MethodArgumentTypeMismatchException nested exceptions contains
     // the real message we want to display. Gather all the nested messages and display the last one.
     List<String> errorMessages = gatherNestedErrorMessages(ex, new ArrayList<>());
     if (!errorMessages.isEmpty()) {
-      errorBody.put(MESSAGE, errorMessages.get(errorMessages.size() - 1));
-    } else {
-      errorBody.put(MESSAGE, "Unexpected error: " + ex.getClass().getName());
+      errorMessage = errorMessages.get(errorMessages.size() - 1);
     }
+    return generateResponse(HttpStatus.BAD_REQUEST, errorMessage, servletRequest);
+  }
 
-    return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(errorBody);
+  /**
+   * Handler for AuthenticationMaskedException. Rewrites the response to be a 404, using the same
+   * message that MissingObjectException would produce. This prevents auth exceptions from leaking
+   * existence/non-existence of resources.
+   *
+   * @param ex the exception in question
+   * @param servletRequest the request
+   * @return the desired response
+   */
+  @ExceptionHandler({AuthenticationMaskedException.class})
+  public ResponseEntity<Map<String, Object>> maskAuthenticationExceptions(
+      Exception ex, HttpServletRequest servletRequest) {
+    // this cast is safe, given the @ExceptionHandler annotation
+    String objectType = ((AuthenticationMaskedException) ex).getObjectType();
+    // use the same message that MissingObjectException would produce
+    String errorMessage = new MissingObjectException(objectType).getMessage();
+
+    return generateResponse(HttpStatus.NOT_FOUND, errorMessage, servletRequest);
+  }
+
+  // helper method for @ExceptionHandlers to build the response payload
+  private ResponseEntity<Map<String, Object>> generateResponse(
+      HttpStatus httpStatus, String errorMessage, HttpServletRequest servletRequest) {
+    Map<String, Object> errorBody = new LinkedHashMap<>();
+
+    errorBody.put(TIMESTAMP, new Date());
+    errorBody.put(STATUS, httpStatus.value());
+    errorBody.put(ERROR, httpStatus.getReasonPhrase());
+    errorBody.put(MESSAGE, errorMessage);
+    errorBody.put(PATH, servletRequest.getRequestURI());
+
+    return ResponseEntity.status(httpStatus)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(errorBody);
   }
 
   @VisibleForTesting
