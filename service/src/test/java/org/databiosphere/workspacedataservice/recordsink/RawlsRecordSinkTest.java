@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.recordsink;
 
 import static com.google.common.collect.MoreCollectors.onlyElement;
 import static java.util.Arrays.stream;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Stream.concat;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -150,10 +149,12 @@ class RawlsRecordSinkTest {
 
   @Test
   void batchDeleteNotSupported() {
+    RecordType ignoredRecordType = RecordType.valueOf("widget");
+    List<Record> ignoredEmptyRecords = List.of();
     var thrown =
         assertThrows(
             UnsupportedOperationException.class,
-            () -> recordSink.deleteBatch(RecordType.valueOf("widget"), emptyList()));
+            () -> recordSink.deleteBatch(ignoredRecordType, ignoredEmptyRecords));
     assertThat(thrown).hasMessageContaining("does not support deleteBatch");
   }
 

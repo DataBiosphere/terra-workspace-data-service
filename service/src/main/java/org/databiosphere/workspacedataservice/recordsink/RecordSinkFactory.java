@@ -22,7 +22,6 @@ public class RecordSinkFactory {
   private RecordService recordService;
   private RecordDao recordDao;
   private DataTypeInferer dataTypeInferer;
-
   private Consumer<String> jsonConsumer;
 
   public RecordSinkFactory(TwdsProperties twdsProperties, ObjectMapper mapper) {
@@ -35,12 +34,12 @@ public class RecordSinkFactory {
     this.recordService = recordService;
   }
 
-  @Autowired(required = false) // RecordService only required for RecordSinkMode.WDS
+  @Autowired(required = false) // RecordDao only required for RecordSinkMode.WDS
   public void setRecordDao(RecordDao recordDao) {
     this.recordDao = recordDao;
   }
 
-  @Autowired(required = false) // RecordService only required for RecordSinkMode.WDS
+  @Autowired(required = false) // DataTypeInferer only required for RecordSinkMode.WDS
   public void setDataTypeInferer(DataTypeInferer dataTypeInferer) {
     this.dataTypeInferer = dataTypeInferer;
   }
@@ -50,7 +49,9 @@ public class RecordSinkFactory {
     this.jsonConsumer = jsonConsumer;
   }
 
-  // TODO(AJ-1589): make prefix assignment dynamic
+  // TODO(AJ-1589): make prefix assignment dynamic. However, of note: the prefix is currently
+  //   ignored for RecordSinkMode.WDS.  In this case, it might be worth adding support for omitting
+  //   the prefix as part of supporting the prefix assignment.
   public RecordSink buildRecordSink(UUID collectionId, String prefix) {
     if (twdsProperties.getDataImport() == null) {
       logger
