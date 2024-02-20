@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.ImportMode.BASE_ATTRIBUTES;
-import static org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.ImportMode.RELATIONS;
+import static org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode.RELATIONS;
 
 import bio.terra.common.db.WriteTransaction;
 import com.google.common.collect.ImmutableList;
