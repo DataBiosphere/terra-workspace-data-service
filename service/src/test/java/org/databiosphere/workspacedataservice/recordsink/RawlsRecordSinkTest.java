@@ -6,6 +6,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.stream.Stream.concat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,7 +17,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
@@ -26,7 +26,6 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttrib
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
-import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -148,6 +147,17 @@ class RawlsRecordSinkTest {
     assertThat(operation.attributeName()).isEqualTo("prefix:widget_name");
   }
 
+  @Test
+  void batchDeleteNotSupported() {
+    RecordType ignoredRecordType = RecordType.valueOf("widget");
+    List<Record> ignoredEmptyRecords = List.of();
+    var thrown =
+        assertThrows(
+            UnsupportedOperationException.class,
+            () -> recordSink.deleteBatch(ignoredRecordType, ignoredEmptyRecords));
+    assertThat(thrown).hasMessageContaining("does not support deleteBatch");
+  }
+
   private Record makeRecord(String type, String id, Map<String, Object> attributes) {
     return new Record(id, RecordType.valueOf(type), new RecordAttributes(attributes));
   }
@@ -156,11 +166,9 @@ class RawlsRecordSinkTest {
     var recordList = concat(Stream.of(record), stream(additionalRecords)).toList();
     var recordType = recordList.stream().map(Record::getRecordType).collect(onlyElement());
     try {
-      recordSink.writeBatch(
-          /* collectionId= */ UUID.randomUUID(), // currently ignored
+      recordSink.upsertBatch(
           recordType,
           /* schema= */ Map.of(), // currently ignored
-          OperationType.UPSERT,
           recordList,
           /* primaryKey= */ "name" // currently ignored
           );

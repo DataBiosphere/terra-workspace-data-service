@@ -11,7 +11,6 @@ import java.lang.annotation.Target;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
@@ -22,7 +21,6 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
-import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
@@ -55,29 +53,29 @@ public class RawlsRecordSink implements RecordSink {
 
   @Override
   public Map<String, DataTypeMapping> createOrModifyRecordType(
-      UUID collectionId,
       RecordType recordType,
       Map<String, DataTypeMapping> schema,
       List<Record> records,
-      String recordTypePrimaryKey) {
+      String primaryKey) {
     // This is a no-op for Rawls as the schema changes occur as a side effect of writeBatch
     return schema;
   }
 
   @Override
-  public void writeBatch(
-      UUID collectionId,
+  public void upsertBatch(
       RecordType recordType,
-      Map<String, DataTypeMapping> schema,
-      OperationType opType,
+      Map<String, DataTypeMapping> schema, // ignored
       List<Record> records,
-      String primaryKey)
-      throws BatchWriteException, IOException {
-    // TODO: this method signature has a lot of unused arguments, can the interface be tidied up to
-    //  not require all these?
+      String primaryKey // ignored
+      ) throws BatchWriteException, IOException {
     ImmutableList.Builder<Entity> entities = ImmutableList.builder();
     records.stream().map(this::toEntity).forEach(entities::add);
     jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
+  }
+
+  @Override
+  public void deleteBatch(RecordType recordType, List<Record> records) throws BatchWriteException {
+    throw new UnsupportedOperationException("RawlsRecordSink does not support deleteBatch");
   }
 
   private Entity toEntity(Record record) {

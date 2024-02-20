@@ -19,7 +19,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
@@ -30,7 +29,6 @@ import org.databiosphere.workspacedataservice.service.model.exception.InvalidNam
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.NewPrimaryKeyException;
-import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -43,7 +41,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
-public class RecordService implements RecordSink {
+public class RecordService {
   // strings used for metrics
   public static final String METRIC_COL_CHANGE = "wds.column.change.datatype";
   public static final String TAG_RECORD_TYPE = "RecordType";
@@ -430,46 +428,5 @@ public class RecordService implements RecordSink {
   @WriteTransaction
   public void deleteAttribute(UUID collectionId, RecordType recordType, String attribute) {
     recordDao.deleteAttribute(collectionId, recordType, attribute);
-  }
-
-  @Override
-  public Map<String, DataTypeMapping> createOrModifyRecordType(
-      UUID collectionId,
-      RecordType recordType,
-      Map<String, DataTypeMapping> schema,
-      List<Record> records,
-      String recordTypePrimaryKey) {
-    if (!recordDao.recordTypeExists(collectionId, recordType)) {
-      recordDao.createRecordType(
-          collectionId,
-          schema,
-          recordType,
-          inferer.findRelations(records, schema),
-          recordTypePrimaryKey);
-    } else {
-      return addOrUpdateColumnIfNeeded(
-          collectionId,
-          recordType,
-          schema,
-          recordDao.getExistingTableSchemaLessPrimaryKey(collectionId, recordType),
-          records);
-    }
-    return schema;
-  }
-
-  @Override
-  public void writeBatch(
-      UUID collectionId,
-      RecordType recordType,
-      Map<String, DataTypeMapping> schema,
-      OperationType opType,
-      List<Record> records,
-      String primaryKey)
-      throws BatchWriteException {
-    if (opType == OperationType.UPSERT) {
-      batchUpsert(collectionId, recordType, records, schema, primaryKey);
-    } else if (opType == OperationType.DELETE) {
-      recordDao.batchDelete(collectionId, recordType, records);
-    }
   }
 }

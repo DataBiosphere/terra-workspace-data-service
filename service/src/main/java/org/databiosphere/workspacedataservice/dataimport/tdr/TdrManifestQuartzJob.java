@@ -156,16 +156,13 @@ public class TdrManifestQuartzJob extends QuartzJob {
    *
    * @param inputFile Parquet file to be imported.
    * @param table info about the table to be imported
-   * @param targetCollection collection into which to import
+   * @param collectionId collection into which to import
    * @param importMode mode for this invocation
    * @return statistics on what was imported
    */
   @VisibleForTesting
   BatchWriteResult importTable(
-      InputFile inputFile,
-      TdrManifestImportTable table,
-      UUID targetCollection,
-      ImportMode importMode) {
+      InputFile inputFile, TdrManifestImportTable table, UUID collectionId, ImportMode importMode) {
     // upsert this parquet file's contents
     try (ParquetReader<GenericRecord> avroParquetReader =
         AvroParquetReader.<GenericRecord>builder(inputFile)
@@ -174,11 +171,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
       logger.info("batch-writing records for file ...");
       return batchWriteService.batchWrite(
           recordSourceFactory.forTdrImport(avroParquetReader, table, importMode),
-          recordSinkFactory.buildRecordSink(/* prefix= */ "tdr"),
-          targetCollection,
+          recordSinkFactory.buildRecordSink(collectionId, /* prefix= */ "tdr"),
           table.recordType(),
-          table.primaryKey(),
-          importMode);
+          table.primaryKey());
     } catch (Throwable t) {
       throw new TdrManifestImportException(t.getMessage(), t);
     }

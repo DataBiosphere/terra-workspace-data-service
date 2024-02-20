@@ -55,4 +55,9 @@ public class ParquetRecordSource implements TwoPassRecordSource {
   public void close() throws IOException {
     parquetReader.close();
   }
+
+  @Override
+  public ImportMode importMode() {
+    return importMode;
+  }
 }
