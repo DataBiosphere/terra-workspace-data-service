@@ -19,5 +19,19 @@ public interface RecordSource extends Closeable {
    */
   WriteStreamInfo readRecords(int numRecords) throws IOException;
 
+  /**
+   * Enum for use by record sources that need their data imported in two passes. The first pass will
+   * upsert base attributes, and the second pass will upsert relation attributes. This allows for
+   * data streams where earlier records contain relations to later records.
+   */
+  enum ImportMode {
+    RELATIONS,
+    BASE_ATTRIBUTES
+  }
+
   record WriteStreamInfo(List<Record> records, OperationType operationType) {}
+
+  default ImportMode importMode() {
+    return ImportMode.BASE_ATTRIBUTES;
+  }
 }

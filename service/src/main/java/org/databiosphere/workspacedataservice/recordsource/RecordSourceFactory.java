@@ -8,7 +8,7 @@ import java.util.Optional;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.parquet.hadoop.ParquetReader;
-import org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.ImportMode;
+import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.springframework.stereotype.Component;

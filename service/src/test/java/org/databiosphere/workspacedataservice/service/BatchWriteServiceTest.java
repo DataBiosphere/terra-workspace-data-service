@@ -30,9 +30,9 @@ import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
+import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.recordsource.TsvRecordSource;
-import org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -91,11 +91,9 @@ class BatchWriteServiceTest {
             () ->
                 batchWriteService.batchWrite(
                     recordSourceFactory.forJson(is),
-                    recordSinkFactory.buildRecordSink(/* prefix= */ "json"),
-                    COLLECTION,
+                    recordSinkFactory.buildRecordSink(COLLECTION, /* prefix= */ "json"),
                     THING_TYPE,
-                    RECORD_ID,
-                    ImportMode.BASE_ATTRIBUTES));
+                    RECORD_ID));
 
     String errorMessage = ex.getMessage();
     assertEquals("Duplicate field 'key'", errorMessage);
@@ -123,9 +121,8 @@ class BatchWriteServiceTest {
     // Note that this call to batchWriteTsvStream specifies a non-null RecordType.
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(file.getInputStream(), recordType, Optional.of(primaryKey));
-    RecordSink recordSink = recordSinkFactory.buildRecordSink(/* prefix= */ "tsv");
-    batchWriteService.batchWrite(
-        recordSource, recordSink, COLLECTION, recordType, primaryKey, ImportMode.BASE_ATTRIBUTES);
+    RecordSink recordSink = recordSinkFactory.buildRecordSink(COLLECTION, /* prefix= */ "tsv");
+    batchWriteService.batchWrite(recordSource, recordSink, recordType, primaryKey);
 
     // we should write three batches
     verify(recordService, times(3))
@@ -266,10 +263,8 @@ class BatchWriteServiceTest {
       DataFileStream<GenericRecord> pfbStream, String primaryKey, ImportMode importMode) {
     return batchWriteService.batchWrite(
         recordSourceFactory.forPfb(pfbStream, importMode),
-        recordSinkFactory.buildRecordSink(/* prefix= */ "pfb"),
-        COLLECTION,
+        recordSinkFactory.buildRecordSink(COLLECTION, /* prefix= */ "pfb"),
         /* recordType= */ null,
-        primaryKey,
-        importMode);
+        primaryKey);
   }
 }

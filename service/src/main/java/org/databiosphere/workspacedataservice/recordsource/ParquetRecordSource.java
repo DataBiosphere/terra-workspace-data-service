@@ -11,7 +11,7 @@ import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTab
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 
-public class ParquetRecordSource implements TwoPassRecordSource {
+public class ParquetRecordSource implements RecordSource {
 
   private final ParquetReader<GenericRecord> parquetReader;
   private final ImportMode importMode;
@@ -54,5 +54,10 @@ public class ParquetRecordSource implements TwoPassRecordSource {
   @Override
   public void close() throws IOException {
     parquetReader.close();
+  }
+
+  @Override
+  public ImportMode importMode() {
+    return importMode;
   }
 }

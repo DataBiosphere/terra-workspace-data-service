@@ -13,7 +13,7 @@ import org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 
-public class PfbRecordSource implements TwoPassRecordSource {
+public class PfbRecordSource implements RecordSource {
 
   private final DataFileStream<GenericRecord> inputStream;
   private final ImportMode importMode;
@@ -51,5 +51,10 @@ public class PfbRecordSource implements TwoPassRecordSource {
   @Override
   public void close() throws IOException {
     inputStream.close();
+  }
+
+  @Override
+  public ImportMode importMode() {
+    return importMode;
   }
 }

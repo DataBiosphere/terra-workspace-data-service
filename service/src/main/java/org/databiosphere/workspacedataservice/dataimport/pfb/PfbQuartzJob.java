@@ -1,8 +1,8 @@
 package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.ID_FIELD;
-import static org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.ImportMode.BASE_ATTRIBUTES;
-import static org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.ImportMode.RELATIONS;
+import static org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode.BASE_ATTRIBUTES;
+import static org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode.RELATIONS;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
@@ -24,8 +24,8 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
+import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
-import org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
@@ -142,25 +142,17 @@ public class PfbQuartzJob extends QuartzJob {
    * Given a DataFileStream representing a PFB, import all the tables and rows inside that PFB.
    *
    * @param dataStream stream representing the PFB.
-   * @param targetCollection the UUID of the WDS collection being imported to
+   * @param collectionId the UUID of the WDS collection being imported to
    * @param importMode indicating whether to import all data in the tables or only the relations
    */
   BatchWriteResult importTables(
-      DataFileStream<GenericRecord> dataStream, UUID targetCollection, ImportMode importMode) {
-
-    // As of this writing, the only use case is import from the UCSC AnVIL Data Browser. In this
-    // single use case, the `primaryKey` argument will always be "id".  However, as we add use cases
-    // and import PFBs from other providers, this may change, and we will encounter different
-    // `primaryKey` argument values.
-    String primaryKey = ID_FIELD;
+      DataFileStream<GenericRecord> dataStream, UUID collectionId, ImportMode importMode) {
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSourceFactory.forPfb(dataStream, importMode),
-            recordSinkFactory.buildRecordSink(/* prefix= */ "pfb"),
-            targetCollection,
+            recordSinkFactory.buildRecordSink(collectionId, /* prefix= */ "pfb"),
             /* recordType= */ null, // record type is determined later
-            primaryKey,
-            importMode);
+            /* primaryKey= */ ID_FIELD); // PFBs currently only use ID_FIELD as primary key
 
     if (result != null) {
       result
