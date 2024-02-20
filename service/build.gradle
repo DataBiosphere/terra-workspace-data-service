@@ -91,6 +91,10 @@ dependencies {
     implementation "org.apache.parquet:parquet-avro:$parquet_mr_version"
     implementation "org.apache.parquet:parquet-hadoop:$parquet_mr_version"
 
+    implementation platform('com.google.cloud:libraries-bom:26.30.0')
+    implementation 'com.google.cloud:google-cloud-storage'
+    implementation 'bio.terra:terra-common-lib:0.1.10-SNAPSHOT'
+
     // we need Hadoop libraries to read Parquet files for TDR import. However, Hadoop brings
     // a boatload of transitive dependencies we don't need, some of which (e.g. com.sun.xml.bind)
     // cause conflicts. Exclude a lot of the transitive deps. Inspired by https://stackoverflow.com/a/60067027
