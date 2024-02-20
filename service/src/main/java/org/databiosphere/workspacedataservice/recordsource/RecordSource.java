@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.recordsource;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
-import org.databiosphere.workspacedataservice.recordsource.TwoPassRecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 
@@ -19,6 +18,16 @@ public interface RecordSource extends Closeable {
    * @throws IOException on error
    */
   WriteStreamInfo readRecords(int numRecords) throws IOException;
+
+  /**
+   * Enum for use by record sources that need their data imported in two passes. The first pass will
+   * upsert base attributes, and the second pass will upsert relation attributes. This allows for
+   * data streams where earlier records contain relations to later records.
+   */
+  enum ImportMode {
+    RELATIONS,
+    BASE_ATTRIBUTES
+  }
 
   record WriteStreamInfo(List<Record> records, OperationType operationType) {}
 
