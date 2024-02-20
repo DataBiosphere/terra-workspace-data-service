@@ -52,8 +52,8 @@ public class ImportService {
     collectionService.validateCollection(collectionId);
 
     // validate write permission
-    // TODO AJ-1631: this must use collectionService.canWriteCollection() instead
-    boolean hasWriteWorkspacePermission = samDao.hasWriteWorkspacePermission();
+    boolean hasWriteWorkspacePermission =
+        collectionService.canWriteCollection(CollectionId.of(collectionId));
     logger.debug("hasWriteWorkspacePermission? {}", hasWriteWorkspacePermission);
     if (!hasWriteWorkspacePermission) {
       throw new AuthorizationException("Caller does not have permission to write to collection.");

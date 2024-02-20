@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -22,7 +23,10 @@ import java.util.stream.Stream;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dao.MockCollectionDao;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbQuartzJob;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJob;
@@ -51,9 +55,11 @@ import org.springframework.test.context.ActiveProfiles;
 class ImportServiceTest {
 
   @Autowired ImportService importService;
+  @Autowired CollectionDao collectionDao;
   @Autowired CollectionService collectionService;
-  @SpyBean JobDao jobDao;
   @Autowired SamDao samDao;
+  @Autowired TwdsProperties twdsProperties;
+  @SpyBean JobDao jobDao;
   @MockBean SchedulerDao schedulerDao;
   @MockBean SamClientFactory mockSamClientFactory;
 
@@ -65,13 +71,20 @@ class ImportServiceTest {
   @BeforeEach
   void setUp() throws ApiException {
     // return the mock ResourcesApi from the mock SamClientFactory
-    given(mockSamClientFactory.getResourcesApi(null)).willReturn(mockSamResourcesApi);
+    given(mockSamClientFactory.getResourcesApi(nullable(String.class)))
+        .willReturn(mockSamResourcesApi);
     // Sam permission check will always return true
     given(mockSamResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
         .willReturn(true);
     given(mockSamClientFactory.getGoogleApi(null)).willReturn(mockSamGoogleApi);
     // Pet token request returns "arbitraryToken"
     given(mockSamGoogleApi.getArbitraryPetServiceAccountToken(any())).willReturn("arbitraryToken");
+
+    // reset to zero collections
+    if (collectionDao instanceof MockCollectionDao mockCollectionDao) {
+      mockCollectionDao.clearAllCollections();
+    }
+
     // clear call history for the mock
     Mockito.clearInvocations(mockSamResourcesApi);
   }
@@ -118,7 +131,7 @@ class ImportServiceTest {
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
-    UUID collectionId = UUID.randomUUID();
+    UUID collectionId = twdsProperties.getInstance().getWorkspaceUuid();
     collectionService.createCollection(collectionId, VERSION);
     // define the import request
     URI importUri = URI.create("http://does/not/matter");
@@ -141,7 +154,7 @@ class ImportServiceTest {
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
-    UUID collectionId = UUID.randomUUID();
+    UUID collectionId = twdsProperties.getInstance().getWorkspaceUuid();
     collectionService.createCollection(collectionId, VERSION);
     // define the import request
     URI importUri = URI.create("http://does/not/matter");
@@ -175,7 +188,7 @@ class ImportServiceTest {
         .when(schedulerDao)
         .schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
-    UUID collectionId = UUID.randomUUID();
+    UUID collectionId = twdsProperties.getInstance().getWorkspaceUuid();
     collectionService.createCollection(collectionId, VERSION);
     // define the import request
     URI importUri = URI.create("http://does/not/matter");
