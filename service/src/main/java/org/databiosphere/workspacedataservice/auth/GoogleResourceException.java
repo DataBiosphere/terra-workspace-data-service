@@ -1,4 +1,4 @@
- package org.databiosphere.workspacedataservice.auth;
+package org.databiosphere.workspacedataservice.auth;
 
 import bio.terra.common.exception.InternalServerErrorException;
 

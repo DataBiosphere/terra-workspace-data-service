@@ -6,12 +6,10 @@ import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import org.apache.commons.lang3.StringUtils;
-import org.databiosphere.workspacedataservice.auth.GoogleResourceException;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 
 public class GcsStorage {
@@ -19,80 +17,45 @@ public class GcsStorage {
 
   @Value("${gcs-resource-test-bucket}")
   private String bucketName;
-  private GcsStorage() throws IOException {
+
+  @Value("${gcs-resource-projectId}")
+  private String projectId;
+
+  public GcsStorage() throws IOException {
     GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
 
     StorageOptions storageOptions =
-        StorageOptions.newBuilder()
-            .setProjectId("test") //need to figure out what this should be)
-            .setCredentials(credentials)
-            .build();
+    StorageOptions.newBuilder()
+        .setProjectId(projectId) //need to figure out what this should be)
+        .setCredentials(credentials)
+        .build();
     this.storage = storageOptions.getService();
   }
-  public static int writeBlobContents(
-      Storage storage, String projectId, BlobInfo blobInfo, String contents) {
-    var blob = storage.get(blobInfo.getBlobId(), Storage.BlobGetOption.userProject(projectId));
-    try (var writer = blob.writer(Storage.BlobWriteOption.userProject(projectId))) {
-      return writer.write(ByteBuffer.wrap(contents.getBytes(StandardCharsets.UTF_8)));
-    } catch (IOException ex) {
-      throw new GoogleResourceException(
-          String.format(
-              "Could not write to GCS file at %s", GcsUriUtils.getGsPathFromBlob(blobInfo)),
-          ex);
-    }
-  }
 
-  public static int writeBlobContents(
-      Storage storage, String projectId, String gsPath, String contents) throws FileNotFoundException {
-    return writeBlobContents(
-        storage, projectId, getBlobFromGsPath(storage, gsPath, projectId), contents);
-  }
-
-  public static String getBlobContents(Storage storage, String projectId, BlobInfo blobInfo) {
-    var blob = storage.get(blobInfo.getBlobId(), Storage.BlobGetOption.userProject(projectId));
+  public String getBlobContents(String projectId, String path) {
+    BlobId blobId = GcsUriUtils.parseBlobUri(path);
+    var blob = storage.get(blobId, Storage.BlobGetOption.userProject(projectId));
     var contents = blob.getContent(Blob.BlobSourceOption.userProject(projectId));
     return new String(contents, StandardCharsets.UTF_8);
   }
 
-  public static Blob getBlobFromGsPath(Storage storage, String gspath, String targetProjectId) throws FileNotFoundException {
-    BlobId locator = GcsUriUtils.parseBlobUri(gspath);
+  /**
+   * Create a file in GCS
+   *
+   * @param projectId project id for billing
+   * @return the Blob of the created file
+   */
+  public BlobId createGcsFile(String projectId, InputStream contents) {
+    BlobId blobId = BlobId.of(bucketName, UUID.randomUUID().toString());
+    storage.create(BlobInfo.newBuilder(blobId).build(), contents);
+    return blobId;
+  }
 
-    // Provide the project of the destination of the file copy to pay if the
-    // source bucket is requester pays.
+  public static Blob getBlobFromGsPath(Storage storage, String gspath) {
+    BlobId locator = GcsUriUtils.parseBlobUri(gspath);
     Storage.BlobGetOption[] getOptions = new Storage.BlobGetOption[0];
-    if (targetProjectId != null) {
-      getOptions = new Storage.BlobGetOption[] {Storage.BlobGetOption.userProject(targetProjectId)};
-    }
     Blob sourceBlob = storage.get(locator, getOptions);
-    if (sourceBlob == null) {
-      throw new FileNotFoundException("Source file not found: '" + gspath + "'");
-    }
 
     return sourceBlob;
-  }
-
-  public boolean deleteFileByGspath(String inGspath, String projectId) {
-    if (inGspath != null) {
-      BlobId blobId = GcsUriUtils.parseBlobUri(inGspath);
-      return deleteWorker(blobId, projectId);
-    }
-    return false;
-  }
-
-  private boolean deleteWorker(BlobId blobId, String projectId) {
-    Blob blob = storage.get(blobId, Storage.BlobGetOption.userProject(projectId));
-    if (blob != null) {
-      return blob.delete(Blob.BlobSourceOption.userProject(projectId));
-    }
-    //logger.warn("{} was not found and so deletion was skipped", blobId);
-    return false;
-  }
-
-  /**
-   * Extract the path portion (everything after the bucket name and it's trailing slash) of a gs
-   * path.
-   */
-  private static String extractFilePathInBucket(final String path, final String bucketName) {
-    return StringUtils.removeStart(path, String.format("gs://%s/", bucketName));
   }
 }
