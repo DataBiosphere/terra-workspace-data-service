@@ -141,17 +141,13 @@ class RecordOrchestratorServiceTest {
         new RecordRequest(RecordAttributes.empty().putAttribute(PRIMARY_KEY, "someOtherValue"));
 
     // Act/Assert
+    Optional<String> primaryKey = Optional.of(PRIMARY_KEY);
     ValidationException e =
         assertThrows(
             ValidationException.class,
             () ->
                 recordOrchestratorService.upsertSingleRecord(
-                    COLLECTION,
-                    VERSION,
-                    TEST_TYPE,
-                    RECORD_ID,
-                    Optional.of(PRIMARY_KEY),
-                    recordRequest),
+                    COLLECTION, VERSION, TEST_TYPE, RECORD_ID, primaryKey, recordRequest),
             "upsertSingleRecord should have thrown an error");
 
     assertEquals("Primary key in payload does not match primary key in URL", e.getMessage());
