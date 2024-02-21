@@ -42,12 +42,13 @@ class ImportServiceDataPlaneTest {
   @MockBean CollectionDao collectionDao;
   @MockBean SamDao samDao;
 
+  private final CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+
   /* collection exists, workspace matches env var, user has access */
   @Test
   void userHasAccess() {
     // ARRANGE
     WorkspaceId workspaceId = WorkspaceId.of(twdsProperties.getInstance().getWorkspaceUuid());
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // collection dao says the collection exists and returns the expected workspace id
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
@@ -71,7 +72,6 @@ class ImportServiceDataPlaneTest {
   void userDoesNotHaveAccess() {
     // ARRANGE
     WorkspaceId workspaceId = WorkspaceId.of(twdsProperties.getInstance().getWorkspaceUuid());
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // collection dao says the collection exists and returns the expected workspace id
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
@@ -101,7 +101,6 @@ class ImportServiceDataPlaneTest {
   void unexpectedWorkspaceId() {
     // ARRANGE
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // collection dao says the collection exists and returns an unexpected workspace id
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
@@ -125,7 +124,6 @@ class ImportServiceDataPlaneTest {
   @Test
   void collectionDoesNotExist() {
     // ARRANGE
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // collection dao says the collection does not exist
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(false);
     when(collectionDao.getWorkspaceId(collectionId))
