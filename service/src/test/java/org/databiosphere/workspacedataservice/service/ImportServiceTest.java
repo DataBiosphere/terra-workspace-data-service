@@ -68,10 +68,17 @@ class ImportServiceTest {
   ResourcesApi mockSamResourcesApi = Mockito.mock(ResourcesApi.class);
   GoogleApi mockSamGoogleApi = Mockito.mock(GoogleApi.class);
 
+  private UUID defaultCollectionId;
+
   private static final String VERSION = "v0.2";
 
   @BeforeEach
   void setUp() throws ApiException {
+    // initialize the default collection id
+    if (defaultCollectionId == null) {
+      defaultCollectionId = twdsProperties.getInstance().getWorkspaceUuid();
+    }
+
     // return the mock ResourcesApi from the mock SamClientFactory
     given(mockSamClientFactory.getResourcesApi(nullable(String.class)))
         .willReturn(mockSamResourcesApi);
@@ -133,13 +140,13 @@ class ImportServiceTest {
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
-    UUID collectionId = twdsProperties.getInstance().getWorkspaceUuid();
-    collectionService.createCollection(collectionId, VERSION);
+    collectionService.createCollection(defaultCollectionId, VERSION);
     // define the import request
     URI importUri = URI.create("http://does/not/matter");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request
-    GenericJobServerModel createdJob = importService.createImport(collectionId, importRequest);
+    GenericJobServerModel createdJob =
+        importService.createImport(defaultCollectionId, importRequest);
 
     // re-retrieve the job; this double-checks what's actually in the db, in case the return
     // value of importService.createImport has bugs
@@ -156,13 +163,13 @@ class ImportServiceTest {
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
-    UUID collectionId = twdsProperties.getInstance().getWorkspaceUuid();
-    collectionService.createCollection(collectionId, VERSION);
+    collectionService.createCollection(defaultCollectionId, VERSION);
     // define the import request
     URI importUri = URI.create("http://does/not/matter");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request
-    GenericJobServerModel createdJob = importService.createImport(collectionId, importRequest);
+    GenericJobServerModel createdJob =
+        importService.createImport(defaultCollectionId, importRequest);
     // assert that importService.createImport properly calls schedulerDao
     ArgumentCaptor<Schedulable> argument = ArgumentCaptor.forClass(Schedulable.class);
     verify(schedulerDao).schedule(argument.capture());
@@ -172,7 +179,7 @@ class ImportServiceTest {
 
     Map<String, Serializable> actualArguments = actual.getArguments();
     assertEquals(
-        collectionId.toString(),
+        defaultCollectionId.toString(),
         actualArguments.get(ARG_COLLECTION),
         "scheduled job had wrong collection argument");
     assertEquals(
@@ -190,13 +197,13 @@ class ImportServiceTest {
         .when(schedulerDao)
         .schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
-    UUID collectionId = twdsProperties.getInstance().getWorkspaceUuid();
-    collectionService.createCollection(collectionId, VERSION);
+    collectionService.createCollection(defaultCollectionId, VERSION);
     // define the import request
     URI importUri = URI.create("http://does/not/matter");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request; this will internally hit the exception from the schedulerDao
-    GenericJobServerModel createdJob = importService.createImport(collectionId, importRequest);
+    GenericJobServerModel createdJob =
+        importService.createImport(defaultCollectionId, importRequest);
 
     // re-retrieve the job; this double-checks what's actually in the db, in case the return
     // value of importService.createImport has bugs
@@ -218,13 +225,14 @@ class ImportServiceTest {
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
-    UUID collectionId = UUID.randomUUID();
-    collectionService.createCollection(collectionId, VERSION);
+    UUID randomCollectionId = UUID.randomUUID();
+    collectionService.createCollection(randomCollectionId, VERSION);
     // define the import request
     URI importUri = URI.create("http://does/not/matter");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // Import will fail without a pet token
-    assertThrows(Exception.class, () -> importService.createImport(collectionId, importRequest));
+    assertThrows(
+        Exception.class, () -> importService.createImport(randomCollectionId, importRequest));
     // Job should not have been created
     verify(jobDao, times(0)).createJob(any());
   }
