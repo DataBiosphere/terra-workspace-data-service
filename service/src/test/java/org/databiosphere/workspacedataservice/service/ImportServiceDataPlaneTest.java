@@ -4,22 +4,18 @@ import static org.databiosphere.workspacedataservice.generated.ImportRequestServ
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
-import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
-import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +31,7 @@ import org.springframework.test.context.ActiveProfiles;
  *
  * @see ImportServiceTest
  */
-@ActiveProfiles("data-plane")
+@ActiveProfiles({"data-plane", "noop-scheduler-dao"})
 @DirtiesContext
 // the "data-plane" profile enforces validity of twds.instance.workspace-id, so we need to set that
 @SpringBootTest(properties = {"twds.instance.workspace-id=b01dface-0000-0000-0000-000000000000"})
@@ -45,7 +41,6 @@ class ImportServiceDataPlaneTest {
   @Autowired TwdsProperties twdsProperties;
   @MockBean CollectionDao collectionDao;
   @MockBean SamDao samDao;
-  @MockBean SchedulerDao schedulerDao;
 
   /* collection exists, workspace matches env var, user has access */
   @Test
@@ -53,8 +48,6 @@ class ImportServiceDataPlaneTest {
     // ARRANGE
     WorkspaceId workspaceId = WorkspaceId.of(twdsProperties.getInstance().getWorkspaceUuid());
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    // schedulerDao.schedule(), which returns void, returns successfully
-    doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // collection dao says the collection exists and returns the expected workspace id
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
@@ -79,8 +72,6 @@ class ImportServiceDataPlaneTest {
     // ARRANGE
     WorkspaceId workspaceId = WorkspaceId.of(twdsProperties.getInstance().getWorkspaceUuid());
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    // schedulerDao.schedule(), which returns void, returns successfully
-    doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // collection dao says the collection exists and returns the expected workspace id
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
@@ -111,8 +102,6 @@ class ImportServiceDataPlaneTest {
     // ARRANGE
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    // schedulerDao.schedule(), which returns void, returns successfully
-    doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // collection dao says the collection exists and returns an unexpected workspace id
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
@@ -137,8 +126,6 @@ class ImportServiceDataPlaneTest {
   void collectionDoesNotExist() {
     // ARRANGE
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    // schedulerDao.schedule(), which returns void, returns successfully
-    doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // collection dao says the collection does not exist
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(false);
     when(collectionDao.getWorkspaceId(collectionId))

@@ -7,7 +7,6 @@ import static org.databiosphere.workspacedataservice.generated.ImportRequestServ
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 import bio.terra.workspace.model.ResourceList;
@@ -18,7 +17,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.ImportService;
@@ -28,11 +26,9 @@ import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,10 +50,9 @@ import org.springframework.test.context.ActiveProfiles;
  * possible by using TdrTestSupport.buildTdrManifestQuartzJob() which creates a special
  * TdrManifestQuartzJob that knows how to fetch from the classpath.
  */
-@ActiveProfiles(profiles = "mock-sam")
+@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao"})
 @DirtiesContext
 @SpringBootTest
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @AutoConfigureMockMvc
 public class TdrManifestQuartzJobE2ETest {
   @Autowired private RecordOrchestratorService recordOrchestratorService;
@@ -65,18 +60,12 @@ public class TdrManifestQuartzJobE2ETest {
   @Autowired private CollectionService collectionService;
   @Autowired private TdrTestSupport testSupport;
 
-  @MockBean SchedulerDao schedulerDao;
   @MockBean WorkspaceManagerDao wsmDao;
 
   @Value("classpath:tdrmanifest/v2f.json")
   Resource v2fManifestResource;
 
   UUID collectionId;
-
-  @BeforeAll
-  void beforeAll() {
-    doNothing().when(schedulerDao).schedule(any());
-  }
 
   @BeforeEach
   void beforeEach() {
