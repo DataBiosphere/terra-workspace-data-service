@@ -29,6 +29,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.InvalidNam
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.NewPrimaryKeyException;
+import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -310,21 +311,21 @@ public class RecordService {
             .getSingleRecord(collectionId, recordType, recordId)
             .orElseThrow(() -> new MissingObjectException("Record"));
     RecordAttributes incomingAttrs = recordRequest.recordAttributes();
+    String primaryKey = recordDao.getPrimaryKeyColumn(recordType, collectionId);
+    if (incomingAttrs.containsAttribute(primaryKey)
+        && incomingAttrs.getAttributeValue(primaryKey) != recordId) {
+      throw new ValidationException("Primary key in payload does not match primary key in URL");
+    }
     RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAttrs).getAttributes();
     Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAttrs);
     Map<String, DataTypeMapping> existingTableSchema =
-        recordDao.getExistingTableSchemaLessPrimaryKey(collectionId, recordType);
+        recordDao.getExistingTableSchema(collectionId, recordType);
     singleRecord.setAttributes(allAttrs);
     List<Record> records = Collections.singletonList(singleRecord);
     Map<String, DataTypeMapping> updatedSchema =
         addOrUpdateColumnIfNeeded(
             collectionId, recordType, typeMapping, existingTableSchema, records);
-    prepareAndUpsert(
-        collectionId,
-        recordType,
-        records,
-        updatedSchema,
-        recordDao.getPrimaryKeyColumn(recordType, collectionId));
+    prepareAndUpsert(collectionId, recordType, records, updatedSchema, primaryKey);
     return new RecordResponse(recordId, recordType, singleRecord.getAttributes());
   }
 
@@ -336,6 +337,12 @@ public class RecordService {
       Optional<String> primaryKey,
       RecordRequest recordRequest) {
     RecordAttributes attributesInRequest = recordRequest.recordAttributes();
+    if (primaryKey.isPresent()
+        && attributesInRequest.containsAttribute(primaryKey.get())
+        && attributesInRequest.getAttributeValue(primaryKey.get()) != recordId) {
+      throw new ValidationException("Primary key in payload does not match primary key in URL");
+    }
+
     Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
     HttpStatus status = HttpStatus.CREATED;
     if (!recordDao.recordTypeExists(collectionId, recordType)) {
@@ -348,7 +355,7 @@ public class RecordService {
     } else {
       validatePrimaryKey(collectionId, recordType, primaryKey);
       Map<String, DataTypeMapping> existingTableSchema =
-          recordDao.getExistingTableSchemaLessPrimaryKey(collectionId, recordType);
+          recordDao.getExistingTableSchema(collectionId, recordType);
       // null out any attributes that already exist but aren't in the request
       existingTableSchema
           .keySet()

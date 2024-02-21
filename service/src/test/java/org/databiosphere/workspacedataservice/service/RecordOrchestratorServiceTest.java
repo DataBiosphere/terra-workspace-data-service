@@ -119,6 +119,144 @@ class RecordOrchestratorServiceTest {
   }
 
   @Test
+  void upsertNewRecordWithMatchingPrimaryKey() {
+    // Arrange
+    RecordRequest recordRequest =
+        new RecordRequest(RecordAttributes.empty().putAttribute(PRIMARY_KEY, RECORD_ID));
+
+    // Act
+    ResponseEntity<RecordResponse> response =
+        recordOrchestratorService.upsertSingleRecord(
+            COLLECTION, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
+
+    // Assert
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+  }
+
+  @Test
+  void upsertNewRecordWithDifferentPrimaryKey() {
+    // Arrange
+    RecordRequest recordRequest =
+        new RecordRequest(RecordAttributes.empty().putAttribute(PRIMARY_KEY, "someOtherValue"));
+
+    // Act/Assert
+    ValidationException e =
+        assertThrows(
+            ValidationException.class,
+            () ->
+                recordOrchestratorService.upsertSingleRecord(
+                    COLLECTION,
+                    VERSION,
+                    TEST_TYPE,
+                    RECORD_ID,
+                    Optional.of(PRIMARY_KEY),
+                    recordRequest),
+            "upsertSingleRecord should have thrown an error");
+
+    assertEquals("Primary key in payload does not match primary key in URL", e.getMessage());
+  }
+
+  @Test
+  void upsertExistingRecordWithMatchingPrimaryKey() {
+    // Arrange
+    recordOrchestratorService.upsertSingleRecord(
+        COLLECTION,
+        VERSION,
+        TEST_TYPE,
+        RECORD_ID,
+        Optional.of(PRIMARY_KEY),
+        new RecordRequest(RecordAttributes.empty()));
+
+    RecordRequest recordRequest =
+        new RecordRequest(RecordAttributes.empty().putAttribute(PRIMARY_KEY, RECORD_ID));
+
+    // Act
+    ResponseEntity<RecordResponse> response =
+        recordOrchestratorService.upsertSingleRecord(
+            COLLECTION, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
+
+    // Assert
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @Test
+  void upsertExistingRecordWithDifferentPrimaryKey() {
+    // Arrange
+    recordOrchestratorService.upsertSingleRecord(
+        COLLECTION,
+        VERSION,
+        TEST_TYPE,
+        RECORD_ID,
+        Optional.of(PRIMARY_KEY),
+        new RecordRequest(RecordAttributes.empty()));
+
+    RecordRequest recordRequest =
+        new RecordRequest(RecordAttributes.empty().putAttribute(PRIMARY_KEY, "someOtherValue"));
+
+    // Act/Assert
+    ValidationException e =
+        assertThrows(
+            ValidationException.class,
+            () ->
+                recordOrchestratorService.upsertSingleRecord(
+                    COLLECTION,
+                    VERSION,
+                    TEST_TYPE,
+                    RECORD_ID,
+                    Optional.of(PRIMARY_KEY),
+                    recordRequest),
+            "upsertSingleRecord should have thrown an error");
+
+    assertEquals("Primary key in payload does not match primary key in URL", e.getMessage());
+  }
+
+  @Test
+  void updateRecordWithMatchingPrimaryKey() {
+    // Arrange
+    recordOrchestratorService.upsertSingleRecord(
+        COLLECTION,
+        VERSION,
+        TEST_TYPE,
+        RECORD_ID,
+        Optional.of(PRIMARY_KEY),
+        new RecordRequest(RecordAttributes.empty()));
+
+    RecordRequest recordRequest =
+        new RecordRequest(RecordAttributes.empty().putAttribute(PRIMARY_KEY, RECORD_ID));
+
+    // Act
+    RecordResponse response =
+        recordOrchestratorService.updateSingleRecord(
+            COLLECTION, VERSION, TEST_TYPE, RECORD_ID, recordRequest);
+  }
+
+  @Test
+  void updateRecordWithDifferentPrimaryKey() {
+    // Arrange
+    recordOrchestratorService.upsertSingleRecord(
+        COLLECTION,
+        VERSION,
+        TEST_TYPE,
+        RECORD_ID,
+        Optional.of(PRIMARY_KEY),
+        new RecordRequest(RecordAttributes.empty()));
+
+    RecordRequest recordRequest =
+        new RecordRequest(RecordAttributes.empty().putAttribute(PRIMARY_KEY, "someOtherValue"));
+
+    // Act/Assert
+    ValidationException e =
+        assertThrows(
+            ValidationException.class,
+            () ->
+                recordOrchestratorService.updateSingleRecord(
+                    COLLECTION, VERSION, TEST_TYPE, RECORD_ID, recordRequest),
+            "updateSingleRecord should have thrown an error");
+
+    assertEquals("Primary key in payload does not match primary key in URL", e.getMessage());
+  }
+
+  @Test
   void deleteSingleRecord() {
     testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
 
