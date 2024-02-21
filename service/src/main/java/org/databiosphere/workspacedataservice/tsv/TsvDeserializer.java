@@ -136,6 +136,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
         return objectMapper.readValue(val, new TypeReference<Map<String, Object>>() {});
       } catch (JsonProcessingException jpe) {
         // this shouldn't happen; if inferer.isValidJson(val) passes, so should the .readValue
+        LOGGER.error("Unable to parse validated JSON: {}", val);
         return val;
       }
     }
@@ -220,6 +221,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
         return objectMapper.readValue(on.toString(), new TypeReference<Map<String, Object>>() {});
       } catch (JsonProcessingException jpe) {
         // this shouldn't happen since we've already parsed the array into JSON
+        LOGGER.error("Unable to parse array element JSON: {}", on);
         return on.toString();
       }
     }
