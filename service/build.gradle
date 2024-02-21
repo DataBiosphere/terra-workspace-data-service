@@ -93,7 +93,6 @@ dependencies {
 
     implementation platform('com.google.cloud:libraries-bom:26.30.0')
     implementation 'com.google.cloud:google-cloud-storage'
-    implementation 'bio.terra:terra-common-lib:0.1.10-SNAPSHOT'
 
     // we need Hadoop libraries to read Parquet files for TDR import. However, Hadoop brings
     // a boatload of transitive dependencies we don't need, some of which (e.g. com.sun.xml.bind)
