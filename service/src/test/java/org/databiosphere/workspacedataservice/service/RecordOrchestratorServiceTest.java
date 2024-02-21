@@ -20,6 +20,7 @@ import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
+import org.databiosphere.workspacedataservice.service.model.exception.ConflictingPrimaryKeysException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -142,15 +143,12 @@ class RecordOrchestratorServiceTest {
 
     // Act/Assert
     Optional<String> primaryKey = Optional.of(PRIMARY_KEY);
-    ValidationException e =
-        assertThrows(
-            ValidationException.class,
-            () ->
-                recordOrchestratorService.upsertSingleRecord(
-                    COLLECTION, VERSION, TEST_TYPE, RECORD_ID, primaryKey, recordRequest),
-            "upsertSingleRecord should have thrown an error");
-
-    assertEquals("Primary key in payload does not match primary key in URL", e.getMessage());
+    assertThrows(
+        ConflictingPrimaryKeysException.class,
+        () ->
+            recordOrchestratorService.upsertSingleRecord(
+                COLLECTION, VERSION, TEST_TYPE, RECORD_ID, primaryKey, recordRequest),
+        "upsertSingleRecord should have thrown an error");
   }
 
   @Test
@@ -194,15 +192,12 @@ class RecordOrchestratorServiceTest {
 
     // Act/Assert
     Optional<String> primaryKey = primaryKeyInQuery ? Optional.of(PRIMARY_KEY) : Optional.empty();
-    ValidationException e =
-        assertThrows(
-            ValidationException.class,
-            () ->
-                recordOrchestratorService.upsertSingleRecord(
-                    COLLECTION, VERSION, TEST_TYPE, RECORD_ID, primaryKey, recordRequest),
-            "upsertSingleRecord should have thrown an error");
-
-    assertEquals("Primary key in payload does not match primary key in URL", e.getMessage());
+    assertThrows(
+        ConflictingPrimaryKeysException.class,
+        () ->
+            recordOrchestratorService.upsertSingleRecord(
+                COLLECTION, VERSION, TEST_TYPE, RECORD_ID, primaryKey, recordRequest),
+        "upsertSingleRecord should have thrown an error");
   }
 
   @Test
@@ -243,15 +238,12 @@ class RecordOrchestratorServiceTest {
         new RecordRequest(RecordAttributes.empty().putAttribute(PRIMARY_KEY, "someOtherValue"));
 
     // Act/Assert
-    ValidationException e =
-        assertThrows(
-            ValidationException.class,
-            () ->
-                recordOrchestratorService.updateSingleRecord(
-                    COLLECTION, VERSION, TEST_TYPE, RECORD_ID, recordRequest),
-            "updateSingleRecord should have thrown an error");
-
-    assertEquals("Primary key in payload does not match primary key in URL", e.getMessage());
+    assertThrows(
+        ConflictingPrimaryKeysException.class,
+        () ->
+            recordOrchestratorService.updateSingleRecord(
+                COLLECTION, VERSION, TEST_TYPE, RECORD_ID, recordRequest),
+        "updateSingleRecord should have thrown an error");
   }
 
   @Test

@@ -25,11 +25,11 @@ import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.service.model.RelationValue;
 import org.databiosphere.workspacedataservice.service.model.ReservedNames;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
+import org.databiosphere.workspacedataservice.service.model.exception.ConflictingPrimaryKeysException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.NewPrimaryKeyException;
-import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -314,7 +314,7 @@ public class RecordService {
     String primaryKey = recordDao.getPrimaryKeyColumn(recordType, collectionId);
     if (incomingAttrs.containsAttribute(primaryKey)
         && incomingAttrs.getAttributeValue(primaryKey) != recordId) {
-      throw new ValidationException("Primary key in payload does not match primary key in URL");
+      throw new ConflictingPrimaryKeysException();
     }
     RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAttrs).getAttributes();
     Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAttrs);
@@ -343,7 +343,7 @@ public class RecordService {
       if (primaryKey.isPresent()
           && attributesInRequest.containsAttribute(primaryKey.get())
           && attributesInRequest.getAttributeValue(primaryKey.get()) != recordId) {
-        throw new ValidationException("Primary key in payload does not match primary key in URL");
+        throw new ConflictingPrimaryKeysException();
       }
       RecordResponse response =
           new RecordResponse(recordId, recordType, recordRequest.recordAttributes());
@@ -355,7 +355,7 @@ public class RecordService {
       String existingPrimaryKey = validatePrimaryKey(collectionId, recordType, primaryKey);
       if (attributesInRequest.containsAttribute(existingPrimaryKey)
           && attributesInRequest.getAttributeValue(existingPrimaryKey) != recordId) {
-        throw new ValidationException("Primary key in payload does not match primary key in URL");
+        throw new ConflictingPrimaryKeysException();
       }
       Map<String, DataTypeMapping> existingTableSchema =
           recordDao.getExistingTableSchema(collectionId, recordType);
