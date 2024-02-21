@@ -41,7 +41,7 @@ import org.springframework.test.context.TestPropertySource;
 
 // "local" profile prevents CollectionInitializerBean from running at Spring startup;
 // that way, we can run it when we want to inside our tests.
-@ActiveProfiles({"mock-storage", "local-cors", "mock-sam", "local"})
+@ActiveProfiles({"mock-storage", "local-cors", "mock-sam", "local", "data-plane"})
 @TestPropertySource(
     properties = {
       "twds.instance.workspace-id=5a9b583c-17ee-4c88-a14c-0edbf31175db",
