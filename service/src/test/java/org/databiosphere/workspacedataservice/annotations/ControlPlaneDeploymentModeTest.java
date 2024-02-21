@@ -10,7 +10,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles({"control-plane"})
+@ActiveProfiles(
+    profiles = {"control-plane"},
+    inheritProfiles = false)
 class ControlPlaneDeploymentModeTest extends DeploymentModeTestBase {
 
   @ParameterizedTest(name = "{0} is disabled for DeploymentMode control-plane")

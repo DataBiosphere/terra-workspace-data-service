@@ -10,7 +10,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles({"data-plane"})
+@ActiveProfiles(
+    profiles = {"data-plane"},
+    inheritProfiles = false)
 class DataPlaneDeploymentModeTest extends DeploymentModeTestBase {
 
   @ParameterizedTest(name = "{0} is enabled for DeploymentMode data-plane only")
