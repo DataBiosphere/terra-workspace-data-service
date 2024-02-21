@@ -66,8 +66,11 @@ class ImportServiceDataPlaneTest {
     ImportRequestServerModel importRequest = new ImportRequestServerModel(PFB, importUri);
 
     // ACT/ASSERT
+    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
+    // exception
+    UUID collectionUuid = collectionId.id();
     // perform the import request
-    assertDoesNotThrow(() -> importService.createImport(collectionId.id(), importRequest));
+    assertDoesNotThrow(() -> importService.createImport(collectionUuid, importRequest));
   }
 
   /* collection exists, workspace matches env var, user does not have access */
@@ -89,11 +92,14 @@ class ImportServiceDataPlaneTest {
     ImportRequestServerModel importRequest = new ImportRequestServerModel(PFB, importUri);
 
     // ACT/ASSERT
+    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
+    // exception
+    UUID collectionUuid = collectionId.id();
     // perform the import request
     AuthenticationMaskableException actual =
         assertThrows(
             AuthenticationMaskableException.class,
-            () -> importService.createImport(collectionId.id(), importRequest));
+            () -> importService.createImport(collectionUuid, importRequest));
 
     // ASSERT
     assertEquals("Collection", actual.getObjectType());
@@ -118,10 +124,12 @@ class ImportServiceDataPlaneTest {
     ImportRequestServerModel importRequest = new ImportRequestServerModel(PFB, importUri);
 
     // ACT/ASSERT
+    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
+    // exception
+    UUID collectionUuid = collectionId.id();
     // perform the import request
     assertThrows(
-        CollectionException.class,
-        () -> importService.createImport(collectionId.id(), importRequest));
+        CollectionException.class, () -> importService.createImport(collectionUuid, importRequest));
   }
 
   /* collection does not exist */
@@ -143,9 +151,12 @@ class ImportServiceDataPlaneTest {
     ImportRequestServerModel importRequest = new ImportRequestServerModel(PFB, importUri);
 
     // ACT/ASSERT
+    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
+    // exception
+    UUID collectionUuid = collectionId.id();
     // perform the import request
     assertThrows(
         MissingObjectException.class,
-        () -> importService.createImport(collectionId.id(), importRequest));
+        () -> importService.createImport(collectionUuid, importRequest));
   }
 }

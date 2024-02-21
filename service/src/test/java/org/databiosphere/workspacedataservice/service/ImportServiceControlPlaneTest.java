@@ -61,8 +61,11 @@ class ImportServiceControlPlaneTest {
     ImportRequestServerModel importRequest = new ImportRequestServerModel(PFB, importUri);
 
     // ACT/ASSERT
+    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
+    // exception
+    UUID collectionUuid = collectionId.id();
     // perform the import request
-    assertDoesNotThrow(() -> importService.createImport(collectionId.id(), importRequest));
+    assertDoesNotThrow(() -> importService.createImport(collectionUuid, importRequest));
   }
 
   /* Collection does not exist, user does not have access */
@@ -83,11 +86,14 @@ class ImportServiceControlPlaneTest {
     ImportRequestServerModel importRequest = new ImportRequestServerModel(PFB, importUri);
 
     // ACT/ASSERT
+    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
+    // exception
+    UUID collectionUuid = collectionId.id();
     // perform the import request
     AuthenticationMaskableException actual =
         assertThrows(
             AuthenticationMaskableException.class,
-            () -> importService.createImport(collectionId.id(), importRequest));
+            () -> importService.createImport(collectionUuid, importRequest));
 
     // ASSERT
     assertEquals("Collection", actual.getObjectType());
@@ -110,9 +116,11 @@ class ImportServiceControlPlaneTest {
     ImportRequestServerModel importRequest = new ImportRequestServerModel(PFB, importUri);
 
     // ACT/ASSERT
+    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
+    // exception
+    UUID collectionUuid = collectionId.id();
     // perform the import request
     assertThrows(
-        CollectionException.class,
-        () -> importService.createImport(collectionId.id(), importRequest));
+        CollectionException.class, () -> importService.createImport(collectionUuid, importRequest));
   }
 }
