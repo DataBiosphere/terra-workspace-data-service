@@ -16,7 +16,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 
-@ActiveProfiles(profiles = {"mock-collection-dao", "mock-sam"})
+@ActiveProfiles(profiles = {"mock-instance-dao", "mock-sam"})
 @DirtiesContext
 class ImportControllerMockMvcTest extends MockMvcTestBase {
 
