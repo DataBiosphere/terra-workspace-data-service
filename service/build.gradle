@@ -64,7 +64,7 @@ dependencies {
     implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
     implementation 'io.sentry:sentry-logback:6.34.0'
-    implementation 'net.logstash.logback:logstash-logback-encoder:7.3'
+    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
     implementation 'javax.cache:cache-api'
@@ -75,7 +75,7 @@ dependencies {
 
     // required by openapi-generated models and api interfaces
     implementation 'jakarta.validation:jakarta.validation-api'
-    implementation 'io.swagger.core.v3:swagger-annotations:2.2.16'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.20'
 
     // Terra libraries
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-752b4f3'
@@ -116,7 +116,7 @@ dependencies {
     implementation "org.glassfish.jersey.core:jersey-common"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.9.0'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.11.7'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -129,10 +129,10 @@ dependencies {
             because("CVE-2022-45688")
         }
         // commons-compress required by org.apache.avro:avro:1.11.3, required by java-pfb-library:0.14.0
-        implementation('org.apache.commons:commons-compress:1.24.0') {
+        implementation('org.apache.commons:commons-compress:1.26.0') {
             because("CVE-2023-42503")
         }
-        implementation('org.xerial.snappy:snappy-java:1.1.10.4') {
+        implementation('org.xerial.snappy:snappy-java:1.1.10.5') {
             because("CVE-2023-34453, CVE-2023-34454, CVE-2023-34455, CVE-2023-43642")
         }
         implementation('org.codehaus.jettison:jettison:1.5.4') {
