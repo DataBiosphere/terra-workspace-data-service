@@ -22,28 +22,26 @@
   </appender>
 
   <springProfile name="!local">
-    <if condition='isDefined("deploymentMode") &amp;&amp; property("deploymentMode").equals("control-plane")'>
-      <then>
-        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-          <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>${CONSOLE_LOG_THRESHOLD}</level>
-          </filter>
-          <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+    <springProfile name="control-plane">
+      <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+          <level>${CONSOLE_LOG_THRESHOLD}</level>
+        </filter>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        <charset>${CONSOLE_LOG_CHARSET}</charset>
+      </appender>
+    </springProfile>
+    <springProfile name="data-plane">
+      <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+          <level>${CONSOLE_LOG_THRESHOLD}</level>
+        </filter>
+        <encoder>
+          <pattern>${WDS_LOG_PATTERN}</pattern>
           <charset>${CONSOLE_LOG_CHARSET}</charset>
-        </appender>
-        </then>
-        <else>
-          <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-              <level>${CONSOLE_LOG_THRESHOLD}</level>
-            </filter>
-            <encoder>
-              <pattern>${WDS_LOG_PATTERN}</pattern>
-              <charset>${CONSOLE_LOG_CHARSET}</charset>
-            </encoder>
-          </appender>
-        </else>
-      </if>
+        </encoder>
+      </appender>
+    </springProfile>
     <!-- log everything at INFO level -->
     <root level="info">
       <appender-ref ref="CONSOLE"/>
