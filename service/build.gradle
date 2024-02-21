@@ -125,7 +125,7 @@ dependencies {
     testImplementation 'org.junit-pioneer:junit-pioneer:2.2.0'
 
     constraints {
-        implementation('org.json:json:20231013') {
+        implementation('org.json:json:20240205') {
             because("CVE-2022-45688")
         }
         // commons-compress required by org.apache.avro:avro:1.11.3, required by java-pfb-library:0.14.0
