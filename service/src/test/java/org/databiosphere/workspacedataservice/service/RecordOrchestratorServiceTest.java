@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
@@ -179,8 +180,9 @@ class RecordOrchestratorServiceTest {
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
-  @Test
-  void upsertExistingRecordWithDifferentPrimaryKey() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void upsertExistingRecordWithDifferentPrimaryKey(boolean primaryKeyInQuery) {
     // Arrange
     recordOrchestratorService.upsertSingleRecord(
         COLLECTION,
@@ -203,7 +205,7 @@ class RecordOrchestratorServiceTest {
                     VERSION,
                     TEST_TYPE,
                     RECORD_ID,
-                    Optional.of(PRIMARY_KEY),
+                    primaryKeyInQuery ? Optional.of(PRIMARY_KEY) : Optional.empty(),
                     recordRequest),
             "upsertSingleRecord should have thrown an error");
 

@@ -337,15 +337,14 @@ public class RecordService {
       Optional<String> primaryKey,
       RecordRequest recordRequest) {
     RecordAttributes attributesInRequest = recordRequest.recordAttributes();
-    if (primaryKey.isPresent()
-        && attributesInRequest.containsAttribute(primaryKey.get())
-        && attributesInRequest.getAttributeValue(primaryKey.get()) != recordId) {
-      throw new ValidationException("Primary key in payload does not match primary key in URL");
-    }
-
     Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
     HttpStatus status = HttpStatus.CREATED;
     if (!recordDao.recordTypeExists(collectionId, recordType)) {
+      if (primaryKey.isPresent()
+          && attributesInRequest.containsAttribute(primaryKey.get())
+          && attributesInRequest.getAttributeValue(primaryKey.get()) != recordId) {
+        throw new ValidationException("Primary key in payload does not match primary key in URL");
+      }
       RecordResponse response =
           new RecordResponse(recordId, recordType, recordRequest.recordAttributes());
       Record newRecord = new Record(recordId, recordType, recordRequest);
@@ -353,7 +352,11 @@ public class RecordService {
           collectionId, newRecord, recordType, requestSchema, primaryKey);
       return new ResponseEntity<>(response, status);
     } else {
-      validatePrimaryKey(collectionId, recordType, primaryKey);
+      String existingPrimaryKey = validatePrimaryKey(collectionId, recordType, primaryKey);
+      if (attributesInRequest.containsAttribute(existingPrimaryKey)
+          && attributesInRequest.getAttributeValue(existingPrimaryKey) != recordId) {
+        throw new ValidationException("Primary key in payload does not match primary key in URL");
+      }
       Map<String, DataTypeMapping> existingTableSchema =
           recordDao.getExistingTableSchema(collectionId, recordType);
       // null out any attributes that already exist but aren't in the request
