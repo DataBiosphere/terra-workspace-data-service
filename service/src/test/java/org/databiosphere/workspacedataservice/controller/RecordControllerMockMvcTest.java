@@ -3122,4 +3122,52 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
                 Map.of(
                     "string", "bar", "number", BigInteger.valueOf(2), "boolean", Boolean.FALSE))));
   }
+
+  @Test
+  @Transactional
+  void jsonArrayElementsMustBeObjectsOrBeEncodedAsStrings() throws Exception {
+    List<Object> mixedTypeList = List.of(Map.of("value", "foo"), Map.of("value", "bar"), "baz");
+
+    RecordType recordType = RecordType.valueOf("test-type");
+    String recordId = "recordId";
+    String attributeName = "jsonArrayValue";
+    RecordAttributes attributes =
+        RecordAttributes.empty().putAttribute(attributeName, mixedTypeList);
+
+    mockMvc
+        .perform(
+            put(
+                    "/{instanceId}/records/{version}/{recordType}/{recordId}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    recordId)
+                .content(toJson(new RecordRequest(attributes)))
+                .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isCreated());
+
+    MvcResult schemaResult =
+        mockMvc
+            .perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType))
+            .andReturn();
+    RecordTypeSchema schema = fromJson(schemaResult, RecordTypeSchema.class);
+
+    assertEquals("ARRAY_OF_STRING", schema.getAttributeSchema(attributeName).datatype());
+
+    MvcResult mvcSingleResult =
+        mockMvc
+            .perform(
+                get(
+                    "/{instanceId}/records/{version}/{recordType}/{recordId}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    recordId))
+            .andExpect(status().isOk())
+            .andReturn();
+    RecordResponse record = fromJson(mvcSingleResult, RecordResponse.class);
+
+    List<String> expectedValue = List.of("{value=foo}", "{value=bar}", "baz");
+    assertEquals(expectedValue, record.recordAttributes().getAttributeValue(attributeName));
+  }
 }

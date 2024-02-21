@@ -1035,7 +1035,8 @@ public class RecordDao {
       String[] jsonArray = (String[]) object;
       Object[] result = new Object[jsonArray.length];
       for (int i = 0; i < jsonArray.length; i++) {
-        result[i] = objectMapper.readValue(jsonArray[i], Object.class);
+        result[i] =
+            objectMapper.readValue(jsonArray[i], new TypeReference<Map<String, Object>>() {});
       }
       return result;
     }
