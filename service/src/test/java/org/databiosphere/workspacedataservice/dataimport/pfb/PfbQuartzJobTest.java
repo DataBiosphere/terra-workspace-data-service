@@ -1,12 +1,10 @@
 package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
-import static org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode.BASE_ATTRIBUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -150,7 +148,7 @@ class PfbQuartzJobTest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
     // We're not testing this, so it doesn't matter what returns
-    when(batchWriteService.batchWrite(any(), any(), any(), any(), eq(BASE_ATTRIBUTES)))
+    when(batchWriteService.batchWrite(any(), any(), any(), any()))
         .thenReturn(BatchWriteResult.empty());
 
     testSupport.buildPfbQuartzJob().execute(mockContext);
@@ -170,7 +168,7 @@ class PfbQuartzJobTest {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
     // We're not testing this, so it doesn't matter what returns
-    when(batchWriteService.batchWrite(any(), any(), any(), any(), eq(BASE_ATTRIBUTES)))
+    when(batchWriteService.batchWrite(any(), any(), any(), any()))
         .thenReturn(BatchWriteResult.empty());
 
     testSupport.buildPfbQuartzJob().execute(mockContext);

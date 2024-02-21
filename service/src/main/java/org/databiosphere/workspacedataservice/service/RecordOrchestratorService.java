@@ -15,10 +15,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.recordstream.PrimaryKeyResolver;
-import org.databiosphere.workspacedataservice.recordstream.RecordSourceFactory;
-import org.databiosphere.workspacedataservice.recordstream.TsvRecordSource;
-import org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode;
+import org.databiosphere.workspacedataservice.recordsink.RecordSink;
+import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
+import org.databiosphere.workspacedataservice.recordsource.PrimaryKeyResolver;
+import org.databiosphere.workspacedataservice.recordsource.RecordSource;
+import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
+import org.databiosphere.workspacedataservice.recordsource.TsvRecordSource;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
@@ -53,6 +55,7 @@ public class RecordOrchestratorService { // TODO give me a better name
 
   private final RecordDao recordDao;
   private final RecordSourceFactory recordSourceFactory;
+  private final RecordSinkFactory recordSinkFactory;
   private final BatchWriteService batchWriteService;
   private final RecordService recordService;
   private final CollectionService collectionService;
@@ -64,6 +67,7 @@ public class RecordOrchestratorService { // TODO give me a better name
   public RecordOrchestratorService(
       RecordDao recordDao,
       RecordSourceFactory recordSourceFactory,
+      RecordSinkFactory recordSinkFactory,
       BatchWriteService batchWriteService,
       RecordService recordService,
       CollectionService collectionService,
@@ -72,6 +76,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       TsvSupport tsvSupport) {
     this.recordDao = recordDao;
     this.recordSourceFactory = recordSourceFactory;
+    this.recordSinkFactory = recordSinkFactory;
     this.batchWriteService = batchWriteService;
     this.recordService = recordService;
     this.collectionService = collectionService;
@@ -136,16 +141,16 @@ public class RecordOrchestratorService { // TODO give me a better name
 
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(records.getInputStream(), recordType, primaryKey);
+    RecordSink recordSink = recordSinkFactory.buildRecordSink(collectionId, /* prefix= */ "tsv");
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSource,
-            collectionId,
+            recordSink,
             recordType,
             // the extra cast here isn't exactly necessary, but left here to call out the additional
             // tangential responsibility of the TsvRecordSource; this can be removed if we
             // can converge on using PrimaryKeyResolver more generally across all formats.
-            ((PrimaryKeyResolver) recordSource).getPrimaryKey(),
-            ImportMode.BASE_ATTRIBUTES);
+            ((PrimaryKeyResolver) recordSource).getPrimaryKey());
     int qty = result.getUpdatedCount(recordType);
     activityLogger.saveEventForCurrentUser(
         user -> user.upserted().record().withRecordType(recordType).ofQuantity(qty));
@@ -371,7 +376,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       recordService.validatePrimaryKey(collectionId, recordType, primaryKey);
     }
 
-    BatchWriteService.RecordSource recordSource = null;
+    RecordSource recordSource;
     try {
       recordSource = recordSourceFactory.forJson(is);
     } catch (IOException e) {
@@ -381,10 +386,9 @@ public class RecordOrchestratorService { // TODO give me a better name
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSource,
-            collectionId,
+            recordSinkFactory.buildRecordSink(collectionId, /* prefix= */ "json"),
             recordType,
-            primaryKey.orElse(RECORD_ID),
-            ImportMode.BASE_ATTRIBUTES);
+            primaryKey.orElse(RECORD_ID));
     int qty = result.getUpdatedCount(recordType);
     activityLogger.saveEventForCurrentUser(
         user -> user.modified().record().withRecordType(recordType).ofQuantity(qty));

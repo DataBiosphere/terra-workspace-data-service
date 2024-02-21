@@ -13,8 +13,7 @@ import org.springframework.context.annotation.Bean;
 public class SmallBatchWriteTestConfig {
 
   @Bean
-  public BatchWriteService batchWriteService(
-      DataTypeInferer dataTypeInferer, BatchWriteService.RecordSink recordSink) {
-    return new BatchWriteService(/* batchSize= */ 1, dataTypeInferer, recordSink);
+  public BatchWriteService batchWriteService(DataTypeInferer dataTypeInferer) {
+    return new BatchWriteService(/* batchSize= */ 1, dataTypeInferer);
   }
 }

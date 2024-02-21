@@ -6,9 +6,11 @@ import static org.databiosphere.workspacedataservice.shared.model.job.Job.newJob
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -22,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -42,6 +45,8 @@ class JobControllerTest {
   @Autowired private TestRestTemplate restTemplate;
 
   @Autowired private JobDao jobDao;
+
+  @MockBean private CollectionDao collectionDao;
 
   private final CollectionId collectionId = CollectionId.of(UUID.randomUUID());
 
@@ -72,6 +77,7 @@ class JobControllerTest {
 
   @Test
   void instanceJobsReturnAllNoStatus() {
+    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     HttpHeaders headers = new HttpHeaders();
     // ParameterizedTypeReference<List<GenericJobServerModel>> returnType = new
     // ParameterizedTypeReference<List<GenericJobServerModel>>() {};
@@ -93,6 +99,7 @@ class JobControllerTest {
 
   @Test
   void instanceJobsWithMultipleStatuses() {
+    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     assertDoesNotThrow(() -> jobDao.updateStatus(jobId, StatusEnum.CANCELLED));
     HttpHeaders headers = new HttpHeaders();
     // ParameterizedTypeReference<List<GenericJobServerModel>> returnType = new

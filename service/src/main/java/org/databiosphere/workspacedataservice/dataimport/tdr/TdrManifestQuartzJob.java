@@ -32,8 +32,9 @@ import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
-import org.databiosphere.workspacedataservice.recordstream.RecordSourceFactory;
-import org.databiosphere.workspacedataservice.recordstream.TwoPassRecordSource.ImportMode;
+import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
+import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
+import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
@@ -54,6 +55,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
   private final JobDao jobDao;
   private final WorkspaceManagerDao wsmDao;
   private final RestClientRetry restClientRetry;
+  private final RecordSinkFactory recordSinkFactory;
   private final UUID workspaceId;
   private final BatchWriteService batchWriteService;
   private final ActivityLogger activityLogger;
@@ -67,6 +69,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       WorkspaceManagerDao wsmDao,
       RestClientRetry restClientRetry,
       RecordSourceFactory recordSourceFactory,
+      RecordSinkFactory recordSinkFactory,
       BatchWriteService batchWriteService,
       ActivityLogger activityLogger,
       @Value("${twds.instance.workspace-id}") UUID workspaceId,
@@ -76,6 +79,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
     this.restClientRetry = restClientRetry;
+    this.recordSinkFactory = recordSinkFactory;
     this.workspaceId = workspaceId;
     this.recordSourceFactory = recordSourceFactory;
     this.batchWriteService = batchWriteService;
@@ -152,16 +156,13 @@ public class TdrManifestQuartzJob extends QuartzJob {
    *
    * @param inputFile Parquet file to be imported.
    * @param table info about the table to be imported
-   * @param targetCollection collection into which to import
+   * @param collectionId collection into which to import
    * @param importMode mode for this invocation
    * @return statistics on what was imported
    */
   @VisibleForTesting
   BatchWriteResult importTable(
-      InputFile inputFile,
-      TdrManifestImportTable table,
-      UUID targetCollection,
-      ImportMode importMode) {
+      InputFile inputFile, TdrManifestImportTable table, UUID collectionId, ImportMode importMode) {
     // upsert this parquet file's contents
     try (ParquetReader<GenericRecord> avroParquetReader =
         AvroParquetReader.<GenericRecord>builder(inputFile)
@@ -170,10 +171,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
       logger.info("batch-writing records for file ...");
       return batchWriteService.batchWrite(
           recordSourceFactory.forTdrImport(avroParquetReader, table, importMode),
-          targetCollection,
+          recordSinkFactory.buildRecordSink(collectionId, /* prefix= */ "tdr"),
           table.recordType(),
-          table.primaryKey(),
-          importMode);
+          table.primaryKey());
     } catch (Throwable t) {
       throw new TdrManifestImportException(t.getMessage(), t);
     }

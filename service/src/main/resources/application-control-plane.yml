@@ -8,3 +8,5 @@ twds:
   bucket:
     name: ${SERVICE_GOOGLE_BUCKET:uknown}
     projectId: ${SERVICE_GOOGLE_PROJECT:uknown}
+  data-import:
+    batch-write-record-sink: "rawls"

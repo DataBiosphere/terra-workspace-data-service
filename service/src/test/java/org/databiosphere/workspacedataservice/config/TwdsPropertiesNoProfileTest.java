@@ -12,9 +12,14 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @SpringBootTest
 @ActiveProfiles("neither-data-plane-nor-control-plane")
-class TenancyPropertiesNoProfileTest {
+class TwdsPropertiesNoProfileTest {
 
   @Autowired TwdsProperties twdsProperties;
+
+  @Test
+  void nullDataImport() {
+    assertNull(twdsProperties.getDataImport());
+  }
 
   @Test
   void nullTenancy() {

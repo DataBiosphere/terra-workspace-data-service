@@ -8,7 +8,7 @@ plugins {
     id 'org.openapi.generator'
     id 'com.diffplug.spotless'
     id 'jacoco'
-    id "au.com.dius.pact" version "4.6.1"
+    id "au.com.dius.pact" version "4.6.7"
     id 'jvm-test-suite'
 }
 
@@ -43,10 +43,10 @@ ext {
 
 dependencies {
     // Azure libraries
-    implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.18'
-    implementation 'com.azure:azure-storage-blob:12.25.0'
-    implementation 'com.azure:azure-identity:1.11.0' // authentication in azure environment
-    implementation 'com.azure:azure-identity-extensions:1.1.10' // postgres password plugin
+    implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.19'
+    implementation 'com.azure:azure-storage-blob:12.25.1'
+    implementation 'com.azure:azure-identity:1.11.2' // authentication in azure environment
+    implementation 'com.azure:azure-identity-extensions:1.1.12' // postgres password plugin
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
@@ -59,12 +59,12 @@ dependencies {
     implementation "io.micrometer.prometheus:prometheus-rsocket-spring:$prometheus_rsocket_version"
     implementation 'org.springframework.integration:spring-integration-jdbc'
     implementation 'org.aspectj:aspectjweaver' // required by spring-retry, not used directly
-    implementation 'com.google.guava:guava:32.1.3-jre'
+    implementation 'com.google.guava:guava:33.0.0-jre'
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
     implementation 'io.sentry:sentry-logback:6.34.0'
-    implementation 'net.logstash.logback:logstash-logback-encoder:7.3'
+    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
     implementation 'javax.cache:cache-api'
@@ -75,7 +75,7 @@ dependencies {
 
     // required by openapi-generated models and api interfaces
     implementation 'jakarta.validation:jakarta.validation-api'
-    implementation 'io.swagger.core.v3:swagger-annotations:2.2.16'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.20'
 
     // Terra libraries
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-752b4f3'
@@ -83,7 +83,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp' // required by Sam client
     implementation "bio.terra:datarepo-jakarta-client:1.570.0-SNAPSHOT"
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.15.0"
+    implementation "bio.terra:java-pfb-library:0.29.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -119,24 +119,26 @@ dependencies {
     implementation "org.glassfish.jersey.core:jersey-common"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.9.0'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.11.7'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation project(':client')
     testImplementation 'au.com.dius.pact.consumer:junit5:4.6.1'
     testImplementation 'org.junit-pioneer:junit-pioneer:2.1.0'
+    
+    // google bucket mock
     implementation 'com.google.cloud:google-cloud-nio'
 
     constraints {
-        implementation('org.json:json:20231013') {
+        implementation('org.json:json:20240205') {
             because("CVE-2022-45688")
         }
         // commons-compress required by org.apache.avro:avro:1.11.3, required by java-pfb-library:0.14.0
-        implementation('org.apache.commons:commons-compress:1.24.0') {
+        implementation('org.apache.commons:commons-compress:1.26.0') {
             because("CVE-2023-42503")
         }
-        implementation('org.xerial.snappy:snappy-java:1.1.10.4') {
+        implementation('org.xerial.snappy:snappy-java:1.1.10.5') {
             because("CVE-2023-34453, CVE-2023-34454, CVE-2023-34455, CVE-2023-43642")
         }
         implementation('org.codehaus.jettison:jettison:1.5.4') {
