@@ -52,10 +52,10 @@ public class ImportService {
     collectionService.validateCollection(collectionId);
 
     // validate write permission
-    boolean hasWriteWorkspacePermission =
+    boolean hasWriteCollectionPermission =
         collectionService.canWriteCollection(CollectionId.of(collectionId));
-    logger.debug("hasWriteWorkspacePermission? {}", hasWriteWorkspacePermission);
-    if (!hasWriteWorkspacePermission) {
+    logger.debug("hasWriteCollectionPermission? {}", hasWriteCollectionPermission);
+    if (!hasWriteCollectionPermission) {
       // Throw a maskable exception, which will result in a 404 to the end user.
       // As an enhancement, we could instead perform a second check for read permissions here.
       // If the user has read permission but not write permission, it would be safe to throw
