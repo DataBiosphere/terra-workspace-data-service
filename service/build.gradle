@@ -128,6 +128,7 @@ dependencies {
     testImplementation project(':client')
     testImplementation 'au.com.dius.pact.consumer:junit5:4.6.1'
     testImplementation 'org.junit-pioneer:junit-pioneer:2.1.0'
+    implementation 'com.google.cloud:google-cloud-nio'
 
     constraints {
         implementation('org.json:json:20231013') {
