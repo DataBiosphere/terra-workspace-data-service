@@ -42,6 +42,10 @@ class ImportServiceDataPlaneTest {
   @MockBean CollectionDao collectionDao;
   @MockBean SamDao samDao;
 
+  private final URI importUri = URI.create("http://does/not/matter");
+  private final ImportRequestServerModel importRequest =
+      new ImportRequestServerModel(PFB, importUri);
+
   private final CollectionId collectionId = CollectionId.of(UUID.randomUUID());
 
   /* collection exists, workspace matches env var, user has access */
@@ -54,10 +58,6 @@ class ImportServiceDataPlaneTest {
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // sam dao says the user has write permission
     when(samDao.hasWriteWorkspacePermission(workspaceId.toString())).thenReturn(true);
-
-    // define the import request
-    URI importUri = URI.create("http://does/not/matter");
-    ImportRequestServerModel importRequest = new ImportRequestServerModel(PFB, importUri);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -77,10 +77,6 @@ class ImportServiceDataPlaneTest {
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // sam dao says the user has write permission
     when(samDao.hasWriteWorkspacePermission(workspaceId.toString())).thenReturn(false);
-
-    // define the import request
-    URI importUri = URI.create("http://does/not/matter");
-    ImportRequestServerModel importRequest = new ImportRequestServerModel(PFB, importUri);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -107,10 +103,6 @@ class ImportServiceDataPlaneTest {
     // sam dao says the user has write permission
     when(samDao.hasWriteWorkspacePermission(workspaceId.toString())).thenReturn(false);
 
-    // define the import request
-    URI importUri = URI.create("http://does/not/matter");
-    ImportRequestServerModel importRequest = new ImportRequestServerModel(PFB, importUri);
-
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
     // exception
@@ -130,10 +122,6 @@ class ImportServiceDataPlaneTest {
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // sam dao says the user has write permission
     when(samDao.hasWriteWorkspacePermission(collectionId.toString())).thenReturn(false);
-
-    // define the import request
-    URI importUri = URI.create("http://does/not/matter");
-    ImportRequestServerModel importRequest = new ImportRequestServerModel(PFB, importUri);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime

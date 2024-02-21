@@ -68,6 +68,8 @@ class ImportServiceTest {
   ResourcesApi mockSamResourcesApi = Mockito.mock(ResourcesApi.class);
   GoogleApi mockSamGoogleApi = Mockito.mock(GoogleApi.class);
 
+  private final URI importUri = URI.create("http://does/not/matter");
+
   private UUID defaultCollectionId;
 
   private static final String VERSION = "v0.2";
@@ -142,7 +144,6 @@ class ImportServiceTest {
     // create collection (in the MockCollectionDao)
     collectionService.createCollection(defaultCollectionId, VERSION);
     // define the import request
-    URI importUri = URI.create("http://does/not/matter");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request
     GenericJobServerModel createdJob =
@@ -165,7 +166,6 @@ class ImportServiceTest {
     // create collection (in the MockCollectionDao)
     collectionService.createCollection(defaultCollectionId, VERSION);
     // define the import request
-    URI importUri = URI.create("http://does/not/matter");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request
     GenericJobServerModel createdJob =
@@ -199,7 +199,6 @@ class ImportServiceTest {
     // create collection (in the MockCollectionDao)
     collectionService.createCollection(defaultCollectionId, VERSION);
     // define the import request
-    URI importUri = URI.create("http://does/not/matter");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request; this will internally hit the exception from the schedulerDao
     GenericJobServerModel createdJob =
@@ -228,7 +227,7 @@ class ImportServiceTest {
     UUID randomCollectionId = UUID.randomUUID();
     collectionService.createCollection(randomCollectionId, VERSION);
     // define the import request
-    URI importUri = URI.create("http://does/not/matter");
+
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // Import will fail without a pet token
     assertThrows(

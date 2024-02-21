@@ -37,6 +37,9 @@ class ImportServiceControlPlaneTest {
   @Autowired ImportService importService;
   @MockBean CollectionDao collectionDao;
   @MockBean SamDao samDao;
+  private final URI importUri = URI.create("http://does/not/matter");
+  private final ImportRequestServerModel importRequest =
+      new ImportRequestServerModel(PFB, importUri);
 
   /* Collection does not exist, user has access */
   @Test
@@ -48,10 +51,6 @@ class ImportServiceControlPlaneTest {
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // sam dao says the user has write permission
     when(samDao.hasWriteWorkspacePermission(collectionId.toString())).thenReturn(true);
-
-    // define the import request
-    URI importUri = URI.create("http://does/not/matter");
-    ImportRequestServerModel importRequest = new ImportRequestServerModel(PFB, importUri);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -71,10 +70,6 @@ class ImportServiceControlPlaneTest {
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // sam dao says the user does not have write permission
     when(samDao.hasWriteWorkspacePermission(collectionId.toString())).thenReturn(false);
-
-    // define the import request
-    URI importUri = URI.create("http://does/not/matter");
-    ImportRequestServerModel importRequest = new ImportRequestServerModel(PFB, importUri);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -99,10 +94,6 @@ class ImportServiceControlPlaneTest {
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(WorkspaceId.of(UUID.randomUUID()));
     // sam dao says the user does have write permission
     when(samDao.hasWriteWorkspacePermission(collectionId.toString())).thenReturn(true);
-
-    // define the import request
-    URI importUri = URI.create("http://does/not/matter");
-    ImportRequestServerModel importRequest = new ImportRequestServerModel(PFB, importUri);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
