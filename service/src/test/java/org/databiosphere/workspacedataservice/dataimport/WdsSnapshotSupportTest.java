@@ -21,6 +21,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -35,7 +36,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-class WsmSnapshotSupportTest {
+class WsmSnapshotSupportTest extends TestBase {
 
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;

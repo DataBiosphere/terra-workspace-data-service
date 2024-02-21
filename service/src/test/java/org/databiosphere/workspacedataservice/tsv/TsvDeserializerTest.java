@@ -10,6 +10,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.service.DataTypeInfererConfig;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,7 @@ import org.springframework.test.annotation.DirtiesContext;
  */
 @DirtiesContext
 @SpringBootTest(classes = {DataTypeInfererConfig.class, JsonConfig.class, TsvConfig.class})
-class TsvDeserializerTest {
+class TsvDeserializerTest extends TestBase {
 
   @Autowired TsvDeserializer tsvDeserializer;
 

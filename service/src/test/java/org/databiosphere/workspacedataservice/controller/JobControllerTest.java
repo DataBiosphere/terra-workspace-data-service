@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
@@ -39,7 +40,7 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class JobControllerTest {
+class JobControllerTest extends TestBase {
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
 
   @Autowired private TestRestTemplate restTemplate;

@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.concurrent.locks.Lock;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.*;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoConfig;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
@@ -57,7 +58,7 @@ import org.springframework.test.context.TestPropertySource;
       MockSamClientFactoryConfig.class,
       RestClientRetry.class
     })
-class CollectionInitializerNoWorkspaceIdTest {
+class CollectionInitializerNoWorkspaceIdTest extends TestBase {
 
   @Autowired CollectionInitializerBean collectionInitializerBean;
   @MockBean JdbcLockRegistry registry;

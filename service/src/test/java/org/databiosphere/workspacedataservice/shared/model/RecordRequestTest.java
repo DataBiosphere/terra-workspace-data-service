@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigInteger;
 import java.util.Map;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -16,7 +17,7 @@ import org.springframework.test.annotation.DirtiesContext;
 @DirtiesContext
 @SpringBootTest(classes = JsonConfig.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class RecordRequestTest {
+public class RecordRequestTest extends TestBase {
 
   @Autowired private ObjectMapper jacksonObjectMapper;
 

@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.observability.TestObservationRegistryConfig;
@@ -46,7 +47,7 @@ import org.springframework.context.annotation.Import;
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Import(TestObservationRegistryConfig.class)
-class QuartzJobTest {
+class QuartzJobTest extends TestBase {
 
   @MockBean JobDao jobDao;
   @Autowired MeterRegistry meterRegistry;

@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.datarepo.DataRepoClientFactory;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
@@ -39,7 +40,7 @@ import org.springframework.web.multipart.MultipartFile;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest
 @ExtendWith(OutputCaptureExtension.class)
-public class LogStatementTest {
+public class LogStatementTest extends TestBase {
 
   private final String VERSION = "v0.2";
 

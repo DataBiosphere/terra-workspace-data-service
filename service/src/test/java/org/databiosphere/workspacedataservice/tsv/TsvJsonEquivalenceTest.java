@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.service.DataTypeInfererConfig;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -29,7 +30,7 @@ import org.springframework.test.annotation.DirtiesContext;
  */
 @DirtiesContext
 @SpringBootTest(classes = {DataTypeInfererConfig.class, JsonConfig.class, TsvConfig.class})
-class TsvJsonEquivalenceTest {
+class TsvJsonEquivalenceTest extends TestBase {
 
   @Autowired private ObjectReader tsvReader;
 

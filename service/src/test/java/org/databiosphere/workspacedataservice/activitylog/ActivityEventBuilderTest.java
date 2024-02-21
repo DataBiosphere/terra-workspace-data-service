@@ -11,6 +11,7 @@ import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.UsersApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserStatusInfo;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.sam.BearerTokenFilter;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.CollectionService;
@@ -34,7 +35,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ExtendWith(OutputCaptureExtension.class)
-public class ActivityEventBuilderTest {
+public class ActivityEventBuilderTest extends TestBase {
 
   @Autowired CollectionService collectionService;
 

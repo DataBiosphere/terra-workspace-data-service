@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.observability.TestObservationRegistryConfig;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -33,7 +34,7 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest
 @ActiveProfiles(profiles = {"mock-sam"})
 @Import(TestObservationRegistryConfig.class)
-class RecordServiceTest {
+class RecordServiceTest extends TestBase {
 
   @Autowired DataTypeInferer inferer;
   @Autowired CollectionService collectionService;

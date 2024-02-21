@@ -8,6 +8,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry.VoidRestCall;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
@@ -32,7 +33,7 @@ import org.springframework.test.annotation.DirtiesContext;
       "rest.retry.backoff.delay=10"
     }) // aggressive retry settings so unit test doesn't run too long
 @EnableRetry
-class RestClientRetryTest {
+class RestClientRetryTest extends TestBase {
 
   @Autowired RestClientRetry restClientRetry;
 

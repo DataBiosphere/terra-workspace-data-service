@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.databiosphere.workspacedata.model.ErrorResponse;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.BatchOperation;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
@@ -60,7 +61,7 @@ import org.springframework.transaction.annotation.Transactional;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {"spring.main.allow-bean-definition-overriding=true"})
 @Import(SmallBatchWriteTestConfig.class)
-class FullStackRecordControllerTest {
+class FullStackRecordControllerTest extends TestBase {
   @Autowired private TestRestTemplate restTemplate;
   private HttpHeaders headers;
   private UUID instanceId;

@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.startup;
 
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.config.ConfigurationException;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,11 +51,11 @@ public class StartupConfig {
           UUID workspaceUuid = UUID.fromString(twdsProperties.getInstance().getWorkspaceId());
           logger.info("single-tenant workspace id: {}", workspaceUuid);
         } catch (Exception e) {
-          logger.error(
+          throw new ConfigurationException(
               "This deployment requires a $WORKSPACE_ID env var, but its value "
-                  + "could not be parsed to a UUID: {}",
-              e.getMessage());
-          throw e;
+                  + "could not be parsed to a UUID: "
+                  + e.getMessage(),
+              e);
         }
       }
     }
