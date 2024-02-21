@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.storage;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
