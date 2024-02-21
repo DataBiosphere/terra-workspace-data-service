@@ -172,9 +172,10 @@ class RecordOrchestratorServiceTest {
         new RecordRequest(RecordAttributes.empty().putAttribute(PRIMARY_KEY, RECORD_ID));
 
     // Act
+    Optional<String> primaryKey = Optional.of(PRIMARY_KEY);
     ResponseEntity<RecordResponse> response =
         recordOrchestratorService.upsertSingleRecord(
-            COLLECTION, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
+            COLLECTION, VERSION, TEST_TYPE, RECORD_ID, primaryKey, recordRequest);
 
     // Assert
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -196,17 +197,13 @@ class RecordOrchestratorServiceTest {
         new RecordRequest(RecordAttributes.empty().putAttribute(PRIMARY_KEY, "someOtherValue"));
 
     // Act/Assert
+    Optional<String> primaryKey = primaryKeyInQuery ? Optional.of(PRIMARY_KEY) : Optional.empty();
     ValidationException e =
         assertThrows(
             ValidationException.class,
             () ->
                 recordOrchestratorService.upsertSingleRecord(
-                    COLLECTION,
-                    VERSION,
-                    TEST_TYPE,
-                    RECORD_ID,
-                    primaryKeyInQuery ? Optional.of(PRIMARY_KEY) : Optional.empty(),
-                    recordRequest),
+                    COLLECTION, VERSION, TEST_TYPE, RECORD_ID, primaryKey, recordRequest),
             "upsertSingleRecord should have thrown an error");
 
     assertEquals("Primary key in payload does not match primary key in URL", e.getMessage());
@@ -230,6 +227,9 @@ class RecordOrchestratorServiceTest {
     RecordResponse response =
         recordOrchestratorService.updateSingleRecord(
             COLLECTION, VERSION, TEST_TYPE, RECORD_ID, recordRequest);
+
+    // Assert
+    assertEquals(RECORD_ID, response.recordId());
   }
 
   @Test
