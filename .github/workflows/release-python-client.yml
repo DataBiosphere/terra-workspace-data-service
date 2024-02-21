@@ -89,7 +89,7 @@ jobs:
           export WORKSPACE_MANAGER_URL=http://localhost:9889
           export WORKSPACE_ID=123e4567-e89b-12d3-a456-426614174000
           ./gradlew --build-cache build -x test
-          ./gradlew bootRun &
+          ./gradlew bootRun --args='--spring.profiles.active=data-plane' &
           count=20
           until $(curl --output /dev/null --silent --head --fail http://localhost:8080/status); do
             printf '.'

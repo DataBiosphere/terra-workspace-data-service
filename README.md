@@ -137,7 +137,7 @@ export SAM_URL=http://localhost:9889
 To run WDS locally, you can either use the command line:
 
 ```bash
-./gradlew bootRun
+./gradlew bootRun --args='--spring.profiles.active=data-plane'
 ```
 
 Or, from Intellij, go
