@@ -25,7 +25,8 @@ public enum DataTypeMapping {
   ARRAY_OF_STRING(String[].class, "text[]", true, "?"),
   ARRAY_OF_RELATION(String[].class, "array_of_relation", true, "?"),
   ARRAY_OF_FILE(String[].class, "array_of_file", true, "?"),
-  ARRAY_OF_BOOLEAN(Boolean[].class, "boolean[]", true, "?");
+  ARRAY_OF_BOOLEAN(Boolean[].class, "boolean[]", true, "?"),
+  ARRAY_OF_JSON(String[].class, "jsonb[]", true, "?::jsonb[]");
 
   private final Class javaArrayTypeForDbWrites;
 
@@ -48,7 +49,8 @@ public enum DataTypeMapping {
           new BaseTypeAndArrayTypePair(DATE, ARRAY_OF_DATE),
           new BaseTypeAndArrayTypePair(DATE_TIME, ARRAY_OF_DATE_TIME),
           new BaseTypeAndArrayTypePair(FILE, ARRAY_OF_FILE),
-          new BaseTypeAndArrayTypePair(RELATION, ARRAY_OF_RELATION));
+          new BaseTypeAndArrayTypePair(RELATION, ARRAY_OF_RELATION),
+          new BaseTypeAndArrayTypePair(JSON, ARRAY_OF_JSON));
 
   static {
     Arrays.stream(DataTypeMapping.values())

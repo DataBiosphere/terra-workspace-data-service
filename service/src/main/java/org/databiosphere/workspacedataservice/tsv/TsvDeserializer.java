@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.NumericNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -135,6 +136,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
         return objectMapper.readValue(val, new TypeReference<Map<String, Object>>() {});
       } catch (JsonProcessingException jpe) {
         // this shouldn't happen; if inferer.isValidJson(val) passes, so should the .readValue
+        LOGGER.error("Unable to parse validated JSON: {}", val);
         return val;
       }
     }
@@ -213,6 +215,15 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
     }
     if (element instanceof BooleanNode bn) {
       return bn.asBoolean();
+    }
+    if (element instanceof ObjectNode on) {
+      try {
+        return objectMapper.readValue(on.toString(), new TypeReference<Map<String, Object>>() {});
+      } catch (JsonProcessingException jpe) {
+        // this shouldn't happen since we've already parsed the array into JSON
+        LOGGER.error("Unable to parse array element JSON: {}", on);
+        return on.toString();
+      }
     }
     if (element instanceof TextNode strElement) {
       return cellToAttribute(strElement.toString());

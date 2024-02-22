@@ -27,6 +27,7 @@ class DataTypeMappingTest {
         Arguments.of(DataTypeMapping.NUMBER, DataTypeMapping.ARRAY_OF_NUMBER),
         Arguments.of(DataTypeMapping.DATE, DataTypeMapping.ARRAY_OF_DATE),
         Arguments.of(DataTypeMapping.DATE_TIME, DataTypeMapping.ARRAY_OF_DATE_TIME),
+        Arguments.of(DataTypeMapping.JSON, DataTypeMapping.ARRAY_OF_JSON),
         Arguments.of(DataTypeMapping.NULL, DataTypeMapping.ARRAY_OF_STRING));
   }
 
@@ -65,6 +66,7 @@ class DataTypeMappingTest {
         Arguments.of(DataTypeMapping.ARRAY_OF_BOOLEAN, DataTypeMapping.BOOLEAN),
         Arguments.of(DataTypeMapping.ARRAY_OF_NUMBER, DataTypeMapping.NUMBER),
         Arguments.of(DataTypeMapping.ARRAY_OF_DATE, DataTypeMapping.DATE),
-        Arguments.of(DataTypeMapping.ARRAY_OF_DATE_TIME, DataTypeMapping.DATE_TIME));
+        Arguments.of(DataTypeMapping.ARRAY_OF_DATE_TIME, DataTypeMapping.DATE_TIME),
+        Arguments.of(DataTypeMapping.ARRAY_OF_JSON, DataTypeMapping.JSON));
   }
 }
