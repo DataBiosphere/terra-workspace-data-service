@@ -17,9 +17,11 @@ public class GcsStorage {
   @Value("${twds.bucket.name}")
   private String bucketName;
 
+  // projectId in GCP (string) is equivalent to subscriptionId in Azure (UUID)
   @Value("${twds.bucket.projectId}")
   private String projectId;
 
+  // Generated an instance of the storage class using the credentials the current process is running under
   public GcsStorage() throws IOException {
     GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
 
@@ -28,6 +30,8 @@ public class GcsStorage {
     this.storage = storageOptions.getService();
   }
 
+  // primary here for tests, but also allows this class to be used with values other than
+  // the ones provided in the config, if needed
   public GcsStorage(Storage storage, String bucketName, String projectId) {
     this.storage = storage;
     this.bucketName = bucketName;
