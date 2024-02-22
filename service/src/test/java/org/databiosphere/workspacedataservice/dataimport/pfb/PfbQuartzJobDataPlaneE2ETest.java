@@ -5,7 +5,6 @@ import static org.databiosphere.workspacedataservice.TestTags.SLOW;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 import bio.terra.workspace.model.ResourceList;
@@ -17,7 +16,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -28,11 +26,9 @@ import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,15 +43,13 @@ import org.springframework.test.context.ActiveProfiles;
  * parsing the PFB, creating tables in Postgres, inserting rows, and then reading back the
  * rows/counts/schema from Postgres.
  */
-@ActiveProfiles(profiles = {"mock-sam", "data-plane"})
+@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "data-plane"})
 @DirtiesContext
 @SpringBootTest
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PfbQuartzJobDataPlaneE2ETest {
   @Autowired RecordOrchestratorService recordOrchestratorService;
   @Autowired CollectionService collectionService;
   @Autowired PfbTestSupport testSupport;
-  @MockBean SchedulerDao schedulerDao;
   @MockBean WorkspaceManagerDao wsmDao;
 
   // test resources used below
@@ -75,11 +69,6 @@ class PfbQuartzJobDataPlaneE2ETest {
   Resource cyclicalAvroResource;
 
   UUID collectionId;
-
-  @BeforeAll
-  void beforeAll() {
-    doNothing().when(schedulerDao).schedule(any());
-  }
 
   @BeforeEach
   void beforeEach() {

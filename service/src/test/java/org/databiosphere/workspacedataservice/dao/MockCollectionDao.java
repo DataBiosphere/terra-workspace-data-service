@@ -73,4 +73,10 @@ public class MockCollectionDao implements CollectionDao {
   public WorkspaceId getWorkspaceId(CollectionId instanceId) {
     return WorkspaceId.of(instanceId.id());
   }
+
+  // convenience for unit tests: removes all collections
+  public void clearAllCollections() {
+    Set<UUID> toRemove = Set.copyOf(collections);
+    collections.removeAll(toRemove);
+  }
 }
