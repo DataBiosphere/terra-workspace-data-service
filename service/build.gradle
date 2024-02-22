@@ -149,6 +149,7 @@ dependencies {
 
         // SEE ALSO:
         //  - org.liquibase:liquibase-core:4.26.0, configured in build.gradle
+        //  - org.postgresql:postgresql:42.6.1, configured in build.gradle
     }
 }
 
