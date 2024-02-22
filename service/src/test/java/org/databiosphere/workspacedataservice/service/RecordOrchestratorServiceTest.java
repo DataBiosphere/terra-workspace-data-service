@@ -19,6 +19,7 @@ import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.service.model.ReservedNames;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictingPrimaryKeysException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -148,6 +149,22 @@ class RecordOrchestratorServiceTest {
         () ->
             recordOrchestratorService.upsertSingleRecord(
                 COLLECTION, VERSION, TEST_TYPE, RECORD_ID, primaryKey, recordRequest),
+        "upsertSingleRecord should have thrown an error");
+  }
+
+  @Test
+  void upsertNewRecordWithDifferentDefaultPrimaryKey() {
+    // Arrange
+    RecordRequest recordRequest =
+        new RecordRequest(
+            RecordAttributes.empty().putAttribute(ReservedNames.RECORD_ID, "someOtherValue"));
+
+    // Act/Assert
+    assertThrows(
+        ConflictingPrimaryKeysException.class,
+        () ->
+            recordOrchestratorService.upsertSingleRecord(
+                COLLECTION, VERSION, TEST_TYPE, RECORD_ID, Optional.empty(), recordRequest),
         "upsertSingleRecord should have thrown an error");
   }
 

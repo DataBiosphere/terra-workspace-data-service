@@ -340,16 +340,16 @@ public class RecordService {
     Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
     HttpStatus status = HttpStatus.CREATED;
     if (!recordDao.recordTypeExists(collectionId, recordType)) {
-      if (primaryKey.isPresent()
-          && attributesInRequest.containsAttribute(primaryKey.get())
-          && attributesInRequest.getAttributeValue(primaryKey.get()) != recordId) {
+      String calculatedPrimaryKey = primaryKey.orElse(ReservedNames.RECORD_ID);
+      if (attributesInRequest.containsAttribute(calculatedPrimaryKey)
+          && attributesInRequest.getAttributeValue(calculatedPrimaryKey) != recordId) {
         throw new ConflictingPrimaryKeysException();
       }
       RecordResponse response =
           new RecordResponse(recordId, recordType, recordRequest.recordAttributes());
       Record newRecord = new Record(recordId, recordType, recordRequest);
       createRecordTypeAndInsertRecords(
-          collectionId, newRecord, recordType, requestSchema, primaryKey);
+          collectionId, newRecord, recordType, requestSchema, calculatedPrimaryKey);
       return new ResponseEntity<>(response, status);
     } else {
       String existingPrimaryKey = validatePrimaryKey(collectionId, recordType, primaryKey);
@@ -388,20 +388,15 @@ public class RecordService {
       Record newRecord,
       RecordType recordType,
       Map<String, DataTypeMapping> requestSchema,
-      Optional<String> primaryKey) {
+      String primaryKey) {
     List<Record> records = Collections.singletonList(newRecord);
     recordDao.createRecordType(
         collectionId,
         requestSchema,
         recordType,
         inferer.findRelations(records, requestSchema),
-        primaryKey.orElse(ReservedNames.RECORD_ID));
-    prepareAndUpsert(
-        collectionId,
-        recordType,
-        records,
-        requestSchema,
-        primaryKey.orElse(ReservedNames.RECORD_ID));
+        primaryKey);
+    prepareAndUpsert(collectionId, recordType, records, requestSchema, primaryKey);
   }
 
   public String validatePrimaryKey(
