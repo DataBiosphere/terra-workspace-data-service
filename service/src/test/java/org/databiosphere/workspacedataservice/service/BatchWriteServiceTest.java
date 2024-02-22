@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils;
@@ -54,7 +55,7 @@ import org.springframework.test.context.TestPropertySource;
 @DirtiesContext
 @SpringBootTest
 @TestPropertySource(properties = {"twds.write.batch.size=2"})
-class BatchWriteServiceTest {
+class BatchWriteServiceTest extends TestBase {
 
   @Autowired private RecordSourceFactory recordSourceFactory;
   @Autowired private RecordSinkFactory recordSinkFactory;

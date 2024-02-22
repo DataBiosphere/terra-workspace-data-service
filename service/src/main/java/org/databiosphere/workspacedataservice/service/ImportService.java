@@ -16,7 +16,7 @@ import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestSchedula
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;
-import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
+import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
@@ -52,11 +52,15 @@ public class ImportService {
     collectionService.validateCollection(collectionId);
 
     // validate write permission
-    // TODO AJ-1631: this must use collectionService.canWriteCollection() instead
-    boolean hasWriteWorkspacePermission = samDao.hasWriteWorkspacePermission();
-    logger.debug("hasWriteWorkspacePermission? {}", hasWriteWorkspacePermission);
-    if (!hasWriteWorkspacePermission) {
-      throw new AuthorizationException("Caller does not have permission to write to collection.");
+    boolean hasWriteCollectionPermission =
+        collectionService.canWriteCollection(CollectionId.of(collectionId));
+    logger.debug("hasWriteCollectionPermission? {}", hasWriteCollectionPermission);
+    if (!hasWriteCollectionPermission) {
+      // Throw a maskable exception, which will result in a 404 to the end user.
+      // As an enhancement, we could instead perform a second check for read permissions here.
+      // If the user has read permission but not write permission, it would be safe to throw
+      // a non-maskable auth exception.
+      throw new AuthenticationMaskableException("Collection");
     }
 
     // get a token to execute the job

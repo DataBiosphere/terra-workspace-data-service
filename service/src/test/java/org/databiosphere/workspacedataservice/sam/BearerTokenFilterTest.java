@@ -7,6 +7,7 @@ import static org.springframework.web.context.request.RequestAttributes.SCOPE_RE
 
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -22,7 +23,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 /** Tests for @see BearerTokenFilter */
 @DirtiesContext
 @SpringBootTest
-class BearerTokenFilterTest {
+class BearerTokenFilterTest extends TestBase {
 
   private static Stream<Arguments> provideAuthorizationHeaders() {
     /* Arguments are sets:

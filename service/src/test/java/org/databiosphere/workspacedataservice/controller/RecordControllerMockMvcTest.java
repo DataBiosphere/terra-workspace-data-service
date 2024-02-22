@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.dao.TestDao;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -40,6 +41,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -3051,5 +3055,119 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
         testDao.getRelationArrayValues(
             instanceId, "relArrAttr", recordWithRelationArray, recordType);
     assertIterableEquals(List.of("record_0", "record_1"), joinVals);
+  }
+
+  @ParameterizedTest
+  @MethodSource("jsonValues")
+  @Transactional
+  void createRecordWithJsonAttributes(Object inputValue, Object expectedValue) throws Exception {
+    RecordType recordType = RecordType.valueOf("test-type");
+    String recordId = "recordId";
+    String attributeName = "jsonValue";
+    RecordAttributes attributes = RecordAttributes.empty().putAttribute(attributeName, inputValue);
+
+    mockMvc
+        .perform(
+            put(
+                    "/{instanceId}/records/{version}/{recordType}/{recordId}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    recordId)
+                .content(toJson(new RecordRequest(attributes)))
+                .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isCreated());
+
+    MvcResult mvcSingleResult =
+        mockMvc
+            .perform(
+                get(
+                    "/{instanceId}/records/{version}/{recordType}/{recordId}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    recordId))
+            .andExpect(status().isOk())
+            .andReturn();
+    RecordResponse record = fromJson(mvcSingleResult, RecordResponse.class);
+
+    assertEquals(expectedValue, record.recordAttributes().getAttributeValue(attributeName));
+
+    MvcResult schemaResult =
+        mockMvc
+            .perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType))
+            .andReturn();
+    RecordTypeSchema schema = fromJson(schemaResult, RecordTypeSchema.class);
+
+    String expectedType = inputValue instanceof List ? "ARRAY_OF_JSON" : "JSON";
+    assertEquals(expectedType, schema.getAttributeSchema(attributeName).datatype());
+  }
+
+  static Stream<Arguments> jsonValues() {
+    return Stream.of(
+        Arguments.of(
+            Map.of("string", "foo", "number", 1, "boolean", true),
+            Map.of("string", "foo", "number", BigInteger.valueOf(1), "boolean", Boolean.TRUE)),
+        // TODO: Is this case (creating a JSON attribute by passing a JSON encoded string)
+        // intentionally supported?
+        Arguments.of(
+            "{\"string\":\"foo\",\"number\":1,\"boolean\":true}",
+            Map.of("string", "foo", "number", BigInteger.valueOf(1), "boolean", Boolean.TRUE)),
+        Arguments.of(
+            List.of(
+                Map.of("string", "foo", "number", 1, "boolean", true),
+                Map.of("string", "bar", "number", 2, "boolean", false)),
+            List.of(
+                Map.of("string", "foo", "number", BigInteger.valueOf(1), "boolean", Boolean.TRUE),
+                Map.of(
+                    "string", "bar", "number", BigInteger.valueOf(2), "boolean", Boolean.FALSE))));
+  }
+
+  @Test
+  @Transactional
+  void jsonArrayElementsMustBeObjectsOrBeEncodedAsStrings() throws Exception {
+    List<Object> mixedTypeList = List.of(Map.of("value", "foo"), Map.of("value", "bar"), "baz");
+
+    RecordType recordType = RecordType.valueOf("test-type");
+    String recordId = "recordId";
+    String attributeName = "jsonArrayValue";
+    RecordAttributes attributes =
+        RecordAttributes.empty().putAttribute(attributeName, mixedTypeList);
+
+    mockMvc
+        .perform(
+            put(
+                    "/{instanceId}/records/{version}/{recordType}/{recordId}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    recordId)
+                .content(toJson(new RecordRequest(attributes)))
+                .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isCreated());
+
+    MvcResult schemaResult =
+        mockMvc
+            .perform(get("/{instanceid}/types/{v}/{type}", instanceId, versionId, recordType))
+            .andReturn();
+    RecordTypeSchema schema = fromJson(schemaResult, RecordTypeSchema.class);
+
+    assertEquals("ARRAY_OF_STRING", schema.getAttributeSchema(attributeName).datatype());
+
+    MvcResult mvcSingleResult =
+        mockMvc
+            .perform(
+                get(
+                    "/{instanceId}/records/{version}/{recordType}/{recordId}",
+                    instanceId,
+                    versionId,
+                    recordType,
+                    recordId))
+            .andExpect(status().isOk())
+            .andReturn();
+    RecordResponse record = fromJson(mvcSingleResult, RecordResponse.class);
+
+    List<String> expectedValue = List.of("{value=foo}", "{value=bar}", "baz");
+    assertEquals(expectedValue, record.recordAttributes().getAttributeValue(attributeName));
   }
 }

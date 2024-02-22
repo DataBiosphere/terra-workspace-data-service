@@ -11,7 +11,6 @@ import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.CR
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.REMOVE_ATTRIBUTE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 import bio.terra.workspace.model.ResourceList;
@@ -26,7 +25,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
@@ -34,12 +32,9 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttrib
 import org.databiosphere.workspacedataservice.recordsink.RawlsRecordSink.RawlsJsonConsumer;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -57,10 +52,9 @@ import org.springframework.test.context.ActiveProfiles;
  * parsing the PFB, and generating the JSON that (will eventually be) stored in a bucket (AJ-1585)
  * and communicated to Rawls via pubsub (AJ-1586).
  */
-@ActiveProfiles(profiles = {"mock-sam", "control-plane"})
+@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "control-plane"})
 @DirtiesContext
 @SpringBootTest
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Import(PfbQuartzJobControlPlaneE2ETest.UseStringWriterForJsonConsumer.class)
 class PfbQuartzJobControlPlaneE2ETest {
   @Autowired ObjectMapper mapper;
@@ -68,7 +62,6 @@ class PfbQuartzJobControlPlaneE2ETest {
   @Autowired PfbTestSupport testSupport;
   @Autowired StringWriter recordedJson; // emitted JSON will be captured in this StringWriter
 
-  @MockBean SchedulerDao schedulerDao;
   @MockBean WorkspaceManagerDao wsmDao;
 
   @Value("classpath:pfb/minimal-data.pfb")
@@ -104,25 +97,13 @@ class PfbQuartzJobControlPlaneE2ETest {
     }
   }
 
-  @BeforeAll
-  void beforeAll() {
-    doNothing().when(schedulerDao).schedule(any());
-  }
-
   @BeforeEach
   void beforeEach() {
     collectionId = UUID.randomUUID();
-    // TODO(AJ-1591): cWDS should not require instances to exist
-    collectionService.createCollection(collectionId, "v0.2");
     recordedJson.getBuffer().setLength(0); // clear the buffer before each test
     // stub out WSM to report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
-  }
-
-  @AfterEach
-  void afterEach() {
-    collectionService.deleteCollection(collectionId, "v0.2");
   }
 
   /* import test.avro, and validate the tables and row counts it imported. */

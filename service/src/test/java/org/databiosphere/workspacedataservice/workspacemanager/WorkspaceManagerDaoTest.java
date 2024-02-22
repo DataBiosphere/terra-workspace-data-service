@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,14 +35,11 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
 @ActiveProfiles(profiles = "mock-sam")
 @DirtiesContext
 @SpringBootTest(classes = {WorkspaceManagerConfig.class, RestClientRetry.class})
-@TestPropertySource(
-    properties = {"twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000"})
-class WorkspaceManagerDaoTest {
+class WorkspaceManagerDaoTest extends TestBase {
 
   @Autowired WorkspaceManagerDao workspaceManagerDao;
 

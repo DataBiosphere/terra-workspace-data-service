@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -45,7 +46,7 @@ import org.springframework.web.server.ResponseStatusException;
 @ActiveProfiles(profiles = {"mock-sam"})
 @DirtiesContext
 @SpringBootTest
-class RecordOrchestratorServiceTest {
+class RecordOrchestratorServiceTest extends TestBase {
 
   @Autowired private CollectionDao collectionDao;
   @Autowired private RecordOrchestratorService recordOrchestratorService;

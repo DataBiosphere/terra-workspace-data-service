@@ -3,13 +3,14 @@ package org.databiosphere.workspacedataservice.dataimport;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import java.io.IOException;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
 
 @SpringBootTest
-class FileDownloadHelperTest {
+class FileDownloadHelperTest extends TestBase {
 
   @Value("classpath:parquet/empty.parquet")
   Resource emptyParquet;

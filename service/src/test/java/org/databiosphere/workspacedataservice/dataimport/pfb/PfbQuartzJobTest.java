@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
@@ -41,7 +42,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-class PfbQuartzJobTest {
+class PfbQuartzJobTest extends TestBase {
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;
   @MockBean BatchWriteService batchWriteService;
@@ -54,8 +55,6 @@ class PfbQuartzJobTest {
 
   @Value("classpath:avro/test.avro")
   Resource testAvroResource;
-
-  private static final String COLLECTION = "aaaabbbb-cccc-dddd-1111-222233334444";
 
   @Test
   void linkAllNewSnapshots() {
