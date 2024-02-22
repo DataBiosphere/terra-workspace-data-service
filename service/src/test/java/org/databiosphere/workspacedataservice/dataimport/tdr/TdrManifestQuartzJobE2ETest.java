@@ -55,7 +55,7 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
-public class TdrManifestQuartzJobE2ETest extends TestBase {
+class TdrManifestQuartzJobE2ETest extends TestBase {
   @Autowired private RecordOrchestratorService recordOrchestratorService;
   @Autowired private ImportService importService;
   @Autowired private CollectionService collectionService;

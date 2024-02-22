@@ -38,7 +38,7 @@ import org.springframework.web.multipart.MultipartFile;
 @ActiveProfiles(profiles = {"mock-sam"})
 @SpringBootTest
 @ExtendWith(OutputCaptureExtension.class)
-public class LogStatementTest extends TestBase {
+class LogStatementTest extends TestBase {
 
   private final String VERSION = "v0.2";
 

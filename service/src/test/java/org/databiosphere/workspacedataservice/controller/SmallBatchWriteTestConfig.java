@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Bean;
  * set a small batch size for the test.
  */
 @TestConfiguration
-public class SmallBatchWriteTestConfig {
+class SmallBatchWriteTestConfig {
 
   @Bean
   public BatchWriteService batchWriteService(DataTypeInferer dataTypeInferer) {

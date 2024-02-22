@@ -14,7 +14,7 @@ import org.springframework.util.StringUtils;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class RecordResponseTest extends TestBase {
+class RecordResponseTest extends TestBase {
 
   @Autowired private ObjectMapper jacksonObjectMapper;
 
