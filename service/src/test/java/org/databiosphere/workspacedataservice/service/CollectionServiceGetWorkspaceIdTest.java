@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -29,7 +30,7 @@ import org.springframework.test.context.TestPropertySource;
     properties = {
       "twds.instance.workspace-id=4fbac661-2ea2-4592-af6d-3c3f710b0456",
     })
-class CollectionServiceGetWorkspaceIdTest {
+class CollectionServiceGetWorkspaceIdTest extends TestBase {
 
   @Autowired private CollectionService collectionService;
   @MockBean private CollectionDao mockCollectionDao;

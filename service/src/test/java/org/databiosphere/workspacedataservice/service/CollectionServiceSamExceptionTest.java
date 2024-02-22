@@ -12,10 +12,9 @@ import java.util.List;
 import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
-import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
-import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
@@ -33,7 +32,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
 /**
  * Tests for Sam exception handling inside CollectionService.createCollection and
@@ -53,17 +51,10 @@ import org.springframework.test.context.TestPropertySource;
 @DirtiesContext
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@TestPropertySource(
-    properties = {
-      "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000"
-    }) // example uuid from https://en.wikipedia.org/wiki/Universally_unique_identifier
-class CollectionServiceSamExceptionTest {
+class CollectionServiceSamExceptionTest extends TestBase {
 
   @Autowired private CollectionService collectionService;
-
   @Autowired private CollectionDao collectionDao;
-  @Autowired private SamDao samDao;
-  @Autowired private ActivityLogger activityLogger;
 
   // mock for the SamClientFactory; since this is a Spring bean we can use @MockBean
   @MockBean SamClientFactory mockSamClientFactory;

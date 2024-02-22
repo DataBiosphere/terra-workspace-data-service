@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.recordsink;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.databiosphere.workspacedataservice.config.ConfigurationException;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.recordsink.RawlsRecordSink.RawlsJsonConsumer;
@@ -54,14 +55,7 @@ public class RecordSinkFactory {
   //   the prefix as part of supporting the prefix assignment.
   public RecordSink buildRecordSink(UUID collectionId, String prefix) {
     if (twdsProperties.getDataImport() == null) {
-      logger
-          .atWarn()
-          .log(
-              "twds.data-import properties are not defined. "
-                  + "Start this deployment with active Spring profile of "
-                  + "either 'data-plane' or 'control-plane'. "
-                  + "Defaulting to batch-write-record-sink=wds");
-      return wdsRecordSink(collectionId);
+      throw new ConfigurationException("twds.data-import properties are not defined");
     }
 
     switch (twdsProperties.getDataImport().getBatchWriteRecordSink()) {

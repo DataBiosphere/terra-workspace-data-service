@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Set;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -23,7 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @DirtiesContext
 @SpringBootTest(properties = "management.prometheus.metrics.export.enabled=true")
 @AutoConfigureMockMvc
-class MetricsConfigTest {
+class MetricsConfigTest extends TestBase {
   @Autowired private BuildProperties buildProperties;
   @Autowired private MockMvc mockMvc;
   @Autowired private MeterRegistry metrics;

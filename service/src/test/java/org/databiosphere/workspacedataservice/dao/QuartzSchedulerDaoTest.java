@@ -8,6 +8,7 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.Map;
 import java.util.Set;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -24,7 +25,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-class QuartzSchedulerDaoTest {
+class QuartzSchedulerDaoTest extends TestBase {
 
   @MockBean Scheduler scheduler;
   @Autowired SchedulerDao schedulerDao;

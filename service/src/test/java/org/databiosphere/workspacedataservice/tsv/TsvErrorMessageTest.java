@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidTsvException;
@@ -28,7 +29,7 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TsvErrorMessageTest {
+public class TsvErrorMessageTest extends TestBase {
 
   @Autowired CollectionService collectionService;
   @Autowired RecordOrchestratorService recordOrchestratorService;

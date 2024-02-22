@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.*;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoConfig;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
@@ -63,7 +64,7 @@ import org.springframework.test.context.TestPropertySource;
       MockSamClientFactoryConfig.class,
       RestClientRetry.class
     })
-class CollectionInitializerBeanTest {
+class CollectionInitializerBeanTest extends TestBase {
 
   @Autowired CollectionInitializerBean collectionInitializerBean;
   @MockBean JdbcLockRegistry registry;

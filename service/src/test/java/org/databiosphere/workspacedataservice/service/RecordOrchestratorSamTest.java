@@ -9,6 +9,7 @@ import static org.mockito.BDDMockito.given;
 import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
@@ -32,7 +33,7 @@ import org.springframework.test.context.ActiveProfiles;
     }) // aggressive retry settings so unit test doesn't run too long)
 @ActiveProfiles(profiles = {"mock-sam", "mock-collection-dao"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class RecordOrchestratorSamTest {
+class RecordOrchestratorSamTest extends TestBase {
 
   @Autowired private CollectionDao collectionDao;
   @Autowired private RecordOrchestratorService recordOrchestratorService;

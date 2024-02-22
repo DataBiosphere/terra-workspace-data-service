@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.MockCollectionDaoConfig;
@@ -33,7 +34,7 @@ import org.springframework.test.context.ActiveProfiles;
       RestClientRetry.class,
       TwdsProperties.class
     })
-class CollectionServiceTest {
+class CollectionServiceTest extends TestBase {
 
   @Autowired private CollectionService collectionService;
   @Autowired private CollectionDao collectionDao;
