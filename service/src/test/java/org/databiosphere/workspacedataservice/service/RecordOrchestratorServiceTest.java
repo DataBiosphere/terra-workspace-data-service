@@ -153,6 +153,22 @@ class RecordOrchestratorServiceTest {
   }
 
   @Test
+  void upsertNewRecordWithMatchingDefaultPrimaryKey() {
+    // Arrange
+    RecordRequest recordRequest =
+        new RecordRequest(
+            RecordAttributes.empty().putAttribute(ReservedNames.RECORD_ID, RECORD_ID));
+
+    // Act
+    ResponseEntity<RecordResponse> response =
+        recordOrchestratorService.upsertSingleRecord(
+            COLLECTION, VERSION, TEST_TYPE, RECORD_ID, Optional.empty(), recordRequest);
+
+    // Assert
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+  }
+
+  @Test
   void upsertNewRecordWithDifferentDefaultPrimaryKey() {
     // Arrange
     RecordRequest recordRequest =
