@@ -27,6 +27,7 @@ import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceClientFactory;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,6 +74,7 @@ class CollectionInitializerCloneTest {
   @Value("${twds.instance.source-workspace-id}")
   String sourceWorkspaceId;
 
+  @BeforeEach
   @AfterEach
   void tearDown() {
     // clean up any collections left in the db
