@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.databiosphere.workspacedataservice.config.DataImportProperties.RecordSinkMode;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,8 +15,10 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(properties = {"twds.instance.workspace-id=00ddba11-0000-0000-0000-000000000000"})
 @ActiveProfiles("data-plane")
 class TwdsPropertiesDataPlaneTest {
-
   @Autowired TwdsProperties twdsProperties;
+  @Autowired DataImportProperties dataImportProperties;
+  @Autowired InstanceProperties instanceProperties;
+  @Autowired TenancyProperties tenancyProperties;
 
   @Test
   void nonNullDataImport() {
@@ -24,9 +27,7 @@ class TwdsPropertiesDataPlaneTest {
 
   @Test
   void batchWriteRecordSink() {
-    assertEquals(
-        DataImportProperties.RecordSinkMode.WDS,
-        twdsProperties.getDataImport().getBatchWriteRecordSink());
+    assertEquals(RecordSinkMode.WDS, dataImportProperties.getBatchWriteRecordSink());
   }
 
   @Test
@@ -36,11 +37,11 @@ class TwdsPropertiesDataPlaneTest {
 
   @Test
   void allowVirtualCollections() {
-    assertFalse(twdsProperties.getTenancy().getAllowVirtualCollections());
+    assertFalse(tenancyProperties.getAllowVirtualCollections());
   }
 
   @Test
   void requireEnvWorkspace() {
-    assertTrue(twdsProperties.getTenancy().getRequireEnvWorkspace());
+    assertTrue(tenancyProperties.getRequireEnvWorkspace());
   }
 }

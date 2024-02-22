@@ -20,7 +20,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
-@ActiveProfiles({"mock-storage", "local-cors", "local"})
+@ActiveProfiles({"mock-storage", "local-cors", "local", "data-plane"})
 @ContextConfiguration(name = "mockStorage")
 @DirtiesContext
 @SpringBootTest

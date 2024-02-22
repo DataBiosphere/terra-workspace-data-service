@@ -10,7 +10,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
@@ -33,8 +32,6 @@ import org.springframework.test.context.ActiveProfiles;
 class JobServiceControlPlaneTest extends JobServiceBaseTest {
 
   @Autowired JobService jobService;
-  @Autowired TwdsProperties twdsProperties;
-
   @MockBean JobDao jobDao;
   @MockBean SamDao samDao;
   @MockBean CollectionDao collectionDao;
