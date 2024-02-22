@@ -28,7 +28,8 @@ import org.springframework.test.context.TestPropertySource;
     properties = {
       "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000",
       "twds.instance.source-workspace-id=10000000-0000-0000-0000-000000000111",
-      "twds.pg_dump.useAzureIdentity=false"
+      "twds.pg_dump.useAzureIdentity=false",
+      "twds.instance.run-on-startup=false"
     })
 class RestoreServiceIntegrationTest {
   @Autowired private BackupRestoreService backupRestoreService;

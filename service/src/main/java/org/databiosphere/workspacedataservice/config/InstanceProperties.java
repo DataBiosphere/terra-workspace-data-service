@@ -12,6 +12,7 @@ public class InstanceProperties {
   private UUID workspaceUuid;
   private String sourceWorkspaceId;
   private UUID sourceWorkspaceUuid;
+  private boolean runOnStartup;
 
   public String getWorkspaceId() {
     return workspaceId;
@@ -48,6 +49,10 @@ public class InstanceProperties {
     return sourceWorkspaceId;
   }
 
+  public boolean getRunOnStartup() {
+    return runOnStartup;
+  }
+
   public void setSourceWorkspaceId(String sourceWorkspaceId) {
     this.sourceWorkspaceId = sourceWorkspaceId;
     try {
@@ -55,5 +60,9 @@ public class InstanceProperties {
     } catch (Exception e) {
       // noop; validation of the workspaceId is handled elsewhere. See StartupConfig.
     }
+  }
+
+  public void setRunOnStartup(boolean set) {
+    runOnStartup = set;
   }
 }

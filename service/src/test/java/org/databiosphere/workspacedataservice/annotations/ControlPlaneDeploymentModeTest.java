@@ -15,7 +15,6 @@ import org.springframework.test.context.ActiveProfiles;
     inheritProfiles = false)
 class ControlPlaneDeploymentModeTest extends DeploymentModeTestBase {
 
-  @Disabled("Test behavior is ok, fix AJ-1653")
   @ParameterizedTest(name = "{0} is disabled for DeploymentMode control-plane")
   @MethodSource("dataPlaneConditionalBeans")
   void beansDisabledForControlPlane(String beanName) {

@@ -1,25 +1,29 @@
 package org.databiosphere.workspacedataservice.startup;
 
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
+import org.databiosphere.workspacedataservice.config.InstanceProperties;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationListener;
-import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 
 @Component
 @DataPlane
-@Profile({"!local"})
 public class CollectionInitializer implements ApplicationListener<ContextRefreshedEvent> {
 
   private final CollectionInitializerBean collectionInitializerBean;
+  private final boolean runOnStartup;
 
-  public CollectionInitializer(CollectionInitializerBean collectionInitializerBean) {
+  public CollectionInitializer(
+      CollectionInitializerBean collectionInitializerBean, InstanceProperties instanceProperties) {
     this.collectionInitializerBean = collectionInitializerBean;
+    this.runOnStartup = instanceProperties.getRunOnStartup();
   }
 
   @Override
   public void onApplicationEvent(@NotNull ContextRefreshedEvent event) {
-    collectionInitializerBean.initializeCollection();
+    if (runOnStartup) {
+      collectionInitializerBean.initializeCollection();
+    }
   }
 }
