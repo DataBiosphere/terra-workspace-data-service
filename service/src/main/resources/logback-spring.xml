@@ -5,8 +5,6 @@
   <property name="WDS_LOG_PATTERN"
             value="%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}} ${LOG_LEVEL_PATTERN:-%5p} [%X{requestId}] [%t] %-40.40logger{39} : %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
 
-  <springProperty scope="context" name="deploymentMode" source="env.wds.deploymentMode" defaultValue="data-plane" />
-
   <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
   <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
 
