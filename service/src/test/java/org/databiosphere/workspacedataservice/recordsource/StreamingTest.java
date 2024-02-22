@@ -9,15 +9,12 @@ import java.io.IOException;
 import java.util.List;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.WriteStreamInfo;
-import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 
-@DirtiesContext
-@SpringBootTest(classes = JsonConfig.class)
+@SpringBootTest
 class StreamingTest extends TestBase {
 
   @Autowired private ObjectMapper objectMapper;
