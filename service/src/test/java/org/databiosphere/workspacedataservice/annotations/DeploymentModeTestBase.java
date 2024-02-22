@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ComponentScan.Filter;
+import org.springframework.test.annotation.DirtiesContext;
 
 /* This is a minimal configuration for testing just the beans annotated with ControlPlane & DataPlane. */
 @TestConfiguration
@@ -21,6 +22,7 @@ import org.springframework.context.annotation.ComponentScan.Filter;
       @Filter(type = ANNOTATION, classes = ControlPlane.class),
       @Filter(type = ANNOTATION, classes = DataPlane.class)
     })
+@DirtiesContext
 @SpringBootTest
 class DeploymentModeTestBase extends TestBase {
 
