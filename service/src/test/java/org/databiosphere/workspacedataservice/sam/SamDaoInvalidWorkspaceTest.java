@@ -21,7 +21,7 @@ import org.springframework.test.context.TestPropertySource;
       // explicitly set the workspace-id to something invalid
       "twds.instance.workspace-id=not-a-real-id",
     })
-public class SamDaoInvalidWorkspaceTest extends TestBase {
+class SamDaoInvalidWorkspaceTest extends TestBase {
 
   @Autowired SamDao samDao;
 

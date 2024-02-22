@@ -45,7 +45,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @Tag(PACT_TEST)
 @PactConsumerTest
 @PactTestFor(providerName = "workspacemanager", pactVersion = PactSpecVersion.V3)
-public class WsmPactTest {
+class WsmPactTest {
   // copied from DslPart.UUID_REGEX, used to configure Pact to accept a wildcard UUID as the
   // workspaceId path param
   private static final String UUID_REGEX_PATTERN =

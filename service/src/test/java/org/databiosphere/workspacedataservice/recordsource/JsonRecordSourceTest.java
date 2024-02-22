@@ -17,8 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-public class JsonRecordSourceTest extends TestBase {
-
+class JsonRecordSourceTest extends TestBase {
   @Autowired ObjectMapper objectMapper; // as defined in JsonConfig
 
   private static Stream<Arguments> parserFeatures() {
