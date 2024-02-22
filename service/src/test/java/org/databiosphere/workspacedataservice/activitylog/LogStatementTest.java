@@ -37,7 +37,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.multipart.MultipartFile;
 
 @ActiveProfiles(profiles = {"mock-sam"})
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext
 @SpringBootTest
 @ExtendWith(OutputCaptureExtension.class)
 public class LogStatementTest extends TestBase {
