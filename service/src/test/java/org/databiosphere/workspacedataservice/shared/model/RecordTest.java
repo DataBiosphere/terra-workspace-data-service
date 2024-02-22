@@ -10,16 +10,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 
-@DirtiesContext
-@SpringBootTest(classes = JsonConfig.class)
+@SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordTest extends TestBase {
 

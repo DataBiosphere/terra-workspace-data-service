@@ -17,11 +17,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.context.request.RequestContextHolder;
 
 /** Tests for @see BearerTokenFilter */
-@DirtiesContext
 @SpringBootTest
 class BearerTokenFilterTest extends TestBase {
 

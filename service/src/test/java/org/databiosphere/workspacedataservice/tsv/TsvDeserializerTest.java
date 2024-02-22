@@ -11,22 +11,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.service.DataTypeInfererConfig;
-import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 
 /**
  * Tests that TSV uploads deserialize into the expected Java objects inside RecordAttributes.
  *
  * @see TsvJsonArgumentsProvider
  */
-@DirtiesContext
-@SpringBootTest(classes = {DataTypeInfererConfig.class, JsonConfig.class, TsvConfig.class})
+@SpringBootTest
 class TsvDeserializerTest extends TestBase {
 
   @Autowired TsvDeserializer tsvDeserializer;
