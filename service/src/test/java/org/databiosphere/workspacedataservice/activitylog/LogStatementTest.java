@@ -32,12 +32,10 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.multipart.MultipartFile;
 
 @ActiveProfiles(profiles = {"mock-sam"})
-@DirtiesContext
 @SpringBootTest
 @ExtendWith(OutputCaptureExtension.class)
 public class LogStatementTest extends TestBase {
