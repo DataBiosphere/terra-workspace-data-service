@@ -7,6 +7,7 @@ import static org.databiosphere.workspacedataservice.shared.model.OperationType.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.List;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.WriteStreamInfo;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -17,7 +18,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest(classes = JsonConfig.class)
-class StreamingTest {
+class StreamingTest extends TestBase {
 
   @Autowired private ObjectMapper objectMapper;
 

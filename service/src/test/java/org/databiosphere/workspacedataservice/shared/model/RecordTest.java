@@ -9,6 +9,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.junit.jupiter.api.Test;
@@ -20,7 +21,7 @@ import org.springframework.test.annotation.DirtiesContext;
 @DirtiesContext
 @SpringBootTest(classes = JsonConfig.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class RecordTest {
+class RecordTest extends TestBase {
 
   @Autowired private ObjectMapper jacksonObjectMapper;
 

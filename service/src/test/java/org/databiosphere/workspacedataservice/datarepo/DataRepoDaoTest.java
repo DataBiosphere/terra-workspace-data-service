@@ -9,6 +9,7 @@ import bio.terra.datarepo.api.RepositoryApi;
 import bio.terra.datarepo.client.ApiException;
 import bio.terra.datarepo.model.SnapshotModel;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.junit.jupiter.api.AfterEach;
@@ -23,7 +24,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-class DataRepoDaoTest {
+class DataRepoDaoTest extends TestBase {
 
   @Autowired DataRepoDao dataRepoDao;
 

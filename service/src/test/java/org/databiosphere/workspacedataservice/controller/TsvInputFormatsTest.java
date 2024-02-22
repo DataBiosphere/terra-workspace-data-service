@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -32,7 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 @DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
-class TsvInputFormatsTest {
+class TsvInputFormatsTest extends TestBase {
 
   @Autowired private MockMvc mockMvc;
   @Autowired RecordDao recordDao;

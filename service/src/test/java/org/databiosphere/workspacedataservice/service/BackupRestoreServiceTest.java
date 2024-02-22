@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import java.util.List;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,7 +18,7 @@ import org.springframework.test.context.TestPropertySource;
       "twds.pg_dump.path=/unit/test/pg_dump",
       "twds.pg_dump.psqlPath=/unit/test/psql"
     })
-class BackupRestoreServiceTest {
+class BackupRestoreServiceTest extends TestBase {
   @Autowired private BackupRestoreService backupRestoreService;
 
   @Test

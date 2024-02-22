@@ -20,6 +20,7 @@ import org.databiosphere.workspacedata.model.RecordTypeSchema;
 import org.databiosphere.workspacedata.model.SearchRequest;
 import org.databiosphere.workspacedata.model.StatusResponse;
 import org.databiosphere.workspacedata.model.TsvUploadResponse;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +32,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(profiles = "mock-sam")
 @DirtiesContext
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class GeneratedClientTests {
+class GeneratedClientTests extends TestBase {
 
   private ApiClient apiClient;
   @LocalServerPort int port;

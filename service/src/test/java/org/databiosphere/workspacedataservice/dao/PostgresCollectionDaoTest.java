@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,7 @@ import org.springframework.test.context.TestPropertySource;
     properties = {
       "twds.instance.workspace-id=80000000-4000-4000-4000-120000000000",
     })
-class PostgresCollectionDaoTest {
+class PostgresCollectionDaoTest extends TestBase {
 
   @Autowired CollectionDao collectionDao;
   @Autowired NamedParameterJdbcTemplate namedParameterJdbcTemplate;

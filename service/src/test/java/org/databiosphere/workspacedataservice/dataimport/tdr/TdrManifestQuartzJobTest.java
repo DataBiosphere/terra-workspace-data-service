@@ -16,6 +16,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.InputFile;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestExemplarData.AzureSmall;
@@ -36,7 +37,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-public class TdrManifestQuartzJobTest {
+public class TdrManifestQuartzJobTest extends TestBase {
 
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;

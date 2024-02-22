@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -28,7 +29,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest(classes = {JsonConfig.class, DataTypeInfererConfig.class})
-class DataTypeInfererTest {
+class DataTypeInfererTest extends TestBase {
 
   @Autowired DataTypeInferer inferer;
 

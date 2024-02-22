@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
@@ -54,7 +55,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(profiles = {"mock-sam", "mock-collection-dao"})
 @DirtiesContext
 @SpringBootTest
-class ImportServiceTest {
+class ImportServiceTest extends TestBase {
 
   @Autowired ImportService importService;
   @Autowired CollectionDao collectionDao;
