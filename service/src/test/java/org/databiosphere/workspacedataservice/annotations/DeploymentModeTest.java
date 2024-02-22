@@ -19,7 +19,9 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.StandardEnvironment;
+import org.springframework.test.annotation.DirtiesContext;
 
+@DirtiesContext
 @SpringBootTest
 class DeploymentModeTest {
   /* This is a minimal configuration for testing just the beans annotated with ControlPlane & DataPlane. */
