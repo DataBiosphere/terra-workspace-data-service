@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.storage;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
@@ -26,7 +27,7 @@ public class GcsStorageTest {
 
     assertEquals(bucketName, blobId.getBucket());
 
-    var contents = storage.getBlobContents(blobId.getName());
-    assertEquals(new String(contents), initialString);
+    String contents = storage.getBlobContents(blobId.getName());
+    assertThat(contents).isEqualTo(initialString);
   }
 }

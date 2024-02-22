@@ -5,9 +5,8 @@ twds:
     allow-virtual-collections: true
     # Should this WDS deployment require a valid $WORKSPACE_ID env var?
     require-env-workspace: false
-  bucket:
-    name: ${SERVICE_GOOGLE_BUCKET:unknown}
-    projectId: ${SERVICE_GOOGLE_PROJECT:unknown}
   data-import:
     batch-write-record-sink: "rawls"
-  
+    rawls-bucket:
+      name: ${SERVICE_GOOGLE_BUCKET:unknown}
+      projectId: ${SERVICE_GOOGLE_PROJECT:unknown}

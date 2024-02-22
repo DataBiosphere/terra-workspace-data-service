@@ -14,11 +14,11 @@ import org.springframework.beans.factory.annotation.Value;
 public class GcsStorage {
   private Storage storage;
 
-  @Value("${twds.bucket.name}")
+  @Value("${twds.data-import.rawls-bucket.name}")
   private String bucketName;
 
   // projectId in GCP (string) is similar to subscriptionId in Azure (UUID)
-  @Value("${twds.bucket.projectId}")
+  @Value("${twds.data-import.rawls-bucket.projectId}")
   private String projectId;
 
   // Generates an instance of the storage class using the credentials the current process is running
