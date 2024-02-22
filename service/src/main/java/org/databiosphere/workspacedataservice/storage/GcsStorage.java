@@ -21,7 +21,8 @@ public class GcsStorage {
   @Value("${twds.bucket.projectId}")
   private String projectId;
 
-  // Generated an instance of the storage class using the credentials the current process is running under
+  // Generated an instance of the storage class using the credentials the current process is running
+  // under
   public GcsStorage() throws IOException {
     GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
 
