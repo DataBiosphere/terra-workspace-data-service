@@ -23,7 +23,6 @@ import org.springframework.test.context.TestPropertySource;
  * which will automatically provide a hint if it detects a test failure due to a {@link
  * ConfigurationException}.
  */
-@SpringBootTest
 @ActiveProfiles({"data-plane"})
 @TestPropertySource(
     properties = {
