@@ -4,7 +4,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 
 /** Conditional annotations for deployment mode-specific beans. */
 public interface DeploymentMode {
@@ -15,7 +15,7 @@ public interface DeploymentMode {
    */
   @Target({ElementType.TYPE, ElementType.METHOD})
   @Retention(RetentionPolicy.RUNTIME)
-  @ConditionalOnProperty(value = "env.wds.deploymentMode", havingValue = "control-plane")
+  @Profile("control-plane")
   @interface ControlPlane {}
 
   /**
@@ -25,6 +25,6 @@ public interface DeploymentMode {
    */
   @Target({ElementType.TYPE, ElementType.METHOD})
   @Retention(RetentionPolicy.RUNTIME)
-  @ConditionalOnProperty(value = "env.wds.deploymentMode", havingValue = "data-plane")
+  @Profile("data-plane")
   @interface DataPlane {}
 }

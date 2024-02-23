@@ -26,8 +26,10 @@ import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceClientFactory;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,11 +46,13 @@ import org.springframework.test.context.TestPropertySource;
 @ActiveProfiles({"mock-storage", "local-cors", "mock-sam", "local", "data-plane"})
 @TestPropertySource(
     properties = {
+      "twds.instance.initialize-collection-on-startup=false",
       "twds.instance.workspace-id=5a9b583c-17ee-4c88-a14c-0edbf31175db",
       // source id must match value in WDS-integrationTest-LocalFileStorage-input.sql
       "twds.instance.source-workspace-id=10000000-0000-0000-0000-000000000111",
       "twds.pg_dump.useAzureIdentity=false"
     })
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DirtiesContext
 @SpringBootTest
 class CollectionInitializerCloneTest {
@@ -72,7 +76,10 @@ class CollectionInitializerCloneTest {
   @Value("${twds.instance.source-workspace-id}")
   String sourceWorkspaceId;
 
-  @AfterEach
+  // this @BeforeEach makes the initialize-collection-on-startup property redundant, but is a
+  // workaround for integration test cleanup
+  @BeforeEach
+  @AfterAll
   void tearDown() {
     // clean up any collections left in the db
     List<UUID> allCollections = collectionDao.listCollectionSchemas();

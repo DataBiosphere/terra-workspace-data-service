@@ -10,8 +10,10 @@ import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -22,10 +24,12 @@ import org.springframework.test.context.TestPropertySource;
 
 @ActiveProfiles({"mock-storage", "local-cors", "local", "data-plane"})
 @ContextConfiguration(name = "mockStorage")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DirtiesContext
 @SpringBootTest
 @TestPropertySource(
     properties = {
+      "twds.instance.initialize-collection-on-startup=false",
       "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000",
       "twds.instance.source-workspace-id=10000000-0000-0000-0000-000000000111",
       "twds.pg_dump.useAzureIdentity=false"
@@ -40,7 +44,10 @@ class RestoreServiceIntegrationTest {
   @Value("${twds.instance.workspace-id:}")
   private String workspaceId;
 
-  @AfterEach
+  // this @BeforeEach makes the initialize-collection-on-startup property redundant, but is a
+  // workaround for integration test cleanup
+  @BeforeEach
+  @AfterAll
   void tearDown() {
     // clean up any collection left in the db
     List<UUID> allCollections = collectionDao.listCollectionSchemas();
