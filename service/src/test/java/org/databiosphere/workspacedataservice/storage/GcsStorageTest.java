@@ -31,7 +31,8 @@ class GcsStorageTest {
 
     assertEquals(fileName, newBlobName);
 
-    String contents = StreamUtils.copyToString(storage.getBlobContents(newBlobName), Charset.defaultCharset());
+    String contents =
+        StreamUtils.copyToString(storage.getBlobContents(newBlobName), Charset.defaultCharset());
     assertThat(contents).isEqualTo(initialString);
   }
 }
