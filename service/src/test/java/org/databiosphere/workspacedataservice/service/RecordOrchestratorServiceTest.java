@@ -20,7 +20,9 @@ import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.service.model.ReservedNames;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
+import org.databiosphere.workspacedataservice.service.model.exception.ConflictingPrimaryKeysException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -35,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
@@ -115,6 +118,164 @@ class RecordOrchestratorServiceTest extends TestBase {
     testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
 
     testGetRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+  }
+
+  @Test
+  void upsertNewRecordWithMatchingPrimaryKey() {
+    // Arrange
+    RecordRequest recordRequest =
+        new RecordRequest(RecordAttributes.empty().putAttribute(PRIMARY_KEY, RECORD_ID));
+
+    // Act
+    ResponseEntity<RecordResponse> response =
+        recordOrchestratorService.upsertSingleRecord(
+            COLLECTION, VERSION, TEST_TYPE, RECORD_ID, Optional.of(PRIMARY_KEY), recordRequest);
+
+    // Assert
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+  }
+
+  @Test
+  void upsertNewRecordWithDifferentPrimaryKey() {
+    // Arrange
+    RecordRequest recordRequest =
+        new RecordRequest(RecordAttributes.empty().putAttribute(PRIMARY_KEY, "someOtherValue"));
+
+    // Act/Assert
+    Optional<String> primaryKey = Optional.of(PRIMARY_KEY);
+    assertThrows(
+        ConflictingPrimaryKeysException.class,
+        () ->
+            recordOrchestratorService.upsertSingleRecord(
+                COLLECTION, VERSION, TEST_TYPE, RECORD_ID, primaryKey, recordRequest),
+        "upsertSingleRecord should have thrown an error");
+  }
+
+  @Test
+  void upsertNewRecordWithMatchingDefaultPrimaryKey() {
+    // Arrange
+    RecordRequest recordRequest =
+        new RecordRequest(
+            RecordAttributes.empty().putAttribute(ReservedNames.RECORD_ID, RECORD_ID));
+
+    // Act
+    ResponseEntity<RecordResponse> response =
+        recordOrchestratorService.upsertSingleRecord(
+            COLLECTION, VERSION, TEST_TYPE, RECORD_ID, Optional.empty(), recordRequest);
+
+    // Assert
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+  }
+
+  @Test
+  void upsertNewRecordWithDifferentDefaultPrimaryKey() {
+    // Arrange
+    RecordRequest recordRequest =
+        new RecordRequest(
+            RecordAttributes.empty().putAttribute(ReservedNames.RECORD_ID, "someOtherValue"));
+
+    // Act/Assert
+    assertThrows(
+        ConflictingPrimaryKeysException.class,
+        () ->
+            recordOrchestratorService.upsertSingleRecord(
+                COLLECTION, VERSION, TEST_TYPE, RECORD_ID, Optional.empty(), recordRequest),
+        "upsertSingleRecord should have thrown an error");
+  }
+
+  @Test
+  void upsertExistingRecordWithMatchingPrimaryKey() {
+    // Arrange
+    recordOrchestratorService.upsertSingleRecord(
+        COLLECTION,
+        VERSION,
+        TEST_TYPE,
+        RECORD_ID,
+        Optional.of(PRIMARY_KEY),
+        new RecordRequest(RecordAttributes.empty()));
+
+    RecordRequest recordRequest =
+        new RecordRequest(RecordAttributes.empty().putAttribute(PRIMARY_KEY, RECORD_ID));
+
+    // Act
+    Optional<String> primaryKey = Optional.of(PRIMARY_KEY);
+    ResponseEntity<RecordResponse> response =
+        recordOrchestratorService.upsertSingleRecord(
+            COLLECTION, VERSION, TEST_TYPE, RECORD_ID, primaryKey, recordRequest);
+
+    // Assert
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void upsertExistingRecordWithDifferentPrimaryKey(boolean primaryKeyInQuery) {
+    // Arrange
+    recordOrchestratorService.upsertSingleRecord(
+        COLLECTION,
+        VERSION,
+        TEST_TYPE,
+        RECORD_ID,
+        Optional.of(PRIMARY_KEY),
+        new RecordRequest(RecordAttributes.empty()));
+
+    RecordRequest recordRequest =
+        new RecordRequest(RecordAttributes.empty().putAttribute(PRIMARY_KEY, "someOtherValue"));
+
+    // Act/Assert
+    Optional<String> primaryKey = primaryKeyInQuery ? Optional.of(PRIMARY_KEY) : Optional.empty();
+    assertThrows(
+        ConflictingPrimaryKeysException.class,
+        () ->
+            recordOrchestratorService.upsertSingleRecord(
+                COLLECTION, VERSION, TEST_TYPE, RECORD_ID, primaryKey, recordRequest),
+        "upsertSingleRecord should have thrown an error");
+  }
+
+  @Test
+  void updateRecordWithMatchingPrimaryKey() {
+    // Arrange
+    recordOrchestratorService.upsertSingleRecord(
+        COLLECTION,
+        VERSION,
+        TEST_TYPE,
+        RECORD_ID,
+        Optional.of(PRIMARY_KEY),
+        new RecordRequest(RecordAttributes.empty()));
+
+    RecordRequest recordRequest =
+        new RecordRequest(RecordAttributes.empty().putAttribute(PRIMARY_KEY, RECORD_ID));
+
+    // Act
+    RecordResponse response =
+        recordOrchestratorService.updateSingleRecord(
+            COLLECTION, VERSION, TEST_TYPE, RECORD_ID, recordRequest);
+
+    // Assert
+    assertEquals(RECORD_ID, response.recordId());
+  }
+
+  @Test
+  void updateRecordWithDifferentPrimaryKey() {
+    // Arrange
+    recordOrchestratorService.upsertSingleRecord(
+        COLLECTION,
+        VERSION,
+        TEST_TYPE,
+        RECORD_ID,
+        Optional.of(PRIMARY_KEY),
+        new RecordRequest(RecordAttributes.empty()));
+
+    RecordRequest recordRequest =
+        new RecordRequest(RecordAttributes.empty().putAttribute(PRIMARY_KEY, "someOtherValue"));
+
+    // Act/Assert
+    assertThrows(
+        ConflictingPrimaryKeysException.class,
+        () ->
+            recordOrchestratorService.updateSingleRecord(
+                COLLECTION, VERSION, TEST_TYPE, RECORD_ID, recordRequest),
+        "updateSingleRecord should have thrown an error");
   }
 
   @Test

@@ -776,7 +776,7 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
                     "attr1")
                 .content(toJson(recordRequest))
                 .contentType(MediaType.APPLICATION_JSON))
-        .andExpect(status().isCreated());
+        .andExpect(status().isBadRequest());
   }
 
   @Test
