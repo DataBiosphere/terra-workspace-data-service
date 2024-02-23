@@ -3,12 +3,12 @@ package org.databiosphere.workspacedataservice.service;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
-import org.databiosphere.workspacedataservice.config.InstanceProperties;
+import org.databiosphere.workspacedataservice.config.InstanceProperties.SingleTenant;
 import org.databiosphere.workspacedataservice.config.TenancyProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.dao.WorkspaceIdDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
@@ -17,37 +17,47 @@ import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class CollectionService {
 
-  private final CollectionDao collectionDao;
+  @Nullable private CollectionDao collectionDao;
+  private final WorkspaceIdDao workspaceIdDao;
   private final SamDao samDao;
   private final ActivityLogger activityLogger;
   private final TenancyProperties tenancyProperties;
 
-  private WorkspaceId workspaceId;
+  @Nullable private WorkspaceId environmentWorkspaceId;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CollectionService.class);
 
   public CollectionService(
-      CollectionDao collectionDao,
+      WorkspaceIdDao workspaceIdDao,
       SamDao samDao,
       ActivityLogger activityLogger,
-      InstanceProperties instanceProperties,
       TenancyProperties tenancyProperties) {
-    this.collectionDao = collectionDao;
+    this.workspaceIdDao = workspaceIdDao;
     this.samDao = samDao;
     this.activityLogger = activityLogger;
     this.tenancyProperties = tenancyProperties;
-    // stash the workspace id from config into a member var
-    if (instanceProperties.getWorkspaceUuid() != null) {
-      workspaceId = WorkspaceId.of(instanceProperties.getWorkspaceUuid());
-    }
+  }
+
+  @Autowired(required = false) // not provided in control-plane deployments
+  void setCollectionDao(CollectionDao collectionDao) {
+    this.collectionDao = collectionDao;
+  }
+
+  // instanceProperties only required when tenancyProperties.getAllowVirtualCollections() is false
+  // TODO(AJ-1655): make instanceProperties an Optional child of tenancyProperties, present only
+  //   when allow-virtual-collections=false?
+  @Autowired(required = false)
+  public void setWorkspaceId(@SingleTenant WorkspaceId workspaceId) {
+    this.environmentWorkspaceId = workspaceId;
   }
 
   public List<UUID> listCollections(String version) {
@@ -118,21 +128,32 @@ public class CollectionService {
   }
 
   public boolean canReadCollection(CollectionId collectionId) {
-    return samDao.hasReadWorkspacePermission(getWorkspaceId(collectionId).toString());
+    try {
+      WorkspaceId workspaceId = getWorkspaceId(collectionId);
+      return samDao.hasReadWorkspacePermission(workspaceId.toString());
+    } catch (MissingObjectException e) {
+      return false;
+    }
   }
 
   public boolean canWriteCollection(CollectionId collectionId) {
-    return samDao.hasWriteWorkspacePermission(getWorkspaceId(collectionId).toString());
+    try {
+      WorkspaceId workspaceId = getWorkspaceId(collectionId);
+      return samDao.hasWriteWorkspacePermission(workspaceId.toString());
+    } catch (MissingObjectException e) {
+      return false;
+    }
   }
 
   /**
-   * Return the workspace that contains the specified collection. The logic for this method is:
+   * Return the {@link WorkspaceId} of the workspace that contains the specified collection. The
+   * logic for this method is:
    *
-   * <p>- look up the row for this collection in sys_wds.collection.
+   * <p>- if the WORKSPACE_ID env var is set, look up the row for this collection in
+   * sys_wds.collection
    *
-   * <p>- if the WORKSPACE_ID env var is set and a row exists in sys_wds.collection, confirm the
-   * row's workspace_id column matches the env var. If it does, return its value. If it doesn't
-   * match, throw an error.
+   * <p>- confirm resulting workspace_id matches the env var. If it does, return its value. If it
+   * doesn't match, throw a {@link CollectionException}.
    *
    * <p>- else, return the CollectionId value as the WorkspaceId. This perpetuates the assumption
    * that collection and workspace ids are the same. But, this will be true in the GCP control plane
@@ -140,44 +161,33 @@ public class CollectionService {
    * not exist in Rawls.
    *
    * @param collectionId the collection for which to look up the workspace
-   * @return the workspace containing the given collection.
+   * @return the {@link WorkspaceId} of the workspace containing the given collection
+   * @throws MissingObjectException when the collection does not exist and the environment does not
+   *     allow virtual collections
+   * @throws CollectionException when the persisted workspaceId does not match the environment
    */
-  public WorkspaceId getWorkspaceId(CollectionId collectionId) {
-    // look up the workspaceId for this collection in the collection table
-    WorkspaceId rowWorkspaceId = null;
-    try {
-      rowWorkspaceId = collectionDao.getWorkspaceId(collectionId);
-      // as of this writing, if a deployment allows virtual collections, it is an error if the
-      // collection DOES exist.
-      if (tenancyProperties.getAllowVirtualCollections()) {
-        throw new CollectionException("Expected a virtual collection");
-      }
-    } catch (EmptyResultDataAccessException e) {
-      // does this deployment allow for virtual collections?
-      // TODO AJ-1630: enable this error for data-plane WDS, which does not allow virtual
-      // collections
-      /*
-      if (!tenancyProperties.getAllowVirtualCollections()) {
-        throw new MissingObjectException("Collection");
-      }
-      */
-    }
+  public WorkspaceId getWorkspaceId(CollectionId collectionId) throws MissingObjectException {
+    // look up the workspaceId for this collection in the collection table; in the case of a virtual
+    // collection, this will just echo the same value as what was passed in
+    WorkspaceId workspaceId = workspaceIdDao.getWorkspaceId(collectionId);
 
-    // safety check: if we found a workspace id in the db, it indicates we are in a data-plane
-    // single-tenant WDS. Verify the workspace matches the $WORKSPACE_ID env var.
-    // we must remove this check in a future multi-tenant WDS.
-    if (rowWorkspaceId != null && !rowWorkspaceId.equals(workspaceId)) {
+    // if single-tenant WDS, verify the workspace matches the $WORKSPACE_ID env var
+    if (isSingleTenantWds() && !workspaceId.equals(environmentWorkspaceId)) {
       // log the details, including expected/actual workspace ids
       LOGGER.error(
           "Found unexpected workspaceId for collection {}. Expected {}, got {}.",
           collectionId,
-          workspaceId,
-          rowWorkspaceId);
+          environmentWorkspaceId,
+          workspaceId);
       // but, don't include workspace ids when throwing a user-facing error
       throw new CollectionException(
           "Found unexpected workspaceId for collection %s.".formatted(collectionId));
     }
 
-    return Objects.requireNonNullElseGet(rowWorkspaceId, () -> WorkspaceId.of(collectionId.id()));
+    return workspaceId;
+  }
+
+  private boolean isSingleTenantWds() {
+    return environmentWorkspaceId != null;
   }
 }

@@ -10,6 +10,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
+import org.databiosphere.workspacedataservice.config.InstanceProperties;
 import org.databiosphere.workspacedataservice.dao.BackupRestoreDao;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
@@ -20,6 +22,7 @@ import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -30,8 +33,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
+@DataPlane
 @Service
 public class BackupRestoreService {
   private final BackupRestoreDao<BackupResponse> backupDao;
@@ -40,13 +45,11 @@ public class BackupRestoreService {
   private final BackUpFileStorage storage;
   private final CollectionDao collectionDao;
   private final ActivityLogger activityLogger;
+
+  private final WorkspaceId workspaceId;
+  @Nullable private final WorkspaceId sourceWorkspaceId;
+
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
-
-  @Value("${twds.instance.workspace-id:}")
-  private String workspaceId;
-
-  @Value("${twds.instance.source-workspace-id:}")
-  private String sourceWorkspaceId;
 
   @Value("${twds.pg_dump.user:}")
   private String dbUser;
@@ -78,13 +81,16 @@ public class BackupRestoreService {
       CollectionDao collectionDao,
       BackUpFileStorage backUpFileStorage,
       CloneDao cloneDao,
-      ActivityLogger activityLogger) {
+      ActivityLogger activityLogger,
+      InstanceProperties instanceProperties) {
     this.backupDao = backupDao;
     this.restoreDao = restoreDao;
     this.collectionDao = collectionDao;
     this.cloneDao = cloneDao;
     this.storage = backUpFileStorage;
     this.activityLogger = activityLogger;
+    this.workspaceId = instanceProperties.workspaceId();
+    this.sourceWorkspaceId = instanceProperties.sourceWorkspaceId().orElse(null);
   }
 
   public Job<JobInput, BackupResponse> checkBackupStatus(UUID trackingId) {
@@ -110,7 +116,7 @@ public class BackupRestoreService {
       // workspace
       UUID requesterWorkspaceId =
           backupRestoreRequest.requestingWorkspaceId() == null
-              ? UUID.fromString(workspaceId)
+              ? workspaceId.id()
               : backupRestoreRequest.requestingWorkspaceId();
 
       // create an entry to track progress of this backup
@@ -149,6 +155,9 @@ public class BackupRestoreService {
 
   public Job<JobInput, RestoreResponse> restoreAzureWDS(
       String version, String backupFileName, UUID trackingId, String startupToken) {
+    if (sourceWorkspaceId == null) {
+      throw new IllegalStateException("sourceWorkspaceId is not set");
+    }
     validateVersion(version);
     boolean doCleanup = false;
     try {
@@ -157,7 +166,7 @@ public class BackupRestoreService {
       restoreDao.createEntry(
           trackingId,
           new BackupRestoreRequest(
-              UUID.fromString(workspaceId), String.format("Restore from %s", backupFileName)));
+              workspaceId.id(), String.format("Restore from %s", backupFileName)));
 
       // generate psql query
       List<String> commandList = generateCommandList(false);
@@ -173,7 +182,10 @@ public class BackupRestoreService {
       doCleanup = true;
       // grab blob from storage
       storage.streamInputFromBlobStorage(
-          localProcessLauncher.getOutputStream(), backupFileName, workspaceId, startupToken);
+          localProcessLauncher.getOutputStream(),
+          backupFileName,
+          workspaceId.toString(),
+          startupToken);
 
       String error = checkForError(localProcessLauncher);
       if (StringUtils.isNotBlank(error)) {
@@ -189,7 +201,7 @@ public class BackupRestoreService {
       */
 
       // rename workspace schema from source to dest
-      collectionDao.alterSchema(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId));
+      collectionDao.alterSchema(sourceWorkspaceId.id(), workspaceId.id());
 
       activityLogger.saveEventForCurrentUser(
           user -> user.restored().backup().withId(backupFileName));
@@ -201,7 +213,7 @@ public class BackupRestoreService {
       // clean up
       if (doCleanup) {
         try {
-          storage.deleteBlob(backupFileName, workspaceId, startupToken);
+          storage.deleteBlob(backupFileName, workspaceId.toString(), startupToken);
         } catch (Exception e) {
           LOGGER.warn(
               "Error cleaning up after restore. File '{}' was not deleted from storage container: {}",

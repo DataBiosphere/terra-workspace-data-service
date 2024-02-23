@@ -1,20 +1,27 @@
 package org.databiosphere.workspacedataservice.leonardo;
 
+import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
+import org.databiosphere.workspacedataservice.config.InstanceProperties.SingleTenant;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+@DataPlane
 @Configuration
 public class LeonardoConfig {
 
   @Value("${leoUrl:}")
   private String leonardoUrl;
 
-  @Value("${twds.instance.source-workspace-id:}")
-  private String workspaceId;
+  private final WorkspaceId workspaceId;
+
+  public LeonardoConfig(@SingleTenant WorkspaceId workspaceId) {
+    this.workspaceId = workspaceId;
+  }
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LeonardoConfig.class);
 
@@ -27,6 +34,6 @@ public class LeonardoConfig {
   @Bean
   public LeonardoDao leonardoDao(
       LeonardoClientFactory leonardoClientFactory, RestClientRetry restClientRetry) {
-    return new LeonardoDao(leonardoClientFactory, workspaceId, restClientRetry);
+    return new LeonardoDao(leonardoClientFactory, workspaceId.toString(), restClientRetry);
   }
 }

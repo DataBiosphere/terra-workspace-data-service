@@ -3,7 +3,8 @@ package org.databiosphere.workspacedataservice.startup;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
-import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
+import org.databiosphere.workspacedataservice.config.InstanceProperties;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
@@ -13,6 +14,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.RestExcept
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -25,7 +27,11 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.integration.support.locks.LockRegistry;
+import org.springframework.lang.Nullable;
+import org.springframework.stereotype.Component;
 
+@DataPlane
+@Component
 public class CollectionInitializerBean {
 
   private final CollectionDao collectionDao;
@@ -36,40 +42,31 @@ public class CollectionInitializerBean {
 
   private final BackupRestoreService restoreService;
 
-  @Value("${twds.instance.workspace-id}")
-  private String workspaceId;
+  private final WorkspaceId workspaceId;
 
-  @Value("${twds.instance.source-workspace-id}")
-  private String sourceWorkspaceId;
+  @Nullable private final WorkspaceId sourceWorkspaceId;
 
   @Value("${twds.startup-token}")
   private String startupToken;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CollectionInitializerBean.class);
 
-  /**
-   * Constructor. Called by {@link CollectionInitializerConfig}.
-   *
-   * @see CollectionInitializerConfig
-   * @param collectionDao CollectionDao
-   * @param leoDao LeonardoDao
-   * @param wdsDao WorkspaceDataServiceDao
-   * @param cloneDao CloneDao
-   * @param restoreService BackupRestoreService
-   */
   public CollectionInitializerBean(
       CollectionDao collectionDao,
       LeonardoDao leoDao,
       WorkspaceDataServiceDao wdsDao,
       CloneDao cloneDao,
       BackupRestoreService restoreService,
-      LockRegistry lockRegistry) {
+      LockRegistry lockRegistry,
+      InstanceProperties instanceProperties) {
     this.collectionDao = collectionDao;
     this.leoDao = leoDao;
     this.wdsDao = wdsDao;
     this.cloneDao = cloneDao;
     this.restoreService = restoreService;
     this.lockRegistry = lockRegistry;
+    this.workspaceId = instanceProperties.workspaceId();
+    this.sourceWorkspaceId = instanceProperties.sourceWorkspaceId().orElse(null);
   }
 
   /**
@@ -105,25 +102,18 @@ public class CollectionInitializerBean {
    *     assist with unit tests.
    * @return whether {@code SOURCE_WORKSPACE_ID} is valid.
    */
-  protected boolean isInCloneMode(String sourceWorkspaceId) {
-    if (StringUtils.isNotBlank(sourceWorkspaceId)) {
-      LOGGER.info("SourceWorkspaceId found, checking validity");
-      try {
-        UUID.fromString(sourceWorkspaceId);
-      } catch (IllegalArgumentException e) {
-        LOGGER.warn(
-            "SourceWorkspaceId {} could not be parsed, unable to clone DB.", sourceWorkspaceId);
-        return false;
-      }
-
-      if (sourceWorkspaceId.equals(workspaceId)) {
-        LOGGER.warn("SourceWorkspaceId and current WorkspaceId can't be the same.");
-        return false;
-      }
-      return true;
+  protected boolean isInCloneMode(@Nullable WorkspaceId sourceWorkspaceId) {
+    if (sourceWorkspaceId == null) {
+      LOGGER.info("No SourceWorkspaceId found, unable to proceed with cloning.");
+      return false;
     }
-    LOGGER.info("No SourceWorkspaceId found, unable to proceed with cloning.");
-    return false;
+
+    LOGGER.info("SourceWorkspaceId found, checking validity");
+    if (sourceWorkspaceId.equals(workspaceId)) {
+      LOGGER.warn("SourceWorkspaceId and current WorkspaceId can't be the same.");
+      return false;
+    }
+    return true;
   }
 
   /*
@@ -133,10 +123,10 @@ public class CollectionInitializerBean {
   starting WDS was initiated via a clone operation and will contain the WorkspaceId of the original workspace where the cloning
   was triggered. This function returns false for an incomplete clone.
   */
-  protected boolean initCloneMode(String sourceWorkspaceId) {
+  protected boolean initCloneMode(WorkspaceId sourceWorkspaceId) {
     LOGGER.info("Starting in clone mode...");
     UUID trackingId = UUID.randomUUID();
-    Lock lock = lockRegistry.obtain(sourceWorkspaceId);
+    Lock lock = lockRegistry.obtain(sourceWorkspaceId.toString());
     try {
       // Make sure it's safe to start cloning (in case another replica is trying to clone)
       boolean lockAcquired = lock.tryLock(1, TimeUnit.SECONDS);
@@ -150,9 +140,8 @@ public class CollectionInitializerBean {
       // or in in a multi replica scenario where one is cloning and another is not.
       // If there's a clone entry and no default schema, another replica errored before completing.
       // If there's a clone entry and a default schema there's nothing for us to do here.
-      if (cloneDao.cloneExistsForWorkspace((UUID.fromString(sourceWorkspaceId)))) {
-        boolean collectionSchemaExists =
-            collectionDao.collectionSchemaExists(UUID.fromString(workspaceId));
+      if (cloneDao.cloneExistsForWorkspace(sourceWorkspaceId.id())) {
+        boolean collectionSchemaExists = collectionDao.collectionSchemaExists(workspaceId.id());
         LOGGER.info(
             "Previous clone entry found. Collection schema exists: {}.", collectionSchemaExists);
         return collectionSchemaExists;
@@ -160,7 +149,7 @@ public class CollectionInitializerBean {
 
       // First, create an entry in the clone table to mark cloning has started
       LOGGER.info("Creating entry to track cloning process.");
-      cloneDao.createCloneEntry(trackingId, UUID.fromString(sourceWorkspaceId));
+      cloneDao.createCloneEntry(trackingId, sourceWorkspaceId.id());
 
       // Get the remote (source) WDS url from Leo, based on the source workspace id env var.
       // This call runs using the "startup token" provided by Leo.
@@ -229,7 +218,7 @@ public class CollectionInitializerBean {
       LOGGER.info(
           "Requesting a backup file from the remote source WDS in workspace {}", sourceWorkspaceId);
       cloneDao.updateCloneEntryStatus(trackingId, CloneStatus.BACKUPQUEUED);
-      var backupResponse = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
+      var backupResponse = wdsDao.triggerBackup(startupToken, workspaceId.id());
 
       // TODO when the wdsDao.triggerBackup is async, we will need a second call here to poll
       // for/check its status
@@ -300,7 +289,7 @@ public class CollectionInitializerBean {
   */
   private void initializeDefaultCollection() {
     try {
-      UUID collectionId = UUID.fromString(workspaceId);
+      UUID collectionId = workspaceId.id();
 
       if (!collectionDao.collectionSchemaExists(collectionId)) {
         collectionDao.createSchema(collectionId);

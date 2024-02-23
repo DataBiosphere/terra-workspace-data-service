@@ -105,7 +105,6 @@ logging:
   level:
     com.zaxxer.hikari.HikariConfig: INFO
     com.zaxxer.hikari: INFO
-
 server:
   error:
     include-stacktrace: never
@@ -114,6 +113,7 @@ server:
 twds:
   write.batch.size: 5000
   streaming.fetch.size: 5000
+  # TODO(AJ-1656): remove instance block from this file as it is only valid in data-plane
   instance:
     initialize-collection-on-startup: true
     # Workspace Id for launching instance

@@ -2,6 +2,11 @@ env:
   wds:
     deploymentMode: data-plane
 twds:
+  instance:
+    initialize-collection-on-startup: true
+    # Workspace Id for launching instance
+    workspace-id: ${WORKSPACE_ID:}
+    source-workspace-id: ${SOURCE_WORKSPACE_ID:}
   tenancy:
     # Should this WDS deployment allow virtual collections, i.e. collections that have no
     # corresponding row in the sys_wds.collection table?

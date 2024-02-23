@@ -4,11 +4,14 @@ import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 
 import bio.terra.common.db.WriteTransaction;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.config.InstanceProperties;
+import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
+import org.databiosphere.workspacedataservice.config.InstanceProperties.SingleTenant;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -19,17 +22,18 @@ import org.springframework.stereotype.Repository;
  * collections. This class will help add entries to the table, check if entries already exist and
  * update them as necessary.
  */
+@DataPlane
 @Repository
-public class PostgresCollectionDao implements CollectionDao {
+public class PostgresCollectionDao implements CollectionDao, WorkspaceIdDao {
 
   private final NamedParameterJdbcTemplate namedTemplate;
 
-  private final UUID workspaceId;
+  private final WorkspaceId workspaceId;
 
   public PostgresCollectionDao(
-      NamedParameterJdbcTemplate namedTemplate, InstanceProperties instanceProperties) {
+      NamedParameterJdbcTemplate namedTemplate, @SingleTenant WorkspaceId workspaceId) {
     this.namedTemplate = namedTemplate;
-    this.workspaceId = instanceProperties.getWorkspaceUuid();
+    this.workspaceId = workspaceId;
   }
 
   @Override
@@ -88,7 +92,7 @@ public class PostgresCollectionDao implements CollectionDao {
         .update(
             "update sys_wds.collection set id = ?, workspace_id = ? where id = ?",
             newSchemaId,
-            workspaceId,
+            workspaceId.id(),
             oldSchemaId);
     // ensure new exists in sys_wds.collection. When this alterSchema() method is called after
     // restoring from a pg_dump,
@@ -96,29 +100,30 @@ public class PostgresCollectionDao implements CollectionDao {
     insertCollectionRow(newSchemaId, /* ignoreConflict= */ true);
   }
 
+  @NotNull
   @Override
-  public WorkspaceId getWorkspaceId(CollectionId collectionId) {
-    UUID workspaceUuid =
-        namedTemplate.queryForObject(
-            "select workspace_id from sys_wds.collection where id = :collectionId",
-            new MapSqlParameterSource("collectionId", collectionId.id()),
-            UUID.class);
-    return WorkspaceId.of(workspaceUuid);
+  public WorkspaceId getWorkspaceId(CollectionId collectionId) throws MissingObjectException {
+    try {
+      UUID workspaceUuid =
+          namedTemplate.queryForObject(
+              "select workspace_id from sys_wds.collection where id = :collectionId",
+              new MapSqlParameterSource("collectionId", collectionId.id()),
+              UUID.class);
+      return WorkspaceId.of(workspaceUuid);
+    } catch (EmptyResultDataAccessException e) {
+      throw new MissingObjectException("Missing collection with id %s".formatted(collectionId));
+    }
   }
 
   private void insertCollectionRow(UUID collectionId, boolean ignoreConflict) {
-    // if workspaceId as configured by the $WORKSPACE_ID is null, use
-    // collectionId instead
-    UUID nonNullWorkspaceId = Objects.requireNonNullElse(workspaceId, collectionId);
-
     // auto-generate the name for this collection
     String name = collectionId.toString();
-    if (collectionId.equals(nonNullWorkspaceId)) {
+    if (collectionId.equals(workspaceId.id())) {
       name = "default";
     }
 
     MapSqlParameterSource params = new MapSqlParameterSource("id", collectionId);
-    params.addValue("workspace_id", nonNullWorkspaceId);
+    params.addValue("workspace_id", workspaceId.id());
     params.addValue("name", name);
     params.addValue("description", name);
 

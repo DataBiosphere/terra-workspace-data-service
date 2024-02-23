@@ -22,7 +22,7 @@ class TwdsPropertiesDataPlaneTest {
 
   @Test
   void nonNullDataImport() {
-    assertNotNull(twdsProperties.getDataImport());
+    assertNotNull(twdsProperties.dataImportProperties());
   }
 
   @Test
@@ -32,7 +32,7 @@ class TwdsPropertiesDataPlaneTest {
 
   @Test
   void nonNullTenancy() {
-    assertNotNull(twdsProperties.getTenancy());
+    assertNotNull(twdsProperties.tenancyProperties());
   }
 
   @Test

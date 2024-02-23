@@ -1,12 +1,17 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +34,7 @@ import org.springframework.test.context.TestPropertySource;
 class PostgresCollectionDaoTest extends TestBase {
 
   @Autowired CollectionDao collectionDao;
+  @Autowired WorkspaceIdDao workspaceIdDao;
   @Autowired NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
   @Value("${twds.instance.workspace-id}")
@@ -102,5 +108,26 @@ class PostgresCollectionDaoTest extends TestBase {
     assertEquals(workspaceId, rowMap.get("workspace_id"));
     assertEquals("default", rowMap.get("name"));
     assertEquals("default", rowMap.get("description"));
+  }
+
+  @Test
+  void getWorkspaceId_returnsWhenPresent() {
+    UUID collectionId = UUID.randomUUID();
+    collectionDao.createSchema(collectionId);
+    assertEquals(
+        WorkspaceId.of(workspaceId), workspaceIdDao.getWorkspaceId(CollectionId.of(collectionId)));
+  }
+
+  @Test
+  void getWorkspaceId_raisesWhenMissing() {
+    var nonexistentCollectionId = UUID.randomUUID();
+    var thrown =
+        assertThrows(
+            MissingObjectException.class,
+            () -> {
+              workspaceIdDao.getWorkspaceId(CollectionId.of(nonexistentCollectionId));
+            });
+
+    assertThat(thrown).hasMessageContaining(nonexistentCollectionId.toString());
   }
 }

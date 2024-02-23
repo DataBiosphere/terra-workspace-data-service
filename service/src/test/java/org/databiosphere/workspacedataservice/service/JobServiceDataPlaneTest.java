@@ -10,9 +10,10 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.config.InstanceProperties;
+import org.databiosphere.workspacedataservice.config.InstanceProperties.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dao.WorkspaceIdDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
@@ -35,11 +36,13 @@ import org.springframework.test.context.ActiveProfiles;
 class JobServiceDataPlaneTest extends JobServiceBaseTest {
 
   @Autowired JobService jobService;
-  @Autowired InstanceProperties instanceProperties;
+
+  @Autowired @SingleTenant WorkspaceId workspaceId;
 
   @MockBean JobDao jobDao;
   @MockBean SamDao samDao;
   @MockBean CollectionDao collectionDao;
+  @MockBean WorkspaceIdDao workspaceIdDao;
 
   @BeforeEach
   void beforeEach() {
@@ -78,9 +81,9 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // job exists
     when(jobDao.getJob(jobId)).thenReturn(expectedJob);
     // collection for this job exists and is associated with the $WORKSPACE_ID workspace
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
+    when(workspaceIdDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // user has permission to that workspace
-    when(samDao.hasReadWorkspacePermission(getEnvWorkspaceId().toString())).thenReturn(true);
+    when(samDao.hasReadWorkspacePermission(workspaceId.toString())).thenReturn(true);
 
     // Act
     GenericJobServerModel actual = jobService.getJob(jobId);
@@ -99,9 +102,9 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // job exists
     when(jobDao.getJob(jobId)).thenReturn(expectedJob);
     // collection for this job exists and is associated with the $WORKSPACE_ID workspace
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
+    when(workspaceIdDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // user has permission to that workspace
-    when(samDao.hasReadWorkspacePermission(getEnvWorkspaceId().toString())).thenReturn(false);
+    when(samDao.hasReadWorkspacePermission(workspaceId.toString())).thenReturn(false);
 
     // Act / assert
     AuthenticationMaskableException actual =
@@ -123,7 +126,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     when(jobDao.getJob(jobId)).thenReturn(expectedJob);
     // collection for this job exists, but is associated with a workspace other than the
     // $WORKSPACE_ID workspace
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+    when(workspaceIdDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // user has permission to that workspace
     when(samDao.hasReadWorkspacePermission(workspaceId.toString())).thenReturn(true);
 
@@ -148,8 +151,8 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // job exists
     when(jobDao.getJob(jobId)).thenReturn(expectedJob);
     // collection for this job does not exist
-    when(collectionDao.getWorkspaceId(collectionId))
-        .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
+    when(workspaceIdDao.getWorkspaceId(collectionId))
+        .thenThrow(new MissingObjectException("unit test intentional error"));
     // user has permission to that workspace
     when(samDao.hasReadWorkspacePermission(workspaceId.toString())).thenReturn(true);
 
@@ -171,7 +174,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // Arrange
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // collection for this job does not exist
-    when(collectionDao.getWorkspaceId(collectionId))
+    when(workspaceIdDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
 
     // Act / assert
@@ -191,9 +194,9 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // collection exists and is associated with the $WORKSPACE_ID workspace
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
+    when(workspaceIdDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // user has permission to that workspace
-    when(samDao.hasReadWorkspacePermission(getEnvWorkspaceId().toString())).thenReturn(true);
+    when(samDao.hasReadWorkspacePermission(workspaceId.toString())).thenReturn(true);
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 2));
@@ -212,9 +215,9 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // Arrange
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // collection exists and is associated with the $WORKSPACE_ID workspace
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
+    when(workspaceIdDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // user has permission to that workspace
-    when(samDao.hasReadWorkspacePermission(getEnvWorkspaceId().toString())).thenReturn(false);
+    when(samDao.hasReadWorkspacePermission(workspaceId.toString())).thenReturn(false);
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 3));
@@ -237,7 +240,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     // collection exists and is associated with a non-default workspace
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+    when(workspaceIdDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // user has permission to that workspace
     when(samDao.hasReadWorkspacePermission(workspaceId.toString())).thenReturn(true);
     // return some jobs when listing this collection
@@ -252,13 +255,5 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
 
     // Assert
     assertThat(actual.getMessage()).startsWith("Found unexpected workspaceId for collection");
-  }
-
-  // ==================================================
-  // ========== helpers ===============================
-  // ==================================================
-
-  private WorkspaceId getEnvWorkspaceId() {
-    return WorkspaceId.of(instanceProperties.getWorkspaceUuid());
   }
 }

@@ -1,11 +1,12 @@
 package org.databiosphere.workspacedataservice.startup;
 
-import java.util.UUID;
 import org.databiosphere.workspacedataservice.config.ConfigurationException;
-import org.databiosphere.workspacedataservice.config.InstanceProperties;
+import org.databiosphere.workspacedataservice.config.InstanceProperties.SingleTenant;
 import org.databiosphere.workspacedataservice.config.TenancyProperties;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -16,12 +17,16 @@ public class StartupConfig {
 
   private static final Logger logger = LoggerFactory.getLogger(StartupConfig.class);
 
-  private final InstanceProperties instanceProperties;
+  private WorkspaceId workspaceId;
   private final TenancyProperties tenancyProperties;
 
-  public StartupConfig(InstanceProperties instanceProperties, TenancyProperties tenancyProperties) {
-    this.instanceProperties = instanceProperties;
+  public StartupConfig(TenancyProperties tenancyProperties) {
     this.tenancyProperties = tenancyProperties;
+  }
+
+  @Autowired(required = false) // not provided in control-plane deployments
+  void setWorkspaceId(@SingleTenant WorkspaceId workspaceId) {
+    this.workspaceId = workspaceId;
   }
 
   /**
@@ -38,8 +43,7 @@ public class StartupConfig {
     if (tenancyProperties.getRequireEnvWorkspace()) {
       // attempt to parse the workspace id
       try {
-        UUID workspaceUuid = UUID.fromString(instanceProperties.getWorkspaceId());
-        logger.info("single-tenant workspace id: {}", workspaceUuid);
+        logger.info("single-tenant workspace id: {}", workspaceId);
       } catch (Exception e) {
         throw new ConfigurationException(
             "This deployment requires a $WORKSPACE_ID env var, but its value "

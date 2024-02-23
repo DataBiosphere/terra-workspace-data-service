@@ -1,68 +1,81 @@
 package org.databiosphere.workspacedataservice.config;
 
-import java.util.UUID;
+import static com.google.common.base.Strings.isNullOrEmpty;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.util.Optional;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.lang.Nullable;
 
 /**
  * ConfigurationProperties class, loaded as a member of TwdsProperties, representing the
  * `twds.instance` property hierarchy
  */
 public class InstanceProperties {
+  /**
+   * Shorthand annotation for @Qualifier("singleTenant"), used to mark the {@link WorkspaceId} bean
+   * used when running in single-tenant mode.
+   */
+  @Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER})
+  @Retention(RetentionPolicy.RUNTIME)
+  @Qualifier("singleTenant")
+  public @interface SingleTenant {}
 
-  private String workspaceId;
-  private UUID workspaceUuid;
-  private String sourceWorkspaceId;
-  private UUID sourceWorkspaceUuid;
+  private boolean validWorkspaceId;
   private boolean initializeCollectionOnStartup;
+  private WorkspaceId workspaceId;
+  @Nullable private WorkspaceId sourceWorkspaceId;
 
-  public String getWorkspaceId() {
+  /**
+   * Returns the {@link WorkspaceId} for the environment $WORKSPACE_ID.
+   *
+   * @throws ConfigurationException if a valid workspaceId isn't present
+   */
+  public WorkspaceId workspaceId() {
+    if (!validWorkspaceId) {
+      throw new ConfigurationException("No workspaceId configured");
+    }
     return workspaceId;
   }
 
-  /**
-   * Will return null if workspace id is populated but is not a valid UUID
-   *
-   * @return the workspace id as a UUID
-   */
-  public UUID getWorkspaceUuid() {
-    return workspaceUuid;
+  public boolean hasValidWorkspaceId() {
+    return validWorkspaceId;
   }
 
-  public void setWorkspaceId(String workspaceId) {
-    this.workspaceId = workspaceId;
-    try {
-      this.workspaceUuid = UUID.fromString(workspaceId);
-    } catch (Exception e) {
-      // noop; validation of the workspaceId is handled elsewhere. See StartupConfig.
+  void setWorkspaceId(String workspaceId) {
+    if (!isNullOrEmpty(workspaceId)) {
+      try {
+        this.workspaceId = WorkspaceId.fromString(workspaceId);
+        validWorkspaceId = true;
+      } catch (Exception e) {
+        validWorkspaceId = false;
+      }
     }
   }
 
-  /**
-   * Will return null if source workspace id is populated but is not a valid UUID
-   *
-   * @return the source workspace id as a UUID
-   */
-  public UUID getSourceWorkspaceUuid() {
-    return sourceWorkspaceUuid;
+  public Optional<WorkspaceId> sourceWorkspaceId() {
+    return Optional.ofNullable(sourceWorkspaceId);
   }
 
-  public String getSourceWorkspaceId() {
-    return sourceWorkspaceId;
+  void setSourceWorkspaceId(String sourceWorkspaceId) {
+    if (!isNullOrEmpty(sourceWorkspaceId)) {
+      try {
+        this.sourceWorkspaceId = WorkspaceId.fromString(sourceWorkspaceId);
+      } catch (Exception e) {
+        throw new ConfigurationException("Invalid sourceWorkspaceId: " + workspaceId, e);
+      }
+    }
+  }
+
+  void setInitializeCollectionOnStartup(boolean initializeCollectionOnStartup) {
+    this.initializeCollectionOnStartup = initializeCollectionOnStartup;
   }
 
   public boolean getInitializeCollectionOnStartup() {
     return initializeCollectionOnStartup;
-  }
-
-  public void setSourceWorkspaceId(String sourceWorkspaceId) {
-    this.sourceWorkspaceId = sourceWorkspaceId;
-    try {
-      this.sourceWorkspaceUuid = UUID.fromString(sourceWorkspaceId);
-    } catch (Exception e) {
-      // noop; validation of the workspaceId is handled elsewhere. See StartupConfig.
-    }
-  }
-
-  public void setInitializeCollectionOnStartup(boolean set) {
-    initializeCollectionOnStartup = set;
   }
 }

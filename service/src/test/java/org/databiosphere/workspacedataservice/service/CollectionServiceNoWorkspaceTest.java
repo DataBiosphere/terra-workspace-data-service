@@ -22,7 +22,6 @@ import org.springframework.test.context.TestPropertySource;
     inheritProfiles = false)
 @TestPropertySource(properties = {"twds.instance.workspace-id="})
 class CollectionServiceNoWorkspaceTest extends TestBase {
-
   @Autowired private CollectionService collectionService;
 
   @Value("${twds.instance.workspace-id:}")

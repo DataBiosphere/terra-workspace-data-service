@@ -24,15 +24,21 @@ import org.springframework.test.annotation.DirtiesContext;
     })
 @DirtiesContext
 @SpringBootTest
-class DeploymentModeTestBase extends TestBase {
+abstract class DeploymentModeTestBase extends TestBase {
 
   @Autowired protected ApplicationContext context;
 
   protected static Stream<String> dataPlaneConditionalBeans() {
-    return Stream.of("collectionInitializer");
+    return Stream.of(
+        "backupRestoreService",
+        "cloningController",
+        "collectionInitializer",
+        "collectionInitializerBean",
+        "leonardoConfig",
+        "postgresCollectionDao");
   }
 
   protected static Stream<String> controlPlaneConditionalBeans() {
-    return Stream.of();
+    return Stream.of("virtualWorkspaceIdDao");
   }
 }

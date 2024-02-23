@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -43,10 +44,10 @@ import org.springframework.test.context.ActiveProfiles;
  * parsing the PFB, creating tables in Postgres, inserting rows, and then reading back the
  * rows/counts/schema from Postgres.
  */
-@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "data-plane"})
+@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao"})
 @DirtiesContext
 @SpringBootTest
-class PfbQuartzJobDataPlaneE2ETest {
+class PfbQuartzJobDataPlaneE2ETest extends TestBase {
   @Autowired RecordOrchestratorService recordOrchestratorService;
   @Autowired CollectionService collectionService;
   @Autowired PfbTestSupport testSupport;

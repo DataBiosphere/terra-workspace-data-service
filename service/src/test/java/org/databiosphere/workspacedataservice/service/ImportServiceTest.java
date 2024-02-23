@@ -24,7 +24,7 @@ import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.config.InstanceProperties;
+import org.databiosphere.workspacedataservice.config.InstanceProperties.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.MockCollectionDao;
@@ -36,6 +36,7 @@ import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -61,7 +62,9 @@ class ImportServiceTest extends TestBase {
   @Autowired CollectionDao collectionDao;
   @Autowired CollectionService collectionService;
   @Autowired SamDao samDao;
-  @Autowired InstanceProperties instanceProperties;
+
+  @Autowired @SingleTenant WorkspaceId workspaceId;
+
   @SpyBean JobDao jobDao;
   @MockBean SchedulerDao schedulerDao;
   @MockBean SamClientFactory mockSamClientFactory;
@@ -71,7 +74,7 @@ class ImportServiceTest extends TestBase {
 
   private final URI importUri = URI.create("http://does/not/matter");
 
-  private UUID defaultCollectionId;
+  private WorkspaceId defaultCollectionId;
 
   private static final String VERSION = "v0.2";
 
@@ -79,7 +82,7 @@ class ImportServiceTest extends TestBase {
   void setUp() throws ApiException {
     // initialize the default collection id
     if (defaultCollectionId == null) {
-      defaultCollectionId = instanceProperties.getWorkspaceUuid();
+      defaultCollectionId = workspaceId;
     }
 
     // return the mock ResourcesApi from the mock SamClientFactory
@@ -143,12 +146,12 @@ class ImportServiceTest extends TestBase {
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
-    collectionService.createCollection(defaultCollectionId, VERSION);
+    collectionService.createCollection(defaultCollectionId.id(), VERSION);
     // define the import request
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request
     GenericJobServerModel createdJob =
-        importService.createImport(defaultCollectionId, importRequest);
+        importService.createImport(defaultCollectionId.id(), importRequest);
 
     // re-retrieve the job; this double-checks what's actually in the db, in case the return
     // value of importService.createImport has bugs
@@ -165,12 +168,12 @@ class ImportServiceTest extends TestBase {
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
-    collectionService.createCollection(defaultCollectionId, VERSION);
+    collectionService.createCollection(defaultCollectionId.id(), VERSION);
     // define the import request
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request
     GenericJobServerModel createdJob =
-        importService.createImport(defaultCollectionId, importRequest);
+        importService.createImport(defaultCollectionId.id(), importRequest);
     // assert that importService.createImport properly calls schedulerDao
     ArgumentCaptor<Schedulable> argument = ArgumentCaptor.forClass(Schedulable.class);
     verify(schedulerDao).schedule(argument.capture());
@@ -198,12 +201,12 @@ class ImportServiceTest extends TestBase {
         .when(schedulerDao)
         .schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
-    collectionService.createCollection(defaultCollectionId, VERSION);
+    collectionService.createCollection(defaultCollectionId.id(), VERSION);
     // define the import request
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request; this will internally hit the exception from the schedulerDao
     GenericJobServerModel createdJob =
-        importService.createImport(defaultCollectionId, importRequest);
+        importService.createImport(defaultCollectionId.id(), importRequest);
 
     // re-retrieve the job; this double-checks what's actually in the db, in case the return
     // value of importService.createImport has bugs

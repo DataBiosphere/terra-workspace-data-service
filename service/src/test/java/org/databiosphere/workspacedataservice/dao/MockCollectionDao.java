@@ -7,10 +7,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.jetbrains.annotations.NotNull;
 import org.postgresql.util.ServerErrorMessage;
 
 /** Mock implementation of CollectionDao that is in-memory instead of requiring Postgres */
-public class MockCollectionDao implements CollectionDao {
+public class MockCollectionDao implements CollectionDao, WorkspaceIdDao {
 
   // backing "database" for this mock
   private final Set<UUID> collections = ConcurrentHashMap.newKeySet();
@@ -69,6 +70,7 @@ public class MockCollectionDao implements CollectionDao {
     collections.add(workspaceId);
   }
 
+  @NotNull
   @Override
   public WorkspaceId getWorkspaceId(CollectionId instanceId) {
     return WorkspaceId.of(instanceId.id());

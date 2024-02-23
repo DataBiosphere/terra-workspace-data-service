@@ -6,21 +6,25 @@ import static org.databiosphere.workspacedataservice.shared.model.job.Job.newJob
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.InstanceProperties.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dao.WorkspaceIdDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.databiosphere.workspacedataservice.shared.model.job.JobType;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,19 +46,24 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class JobControllerTest extends TestBase {
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
-
   @Autowired private TestRestTemplate restTemplate;
-
   @Autowired private JobDao jobDao;
+  @Autowired @SingleTenant private WorkspaceId workspaceId;
 
   @MockBean private CollectionDao collectionDao;
+  @MockBean private WorkspaceIdDao workspaceIdDao;
 
-  private final CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+  private CollectionId collectionId;
 
   private UUID jobId;
 
-  @BeforeAll
-  void beforeAll() {
+  @BeforeEach
+  void setup() {
+    clearJobs();
+    collectionId = CollectionId.of(workspaceId.id());
+    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(workspaceIdDao.getWorkspaceId(eq(collectionId))).thenReturn(workspaceId);
+
     // push jobs into the db, one of different collectionId
     Job<JobInput, JobResult> testJob1 = newJob(collectionId, JobType.DATA_IMPORT, JobInput.empty());
     Job<JobInput, JobResult> testJob2 = newJob(collectionId, JobType.DATA_IMPORT, JobInput.empty());
@@ -70,24 +79,21 @@ class JobControllerTest extends TestBase {
     jobDao.createJob(testJob3);
   }
 
-  @AfterAll
-  void afterAll() {
+  @AfterEach
+  void clearJobs() {
     // cleanup: delete everything from the job table
     namedTemplate.getJdbcTemplate().update("delete from sys_wds.job;");
   }
 
   @Test
   void instanceJobsReturnAllNoStatus() {
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     HttpHeaders headers = new HttpHeaders();
-    // ParameterizedTypeReference<List<GenericJobServerModel>> returnType = new
-    // ParameterizedTypeReference<List<GenericJobServerModel>>() {};
     ResponseEntity<List<GenericJobServerModel>> result =
         restTemplate.exchange(
             "/job/v1/instance/{instanceUuid}?statuses={statuses}",
             HttpMethod.GET,
             new HttpEntity<>(headers),
-            new ParameterizedTypeReference<List<GenericJobServerModel>>() {},
+            new ParameterizedTypeReference<>() {},
             collectionId,
             "");
     List<GenericJobServerModel> jobList = result.getBody();
@@ -100,17 +106,14 @@ class JobControllerTest extends TestBase {
 
   @Test
   void instanceJobsWithMultipleStatuses() {
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     assertDoesNotThrow(() -> jobDao.updateStatus(jobId, StatusEnum.CANCELLED));
     HttpHeaders headers = new HttpHeaders();
-    // ParameterizedTypeReference<List<GenericJobServerModel>> returnType = new
-    // ParameterizedTypeReference<List<GenericJobServerModel>>() {};
     ResponseEntity<List<GenericJobServerModel>> result =
         restTemplate.exchange(
             "/job/v1/instance/{instanceUuid}?statuses={status1}&statuses={status2}",
             HttpMethod.GET,
             new HttpEntity<>(headers),
-            new ParameterizedTypeReference<List<GenericJobServerModel>>() {},
+            new ParameterizedTypeReference<>() {},
             collectionId,
             "CREATED",
             "CANCELLED");

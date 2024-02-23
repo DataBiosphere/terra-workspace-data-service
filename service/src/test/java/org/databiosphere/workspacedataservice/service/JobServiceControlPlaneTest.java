@@ -10,15 +10,12 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
-import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
-import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,20 +23,24 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 @ActiveProfiles(profiles = {"control-plane"})
 @SpringBootTest
+@TestPropertySource(
+    properties = {
+      // TODO(AJ-1656): control-plane should not require instance config in any form, this is a hold
+      //   over from direct injection of @Value('twds.instance.workspace-id')
+      "twds.instance.workspace-id=",
+    })
 class JobServiceControlPlaneTest extends JobServiceBaseTest {
-
   @Autowired JobService jobService;
   @MockBean JobDao jobDao;
   @MockBean SamDao samDao;
-  @MockBean CollectionDao collectionDao;
 
   @BeforeEach
   void beforeEach() {
     reset(jobDao);
-    reset(collectionDao);
     reset(samDao);
   }
 
@@ -59,28 +60,6 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
     assertThat(actual.getMessage()).startsWith("Job");
   }
 
-  /** requested job exists; its collection also exists. In the control plane, this is an error */
-  @Test
-  void collectionExists() {
-    // Arrange
-    UUID jobId = UUID.randomUUID();
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    GenericJobServerModel expectedJob = makeJob(jobId, collectionId);
-    // job exists
-    when(jobDao.getJob(jobId)).thenReturn(expectedJob);
-    // collection for this job exists
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
-    // user has permission to that workspace
-    when(samDao.hasReadWorkspacePermission(workspaceId.toString())).thenReturn(true);
-
-    // Act / assert
-    Exception actual = assertThrows(CollectionException.class, () -> jobService.getJob(jobId));
-
-    // Assert
-    assertEquals("Expected a virtual collection", actual.getMessage());
-  }
-
   /** requested job exists; its collection is virtual and the user has permission */
   @Test
   void virtualCollectionWithPermission() {
@@ -90,9 +69,6 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
     GenericJobServerModel expectedJob = makeJob(jobId, collectionId);
     // job exists
     when(jobDao.getJob(jobId)).thenReturn(expectedJob);
-    // collection for this job does not exist
-    when(collectionDao.getWorkspaceId(collectionId))
-        .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // user has permission to the workspace with the same id as the collection
     when(samDao.hasReadWorkspacePermission(collectionId.toString())).thenReturn(true);
 
@@ -112,9 +88,6 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
     GenericJobServerModel expectedJob = makeJob(jobId, collectionId);
     // job exists
     when(jobDao.getJob(jobId)).thenReturn(expectedJob);
-    // collection for this job does not exist
-    when(collectionDao.getWorkspaceId(collectionId))
-        .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // user has permission to the workspace with the same id as the collection
     when(samDao.hasReadWorkspacePermission(collectionId.toString())).thenReturn(false);
 
@@ -130,36 +103,11 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
   // ========== tests for getJobsForCollection ========
   // ==================================================
 
-  /** Collection exists. In the control plane, this is an error */
-  @Test
-  void listJobsCollectionExists() {
-    // Arrange
-    UUID jobId = UUID.randomUUID();
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    // collection for this job exists
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
-    // user has permission to that workspace
-    when(samDao.hasReadWorkspacePermission(workspaceId.toString())).thenReturn(true);
-
-    // Act / assert
-    Exception actual =
-        assertThrows(
-            CollectionException.class,
-            () -> jobService.getJobsForCollection(collectionId, allStatuses));
-
-    // Assert
-    assertEquals("Expected a virtual collection", actual.getMessage());
-  }
-
   /** Collection is virtual; user has permission */
   @Test
   void listJobsVirtualCollection() {
     // Arrange
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    // collection for this job does not exist
-    when(collectionDao.getWorkspaceId(collectionId))
-        .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // user has permission to the workspace with the same id as the collection
     when(samDao.hasReadWorkspacePermission(collectionId.toString())).thenReturn(true);
     // return some jobs when listing this collection
@@ -179,9 +127,6 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
   void listJobsVirtualCollectionNoPermission() {
     // Arrange
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    // collection for this job does not exist
-    when(collectionDao.getWorkspaceId(collectionId))
-        .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // user has permission to the workspace with the same id as the collection
     when(samDao.hasReadWorkspacePermission(collectionId.toString())).thenReturn(false);
     // return some jobs when listing this collection

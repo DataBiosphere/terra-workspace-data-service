@@ -14,6 +14,7 @@ import org.databiosphere.workspacedata.api.CloningApi;
 import org.databiosphere.workspacedata.client.ApiException;
 import org.databiosphere.workspacedata.model.BackupJob;
 import org.databiosphere.workspacedata.model.BackupResponse;
+import org.databiosphere.workspacedataservice.config.InstanceProperties.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
@@ -21,6 +22,7 @@ import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -32,7 +34,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -64,17 +65,12 @@ class CollectionInitializerCloneTest {
   @Autowired CloneDao cloneDao;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
 
+  @Autowired @SingleTenant WorkspaceId workspaceId;
+
   // mock beans
   @MockBean WorkspaceDataServiceClientFactory workspaceDataServiceClientFactory;
   @MockBean LeonardoDao mockLeonardoDao;
   @MockBean WorkspaceManagerDao workspaceManagerDao;
-
-  // values
-  @Value("${twds.instance.workspace-id}")
-  String workspaceId;
-
-  @Value("${twds.instance.source-workspace-id}")
-  String sourceWorkspaceId;
 
   // this @BeforeEach makes the initialize-collection-on-startup property redundant, but is a
   // workaround for integration test cleanup
@@ -123,9 +119,8 @@ class CollectionInitializerCloneTest {
         cloneStatus.getErrorMessage());
 
     // default collection should exist, with no tables in it
-    UUID workspaceUuid = UUID.fromString(workspaceId);
-    assertTrue(collectionDao.collectionSchemaExists(workspaceUuid));
-    assertThat(recordDao.getAllRecordTypes(workspaceUuid)).isEmpty();
+    assertTrue(collectionDao.collectionSchemaExists(workspaceId.id()));
+    assertThat(recordDao.getAllRecordTypes(workspaceId.id())).isEmpty();
   }
 
   /*
@@ -163,7 +158,7 @@ class CollectionInitializerCloneTest {
 
     // default collection should exist, with a single table named "thing" in it
     // the "thing" table is defined in WDS-integrationTest-LocalFileStorage-input.sql.
-    UUID workspaceUuid = UUID.fromString(workspaceId);
+    UUID workspaceUuid = workspaceId.id();
     List<UUID> actualCollections = collectionDao.listCollectionSchemas();
     assertEquals(List.of(workspaceUuid), actualCollections);
     List<RecordType> actualTypes = recordDao.getAllRecordTypes(workspaceUuid);
