@@ -70,6 +70,10 @@ public class RecordAttributes {
     return this.attributes.get(attributeName);
   }
 
+  public boolean containsAttribute(String attributeName) {
+    return this.attributes.containsKey(attributeName);
+  }
+
   public Set<Map.Entry<String, Object>> attributeSet() {
     return this.attributes.entrySet();
   }

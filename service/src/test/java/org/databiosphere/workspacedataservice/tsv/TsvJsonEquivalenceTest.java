@@ -12,15 +12,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.service.DataTypeInfererConfig;
-import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 
 /**
  * Tests that, when supplied the same inputs, TSV uploads and JSON request payloads deserialize into
@@ -28,8 +25,7 @@ import org.springframework.test.annotation.DirtiesContext;
  *
  * @see TsvJsonArgumentsProvider
  */
-@DirtiesContext
-@SpringBootTest(classes = {DataTypeInfererConfig.class, JsonConfig.class, TsvConfig.class})
+@SpringBootTest
 class TsvJsonEquivalenceTest extends TestBase {
 
   @Autowired private ObjectReader tsvReader;

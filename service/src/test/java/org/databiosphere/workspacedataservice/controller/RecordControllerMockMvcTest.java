@@ -48,14 +48,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @ActiveProfiles(profiles = "mock-sam")
-@DirtiesContext
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordControllerMockMvcTest extends MockMvcTestBase {
 
@@ -778,7 +776,7 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
                     "attr1")
                 .content(toJson(recordRequest))
                 .contentType(MediaType.APPLICATION_JSON))
-        .andExpect(status().isCreated());
+        .andExpect(status().isBadRequest());
   }
 
   @Test

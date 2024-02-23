@@ -18,12 +18,10 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 
 @ActiveProfiles(profiles = {"mock-sam"})
-@DirtiesContext
 class JobControllerMockMvcTest extends MockMvcTestBase {
   @MockBean private JobDao jobDao;
   @MockBean private CollectionDao collectionDao;

@@ -6,18 +6,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.util.StringUtils;
 
-@DirtiesContext
-@SpringBootTest(classes = JsonConfig.class)
+@SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class RecordResponseTest extends TestBase {
+class RecordResponseTest extends TestBase {
 
   @Autowired private ObjectMapper jacksonObjectMapper;
 

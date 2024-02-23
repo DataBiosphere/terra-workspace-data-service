@@ -6,33 +6,30 @@ import bio.terra.common.db.WriteTransaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.config.InstanceProperties;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+/**
+ * PostgresCollectionDao is used to interact with sys_wds collection table in postgres. This table
+ * tracks activity such as collection creation and deletion, as well as returning existing
+ * collections. This class will help add entries to the table, check if entries already exist and
+ * update them as necessary.
+ */
 @Repository
 public class PostgresCollectionDao implements CollectionDao {
 
   private final NamedParameterJdbcTemplate namedTemplate;
 
-  private UUID workspaceId;
+  private final UUID workspaceId;
 
-  /*
-  PostgresCollectionDao is used to interact with sys_wds collection table in postgres.
-  This table tracks activity such as collection creation and deletion, as well as returning existing collections.
-  This class will help add entries to the table, check if entries already exist and update them as necessary.
-   */
   public PostgresCollectionDao(
-      NamedParameterJdbcTemplate namedTemplate, TwdsProperties twdsProperties) {
+      NamedParameterJdbcTemplate namedTemplate, InstanceProperties instanceProperties) {
     this.namedTemplate = namedTemplate;
-    // if we have a valid workspaceId, save it to a local var now
-    if (twdsProperties.getInstance() != null
-        && twdsProperties.getInstance().getWorkspaceUuid() != null) {
-      this.workspaceId = twdsProperties.getInstance().getWorkspaceUuid();
-    }
+    this.workspaceId = instanceProperties.getWorkspaceUuid();
   }
 
   @Override

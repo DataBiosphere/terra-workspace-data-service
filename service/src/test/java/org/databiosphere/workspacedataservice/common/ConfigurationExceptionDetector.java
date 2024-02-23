@@ -21,14 +21,21 @@ public class ConfigurationExceptionDetector implements TestWatcher {
           "Test failed due to an unhandled ConfigurationException! " + RESOLUTION_HINT, rootCause);
     }
 
-    if (rootCause instanceof AssertionFailedError afe) {
-      if (ConfigurationException.class.equals(afe.getActual().getType())
-          && !ConfigurationException.class.equals(afe.getExpected().getType())) {
-        throw new AssertionError(
-            "Test failed due to an unexpected ConfigurationException! " + RESOLUTION_HINT,
-            rootCause);
-      }
+    if (rootCause instanceof AssertionFailedError afe && isUnexpectedConfigurationException(afe)) {
+      throw new AssertionError(
+          "Test failed due to an unexpected ConfigurationException! " + RESOLUTION_HINT, rootCause);
     }
+  }
+
+  private boolean isUnexpectedConfigurationException(AssertionFailedError afe) {
+    boolean actualValueIsConfigurationException =
+        afe.getActual() != null && afe.getActual().getType().equals(ConfigurationException.class);
+
+    boolean expectedValueIsNot =
+        afe.getExpected() == null
+            || !ConfigurationException.class.equals(afe.getExpected().getType());
+
+    return actualValueIsConfigurationException && expectedValueIsNot;
   }
 
   private Throwable getRootCause(Throwable throwable) {
