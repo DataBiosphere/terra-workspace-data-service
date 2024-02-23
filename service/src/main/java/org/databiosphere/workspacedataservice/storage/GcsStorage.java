@@ -29,7 +29,7 @@ public class GcsStorage {
     this.storage = storageOptions.getService();
   }
 
-  // primary here for tests, but also allows this class to be used with values other than
+  // primarily here for tests, but also allows this class to be used with values other than
   // the ones provided in the config, if needed
   public GcsStorage(Storage storage, String bucketName, String projectId) {
     this.storage = storage;
