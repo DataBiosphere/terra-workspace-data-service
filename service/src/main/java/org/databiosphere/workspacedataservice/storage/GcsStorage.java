@@ -1,15 +1,15 @@
 package org.databiosphere.workspacedataservice.storage;
 
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.storage.BlobId;
-import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.spring.storage.GoogleStorageResource;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.StreamUtils;
 
 public class GcsStorage {
   private Storage storage;
@@ -39,16 +39,22 @@ public class GcsStorage {
     this.projectId = projectId;
   }
 
-  public String getBlobContents(String blobName) {
-    BlobId blobId = BlobId.of(bucketName, blobName);
-    var blob = storage.get(blobId);
-    var contents = blob.getContent();
-    return new String(contents, StandardCharsets.UTF_8);
+  public String getBlobContents(String blobName) throws IOException {
+    GoogleStorageResource gcsResource =
+        new GoogleStorageResource(
+            this.storage, String.format("gs://%s/%s", this.bucketName, blobName));
+    return StreamUtils.copyToString(gcsResource.getInputStream(), Charset.defaultCharset());
   }
 
-  public BlobId createGcsFile(InputStream contents) {
-    BlobId blobId = BlobId.of(bucketName, UUID.randomUUID().toString());
-    storage.create(BlobInfo.newBuilder(blobId).build(), contents);
-    return blobId;
+  public String createGcsFile(String blobName, InputStream contents) throws IOException {
+    // create the GCS Resource
+    GoogleStorageResource gcsResource =
+        new GoogleStorageResource(
+            this.storage, String.format("gs://%s/%s", this.bucketName, blobName));
+    // write the data to the resource
+    try (OutputStream os = gcsResource.getOutputStream()) {
+      contents.transferTo(os);
+    }
+    return gcsResource.getBlobName();
   }
 }
