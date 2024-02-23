@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -31,5 +32,5 @@ public interface JobDao {
   GenericJobServerModel getJob(UUID jobId);
 
   List<GenericJobServerModel> getJobsForCollection(
-      CollectionId collectionId, List<String> statuses);
+      CollectionId collectionId, Optional<List<String>> statuses);
 }

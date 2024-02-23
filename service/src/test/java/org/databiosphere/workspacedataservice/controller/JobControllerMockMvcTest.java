@@ -11,6 +11,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
@@ -84,7 +85,8 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
             GenericJobServerModel.StatusEnum.RUNNING,
             time,
             time));
-    when(jobDao.getJobsForCollection(collectionId, List.of("RUNNING"))).thenReturn(expected);
+    when(jobDao.getJobsForCollection(collectionId, Optional.of(List.of("RUNNING"))))
+        .thenReturn(expected);
 
     // calling the API should result in 200 OK
     MvcResult mvcResult =
