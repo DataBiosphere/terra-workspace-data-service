@@ -76,6 +76,8 @@ class CollectionInitializerCloneTest {
   @Value("${twds.instance.source-workspace-id}")
   String sourceWorkspaceId;
 
+  // this @BeforeEach makes the initialize-collection-on-startup property redundant, but is a
+  // workaround for integration test cleanup
   @BeforeEach
   @AfterAll
   void tearDown() {
