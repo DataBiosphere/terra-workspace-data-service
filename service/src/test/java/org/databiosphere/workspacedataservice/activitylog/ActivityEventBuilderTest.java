@@ -35,7 +35,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ExtendWith(OutputCaptureExtension.class)
-public class ActivityEventBuilderTest extends TestBase {
+class ActivityEventBuilderTest extends TestBase {
 
   @Autowired CollectionService collectionService;
 

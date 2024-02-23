@@ -5,8 +5,8 @@ package org.databiosphere.workspacedataservice.config;
  * deployment.
  */
 public class TenancyProperties {
-  private Boolean allowVirtualCollections;
-  private Boolean requireEnvWorkspace;
+  private boolean allowVirtualCollections;
+  private boolean requireEnvWorkspace;
 
   /**
    * Does this WDS deployment allow virtual collections? That is, does it allow for a collection
@@ -16,11 +16,11 @@ public class TenancyProperties {
    *
    * @return Does this WDS deployment allow virtual collections?
    */
-  public Boolean getAllowVirtualCollections() {
+  public boolean getAllowVirtualCollections() {
     return allowVirtualCollections;
   }
 
-  public void setAllowVirtualCollections(Boolean allowVirtualCollections) {
+  public void setAllowVirtualCollections(boolean allowVirtualCollections) {
     this.allowVirtualCollections = allowVirtualCollections;
   }
 
@@ -31,11 +31,11 @@ public class TenancyProperties {
    *
    * @return Does this WDS deployment require a $WORKSPACE_ID environment variable to be set?
    */
-  public Boolean getRequireEnvWorkspace() {
+  public boolean getRequireEnvWorkspace() {
     return requireEnvWorkspace;
   }
 
-  public void setRequireEnvWorkspace(Boolean requireEnvWorkspace) {
+  public void setRequireEnvWorkspace(boolean requireEnvWorkspace) {
     this.requireEnvWorkspace = requireEnvWorkspace;
   }
 }

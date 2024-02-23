@@ -6,7 +6,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.config.InstanceProperties;
+import org.databiosphere.workspacedataservice.config.TenancyProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
@@ -27,8 +28,7 @@ public class CollectionService {
   private final CollectionDao collectionDao;
   private final SamDao samDao;
   private final ActivityLogger activityLogger;
-
-  private final TwdsProperties twdsProperties;
+  private final TenancyProperties tenancyProperties;
 
   private WorkspaceId workspaceId;
 
@@ -38,15 +38,15 @@ public class CollectionService {
       CollectionDao collectionDao,
       SamDao samDao,
       ActivityLogger activityLogger,
-      TwdsProperties twdsProperties) {
+      InstanceProperties instanceProperties,
+      TenancyProperties tenancyProperties) {
     this.collectionDao = collectionDao;
     this.samDao = samDao;
     this.activityLogger = activityLogger;
-    this.twdsProperties = twdsProperties;
+    this.tenancyProperties = tenancyProperties;
     // stash the workspace id from config into a member var
-    if (twdsProperties.getInstance() != null
-        && twdsProperties.getInstance().getWorkspaceUuid() != null) {
-      workspaceId = WorkspaceId.of(twdsProperties.getInstance().getWorkspaceUuid());
+    if (instanceProperties.getWorkspaceUuid() != null) {
+      workspaceId = WorkspaceId.of(instanceProperties.getWorkspaceUuid());
     }
   }
 
@@ -108,8 +108,7 @@ public class CollectionService {
 
   public void validateCollection(UUID collectionId) {
     // if this deployment allows virtual collections, there is nothing to validate
-    if (twdsProperties.getTenancy() != null
-        && twdsProperties.getTenancy().getAllowVirtualCollections()) {
+    if (tenancyProperties.getAllowVirtualCollections()) {
       return;
     }
     // else, check if this collection has a row in the collections table
@@ -150,8 +149,7 @@ public class CollectionService {
       rowWorkspaceId = collectionDao.getWorkspaceId(collectionId);
       // as of this writing, if a deployment allows virtual collections, it is an error if the
       // collection DOES exist.
-      if (twdsProperties.getTenancy() != null
-          && twdsProperties.getTenancy().getAllowVirtualCollections()) {
+      if (tenancyProperties.getAllowVirtualCollections()) {
         throw new CollectionException("Expected a virtual collection");
       }
     } catch (EmptyResultDataAccessException e) {
@@ -159,8 +157,7 @@ public class CollectionService {
       // TODO AJ-1630: enable this error for data-plane WDS, which does not allow virtual
       // collections
       /*
-      if (twdsProperties.getTenancy() == null
-          || !twdsProperties.getTenancy().getAllowVirtualCollections()) {
+      if (!tenancyProperties.getAllowVirtualCollections()) {
         throw new MissingObjectException("Collection");
       }
       */

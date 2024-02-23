@@ -19,7 +19,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
-@ActiveProfiles({"mock-storage", "local-cors", "local"})
+@ActiveProfiles({"mock-storage", "local-cors", "local", "data-plane"})
 @ContextConfiguration(name = "mockStorage")
 @DirtiesContext
 @SpringBootTest
@@ -30,7 +30,7 @@ import org.springframework.test.context.TestPropertySource;
       "twds.instance.source-workspace-id=123e4567-e89b-12d3-a456-426614174001",
       "twds.pg_dump.host="
     })
-public class BackupRestoreServiceFailureIntegrationTest {
+class BackupRestoreServiceFailureIntegrationTest {
   @Autowired private BackupRestoreService backupRestoreService;
 
   @Value("${twds.instance.source-workspace-id}")

@@ -14,8 +14,10 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest
 @ActiveProfiles("control-plane")
 class TwdsPropertiesControlPlaneTest {
-
   @Autowired TwdsProperties twdsProperties;
+  @Autowired DataImportProperties dataImportProperties;
+  @Autowired InstanceProperties instanceProperties;
+  @Autowired TenancyProperties tenancyProperties;
 
   @Test
   void nonNullDataImport() {
@@ -24,7 +26,7 @@ class TwdsPropertiesControlPlaneTest {
 
   @Test
   void batchWriteRecordSink() {
-    assertEquals(RecordSinkMode.RAWLS, twdsProperties.getDataImport().getBatchWriteRecordSink());
+    assertEquals(RecordSinkMode.RAWLS, dataImportProperties.getBatchWriteRecordSink());
   }
 
   @Test
@@ -34,11 +36,11 @@ class TwdsPropertiesControlPlaneTest {
 
   @Test
   void allowVirtualCollections() {
-    assertTrue(twdsProperties.getTenancy().getAllowVirtualCollections());
+    assertTrue(tenancyProperties.getAllowVirtualCollections());
   }
 
   @Test
   void requireEnvWorkspace() {
-    assertFalse(twdsProperties.getTenancy().getRequireEnvWorkspace());
+    assertFalse(tenancyProperties.getRequireEnvWorkspace());
   }
 }

@@ -10,18 +10,14 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 
-@DirtiesContext
-@SpringBootTest(classes = {JsonConfig.class})
-public class JsonRecordSourceTest extends TestBase {
-
+@SpringBootTest
+class JsonRecordSourceTest extends TestBase {
   @Autowired ObjectMapper objectMapper; // as defined in JsonConfig
 
   private static Stream<Arguments> parserFeatures() {

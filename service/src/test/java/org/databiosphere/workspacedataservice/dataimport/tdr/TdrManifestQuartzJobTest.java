@@ -37,7 +37,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-public class TdrManifestQuartzJobTest extends TestBase {
+class TdrManifestQuartzJobTest extends TestBase {
 
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;

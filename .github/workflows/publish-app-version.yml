@@ -13,6 +13,16 @@ on:
         required: true
 
 jobs:
+  ####################
+  # WDS (data plane) #
+  ####################
+
+  # Create a PR to update the WDS version in terra-helmfile.
+  # This starts the process of updating the WDS version in Leonardo.
+  # The terra-helmfile PR crated here will be automatically merged (if checks pass).
+  # Once it is merged, a new version of the Helm chart will automatically be published
+  # and a PR to Leonardo opened to update the WDS chart version in Leonardo.
+  # The Leonardo PR will also be automatically merged (if checks pass).
   create-terra-helmfile-pr:
     name: Create terra-helmfile PR for latest WDS version
     runs-on: ubuntu-latest
@@ -56,6 +66,12 @@ jobs:
           git push -u origin ${JIRA_ID}-auto-update-${HELM_NEW_TAG}
           gh pr create --title "${JIRA_ID}: auto update WDS version to $HELM_NEW_TAG" --body "${JIRA_ID} helm chart update" --label "automerge"
 
+  ########################
+  # cWDS (control plane) #
+  ########################
+
+  # Report the new version of cWDS to Sherlock.
+  # This enables Sherlock to gather metrics and generate changelogs for deployments.
   cwds-report-to-sherlock:
     uses: broadinstitute/sherlock/.github/workflows/client-report-app-version.yaml@main
     with:
@@ -65,6 +81,7 @@ jobs:
       contents: 'read'
       id-token: 'write'
 
+  # Deploy the new version of cWDS to the dev environment.
   cwds-set-version-in-dev:
     uses: broadinstitute/sherlock/.github/workflows/client-set-environment-app-version.yaml@main
     needs: cwds-report-to-sherlock

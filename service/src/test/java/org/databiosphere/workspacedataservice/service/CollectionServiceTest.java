@@ -1,21 +1,16 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
-import org.databiosphere.workspacedataservice.dao.MockCollectionDaoConfig;
-import org.databiosphere.workspacedataservice.retry.RestClientRetry;
-import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
-import org.databiosphere.workspacedataservice.sam.SamConfig;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,16 +19,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(profiles = {"mock-sam", "mock-collection-dao"})
 @DirtiesContext
-@SpringBootTest(
-    classes = {
-      CollectionService.class,
-      MockCollectionDaoConfig.class,
-      SamConfig.class,
-      MockSamClientFactoryConfig.class,
-      ActivityLoggerConfig.class,
-      RestClientRetry.class,
-      TwdsProperties.class
-    })
+@SpringBootTest
 class CollectionServiceTest extends TestBase {
 
   @Autowired private CollectionService collectionService;
@@ -41,8 +27,9 @@ class CollectionServiceTest extends TestBase {
 
   private static final UUID COLLECTION = UUID.fromString("111e9999-e89b-12d3-a456-426614174000");
 
+  @BeforeEach
   @AfterEach
-  void tearDown() {
+  void dropCollectionSchemas() {
     // Delete all collections
     collectionDao
         .listCollectionSchemas()
@@ -59,9 +46,6 @@ class CollectionServiceTest extends TestBase {
         MissingObjectException.class,
         () -> collectionService.validateCollection(invalidCollection),
         "validateCollection should have thrown an error");
-
-    // clean up
-    collectionService.deleteCollection(COLLECTION, VERSION);
   }
 
   @Test
@@ -73,12 +57,7 @@ class CollectionServiceTest extends TestBase {
 
     List<UUID> collections = collectionService.listCollections(VERSION);
 
-    assertEquals(2, collections.size());
-    assert (collections.contains(COLLECTION));
-    assert (collections.contains(secondCollectionId));
-
-    collectionService.deleteCollection(COLLECTION, VERSION);
-    collectionService.deleteCollection(secondCollectionId, VERSION);
+    assertThat(collections).hasSize(2).contains(COLLECTION).contains(secondCollectionId);
   }
 
   @Test

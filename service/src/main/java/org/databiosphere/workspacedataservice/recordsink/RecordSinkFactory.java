@@ -3,8 +3,7 @@ package org.databiosphere.workspacedataservice.recordsink;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import java.util.function.Consumer;
-import org.databiosphere.workspacedataservice.config.ConfigurationException;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.recordsink.RawlsRecordSink.RawlsJsonConsumer;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
@@ -18,15 +17,15 @@ import org.springframework.stereotype.Component;
 public class RecordSinkFactory {
   private static final Logger logger = LoggerFactory.getLogger(RecordSinkFactory.class);
 
-  private final TwdsProperties twdsProperties;
+  private final DataImportProperties dataImportProperties;
   private final ObjectMapper mapper;
   private RecordService recordService;
   private RecordDao recordDao;
   private DataTypeInferer dataTypeInferer;
   private Consumer<String> jsonConsumer;
 
-  public RecordSinkFactory(TwdsProperties twdsProperties, ObjectMapper mapper) {
-    this.twdsProperties = twdsProperties;
+  public RecordSinkFactory(DataImportProperties dataImportProperties, ObjectMapper mapper) {
+    this.dataImportProperties = dataImportProperties;
     this.mapper = mapper;
   }
 
@@ -54,11 +53,7 @@ public class RecordSinkFactory {
   //   ignored for RecordSinkMode.WDS.  In this case, it might be worth adding support for omitting
   //   the prefix as part of supporting the prefix assignment.
   public RecordSink buildRecordSink(UUID collectionId, String prefix) {
-    if (twdsProperties.getDataImport() == null) {
-      throw new ConfigurationException("twds.data-import properties are not defined");
-    }
-
-    switch (twdsProperties.getDataImport().getBatchWriteRecordSink()) {
+    switch (dataImportProperties.getBatchWriteRecordSink()) {
       case WDS -> {
         return wdsRecordSink(collectionId);
       }
@@ -66,8 +61,7 @@ public class RecordSinkFactory {
         return rawlsRecordSink(prefix);
       }
       default -> throw new RuntimeException(
-          "Unknown RecordSinkMode: %s"
-              .formatted(twdsProperties.getDataImport().getBatchWriteRecordSink()));
+          "Unknown RecordSinkMode: %s".formatted(dataImportProperties.getBatchWriteRecordSink()));
     }
   }
 
