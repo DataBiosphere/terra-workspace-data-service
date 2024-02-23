@@ -127,9 +127,7 @@ dependencies {
     testImplementation 'org.junit-pioneer:junit-pioneer:2.2.0'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio'
-    testImplementation platform('com.google.cloud:libraries-bom:26.30.0')
-    testImplementation 'com.google.cloud:google-cloud-storage'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.13'
 
     constraints {
         implementation('org.json:json:20240205') {

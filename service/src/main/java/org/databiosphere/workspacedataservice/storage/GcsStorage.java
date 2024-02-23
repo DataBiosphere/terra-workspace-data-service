@@ -7,9 +7,7 @@ import com.google.cloud.storage.StorageOptions;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.util.StreamUtils;
 
 public class GcsStorage {
   private Storage storage;
@@ -39,11 +37,11 @@ public class GcsStorage {
     this.projectId = projectId;
   }
 
-  public String getBlobContents(String blobName) throws IOException {
+  public InputStream getBlobContents(String blobName) throws IOException {
     GoogleStorageResource gcsResource =
         new GoogleStorageResource(
             this.storage, String.format("gs://%s/%s", this.bucketName, blobName));
-    return StreamUtils.copyToString(gcsResource.getInputStream(), Charset.defaultCharset());
+    return gcsResource.getInputStream();
   }
 
   public String createGcsFile(String blobName, InputStream contents) throws IOException {
