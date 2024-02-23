@@ -10,9 +10,10 @@ import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,14 +24,15 @@ import org.springframework.test.context.TestPropertySource;
 
 @ActiveProfiles({"mock-storage", "local-cors", "local", "data-plane"})
 @ContextConfiguration(name = "mockStorage")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DirtiesContext
 @SpringBootTest
 @TestPropertySource(
     properties = {
+      "twds.instance.initialize-collection-on-startup=false",
       "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000",
       "twds.instance.source-workspace-id=10000000-0000-0000-0000-000000000111",
-      "twds.pg_dump.useAzureIdentity=false",
-      "twds.instance.run-on-startup=false"
+      "twds.pg_dump.useAzureIdentity=false"
     })
 class RestoreServiceIntegrationTest {
   @Autowired private BackupRestoreService backupRestoreService;
@@ -43,7 +45,7 @@ class RestoreServiceIntegrationTest {
   private String workspaceId;
 
   @BeforeEach
-  @AfterEach
+  @AfterAll
   void tearDown() {
     // clean up any collection left in the db
     List<UUID> allCollections = collectionDao.listCollectionSchemas();

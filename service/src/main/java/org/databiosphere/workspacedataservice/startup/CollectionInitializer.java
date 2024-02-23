@@ -17,7 +17,7 @@ public class CollectionInitializer implements ApplicationListener<ContextRefresh
   public CollectionInitializer(
       CollectionInitializerBean collectionInitializerBean, InstanceProperties instanceProperties) {
     this.collectionInitializerBean = collectionInitializerBean;
-    this.runOnStartup = instanceProperties.getRunOnStartup();
+    this.runOnStartup = instanceProperties.getInitializeCollectionOnStartup();
   }
 
   @Override

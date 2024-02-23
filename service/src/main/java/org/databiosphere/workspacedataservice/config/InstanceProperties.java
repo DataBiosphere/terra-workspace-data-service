@@ -12,7 +12,7 @@ public class InstanceProperties {
   private UUID workspaceUuid;
   private String sourceWorkspaceId;
   private UUID sourceWorkspaceUuid;
-  private boolean runOnStartup;
+  private boolean initializeCollectionOnStartup;
 
   public String getWorkspaceId() {
     return workspaceId;
@@ -49,8 +49,8 @@ public class InstanceProperties {
     return sourceWorkspaceId;
   }
 
-  public boolean getRunOnStartup() {
-    return runOnStartup;
+  public boolean getInitializeCollectionOnStartup() {
+    return initializeCollectionOnStartup;
   }
 
   public void setSourceWorkspaceId(String sourceWorkspaceId) {
@@ -62,7 +62,7 @@ public class InstanceProperties {
     }
   }
 
-  public void setRunOnStartup(boolean set) {
-    runOnStartup = set;
+  public void setInitializeCollectionOnStartup(boolean set) {
+    initializeCollectionOnStartup = set;
   }
 }
