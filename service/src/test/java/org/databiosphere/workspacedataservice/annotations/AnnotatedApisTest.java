@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Optional;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,9 +13,11 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.bind.annotation.RestController;
 
-@ActiveProfiles({"control-plane", "data-plane"})
+@ActiveProfiles(
+    value = {"control-plane", "data-plane"},
+    inheritProfiles = false)
 @SpringBootTest
-class AnnotatedApisTest {
+class AnnotatedApisTest extends TestBase {
 
   @Autowired private ApplicationContext context;
 
