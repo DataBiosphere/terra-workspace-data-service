@@ -4,6 +4,8 @@ import static org.databiosphere.workspacedataservice.generated.GenericJobServerM
 
 import java.util.List;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
+import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.JobApi;
 import org.databiosphere.workspacedataservice.service.JobService;
@@ -14,6 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Controller for job-related APIs */
+@DataPlane
+@ControlPlane
 @RestController
 public class JobController implements JobApi {
 
