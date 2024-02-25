@@ -3,6 +3,8 @@ package org.databiosphere.workspacedataservice.controller;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
+import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
+import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
@@ -13,6 +15,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
+@ControlPlane
+@DataPlane
 @RestController
 public class SwaggerUiController {
 
