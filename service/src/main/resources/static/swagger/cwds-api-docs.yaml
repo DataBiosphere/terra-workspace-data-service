@@ -2,9 +2,10 @@ openapi: 3.0.3
 
 info:
   title: cWDS API Spec
-  version: v0.2
+  version: v1
   description: |
-    Welcome to cWDS.
+    cWDS - the "(c)control-plane (W)orkspace (D)ata (S)ervice - is responsible for importing
+    tabular data into the Data tab of a workspace.
   termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
   license:
     name: BSD
@@ -21,18 +22,18 @@ tags:
     description: Job APIs
   - name: General WDS Information
     description: Information regarding versioning, health, info, etc. for WDS
-  - name: Capabilities
-    description: Describes the features of WDS
 
 paths:
   # Paths should be grouped by their tag, following the order of tags listed above.
   # Within each tag group, paths should be listed alphabetically.
 
+
+  # OpenApi requires "/" to be replaced with "~1" when referencing paths in another file.
+
   ##############################
   # Import APIs
   ##############################
   /{instanceUuid}/import/v1:
-    # OpenApi requires "/" to be replaced with "~1" in the path being referenced
     $ref: 'apis-v1.yaml#/paths/~1{instanceUuid}~1import~1v1'
 
   ##############################
@@ -50,11 +51,3 @@ paths:
     $ref: 'openapi-docs.yaml#/paths/~1status'
   /version:
     $ref: 'openapi-docs.yaml#/paths/~1version'
-
-  ##############################
-  # Capabilities APIs
-  ##############################
-  /capabilities/v1:
-    # OpenApi requires "/" to be replaced with "~1" in the path being referenced
-    $ref: 'apis-v1.yaml#/paths/~1capabilities~1v1'
-
