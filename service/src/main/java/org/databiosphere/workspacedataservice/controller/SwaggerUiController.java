@@ -27,21 +27,19 @@ public class SwaggerUiController {
     return new ModelAndView("redirect:/swagger/swagger-ui.html", model);
   }
 
+  // serve up the swagger-ui html, replacing tokens appropriately
   @GetMapping("/swagger/swagger-ui.html")
   public ResponseEntity<String> getSwaggerUi() throws IOException {
     String template = new String(Files.readAllBytes(swaggerUiResource.getFile().toPath()));
 
-    String content = "error";
+    String content;
 
     if (environment.matchesProfiles("control-plane")) {
       // replace the title
       content =
           template.replace("${TITLE}", "cWDS API").replace("${APISPEC}", "cwds-api-docs.yaml");
     } else {
-      content =
-          template
-              .replace("${TITLE}", "Azure Data Plane WDS API")
-              .replace("${APISPEC}", "openapi-docs.yaml");
+      content = template.replace("${TITLE}", "WDS API").replace("${APISPEC}", "openapi-docs.yaml");
     }
 
     return ResponseEntity.of(Optional.of(content));
