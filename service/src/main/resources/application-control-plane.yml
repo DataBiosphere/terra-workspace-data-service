@@ -1,3 +1,6 @@
+env:
+  wds:
+    deploymentMode: control-plane
 twds:
   tenancy:
     # Should this WDS deployment allow virtual collections, i.e. collections that have no
@@ -5,5 +8,6 @@ twds:
     allow-virtual-collections: true
     # Should this WDS deployment require a valid $WORKSPACE_ID env var?
     require-env-workspace: false
+
   data-import:
     batch-write-record-sink: "rawls"

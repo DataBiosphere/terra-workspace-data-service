@@ -25,6 +25,7 @@ import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.service.model.RelationValue;
 import org.databiosphere.workspacedataservice.service.model.ReservedNames;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
+import org.databiosphere.workspacedataservice.service.model.exception.ConflictingPrimaryKeysException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -310,21 +311,21 @@ public class RecordService {
             .getSingleRecord(collectionId, recordType, recordId)
             .orElseThrow(() -> new MissingObjectException("Record"));
     RecordAttributes incomingAttrs = recordRequest.recordAttributes();
+    String primaryKey = recordDao.getPrimaryKeyColumn(recordType, collectionId);
+    if (incomingAttrs.containsAttribute(primaryKey)
+        && incomingAttrs.getAttributeValue(primaryKey) != recordId) {
+      throw new ConflictingPrimaryKeysException();
+    }
     RecordAttributes allAttrs = singleRecord.putAllAttributes(incomingAttrs).getAttributes();
     Map<String, DataTypeMapping> typeMapping = inferer.inferTypes(incomingAttrs);
     Map<String, DataTypeMapping> existingTableSchema =
-        recordDao.getExistingTableSchemaLessPrimaryKey(collectionId, recordType);
+        recordDao.getExistingTableSchema(collectionId, recordType);
     singleRecord.setAttributes(allAttrs);
     List<Record> records = Collections.singletonList(singleRecord);
     Map<String, DataTypeMapping> updatedSchema =
         addOrUpdateColumnIfNeeded(
             collectionId, recordType, typeMapping, existingTableSchema, records);
-    prepareAndUpsert(
-        collectionId,
-        recordType,
-        records,
-        updatedSchema,
-        recordDao.getPrimaryKeyColumn(recordType, collectionId));
+    prepareAndUpsert(collectionId, recordType, records, updatedSchema, primaryKey);
     return new RecordResponse(recordId, recordType, singleRecord.getAttributes());
   }
 
@@ -339,16 +340,25 @@ public class RecordService {
     Map<String, DataTypeMapping> requestSchema = inferer.inferTypes(attributesInRequest);
     HttpStatus status = HttpStatus.CREATED;
     if (!recordDao.recordTypeExists(collectionId, recordType)) {
+      String calculatedPrimaryKey = primaryKey.orElse(ReservedNames.RECORD_ID);
+      if (attributesInRequest.containsAttribute(calculatedPrimaryKey)
+          && attributesInRequest.getAttributeValue(calculatedPrimaryKey) != recordId) {
+        throw new ConflictingPrimaryKeysException();
+      }
       RecordResponse response =
           new RecordResponse(recordId, recordType, recordRequest.recordAttributes());
       Record newRecord = new Record(recordId, recordType, recordRequest);
       createRecordTypeAndInsertRecords(
-          collectionId, newRecord, recordType, requestSchema, primaryKey);
+          collectionId, newRecord, recordType, requestSchema, calculatedPrimaryKey);
       return new ResponseEntity<>(response, status);
     } else {
-      validatePrimaryKey(collectionId, recordType, primaryKey);
+      String existingPrimaryKey = validatePrimaryKey(collectionId, recordType, primaryKey);
+      if (attributesInRequest.containsAttribute(existingPrimaryKey)
+          && attributesInRequest.getAttributeValue(existingPrimaryKey) != recordId) {
+        throw new ConflictingPrimaryKeysException();
+      }
       Map<String, DataTypeMapping> existingTableSchema =
-          recordDao.getExistingTableSchemaLessPrimaryKey(collectionId, recordType);
+          recordDao.getExistingTableSchema(collectionId, recordType);
       // null out any attributes that already exist but aren't in the request
       existingTableSchema
           .keySet()
@@ -378,20 +388,15 @@ public class RecordService {
       Record newRecord,
       RecordType recordType,
       Map<String, DataTypeMapping> requestSchema,
-      Optional<String> primaryKey) {
+      String primaryKey) {
     List<Record> records = Collections.singletonList(newRecord);
     recordDao.createRecordType(
         collectionId,
         requestSchema,
         recordType,
         inferer.findRelations(records, requestSchema),
-        primaryKey.orElse(ReservedNames.RECORD_ID));
-    prepareAndUpsert(
-        collectionId,
-        recordType,
-        records,
-        requestSchema,
-        primaryKey.orElse(ReservedNames.RECORD_ID));
+        primaryKey);
+    prepareAndUpsert(collectionId, recordType, records, requestSchema, primaryKey);
   }
 
   public String validatePrimaryKey(

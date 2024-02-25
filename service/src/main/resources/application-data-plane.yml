@@ -1,3 +1,6 @@
+env:
+  wds:
+    deploymentMode: data-plane
 twds:
   tenancy:
     # Should this WDS deployment allow virtual collections, i.e. collections that have no
@@ -7,3 +10,4 @@ twds:
     require-env-workspace: true
   data-import:
     batch-write-record-sink: "wds"
+
