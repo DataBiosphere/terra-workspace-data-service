@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -213,7 +214,7 @@ public class PostgresJobDao implements JobDao {
   }
 
   public List<GenericJobServerModel> getJobsForCollection(
-      CollectionId collectionId, List<String> statuses) {
+      CollectionId collectionId, Optional<List<String>> statuses) {
     // start our sql statement and map of params
     StringBuilder sb =
         new StringBuilder(
@@ -224,9 +225,9 @@ public class PostgresJobDao implements JobDao {
     MapSqlParameterSource params = new MapSqlParameterSource("collection_id", collectionId.id());
 
     // if status is supplied, filter by that
-    if (!statuses.isEmpty()) {
+    if (statuses.isPresent()) {
       sb.append(" and status in (:statuses)");
-      params.addValue("statuses", statuses);
+      params.addValue("statuses", statuses.get());
     }
     return namedTemplate.query(sb.toString(), params, new AsyncJobRowMapper());
   }

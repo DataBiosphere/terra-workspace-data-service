@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.controller;
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
@@ -53,7 +54,9 @@ public class JobController implements JobApi {
       }
     }
     List<GenericJobServerModel> jobList =
-        jobService.getJobsForCollection(CollectionId.of(instanceUuid), statuses);
+        jobService.getJobsForCollection(
+            CollectionId.of(instanceUuid),
+            statuses == null ? Optional.empty() : Optional.of(statuses));
 
     return new ResponseEntity<>(jobList, HttpStatus.OK);
   }

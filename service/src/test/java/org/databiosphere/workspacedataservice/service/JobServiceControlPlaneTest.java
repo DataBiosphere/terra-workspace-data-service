@@ -9,6 +9,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
@@ -134,7 +135,6 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
   @Test
   void listJobsCollectionExists() {
     // Arrange
-    UUID jobId = UUID.randomUUID();
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     // collection for this job exists
@@ -146,7 +146,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
     Exception actual =
         assertThrows(
             CollectionException.class,
-            () -> jobService.getJobsForCollection(collectionId, allStatuses));
+            () -> jobService.getJobsForCollection(collectionId, Optional.of(allStatuses)));
 
     // Assert
     assertEquals("Expected a virtual collection", actual.getMessage());
@@ -167,7 +167,8 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
         .thenReturn(makeJobList(collectionId, 2));
 
     // Act
-    List<GenericJobServerModel> actual = jobService.getJobsForCollection(collectionId, allStatuses);
+    List<GenericJobServerModel> actual =
+        jobService.getJobsForCollection(collectionId, Optional.of(allStatuses));
 
     // Assert
     // this is verifying permissions only; only smoke-testing correctness of the result
@@ -192,7 +193,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
     AuthenticationMaskableException actual =
         assertThrows(
             AuthenticationMaskableException.class,
-            () -> jobService.getJobsForCollection(collectionId, allStatuses));
+            () -> jobService.getJobsForCollection(collectionId, Optional.of(allStatuses)));
 
     // Assert
     assertEquals("Collection", actual.getObjectType());
