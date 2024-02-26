@@ -77,19 +77,16 @@ class JobControllerTest extends TestBase {
   }
 
   @Test
-  void instanceJobsReturnAllNoStatus() {
+  void instanceJobsReturnAll() {
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     HttpHeaders headers = new HttpHeaders();
-    // ParameterizedTypeReference<List<GenericJobServerModel>> returnType = new
-    // ParameterizedTypeReference<List<GenericJobServerModel>>() {};
     ResponseEntity<List<GenericJobServerModel>> result =
         restTemplate.exchange(
-            "/job/v1/instance/{instanceUuid}?statuses={statuses}",
+            "/job/v1/instance/{instanceUuid}",
             HttpMethod.GET,
             new HttpEntity<>(headers),
             new ParameterizedTypeReference<List<GenericJobServerModel>>() {},
-            collectionId,
-            "");
+            collectionId);
     List<GenericJobServerModel> jobList = result.getBody();
     assertNotNull(jobList);
     // 3 jobs inserted in beforeAll, only 2 for this instanceId

@@ -9,6 +9,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.config.InstanceProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
@@ -178,7 +179,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     Exception actual =
         assertThrows(
             MissingObjectException.class,
-            () -> jobService.getJobsForCollection(collectionId, allStatuses));
+            () -> jobService.getJobsForCollection(collectionId, Optional.of(allStatuses)));
 
     // Assert
     assertThat(actual.getMessage()).startsWith("Collection");
@@ -199,7 +200,8 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
         .thenReturn(makeJobList(collectionId, 2));
 
     // Act
-    List<GenericJobServerModel> actual = jobService.getJobsForCollection(collectionId, allStatuses);
+    List<GenericJobServerModel> actual =
+        jobService.getJobsForCollection(collectionId, Optional.of(allStatuses));
 
     // Assert
     // this is verifying permissions only; only smoke-testing correctness of the result
@@ -223,7 +225,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     Exception actual =
         assertThrows(
             MissingObjectException.class,
-            () -> jobService.getJobsForCollection(collectionId, allStatuses));
+            () -> jobService.getJobsForCollection(collectionId, Optional.of(allStatuses)));
 
     // Assert
     assertThat(actual.getMessage()).startsWith("Collection");
@@ -248,7 +250,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     Exception actual =
         assertThrows(
             CollectionException.class,
-            () -> jobService.getJobsForCollection(collectionId, allStatuses));
+            () -> jobService.getJobsForCollection(collectionId, Optional.of(allStatuses)));
 
     // Assert
     assertThat(actual.getMessage()).startsWith("Found unexpected workspaceId for collection");

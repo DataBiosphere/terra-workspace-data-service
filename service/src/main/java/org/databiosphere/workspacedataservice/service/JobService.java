@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
@@ -34,7 +35,7 @@ public class JobService {
   }
 
   public List<GenericJobServerModel> getJobsForCollection(
-      CollectionId collectionId, List<String> statuses) {
+      CollectionId collectionId, Optional<List<String>> statuses) {
     // verify collection exists
     collectionService.validateCollection(collectionId.id());
     // check permissions
