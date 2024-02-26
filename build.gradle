@@ -43,7 +43,7 @@ subprojects {
             dependency 'org.liquibase:liquibase-core:4.26.0'
             dependency 'com.jayway.jsonpath:json-path:2.9.0' // CVE-2023-51074
             // CVE-2024-1597; we are not vulnerable but upgrading anyway
-            dependency 'org.postgresql:postgresql:42.6.1'
+            dependency 'org.postgresql:postgresql:42.7.2'
         }
     }
 }
