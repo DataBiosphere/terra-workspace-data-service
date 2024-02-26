@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
+import org.springframework.util.StreamUtils;
 
 /**
  * Reads either swagger-ui-control-plane.html or swagger-ui-data-plane.html, depending on the
@@ -24,7 +26,8 @@ public class SwaggerUiConfig {
   public String controlPlaneSwaggerHtml(
       @Value("classpath:swagger-ui-control-plane.html") Resource swaggerUiControlPlaneResource)
       throws IOException {
-    return new String(Files.readAllBytes(swaggerUiControlPlaneResource.getFile().toPath()));
+    return StreamUtils.copyToString(
+        swaggerUiControlPlaneResource.getInputStream(), StandardCharsets.UTF_8);
   }
 
   @DataPlane
@@ -32,6 +35,7 @@ public class SwaggerUiConfig {
   public String dataPlaneSwaggerHtml(
       @Value("classpath:swagger-ui-data-plane.html") Resource swaggerUiDataPlaneResource)
       throws IOException {
-    return new String(Files.readAllBytes(swaggerUiDataPlaneResource.getFile().toPath()));
+    return StreamUtils.copyToString(
+        swaggerUiDataPlaneResource.getInputStream(), StandardCharsets.UTF_8);
   }
 }
