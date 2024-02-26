@@ -2,13 +2,8 @@ package org.databiosphere.workspacedataservice.config;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.util.Optional;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.lang.Nullable;
 
 /**
@@ -16,15 +11,6 @@ import org.springframework.lang.Nullable;
  * `twds.instance` property hierarchy
  */
 public class InstanceProperties {
-  /**
-   * Shorthand annotation for @Qualifier("singleTenant"), used to mark the {@link WorkspaceId} bean
-   * used when running in single-tenant mode.
-   */
-  @Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER})
-  @Retention(RetentionPolicy.RUNTIME)
-  @Qualifier("singleTenant")
-  public @interface SingleTenant {}
-
   private boolean validWorkspaceId;
   private boolean initializeCollectionOnStartup;
   private WorkspaceId workspaceId;

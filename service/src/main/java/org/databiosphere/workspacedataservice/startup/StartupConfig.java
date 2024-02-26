@@ -3,8 +3,8 @@ package org.databiosphere.workspacedataservice.startup;
 import static java.util.Arrays.stream;
 
 import java.util.Set;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.config.ConfigurationException;
-import org.databiosphere.workspacedataservice.config.InstanceProperties.SingleTenant;
 import org.databiosphere.workspacedataservice.config.TenancyProperties;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
@@ -32,7 +32,7 @@ public class StartupConfig {
   }
 
   @Autowired(required = false) // control plane won't have workspaceId
-  void setWorkspaceId(@SingleTenant WorkspaceId workspaceId) {
+  void setWorkspaceId(@Nullable @SingleTenant WorkspaceId workspaceId) {
     this.workspaceId = workspaceId;
   }
 

@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.config.InstanceProperties.SingleTenant;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;

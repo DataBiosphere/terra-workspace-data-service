@@ -6,7 +6,7 @@ import bio.terra.common.db.WriteTransaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.config.InstanceProperties.SingleTenant;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.springframework.beans.factory.annotation.Autowired;
