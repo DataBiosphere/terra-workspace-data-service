@@ -11,7 +11,7 @@ import org.springframework.lang.Nullable;
  * `twds.instance` property hierarchy
  */
 public class InstanceProperties {
-  private boolean validWorkspaceId;
+  private boolean validWorkspaceId = false; // assume false until configured otherwise
   private boolean initializeCollectionOnStartup;
   private WorkspaceId workspaceId;
   @Nullable private WorkspaceId sourceWorkspaceId;
