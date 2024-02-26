@@ -100,11 +100,31 @@ class JobControllerTest extends TestBase {
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     assertDoesNotThrow(() -> jobDao.updateStatus(jobId, StatusEnum.CANCELLED));
     HttpHeaders headers = new HttpHeaders();
-    // ParameterizedTypeReference<List<GenericJobServerModel>> returnType = new
-    // ParameterizedTypeReference<List<GenericJobServerModel>>() {};
     ResponseEntity<List<GenericJobServerModel>> result =
         restTemplate.exchange(
             "/job/v1/instance/{instanceUuid}?statuses={status1}&statuses={status2}",
+            HttpMethod.GET,
+            new HttpEntity<>(headers),
+            new ParameterizedTypeReference<List<GenericJobServerModel>>() {},
+            collectionId,
+            "CREATED",
+            "CANCELLED");
+    List<GenericJobServerModel> jobList = result.getBody();
+    assertNotNull(jobList);
+    // 3 jobs inserted in beforeAll, only 2 for this instanceId
+    assertEquals(2, jobList.size());
+    assertEquals(StatusEnum.CREATED, jobList.get(0).getStatus());
+    assertEquals(StatusEnum.CANCELLED, jobList.get(1).getStatus());
+  }
+
+  @Test
+  void instanceJobsWithMultipleDelimitedStatuses() {
+    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    assertDoesNotThrow(() -> jobDao.updateStatus(jobId, StatusEnum.CANCELLED));
+    HttpHeaders headers = new HttpHeaders();
+    ResponseEntity<List<GenericJobServerModel>> result =
+        restTemplate.exchange(
+            "/job/v1/instance/{instanceUuid}?statuses={status1},{status2}",
             HttpMethod.GET,
             new HttpEntity<>(headers),
             new ParameterizedTypeReference<List<GenericJobServerModel>>() {},

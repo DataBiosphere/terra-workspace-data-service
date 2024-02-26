@@ -111,6 +111,8 @@ paths:
         - name: statuses
           in: query
           required: false
+          style: form
+          explode: false
           schema:
             type: array
             items:
