@@ -4,15 +4,12 @@ info:
   title: cWDS API Spec
   version: v1
   description: |
-    cWDS - the "(c)control-plane (W)orkspace (D)ata (S)ervice - is responsible for importing
+    cWDS - the (c)control-plane (W)orkspace (D)ata (S)ervice - is responsible for importing
     tabular data into the Data tab of a workspace.
   termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
   license:
     name: BSD
     url: https://opensource.org/licenses/BSD-3-Clause
-
-servers:
-  - url: /
 
 tags:
   # Tags should be listed in the order they should appear in the UI
