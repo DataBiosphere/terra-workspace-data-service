@@ -1,5 +1,10 @@
 package org.databiosphere.workspacedataservice.config;
 
+import java.util.Optional;
+import javax.annotation.Nullable;
+import org.databiosphere.workspacedataservice.config.InstanceProperties.SingleTenant;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,33 +14,46 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "twds")
 public class TwdsProperties {
   private DataImportProperties dataImport;
+  private TenancyProperties tenancy;
   private InstanceProperties instance;
   private String startupToken;
-  private TenancyProperties tenancy;
-
-  public DataImportProperties getDataImport() {
-    return dataImport;
-  }
 
   @Bean
   public DataImportProperties dataImportProperties() {
-    return getDataImport();
+    return dataImport;
   }
 
-  public void setDataImport(DataImportProperties dataImport) {
+  // setter method allows spring to automatically populate this with the contents of the
+  // twds.data-import section of the props file
+  void setDataImport(DataImportProperties dataImport) {
     this.dataImport = dataImport;
   }
 
-  public InstanceProperties getInstance() {
-    return instance;
-  }
-
+  /**
+   * InstanceProperties are only returned if tenancy requires a WORKSPACE_ID environment variable,
+   * and if that environment variable is correctly configured with a WorkspaceId.
+   */
   @Bean
+  @Nullable
+  @ConditionalOnProperty(name = "twds.tenancy.require-env-workspace", havingValue = "true")
   public InstanceProperties instanceProperties() {
-    return getInstance();
+    return safeGetInstanceProperties().orElse(null);
   }
 
-  public void setInstance(InstanceProperties instance) {
+  /**
+   * WorkspaceId is only returned if tenancy requires a WORKSPACE_ID environment variable, and if
+   * that environment variable is correctly configured with a WorkspaceId.
+   */
+  @Bean
+  @SingleTenant
+  @ConditionalOnProperty(name = "twds.tenancy.require-env-workspace", havingValue = "true")
+  public WorkspaceId workspaceId() {
+    return safeGetInstanceProperties().map(InstanceProperties::workspaceId).orElse(null);
+  }
+
+  // setter method allows spring to automatically populate this with the contents of the
+  // twds.instance section of the props file
+  void setInstance(InstanceProperties instance) {
     this.instance = instance;
   }
 
@@ -43,20 +61,28 @@ public class TwdsProperties {
     return startupToken;
   }
 
-  public void setStartupToken(String startupToken) {
+  // setter method allows spring to automatically populate this with the contents of the
+  // twds.startup-token property from the props file
+  void setStartupToken(String startupToken) {
     this.startupToken = startupToken;
-  }
-
-  public TenancyProperties getTenancy() {
-    return tenancy;
   }
 
   @Bean
   public TenancyProperties tenancyProperties() {
-    return getTenancy();
+    return tenancy;
   }
 
-  public void setTenancy(TenancyProperties tenancy) {
+  // setter method allows spring to automatically populate this with the contents of the
+  // twds.tenancy section of the props file
+  void setTenancy(TenancyProperties tenancy) {
     this.tenancy = tenancy;
+  }
+
+  // only return InstanceProperties if it is correctly configured with a WorkspaceId
+  private Optional<InstanceProperties> safeGetInstanceProperties() {
+    if (instance != null && instance.hasValidWorkspaceId()) {
+      return Optional.of(instance);
+    }
+    return Optional.empty();
   }
 }

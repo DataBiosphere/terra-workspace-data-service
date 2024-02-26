@@ -3,15 +3,17 @@ package org.databiosphere.workspacedataservice.startup;
 import static java.util.Arrays.stream;
 
 import java.util.Set;
-import java.util.UUID;
 import org.databiosphere.workspacedataservice.config.ConfigurationException;
-import org.databiosphere.workspacedataservice.config.InstanceProperties;
+import org.databiosphere.workspacedataservice.config.InstanceProperties.SingleTenant;
 import org.databiosphere.workspacedataservice.config.TenancyProperties;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 /** */
@@ -20,17 +22,18 @@ public class StartupConfig {
   private static final Set<String> REQUIRED_PROFILES = Set.of("data-plane", "control-plane");
   private static final Logger logger = LoggerFactory.getLogger(StartupConfig.class);
 
-  private final InstanceProperties instanceProperties;
   private final TenancyProperties tenancyProperties;
   private final Environment environment;
+  @Nullable private WorkspaceId workspaceId;
 
-  public StartupConfig(
-      Environment environment,
-      InstanceProperties instanceProperties,
-      TenancyProperties tenancyProperties) {
-    this.instanceProperties = instanceProperties;
+  public StartupConfig(Environment environment, TenancyProperties tenancyProperties) {
     this.tenancyProperties = tenancyProperties;
     this.environment = environment;
+  }
+
+  @Autowired(required = false) // control plane won't have workspaceId
+  void setWorkspaceId(@SingleTenant WorkspaceId workspaceId) {
+    this.workspaceId = workspaceId;
   }
 
   /**
@@ -46,17 +49,10 @@ public class StartupConfig {
     logger.info("require $WORKSPACE_ID env var: {}", tenancyProperties.getRequireEnvWorkspace());
 
     if (tenancyProperties.getRequireEnvWorkspace()) {
-      // attempt to parse the workspace id
-      try {
-        UUID workspaceUuid = UUID.fromString(instanceProperties.getWorkspaceId());
-        logger.info("single-tenant workspace id: {}", workspaceUuid);
-      } catch (Exception e) {
-        throw new ConfigurationException(
-            "This deployment requires a $WORKSPACE_ID env var, but its value "
-                + "could not be parsed to a UUID: "
-                + e.getMessage(),
-            e);
+      if (workspaceId == null) {
+        throw new ConfigurationException("This deployment requires a valid $WORKSPACE_ID env var.");
       }
+      logger.info("single-tenant workspace id: {}", workspaceId);
     }
   }
 
