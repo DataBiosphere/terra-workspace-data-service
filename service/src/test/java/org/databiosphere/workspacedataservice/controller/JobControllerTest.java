@@ -100,8 +100,6 @@ class JobControllerTest extends TestBase {
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     assertDoesNotThrow(() -> jobDao.updateStatus(jobId, StatusEnum.CANCELLED));
     HttpHeaders headers = new HttpHeaders();
-    // ParameterizedTypeReference<List<GenericJobServerModel>> returnType = new
-    // ParameterizedTypeReference<List<GenericJobServerModel>>() {};
     ResponseEntity<List<GenericJobServerModel>> result =
         restTemplate.exchange(
             "/job/v1/instance/{instanceUuid}?statuses={status1}&statuses={status2}",
@@ -124,8 +122,6 @@ class JobControllerTest extends TestBase {
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     assertDoesNotThrow(() -> jobDao.updateStatus(jobId, StatusEnum.CANCELLED));
     HttpHeaders headers = new HttpHeaders();
-    // ParameterizedTypeReference<List<GenericJobServerModel>> returnType = new
-    // ParameterizedTypeReference<List<GenericJobServerModel>>() {};
     ResponseEntity<List<GenericJobServerModel>> result =
         restTemplate.exchange(
             "/job/v1/instance/{instanceUuid}?statuses={status1},{status2}",
