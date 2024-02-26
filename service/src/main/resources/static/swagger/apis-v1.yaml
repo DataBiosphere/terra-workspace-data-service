@@ -108,7 +108,7 @@ paths:
         - Job
       parameters:
         - $ref: '#/components/parameters/instanceUuidPathParam'
-        - name: statuses
+        - name: status
           in: query
           required: false
           schema:

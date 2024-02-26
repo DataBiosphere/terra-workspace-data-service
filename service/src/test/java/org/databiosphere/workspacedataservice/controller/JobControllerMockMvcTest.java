@@ -92,7 +92,7 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
     MvcResult mvcResult =
         mockMvc
             .perform(
-                get("/job/v1/instance/{instanceUuid}?statuses={statuses}", collectionId, "RUNNING"))
+                get("/job/v1/instance/{instanceUuid}?status={status}", collectionId, "RUNNING"))
             .andExpect(status().isOk())
             .andReturn();
 

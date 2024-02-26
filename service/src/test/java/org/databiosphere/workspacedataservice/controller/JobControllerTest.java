@@ -104,7 +104,7 @@ class JobControllerTest extends TestBase {
     // ParameterizedTypeReference<List<GenericJobServerModel>>() {};
     ResponseEntity<List<GenericJobServerModel>> result =
         restTemplate.exchange(
-            "/job/v1/instance/{instanceUuid}?statuses={status1}&statuses={status2}",
+            "/job/v1/instance/{instanceUuid}?status={status1}&status={status2}",
             HttpMethod.GET,
             new HttpEntity<>(headers),
             new ParameterizedTypeReference<List<GenericJobServerModel>>() {},
