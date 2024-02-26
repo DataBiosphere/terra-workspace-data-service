@@ -4,7 +4,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>WDS API</title>
+  <title>cWDS API</title>
   <!-- *** next 4 lines updated to reference /webjars/swagger-ui-dist/ instead of ./ -->
   <link rel="stylesheet" type="text/css" href="/webjars/swagger-ui-dist/swagger-ui.css"/>
   <link rel="stylesheet" type="text/css" href="/webjars/swagger-ui-dist/index.css"/>
@@ -38,7 +38,7 @@
   window.onload = function () {
     // Begin Swagger UI call region
     const ui = SwaggerUIBundle({
-      url: '/swagger/openapi-docs.yaml',
+      url: '/swagger/cwds-api-docs.yaml',
       dom_id: '#swagger-ui',
       deepLinking: true,
       presets: [
@@ -55,8 +55,6 @@
       defaultModelRendering: 'model', // schema has the descriptions, unlike the example value
       defaultModelExpandDepth: 2,     // affects the schema shown for a request or response
       displayRequestDuration: true,   // show timing
-      docExpansion: 'none',           // start with sections collapsed
-      filter: true,                   // show tag filter bar
     })
     // End Swagger UI call region
 

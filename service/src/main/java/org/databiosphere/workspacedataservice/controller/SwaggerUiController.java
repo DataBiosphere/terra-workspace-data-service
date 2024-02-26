@@ -1,17 +1,12 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.Optional;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
-import org.springframework.core.io.Resource;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.MediaType;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -19,11 +14,16 @@ import org.springframework.web.servlet.ModelAndView;
 @DataPlane
 @RestController
 public class SwaggerUiController {
+  /**
+   * holds the HTML content of the swagger-ui.
+   *
+   * @see SwaggerUiConfig
+   */
+  final String swaggerUiContent;
 
-  @Autowired private Environment environment;
-
-  @Value("classpath:swagger-ui-template.html")
-  Resource swaggerUiResource;
+  public SwaggerUiController(@Qualifier("swaggerHtml") String swaggerUiContent) {
+    this.swaggerUiContent = swaggerUiContent;
+  }
 
   // redirect "/", "/swagger" and "/swagger/" to "/swagger/swagger-ui.html"
   @GetMapping({"/", "/swagger", "/swagger/"})
@@ -31,21 +31,9 @@ public class SwaggerUiController {
     return new ModelAndView("redirect:/swagger/swagger-ui.html", model);
   }
 
-  // serve up the swagger-ui html, replacing tokens appropriately
-  @GetMapping("/swagger/swagger-ui.html")
-  public ResponseEntity<String> getSwaggerUi() throws IOException {
-    String template = new String(Files.readAllBytes(swaggerUiResource.getFile().toPath()));
-
-    String content;
-
-    if (environment.matchesProfiles("control-plane")) {
-      // replace the title
-      content =
-          template.replace("${TITLE}", "cWDS API").replace("${APISPEC}", "cwds-api-docs.yaml");
-    } else {
-      content = template.replace("${TITLE}", "WDS API").replace("${APISPEC}", "openapi-docs.yaml");
-    }
-
-    return ResponseEntity.of(Optional.of(content));
+  // serve up the swagger-ui html
+  @GetMapping(value = "/swagger/swagger-ui.html", produces = MediaType.TEXT_HTML_VALUE)
+  public @ResponseBody String getSwaggerUi() {
+    return swaggerUiContent;
   }
 }
