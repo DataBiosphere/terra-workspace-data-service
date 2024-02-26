@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.controller;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.springframework.beans.factory.annotation.Value;
