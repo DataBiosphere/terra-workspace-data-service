@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.config;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -47,7 +47,7 @@ public class InstanceProperties {
   }
 
   void setWorkspaceId(String workspaceId) {
-    if (!isNullOrEmpty(workspaceId)) {
+    if (isNotBlank(workspaceId)) {
       try {
         this.workspaceId = WorkspaceId.fromString(workspaceId);
         validWorkspaceId = true;
@@ -62,7 +62,7 @@ public class InstanceProperties {
   }
 
   void setSourceWorkspaceId(String sourceWorkspaceId) {
-    if (!isNullOrEmpty(sourceWorkspaceId)) {
+    if (isNotBlank(sourceWorkspaceId)) {
       try {
         this.sourceWorkspaceId = WorkspaceId.fromString(sourceWorkspaceId);
       } catch (Exception e) {
