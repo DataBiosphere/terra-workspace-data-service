@@ -65,6 +65,11 @@ spring:
     jcache:
       config: classpath:ehcache.xml
 
+  cloud:
+    gcp:
+      storage:
+        enabled: false
+
   datasource:
     hikari:
       jdbc-url: jdbc:postgresql://${env.wds.db.host}:${env.wds.db.port}/${env.wds.db.name}?reWriteBatchedInserts=true&${env.wds.db.additionalUrlParams}
