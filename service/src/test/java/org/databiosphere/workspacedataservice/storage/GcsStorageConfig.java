@@ -4,6 +4,8 @@ import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 
 @Configuration
 public class GcsStorageConfig {
@@ -12,6 +14,8 @@ public class GcsStorageConfig {
   private String projectId = "test-projectId";
 
   @Bean
+  @Profile("mock-storage")
+  @Primary
   public GcsStorage mockGcsStorage() {
     Storage mockStorage = LocalStorageHelper.getOptions().getService();
     return new GcsStorage(mockStorage, bucketName, projectId);
