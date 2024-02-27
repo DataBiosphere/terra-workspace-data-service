@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.service;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -18,6 +19,7 @@ import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -69,7 +71,8 @@ class CollectionServiceSamExceptionTest extends TestBase {
   @BeforeEach
   void setUp() {
     // return the mock ResourcesApi from the mock SamClientFactory
-    given(mockSamClientFactory.getResourcesApi(null)).willReturn(mockResourcesApi);
+    given(mockSamClientFactory.getResourcesApi(any(BearerToken.class)))
+        .willReturn(mockResourcesApi);
   }
 
   @AfterEach
