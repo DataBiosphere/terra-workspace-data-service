@@ -11,18 +11,15 @@ import java.lang.annotation.Target;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.*;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.storage.GcsStorage;
 
 /**
  * {@link RecordSink} implementation that produces Rawls-compatible JSON using {@link RawlsModel}
@@ -35,6 +32,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
 public class RawlsRecordSink implements RecordSink {
   private final String attributePrefix;
   private final ObjectMapper mapper;
+  private final GcsStorage storage;
   private final Consumer<String> jsonConsumer;
 
   /** Annotates a String consumer for JSON strings emitted by {@link RawlsRecordSink}. */
@@ -45,10 +43,12 @@ public class RawlsRecordSink implements RecordSink {
   RawlsRecordSink(
       String attributePrefix,
       ObjectMapper mapper,
+      GcsStorage storage,
       @RawlsJsonConsumer Consumer<String> jsonConsumer) {
     this.attributePrefix = attributePrefix;
     this.mapper = mapper;
     this.jsonConsumer = jsonConsumer;
+    this.storage = storage;
   }
 
   @Override
@@ -70,7 +70,12 @@ public class RawlsRecordSink implements RecordSink {
       ) throws BatchWriteException, IOException {
     ImmutableList.Builder<Entity> entities = ImmutableList.builder();
     records.stream().map(this::toEntity).forEach(entities::add);
-    jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
+    var rawlsJson = mapper.writeValueAsString(entities.build());
+    var blobName = UUID.randomUUID().toString();
+    // storage.createGcsFile(blobName, new ByteArrayInputStream(rawlsJson.getBytes()));
+    // var text = storage.getBlobContents(blobName);
+    // System.out.println("HERE IT ISSSSSSSSSSSSSSSSSSSSSSSSSSSSSS " + text);
+    // AJ-1586 - the name of where in the bucket the file is inside blobName
   }
 
   @Override

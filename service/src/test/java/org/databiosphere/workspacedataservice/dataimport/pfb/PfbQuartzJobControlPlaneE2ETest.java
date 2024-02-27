@@ -2,13 +2,8 @@ package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
-import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
-import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
-import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op;
-import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.ADD_LIST_MEMBER;
-import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.ADD_UPDATE_ATTRIBUTE;
-import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.CREATE_ATTRIBUTE_VALUE_LIST;
-import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.REMOVE_ATTRIBUTE;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.*;
+import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
@@ -25,10 +20,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsRecordSink.RawlsJsonConsumer;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
@@ -93,7 +84,7 @@ class PfbQuartzJobControlPlaneE2ETest {
     @Bean
     @RawlsJsonConsumer
     Consumer<String> jsonConsumer() {
-      return (json) -> recordedJson().append(json);
+      return json -> recordedJson().append(json);
     }
   }
 
@@ -200,4 +191,6 @@ class PfbQuartzJobControlPlaneE2ETest {
 
     assertThat(treeActual).isEqualTo(treeExpected);
   }
+
+  private void assertJsonWrittenToBucket(Resource expectedJsonResource) {}
 }
