@@ -70,7 +70,7 @@ public class RecordSinkFactory {
   }
 
   private RecordSink rawlsRecordSink(String prefix) {
-    return new RawlsRecordSink(prefix, mapper, this.storage, jsonConsumer);
+    return new RawlsRecordSink(prefix, mapper, storage, jsonConsumer);
   }
 
   private WdsRecordSink wdsRecordSink(UUID collectionId) {

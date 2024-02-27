@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 
 @Component
-@SpringBootTest(properties = "spring.cache.type=NONE")
+@SpringBootTest
 class GcsStorageTest {
 
   @Qualifier("mockGcsStorage")

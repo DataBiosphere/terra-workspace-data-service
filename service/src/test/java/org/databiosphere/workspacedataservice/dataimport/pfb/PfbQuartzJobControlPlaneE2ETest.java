@@ -84,7 +84,7 @@ class PfbQuartzJobControlPlaneE2ETest {
     @Bean
     @RawlsJsonConsumer
     Consumer<String> jsonConsumer() {
-      return json -> recordedJson().append(json);
+      return (json) -> recordedJson().append(json);
     }
   }
 
@@ -191,6 +191,4 @@ class PfbQuartzJobControlPlaneE2ETest {
 
     assertThat(treeActual).isEqualTo(treeExpected);
   }
-
-  private void assertJsonWrittenToBucket(Resource expectedJsonResource) {}
 }

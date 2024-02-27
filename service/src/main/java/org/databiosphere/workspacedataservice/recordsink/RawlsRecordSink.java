@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.recordsink;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.mu.util.stream.BiStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -70,11 +71,12 @@ public class RawlsRecordSink implements RecordSink {
       ) throws BatchWriteException, IOException {
     ImmutableList.Builder<Entity> entities = ImmutableList.builder();
     records.stream().map(this::toEntity).forEach(entities::add);
-    var rawlsJson = mapper.writeValueAsString(entities.build());
+    jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
+
     var blobName = UUID.randomUUID().toString();
-    // storage.createGcsFile(blobName, new ByteArrayInputStream(rawlsJson.getBytes()));
-    // var text = storage.getBlobContents(blobName);
-    // System.out.println("HERE IT ISSSSSSSSSSSSSSSSSSSSSSSSSSSSSS " + text);
+    storage.createGcsFile(
+        blobName, new ByteArrayInputStream(mapper.writeValueAsBytes(entities.build())));
+
     // AJ-1586 - the name of where in the bucket the file is inside blobName
   }
 
