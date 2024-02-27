@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.recordsink;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.recordsink.RawlsRecordSink.RawlsJsonConsumer;
@@ -27,7 +28,9 @@ public class RecordSinkFactory {
   private Consumer<String> jsonConsumer;
 
   public RecordSinkFactory(
-      DataImportProperties dataImportProperties, ObjectMapper mapper, GcsStorage storage) {
+      DataImportProperties dataImportProperties,
+      ObjectMapper mapper,
+      @Nullable GcsStorage storage) {
     this.dataImportProperties = dataImportProperties;
     this.mapper = mapper;
     this.storage = storage;

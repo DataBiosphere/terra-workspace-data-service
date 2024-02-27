@@ -15,7 +15,13 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.*;
+import javax.annotation.Nullable;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -44,7 +50,7 @@ public class RawlsRecordSink implements RecordSink {
   RawlsRecordSink(
       String attributePrefix,
       ObjectMapper mapper,
-      GcsStorage storage,
+      @Nullable GcsStorage storage,
       @RawlsJsonConsumer Consumer<String> jsonConsumer) {
     this.attributePrefix = attributePrefix;
     this.mapper = mapper;
