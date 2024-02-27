@@ -12,5 +12,4 @@ twds:
   data-import:
     batch-write-record-sink: "rawls"
     projectId: ${SERVICE_GOOGLE_PROJECT:unknown}
-    rawls-bucket:
-      name: ${SERVICE_GOOGLE_BUCKET:unknown}
+    rawls-bucket-name: ${SERVICE_GOOGLE_BUCKET:unknown}
