@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
 import java.util.Objects;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 /**
  * Record class to represent an auth token; use this instead of String for more type safety and
@@ -13,20 +15,26 @@ public class BearerToken {
 
   private final String value;
 
-  private BearerToken(String value) {
+  private BearerToken(@Nullable String value) {
     this.value = value;
   }
 
   /** returns an empty BearerToken; that is, a BearerToken whose `value` is null */
   public static BearerToken empty() {
-    return new BearerToken(null);
+    return new BearerToken(/* value= */ null);
   }
 
   /** returns a BearerToken with the specified `value` */
-  public static BearerToken of(String val) {
+  public static BearerToken ofNullable(@Nullable String val) {
     return new BearerToken(val);
   }
 
+  /** returns a BearerToken with the specified `value` */
+  public static BearerToken of(@NonNull String val) {
+    return ofNullable(val);
+  }
+
+  @Nullable
   public String getValue() {
     return value;
   }

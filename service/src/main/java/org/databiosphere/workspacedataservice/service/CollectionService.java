@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
-import org.databiosphere.workspacedataservice.config.InstanceProperties;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.config.TenancyProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamDao;
@@ -17,8 +17,10 @@ import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -30,7 +32,7 @@ public class CollectionService {
   private final ActivityLogger activityLogger;
   private final TenancyProperties tenancyProperties;
 
-  private WorkspaceId workspaceId;
+  @Nullable private WorkspaceId workspaceId;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CollectionService.class);
 
@@ -38,16 +40,16 @@ public class CollectionService {
       CollectionDao collectionDao,
       SamDao samDao,
       ActivityLogger activityLogger,
-      InstanceProperties instanceProperties,
       TenancyProperties tenancyProperties) {
     this.collectionDao = collectionDao;
     this.samDao = samDao;
     this.activityLogger = activityLogger;
     this.tenancyProperties = tenancyProperties;
-    // stash the workspace id from config into a member var
-    if (instanceProperties.getWorkspaceUuid() != null) {
-      workspaceId = WorkspaceId.of(instanceProperties.getWorkspaceUuid());
-    }
+  }
+
+  @Autowired(required = false) // control plane won't have workspaceId
+  void setWorkspaceId(@SingleTenant WorkspaceId workspaceId) {
+    this.workspaceId = workspaceId;
   }
 
   public List<UUID> listCollections(String version) {
@@ -118,11 +120,11 @@ public class CollectionService {
   }
 
   public boolean canReadCollection(CollectionId collectionId) {
-    return samDao.hasReadWorkspacePermission(getWorkspaceId(collectionId).toString());
+    return samDao.hasReadWorkspacePermission(getWorkspaceId(collectionId));
   }
 
   public boolean canWriteCollection(CollectionId collectionId) {
-    return samDao.hasWriteWorkspacePermission(getWorkspaceId(collectionId).toString());
+    return samDao.hasWriteWorkspacePermission(getWorkspaceId(collectionId));
   }
 
   /**

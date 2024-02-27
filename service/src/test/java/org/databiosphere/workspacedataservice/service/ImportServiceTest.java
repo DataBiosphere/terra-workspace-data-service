@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -23,8 +22,8 @@ import java.util.stream.Stream;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.config.InstanceProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.MockCollectionDao;
@@ -35,7 +34,9 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.sam.SamDao;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -61,7 +62,7 @@ class ImportServiceTest extends TestBase {
   @Autowired CollectionDao collectionDao;
   @Autowired CollectionService collectionService;
   @Autowired SamDao samDao;
-  @Autowired InstanceProperties instanceProperties;
+  @Autowired @SingleTenant WorkspaceId workspaceId;
   @SpyBean JobDao jobDao;
   @MockBean SchedulerDao schedulerDao;
   @MockBean SamClientFactory mockSamClientFactory;
@@ -79,16 +80,16 @@ class ImportServiceTest extends TestBase {
   void setUp() throws ApiException {
     // initialize the default collection id
     if (defaultCollectionId == null) {
-      defaultCollectionId = instanceProperties.getWorkspaceUuid();
+      defaultCollectionId = workspaceId.id();
     }
 
     // return the mock ResourcesApi from the mock SamClientFactory
-    given(mockSamClientFactory.getResourcesApi(nullable(String.class)))
+    given(mockSamClientFactory.getResourcesApi(any(BearerToken.class)))
         .willReturn(mockSamResourcesApi);
     // Sam permission check will always return true
     given(mockSamResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
         .willReturn(true);
-    given(mockSamClientFactory.getGoogleApi(null)).willReturn(mockSamGoogleApi);
+    given(mockSamClientFactory.getGoogleApi(any(BearerToken.class))).willReturn(mockSamGoogleApi);
     // Pet token request returns "arbitraryToken"
     given(mockSamGoogleApi.getArbitraryPetServiceAccountToken(any())).willReturn("arbitraryToken");
 
@@ -217,7 +218,7 @@ class ImportServiceTest extends TestBase {
   @EnumSource(ImportRequestServerModel.TypeEnum.class)
   void doesNotCreateJobWithoutPetToken(ImportRequestServerModel.TypeEnum importType)
       throws ApiException {
-    given(mockSamClientFactory.getGoogleApi(null)).willReturn(mockSamGoogleApi);
+    given(mockSamClientFactory.getGoogleApi(any(BearerToken.class))).willReturn(mockSamGoogleApi);
     // Sam permission check will always return true
     given(mockSamGoogleApi.getArbitraryPetServiceAccountToken(any()))
         .willThrow(new ApiException("token failure for unit test"));

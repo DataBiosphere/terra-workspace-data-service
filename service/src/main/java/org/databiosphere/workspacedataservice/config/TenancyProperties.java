@@ -20,7 +20,7 @@ public class TenancyProperties {
     return allowVirtualCollections;
   }
 
-  public void setAllowVirtualCollections(boolean allowVirtualCollections) {
+  void setAllowVirtualCollections(boolean allowVirtualCollections) {
     this.allowVirtualCollections = allowVirtualCollections;
   }
 
@@ -35,7 +35,7 @@ public class TenancyProperties {
     return requireEnvWorkspace;
   }
 
-  public void setRequireEnvWorkspace(boolean requireEnvWorkspace) {
+  void setRequireEnvWorkspace(boolean requireEnvWorkspace) {
     this.requireEnvWorkspace = requireEnvWorkspace;
   }
 }

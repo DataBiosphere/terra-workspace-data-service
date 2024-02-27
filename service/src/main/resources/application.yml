@@ -120,12 +120,19 @@ twds:
   write.batch.size: 5000
   streaming.fetch.size: 5000
   instance:
-    initialize-collection-on-startup: true
     # Workspace Id for launching instance
     workspace-id: ${WORKSPACE_ID:}
     source-workspace-id: ${SOURCE_WORKSPACE_ID:}
   # short-lived credentials to use during cloning
   startup-token: ${STARTUP_TOKEN:}
+  # tenancy & data-import defaults match data-plane, but the source of truth for these configs
+  # should be application-data-plane.yml or application-control-plane.yml; they are provided here
+  # to allow Spring to boot without crashing and allow StartupConfig to run and check preconditions
+  tenancy:
+    allow-virtual-collections: false
+    require-env-workspace: true
+  data-import:
+    batch-write-record-sink: "wds"
 
   pg_dump:
     path: ${PGDUMP_PATH:/usr/bin/pg_dump}

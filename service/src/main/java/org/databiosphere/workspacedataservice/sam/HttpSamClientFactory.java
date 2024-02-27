@@ -35,7 +35,7 @@ public class HttpSamClientFactory implements SamClientFactory {
     // this requires we import terra-common-lib
   }
 
-  private ApiClient getApiClient(String authToken) {
+  private ApiClient getApiClient(BearerToken authToken) {
     // create a new Sam client
     ApiClient apiClient = new ApiClient();
     apiClient.setHttpClient(commonHttpClient);
@@ -44,7 +44,8 @@ public class HttpSamClientFactory implements SamClientFactory {
       apiClient.setBasePath(samUrl);
     }
 
-    // grab the current user's bearer token (see BearerTokenFilter) or use parameter value
+    // use the parameter value or fall back to the current user's bearer token (see
+    // BearerTokenFilter)
     BearerToken token = TokenContextUtil.getToken(authToken);
 
     // add the user's bearer token to the client
@@ -65,7 +66,7 @@ public class HttpSamClientFactory implements SamClientFactory {
    *
    * @return the usable Sam client
    */
-  public ResourcesApi getResourcesApi(String token) {
+  public ResourcesApi getResourcesApi(BearerToken token) {
     ApiClient apiClient = getApiClient(token);
     ResourcesApi resourcesApi = new ResourcesApi();
     resourcesApi.setApiClient(apiClient);
@@ -78,21 +79,21 @@ public class HttpSamClientFactory implements SamClientFactory {
    *
    * @return the usable Sam client
    */
-  public StatusApi getStatusApi() {
-    ApiClient apiClient = getApiClient(null);
+  public StatusApi getStatusApi(BearerToken token) {
+    ApiClient apiClient = getApiClient(token);
     StatusApi statusApi = new StatusApi();
     statusApi.setApiClient(apiClient);
     return statusApi;
   }
 
-  public UsersApi getUsersApi(String token) {
+  public UsersApi getUsersApi(BearerToken token) {
     ApiClient apiClient = getApiClient(token);
     UsersApi usersApi = new UsersApi();
     usersApi.setApiClient(apiClient);
     return usersApi;
   }
 
-  public GoogleApi getGoogleApi(String token) {
+  public GoogleApi getGoogleApi(BearerToken token) {
     ApiClient apiClient = getApiClient(token);
     GoogleApi googleApi = new GoogleApi();
     googleApi.setApiClient(apiClient);

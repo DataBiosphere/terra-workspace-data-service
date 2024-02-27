@@ -9,6 +9,7 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.sam.HttpSamDao;
 import org.databiosphere.workspacedataservice.sam.PermissionsStatusService;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,7 +42,7 @@ class PermissionsStatusServiceTest extends TestBase {
   @BeforeEach
   void setUp() {
     // return the mock StatusApi from the mock SamClientFactory
-    given(mockSamClientFactory.getStatusApi()).willReturn(mockStatusApi);
+    given(mockSamClientFactory.getStatusApi(any(BearerToken.class))).willReturn(mockStatusApi);
     Mockito.clearInvocations(mockStatusApi);
     Mockito.clearInvocations(mockHealthBuilder);
   }
