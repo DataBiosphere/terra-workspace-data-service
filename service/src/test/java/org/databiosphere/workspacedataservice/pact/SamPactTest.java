@@ -215,7 +215,8 @@ class SamPactTest {
   @Test
   @PactTestFor(pactMethod = "deleteNoPermissionPact", pactVersion = PactSpecVersion.V3)
   void testSamDeleteNoPermission(MockServer mockServer) {
-    SamAuthorizationDao samAuthorizationDao = getSamDao(mockServer, dummyWorkspaceId());
+    SamAuthorizationDao samAuthorizationDao =
+        getSamAuthorizationDao(mockServer, dummyWorkspaceId());
 
     assertFalse(samAuthorizationDao.hasDeleteCollectionPermission());
   }
@@ -223,7 +224,8 @@ class SamPactTest {
   @Test
   @PactTestFor(pactMethod = "deletePermissionPact", pactVersion = PactSpecVersion.V3)
   void testSamDeletePermission(MockServer mockServer) {
-    SamAuthorizationDao samAuthorizationDao = getSamDao(mockServer, dummyWorkspaceId());
+    SamAuthorizationDao samAuthorizationDao =
+        getSamAuthorizationDao(mockServer, dummyWorkspaceId());
 
     assertTrue(samAuthorizationDao.hasDeleteCollectionPermission());
   }
@@ -231,7 +233,8 @@ class SamPactTest {
   @Test
   @PactTestFor(pactMethod = "writeNoPermissionPact", pactVersion = PactSpecVersion.V3)
   void testSamWriteNoPermission(MockServer mockServer) {
-    SamAuthorizationDao samAuthorizationDao = getSamDao(mockServer, dummyWorkspaceId());
+    SamAuthorizationDao samAuthorizationDao =
+        getSamAuthorizationDao(mockServer, dummyWorkspaceId());
 
     assertFalse(samAuthorizationDao.hasWriteWorkspacePermission());
   }
@@ -239,7 +242,8 @@ class SamPactTest {
   @Test
   @PactTestFor(pactMethod = "writePermissionPact", pactVersion = PactSpecVersion.V3)
   void testSamWritePermission(MockServer mockServer) {
-    SamAuthorizationDao samAuthorizationDao = getSamDao(mockServer, dummyWorkspaceId());
+    SamAuthorizationDao samAuthorizationDao =
+        getSamAuthorizationDao(mockServer, dummyWorkspaceId());
 
     assertTrue(samAuthorizationDao.hasWriteWorkspacePermission());
   }
@@ -250,6 +254,12 @@ class SamPactTest {
     SamDao samDao = getSamDao(mockServer, randomWorkspaceId());
     String petToken = samDao.getPetToken();
     assertNotNull(petToken);
+  }
+
+  private SamAuthorizationDao getSamAuthorizationDao(
+      MockServer mockServer, WorkspaceId workspaceId) {
+    SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
+    return new HttpSamDao(clientFactory, new RestClientRetry(), workspaceId);
   }
 
   private SamDao getSamDao(MockServer mockServer, WorkspaceId workspaceId) {
