@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.pact;
 
+import static java.util.UUID.randomUUID;
 import static org.databiosphere.workspacedataservice.TestTags.PACT_TEST;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -13,12 +14,13 @@ import au.com.dius.pact.core.model.PactSpecVersion;
 import au.com.dius.pact.core.model.RequestResponsePact;
 import au.com.dius.pact.core.model.annotations.Pact;
 import java.util.Map;
-import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.*;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestServerException;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -178,9 +180,7 @@ class SamPactTest {
   @Test
   @PactTestFor(pactMethod = "statusApiPact", pactVersion = PactSpecVersion.V3)
   void testSamServiceStatusCheck(MockServer mockServer) {
-    SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
-    SamDao samDao =
-        new HttpSamDao(clientFactory, new RestClientRetry(), UUID.randomUUID().toString());
+    SamDao samDao = getSamDao(mockServer, randomWorkspaceId());
 
     SystemStatus samStatus = samDao.getSystemStatus();
     assertTrue(samStatus.getOk());
@@ -189,40 +189,33 @@ class SamPactTest {
   @Test
   @PactTestFor(pactMethod = "downStatusApiPact", pactVersion = PactSpecVersion.V3)
   void testSamServiceDown(MockServer mockServer) {
-    SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
-    SamDao samDao =
-        new HttpSamDao(clientFactory, new RestClientRetry(), UUID.randomUUID().toString());
-    assertThrows(
-        RestServerException.class, () -> samDao.getSystemStatus(), "down Sam should throw 500");
+    SamDao samDao = getSamDao(mockServer, randomWorkspaceId());
+    assertThrows(RestServerException.class, samDao::getSystemStatus, "down Sam should throw 500");
   }
 
   @Test
   @PactTestFor(pactMethod = "userStatusPact", pactVersion = PactSpecVersion.V3)
   void testSamServiceUserStatusInfo(MockServer mockServer) {
-    SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
-    SamDao samDao =
-        new HttpSamDao(clientFactory, new RestClientRetry(), UUID.randomUUID().toString());
-    String userId = samDao.getUserId("accessToken");
+    SamDao samDao = getSamDao(mockServer, randomWorkspaceId());
+    String userId = samDao.getUserId(BearerToken.of("accessToken"));
     assertNotNull(userId);
   }
 
   @Test
   @PactTestFor(pactMethod = "noUserStatusPact", pactVersion = PactSpecVersion.V3)
   void testSamServiceNoUser(MockServer mockServer) {
-    SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
-    SamDao samDao =
-        new HttpSamDao(clientFactory, new RestClientRetry(), UUID.randomUUID().toString());
+    SamDao samDao = getSamDao(mockServer, randomWorkspaceId());
+    BearerToken token = BearerToken.empty();
     assertThrows(
         AuthenticationException.class,
-        () -> samDao.getUserId(null),
+        () -> samDao.getUserId(token),
         "userId request without token should throw 401");
   }
 
   @Test
   @PactTestFor(pactMethod = "deleteNoPermissionPact", pactVersion = PactSpecVersion.V3)
   void testSamDeleteNoPermission(MockServer mockServer) {
-    SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
-    SamDao samDao = new HttpSamDao(clientFactory, new RestClientRetry(), dummyResourceId);
+    SamDao samDao = getSamDao(mockServer, dummyWorkspaceId());
 
     assertFalse(samDao.hasDeleteCollectionPermission());
   }
@@ -230,8 +223,7 @@ class SamPactTest {
   @Test
   @PactTestFor(pactMethod = "deletePermissionPact", pactVersion = PactSpecVersion.V3)
   void testSamDeletePermission(MockServer mockServer) {
-    SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
-    SamDao samDao = new HttpSamDao(clientFactory, new RestClientRetry(), dummyResourceId);
+    SamDao samDao = getSamDao(mockServer, dummyWorkspaceId());
 
     assertTrue(samDao.hasDeleteCollectionPermission());
   }
@@ -239,8 +231,7 @@ class SamPactTest {
   @Test
   @PactTestFor(pactMethod = "writeNoPermissionPact", pactVersion = PactSpecVersion.V3)
   void testSamWriteNoPermission(MockServer mockServer) {
-    SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
-    SamDao samDao = new HttpSamDao(clientFactory, new RestClientRetry(), dummyResourceId);
+    SamDao samDao = getSamDao(mockServer, dummyWorkspaceId());
 
     assertFalse(samDao.hasWriteWorkspacePermission());
   }
@@ -248,8 +239,7 @@ class SamPactTest {
   @Test
   @PactTestFor(pactMethod = "writePermissionPact", pactVersion = PactSpecVersion.V3)
   void testSamWritePermission(MockServer mockServer) {
-    SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
-    SamDao samDao = new HttpSamDao(clientFactory, new RestClientRetry(), dummyResourceId);
+    SamDao samDao = getSamDao(mockServer, dummyWorkspaceId());
 
     assertTrue(samDao.hasWriteWorkspacePermission());
   }
@@ -257,10 +247,21 @@ class SamPactTest {
   @Test
   @PactTestFor(pactMethod = "petTokenPact", pactVersion = PactSpecVersion.V3)
   void testPetToken(MockServer mockServer) {
-    SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
-    SamDao samDao =
-        new HttpSamDao(clientFactory, new RestClientRetry(), UUID.randomUUID().toString());
+    SamDao samDao = getSamDao(mockServer, randomWorkspaceId());
     String petToken = samDao.getPetToken();
     assertNotNull(petToken);
+  }
+
+  private SamDao getSamDao(MockServer mockServer, WorkspaceId workspaceId) {
+    SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
+    return new HttpSamDao(clientFactory, new RestClientRetry(), workspaceId);
+  }
+
+  private WorkspaceId randomWorkspaceId() {
+    return WorkspaceId.of(randomUUID());
+  }
+
+  private WorkspaceId dummyWorkspaceId() {
+    return WorkspaceId.fromString(dummyResourceId);
   }
 }

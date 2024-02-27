@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.sam;
 
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,9 +31,8 @@ public class MisconfiguredSamDao implements SamDao {
   }
 
   @Override
-  public boolean hasCreateCollectionPermission(String token) {
-    logWarning();
-    return false;
+  public boolean hasCreateCollectionPermission(BearerToken token) {
+    return hasCreateCollectionPermission();
   }
 
   @Override
@@ -41,9 +42,8 @@ public class MisconfiguredSamDao implements SamDao {
   }
 
   @Override
-  public boolean hasDeleteCollectionPermission(String token) {
-    logWarning();
-    return false;
+  public boolean hasDeleteCollectionPermission(BearerToken token) {
+    return hasDeleteCollectionPermission();
   }
 
   @Override
@@ -53,25 +53,23 @@ public class MisconfiguredSamDao implements SamDao {
   }
 
   @Override
-  public boolean hasWriteWorkspacePermission(String token) {
+  public boolean hasWriteWorkspacePermission(WorkspaceId workspaceId) {
+    return hasWriteWorkspacePermission();
+  }
+
+  @Override
+  public boolean hasReadWorkspacePermission(WorkspaceId workspaceId) {
     logWarning();
     return false;
   }
 
   @Override
-  public boolean hasReadWorkspacePermission(String workspaceId) {
-    logWarning();
-    return false;
+  public boolean hasReadWorkspacePermission(WorkspaceId workspaceId, BearerToken token) {
+    return hasReadWorkspacePermission(workspaceId);
   }
 
   @Override
-  public boolean hasReadWorkspacePermission(String workspaceId, String token) {
-    logWarning();
-    return false;
-  }
-
-  @Override
-  public String getUserId(String token) {
+  public String getUserId(BearerToken token) {
     logWarning();
     return "n/a";
   }
