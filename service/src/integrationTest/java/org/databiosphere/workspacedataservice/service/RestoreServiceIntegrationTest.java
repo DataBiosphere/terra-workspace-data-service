@@ -6,17 +6,19 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.util.List;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.IntegrationServiceTestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
+import org.databiosphere.workspacedataservice.startup.CollectionInitializer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -24,37 +26,32 @@ import org.springframework.test.context.TestPropertySource;
 
 @ActiveProfiles({"mock-storage", "local-cors", "local", "data-plane"})
 @ContextConfiguration(name = "mockStorage")
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DirtiesContext
 @SpringBootTest
 @TestPropertySource(
     properties = {
-      "twds.instance.initialize-collection-on-startup=false",
       "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000",
       "twds.instance.source-workspace-id=10000000-0000-0000-0000-000000000111",
       "twds.pg_dump.useAzureIdentity=false"
     })
-class RestoreServiceIntegrationTest {
+class RestoreServiceIntegrationTest extends IntegrationServiceTestBase {
+
   @Autowired private BackupRestoreService backupRestoreService;
-
   @Autowired CollectionDao collectionDao;
-
+  @Autowired NamedParameterJdbcTemplate namedTemplate;
   @Autowired RecordDao recordDao;
+
+  // Don't run the CollectionInitializer on startup, so this test can start with a clean slate.
+  // By making an (empty) mock bean to replace CollectionInitializer, we ensure it is a noop.
+  @MockBean CollectionInitializer mockCollectionInitializer;
 
   @Value("${twds.instance.workspace-id:}")
   private String workspaceId;
 
-  // this @BeforeEach makes the initialize-collection-on-startup property redundant, but is a
-  // workaround for integration test cleanup
-  @BeforeEach
-  @AfterAll
-  void tearDown() {
-    // clean up any collection left in the db
-    List<UUID> allCollections = collectionDao.listCollectionSchemas();
-    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
-    // TODO: also drop any orphaned pg schemas that don't have an entry in the sys_wds.collection
-    // table.
-    // this can happen when restores fail.
+  // ensure we clean up the db after our tests
+  @AfterEach
+  void cleanUp() {
+    cleanDb(collectionDao, namedTemplate);
   }
 
   // this test references the file src/integrationTest/resources/backup-test.sql as its backup
