@@ -23,8 +23,8 @@ import java.util.stream.Stream;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.config.InstanceProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.MockCollectionDao;
@@ -36,6 +36,7 @@ import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -61,7 +62,7 @@ class ImportServiceTest extends TestBase {
   @Autowired CollectionDao collectionDao;
   @Autowired CollectionService collectionService;
   @Autowired SamDao samDao;
-  @Autowired InstanceProperties instanceProperties;
+  @Autowired @SingleTenant WorkspaceId workspaceId;
   @SpyBean JobDao jobDao;
   @MockBean SchedulerDao schedulerDao;
   @MockBean SamClientFactory mockSamClientFactory;
@@ -79,7 +80,7 @@ class ImportServiceTest extends TestBase {
   void setUp() throws ApiException {
     // initialize the default collection id
     if (defaultCollectionId == null) {
-      defaultCollectionId = instanceProperties.getWorkspaceUuid();
+      defaultCollectionId = workspaceId.id();
     }
 
     // return the mock ResourcesApi from the mock SamClientFactory

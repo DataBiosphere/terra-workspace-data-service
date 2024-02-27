@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.config.InstanceProperties;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;
@@ -38,7 +38,7 @@ import org.springframework.test.context.ActiveProfiles;
 class ImportServiceDataPlaneTest {
 
   @Autowired ImportService importService;
-  @Autowired InstanceProperties instanceProperties;
+  @Autowired @SingleTenant WorkspaceId workspaceId;
   @MockBean CollectionDao collectionDao;
   @MockBean SamDao samDao;
 
@@ -52,7 +52,6 @@ class ImportServiceDataPlaneTest {
   @Test
   void userHasAccess() {
     // ARRANGE
-    WorkspaceId workspaceId = WorkspaceId.of(instanceProperties.getWorkspaceUuid());
     // collection dao says the collection exists and returns the expected workspace id
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
@@ -71,7 +70,6 @@ class ImportServiceDataPlaneTest {
   @Test
   void userDoesNotHaveAccess() {
     // ARRANGE
-    WorkspaceId workspaceId = WorkspaceId.of(instanceProperties.getWorkspaceUuid());
     // collection dao says the collection exists and returns the expected workspace id
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
