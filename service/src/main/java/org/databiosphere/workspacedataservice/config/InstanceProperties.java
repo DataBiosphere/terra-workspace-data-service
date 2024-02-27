@@ -12,7 +12,6 @@ public class InstanceProperties {
   private UUID workspaceUuid;
   private String sourceWorkspaceId;
   private UUID sourceWorkspaceUuid;
-  private boolean initializeCollectionOnStartup;
 
   public String getWorkspaceId() {
     return workspaceId;
@@ -49,10 +48,6 @@ public class InstanceProperties {
     return sourceWorkspaceId;
   }
 
-  public boolean getInitializeCollectionOnStartup() {
-    return initializeCollectionOnStartup;
-  }
-
   public void setSourceWorkspaceId(String sourceWorkspaceId) {
     this.sourceWorkspaceId = sourceWorkspaceId;
     try {
@@ -60,9 +55,5 @@ public class InstanceProperties {
     } catch (Exception e) {
       // noop; validation of the workspaceId is handled elsewhere. See StartupConfig.
     }
-  }
-
-  public void setInitializeCollectionOnStartup(boolean set) {
-    initializeCollectionOnStartup = set;
   }
 }

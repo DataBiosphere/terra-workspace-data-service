@@ -14,6 +14,7 @@ import org.databiosphere.workspacedata.api.CloningApi;
 import org.databiosphere.workspacedata.client.ApiException;
 import org.databiosphere.workspacedata.model.BackupJob;
 import org.databiosphere.workspacedata.model.BackupResponse;
+import org.databiosphere.workspacedataservice.IntegrationServiceTestBase;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
@@ -26,8 +27,8 @@ import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceClientFactory;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.Mockito;
@@ -46,7 +47,6 @@ import org.springframework.test.context.TestPropertySource;
 @ActiveProfiles({"mock-storage", "local-cors", "mock-sam", "local", "data-plane"})
 @TestPropertySource(
     properties = {
-      "twds.instance.initialize-collection-on-startup=false",
       "twds.instance.workspace-id=5a9b583c-17ee-4c88-a14c-0edbf31175db",
       // source id must match value in WDS-integrationTest-LocalFileStorage-input.sql
       "twds.instance.source-workspace-id=10000000-0000-0000-0000-000000000111",
@@ -55,7 +55,7 @@ import org.springframework.test.context.TestPropertySource;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DirtiesContext
 @SpringBootTest
-class CollectionInitializerCloneTest {
+class CollectionInitializerCloneTest extends IntegrationServiceTestBase {
 
   // standard beans
   @Autowired CollectionInitializerBean collectionInitializerBean;
@@ -76,19 +76,13 @@ class CollectionInitializerCloneTest {
   @Value("${twds.instance.source-workspace-id}")
   String sourceWorkspaceId;
 
-  // this @BeforeEach makes the initialize-collection-on-startup property redundant, but is a
-  // workaround for integration test cleanup
-  @BeforeEach
-  @AfterAll
-  void tearDown() {
-    // clean up any collections left in the db
-    List<UUID> allCollections = collectionDao.listCollectionSchemas();
-    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
-    // clean up any clone entries
-    namedTemplate.getJdbcTemplate().update("delete from sys_wds.clone");
-    // TODO: also drop any orphaned pg schemas that don't have an entry in the sys_wds.collection
-    // table.
-    // this can happen when restores fail.
+  // run cleanup BeforeAll as well as AfterEach. Since the tests in this file assume a clean slate,
+  // we need to clean up anything in the db left over from the CollectionInitializer running
+  // at startup before the tests run.
+  @BeforeAll
+  @AfterEach
+  void cleanUp() {
+    cleanDb(collectionDao, namedTemplate);
   }
 
   /*
