@@ -9,7 +9,7 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.config.TenancyProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
-import org.databiosphere.workspacedataservice.sam.SamDao;
+import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -28,7 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class CollectionService {
 
   private final CollectionDao collectionDao;
-  private final SamDao samDao;
+  private final SamAuthorizationDao samAuthorizationDao;
   private final ActivityLogger activityLogger;
   private final TenancyProperties tenancyProperties;
 
@@ -38,11 +38,11 @@ public class CollectionService {
 
   public CollectionService(
       CollectionDao collectionDao,
-      SamDao samDao,
+      SamAuthorizationDao samAuthorizationDao,
       ActivityLogger activityLogger,
       TenancyProperties tenancyProperties) {
     this.collectionDao = collectionDao;
-    this.samDao = samDao;
+    this.samAuthorizationDao = samAuthorizationDao;
     this.activityLogger = activityLogger;
     this.tenancyProperties = tenancyProperties;
   }
@@ -71,7 +71,7 @@ public class CollectionService {
     validateVersion(version);
 
     // check that the current user has permission on the parent workspace
-    boolean hasCreateCollectionPermission = samDao.hasCreateCollectionPermission();
+    boolean hasCreateCollectionPermission = samAuthorizationDao.hasCreateCollectionPermission();
     LOGGER.debug("hasCreateCollectionPermission? {}", hasCreateCollectionPermission);
 
     if (!hasCreateCollectionPermission) {
@@ -94,7 +94,7 @@ public class CollectionService {
     validateCollection(collectionId);
 
     // check that the current user has permission to delete the Sam resource
-    boolean hasDeleteCollectionPermission = samDao.hasDeleteCollectionPermission();
+    boolean hasDeleteCollectionPermission = samAuthorizationDao.hasDeleteCollectionPermission();
     LOGGER.debug("hasDeleteCollectionPermission? {}", hasDeleteCollectionPermission);
 
     if (!hasDeleteCollectionPermission) {
@@ -120,11 +120,11 @@ public class CollectionService {
   }
 
   public boolean canReadCollection(CollectionId collectionId) {
-    return samDao.hasReadWorkspacePermission(getWorkspaceId(collectionId));
+    return samAuthorizationDao.hasReadWorkspacePermission(getWorkspaceId(collectionId));
   }
 
   public boolean canWriteCollection(CollectionId collectionId) {
-    return samDao.hasWriteWorkspacePermission(getWorkspaceId(collectionId));
+    return samAuthorizationDao.hasWriteWorkspacePermission(getWorkspaceId(collectionId));
   }
 
   /**

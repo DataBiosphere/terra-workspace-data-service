@@ -15,7 +15,7 @@ import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
-import org.databiosphere.workspacedataservice.sam.SamDao;
+import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -39,14 +39,14 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
   @Autowired @SingleTenant WorkspaceId workspaceId;
 
   @MockBean JobDao jobDao;
-  @MockBean SamDao samDao;
+  @MockBean SamAuthorizationDao samAuthorizationDao;
   @MockBean CollectionDao collectionDao;
 
   @BeforeEach
   void beforeEach() {
     reset(jobDao);
     reset(collectionDao);
-    reset(samDao);
+    reset(samAuthorizationDao);
   }
 
   // ==================================================
@@ -81,7 +81,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // collection for this job exists and is associated with the $WORKSPACE_ID workspace
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
     // user has permission to that workspace
-    when(samDao.hasReadWorkspacePermission(getEnvWorkspaceId())).thenReturn(true);
+    when(samAuthorizationDao.hasReadWorkspacePermission(getEnvWorkspaceId())).thenReturn(true);
 
     // Act
     GenericJobServerModel actual = jobService.getJob(jobId);
@@ -102,7 +102,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // collection for this job exists and is associated with the $WORKSPACE_ID workspace
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
     // user has permission to that workspace
-    when(samDao.hasReadWorkspacePermission(getEnvWorkspaceId())).thenReturn(false);
+    when(samAuthorizationDao.hasReadWorkspacePermission(getEnvWorkspaceId())).thenReturn(false);
 
     // Act / assert
     AuthenticationMaskableException actual =
@@ -126,7 +126,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // $WORKSPACE_ID workspace
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // user has permission to that workspace
-    when(samDao.hasReadWorkspacePermission(workspaceId)).thenReturn(true);
+    when(samAuthorizationDao.hasReadWorkspacePermission(workspaceId)).thenReturn(true);
 
     // Act / assert
     Exception actual = assertThrows(CollectionException.class, () -> jobService.getJob(jobId));
@@ -152,7 +152,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // user has permission to that workspace
-    when(samDao.hasReadWorkspacePermission(workspaceId)).thenReturn(true);
+    when(samAuthorizationDao.hasReadWorkspacePermission(workspaceId)).thenReturn(true);
 
     // Act / assert
     MissingObjectException actual =
@@ -194,7 +194,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
     // user has permission to that workspace
-    when(samDao.hasReadWorkspacePermission(getEnvWorkspaceId())).thenReturn(true);
+    when(samAuthorizationDao.hasReadWorkspacePermission(getEnvWorkspaceId())).thenReturn(true);
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 2));
@@ -216,7 +216,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // collection exists and is associated with the $WORKSPACE_ID workspace
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
     // user has permission to that workspace
-    when(samDao.hasReadWorkspacePermission(getEnvWorkspaceId())).thenReturn(false);
+    when(samAuthorizationDao.hasReadWorkspacePermission(getEnvWorkspaceId())).thenReturn(false);
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 3));
@@ -241,7 +241,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // user has permission to that workspace
-    when(samDao.hasReadWorkspacePermission(workspaceId)).thenReturn(true);
+    when(samAuthorizationDao.hasReadWorkspacePermission(workspaceId)).thenReturn(true);
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 4));
