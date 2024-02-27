@@ -32,8 +32,8 @@ import org.databiosphere.workspacedataservice.dataimport.pfb.PfbQuartzJob;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJob;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
-import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -61,7 +61,7 @@ class ImportServiceTest extends TestBase {
   @Autowired ImportService importService;
   @Autowired CollectionDao collectionDao;
   @Autowired CollectionService collectionService;
-  @Autowired SamDao samDao;
+  @Autowired SamAuthorizationDao samAuthorizationDao;
   @Autowired @SingleTenant WorkspaceId workspaceId;
   @SpyBean JobDao jobDao;
   @MockBean SchedulerDao schedulerDao;

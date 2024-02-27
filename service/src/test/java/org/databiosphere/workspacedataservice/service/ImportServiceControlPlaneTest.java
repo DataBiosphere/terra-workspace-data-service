@@ -10,7 +10,7 @@ import java.net.URI;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
-import org.databiosphere.workspacedataservice.sam.SamDao;
+import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -36,7 +36,7 @@ class ImportServiceControlPlaneTest {
 
   @Autowired ImportService importService;
   @MockBean CollectionDao collectionDao;
-  @MockBean SamDao samDao;
+  @MockBean SamAuthorizationDao samAuthorizationDao;
   private final URI importUri = URI.create("http://does/not/matter");
   private final ImportRequestServerModel importRequest =
       new ImportRequestServerModel(PFB, importUri);
@@ -50,7 +50,8 @@ class ImportServiceControlPlaneTest {
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // sam dao says the user has write permission
-    when(samDao.hasWriteWorkspacePermission(WorkspaceId.of(collectionId.id()))).thenReturn(true);
+    when(samAuthorizationDao.hasWriteWorkspacePermission(WorkspaceId.of(collectionId.id())))
+        .thenReturn(true);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -69,7 +70,8 @@ class ImportServiceControlPlaneTest {
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // sam dao says the user does not have write permission
-    when(samDao.hasWriteWorkspacePermission(WorkspaceId.of(collectionId.id()))).thenReturn(false);
+    when(samAuthorizationDao.hasWriteWorkspacePermission(WorkspaceId.of(collectionId.id())))
+        .thenReturn(false);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -93,7 +95,8 @@ class ImportServiceControlPlaneTest {
     // collection dao says the collection DOES exist, which is an error in the control plane
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(WorkspaceId.of(UUID.randomUUID()));
     // sam dao says the user does have write permission
-    when(samDao.hasWriteWorkspacePermission(WorkspaceId.of(collectionId.id()))).thenReturn(true);
+    when(samAuthorizationDao.hasWriteWorkspacePermission(WorkspaceId.of(collectionId.id())))
+        .thenReturn(true);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime

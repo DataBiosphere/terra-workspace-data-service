@@ -21,7 +21,7 @@ import org.databiosphere.workspacedataservice.recordsource.PrimaryKeyResolver;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.recordsource.TsvRecordSource;
-import org.databiosphere.workspacedataservice.sam.SamDao;
+import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -59,7 +59,7 @@ public class RecordOrchestratorService { // TODO give me a better name
   private final BatchWriteService batchWriteService;
   private final RecordService recordService;
   private final CollectionService collectionService;
-  private final SamDao samDao;
+  private final SamAuthorizationDao samAuthorizationDao;
   private final ActivityLogger activityLogger;
 
   private final TsvSupport tsvSupport;
@@ -71,7 +71,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       BatchWriteService batchWriteService,
       RecordService recordService,
       CollectionService collectionService,
-      SamDao samDao,
+      SamAuthorizationDao samAuthorizationDao,
       ActivityLogger activityLogger,
       TsvSupport tsvSupport) {
     this.recordDao = recordDao;
@@ -80,7 +80,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     this.batchWriteService = batchWriteService;
     this.recordService = recordService;
     this.collectionService = collectionService;
-    this.samDao = samDao;
+    this.samAuthorizationDao = samAuthorizationDao;
     this.activityLogger = activityLogger;
     this.tsvSupport = tsvSupport;
   }
@@ -104,7 +104,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     validateVersion(version);
     collectionService.validateCollection(collectionId);
 
-    boolean hasWriteWorkspacePermission = samDao.hasWriteWorkspacePermission();
+    boolean hasWriteWorkspacePermission = samAuthorizationDao.hasWriteWorkspacePermission();
     LOGGER.debug("hasWriteWorkspacePermission? {}", hasWriteWorkspacePermission);
 
     if (!hasWriteWorkspacePermission) {
