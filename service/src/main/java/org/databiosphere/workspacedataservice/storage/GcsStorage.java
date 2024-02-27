@@ -8,9 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
-import org.springframework.context.annotation.Configuration;
 
-@Configuration
 public class GcsStorage {
   private Storage storage;
 

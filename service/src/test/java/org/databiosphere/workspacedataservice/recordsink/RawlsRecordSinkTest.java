@@ -36,7 +36,6 @@ class RawlsRecordSinkTest extends TestBase {
   @Autowired private ObjectMapper mapper;
   private RecordSink recordSink;
   private StringWriter recordedJson;
-  private StringWriter blobName;
 
   @Qualifier("mockGcsStorage")
   @Autowired
