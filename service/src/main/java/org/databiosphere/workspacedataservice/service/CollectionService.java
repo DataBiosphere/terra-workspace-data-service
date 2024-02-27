@@ -120,11 +120,11 @@ public class CollectionService {
   }
 
   public boolean canReadCollection(CollectionId collectionId) {
-    return samDao.hasReadWorkspacePermission(getWorkspaceId(collectionId).toString());
+    return samDao.hasReadWorkspacePermission(getWorkspaceId(collectionId));
   }
 
   public boolean canWriteCollection(CollectionId collectionId) {
-    return samDao.hasWriteWorkspacePermission(getWorkspaceId(collectionId).toString());
+    return samDao.hasWriteWorkspacePermission(getWorkspaceId(collectionId));
   }
 
   /**

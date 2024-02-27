@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.sam;
 
-import java.util.UUID;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,7 +43,7 @@ public class SamConfig {
     // Try to parse the WORKSPACE_ID env var;
     // return a MisconfiguredSamDao if it can't be parsed.
     try {
-      String workspaceId = UUID.fromString(workspaceIdArgument).toString(); // verify UUID-ness
+      WorkspaceId workspaceId = WorkspaceId.fromString(workspaceIdArgument); // verify UUID-ness
       LOGGER.info(
           "Sam integration will query type={}, resourceId={}, action={}",
           SamDao.RESOURCE_NAME_WORKSPACE,
