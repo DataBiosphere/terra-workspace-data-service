@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.sam;
 
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 
 /**
  * Interface for SamDao, allowing various dao implementations. Currently, the only implementation is
@@ -28,7 +29,7 @@ public interface SamDao {
    */
   boolean hasCreateCollectionPermission();
 
-  boolean hasCreateCollectionPermission(String token);
+  boolean hasCreateCollectionPermission(BearerToken token);
 
   /**
    * Check if the current user has permission to delete a collection associated with a Sam workspace
@@ -38,7 +39,7 @@ public interface SamDao {
    */
   boolean hasDeleteCollectionPermission();
 
-  boolean hasDeleteCollectionPermission(String token);
+  boolean hasDeleteCollectionPermission(BearerToken token);
 
   /**
    * Check if the current user has permission to read the workspace resource from Sam
@@ -47,7 +48,7 @@ public interface SamDao {
    */
   boolean hasReadWorkspacePermission(String workspaceId);
 
-  boolean hasReadWorkspacePermission(String workspaceId, String token);
+  boolean hasReadWorkspacePermission(String workspaceId, BearerToken token);
 
   /**
    * Check if the current user has permission to write to a workspace resource from Sam
@@ -58,7 +59,7 @@ public interface SamDao {
 
   boolean hasWriteWorkspacePermission(String workspaceId);
 
-  String getUserId(String token);
+  String getUserId(BearerToken token);
 
   /** Gets the up/down system status of Sam. */
   Boolean getSystemStatusOk();

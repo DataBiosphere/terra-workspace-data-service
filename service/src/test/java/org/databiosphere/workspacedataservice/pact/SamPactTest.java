@@ -19,6 +19,7 @@ import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.*;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestServerException;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -202,7 +203,7 @@ class SamPactTest {
     SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
     SamDao samDao =
         new HttpSamDao(clientFactory, new RestClientRetry(), UUID.randomUUID().toString());
-    String userId = samDao.getUserId("accessToken");
+    String userId = samDao.getUserId(BearerToken.of("accessToken"));
     assertNotNull(userId);
   }
 
@@ -212,9 +213,10 @@ class SamPactTest {
     SamClientFactory clientFactory = new HttpSamClientFactory(mockServer.getUrl());
     SamDao samDao =
         new HttpSamDao(clientFactory, new RestClientRetry(), UUID.randomUUID().toString());
+    BearerToken token = BearerToken.empty();
     assertThrows(
         AuthenticationException.class,
-        () -> samDao.getUserId(null),
+        () -> samDao.getUserId(token),
         "userId request without token should throw 401");
   }
 

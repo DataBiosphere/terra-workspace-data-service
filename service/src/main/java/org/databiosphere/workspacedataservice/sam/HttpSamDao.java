@@ -9,7 +9,6 @@ import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.lang.Nullable;
 
 /**
  * Implementation of SamDao that accepts a SamClientFactory, then asks that factory for a new
@@ -38,13 +37,12 @@ public class HttpSamDao implements SamDao {
    */
   @Override
   public boolean hasCreateCollectionPermission() {
-    return hasCreateCollectionPermission(null);
+    return hasCreateCollectionPermission(BearerToken.empty());
   }
 
   @Override
-  public boolean hasCreateCollectionPermission(@Nullable String token) {
-    return hasPermission(
-        ACTION_WRITE, "Sam.hasCreateCollectionPermission", BearerToken.ofNullable(token));
+  public boolean hasCreateCollectionPermission(BearerToken token) {
+    return hasPermission(ACTION_WRITE, "Sam.hasCreateCollectionPermission", token);
   }
 
   /**
@@ -55,13 +53,12 @@ public class HttpSamDao implements SamDao {
    */
   @Override
   public boolean hasDeleteCollectionPermission() {
-    return hasDeleteCollectionPermission(null);
+    return hasDeleteCollectionPermission(BearerToken.empty());
   }
 
   @Override
-  public boolean hasDeleteCollectionPermission(@Nullable String token) {
-    return hasPermission(
-        ACTION_DELETE, "Sam.hasDeleteCollectionPermission", BearerToken.ofNullable(token));
+  public boolean hasDeleteCollectionPermission(BearerToken token) {
+    return hasPermission(ACTION_DELETE, "Sam.hasDeleteCollectionPermission", token);
   }
 
   /**
@@ -88,13 +85,12 @@ public class HttpSamDao implements SamDao {
    */
   @Override
   public boolean hasReadWorkspacePermission(String workspaceId) {
-    return hasReadWorkspacePermission(workspaceId, null);
+    return hasReadWorkspacePermission(workspaceId, BearerToken.empty());
   }
 
   @Override
-  public boolean hasReadWorkspacePermission(String workspaceId, @Nullable String token) {
-    return hasPermission(
-        ACTION_READ, "Sam.hasReadWorkspacePermission", BearerToken.ofNullable(token));
+  public boolean hasReadWorkspacePermission(String workspaceId, BearerToken token) {
+    return hasPermission(ACTION_READ, "Sam.hasReadWorkspacePermission", token);
   }
 
   // helper implementation for permission checks
@@ -120,14 +116,14 @@ public class HttpSamDao implements SamDao {
   // this cache uses token.hashCode as its key. This prevents any logging such as
   // in CacheLogger from logging the raw token.
   @Cacheable(cacheNames = "tokenResolution", key = "#token.hashCode()")
-  public String getUserId(String token) {
+  public String getUserId(BearerToken token) {
     return getUserInfo(token).getUserSubjectId();
   }
 
-  public UserStatusInfo getUserInfo(String token) {
+  private UserStatusInfo getUserInfo(BearerToken token) {
     LOGGER.debug("Resolving Sam token to UserStatusInfo ...");
     RestCall<UserStatusInfo> samFunction =
-        () -> samClientFactory.getUsersApi(BearerToken.of(token)).getUserStatusInfo();
+        () -> samClientFactory.getUsersApi(token).getUserStatusInfo();
     return restClientRetry.withRetryAndErrorHandling(samFunction, "Sam.getUserInfo");
   }
 
