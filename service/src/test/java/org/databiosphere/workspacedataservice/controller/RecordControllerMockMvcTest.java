@@ -38,7 +38,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-@ActiveProfiles({"mock-storage", "mock-sam"})
+@ActiveProfiles(profiles = "mock-sam")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordControllerMockMvcTest extends MockMvcTestBase {
 
