@@ -29,7 +29,7 @@ import org.springframework.test.context.ActiveProfiles;
  *
  * @see ImportServiceTest
  */
-@ActiveProfiles({"control-plane", "noop-scheduler-dao"})
+@ActiveProfiles({"control-plane", "noop-scheduler-dao", "mock-sam"})
 @DirtiesContext
 @SpringBootTest
 class ImportServiceControlPlaneTest {

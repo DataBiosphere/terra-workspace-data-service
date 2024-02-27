@@ -4,6 +4,10 @@ import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 
 public interface SamAuthorizationDao {
+  // TODO(jladieu): get the BearerToken injected during creation and remove it from all arg lists
+  // TODO(jladieu): get the WorkspaceId injected during creation and remove it from all arg lists
+  // TODO(jladieu): collapse overloads after the extra params are gone
+
   /** Sam resource type name for Workspaces */
   String RESOURCE_NAME_WORKSPACE = "workspace";
 
