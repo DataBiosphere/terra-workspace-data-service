@@ -9,6 +9,7 @@ import org.databiosphere.workspacedataservice.shared.model.BearerToken;
  */
 public interface SamDao {
 
+  // TODO(jladieu): get the token injected during creation and eliminate it from the arg list
   String getUserId(BearerToken token);
 
   /** Gets the up/down system status of Sam. */

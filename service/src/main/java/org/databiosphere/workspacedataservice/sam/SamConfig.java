@@ -28,7 +28,7 @@ public class SamConfig {
   private static final Logger LOGGER = LoggerFactory.getLogger(SamConfig.class);
 
   @Bean
-  public SamClientFactory getSamClientFactory() {
+  SamClientFactory getSamClientFactory() {
     // TODO: AJ-898 what validation of the sam url should we do here?
     // - none
     // - check if the value is null/empty/whitespace
@@ -43,10 +43,15 @@ public class SamConfig {
   }
 
   @Bean
-  public SamAuthorizationDao samAuthorizationDao(
+  SamAuthorizationDaoFactory samAuthorizationDaoFactory(
       SamClientFactory samClientFactory, RestClientRetry restClientRetry) {
+    return new SamAuthorizationDaoFactory(samClientFactory, restClientRetry);
+  }
+
+  @Bean
+  SamAuthorizationDao samAuthorizationDao(SamAuthorizationDaoFactory samAuthorizationDaoFactory) {
     // Try to parse the WORKSPACE_ID env var;
-    // return a MisconfiguredSamDao if it can't be parsed.
+    // return a MisconfiguredSamAuthorizationDao if it can't be parsed.
     try {
       WorkspaceId workspaceId = WorkspaceId.fromString(workspaceIdArgument); // verify UUID-ness
       LOGGER.info(
@@ -54,40 +59,21 @@ public class SamConfig {
           SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
           workspaceId,
           SamAuthorizationDao.ACTION_WRITE);
-      return new HttpSamDao(samClientFactory, restClientRetry, workspaceId);
+      return samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId);
     } catch (IllegalArgumentException e) {
       LOGGER.warn(
           "Workspace id could not be parsed, all Sam permission checks will fail. Provided id: {}",
           workspaceIdArgument);
-      return new MisconfiguredSamDao(
+      return new MisconfiguredSamAuthorizationDao(
           "WDS was started with invalid WORKSPACE_ID of: " + workspaceIdArgument);
     } catch (Exception e) {
       LOGGER.warn("Error during initial Sam configuration: " + e.getMessage());
-      return new MisconfiguredSamDao(e.getMessage());
+      return new MisconfiguredSamAuthorizationDao(e.getMessage());
     }
   }
 
   @Bean
   public SamDao samDao(SamClientFactory samClientFactory, RestClientRetry restClientRetry) {
-    // Try to parse the WORKSPACE_ID env var;
-    // return a MisconfiguredSamDao if it can't be parsed.
-    try {
-      WorkspaceId workspaceId = WorkspaceId.fromString(workspaceIdArgument); // verify UUID-ness
-      LOGGER.info(
-          "Sam integration will query type={}, resourceId={}, action={}",
-          SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
-          workspaceId,
-          SamAuthorizationDao.ACTION_WRITE);
-      return new HttpSamDao(samClientFactory, restClientRetry, workspaceId);
-    } catch (IllegalArgumentException e) {
-      LOGGER.warn(
-          "Workspace id could not be parsed, all Sam permission checks will fail. Provided id: {}",
-          workspaceIdArgument);
-      return new MisconfiguredSamDao(
-          "WDS was started with invalid WORKSPACE_ID of: " + workspaceIdArgument);
-    } catch (Exception e) {
-      LOGGER.warn("Error during initial Sam configuration: " + e.getMessage());
-      return new MisconfiguredSamDao(e.getMessage());
-    }
+    return new HttpSamDao(samClientFactory, restClientRetry);
   }
 }

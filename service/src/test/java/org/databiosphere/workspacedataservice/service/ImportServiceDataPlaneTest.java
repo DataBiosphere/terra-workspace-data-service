@@ -31,7 +31,7 @@ import org.springframework.test.context.ActiveProfiles;
  *
  * @see ImportServiceTest
  */
-@ActiveProfiles({"data-plane", "noop-scheduler-dao"})
+@ActiveProfiles({"data-plane", "noop-scheduler-dao", "mock-sam"})
 @DirtiesContext
 // the "data-plane" profile enforces validity of twds.instance.workspace-id, so we need to set that
 @SpringBootTest(properties = {"twds.instance.workspace-id=b01dface-0000-0000-0000-000000000000"})
