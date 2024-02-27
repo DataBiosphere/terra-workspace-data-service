@@ -4,21 +4,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Workspace Data Service API</title>
-  <!-- *** next 4 lines updated to reference ../webjars/swagger-ui-dist/ instead of ./ -->
-  <link rel="stylesheet" type="text/css" href="../webjars/swagger-ui-dist/swagger-ui.css"/>
-  <link rel="stylesheet" type="text/css" href="../webjars/swagger-ui-dist/index.css"/>
-  <link rel="icon" type="image/png" href="../webjars/swagger-ui-dist/favicon-32x32.png"
+  <title>WDS API</title>
+  <!-- *** next 4 lines updated to reference /webjars/swagger-ui-dist/ instead of ./ -->
+  <link rel="stylesheet" type="text/css" href="/webjars/swagger-ui-dist/swagger-ui.css"/>
+  <link rel="stylesheet" type="text/css" href="/webjars/swagger-ui-dist/index.css"/>
+  <link rel="icon" type="image/png" href="/webjars/swagger-ui-dist/favicon-32x32.png"
         sizes="32x32"/>
-  <link rel="icon" type="image/png" href="../webjars/swagger-ui-dist/favicon-16x16.png"
+  <link rel="icon" type="image/png" href="/webjars/swagger-ui-dist/favicon-16x16.png"
         sizes="16x16"/>
 </head>
 
 <body>
 <div id="swagger-ui"></div>
 <!-- *** next 4 lines updated to reference ../webjars/swagger-ui-dist/ instead of ./ -->
-<script src="../webjars/swagger-ui-dist/swagger-ui-bundle.js" charset="UTF-8"></script>
-<script src="../webjars/swagger-ui-dist/swagger-ui-standalone-preset.js" charset="UTF-8"></script>
+<script src="/webjars/swagger-ui-dist/swagger-ui-bundle.js" charset="UTF-8"></script>
+<script src="/webjars/swagger-ui-dist/swagger-ui-standalone-preset.js" charset="UTF-8"></script>
 <!-- *** call to swagger-initializer.js removed here, replaced by customization below -->
 <!-- *** start WDS customization -->
 <script>
@@ -38,7 +38,7 @@
   window.onload = function () {
     // Begin Swagger UI call region
     const ui = SwaggerUIBundle({
-      url: 'openapi-docs.yaml',
+      url: '/swagger/openapi-docs.yaml',
       dom_id: '#swagger-ui',
       deepLinking: true,
       presets: [
