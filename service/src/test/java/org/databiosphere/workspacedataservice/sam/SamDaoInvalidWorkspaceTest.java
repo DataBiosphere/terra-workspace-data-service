@@ -37,7 +37,7 @@ class SamDaoInvalidWorkspaceTest extends TestBase {
     assertFalse(samDao.hasDeleteCollectionPermission());
     assertFalse(samDao.hasDeleteCollectionPermission("token"));
     assertFalse(samDao.hasWriteWorkspacePermission());
-    assertFalse(samDao.hasWriteWorkspacePermission("token"));
+    assertFalse(samDao.hasWriteWorkspacePermission("some-workspace-id"));
   }
 
   @Test

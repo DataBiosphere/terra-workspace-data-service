@@ -43,7 +43,8 @@ public class HttpSamDao implements SamDao {
 
   @Override
   public boolean hasCreateCollectionPermission(@Nullable String token) {
-    return hasPermission(ACTION_WRITE, "Sam.hasCreateCollectionPermission", token);
+    return hasPermission(
+        ACTION_WRITE, "Sam.hasCreateCollectionPermission", BearerToken.ofNullable(token));
   }
 
   /**
@@ -59,22 +60,8 @@ public class HttpSamDao implements SamDao {
 
   @Override
   public boolean hasDeleteCollectionPermission(@Nullable String token) {
-    return hasPermission(ACTION_DELETE, "Sam.hasDeleteCollectionPermission", token);
-  }
-
-  // helper implementation for permission checks
-  private boolean hasPermission(String action, String loggerHint, @Nullable String token) {
-    LOGGER.debug(
-        "Checking Sam permission for {}/{}/{} ...",
-        SamDao.RESOURCE_NAME_WORKSPACE,
-        workspaceId,
-        action);
-    RestCall<Boolean> samFunction =
-        () ->
-            samClientFactory
-                .getResourcesApi(BearerToken.ofNullable(token))
-                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, workspaceId, action);
-    return restClientRetry.withRetryAndErrorHandling(samFunction, loggerHint);
+    return hasPermission(
+        ACTION_DELETE, "Sam.hasDeleteCollectionPermission", BearerToken.ofNullable(token));
   }
 
   /**
@@ -85,12 +72,13 @@ public class HttpSamDao implements SamDao {
    */
   @Override
   public boolean hasWriteWorkspacePermission() {
-    return hasWriteWorkspacePermission(null);
+    return hasWriteWorkspacePermission(workspaceId);
   }
 
   @Override
-  public boolean hasWriteWorkspacePermission(@Nullable String token) {
-    return hasPermission(ACTION_WRITE, "Sam.hasWriteWorkspacePermission", token);
+  public boolean hasWriteWorkspacePermission(String workspaceId) {
+    return hasPermission(
+        ACTION_WRITE, "Sam.hasWriteWorkspacePermission", workspaceId, BearerToken.empty());
   }
 
   /**
@@ -105,7 +93,28 @@ public class HttpSamDao implements SamDao {
 
   @Override
   public boolean hasReadWorkspacePermission(String workspaceId, @Nullable String token) {
-    return hasPermission(ACTION_READ, "Sam.hasReadWorkspacePermission", token);
+    return hasPermission(
+        ACTION_READ, "Sam.hasReadWorkspacePermission", BearerToken.ofNullable(token));
+  }
+
+  // helper implementation for permission checks
+  private boolean hasPermission(String action, String loggerHint, BearerToken token) {
+    return hasPermission(action, loggerHint, workspaceId, token);
+  }
+
+  private boolean hasPermission(
+      String action, String loggerHint, String workspaceId, BearerToken token) {
+    LOGGER.debug(
+        "Checking Sam permission for {}/{}/{} ...",
+        SamDao.RESOURCE_NAME_WORKSPACE,
+        workspaceId,
+        action);
+    RestCall<Boolean> samFunction =
+        () ->
+            samClientFactory
+                .getResourcesApi(token)
+                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, workspaceId, action);
+    return restClientRetry.withRetryAndErrorHandling(samFunction, loggerHint);
   }
 
   // this cache uses token.hashCode as its key. This prevents any logging such as

@@ -30,8 +30,7 @@ public class MisconfiguredSamDao implements SamDao {
 
   @Override
   public boolean hasCreateCollectionPermission(String token) {
-    logWarning();
-    return false;
+    return hasCreateCollectionPermission();
   }
 
   @Override
@@ -42,8 +41,7 @@ public class MisconfiguredSamDao implements SamDao {
 
   @Override
   public boolean hasDeleteCollectionPermission(String token) {
-    logWarning();
-    return false;
+    return hasDeleteCollectionPermission();
   }
 
   @Override
@@ -53,9 +51,8 @@ public class MisconfiguredSamDao implements SamDao {
   }
 
   @Override
-  public boolean hasWriteWorkspacePermission(String token) {
-    logWarning();
-    return false;
+  public boolean hasWriteWorkspacePermission(String workspaceId) {
+    return hasWriteWorkspacePermission();
   }
 
   @Override
@@ -66,8 +63,7 @@ public class MisconfiguredSamDao implements SamDao {
 
   @Override
   public boolean hasReadWorkspacePermission(String workspaceId, String token) {
-    logWarning();
-    return false;
+    return hasReadWorkspacePermission(workspaceId);
   }
 
   @Override

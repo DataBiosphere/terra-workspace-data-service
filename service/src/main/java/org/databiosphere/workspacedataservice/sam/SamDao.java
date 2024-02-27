@@ -56,7 +56,7 @@ public interface SamDao {
    */
   boolean hasWriteWorkspacePermission();
 
-  boolean hasWriteWorkspacePermission(String token);
+  boolean hasWriteWorkspacePermission(String workspaceId);
 
   String getUserId(String token);
 
