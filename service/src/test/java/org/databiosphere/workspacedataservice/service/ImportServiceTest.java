@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -35,6 +34,7 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.sam.SamDao;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,12 +84,12 @@ class ImportServiceTest extends TestBase {
     }
 
     // return the mock ResourcesApi from the mock SamClientFactory
-    given(mockSamClientFactory.getResourcesApi(nullable(String.class)))
+    given(mockSamClientFactory.getResourcesApi(any(BearerToken.class)))
         .willReturn(mockSamResourcesApi);
     // Sam permission check will always return true
     given(mockSamResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
         .willReturn(true);
-    given(mockSamClientFactory.getGoogleApi(null)).willReturn(mockSamGoogleApi);
+    given(mockSamClientFactory.getGoogleApi(any(BearerToken.class))).willReturn(mockSamGoogleApi);
     // Pet token request returns "arbitraryToken"
     given(mockSamGoogleApi.getArbitraryPetServiceAccountToken(any())).willReturn("arbitraryToken");
 
@@ -218,7 +218,7 @@ class ImportServiceTest extends TestBase {
   @EnumSource(ImportRequestServerModel.TypeEnum.class)
   void doesNotCreateJobWithoutPetToken(ImportRequestServerModel.TypeEnum importType)
       throws ApiException {
-    given(mockSamClientFactory.getGoogleApi(null)).willReturn(mockSamGoogleApi);
+    given(mockSamClientFactory.getGoogleApi(any(BearerToken.class))).willReturn(mockSamGoogleApi);
     // Sam permission check will always return true
     given(mockSamGoogleApi.getArbitraryPetServiceAccountToken(any()))
         .willThrow(new ApiException("token failure for unit test"));

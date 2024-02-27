@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
@@ -14,6 +15,7 @@ import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +53,8 @@ class RecordOrchestratorSamTest extends TestBase {
     if (!collectionDao.collectionSchemaExists(COLLECTION)) {
       collectionDao.createSchema(COLLECTION);
     }
-    given(mockSamClientFactory.getResourcesApi(null)).willReturn(mockResourcesApi);
+    given(mockSamClientFactory.getResourcesApi(any(BearerToken.class)))
+        .willReturn(mockResourcesApi);
 
     // clear call history for the mock
     Mockito.reset(mockResourcesApi);
