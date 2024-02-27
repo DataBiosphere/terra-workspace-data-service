@@ -29,7 +29,7 @@ class SamAuthorizationDaoInvalidWorkspaceIdTest extends TestBase {
 
   @Test
   public void createsFailingDao() {
-    assertInstanceOf(MisconfiguredSamDao.class, samAuthorizationDao);
+    assertInstanceOf(MisconfiguredSamAuthorizationDao.class, samAuthorizationDao);
   }
 
   @Test
