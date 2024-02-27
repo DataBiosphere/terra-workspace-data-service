@@ -24,27 +24,21 @@ import org.springframework.test.context.TestPropertySource;
       // explicitly set the workspace-id to something invalid
       "twds.instance.workspace-id=not-a-real-id",
     })
-class SamDaoInvalidWorkspaceTest extends TestBase {
-
-  @Autowired SamDao samDao;
+class SamAuthorizationDaoInvalidWorkspaceIdTest extends TestBase {
+  @Autowired SamAuthorizationDao samAuthorizationDao;
 
   @Test
   public void createsFailingDao() {
-    assertInstanceOf(MisconfiguredSamDao.class, samDao);
+    assertInstanceOf(MisconfiguredSamDao.class, samAuthorizationDao);
   }
 
   @Test
   public void permissionsReturnFalse() {
-    assertFalse(samDao.hasCreateCollectionPermission());
-    assertFalse(samDao.hasCreateCollectionPermission(BearerToken.of("token")));
-    assertFalse(samDao.hasDeleteCollectionPermission());
-    assertFalse(samDao.hasDeleteCollectionPermission(BearerToken.of("token")));
-    assertFalse(samDao.hasWriteWorkspacePermission());
-    assertFalse(samDao.hasWriteWorkspacePermission(WorkspaceId.of(randomUUID())));
-  }
-
-  @Test
-  public void statusThrows() {
-    assertThrows(RuntimeException.class, () -> samDao.getSystemStatus());
+    assertFalse(samAuthorizationDao.hasCreateCollectionPermission());
+    assertFalse(samAuthorizationDao.hasCreateCollectionPermission(BearerToken.of("token")));
+    assertFalse(samAuthorizationDao.hasDeleteCollectionPermission());
+    assertFalse(samAuthorizationDao.hasDeleteCollectionPermission(BearerToken.of("token")));
+    assertFalse(samAuthorizationDao.hasWriteWorkspacePermission());
+    assertFalse(samAuthorizationDao.hasWriteWorkspacePermission(WorkspaceId.of(randomUUID())));
   }
 }

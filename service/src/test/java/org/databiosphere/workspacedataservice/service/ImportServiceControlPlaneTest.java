@@ -11,6 +11,7 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
+import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -37,6 +38,8 @@ class ImportServiceControlPlaneTest {
   @Autowired ImportService importService;
   @MockBean CollectionDao collectionDao;
   @MockBean SamAuthorizationDao samAuthorizationDao;
+  @MockBean SamDao samDao;
+
   private final URI importUri = URI.create("http://does/not/matter");
   private final ImportRequestServerModel importRequest =
       new ImportRequestServerModel(PFB, importUri);

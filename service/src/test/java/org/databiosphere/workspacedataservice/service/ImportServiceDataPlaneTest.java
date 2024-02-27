@@ -12,6 +12,7 @@ import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
+import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -41,6 +42,7 @@ class ImportServiceDataPlaneTest {
   @Autowired @SingleTenant WorkspaceId workspaceId;
   @MockBean CollectionDao collectionDao;
   @MockBean SamAuthorizationDao samAuthorizationDao;
+  @MockBean SamDao samDao;
 
   private final URI importUri = URI.create("http://does/not/matter");
   private final ImportRequestServerModel importRequest =

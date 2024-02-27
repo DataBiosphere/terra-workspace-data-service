@@ -7,7 +7,7 @@ import org.databiosphere.workspacedataservice.shared.model.BearerToken;
  * Interface for SamDao, allowing various dao implementations. Currently, the only implementation is
  * HttpSamDao.
  */
-public interface SamDao extends SamAuthorizationDao {
+public interface SamDao {
 
   String getUserId(BearerToken token);
 
