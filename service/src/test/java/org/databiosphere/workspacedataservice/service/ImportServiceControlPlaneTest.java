@@ -37,6 +37,7 @@ class ImportServiceControlPlaneTest {
   @Autowired ImportService importService;
   @MockBean CollectionDao collectionDao;
   @MockBean SamAuthorizationDao samAuthorizationDao;
+
   private final URI importUri = URI.create("http://does/not/matter");
   private final ImportRequestServerModel importRequest =
       new ImportRequestServerModel(PFB, importUri);

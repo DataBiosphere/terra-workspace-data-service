@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
  * disallow any write operations that require permissions, while still allowing WDS to start up and
  * for users to read any data already in WDS.
  */
-public class MisconfiguredSamDao implements SamDao {
+public class MisconfiguredSamDao implements SamDao, SamAuthorizationDao {
 
   private final String errorMessage;
 

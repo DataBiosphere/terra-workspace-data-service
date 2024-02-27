@@ -15,7 +15,7 @@ import org.springframework.cache.annotation.Cacheable;
  * Implementation of SamDao that accepts a SamClientFactory, then asks that factory for a new
  * ResourcesApi to use within each method invocation.
  */
-public class HttpSamDao implements SamDao {
+public class HttpSamDao implements SamDao, SamAuthorizationDao {
 
   protected final SamClientFactory samClientFactory;
   private static final Logger LOGGER = LoggerFactory.getLogger(HttpSamDao.class);
