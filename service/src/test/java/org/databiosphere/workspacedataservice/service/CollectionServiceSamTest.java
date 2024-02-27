@@ -10,8 +10,8 @@ import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
-import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -94,7 +94,9 @@ class CollectionServiceSamTest extends TestBase {
     callOrder
         .verify(mockResourcesApi)
         .resourcePermissionV2(
-            SamDao.RESOURCE_NAME_WORKSPACE, parentWorkspaceId, SamDao.ACTION_WRITE);
+            SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
+            parentWorkspaceId,
+            SamAuthorizationDao.ACTION_WRITE);
 
     // and that should be the only call we made to Sam
     verifyNoMoreInteractions(mockResourcesApi);
@@ -122,7 +124,9 @@ class CollectionServiceSamTest extends TestBase {
     callOrder
         .verify(mockResourcesApi)
         .resourcePermissionV2(
-            SamDao.RESOURCE_NAME_WORKSPACE, parentWorkspaceId, SamDao.ACTION_DELETE);
+            SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
+            parentWorkspaceId,
+            SamAuthorizationDao.ACTION_DELETE);
 
     // and that should be the only call we made to Sam
     verifyNoMoreInteractions(mockResourcesApi);

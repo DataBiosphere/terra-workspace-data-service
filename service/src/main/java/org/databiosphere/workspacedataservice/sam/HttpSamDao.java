@@ -103,7 +103,7 @@ public class HttpSamDao implements SamDao {
       String action, String loggerHint, WorkspaceId workspaceId, BearerToken token) {
     LOGGER.debug(
         "Checking Sam permission for {}/{}/{} ...",
-        SamDao.RESOURCE_NAME_WORKSPACE,
+        SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
         workspaceId,
         action);
     RestCall<Boolean> samFunction =
@@ -111,7 +111,7 @@ public class HttpSamDao implements SamDao {
             samClientFactory
                 .getResourcesApi(token)
                 .resourcePermissionV2(
-                    SamDao.RESOURCE_NAME_WORKSPACE, workspaceId.toString(), action);
+                    SamAuthorizationDao.RESOURCE_NAME_WORKSPACE, workspaceId.toString(), action);
     return restClientRetry.withRetryAndErrorHandling(samFunction, loggerHint);
   }
 

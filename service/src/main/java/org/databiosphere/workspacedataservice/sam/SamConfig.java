@@ -46,9 +46,9 @@ public class SamConfig {
       WorkspaceId workspaceId = WorkspaceId.fromString(workspaceIdArgument); // verify UUID-ness
       LOGGER.info(
           "Sam integration will query type={}, resourceId={}, action={}",
-          SamDao.RESOURCE_NAME_WORKSPACE,
+          SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
           workspaceId,
-          SamDao.ACTION_WRITE);
+          SamAuthorizationDao.ACTION_WRITE);
       return new HttpSamDao(samClientFactory, restClientRetry, workspaceId);
     } catch (IllegalArgumentException e) {
       LOGGER.warn(

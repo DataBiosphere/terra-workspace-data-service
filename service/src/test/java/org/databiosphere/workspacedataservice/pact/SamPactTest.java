@@ -215,33 +215,33 @@ class SamPactTest {
   @Test
   @PactTestFor(pactMethod = "deleteNoPermissionPact", pactVersion = PactSpecVersion.V3)
   void testSamDeleteNoPermission(MockServer mockServer) {
-    SamDao samDao = getSamDao(mockServer, dummyWorkspaceId());
+    SamAuthorizationDao samAuthorizationDao = getSamDao(mockServer, dummyWorkspaceId());
 
-    assertFalse(samDao.hasDeleteCollectionPermission());
+    assertFalse(samAuthorizationDao.hasDeleteCollectionPermission());
   }
 
   @Test
   @PactTestFor(pactMethod = "deletePermissionPact", pactVersion = PactSpecVersion.V3)
   void testSamDeletePermission(MockServer mockServer) {
-    SamDao samDao = getSamDao(mockServer, dummyWorkspaceId());
+    SamAuthorizationDao samAuthorizationDao = getSamDao(mockServer, dummyWorkspaceId());
 
-    assertTrue(samDao.hasDeleteCollectionPermission());
+    assertTrue(samAuthorizationDao.hasDeleteCollectionPermission());
   }
 
   @Test
   @PactTestFor(pactMethod = "writeNoPermissionPact", pactVersion = PactSpecVersion.V3)
   void testSamWriteNoPermission(MockServer mockServer) {
-    SamDao samDao = getSamDao(mockServer, dummyWorkspaceId());
+    SamAuthorizationDao samAuthorizationDao = getSamDao(mockServer, dummyWorkspaceId());
 
-    assertFalse(samDao.hasWriteWorkspacePermission());
+    assertFalse(samAuthorizationDao.hasWriteWorkspacePermission());
   }
 
   @Test
   @PactTestFor(pactMethod = "writePermissionPact", pactVersion = PactSpecVersion.V3)
   void testSamWritePermission(MockServer mockServer) {
-    SamDao samDao = getSamDao(mockServer, dummyWorkspaceId());
+    SamAuthorizationDao samAuthorizationDao = getSamDao(mockServer, dummyWorkspaceId());
 
-    assertTrue(samDao.hasWriteWorkspacePermission());
+    assertTrue(samAuthorizationDao.hasWriteWorkspacePermission());
   }
 
   @Test
