@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.config.InstanceProperties;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
@@ -36,7 +36,7 @@ import org.springframework.test.context.ActiveProfiles;
 class JobServiceDataPlaneTest extends JobServiceBaseTest {
 
   @Autowired JobService jobService;
-  @Autowired InstanceProperties instanceProperties;
+  @Autowired @SingleTenant WorkspaceId workspaceId;
 
   @MockBean JobDao jobDao;
   @MockBean SamDao samDao;
@@ -261,6 +261,6 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
   // ==================================================
 
   private WorkspaceId getEnvWorkspaceId() {
-    return WorkspaceId.of(instanceProperties.getWorkspaceUuid());
+    return workspaceId;
   }
 }
