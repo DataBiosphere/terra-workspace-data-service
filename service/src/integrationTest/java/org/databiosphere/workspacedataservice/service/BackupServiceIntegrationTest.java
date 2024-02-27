@@ -15,12 +15,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
 @ActiveProfiles({"mock-storage", "local-cors", "local", "data-plane"})
 @ContextConfiguration(name = "mockStorage")
+@DirtiesContext
 @SpringBootTest
 @TestPropertySource(
     properties = {
@@ -33,6 +35,7 @@ class BackupServiceIntegrationTest extends IntegrationServiceTestBase {
   @Autowired CollectionDao collectionDao;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
 
+  // ensure we clean up the db after our tests
   @AfterEach
   void cleanUp() {
     cleanDb(collectionDao, namedTemplate);

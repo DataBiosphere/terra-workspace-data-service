@@ -11,13 +11,13 @@ import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
+import org.databiosphere.workspacedataservice.startup.CollectionInitializer;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -26,7 +26,6 @@ import org.springframework.test.context.TestPropertySource;
 
 @ActiveProfiles({"mock-storage", "local-cors", "local", "data-plane"})
 @ContextConfiguration(name = "mockStorage")
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DirtiesContext
 @SpringBootTest
 @TestPropertySource(
@@ -42,13 +41,14 @@ class RestoreServiceIntegrationTest extends IntegrationServiceTestBase {
   @Autowired NamedParameterJdbcTemplate namedTemplate;
   @Autowired RecordDao recordDao;
 
+  // Don't run the CollectionInitializer on startup, so this test can start with a clean slate.
+  // By making an (empty) mock bean to replace CollectionInitializer, we ensure it is a noop.
+  @MockBean CollectionInitializer mockCollectionInitializer;
+
   @Value("${twds.instance.workspace-id:}")
   private String workspaceId;
 
-  // run cleanup BeforeAll as well as AfterEach. Since the tests in this file assume a clean slate,
-  // we need to clean up anything in the db left over from the CollectionInitializer running
-  // at startup before the tests run.
-  @BeforeAll
+  // ensure we clean up the db after our tests
   @AfterEach
   void cleanUp() {
     cleanDb(collectionDao, namedTemplate);

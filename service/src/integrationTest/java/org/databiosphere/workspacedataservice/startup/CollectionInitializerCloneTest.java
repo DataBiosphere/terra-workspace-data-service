@@ -28,9 +28,7 @@ import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceClientFactory;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,7 +50,6 @@ import org.springframework.test.context.TestPropertySource;
       "twds.instance.source-workspace-id=10000000-0000-0000-0000-000000000111",
       "twds.pg_dump.useAzureIdentity=false"
     })
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DirtiesContext
 @SpringBootTest
 class CollectionInitializerCloneTest extends IntegrationServiceTestBase {
@@ -69,6 +66,10 @@ class CollectionInitializerCloneTest extends IntegrationServiceTestBase {
   @MockBean LeonardoDao mockLeonardoDao;
   @MockBean WorkspaceManagerDao workspaceManagerDao;
 
+  // Don't run the CollectionInitializer on startup, so this test can start with a clean slate.
+  // By making an (empty) mock bean to replace CollectionInitializer, we ensure it is a noop.
+  @MockBean CollectionInitializer mockCollectionInitializer;
+
   // values
   @Value("${twds.instance.workspace-id}")
   String workspaceId;
@@ -76,10 +77,7 @@ class CollectionInitializerCloneTest extends IntegrationServiceTestBase {
   @Value("${twds.instance.source-workspace-id}")
   String sourceWorkspaceId;
 
-  // run cleanup BeforeAll as well as AfterEach. Since the tests in this file assume a clean slate,
-  // we need to clean up anything in the db left over from the CollectionInitializer running
-  // at startup before the tests run.
-  @BeforeAll
+  // ensure we clean up the db after our tests
   @AfterEach
   void cleanUp() {
     cleanDb(collectionDao, namedTemplate);

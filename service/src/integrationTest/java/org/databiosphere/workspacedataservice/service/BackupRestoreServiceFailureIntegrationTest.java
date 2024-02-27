@@ -42,6 +42,7 @@ class BackupRestoreServiceFailureIntegrationTest extends IntegrationServiceTestB
   @Value("${twds.instance.source-workspace-id}")
   private String sourceWorkspaceId;
 
+  // ensure we clean up the db after our tests
   @AfterEach
   void cleanUp() {
     cleanDb(collectionDao, namedTemplate);
