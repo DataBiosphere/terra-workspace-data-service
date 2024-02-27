@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.sam;
 
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 
 /**
  * Interface for SamDao, allowing various dao implementations. Currently, the only implementation is
@@ -46,9 +47,9 @@ public interface SamDao {
    *
    * @return true if the user has permission
    */
-  boolean hasReadWorkspacePermission(String workspaceId);
+  boolean hasReadWorkspacePermission(WorkspaceId workspaceId);
 
-  boolean hasReadWorkspacePermission(String workspaceId, BearerToken token);
+  boolean hasReadWorkspacePermission(WorkspaceId workspaceId, BearerToken token);
 
   /**
    * Check if the current user has permission to write to a workspace resource from Sam
@@ -57,7 +58,7 @@ public interface SamDao {
    */
   boolean hasWriteWorkspacePermission();
 
-  boolean hasWriteWorkspacePermission(String workspaceId);
+  boolean hasWriteWorkspacePermission(WorkspaceId workspaceId);
 
   String getUserId(BearerToken token);
 

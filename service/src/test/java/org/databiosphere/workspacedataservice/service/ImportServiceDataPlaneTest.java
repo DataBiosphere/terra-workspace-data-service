@@ -56,7 +56,7 @@ class ImportServiceDataPlaneTest {
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // sam dao says the user has write permission
-    when(samDao.hasWriteWorkspacePermission(workspaceId.toString())).thenReturn(true);
+    when(samDao.hasWriteWorkspacePermission(workspaceId)).thenReturn(true);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -74,7 +74,7 @@ class ImportServiceDataPlaneTest {
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // sam dao says the user has write permission
-    when(samDao.hasWriteWorkspacePermission(workspaceId.toString())).thenReturn(false);
+    when(samDao.hasWriteWorkspacePermission(workspaceId)).thenReturn(false);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -99,7 +99,7 @@ class ImportServiceDataPlaneTest {
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // sam dao says the user has write permission
-    when(samDao.hasWriteWorkspacePermission(workspaceId.toString())).thenReturn(false);
+    when(samDao.hasWriteWorkspacePermission(workspaceId)).thenReturn(false);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -119,7 +119,7 @@ class ImportServiceDataPlaneTest {
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // sam dao says the user has write permission
-    when(samDao.hasWriteWorkspacePermission(collectionId.toString())).thenReturn(false);
+    when(samDao.hasWriteWorkspacePermission(WorkspaceId.of(collectionId.id()))).thenReturn(false);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime

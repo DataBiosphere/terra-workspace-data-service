@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.sam;
 
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,18 +53,18 @@ public class MisconfiguredSamDao implements SamDao {
   }
 
   @Override
-  public boolean hasWriteWorkspacePermission(String workspaceId) {
+  public boolean hasWriteWorkspacePermission(WorkspaceId workspaceId) {
     return hasWriteWorkspacePermission();
   }
 
   @Override
-  public boolean hasReadWorkspacePermission(String workspaceId) {
+  public boolean hasReadWorkspacePermission(WorkspaceId workspaceId) {
     logWarning();
     return false;
   }
 
   @Override
-  public boolean hasReadWorkspacePermission(String workspaceId, BearerToken token) {
+  public boolean hasReadWorkspacePermission(WorkspaceId workspaceId, BearerToken token) {
     return hasReadWorkspacePermission(workspaceId);
   }
 

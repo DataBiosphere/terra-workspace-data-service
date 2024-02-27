@@ -1,10 +1,12 @@
 package org.databiosphere.workspacedataservice.sam;
 
+import static java.util.UUID.randomUUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,7 +40,7 @@ class SamDaoInvalidWorkspaceTest extends TestBase {
     assertFalse(samDao.hasDeleteCollectionPermission());
     assertFalse(samDao.hasDeleteCollectionPermission(BearerToken.of("token")));
     assertFalse(samDao.hasWriteWorkspacePermission());
-    assertFalse(samDao.hasWriteWorkspacePermission("some-workspace-id"));
+    assertFalse(samDao.hasWriteWorkspacePermission(WorkspaceId.of(randomUUID())));
   }
 
   @Test

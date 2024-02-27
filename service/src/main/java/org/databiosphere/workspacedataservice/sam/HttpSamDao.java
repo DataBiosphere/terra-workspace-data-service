@@ -6,6 +6,7 @@ import org.broadinstitute.dsde.workbench.client.sam.model.UserStatusInfo;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
@@ -19,10 +20,10 @@ public class HttpSamDao implements SamDao {
   protected final SamClientFactory samClientFactory;
   private static final Logger LOGGER = LoggerFactory.getLogger(HttpSamDao.class);
   private final RestClientRetry restClientRetry;
-  private final String workspaceId;
+  private final WorkspaceId workspaceId;
 
   public HttpSamDao(
-      SamClientFactory samClientFactory, RestClientRetry restClientRetry, String workspaceId) {
+      SamClientFactory samClientFactory, RestClientRetry restClientRetry, WorkspaceId workspaceId) {
     this.samClientFactory = samClientFactory;
     this.restClientRetry = restClientRetry;
     this.workspaceId = workspaceId;
@@ -73,7 +74,7 @@ public class HttpSamDao implements SamDao {
   }
 
   @Override
-  public boolean hasWriteWorkspacePermission(String workspaceId) {
+  public boolean hasWriteWorkspacePermission(WorkspaceId workspaceId) {
     return hasPermission(
         ACTION_WRITE, "Sam.hasWriteWorkspacePermission", workspaceId, BearerToken.empty());
   }
@@ -84,12 +85,12 @@ public class HttpSamDao implements SamDao {
    * @return true if the user has permission
    */
   @Override
-  public boolean hasReadWorkspacePermission(String workspaceId) {
+  public boolean hasReadWorkspacePermission(WorkspaceId workspaceId) {
     return hasReadWorkspacePermission(workspaceId, BearerToken.empty());
   }
 
   @Override
-  public boolean hasReadWorkspacePermission(String workspaceId, BearerToken token) {
+  public boolean hasReadWorkspacePermission(WorkspaceId workspaceId, BearerToken token) {
     return hasPermission(ACTION_READ, "Sam.hasReadWorkspacePermission", token);
   }
 
@@ -99,7 +100,7 @@ public class HttpSamDao implements SamDao {
   }
 
   private boolean hasPermission(
-      String action, String loggerHint, String workspaceId, BearerToken token) {
+      String action, String loggerHint, WorkspaceId workspaceId, BearerToken token) {
     LOGGER.debug(
         "Checking Sam permission for {}/{}/{} ...",
         SamDao.RESOURCE_NAME_WORKSPACE,
@@ -109,7 +110,8 @@ public class HttpSamDao implements SamDao {
         () ->
             samClientFactory
                 .getResourcesApi(token)
-                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, workspaceId, action);
+                .resourcePermissionV2(
+                    SamDao.RESOURCE_NAME_WORKSPACE, workspaceId.toString(), action);
     return restClientRetry.withRetryAndErrorHandling(samFunction, loggerHint);
   }
 
