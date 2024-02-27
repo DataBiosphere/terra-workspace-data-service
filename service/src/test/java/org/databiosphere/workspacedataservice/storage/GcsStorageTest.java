@@ -13,10 +13,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.stereotype.Component;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.StreamUtils;
 
 @Component
 @SpringBootTest
+@ActiveProfiles("control-plane")
 class GcsStorageTest {
 
   @Qualifier("mockGcsStorage")

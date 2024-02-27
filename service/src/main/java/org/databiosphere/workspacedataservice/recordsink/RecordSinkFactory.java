@@ -38,7 +38,7 @@ public class RecordSinkFactory {
     this.recordService = recordService;
   }
 
-  @Autowired(required = false) // RecordDao only required for RecordSinkMode.WDS
+  @Autowired(required = false) // RecordDao only required for RecordSinkMode.WDSs
   public void setRecordDao(RecordDao recordDao) {
     this.recordDao = recordDao;
   }

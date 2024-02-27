@@ -28,17 +28,18 @@ import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
-@ActiveProfiles({"mock-storage"})
 class RawlsRecordSinkTest extends TestBase {
   @Autowired private ObjectMapper mapper;
   private RecordSink recordSink;
   private StringWriter recordedJson;
 
-  @Autowired private GcsStorage storage;
+  @Qualifier("mockGcsStorage")
+  @Autowired
+  private GcsStorage storage;
 
   @BeforeEach
   void setUp() {
