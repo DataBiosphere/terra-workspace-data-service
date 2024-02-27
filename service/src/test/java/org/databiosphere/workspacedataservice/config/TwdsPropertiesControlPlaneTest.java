@@ -10,18 +10,24 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
 @ActiveProfiles("control-plane")
+@TestPropertySource(
+    properties = {
+      // TODO(AJ-1656): control-plane should not require instance config in any form, this is a hold
+      //   over from direct injection of @Value('twds.instance.workspace-id')
+      "twds.instance.workspace-id=",
+    })
 class TwdsPropertiesControlPlaneTest {
   @Autowired TwdsProperties twdsProperties;
   @Autowired DataImportProperties dataImportProperties;
-  @Autowired InstanceProperties instanceProperties;
   @Autowired TenancyProperties tenancyProperties;
 
   @Test
   void nonNullDataImport() {
-    assertNotNull(twdsProperties.getDataImport());
+    assertNotNull(twdsProperties.dataImportProperties());
   }
 
   @Test
@@ -31,7 +37,7 @@ class TwdsPropertiesControlPlaneTest {
 
   @Test
   void nonNullTenancy() {
-    assertNotNull(twdsProperties.getTenancy());
+    assertNotNull(twdsProperties.tenancyProperties());
   }
 
   @Test
