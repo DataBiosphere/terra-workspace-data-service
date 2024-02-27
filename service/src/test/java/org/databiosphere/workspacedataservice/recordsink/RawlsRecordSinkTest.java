@@ -11,8 +11,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -180,10 +183,14 @@ class RawlsRecordSinkTest extends TestBase {
           /* primaryKey= */ "name" // currently ignored
           );
 
-      // instead here check that Json is in the right place in the bucket
-
       assertThat(recordedJson.toString()).isNotNull();
-      // assert that rawls JSON is in the bucket - but need to get fileName...
+      var blobName = recordSink.getBlobName();
+      var text = storage.getBlobContents(blobName);
+      String contents =
+          new BufferedReader(new InputStreamReader(text, StandardCharsets.UTF_8))
+              .lines()
+              .collect(Collectors.joining("\n"));
+      assertThat(contents).isNotNull();
 
       return mapper.readValue(recordedJson.toString(), new TypeReference<>() {});
     } catch (IOException e) {

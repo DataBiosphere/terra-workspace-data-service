@@ -42,6 +42,12 @@ public class RawlsRecordSink implements RecordSink {
   private final GcsStorage storage;
   private final Consumer<String> jsonConsumer;
 
+  public String blobName;
+
+  public String getBlobName() {
+    return this.blobName;
+  }
+
   /** Annotates a String consumer for JSON strings emitted by {@link RawlsRecordSink}. */
   @Target({ElementType.PARAMETER, ElementType.METHOD})
   @Retention(RetentionPolicy.RUNTIME)
@@ -79,9 +85,9 @@ public class RawlsRecordSink implements RecordSink {
     records.stream().map(this::toEntity).forEach(entities::add);
     jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
 
-    var blobName = UUID.randomUUID().toString();
+    this.blobName = UUID.randomUUID().toString();
     storage.createGcsFile(
-        blobName, new ByteArrayInputStream(mapper.writeValueAsBytes(entities.build())));
+        this.blobName, new ByteArrayInputStream(mapper.writeValueAsBytes(entities.build())));
 
     // AJ-1586 - the name of where in the bucket the file is inside blobName
   }

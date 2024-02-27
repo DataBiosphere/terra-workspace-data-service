@@ -31,4 +31,6 @@ public interface RecordSink {
   /** Delete the given batch of records. */
   void deleteBatch(RecordType recordType, List<Record> records)
       throws BatchWriteException, IOException;
+
+  String getBlobName();
 }
