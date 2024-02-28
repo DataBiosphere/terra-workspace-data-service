@@ -62,6 +62,8 @@ public interface SamDao {
 
   String getUserId(BearerToken token);
 
+  String getUserEmail(BearerToken token);
+
   /** Gets the up/down system status of Sam. */
   Boolean getSystemStatusOk();
 

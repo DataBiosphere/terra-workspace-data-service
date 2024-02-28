@@ -69,6 +69,12 @@ public class MisconfiguredSamDao implements SamDao {
   }
 
   @Override
+  public String getUserEmail(BearerToken token) {
+    logWarning();
+    return "n/a";
+  }
+
+  @Override
   public String getUserId(BearerToken token) {
     logWarning();
     return "n/a";
