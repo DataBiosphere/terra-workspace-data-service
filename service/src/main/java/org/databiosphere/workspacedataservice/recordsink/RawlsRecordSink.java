@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
@@ -36,6 +37,7 @@ public class RawlsRecordSink implements RecordSink {
   private final String attributePrefix;
   private final ObjectMapper mapper;
   private final Consumer<String> jsonConsumer;
+  private final PubSub pubSub;
 
   /** Annotates a String consumer for JSON strings emitted by {@link RawlsRecordSink}. */
   @Target({ElementType.PARAMETER, ElementType.METHOD})
@@ -45,10 +47,12 @@ public class RawlsRecordSink implements RecordSink {
   RawlsRecordSink(
       String attributePrefix,
       ObjectMapper mapper,
-      @RawlsJsonConsumer Consumer<String> jsonConsumer) {
+      @RawlsJsonConsumer Consumer<String> jsonConsumer,
+      PubSub pubSub) {
     this.attributePrefix = attributePrefix;
     this.mapper = mapper;
     this.jsonConsumer = jsonConsumer;
+    this.pubSub = pubSub;
   }
 
   @Override
@@ -71,11 +75,32 @@ public class RawlsRecordSink implements RecordSink {
     ImmutableList.Builder<Entity> entities = ImmutableList.builder();
     records.stream().map(this::toEntity).forEach(entities::add);
     jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
+    // Now send an alert to the pubsub
+    publishToPubSub("workspaceId", "userEmail", "jobId", "upsertFile");
   }
 
   @Override
   public void deleteBatch(RecordType recordType, List<Record> records) throws BatchWriteException {
     throw new UnsupportedOperationException("RawlsRecordSink does not support deleteBatch");
+  }
+
+  /* import-service sends this message:
+      pubsub.publish_rawls({
+      "workspaceNamespace": import_details.workspace_namespace,
+      "workspaceName": import_details.workspace_name,
+      "userEmail": import_details.submitter,
+      "jobId": import_details.id,
+      "upsertFile": dest_file,
+      "isUpsert": str(import_details.is_upsert)
+  })
+       */
+  private void publishToPubSub(String workspaceId, String user, String jobId, String upsertFile) {
+    // TODO jsonize this properly
+    String message =
+        String.format(
+            "{\"workspaceId\": \"%s\", \"userEmail\": \"%s\", \"jobId\": \"%s\", \"upsertFile\": \"%s\", \"isUpsert\": \"true\"}",
+            workspaceId, user, jobId, upsertFile);
+    pubSub.publish(message);
   }
 
   private Entity toEntity(Record record) {

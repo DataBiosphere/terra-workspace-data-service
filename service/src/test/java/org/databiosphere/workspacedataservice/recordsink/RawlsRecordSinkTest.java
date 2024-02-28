@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
@@ -38,13 +39,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 class RawlsRecordSinkTest extends TestBase {
   @Autowired private ObjectMapper mapper;
+  @Autowired private PubSub pubSub;
   private RecordSink recordSink;
   private StringWriter recordedJson;
 
   @BeforeEach
   void setUp() {
     recordedJson = new StringWriter();
-    recordSink = new RawlsRecordSink("prefix", mapper, json -> recordedJson.append(json));
+    recordSink = new RawlsRecordSink("prefix", mapper, json -> recordedJson.append(json), pubSub);
   }
 
   @Test

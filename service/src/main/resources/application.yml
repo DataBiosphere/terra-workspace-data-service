@@ -73,9 +73,8 @@ spring:
       pubsub:
         project-id: terra-importservice-dev
         topic: import-service-notify-local
-#        enabled: false
-      credentials:
-        location: file:/Users/bmorgan/dev/workbench/terra-workspace-data-service/terra-importservice-dev-20bc15025667.json
+#      credentials:
+#        location: file:/Users/bmorgan/dev/workbench/terra-workspace-data-service/terra-importservice-dev-20bc15025667.json
 
 
   datasource:

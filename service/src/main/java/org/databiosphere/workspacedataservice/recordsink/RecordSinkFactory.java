@@ -5,6 +5,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsRecordSink.RawlsJsonConsumer;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RecordService;
@@ -19,14 +20,17 @@ public class RecordSinkFactory {
 
   private final DataImportProperties dataImportProperties;
   private final ObjectMapper mapper;
+  private final PubSub pubSub;
   private RecordService recordService;
   private RecordDao recordDao;
   private DataTypeInferer dataTypeInferer;
   private Consumer<String> jsonConsumer;
 
-  public RecordSinkFactory(DataImportProperties dataImportProperties, ObjectMapper mapper) {
+  public RecordSinkFactory(
+      DataImportProperties dataImportProperties, ObjectMapper mapper, PubSub pubSub) {
     this.dataImportProperties = dataImportProperties;
     this.mapper = mapper;
+    this.pubSub = pubSub;
   }
 
   @Autowired(required = false) // RecordService only required for RecordSinkMode.WDS
@@ -66,7 +70,7 @@ public class RecordSinkFactory {
   }
 
   private RecordSink rawlsRecordSink(String prefix) {
-    return new RawlsRecordSink(prefix, mapper, jsonConsumer);
+    return new RawlsRecordSink(prefix, mapper, jsonConsumer, pubSub);
   }
 
   private WdsRecordSink wdsRecordSink(UUID collectionId) {
