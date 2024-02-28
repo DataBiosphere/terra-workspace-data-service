@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -14,7 +14,9 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
+import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
+import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -34,14 +36,15 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
 
   @Autowired JobService jobService;
   @MockBean JobDao jobDao;
-  @MockBean SamAuthorizationDao samAuthorizationDao;
+  @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
   @MockBean CollectionDao collectionDao;
+
+  private final SamAuthorizationDao samAuthorizationDao = spy(MockSamAuthorizationDao.allowAll());
 
   @BeforeEach
   void beforeEach() {
-    reset(jobDao);
-    reset(collectionDao);
-    reset(samAuthorizationDao);
+    when(samAuthorizationDaoFactory.getSamAuthorizationDao(any(WorkspaceId.class)))
+        .thenReturn(samAuthorizationDao);
   }
 
   /** requested job does not exist */

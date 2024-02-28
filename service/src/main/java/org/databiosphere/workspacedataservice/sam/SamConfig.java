@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.sam;
 
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
-import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,30 +45,6 @@ public class SamConfig {
   SamAuthorizationDaoFactory samAuthorizationDaoFactory(
       SamClientFactory samClientFactory, RestClientRetry restClientRetry) {
     return new SamAuthorizationDaoFactory(samClientFactory, restClientRetry);
-  }
-
-  @Bean
-  SamAuthorizationDao samAuthorizationDao(SamAuthorizationDaoFactory samAuthorizationDaoFactory) {
-    // Try to parse the WORKSPACE_ID env var;
-    // return a MisconfiguredSamAuthorizationDao if it can't be parsed.
-    try {
-      WorkspaceId workspaceId = WorkspaceId.fromString(workspaceIdArgument); // verify UUID-ness
-      LOGGER.info(
-          "Sam integration will query type={}, resourceId={}, action={}",
-          SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
-          workspaceId,
-          SamAuthorizationDao.ACTION_WRITE);
-      return samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId);
-    } catch (IllegalArgumentException e) {
-      LOGGER.warn(
-          "Workspace id could not be parsed, all Sam permission checks will fail. Provided id: {}",
-          workspaceIdArgument);
-      return new MisconfiguredSamAuthorizationDao(
-          "WDS was started with invalid WORKSPACE_ID of: " + workspaceIdArgument);
-    } catch (Exception e) {
-      LOGGER.warn("Error during initial Sam configuration: " + e.getMessage());
-      return new MisconfiguredSamAuthorizationDao(e.getMessage());
-    }
   }
 
   @Bean
