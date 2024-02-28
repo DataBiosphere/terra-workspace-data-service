@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 
 /**
  * Bean creator for:
@@ -43,8 +45,22 @@ public class SamConfig {
   }
 
   @Bean
-  SamDaoFactory samDaoFactory(SamClientFactory samClientFactory, RestClientRetry restClientRetry) {
-    return new SamDaoFactory(samClientFactory, restClientRetry);
+  SamDaoFactory samDaoFactory(
+      SamClientFactory samClientFactory,
+      RestClientRetry restClientRetry,
+      BearerTokenHolder bearerTokenHolder) {
+    return new SamDaoFactory(samClientFactory, restClientRetry, bearerTokenHolder);
+  }
+
+  /**
+   * A request-scoped bean that holds the BearerToken for the current request, set by {@link
+   * BearerTokenFilter}. Can be injected just like any other bean to get access to the token as part
+   * of bean configuration.
+   */
+  @Bean
+  @Scope(value = "request", proxyMode = ScopedProxyMode.TARGET_CLASS)
+  BearerTokenHolder bearerTokenHolder() {
+    return new BearerTokenHolder();
   }
 
   @Bean

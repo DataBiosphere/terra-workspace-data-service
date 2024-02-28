@@ -3,7 +3,9 @@ package org.databiosphere.workspacedataservice.sam;
 import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
+import static org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes;
 
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -14,10 +16,10 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.lang.Nullable;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.web.context.request.RequestContextHolder;
 
 /** Tests for @see BearerTokenFilter */
 @SpringBootTest
@@ -60,14 +62,14 @@ class BearerTokenFilterTest extends TestBase {
 
     MockHttpServletResponse response = new MockHttpServletResponse();
     MockFilterChain filterChain = new MockFilterChain();
+    BearerTokenHolder tokenHolder = new BearerTokenHolder();
 
-    new BearerTokenFilter().doFilter(request, response, filterChain);
+    new BearerTokenFilter(tokenHolder).doFilter(request, response, filterChain);
 
-    Object actual =
-        RequestContextHolder.currentRequestAttributes()
-            .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
+    Object actual = currentRequestAttributes().getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
 
     assertEquals(expected, actual);
+    assertEquals(expected, getToken(tokenHolder));
   }
 
   // long token could be included in the extractTokenTest() parameters, but generates an unwieldy
@@ -81,14 +83,14 @@ class BearerTokenFilterTest extends TestBase {
 
     MockHttpServletResponse response = new MockHttpServletResponse();
     MockFilterChain filterChain = new MockFilterChain();
+    BearerTokenHolder tokenHolder = new BearerTokenHolder();
 
-    new BearerTokenFilter().doFilter(request, response, filterChain);
+    new BearerTokenFilter(tokenHolder).doFilter(request, response, filterChain);
 
-    Object actual =
-        RequestContextHolder.currentRequestAttributes()
-            .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
+    Object actual = currentRequestAttributes().getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
 
     assertEquals(longToken, actual);
+    assertEquals(longToken, getToken(tokenHolder));
   }
 
   /**
@@ -104,13 +106,18 @@ class BearerTokenFilterTest extends TestBase {
 
     MockHttpServletResponse response = new MockHttpServletResponse();
     MockFilterChain filterChain = new MockFilterChain();
+    BearerTokenHolder tokenHolder = new BearerTokenHolder();
 
-    new BearerTokenFilter().doFilter(request, response, filterChain);
+    new BearerTokenFilter(tokenHolder).doFilter(request, response, filterChain);
 
-    Object actual =
-        RequestContextHolder.currentRequestAttributes()
-            .getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
+    Object actual = currentRequestAttributes().getAttribute(ATTRIBUTE_NAME_TOKEN, SCOPE_REQUEST);
 
     assertNull(actual);
+    assertTrue(tokenHolder.getToken().isEmpty());
+  }
+
+  @Nullable
+  private String getToken(BearerTokenHolder tokenHolder) {
+    return tokenHolder.getToken().getValue();
   }
 }

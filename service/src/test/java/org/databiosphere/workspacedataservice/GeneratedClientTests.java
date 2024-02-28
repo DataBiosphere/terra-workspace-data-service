@@ -33,7 +33,6 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class GeneratedClientTests extends TestBase {
-
   private ApiClient apiClient;
   @LocalServerPort int port;
 

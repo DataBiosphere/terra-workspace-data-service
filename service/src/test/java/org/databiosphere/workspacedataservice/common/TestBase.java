@@ -1,8 +1,10 @@
 package org.databiosphere.workspacedataservice.common;
 
 import org.databiosphere.workspacedataservice.config.ConfigurationException;
+import org.databiosphere.workspacedataservice.sam.StubBearerTokenHolder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
@@ -34,4 +36,5 @@ import org.springframework.test.context.TestPropertySource;
       "rest.retry.backoff.delay=3",
     })
 @ExtendWith(ConfigurationExceptionDetector.class)
+@Import(StubBearerTokenHolder.class)
 public abstract class TestBase {}

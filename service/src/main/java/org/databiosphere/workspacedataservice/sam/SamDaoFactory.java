@@ -10,10 +10,15 @@ public class SamDaoFactory {
 
   private final SamClientFactory samClientFactory;
   private final RestClientRetry restClientRetry;
+  private final BearerTokenHolder bearerTokenHolder;
 
-  public SamDaoFactory(SamClientFactory samClientFactory, RestClientRetry restClientRetry) {
+  public SamDaoFactory(
+      SamClientFactory samClientFactory,
+      RestClientRetry restClientRetry,
+      BearerTokenHolder bearerTokenHolder) {
     this.samClientFactory = samClientFactory;
     this.restClientRetry = restClientRetry;
+    this.bearerTokenHolder = bearerTokenHolder;
   }
 
   public SamDao getSamDao() {
@@ -26,6 +31,7 @@ public class SamDaoFactory {
         SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
         workspaceId,
         SamAuthorizationDao.ACTION_WRITE);
-    return new HttpSamAuthorizationDao(samClientFactory, restClientRetry, workspaceId);
+    return new HttpSamAuthorizationDao(
+        samClientFactory, restClientRetry, workspaceId, bearerTokenHolder);
   }
 }
