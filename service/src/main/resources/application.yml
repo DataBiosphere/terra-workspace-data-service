@@ -69,6 +69,11 @@ spring:
     gcp:
       storage:
         enabled: false
+    #TODO arrange this in the right files
+      pubsub:
+        project-id: terra-importservice-dev
+        topic: import-service-notify-local
+
 
   datasource:
     hikari:
