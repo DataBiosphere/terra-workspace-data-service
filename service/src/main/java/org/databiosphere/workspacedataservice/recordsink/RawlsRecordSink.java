@@ -42,9 +42,10 @@ public class RawlsRecordSink implements RecordSink {
   private final GcsStorage storage;
   private final Consumer<String> jsonConsumer;
 
-  public String blobName;
+  private String blobName;
 
-  public String GetBlobName() {
+  @Override
+  public String getBlobName() {
     return this.blobName;
   }
 

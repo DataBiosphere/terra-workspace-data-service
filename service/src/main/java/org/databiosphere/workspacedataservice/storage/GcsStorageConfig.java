@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 public class GcsStorageConfig {
   @Bean
   @Autowired(required = false)
-  public GcsStorage GcsStorage(DataImportProperties properties) throws IOException {
+  public GcsStorage gcsStorage(DataImportProperties properties) throws IOException {
     return new GcsStorage(properties);
   }
 }

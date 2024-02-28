@@ -184,7 +184,7 @@ class RawlsRecordSinkTest extends TestBase {
           );
 
       assertThat(recordedJson.toString()).isNotNull();
-      var blobName = recordSink.GetBlobName();
+      var blobName = recordSink.getBlobName();
       var text = storage.getBlobContents(blobName);
       String contents =
           new BufferedReader(new InputStreamReader(text, StandardCharsets.UTF_8))

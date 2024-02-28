@@ -36,7 +36,7 @@ public interface RecordSink {
    * This method is only used in Control Plane WDS to get the name of the Google Bucket import has
    * been written to
    */
-  default String GetBlobName() {
+  default String getBlobName() {
     return "Not applicable outside of cWDS.";
   }
 }
