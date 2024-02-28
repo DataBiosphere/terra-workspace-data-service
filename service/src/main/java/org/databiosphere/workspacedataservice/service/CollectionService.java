@@ -7,9 +7,11 @@ import java.util.Objects;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
+import org.databiosphere.workspacedataservice.config.ConfigurationException;
 import org.databiosphere.workspacedataservice.config.TenancyProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
+import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -28,7 +30,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class CollectionService {
 
   private final CollectionDao collectionDao;
-  private final SamAuthorizationDao samAuthorizationDao;
+  private final SamAuthorizationDaoFactory samAuthorizationDaoFactory;
   private final ActivityLogger activityLogger;
   private final TenancyProperties tenancyProperties;
 
@@ -38,17 +40,17 @@ public class CollectionService {
 
   public CollectionService(
       CollectionDao collectionDao,
-      SamAuthorizationDao samAuthorizationDao,
+      SamAuthorizationDaoFactory samAuthorizationDaoFactory,
       ActivityLogger activityLogger,
       TenancyProperties tenancyProperties) {
     this.collectionDao = collectionDao;
-    this.samAuthorizationDao = samAuthorizationDao;
+    this.samAuthorizationDaoFactory = samAuthorizationDaoFactory;
     this.activityLogger = activityLogger;
     this.tenancyProperties = tenancyProperties;
   }
 
   @Autowired(required = false) // control plane won't have workspaceId
-  void setWorkspaceId(@SingleTenant WorkspaceId workspaceId) {
+  void setWorkspaceId(@Nullable @SingleTenant WorkspaceId workspaceId) {
     this.workspaceId = workspaceId;
   }
 
@@ -71,7 +73,8 @@ public class CollectionService {
     validateVersion(version);
 
     // check that the current user has permission on the parent workspace
-    boolean hasCreateCollectionPermission = samAuthorizationDao.hasCreateCollectionPermission();
+    boolean hasCreateCollectionPermission =
+        getSamAuthorizationDao().hasCreateCollectionPermission();
     LOGGER.debug("hasCreateCollectionPermission? {}", hasCreateCollectionPermission);
 
     if (!hasCreateCollectionPermission) {
@@ -94,7 +97,8 @@ public class CollectionService {
     validateCollection(collectionId);
 
     // check that the current user has permission to delete the Sam resource
-    boolean hasDeleteCollectionPermission = samAuthorizationDao.hasDeleteCollectionPermission();
+    boolean hasDeleteCollectionPermission =
+        getSamAuthorizationDao().hasDeleteCollectionPermission();
     LOGGER.debug("hasDeleteCollectionPermission? {}", hasDeleteCollectionPermission);
 
     if (!hasDeleteCollectionPermission) {
@@ -120,11 +124,15 @@ public class CollectionService {
   }
 
   public boolean canReadCollection(CollectionId collectionId) {
-    return samAuthorizationDao.hasReadWorkspacePermission(getWorkspaceId(collectionId));
+    return getSamAuthorizationDao(WorkspaceId.of(collectionId.id()))
+        // TODO: remove redundant param from hasReadWorkspacePermission
+        .hasReadWorkspacePermission(getWorkspaceId(collectionId));
   }
 
   public boolean canWriteCollection(CollectionId collectionId) {
-    return samAuthorizationDao.hasWriteWorkspacePermission(getWorkspaceId(collectionId));
+    return getSamAuthorizationDao(WorkspaceId.of(collectionId.id()))
+        // TODO: remove redundant param from hasReadWorkspacePermission
+        .hasWriteWorkspacePermission(getWorkspaceId(collectionId));
   }
 
   /**
@@ -176,5 +184,16 @@ public class CollectionService {
     }
 
     return Objects.requireNonNullElseGet(rowWorkspaceId, () -> WorkspaceId.of(collectionId.id()));
+  }
+
+  private SamAuthorizationDao getSamAuthorizationDao() {
+    if (workspaceId == null) {
+      throw new ConfigurationException("WORKSPACE_ID missing");
+    }
+    return getSamAuthorizationDao(workspaceId);
+  }
+
+  private SamAuthorizationDao getSamAuthorizationDao(WorkspaceId workspaceId) {
+    return samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId);
   }
 }

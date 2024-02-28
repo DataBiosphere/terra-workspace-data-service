@@ -4,6 +4,8 @@ import static org.databiosphere.workspacedataservice.generated.ImportRequestServ
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
@@ -11,12 +13,15 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
+import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,13 +45,21 @@ class ImportServiceDataPlaneTest {
   @Autowired ImportService importService;
   @Autowired @SingleTenant WorkspaceId workspaceId;
   @MockBean CollectionDao collectionDao;
-  @MockBean SamAuthorizationDao samAuthorizationDao;
+  @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
+  private final SamAuthorizationDao samAuthorizationDao = spy(MockSamAuthorizationDao.allowAll());
 
   private final URI importUri = URI.create("http://does/not/matter");
   private final ImportRequestServerModel importRequest =
       new ImportRequestServerModel(PFB, importUri);
 
-  private final CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+  private CollectionId collectionId; // initialized in setup to match the @SingleTenant WorkspaceId
+
+  @BeforeEach
+  void setup() {
+    collectionId = CollectionId.of(workspaceId.id());
+    when(samAuthorizationDaoFactory.getSamAuthorizationDao(any(WorkspaceId.class)))
+        .thenReturn(samAuthorizationDao);
+  }
 
   /* collection exists, workspace matches env var, user has access */
   @Test

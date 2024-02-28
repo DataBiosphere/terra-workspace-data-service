@@ -4,17 +4,22 @@ import static org.databiosphere.workspacedataservice.generated.ImportRequestServ
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
+import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -36,11 +41,18 @@ class ImportServiceControlPlaneTest {
 
   @Autowired ImportService importService;
   @MockBean CollectionDao collectionDao;
-  @MockBean SamAuthorizationDao samAuthorizationDao;
+  @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
 
+  private final SamAuthorizationDao samAuthorizationDao = spy(MockSamAuthorizationDao.allowAll());
   private final URI importUri = URI.create("http://does/not/matter");
   private final ImportRequestServerModel importRequest =
       new ImportRequestServerModel(PFB, importUri);
+
+  @BeforeEach
+  void setup() {
+    when(samAuthorizationDaoFactory.getSamAuthorizationDao(any(WorkspaceId.class)))
+        .thenReturn(samAuthorizationDao);
+  }
 
   /* Collection does not exist, user has access */
   @Test
