@@ -5,12 +5,10 @@ import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPla
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RecordService;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 /** RecordSinkFactory implementation for the data plane */
 @DataPlane
-@Primary // marked as primary specifically so AnnotatedApisTest won't fail
 @Component
 public class WdsRecordSinkFactory implements RecordSinkFactory {
   private final RecordService recordService;
