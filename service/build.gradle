@@ -92,9 +92,7 @@ dependencies {
     implementation "org.apache.parquet:parquet-hadoop:$parquet_mr_version"
 
     implementation "com.google.cloud:spring-cloud-gcp-starter-storage:5.0.3"
-    implementation "com.google.cloud:google-cloud-pubsub:1.126.6"
-//    implementation "com.google.cloud:spring-cloud-gcp-starter-pubsub:$spring_cloud_gcp_version"
-//    implementation "com.google.cloud:spring-cloud-gcp-dependencies:$spring_cloud_gcp_version"
+    implementation "com.google.cloud:spring-cloud-gcp-starter-pubsub:$spring_cloud_gcp_version"
 
 
     // we need Hadoop libraries to read Parquet files for TDR import. However, Hadoop brings
