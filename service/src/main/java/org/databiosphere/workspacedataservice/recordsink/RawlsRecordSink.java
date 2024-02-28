@@ -3,6 +3,17 @@ package org.databiosphere.workspacedataservice.recordsink;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.mu.util.stream.BiStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.config.ConfigurationException;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
@@ -15,18 +26,6 @@ import org.databiosphere.workspacedataservice.service.model.exception.BatchWrite
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 /**
  * {@link RecordSink} implementation that produces Rawls-compatible JSON using {@link RawlsModel}
@@ -77,7 +76,8 @@ public class RawlsRecordSink implements RecordSink {
     records.stream().map(this::toEntity).forEach(entities::add);
     jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
 
-    // TODO(AJ-1661) - Would it make sense to propogate the JobId into here so that BlobName can be named
+    // TODO(AJ-1661) - Would it make sense to propogate the JobId into here so that BlobName can be
+    // named
     // with JobId as it is today with import service?
     if (storage != null) {
       storage.createGcsFile(new ByteArrayInputStream(mapper.writeValueAsBytes(entities.build())));
