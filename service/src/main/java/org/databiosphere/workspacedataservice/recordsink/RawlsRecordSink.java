@@ -3,6 +3,14 @@ package org.databiosphere.workspacedataservice.recordsink;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.mu.util.stream.BiStream;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.*;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
+import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.storage.GcsStorage;
+
+import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.annotation.ElementType;
@@ -15,18 +23,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
-import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
-import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.databiosphere.workspacedataservice.storage.GcsStorage;
 
 /**
  * {@link RecordSink} implementation that produces Rawls-compatible JSON using {@link RawlsModel}
@@ -44,7 +40,7 @@ public class RawlsRecordSink implements RecordSink {
 
   public String blobName;
 
-  public String getBlobName() {
+  public String GetBlobName() {
     return this.blobName;
   }
 

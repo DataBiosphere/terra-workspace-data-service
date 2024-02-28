@@ -22,10 +22,6 @@ public class WdsRecordSink implements RecordSink {
   private final DataTypeInferer inferer;
   private final UUID collectionId;
 
-  public String getBlobName() {
-    return "";
-  }
-
   WdsRecordSink(
       RecordService recordService,
       RecordDao recordDao,

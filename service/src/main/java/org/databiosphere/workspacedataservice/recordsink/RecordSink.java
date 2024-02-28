@@ -32,5 +32,11 @@ public interface RecordSink {
   void deleteBatch(RecordType recordType, List<Record> records)
       throws BatchWriteException, IOException;
 
-  String getBlobName();
+  /**
+   * This method is only used in Control Plane WDS to get the name of the Google Bucket import has
+   * been written to
+   */
+  default String GetBlobName() {
+    return "Not applicable outside of cWDS.";
+  }
 }
