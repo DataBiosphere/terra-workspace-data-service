@@ -127,7 +127,6 @@ twds:
   write.batch.size: 5000
   streaming.fetch.size: 5000
   instance:
-    initialize-collection-on-startup: true
     # Workspace Id for launching instance
     workspace-id: ${WORKSPACE_ID:}
     source-workspace-id: ${SOURCE_WORKSPACE_ID:}

@@ -3,13 +3,13 @@ package org.databiosphere.workspacedataservice.sam;
 import static org.databiosphere.workspacedataservice.sam.BearerTokenFilter.ATTRIBUTE_NAME_TOKEN;
 import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
-import jakarta.validation.constraints.NotNull;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.databiosphere.workspacedataservice.jobexec.JobContextHolder;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
@@ -35,18 +35,37 @@ public class TokenContextUtil {
    * @param initialValue the first value to check for a non-null token
    * @return the final value
    */
-  @NotNull
-  public static BearerToken getToken(String initialValue) {
-    return getToken(BearerToken.of(initialValue), BearerToken::empty);
+  public static BearerToken getToken(@Nullable String initialValue) {
+    return getToken(BearerToken.ofNullable(initialValue), BearerToken::empty);
   }
 
   /**
    * Convenience for evaluating auth tokens.
    *
-   * <p>If `initialValue` is non-null, returns the initialValue as-is.
+   * <p>If `initialValue` is non-null and non-empty, returns the initialValue as-is.
    *
-   * <p>If `initialValue` is null, searches request context for a non-null String value, and returns
-   * it if found.
+   * <p>If `initialValue` is null or empty, searches request context for a non-null String value,
+   * and returns it if found.
+   *
+   * <p>If the request context has no value, searches job context for a non-null String value, and
+   * returns it if found.
+   *
+   * <p>If not found in any of the above, return null.
+   *
+   * @param initialValue the first value to check for a non-null token
+   * @return the final value
+   */
+  public static BearerToken getToken(@Nullable BearerToken initialValue) {
+    return getToken(initialValue, BearerToken::empty);
+  }
+
+  /**
+   * Convenience for evaluating auth tokens.
+   *
+   * <p>If `initialValue` is non-null and non-empty, returns the initialValue as-is.
+   *
+   * <p>If `initialValue` is null or empty, searches request context for a non-null String value,
+   * and returns it if found.
    *
    * <p>If the request context has no value, searches job context for a non-null String value, and
    * returns it if found.
@@ -57,12 +76,13 @@ public class TokenContextUtil {
    * @param orElse the value to return if the token was not found otherwise
    * @return the final value
    */
-  @NotNull
-  public static BearerToken getToken(BearerToken initialValue, Supplier<BearerToken> orElse) {
-    if (initialValue != null && initialValue.nonEmpty()) {
-      return initialValue;
+  public static BearerToken getToken(
+      @Nullable BearerToken initialValue, Supplier<BearerToken> orElse) {
+    if (initialValue == null || initialValue.isEmpty()) {
+      return getToken(orElse);
     }
-    return getToken(orElse);
+
+    return initialValue;
   }
 
   /**
@@ -72,7 +92,6 @@ public class TokenContextUtil {
    * @param orElse the value to return if the token was not found otherwise
    * @return the final value
    */
-  @NotNull
   public static BearerToken getToken(Supplier<BearerToken> orElse) {
     BearerToken foundToken = getToken();
     if (foundToken.nonEmpty()) {
@@ -90,7 +109,6 @@ public class TokenContextUtil {
    *
    * @return the token if found; BearerToken.empty() otherwise
    */
-  @NotNull
   public static BearerToken getToken() {
     BearerToken foundToken;
     // look in request context; if non-null, return it
@@ -113,7 +131,6 @@ public class TokenContextUtil {
    *
    * @return the token if found; BearerToken.empty() otherwise
    */
-  @NotNull
   private static BearerToken tokenFromRequestContext() {
     // do any request attributes exist?
     RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
@@ -128,7 +145,6 @@ public class TokenContextUtil {
    *
    * @return the token if found; BearerToken.empty() otherwise
    */
-  @NotNull
   private static BearerToken tokenFromJobContext() {
     // do any job attributes exist?
     Map<String, Object> jobAttributes = JobContextHolder.getAttributes();
@@ -139,8 +155,7 @@ public class TokenContextUtil {
   }
 
   /** Convenience: is the input object non-null and a String? */
-  @NotNull
-  private static BearerToken maybeToken(Object obj) {
+  private static BearerToken maybeToken(@Nullable Object obj) {
     // as of this writing, if "obj instanceof String" passes, then "BearerToken.isValid" will always
     // pass. The check is included here for future compatibility, in case we change the isValid
     // implementation later.

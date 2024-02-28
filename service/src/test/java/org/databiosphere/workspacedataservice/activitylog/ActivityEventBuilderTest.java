@@ -15,6 +15,7 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.sam.BearerTokenFilter;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.CollectionService;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,8 +47,9 @@ class ActivityEventBuilderTest extends TestBase {
 
   @BeforeEach
   void setUp() {
-    given(mockSamClientFactory.getUsersApi(any())).willReturn(mockUsersApi);
-    given(mockSamClientFactory.getResourcesApi(any())).willReturn(mockResourcesApi);
+    given(mockSamClientFactory.getUsersApi(any(BearerToken.class))).willReturn(mockUsersApi);
+    given(mockSamClientFactory.getResourcesApi(any(BearerToken.class)))
+        .willReturn(mockResourcesApi);
   }
 
   @Test

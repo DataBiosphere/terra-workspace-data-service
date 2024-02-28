@@ -9,7 +9,7 @@ class BearerTokenTest {
 
   @Test
   void nullIsEmpty() {
-    assertTrue(BearerToken.of(null).isEmpty());
+    assertTrue(BearerToken.ofNullable(null).isEmpty());
   }
 
   // empty string will cause 401s in practice, but BearerToken is only lightweight validation

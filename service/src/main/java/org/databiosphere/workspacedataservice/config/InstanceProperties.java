@@ -12,7 +12,6 @@ import org.springframework.lang.Nullable;
  */
 public class InstanceProperties {
   private boolean validWorkspaceId = false; // assume false until configured otherwise
-  private boolean initializeCollectionOnStartup;
   private WorkspaceId workspaceId;
   @Nullable private WorkspaceId sourceWorkspaceId;
 
@@ -55,13 +54,5 @@ public class InstanceProperties {
         throw new ConfigurationException("Invalid sourceWorkspaceId: " + workspaceId, e);
       }
     }
-  }
-
-  void setInitializeCollectionOnStartup(boolean initializeCollectionOnStartup) {
-    this.initializeCollectionOnStartup = initializeCollectionOnStartup;
-  }
-
-  public boolean getInitializeCollectionOnStartup() {
-    return initializeCollectionOnStartup;
   }
 }

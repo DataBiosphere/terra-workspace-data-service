@@ -5,6 +5,8 @@ import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserStatusInfo;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
@@ -18,10 +20,10 @@ public class HttpSamDao implements SamDao {
   protected final SamClientFactory samClientFactory;
   private static final Logger LOGGER = LoggerFactory.getLogger(HttpSamDao.class);
   private final RestClientRetry restClientRetry;
-  private final String workspaceId;
+  private final WorkspaceId workspaceId;
 
   public HttpSamDao(
-      SamClientFactory samClientFactory, RestClientRetry restClientRetry, String workspaceId) {
+      SamClientFactory samClientFactory, RestClientRetry restClientRetry, WorkspaceId workspaceId) {
     this.samClientFactory = samClientFactory;
     this.restClientRetry = restClientRetry;
     this.workspaceId = workspaceId;
@@ -36,11 +38,11 @@ public class HttpSamDao implements SamDao {
    */
   @Override
   public boolean hasCreateCollectionPermission() {
-    return hasCreateCollectionPermission(null);
+    return hasCreateCollectionPermission(BearerToken.empty());
   }
 
   @Override
-  public boolean hasCreateCollectionPermission(String token) {
+  public boolean hasCreateCollectionPermission(BearerToken token) {
     return hasPermission(ACTION_WRITE, "Sam.hasCreateCollectionPermission", token);
   }
 
@@ -52,27 +54,12 @@ public class HttpSamDao implements SamDao {
    */
   @Override
   public boolean hasDeleteCollectionPermission() {
-    return hasDeleteCollectionPermission(null);
+    return hasDeleteCollectionPermission(BearerToken.empty());
   }
 
   @Override
-  public boolean hasDeleteCollectionPermission(String token) {
+  public boolean hasDeleteCollectionPermission(BearerToken token) {
     return hasPermission(ACTION_DELETE, "Sam.hasDeleteCollectionPermission", token);
-  }
-
-  // helper implementation for permission checks
-  private boolean hasPermission(String action, String loggerHint, String token) {
-    LOGGER.debug(
-        "Checking Sam permission for {}/{}/{} ...",
-        SamDao.RESOURCE_NAME_WORKSPACE,
-        workspaceId,
-        action);
-    RestCall<Boolean> samFunction =
-        () ->
-            samClientFactory
-                .getResourcesApi(token)
-                .resourcePermissionV2(SamDao.RESOURCE_NAME_WORKSPACE, workspaceId, action);
-    return restClientRetry.withRetryAndErrorHandling(samFunction, loggerHint);
   }
 
   /**
@@ -83,12 +70,13 @@ public class HttpSamDao implements SamDao {
    */
   @Override
   public boolean hasWriteWorkspacePermission() {
-    return hasWriteWorkspacePermission(null);
+    return hasWriteWorkspacePermission(workspaceId);
   }
 
   @Override
-  public boolean hasWriteWorkspacePermission(String token) {
-    return hasPermission(ACTION_WRITE, "Sam.hasWriteWorkspacePermission", token);
+  public boolean hasWriteWorkspacePermission(WorkspaceId workspaceId) {
+    return hasPermission(
+        ACTION_WRITE, "Sam.hasWriteWorkspacePermission", workspaceId, BearerToken.empty());
   }
 
   /**
@@ -97,23 +85,44 @@ public class HttpSamDao implements SamDao {
    * @return true if the user has permission
    */
   @Override
-  public boolean hasReadWorkspacePermission(String workspaceId) {
-    return hasReadWorkspacePermission(workspaceId, null);
+  public boolean hasReadWorkspacePermission(WorkspaceId workspaceId) {
+    return hasReadWorkspacePermission(workspaceId, BearerToken.empty());
   }
 
   @Override
-  public boolean hasReadWorkspacePermission(String workspaceId, String token) {
+  public boolean hasReadWorkspacePermission(WorkspaceId workspaceId, BearerToken token) {
     return hasPermission(ACTION_READ, "Sam.hasReadWorkspacePermission", token);
+  }
+
+  // helper implementation for permission checks
+  private boolean hasPermission(String action, String loggerHint, BearerToken token) {
+    return hasPermission(action, loggerHint, workspaceId, token);
+  }
+
+  private boolean hasPermission(
+      String action, String loggerHint, WorkspaceId workspaceId, BearerToken token) {
+    LOGGER.debug(
+        "Checking Sam permission for {}/{}/{} ...",
+        SamDao.RESOURCE_NAME_WORKSPACE,
+        workspaceId,
+        action);
+    RestCall<Boolean> samFunction =
+        () ->
+            samClientFactory
+                .getResourcesApi(token)
+                .resourcePermissionV2(
+                    SamDao.RESOURCE_NAME_WORKSPACE, workspaceId.toString(), action);
+    return restClientRetry.withRetryAndErrorHandling(samFunction, loggerHint);
   }
 
   // this cache uses token.hashCode as its key. This prevents any logging such as
   // in CacheLogger from logging the raw token.
   @Cacheable(cacheNames = "tokenResolution", key = "#token.hashCode()")
-  public String getUserId(String token) {
+  public String getUserId(BearerToken token) {
     return getUserInfo(token).getUserSubjectId();
   }
 
-  public UserStatusInfo getUserInfo(String token) {
+  private UserStatusInfo getUserInfo(BearerToken token) {
     LOGGER.debug("Resolving Sam token to UserStatusInfo ...");
     RestCall<UserStatusInfo> samFunction =
         () -> samClientFactory.getUsersApi(token).getUserStatusInfo();
@@ -130,7 +139,8 @@ public class HttpSamDao implements SamDao {
   }
 
   public SystemStatus getSystemStatus() {
-    RestCall<SystemStatus> samFunction = () -> samClientFactory.getStatusApi().getSystemStatus();
+    RestCall<SystemStatus> samFunction =
+        () -> samClientFactory.getStatusApi(BearerToken.empty()).getSystemStatus();
     return restClientRetry.withRetryAndErrorHandling(samFunction, "Sam.getSystemStatus");
   }
 
@@ -138,7 +148,7 @@ public class HttpSamDao implements SamDao {
     RestCall<String> samFunction =
         () ->
             samClientFactory
-                .getGoogleApi(null)
+                .getGoogleApi(BearerToken.empty())
                 .getArbitraryPetServiceAccountToken(
                     List.of(
                         "https://www.googleapis.com/auth/userinfo.email",

@@ -20,7 +20,7 @@ repositories {
 
 subprojects {
     group = 'org.databiosphere'
-    version = '0.2.114-SNAPSHOT'
+    version = '0.2.115-SNAPSHOT'
 
     apply plugin: 'idea'
     apply plugin: 'java'
@@ -52,5 +52,13 @@ tasks.named('test') {
     testLogging {
         events = ["passed", "failed", "skipped", "started"]
         exceptionFormat = "full"
+    }
+}
+
+// to avoid prompts in Gradle build scans
+if (hasProperty("buildScan")) {
+    buildScan {
+        termsOfServiceUrl = "https://gradle.com/terms-of-service"
+        termsOfServiceAgree = "yes"
     }
 }
