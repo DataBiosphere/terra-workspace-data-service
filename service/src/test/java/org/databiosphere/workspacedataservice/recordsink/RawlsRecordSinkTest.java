@@ -176,6 +176,7 @@ class RawlsRecordSinkTest extends TestBase {
   private List<Entity> doUpsert(Record record, Record... additionalRecords) {
     var recordList = concat(Stream.of(record), stream(additionalRecords)).toList();
     var recordType = recordList.stream().map(Record::getRecordType).collect(onlyElement());
+    var blobName = "";
     try {
       recordSink.upsertBatch(
           recordType,
@@ -190,7 +191,7 @@ class RawlsRecordSinkTest extends TestBase {
       // confirm there is only 1
       assertThat(Iterables.size(blobs)).isEqualTo(1);
       // get the name of the blob
-      var blobName = blobs.iterator().next().getName();
+      blobName = blobs.iterator().next().getName();
       // check that the contents match the expected Json
       var text = storage.getBlobContents(blobName);
       String contents =
@@ -198,11 +199,14 @@ class RawlsRecordSinkTest extends TestBase {
               .lines()
               .collect(Collectors.joining("\n"));
       assertThat(contents).isEqualTo(recordedJson.toString());
-      // delete the blob so the next test can have a clean slate
-      storage.deleteBlob(blobName);
       return mapper.readValue(recordedJson.toString(), new TypeReference<>() {});
     } catch (IOException e) {
       throw new RuntimeException(e);
+    } finally {
+      // delete the blob so the next test can have a clean slate
+      if (!blobName.isEmpty()) {
+        storage.deleteBlob(blobName);
+      }
     }
   }
 
