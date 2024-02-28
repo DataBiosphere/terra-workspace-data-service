@@ -12,9 +12,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -40,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.util.StreamUtils;
 
 @SpringBootTest
 class RawlsRecordSinkTest extends TestBase {
@@ -194,10 +193,7 @@ class RawlsRecordSinkTest extends TestBase {
       blobName = blobs.iterator().next().getName();
       // check that the contents match the expected Json
       var text = storage.getBlobContents(blobName);
-      String contents =
-          new BufferedReader(new InputStreamReader(text, StandardCharsets.UTF_8))
-              .lines()
-              .collect(Collectors.joining("\n"));
+      String contents = StreamUtils.copyToString(text, StandardCharsets.UTF_8);
       assertThat(contents).isEqualTo(recordedJson.toString());
       return mapper.readValue(recordedJson.toString(), new TypeReference<>() {});
     } catch (IOException e) {

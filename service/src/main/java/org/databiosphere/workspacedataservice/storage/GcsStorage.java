@@ -5,6 +5,7 @@ import com.google.cloud.spring.storage.GoogleStorageResource;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -61,10 +62,12 @@ public class GcsStorage {
     return gcsResource.getBlobName();
   }
 
+  @VisibleForTesting
   public Iterable<Blob> getBlobsInBucket() {
     return storage.list(this.bucketName).getValues();
   }
 
+  @VisibleForTesting
   public void deleteBlob(String blobName) {
     storage.delete(this.bucketName, blobName);
   }

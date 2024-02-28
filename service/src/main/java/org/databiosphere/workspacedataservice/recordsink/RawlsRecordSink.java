@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 import org.databiosphere.workspacedataservice.config.ConfigurationException;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
@@ -32,8 +31,6 @@ import org.databiosphere.workspacedataservice.storage.GcsStorage;
  * {@link RecordSink} implementation that produces Rawls-compatible JSON using {@link RawlsModel}
  * serialization classes.
  *
- * <p>TODO(AJ-1585): integrate with storage to write JSON output to the appropriate bucket
- *
  * <p>TODO(AJ-1586): integrate with pubsub to notify Rawls when JSON is ready to be processed
  */
 public class RawlsRecordSink implements RecordSink {
@@ -50,7 +47,7 @@ public class RawlsRecordSink implements RecordSink {
   RawlsRecordSink(
       String attributePrefix,
       ObjectMapper mapper,
-      @Nullable GcsStorage storage,
+      GcsStorage storage,
       @RawlsJsonConsumer Consumer<String> jsonConsumer) {
     this.attributePrefix = attributePrefix;
     this.mapper = mapper;
@@ -79,10 +76,10 @@ public class RawlsRecordSink implements RecordSink {
     records.stream().map(this::toEntity).forEach(entities::add);
     jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
 
+    // TODO - Would it make sense to propogate the JobId into here so that BlobName can be named
+    // with JobId as it is today with import service?
     if (storage != null) {
-      var blobName =
-          storage.createGcsFile(
-              new ByteArrayInputStream(mapper.writeValueAsBytes(entities.build())));
+      storage.createGcsFile(new ByteArrayInputStream(mapper.writeValueAsBytes(entities.build())));
     } else {
       throw new ConfigurationException("GcsStorage is null for cWDS which is unexpected.");
     }
