@@ -152,7 +152,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // user has permission to that workspace
-    when(samDao.hasReadWorkspacePermission(workspaceId)).thenReturn(true);
+    when(samDao.hasReadWorkspacePermission(any(WorkspaceId.class))).thenReturn(true);
 
     // Act / assert
     AuthenticationMaskableException actual =
