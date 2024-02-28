@@ -155,11 +155,11 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     when(samDao.hasReadWorkspacePermission(workspaceId)).thenReturn(true);
 
     // Act / assert
-    AuthenticationMaskableException actual =
-        assertThrows(AuthenticationMaskableException.class, () -> jobService.getJob(jobId));
+    MissingObjectException actual =
+        assertThrows(MissingObjectException.class, () -> jobService.getJob(jobId));
 
     // Assert
-    assertEquals("Job", actual.getObjectType());
+    assertThat(actual).hasMessageContaining("Collection does not exist");
   }
 
   // ==================================================
