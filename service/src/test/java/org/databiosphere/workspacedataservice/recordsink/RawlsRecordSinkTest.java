@@ -1,20 +1,16 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
+import static com.google.common.collect.MoreCollectors.onlyElement;
+import static java.util.Arrays.stream;
+import static java.util.Collections.emptyMap;
+import static java.util.stream.Stream.concat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
-import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.*;
-import org.databiosphere.workspacedataservice.shared.model.Record;
-import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
-import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.databiosphere.workspacedataservice.storage.GcsStorage;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.context.SpringBootTest;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -26,14 +22,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.google.common.collect.MoreCollectors.onlyElement;
-import static java.util.Arrays.stream;
-import static java.util.Collections.emptyMap;
-import static java.util.stream.Stream.concat;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
+import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.storage.GcsStorage;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
 class RawlsRecordSinkTest extends TestBase {
