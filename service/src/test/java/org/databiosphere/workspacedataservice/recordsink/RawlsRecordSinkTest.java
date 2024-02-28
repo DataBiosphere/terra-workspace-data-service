@@ -1,27 +1,9 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
-import static com.google.common.collect.MoreCollectors.onlyElement;
-import static java.util.Arrays.stream;
-import static java.util.Collections.emptyMap;
-import static java.util.stream.Stream.concat;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import com.google.common.collect.Iterables;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
@@ -39,6 +21,26 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.google.common.collect.MoreCollectors.onlyElement;
+import static java.util.Arrays.stream;
+import static java.util.Collections.emptyMap;
+import static java.util.stream.Stream.concat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
 class RawlsRecordSinkTest extends TestBase {
@@ -184,14 +186,21 @@ class RawlsRecordSinkTest extends TestBase {
           );
 
       assertThat(recordedJson.toString()).isNotNull();
-      var blobName = recordSink.getBlobName();
+      // look for the blob that was created in a bucket with the appropriate json
+      var blobs = storage.getBlobsInBucket();
+      // confirm there is only 1
+      assertThat(Iterables.size(blobs)).isEqualTo(1);
+      // get the name of the blob
+      var blobName = blobs.iterator().next().getName();
+      // check that the contents match the expected Json
       var text = storage.getBlobContents(blobName);
       String contents =
           new BufferedReader(new InputStreamReader(text, StandardCharsets.UTF_8))
               .lines()
               .collect(Collectors.joining("\n"));
       assertThat(contents).isEqualTo(recordedJson.toString());
-
+      // delete the blob so the next test can have a clean slate
+      storage.deleteBlob(blobName);
       return mapper.readValue(recordedJson.toString(), new TypeReference<>() {});
     } catch (IOException e) {
       throw new RuntimeException(e);

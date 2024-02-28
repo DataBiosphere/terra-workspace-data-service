@@ -3,19 +3,7 @@ package org.databiosphere.workspacedataservice.recordsink;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.mu.util.stream.BiStream;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-import javax.annotation.Nullable;
+import org.databiosphere.workspacedataservice.config.ConfigurationException;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
@@ -27,6 +15,19 @@ import org.databiosphere.workspacedataservice.service.model.exception.BatchWrite
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
+
+import javax.annotation.Nullable;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * {@link RecordSink} implementation that produces Rawls-compatible JSON using {@link RawlsModel}
@@ -41,13 +42,6 @@ public class RawlsRecordSink implements RecordSink {
   private final ObjectMapper mapper;
   private final GcsStorage storage;
   private final Consumer<String> jsonConsumer;
-
-  private String blobName;
-
-  @Override
-  public String getBlobName() {
-    return this.blobName;
-  }
 
   /** Annotates a String consumer for JSON strings emitted by {@link RawlsRecordSink}. */
   @Target({ElementType.PARAMETER, ElementType.METHOD})
@@ -86,9 +80,13 @@ public class RawlsRecordSink implements RecordSink {
     records.stream().map(this::toEntity).forEach(entities::add);
     jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
 
-    this.blobName = UUID.randomUUID().toString();
-    storage.createGcsFile(
-        this.blobName, new ByteArrayInputStream(mapper.writeValueAsBytes(entities.build())));
+    if (storage != null) {
+      var blobName =
+          storage.createGcsFile(
+              new ByteArrayInputStream(mapper.writeValueAsBytes(entities.build())));
+    } else {
+      throw new ConfigurationException("GcsStorage is null for cWDS which is unexpected.");
+    }
 
     // AJ-1586 - the name of where in the bucket the file is inside blobName
   }

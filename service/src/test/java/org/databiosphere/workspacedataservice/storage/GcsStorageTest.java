@@ -1,13 +1,11 @@
 package org.databiosphere.workspacedataservice.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -29,10 +27,8 @@ class GcsStorageTest {
   void testCreateandGetBlobSimple() throws IOException {
     String initialString = "text";
     InputStream targetStream = new ByteArrayInputStream(initialString.getBytes());
-    var fileName = UUID.randomUUID().toString();
-    String newBlobName = storage.createGcsFile(fileName, targetStream);
-
-    assertEquals(fileName, newBlobName);
+    String newBlobName = storage.createGcsFile(targetStream);
+    assertThat(newBlobName).isNotNull();
 
     String contents =
         StreamUtils.copyToString(storage.getBlobContents(newBlobName), Charset.defaultCharset());

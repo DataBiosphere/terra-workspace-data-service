@@ -2,11 +2,13 @@ package org.databiosphere.workspacedataservice.storage;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.spring.storage.GoogleStorageResource;
+import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.UUID;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 
 public class GcsStorage {
@@ -21,8 +23,8 @@ public class GcsStorage {
   // under
   public GcsStorage(DataImportProperties properties) throws IOException {
     GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
-    this.bucketName = properties.getGoogleBucketName();
-    this.projectId = properties.getGoogleProjectId();
+    this.bucketName = properties.getRawlsBucketName();
+    this.projectId = properties.getProjectId();
     StorageOptions storageOptions =
         StorageOptions.newBuilder()
             .setProjectId(this.projectId)
@@ -46,8 +48,9 @@ public class GcsStorage {
     return gcsResource.getInputStream();
   }
 
-  public String createGcsFile(String blobName, InputStream contents) throws IOException {
+  public String createGcsFile(InputStream contents) throws IOException {
     // create the GCS Resource
+    var blobName = UUID.randomUUID().toString();
     GoogleStorageResource gcsResource =
         new GoogleStorageResource(
             this.storage, String.format("gs://%s/%s", this.bucketName, blobName));
@@ -56,5 +59,13 @@ public class GcsStorage {
       contents.transferTo(os);
     }
     return gcsResource.getBlobName();
+  }
+
+  public Iterable<Blob> getBlobsInBucket() {
+    return storage.list(this.bucketName).getValues();
+  }
+
+  public void deleteBlob(String blobName) {
+    storage.delete(this.bucketName, blobName);
   }
 }
