@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.sam;
 
-import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.ACTION_DELETE;
 import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.ACTION_READ;
 import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.ACTION_WRITE;
 
@@ -27,7 +26,7 @@ public class SamAuthorizationDaoFactory {
         "Sam integration will query type={}, resourceId={}, actions={}",
         SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
         workspaceId,
-        Set.of(ACTION_READ, ACTION_WRITE, ACTION_DELETE));
+        Set.of(ACTION_READ, ACTION_WRITE));
     return new HttpSamAuthorizationDao(samClientFactory, restClientRetry, workspaceId);
   }
 }

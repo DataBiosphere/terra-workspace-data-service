@@ -26,16 +26,6 @@ public class MockSamAuthorizationDao implements SamAuthorizationDao {
   }
 
   @Override
-  public boolean hasCreateCollectionPermission() {
-    return defaultReturnValue;
-  }
-
-  @Override
-  public boolean hasDeleteCollectionPermission() {
-    return defaultReturnValue;
-  }
-
-  @Override
   public boolean hasReadWorkspacePermission() {
     return defaultReturnValue;
   }

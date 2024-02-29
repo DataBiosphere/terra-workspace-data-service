@@ -74,13 +74,14 @@ class CollectionServiceGetWorkspaceIdTest extends TestBase {
   }
 
   @Test
-  void unexpectedWorkspaceId() {
+  void mismatchingWorkspaceId() {
     // collection dao returns a value not equal to the workspace id set in $WORKSPACE_ID
+    WorkspaceId mismatchingWorkspaceId = WorkspaceId.of(UUID.randomUUID());
     when(mockCollectionDao.getWorkspaceId(any(CollectionId.class)))
-        .thenReturn(WorkspaceId.of(UUID.randomUUID()));
+        .thenReturn(mismatchingWorkspaceId);
 
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // expect getWorkspaceId to throw, since it found an unexpected workspace id
-    assertThrows(RuntimeException.class, () -> collectionService.getWorkspaceId(collectionId));
+    assertThat(collectionService.getWorkspaceId(collectionId)).isEqualTo(mismatchingWorkspaceId);
   }
 }

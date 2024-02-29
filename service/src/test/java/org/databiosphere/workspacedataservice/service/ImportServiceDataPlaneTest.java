@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
@@ -16,12 +17,11 @@ import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
-import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -53,13 +53,6 @@ class ImportServiceDataPlaneTest {
 
   private final CollectionId collectionId = CollectionId.of(UUID.randomUUID());
 
-  @BeforeEach
-  void setup() {
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
-    when(samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId))
-        .thenReturn(samAuthorizationDao);
-  }
-
   /* collection exists, workspace matches env var, user has access */
   @Test
   void userHasAccess() {
@@ -68,7 +61,7 @@ class ImportServiceDataPlaneTest {
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // sam dao says the user has write permission
-    when(samAuthorizationDao.hasWriteWorkspacePermission()).thenReturn(true);
+    stubWriteWorkspacePermission(workspaceId).thenReturn(true);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -85,8 +78,8 @@ class ImportServiceDataPlaneTest {
     // collection dao says the collection exists and returns the expected workspace id
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
-    // sam dao says the user has write permission
-    when(samAuthorizationDao.hasWriteWorkspacePermission()).thenReturn(false);
+    // sam dao says the user does not have write permission
+    stubWriteWorkspacePermission(workspaceId).thenReturn(false);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -104,22 +97,21 @@ class ImportServiceDataPlaneTest {
 
   /* collection exists, workspace does not match env var */
   @Test
-  void unexpectedWorkspaceId() {
+  void nonDefaultCollection() {
     // ARRANGE
-    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    WorkspaceId nonMatchingWorkspaceId = WorkspaceId.of(UUID.randomUUID());
     // collection dao says the collection exists and returns an unexpected workspace id
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(nonMatchingWorkspaceId);
     // sam dao says the user has write permission
-    when(samAuthorizationDao.hasWriteWorkspacePermission()).thenReturn(false);
+    stubWriteWorkspacePermission(nonMatchingWorkspaceId).thenReturn(true);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
     // exception
     UUID collectionUuid = collectionId.id();
     // perform the import request
-    assertThrows(
-        CollectionException.class, () -> importService.createImport(collectionUuid, importRequest));
+    assertDoesNotThrow(() -> importService.createImport(collectionUuid, importRequest));
   }
 
   /* collection does not exist */
@@ -130,8 +122,6 @@ class ImportServiceDataPlaneTest {
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(false);
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
-    // sam dao says the user has write permission
-    when(samAuthorizationDao.hasWriteWorkspacePermission()).thenReturn(false);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -141,5 +131,14 @@ class ImportServiceDataPlaneTest {
     assertThrows(
         MissingObjectException.class,
         () -> importService.createImport(collectionUuid, importRequest));
+
+    verifyNoInteractions(samAuthorizationDaoFactory);
+    verifyNoInteractions(samAuthorizationDao);
+  }
+
+  private OngoingStubbing<Boolean> stubWriteWorkspacePermission(WorkspaceId workspaceId) {
+    when(samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId))
+        .thenReturn(samAuthorizationDao);
+    return when(samAuthorizationDao.hasWriteWorkspacePermission());
   }
 }
