@@ -21,3 +21,5 @@ jobs:
           distribution: 'temurin'
       - name: Generate and submit dependency graph
         uses: gradle/actions/dependency-submission@v3
+        env:
+          DEPENDENCY_GRAPH_INCLUDE_CONFIGURATIONS: runtimeClasspath

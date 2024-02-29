@@ -3,11 +3,13 @@ package org.databiosphere.workspacedataservice.recordsink;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.recordsink.RawlsRecordSink.RawlsJsonConsumer;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RecordService;
+import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,11 +24,16 @@ public class RecordSinkFactory {
   private RecordService recordService;
   private RecordDao recordDao;
   private DataTypeInferer dataTypeInferer;
+  private GcsStorage storage;
   private Consumer<String> jsonConsumer;
 
-  public RecordSinkFactory(DataImportProperties dataImportProperties, ObjectMapper mapper) {
+  public RecordSinkFactory(
+      DataImportProperties dataImportProperties,
+      ObjectMapper mapper,
+      @Nullable GcsStorage storage) {
     this.dataImportProperties = dataImportProperties;
     this.mapper = mapper;
+    this.storage = storage;
   }
 
   @Autowired(required = false) // RecordService only required for RecordSinkMode.WDS
@@ -66,7 +73,7 @@ public class RecordSinkFactory {
   }
 
   private RecordSink rawlsRecordSink(String prefix) {
-    return new RawlsRecordSink(prefix, mapper, jsonConsumer);
+    return new RawlsRecordSink(prefix, mapper, storage, jsonConsumer);
   }
 
   private WdsRecordSink wdsRecordSink(UUID collectionId) {
