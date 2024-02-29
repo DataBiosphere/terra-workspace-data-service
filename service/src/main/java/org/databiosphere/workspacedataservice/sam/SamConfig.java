@@ -11,8 +11,9 @@ import org.springframework.context.annotation.Configuration;
  * Bean creator for:
  *
  * <ul>
- *   <li>SamClientFactory, injecting the base url to Sam into that factory.
- *   <li>SamDao, injecting the SamClientFactory into that dao.
+ *   <li>{@link SamClientFactory}, injecting the base url to Sam.
+ *   <li>{@link SamDao} and {@link SamAuthorizationDaoFactory}, injecting the SamClientFactory and
+ *       {@link RestClientRetry}.
  * </ul>
  */
 @Configuration
