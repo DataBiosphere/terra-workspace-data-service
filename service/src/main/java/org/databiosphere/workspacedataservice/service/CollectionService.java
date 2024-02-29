@@ -124,15 +124,11 @@ public class CollectionService {
   }
 
   public boolean canReadCollection(CollectionId collectionId) {
-    return getSamAuthorizationDao(getWorkspaceId(collectionId))
-        // TODO: remove redundant param from hasReadWorkspacePermission
-        .hasReadWorkspacePermission(getWorkspaceId(collectionId));
+    return getSamAuthorizationDao(getWorkspaceId(collectionId)).hasReadWorkspacePermission();
   }
 
   public boolean canWriteCollection(CollectionId collectionId) {
-    return getSamAuthorizationDao(WorkspaceId.of(collectionId.id()))
-        // TODO: remove redundant param from hasReadWorkspacePermission
-        .hasWriteWorkspacePermission(getWorkspaceId(collectionId));
+    return getSamAuthorizationDao(getWorkspaceId(collectionId)).hasWriteWorkspacePermission();
   }
 
   /**

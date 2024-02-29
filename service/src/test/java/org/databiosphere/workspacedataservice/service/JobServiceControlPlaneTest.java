@@ -76,7 +76,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
     // collection for this job exists
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // user has permission to that workspace
-    when(samAuthorizationDao.hasReadWorkspacePermission(workspaceId)).thenReturn(true);
+    when(samAuthorizationDao.hasReadWorkspacePermission()).thenReturn(true);
 
     // Act / assert
     Exception actual = assertThrows(CollectionException.class, () -> jobService.getJob(jobId));
@@ -98,8 +98,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // user has permission to the workspace with the same id as the collection
-    when(samAuthorizationDao.hasReadWorkspacePermission(WorkspaceId.of(collectionId.id())))
-        .thenReturn(true);
+    when(samAuthorizationDao.hasReadWorkspacePermission()).thenReturn(true);
 
     // Act
     GenericJobServerModel actual = jobService.getJob(jobId);
@@ -121,8 +120,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // user has permission to the workspace with the same id as the collection
-    when(samAuthorizationDao.hasReadWorkspacePermission(WorkspaceId.of(collectionId.id())))
-        .thenReturn(false);
+    when(samAuthorizationDao.hasReadWorkspacePermission()).thenReturn(false);
 
     // Act / assert
     AuthenticationMaskableException actual =
@@ -145,7 +143,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
     // collection for this job exists
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // user has permission to that workspace
-    when(samAuthorizationDao.hasReadWorkspacePermission(workspaceId)).thenReturn(true);
+    when(samAuthorizationDao.hasReadWorkspacePermission()).thenReturn(true);
 
     // Act / assert
     Exception actual =
@@ -166,8 +164,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // user has permission to the workspace with the same id as the collection
-    when(samAuthorizationDao.hasReadWorkspacePermission(WorkspaceId.of(collectionId.id())))
-        .thenReturn(true);
+    when(samAuthorizationDao.hasReadWorkspacePermission()).thenReturn(true);
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 2));
@@ -190,8 +187,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // user has permission to the workspace with the same id as the collection
-    when(samAuthorizationDao.hasReadWorkspacePermission(WorkspaceId.of(collectionId.id())))
-        .thenReturn(false);
+    when(samAuthorizationDao.hasReadWorkspacePermission()).thenReturn(false);
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 3));
