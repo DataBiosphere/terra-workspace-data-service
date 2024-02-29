@@ -61,8 +61,13 @@ public class CollectionService {
   /** Migrate callers to use {@link #createCollection(WorkspaceId, CollectionId, String)} */
   @Deprecated
   public void createCollection(UUID collectionId, String version) {
+    if (tenancyProperties.getAllowVirtualCollections()) {
+      throw new CollectionException(
+          "createCollection not allowed when virtual collections are enabled");
+    }
     if (workspaceId == null) {
-      throw new IllegalStateException("workspaceId must be set to create a collection.");
+      throw new CollectionException(
+          "createCollection requires a workspaceId to be configured or provided");
     }
     createCollection(workspaceId, CollectionId.of(collectionId), version);
   }
