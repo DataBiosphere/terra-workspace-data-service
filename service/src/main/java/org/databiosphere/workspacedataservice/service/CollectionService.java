@@ -7,7 +7,6 @@ import java.util.Objects;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
-import org.databiosphere.workspacedataservice.config.ConfigurationException;
 import org.databiosphere.workspacedataservice.config.TenancyProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
@@ -59,46 +58,58 @@ public class CollectionService {
     return collectionDao.listCollectionSchemas();
   }
 
-  // TODO update this javadoc, also are there logical problems with the sam resource type?
-  // Also check the naming on these methods here
+  /** Migrate callers to use {@link #createCollection(WorkspaceId, CollectionId, String)} */
+  @Deprecated
+  public void createCollection(UUID collectionId, String version) {
+    if (workspaceId == null) {
+      throw new IllegalStateException("workspaceId must be set to create a collection.");
+    }
+    createCollection(workspaceId, CollectionId.of(collectionId), version);
+  }
+
   /**
    * Creates a WDS collection, comprised of a Postgres schema and a Sam resource of type
    * "workspace". The Postgres schema will have an id of `collectionId`, which will match the Sam
    * resource's`workspaceId` unless otherwise specified.
    *
+   * <p>TODO(AJ-1662): wire workspaceId down through collectionDao
+   *
    * @param collectionId id of the collection to create
    * @param version WDS API version
    */
-  public void createCollection(UUID collectionId, String version) {
+  public void createCollection(WorkspaceId workspaceId, CollectionId collectionId, String version) {
     validateVersion(version);
 
     // check that the current user has permission on the parent workspace
     boolean hasCreateCollectionPermission =
-        getSamAuthorizationDao().hasCreateCollectionPermission();
+        getSamAuthorizationDao(workspaceId).hasCreateCollectionPermission();
     LOGGER.debug("hasCreateCollectionPermission? {}", hasCreateCollectionPermission);
 
     if (!hasCreateCollectionPermission) {
       throw new AuthorizationException("Caller does not have permission to create collection.");
     }
 
-    if (collectionDao.collectionSchemaExists(collectionId)) {
+    if (collectionDao.collectionSchemaExists(collectionId.id())) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "This collection already exists");
     }
 
     // create collection schema in Postgres
-    collectionDao.createSchema(collectionId);
+    collectionDao.createSchema(collectionId.id());
 
     activityLogger.saveEventForCurrentUser(
-        user -> user.created().collection().withUuid(collectionId));
+        user -> user.created().collection().withUuid(collectionId.id()));
   }
 
   public void deleteCollection(UUID collectionId, String version) {
     validateVersion(version);
     validateCollection(collectionId);
 
+    // TODO(AJ-1633): call getWorkspaceId(collectionId) to get the workspaceId, rather than relying
+    //   on the WORKSPACE_ID environment variable; test cases that rely on deleteCollection prevent
+    //   this change
     // check that the current user has permission to delete the Sam resource
     boolean hasDeleteCollectionPermission =
-        getSamAuthorizationDao().hasDeleteCollectionPermission();
+        getSamAuthorizationDao(workspaceId).hasDeleteCollectionPermission();
     LOGGER.debug("hasDeleteCollectionPermission? {}", hasDeleteCollectionPermission);
 
     if (!hasDeleteCollectionPermission) {
@@ -118,6 +129,7 @@ public class CollectionService {
       return;
     }
     // else, check if this collection has a row in the collections table
+    // TODO(AJ-1662): wire workspaceId down through collectionDao
     if (!collectionDao.collectionSchemaExists(collectionId)) {
       throw new MissingObjectException("Collection");
     }
@@ -180,13 +192,6 @@ public class CollectionService {
     }
 
     return Objects.requireNonNullElseGet(rowWorkspaceId, () -> WorkspaceId.of(collectionId.id()));
-  }
-
-  private SamAuthorizationDao getSamAuthorizationDao() {
-    if (workspaceId == null) {
-      throw new ConfigurationException("WORKSPACE_ID missing");
-    }
-    return getSamAuthorizationDao(workspaceId);
   }
 
   private SamAuthorizationDao getSamAuthorizationDao(WorkspaceId workspaceId) {
