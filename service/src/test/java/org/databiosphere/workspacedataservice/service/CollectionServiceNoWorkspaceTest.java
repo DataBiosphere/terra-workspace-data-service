@@ -52,11 +52,11 @@ class CollectionServiceNoWorkspaceTest extends TestBase {
   @Test
   void createCollectionNotAllowed_virtualCollectionsEnabled() {
     when(tenancyProperties.getAllowVirtualCollections()).thenReturn(true);
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    UUID collectionId = UUID.randomUUID();
     var thrown =
         assertThrows(
             CollectionException.class,
-            () -> collectionService.createCollection(collectionId.id(), "v0.2"));
+            () -> collectionService.createCollection(collectionId, "v0.2"));
     assertThat(thrown)
         .hasMessageContaining("createCollection not allowed when virtual collections are enabled");
   }
@@ -64,11 +64,11 @@ class CollectionServiceNoWorkspaceTest extends TestBase {
   @Test
   void createCollectionNotAllowed_missingWorkspaceId() {
     when(tenancyProperties.getAllowVirtualCollections()).thenReturn(false);
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    UUID collectionId = UUID.randomUUID();
     var thrown =
         assertThrows(
             CollectionException.class,
-            () -> collectionService.createCollection(collectionId.id(), "v0.2"));
+            () -> collectionService.createCollection(collectionId, "v0.2"));
     assertThat(thrown)
         .hasMessageContaining(
             "createCollection requires a workspaceId to be configured or provided");

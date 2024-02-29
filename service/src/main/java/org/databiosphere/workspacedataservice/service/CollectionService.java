@@ -58,7 +58,9 @@ public class CollectionService {
     return collectionDao.listCollectionSchemas();
   }
 
-  /** Migrate callers to use {@link #createCollection(WorkspaceId, CollectionId, String)} */
+  /**
+   * @deprecated Use {@link #createCollection(WorkspaceId, CollectionId, String)}
+   */
   @Deprecated
   public void createCollection(UUID collectionId, String version) {
     if (tenancyProperties.getAllowVirtualCollections()) {
