@@ -4,7 +4,6 @@ import static org.databiosphere.workspacedataservice.generated.ImportRequestServ
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
@@ -52,12 +51,12 @@ class ImportServiceDataPlaneTest {
   private final ImportRequestServerModel importRequest =
       new ImportRequestServerModel(PFB, importUri);
 
-  private CollectionId collectionId; // initialized in setup to match the @SingleTenant WorkspaceId
+  private final CollectionId collectionId = CollectionId.of(UUID.randomUUID());
 
   @BeforeEach
   void setup() {
-    collectionId = CollectionId.of(workspaceId.id());
-    when(samAuthorizationDaoFactory.getSamAuthorizationDao(any(WorkspaceId.class)))
+    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+    when(samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId))
         .thenReturn(samAuthorizationDao);
   }
 
