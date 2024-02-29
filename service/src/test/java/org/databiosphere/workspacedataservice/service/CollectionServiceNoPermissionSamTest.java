@@ -61,7 +61,6 @@ class CollectionServiceNoPermissionSamTest extends TestBase {
 
   @Test
   void testDeleteCollectionNoPermission() throws ApiException {
-
     // return the mock ResourcesApi from the mock SamClientFactory
     given(mockSamClientFactory.getResourcesApi()).willReturn(mockResourcesApi);
 
@@ -77,7 +76,7 @@ class CollectionServiceNoPermissionSamTest extends TestBase {
     assertThrows(
         AuthorizationException.class,
         () -> collectionService.deleteCollection(collectionId, VERSION),
-        "deleteCollection should throw if caller does not have delete permission to the workspace resource in Sam");
+        "deleteCollection should throw if caller does not have write permission to the workspace resource in Sam");
     List<UUID> allCollections = collectionService.listCollections(VERSION);
     assertTrue(allCollections.contains(collectionId), "should not have deleted the collection.");
   }

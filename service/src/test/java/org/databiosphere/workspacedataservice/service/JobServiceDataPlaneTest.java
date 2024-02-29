@@ -20,7 +20,6 @@ import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
-import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -115,21 +114,21 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // Arrange
     UUID jobId = UUID.randomUUID();
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    WorkspaceId nonMatchingWorkspaceId = WorkspaceId.of(UUID.randomUUID());
     GenericJobServerModel expectedJob = makeJob(jobId, collectionId);
     // job exists
     when(jobDao.getJob(jobId)).thenReturn(expectedJob);
     // collection for this job exists, but is associated with a workspace other than the
     // $WORKSPACE_ID workspace
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(nonMatchingWorkspaceId);
     // user has permission to that workspace
-    stubReadWorkspacePermission(workspaceId).thenReturn(true);
+    stubReadWorkspacePermission(nonMatchingWorkspaceId).thenReturn(true);
 
     // Act / assert
-    Exception actual = assertThrows(CollectionException.class, () -> jobService.getJob(jobId));
+    GenericJobServerModel actual = jobService.getJob(jobId);
 
     // Assert
-    assertThat(actual.getMessage()).startsWith("Found unexpected workspaceId for collection");
+    assertThat(actual).isEqualTo(expectedJob);
   }
 
   /**
@@ -234,24 +233,23 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
   void listJobsNonDefaultCollection() {
     // Arrange
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    WorkspaceId nonMatchingWorkspaceId = WorkspaceId.of(UUID.randomUUID());
     // collection exists and is associated with a non-default workspace
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(nonMatchingWorkspaceId);
     // user has permission to that workspace
-    stubReadWorkspacePermission(workspaceId).thenReturn(true);
+    stubReadWorkspacePermission(nonMatchingWorkspaceId).thenReturn(true);
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 4));
 
     // Act / assert
-    Exception actual =
-        assertThrows(
-            CollectionException.class,
-            () -> jobService.getJobsForCollection(collectionId, Optional.of(allStatuses)));
+    List<GenericJobServerModel> actual =
+        jobService.getJobsForCollection(collectionId, Optional.of(allStatuses));
 
     // Assert
-    assertThat(actual.getMessage()).startsWith("Found unexpected workspaceId for collection");
+    // this is verifying workspaceId behavior only; only smoke-testing correctness of the result
+    assertThat(actual).hasSize(4);
   }
 
   // ==================================================
