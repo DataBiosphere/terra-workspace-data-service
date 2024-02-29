@@ -69,7 +69,7 @@ class ImportServiceDataPlaneTest {
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // sam dao says the user has write permission
-    when(samAuthorizationDao.hasWriteWorkspacePermission(workspaceId)).thenReturn(true);
+    when(samAuthorizationDao.hasWriteWorkspacePermission()).thenReturn(true);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -87,7 +87,7 @@ class ImportServiceDataPlaneTest {
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // sam dao says the user has write permission
-    when(samAuthorizationDao.hasWriteWorkspacePermission(workspaceId)).thenReturn(false);
+    when(samAuthorizationDao.hasWriteWorkspacePermission()).thenReturn(false);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -112,7 +112,7 @@ class ImportServiceDataPlaneTest {
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // sam dao says the user has write permission
-    when(samAuthorizationDao.hasWriteWorkspacePermission(workspaceId)).thenReturn(false);
+    when(samAuthorizationDao.hasWriteWorkspacePermission()).thenReturn(false);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -132,8 +132,7 @@ class ImportServiceDataPlaneTest {
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // sam dao says the user has write permission
-    when(samAuthorizationDao.hasWriteWorkspacePermission(WorkspaceId.of(collectionId.id())))
-        .thenReturn(false);
+    when(samAuthorizationDao.hasWriteWorkspacePermission()).thenReturn(false);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime

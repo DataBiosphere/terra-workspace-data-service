@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.sam;
 
-import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.mockito.Mockito;
 
 /**
@@ -37,17 +36,12 @@ public class MockSamAuthorizationDao implements SamAuthorizationDao {
   }
 
   @Override
-  public boolean hasReadWorkspacePermission(WorkspaceId workspaceId) {
+  public boolean hasReadWorkspacePermission() {
     return defaultReturnValue;
   }
 
   @Override
   public boolean hasWriteWorkspacePermission() {
-    return defaultReturnValue;
-  }
-
-  @Override
-  public boolean hasWriteWorkspacePermission(WorkspaceId workspaceId) {
     return defaultReturnValue;
   }
 }

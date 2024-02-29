@@ -55,11 +55,6 @@ public class HttpSamAuthorizationDao implements SamAuthorizationDao {
    */
   @Override
   public boolean hasWriteWorkspacePermission() {
-    return hasWriteWorkspacePermission(workspaceId);
-  }
-
-  @Override
-  public boolean hasWriteWorkspacePermission(WorkspaceId workspaceId) {
     return hasPermission(ACTION_WRITE, "Sam.hasWriteWorkspacePermission", workspaceId);
   }
 
@@ -69,7 +64,7 @@ public class HttpSamAuthorizationDao implements SamAuthorizationDao {
    * @return true if the user has permission
    */
   @Override
-  public boolean hasReadWorkspacePermission(WorkspaceId workspaceId) {
+  public boolean hasReadWorkspacePermission() {
     return hasPermission(ACTION_READ, "Sam.hasReadWorkspacePermission", workspaceId);
   }
 

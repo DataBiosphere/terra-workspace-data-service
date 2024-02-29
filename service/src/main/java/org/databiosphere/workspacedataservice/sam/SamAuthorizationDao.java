@@ -1,11 +1,6 @@
 package org.databiosphere.workspacedataservice.sam;
 
-import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-
 public interface SamAuthorizationDao {
-  // TODO(jladieu): get the WorkspaceId injected during creation and remove it from all arg lists
-  // TODO(jladieu): collapse overloads after the extra params are gone
-
   /** Sam resource type name for Workspaces */
   String RESOURCE_NAME_WORKSPACE = "workspace";
 
@@ -39,7 +34,7 @@ public interface SamAuthorizationDao {
    *
    * @return true if the user has permission
    */
-  boolean hasReadWorkspacePermission(WorkspaceId workspaceId);
+  boolean hasReadWorkspacePermission();
 
   /**
    * Check if the current user has permission to write to a workspace resource from Sam
@@ -47,6 +42,4 @@ public interface SamAuthorizationDao {
    * @return true if the user has permission
    */
   boolean hasWriteWorkspacePermission();
-
-  boolean hasWriteWorkspacePermission(WorkspaceId workspaceId);
 }

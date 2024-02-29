@@ -63,8 +63,7 @@ class ImportServiceControlPlaneTest {
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // sam dao says the user has write permission
-    when(samAuthorizationDao.hasWriteWorkspacePermission(WorkspaceId.of(collectionId.id())))
-        .thenReturn(true);
+    when(samAuthorizationDao.hasWriteWorkspacePermission()).thenReturn(true);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -83,8 +82,7 @@ class ImportServiceControlPlaneTest {
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // sam dao says the user does not have write permission
-    when(samAuthorizationDao.hasWriteWorkspacePermission(WorkspaceId.of(collectionId.id())))
-        .thenReturn(false);
+    when(samAuthorizationDao.hasWriteWorkspacePermission()).thenReturn(false);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -108,8 +106,7 @@ class ImportServiceControlPlaneTest {
     // collection dao says the collection DOES exist, which is an error in the control plane
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(WorkspaceId.of(UUID.randomUUID()));
     // sam dao says the user does have write permission
-    when(samAuthorizationDao.hasWriteWorkspacePermission(WorkspaceId.of(collectionId.id())))
-        .thenReturn(true);
+    when(samAuthorizationDao.hasWriteWorkspacePermission()).thenReturn(true);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
