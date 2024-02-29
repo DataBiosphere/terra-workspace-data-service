@@ -58,7 +58,7 @@ public class HttpSamAuthorizationDao implements SamAuthorizationDao {
    */
   @Override
   public boolean hasWriteWorkspacePermission() {
-    return hasPermission(ACTION_WRITE, "Sam.hasWriteWorkspacePermission", workspaceId);
+    return hasPermission(ACTION_WRITE, "Sam.hasWriteWorkspacePermission");
   }
 
   /**
@@ -68,18 +68,11 @@ public class HttpSamAuthorizationDao implements SamAuthorizationDao {
    */
   @Override
   public boolean hasReadWorkspacePermission() {
-    return hasPermission(ACTION_READ, "Sam.hasReadWorkspacePermission", workspaceId);
+    return hasPermission(ACTION_READ, "Sam.hasReadWorkspacePermission");
   }
 
-  // helpers for permission checks
-
-  // check for permission using the configured workspaceId
+  /** check for permission using the configured {@link WorkspaceId} */
   private boolean hasPermission(String action, String loggerHint) {
-    return hasPermission(action, loggerHint, workspaceId);
-  }
-
-  // check for permission using the provided workspaceId
-  private boolean hasPermission(String action, String loggerHint, WorkspaceId workspaceId) {
     LOGGER.debug(
         "Checking Sam permission for {}/{}/{} ...",
         SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
