@@ -11,7 +11,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
@@ -55,7 +54,7 @@ public class AzureBlobStorage implements BackUpFileStorage {
                     .getBlobClient(blobName)
                     .getBlockBlobClient()
                     .getBlobOutputStream()),
-            Charset.forName("UTF-8").newEncoder())) {
+            StandardCharsets.UTF_8.newEncoder())) {
       try (BufferedReader bufferedReader =
           new BufferedReader(new InputStreamReader(fromStream, StandardCharsets.UTF_8))) {
         int line;
