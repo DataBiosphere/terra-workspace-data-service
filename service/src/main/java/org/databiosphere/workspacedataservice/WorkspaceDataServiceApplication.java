@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 public class WorkspaceDataServiceApplication {
 
   public static void main(String[] args) {
+    // TODO AJ-1621: if APPLICATIONINSIGHTS_CONNECTION_STRING is empty, don't attempt to attach
     ApplicationInsights.attach();
     SpringApplication.run(WorkspaceDataServiceApplication.class, args);
   }

@@ -17,6 +17,8 @@ import org.springframework.context.annotation.PropertySource;
 public class SentryInitializer {
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryInitializer.class);
 
+  // TODO AJ-1621: use config class for Sentry entries?
+
   @Value("${sentry.dsn}")
   String dsn;
 
@@ -29,6 +31,7 @@ public class SentryInitializer {
   @Value("${samurl}")
   String samurl;
 
+  // TODO AJ-1621: what should cWDS use here?
   @Value("${sentry.releasename}")
   String releaseName;
 
@@ -43,6 +46,7 @@ public class SentryInitializer {
 
   @Bean
   public SmartInitializingSingleton initialize() {
+    // TODO AJ-1621: cWDS should get environments from Helm chart, not from Sam url
     String env = urlToEnv(samurl);
 
     return () ->
@@ -52,6 +56,9 @@ public class SentryInitializer {
               options.setDsn(environments.contains(env) ? dsn : "");
               options.setServerName(releaseName);
               options.setRelease(release);
+              // TODO AJ-1621: add cWDS vs dWDS tag
+              // TODO AJ-1621: workspaceId and mrg might be empty
+
               options.setTag("workspaceId", workspaceId);
               options.setTag("mrg", mrg);
             });
