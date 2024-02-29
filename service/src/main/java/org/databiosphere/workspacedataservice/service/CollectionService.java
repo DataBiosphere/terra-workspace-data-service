@@ -124,7 +124,7 @@ public class CollectionService {
   }
 
   public boolean canReadCollection(CollectionId collectionId) {
-    return getSamAuthorizationDao(WorkspaceId.of(collectionId.id()))
+    return getSamAuthorizationDao(getWorkspaceId(collectionId))
         // TODO: remove redundant param from hasReadWorkspacePermission
         .hasReadWorkspacePermission(getWorkspaceId(collectionId));
   }

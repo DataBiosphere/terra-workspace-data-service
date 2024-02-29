@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.sam;
 
-import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.mockito.Mockito;
 
@@ -33,27 +32,12 @@ public class MockSamAuthorizationDao implements SamAuthorizationDao {
   }
 
   @Override
-  public boolean hasCreateCollectionPermission(BearerToken token) {
-    return defaultReturnValue;
-  }
-
-  @Override
   public boolean hasDeleteCollectionPermission() {
     return defaultReturnValue;
   }
 
   @Override
-  public boolean hasDeleteCollectionPermission(BearerToken token) {
-    return defaultReturnValue;
-  }
-
-  @Override
   public boolean hasReadWorkspacePermission(WorkspaceId workspaceId) {
-    return defaultReturnValue;
-  }
-
-  @Override
-  public boolean hasReadWorkspacePermission(WorkspaceId workspaceId, BearerToken token) {
     return defaultReturnValue;
   }
 
