@@ -26,13 +26,14 @@ public class RecordSinkFactory {
   private RecordService recordService;
   private RecordDao recordDao;
   private DataTypeInferer dataTypeInferer;
-  private GcsStorage storage;
+  private final GcsStorage storage;
   private Consumer<String> jsonConsumer;
 
   public RecordSinkFactory(
       DataImportProperties dataImportProperties,
       ObjectMapper mapper,
-      @Nullable GcsStorage storage, PubSub pubSub) {
+      @Nullable GcsStorage storage,
+      @Nullable PubSub pubSub) {
     this.dataImportProperties = dataImportProperties;
     this.mapper = mapper;
     this.storage = storage;
@@ -76,7 +77,7 @@ public class RecordSinkFactory {
   }
 
   private RecordSink rawlsRecordSink(String prefix) {
-    return new RawlsRecordSink(prefix, mapper, storage, jsonConsumer, pubSub);
+    return new RawlsRecordSink(prefix, mapper, jsonConsumer, storage, pubSub);
   }
 
   private WdsRecordSink wdsRecordSink(UUID collectionId) {

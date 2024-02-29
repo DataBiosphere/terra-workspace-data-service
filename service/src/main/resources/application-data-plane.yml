@@ -11,3 +11,9 @@ twds:
   data-import:
     batch-write-record-sink: "wds"
 
+spring:
+  cloud:
+    gcp:
+      pubsub:
+        enabled: false
+

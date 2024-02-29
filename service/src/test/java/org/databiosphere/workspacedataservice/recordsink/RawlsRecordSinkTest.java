@@ -39,9 +39,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.StreamUtils;
 
 @SpringBootTest
+@ActiveProfiles("control-plane")
 class RawlsRecordSinkTest extends TestBase {
   @Autowired private ObjectMapper mapper;
   @Autowired private PubSub pubSub;
@@ -55,7 +57,8 @@ class RawlsRecordSinkTest extends TestBase {
   @BeforeEach
   void setUp() {
     recordedJson = new StringWriter();
-    recordSink = new RawlsRecordSink("prefix", mapper, storage, json -> recordedJson.append(json), pubSub);
+    recordSink =
+        new RawlsRecordSink("prefix", mapper, json -> recordedJson.append(json), storage, pubSub);
   }
 
   @Test
