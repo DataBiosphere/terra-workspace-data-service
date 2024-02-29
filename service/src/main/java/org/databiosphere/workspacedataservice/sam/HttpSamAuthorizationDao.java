@@ -44,6 +44,9 @@ public class HttpSamAuthorizationDao implements SamAuthorizationDao {
    */
   @Override
   public boolean hasDeleteCollectionPermission() {
+    // TODO(jladieu): rather than check `ACTION_DELETE` on workspace this should check
+    //  `ACTION_WRITE`; this method should cease to exist and be replaced by a method in
+    //  `CollectionService` that calls `hasWriteWorkspacePermission`
     return hasPermission(ACTION_DELETE, "Sam.hasDeleteCollectionPermission");
   }
 
