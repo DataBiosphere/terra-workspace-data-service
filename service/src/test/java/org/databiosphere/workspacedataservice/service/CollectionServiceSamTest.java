@@ -12,7 +12,6 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
-import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -47,8 +46,7 @@ class CollectionServiceSamTest extends TestBase {
   @BeforeEach
   void setUp() throws ApiException {
     // return the mock ResourcesApi from the mock SamClientFactory
-    given(mockSamClientFactory.getResourcesApi(any(BearerToken.class)))
-        .willReturn(mockResourcesApi);
+    given(mockSamClientFactory.getResourcesApi()).willReturn(mockResourcesApi);
     // Sam permission check will always return true
     given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
         .willReturn(true);

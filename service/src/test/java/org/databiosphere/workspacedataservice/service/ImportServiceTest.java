@@ -82,8 +82,7 @@ class ImportServiceTest extends TestBase {
     }
 
     // return the mock ResourcesApi from the mock SamClientFactory
-    given(mockSamClientFactory.getResourcesApi(any(BearerToken.class)))
-        .willReturn(mockSamResourcesApi);
+    given(mockSamClientFactory.getResourcesApi()).willReturn(mockSamResourcesApi);
     // Sam permission check will always return true
     given(mockSamResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
         .willReturn(true);
