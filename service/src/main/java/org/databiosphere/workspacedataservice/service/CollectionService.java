@@ -129,7 +129,6 @@ public class CollectionService {
       return;
     }
     // else, check if this collection has a row in the collections table
-    // TODO(AJ-1662): wire workspaceId down through collectionDao
     if (!collectionDao.collectionSchemaExists(collectionId)) {
       throw new MissingObjectException("Collection");
     }
