@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -23,8 +24,8 @@ import org.databiosphere.workspacedataservice.service.model.exception.Collection
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -44,12 +45,6 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
   @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
   @MockBean CollectionDao collectionDao;
   private final SamAuthorizationDao samAuthorizationDao = spy(MockSamAuthorizationDao.allowAll());
-
-  @BeforeEach
-  void setup() {
-    when(samAuthorizationDaoFactory.getSamAuthorizationDao(any(WorkspaceId.class)))
-        .thenReturn(samAuthorizationDao);
-  }
 
   // ==================================================
   // ========== tests for getJob ======================
@@ -83,7 +78,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // collection for this job exists and is associated with the $WORKSPACE_ID workspace
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
     // user has permission to that workspace
-    when(samAuthorizationDao.hasReadWorkspacePermission()).thenReturn(true);
+    stubReadWorkspacePermission(getEnvWorkspaceId()).thenReturn(true);
 
     // Act
     GenericJobServerModel actual = jobService.getJob(jobId);
@@ -104,7 +99,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // collection for this job exists and is associated with the $WORKSPACE_ID workspace
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
     // user has permission to that workspace
-    when(samAuthorizationDao.hasReadWorkspacePermission()).thenReturn(false);
+    stubReadWorkspacePermission(getEnvWorkspaceId()).thenReturn(false);
 
     // Act / assert
     AuthenticationMaskableException actual =
@@ -128,7 +123,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // $WORKSPACE_ID workspace
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // user has permission to that workspace
-    when(samAuthorizationDao.hasReadWorkspacePermission()).thenReturn(true);
+    stubReadWorkspacePermission(workspaceId).thenReturn(true);
 
     // Act / assert
     Exception actual = assertThrows(CollectionException.class, () -> jobService.getJob(jobId));
@@ -153,8 +148,6 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // collection for this job does not exist
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
-    // user has permission to that workspace
-    when(samAuthorizationDao.hasReadWorkspacePermission()).thenReturn(true);
 
     // Act / assert
     MissingObjectException actual =
@@ -162,6 +155,9 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
 
     // Assert
     assertThat(actual).hasMessageContaining("Collection does not exist");
+    // logic never made it to the authorization dao
+    verifyNoInteractions(samAuthorizationDaoFactory);
+    verifyNoInteractions(samAuthorizationDao);
   }
 
   // ==================================================
@@ -196,7 +192,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
     // user has permission to that workspace
-    when(samAuthorizationDao.hasReadWorkspacePermission()).thenReturn(true);
+    stubReadWorkspacePermission(getEnvWorkspaceId()).thenReturn(true);
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 2));
@@ -218,7 +214,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // collection exists and is associated with the $WORKSPACE_ID workspace
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
     // user has permission to that workspace
-    when(samAuthorizationDao.hasReadWorkspacePermission()).thenReturn(false);
+    stubReadWorkspacePermission(getEnvWorkspaceId()).thenReturn(false);
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 3));
@@ -243,7 +239,7 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // user has permission to that workspace
-    when(samAuthorizationDao.hasReadWorkspacePermission()).thenReturn(true);
+    stubReadWorkspacePermission(workspaceId).thenReturn(true);
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 4));
@@ -264,5 +260,11 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
 
   private WorkspaceId getEnvWorkspaceId() {
     return workspaceId;
+  }
+
+  private OngoingStubbing<Boolean> stubReadWorkspacePermission(WorkspaceId workspaceId) {
+    when(samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId))
+        .thenReturn(samAuthorizationDao);
+    return when(samAuthorizationDao.hasReadWorkspacePermission());
   }
 }
