@@ -1,9 +1,12 @@
 package org.databiosphere.workspacedataservice;
 
 import io.sentry.Sentry;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.SmartInitializingSingleton;
@@ -31,12 +34,14 @@ public class SentryInitializer {
   @Value("${samurl}")
   String samurl;
 
-  // TODO AJ-1621: what should cWDS use here?
   @Value("${sentry.releasename}")
   String releaseName;
 
   @Value("${sentry.mrg}")
   String mrg;
+
+  @Value("${sentry.env}")
+  String terraEnv;
 
   private static final Pattern SAM_ENV_PATTERN = Pattern.compile("\\.dsde-(\\p{Alnum}+)\\.");
   private static final String DEFAULT_ENV = "unknown";
@@ -46,8 +51,12 @@ public class SentryInitializer {
 
   @Bean
   public SmartInitializingSingleton initialize() {
-    // TODO AJ-1621: cWDS should get environments from Helm chart, not from Sam url
-    String env = urlToEnv(samurl);
+    String env;
+    if (StringUtils.isNotBlank(terraEnv)) {
+      env = terraEnv;
+    } else {
+      env = urlToEnv(samurl);
+    }
 
     return () ->
         Sentry.init(
@@ -58,10 +67,22 @@ public class SentryInitializer {
               options.setRelease(release);
               // TODO AJ-1621: add cWDS vs dWDS tag
               // TODO AJ-1621: workspaceId and mrg might be empty
-
-              options.setTag("workspaceId", workspaceId);
-              options.setTag("mrg", mrg);
+              getTags().forEach(options::setTag);
             });
+  }
+
+  Map<String, String> getTags() {
+    Map<String, String> tags = new HashMap<>();
+    // workspaceId, used in data plane
+    if (StringUtils.isNotBlank(workspaceId)) {
+      tags.put("workspaceId", workspaceId);
+    }
+    // MRG, used in data plane
+    if (StringUtils.isNotBlank(mrg)) {
+      tags.put("mrg", mrg);
+    }
+
+    return tags;
   }
 
   /**

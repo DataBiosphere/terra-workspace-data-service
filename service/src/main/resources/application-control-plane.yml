@@ -13,3 +13,8 @@ twds:
     batch-write-record-sink: "rawls"
     project-id: ${SERVICE_GOOGLE_PROJECT}
     rawls-bucket-name: ${SERVICE_GOOGLE_BUCKET}
+
+sentry:
+  mrg: # intentionally empty
+  releasename: "cWDS"
+  env: ${TERRA_ENV}

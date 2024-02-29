@@ -11,3 +11,7 @@ twds:
   data-import:
     batch-write-record-sink: "wds"
 
+sentry:
+  mrg: ${LZ_MRG:}
+  releasename: ${RELEASE_NAME:}
+  env: # intentionally empty
