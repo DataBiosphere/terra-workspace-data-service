@@ -11,8 +11,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -31,10 +33,13 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttrib
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.util.StreamUtils;
 
 @SpringBootTest
 class RawlsRecordSinkTest extends TestBase {
@@ -43,10 +48,14 @@ class RawlsRecordSinkTest extends TestBase {
   private RecordSink recordSink;
   private StringWriter recordedJson;
 
+  @Qualifier("mockGcsStorage")
+  @Autowired
+  private GcsStorage storage;
+
   @BeforeEach
   void setUp() {
     recordedJson = new StringWriter();
-    recordSink = new RawlsRecordSink("prefix", mapper, json -> recordedJson.append(json), pubSub);
+    recordSink = new RawlsRecordSink("prefix", mapper, storage, json -> recordedJson.append(json), pubSub);
   }
 
   @Test
@@ -168,6 +177,7 @@ class RawlsRecordSinkTest extends TestBase {
   private List<Entity> doUpsert(Record record, Record... additionalRecords) {
     var recordList = concat(Stream.of(record), stream(additionalRecords)).toList();
     var recordType = recordList.stream().map(Record::getRecordType).collect(onlyElement());
+    var blobName = "";
     try {
       recordSink.upsertBatch(
           recordType,
@@ -177,9 +187,24 @@ class RawlsRecordSinkTest extends TestBase {
           );
 
       assertThat(recordedJson.toString()).isNotNull();
+      // look for the blob that was created in a bucket with the appropriate json
+      var blobs = storage.getBlobsInBucket();
+      // confirm there is only 1
+      assertThat(Iterables.size(blobs)).isEqualTo(1);
+      // get the name of the blob
+      blobName = blobs.iterator().next().getName();
+      // check that the contents match the expected Json
+      var text = storage.getBlobContents(blobName);
+      String contents = StreamUtils.copyToString(text, StandardCharsets.UTF_8);
+      assertThat(contents).isEqualTo(recordedJson.toString());
       return mapper.readValue(recordedJson.toString(), new TypeReference<>() {});
     } catch (IOException e) {
       throw new RuntimeException(e);
+    } finally {
+      // delete the blob so the next test can have a clean slate
+      if (!blobName.isEmpty()) {
+        storage.deleteBlob(blobName);
+      }
     }
   }
 

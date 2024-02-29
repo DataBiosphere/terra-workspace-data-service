@@ -32,4 +32,24 @@ public class DataImportProperties {
   void setBatchWriteRecordSink(String batchWriteRecordSink) {
     this.batchWriteRecordSink = RecordSinkMode.fromValue(batchWriteRecordSink);
   }
+
+  private String projectId;
+
+  public String getProjectId() {
+    return projectId;
+  }
+
+  void setProjectId(String projectId) {
+    this.projectId = projectId;
+  }
+
+  private String rawlsBucketName;
+
+  public String getRawlsBucketName() {
+    return rawlsBucketName;
+  }
+
+  void setRawlsBucketName(String rawlsBucketName) {
+    this.rawlsBucketName = rawlsBucketName;
+  }
 }

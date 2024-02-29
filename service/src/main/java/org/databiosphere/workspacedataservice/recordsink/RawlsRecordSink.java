@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.recordsink;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.mu.util.stream.BiStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -14,6 +15,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
+import org.databiosphere.workspacedataservice.config.ConfigurationException;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
@@ -24,18 +26,18 @@ import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.storage.GcsStorage;
 
 /**
  * {@link RecordSink} implementation that produces Rawls-compatible JSON using {@link RawlsModel}
  * serialization classes.
- *
- * <p>TODO(AJ-1585): integrate with storage to write JSON output to the appropriate bucket
  *
  * <p>TODO(AJ-1586): integrate with pubsub to notify Rawls when JSON is ready to be processed
  */
 public class RawlsRecordSink implements RecordSink {
   private final String attributePrefix;
   private final ObjectMapper mapper;
+  private final GcsStorage storage;
   private final Consumer<String> jsonConsumer;
   private final PubSub pubSub;
 
@@ -48,10 +50,12 @@ public class RawlsRecordSink implements RecordSink {
       String attributePrefix,
       ObjectMapper mapper,
       @RawlsJsonConsumer Consumer<String> jsonConsumer,
+      GcsStorage storage,
       PubSub pubSub) {
     this.attributePrefix = attributePrefix;
     this.mapper = mapper;
     this.jsonConsumer = jsonConsumer;
+    this.storage = storage;
     this.pubSub = pubSub;
   }
 
@@ -75,6 +79,16 @@ public class RawlsRecordSink implements RecordSink {
     ImmutableList.Builder<Entity> entities = ImmutableList.builder();
     records.stream().map(this::toEntity).forEach(entities::add);
     jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
+    // TODO(AJ-1661) - Would it make sense to propogate the JobId into here so that BlobName can be
+    // named
+    // with JobId as it is today with import service?
+    if (storage != null) {
+      storage.createGcsFile(new ByteArrayInputStream(mapper.writeValueAsBytes(entities.build())));
+    } else {
+      throw new ConfigurationException("GcsStorage is null for cWDS which is unexpected.");
+    }
+
+    // AJ-1586 - the name of where in the bucket the file is inside blobName
     // Now send an alert to the pubsub
     publishToPubSub("workspaceId", "userEmail", "jobId", "upsertFile");
   }
