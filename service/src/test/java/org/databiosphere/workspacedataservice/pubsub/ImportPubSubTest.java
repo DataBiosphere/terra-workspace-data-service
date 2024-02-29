@@ -7,12 +7,12 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("control-plane")
-public class PubSubTest {
+public class ImportPubSubTest {
 
-  @Autowired PubSub pubSub;
+  @Autowired ImportPubSub importPubSub;
 
   @Test
   void testPubSub() {
-    pubSub.publish("testing");
+    importPubSub.publish("testing");
   }
 }

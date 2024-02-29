@@ -14,7 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.bind.annotation.RestController;
 
 @ActiveProfiles(
-    value = {"control-plane", "data-plane"},
+    value = {"control-plane", "data-plane", "mock-pubsub"},
     inheritProfiles = false)
 @SpringBootTest
 class AnnotatedApisTest extends TestBase {

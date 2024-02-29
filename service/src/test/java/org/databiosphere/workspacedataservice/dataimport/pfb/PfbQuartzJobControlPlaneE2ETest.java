@@ -52,7 +52,7 @@ import org.springframework.test.context.ActiveProfiles;
  * parsing the PFB, and generating the JSON that (will eventually be) stored in a bucket (AJ-1585)
  * and communicated to Rawls via pubsub (AJ-1586).
  */
-@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "control-plane"})
+@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "control-plane", "mock-pubsub"})
 @DirtiesContext
 @SpringBootTest
 @Import(PfbQuartzJobControlPlaneE2ETest.UseStringWriterForJsonConsumer.class)
