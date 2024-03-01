@@ -9,7 +9,8 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.config.TenancyProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
-import org.databiosphere.workspacedataservice.sam.SamDao;
+import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
+import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -28,7 +29,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class CollectionService {
 
   private final CollectionDao collectionDao;
-  private final SamDao samDao;
+  private final SamAuthorizationDaoFactory samAuthorizationDaoFactory;
   private final ActivityLogger activityLogger;
   private final TenancyProperties tenancyProperties;
 
@@ -38,17 +39,17 @@ public class CollectionService {
 
   public CollectionService(
       CollectionDao collectionDao,
-      SamDao samDao,
+      SamAuthorizationDaoFactory samAuthorizationDaoFactory,
       ActivityLogger activityLogger,
       TenancyProperties tenancyProperties) {
     this.collectionDao = collectionDao;
-    this.samDao = samDao;
+    this.samAuthorizationDaoFactory = samAuthorizationDaoFactory;
     this.activityLogger = activityLogger;
     this.tenancyProperties = tenancyProperties;
   }
 
   @Autowired(required = false) // control plane won't have workspaceId
-  void setWorkspaceId(@SingleTenant WorkspaceId workspaceId) {
+  void setWorkspaceId(@Nullable @SingleTenant WorkspaceId workspaceId) {
     this.workspaceId = workspaceId;
   }
 
@@ -57,44 +58,65 @@ public class CollectionService {
     return collectionDao.listCollectionSchemas();
   }
 
-  // TODO update this javadoc, also are there logical problems with the sam resource type?
-  // Also check the naming on these methods here
+  /**
+   * @deprecated Use {@link #createCollection(WorkspaceId, CollectionId, String)}
+   */
+  @Deprecated
+  public void createCollection(UUID collectionId, String version) {
+    if (tenancyProperties.getAllowVirtualCollections()) {
+      throw new CollectionException(
+          "createCollection not allowed when virtual collections are enabled");
+    }
+    if (workspaceId == null) {
+      throw new CollectionException(
+          "createCollection requires a workspaceId to be configured or provided");
+    }
+    createCollection(workspaceId, CollectionId.of(collectionId), version);
+  }
+
   /**
    * Creates a WDS collection, comprised of a Postgres schema and a Sam resource of type
    * "workspace". The Postgres schema will have an id of `collectionId`, which will match the Sam
    * resource's`workspaceId` unless otherwise specified.
    *
+   * <p>TODO(AJ-1662): wire workspaceId down through collectionDao
+   *
    * @param collectionId id of the collection to create
    * @param version WDS API version
    */
-  public void createCollection(UUID collectionId, String version) {
+  public void createCollection(WorkspaceId workspaceId, CollectionId collectionId, String version) {
     validateVersion(version);
 
     // check that the current user has permission on the parent workspace
-    boolean hasCreateCollectionPermission = samDao.hasCreateCollectionPermission();
+    boolean hasCreateCollectionPermission =
+        getSamAuthorizationDao(workspaceId).hasCreateCollectionPermission();
     LOGGER.debug("hasCreateCollectionPermission? {}", hasCreateCollectionPermission);
 
     if (!hasCreateCollectionPermission) {
       throw new AuthorizationException("Caller does not have permission to create collection.");
     }
 
-    if (collectionDao.collectionSchemaExists(collectionId)) {
+    if (collectionDao.collectionSchemaExists(collectionId.id())) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "This collection already exists");
     }
 
     // create collection schema in Postgres
-    collectionDao.createSchema(collectionId);
+    collectionDao.createSchema(collectionId.id());
 
     activityLogger.saveEventForCurrentUser(
-        user -> user.created().collection().withUuid(collectionId));
+        user -> user.created().collection().withUuid(collectionId.id()));
   }
 
   public void deleteCollection(UUID collectionId, String version) {
     validateVersion(version);
     validateCollection(collectionId);
 
+    // TODO(AJ-1633): call getWorkspaceId(collectionId) to get the workspaceId, rather than relying
+    //   on the WORKSPACE_ID environment variable; test cases that rely on deleteCollection prevent
+    //   this change
     // check that the current user has permission to delete the Sam resource
-    boolean hasDeleteCollectionPermission = samDao.hasDeleteCollectionPermission();
+    boolean hasDeleteCollectionPermission =
+        getSamAuthorizationDao(workspaceId).hasDeleteCollectionPermission();
     LOGGER.debug("hasDeleteCollectionPermission? {}", hasDeleteCollectionPermission);
 
     if (!hasDeleteCollectionPermission) {
@@ -120,11 +142,11 @@ public class CollectionService {
   }
 
   public boolean canReadCollection(CollectionId collectionId) {
-    return samDao.hasReadWorkspacePermission(getWorkspaceId(collectionId));
+    return getSamAuthorizationDao(getWorkspaceId(collectionId)).hasReadWorkspacePermission();
   }
 
   public boolean canWriteCollection(CollectionId collectionId) {
-    return samDao.hasWriteWorkspacePermission(getWorkspaceId(collectionId));
+    return getSamAuthorizationDao(getWorkspaceId(collectionId)).hasWriteWorkspacePermission();
   }
 
   /**
@@ -176,5 +198,9 @@ public class CollectionService {
     }
 
     return Objects.requireNonNullElseGet(rowWorkspaceId, () -> WorkspaceId.of(collectionId.id()));
+  }
+
+  private SamAuthorizationDao getSamAuthorizationDao(WorkspaceId workspaceId) {
+    return samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId);
   }
 }
