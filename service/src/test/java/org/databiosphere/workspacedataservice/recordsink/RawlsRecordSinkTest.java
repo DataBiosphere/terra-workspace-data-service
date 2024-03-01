@@ -25,7 +25,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.dataimport.GcpImportDestinationDetails;
+import org.databiosphere.workspacedataservice.dataimport.ImportDestinationDetails;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
@@ -49,7 +49,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.StreamUtils;
 
 @SpringBootTest
-@ActiveProfiles("control-plane")
+@ActiveProfiles(value = "control-plane", inheritProfiles = false)
 class RawlsRecordSinkTest extends TestBase {
   @Autowired private ObjectMapper mapper;
   @MockBean private PubSub pubSub;
@@ -74,7 +74,7 @@ class RawlsRecordSinkTest extends TestBase {
             json -> recordedJson.append(json),
             storage,
             pubSub,
-            new GcpImportDestinationDetails(JOB_ID, USER_EMAIL, WORKSPACE_ID));
+            new ImportDestinationDetails(JOB_ID, USER_EMAIL, WORKSPACE_ID));
   }
 
   @Test

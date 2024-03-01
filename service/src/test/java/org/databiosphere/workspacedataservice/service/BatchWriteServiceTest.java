@@ -28,7 +28,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.dataimport.GcpImportDestinationDetails;
+import org.databiosphere.workspacedataservice.dataimport.ImportDestinationDetails;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
@@ -94,7 +94,7 @@ class BatchWriteServiceTest extends TestBase {
                 batchWriteService.batchWrite(
                     recordSourceFactory.forJson(is),
                     recordSinkFactory.buildRecordSink(
-                        COLLECTION, /* prefix= */ "json", GcpImportDestinationDetails.empty()),
+                        COLLECTION, /* prefix= */ "json", ImportDestinationDetails.empty()),
                     THING_TYPE,
                     RECORD_ID));
 
@@ -127,7 +127,7 @@ class BatchWriteServiceTest extends TestBase {
     // TODO what to do about importdetails
     RecordSink recordSink =
         recordSinkFactory.buildRecordSink(
-            COLLECTION, /* prefix= */ "tsv", GcpImportDestinationDetails.empty());
+            COLLECTION, /* prefix= */ "tsv", ImportDestinationDetails.empty());
     batchWriteService.batchWrite(recordSource, recordSink, recordType, primaryKey);
 
     // we should write three batches
@@ -270,7 +270,7 @@ class BatchWriteServiceTest extends TestBase {
     return batchWriteService.batchWrite(
         recordSourceFactory.forPfb(pfbStream, importMode),
         recordSinkFactory.buildRecordSink(
-            COLLECTION, /* prefix= */ "pfb", GcpImportDestinationDetails.empty()),
+            COLLECTION, /* prefix= */ "pfb", ImportDestinationDetails.empty()),
         /* recordType= */ null,
         primaryKey);
   }

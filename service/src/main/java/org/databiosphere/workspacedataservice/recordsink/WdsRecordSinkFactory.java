@@ -3,7 +3,7 @@ package org.databiosphere.workspacedataservice.recordsink;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.dataimport.GcpImportDestinationDetails;
+import org.databiosphere.workspacedataservice.dataimport.ImportDestinationDetails;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RecordService;
 import org.springframework.stereotype.Component;
@@ -27,7 +27,7 @@ public class WdsRecordSinkFactory implements RecordSinkFactory {
   //   ignored for RecordSinkMode.WDS.  In this case, it might be worth adding support for omitting
   //   the prefix as part of supporting the prefix assignment.
   public RecordSink buildRecordSink(
-      UUID collectionId, String prefix, GcpImportDestinationDetails importDestinationDetails) {
+      UUID collectionId, String prefix, ImportDestinationDetails importDestinationDetails) {
     return wdsRecordSink(collectionId);
   }
 

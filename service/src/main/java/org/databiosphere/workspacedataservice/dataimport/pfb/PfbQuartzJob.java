@@ -22,7 +22,7 @@ import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
-import org.databiosphere.workspacedataservice.dataimport.GcpImportDestinationDetails;
+import org.databiosphere.workspacedataservice.dataimport.ImportDestinationDetails;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
@@ -113,8 +113,8 @@ public class PfbQuartzJob extends QuartzJob {
     // TODO what if it doesn't work
     String userEmail = samDao.getUserEmail(BearerToken.of(authToken));
 
-    GcpImportDestinationDetails importDetails =
-        new GcpImportDestinationDetails(jobId, userEmail, targetCollection);
+    ImportDestinationDetails importDetails =
+        new ImportDestinationDetails(jobId, userEmail, targetCollection);
     // Import all the tables and rows inside the PFB.
     //
     // This is HTTP connection #2 to the PFB.
@@ -164,7 +164,7 @@ public class PfbQuartzJob extends QuartzJob {
       DataFileStream<GenericRecord> dataStream,
       UUID collectionId,
       ImportMode importMode,
-      GcpImportDestinationDetails importDetails) {
+      ImportDestinationDetails importDetails) {
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSourceFactory.forPfb(dataStream, importMode),

@@ -16,7 +16,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.config.ConfigurationException;
-import org.databiosphere.workspacedataservice.dataimport.GcpImportDestinationDetails;
+import org.databiosphere.workspacedataservice.dataimport.ImportDestinationDetails;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
@@ -42,7 +42,7 @@ public class RawlsRecordSink implements RecordSink {
   private final GcsStorage storage;
   private final Consumer<String> jsonConsumer;
   private final PubSub pubSub;
-  private final GcpImportDestinationDetails importDestinationDetails;
+  private final ImportDestinationDetails importDestinationDetails;
 
   /** Annotates a String consumer for JSON strings emitted by {@link RawlsRecordSink}. */
   @Target({ElementType.PARAMETER, ElementType.METHOD})
@@ -55,7 +55,7 @@ public class RawlsRecordSink implements RecordSink {
       @RawlsJsonConsumer Consumer<String> jsonConsumer,
       GcsStorage storage,
       PubSub pubSub,
-      GcpImportDestinationDetails importDestinationDetails) {
+      ImportDestinationDetails importDestinationDetails) {
     this.attributePrefix = attributePrefix;
     this.mapper = mapper;
     this.jsonConsumer = jsonConsumer;

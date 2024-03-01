@@ -29,7 +29,7 @@ import org.apache.parquet.io.InputFile;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
-import org.databiosphere.workspacedataservice.dataimport.GcpImportDestinationDetails;
+import org.databiosphere.workspacedataservice.dataimport.ImportDestinationDetails;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
@@ -174,7 +174,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
           recordSourceFactory.forTdrImport(avroParquetReader, table, importMode),
           // TODO what to do about importdetails
           recordSinkFactory.buildRecordSink(
-              collectionId, /* prefix= */ "tdr", GcpImportDestinationDetails.empty()),
+              collectionId, /* prefix= */ "tdr", ImportDestinationDetails.empty()),
           table.recordType(),
           table.primaryKey());
     } catch (Throwable t) {

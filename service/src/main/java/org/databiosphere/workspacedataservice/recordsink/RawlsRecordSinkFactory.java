@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
-import org.databiosphere.workspacedataservice.dataimport.GcpImportDestinationDetails;
+import org.databiosphere.workspacedataservice.dataimport.ImportDestinationDetails;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsRecordSink.RawlsJsonConsumer;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
@@ -41,12 +41,12 @@ public class RawlsRecordSinkFactory implements RecordSinkFactory {
   //   ignored for RecordSinkMode.WDS.  In this case, it might be worth adding support for omitting
   //   the prefix as part of supporting the prefix assignment.
   public RecordSink buildRecordSink(
-      UUID collectionId, String prefix, GcpImportDestinationDetails importDestinationDetails) {
+      UUID collectionId, String prefix, ImportDestinationDetails importDestinationDetails) {
     return rawlsRecordSink(prefix, importDestinationDetails);
   }
 
   private RecordSink rawlsRecordSink(
-      String prefix, GcpImportDestinationDetails importDestinationDetails) {
+      String prefix, ImportDestinationDetails importDestinationDetails) {
     return new RawlsRecordSink(
         prefix, mapper, jsonConsumer, storage, pubSub, importDestinationDetails);
   }
