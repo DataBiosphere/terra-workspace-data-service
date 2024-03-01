@@ -7,8 +7,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -18,10 +16,6 @@ import org.springframework.context.annotation.PropertySource;
 @Configuration
 @PropertySource("classpath:git.properties")
 public class SentryInitializer {
-  private static final Logger LOGGER = LoggerFactory.getLogger(SentryInitializer.class);
-
-  // TODO AJ-1621: use config class for Sentry entries?
-
   @Value("${sentry.dsn}")
   String dsn;
 
@@ -42,6 +36,9 @@ public class SentryInitializer {
 
   @Value("${sentry.env}")
   String terraEnv;
+
+  @Value("${sentry.deploymentMode}")
+  String deploymentMode;
 
   private static final Pattern SAM_ENV_PATTERN = Pattern.compile("\\.dsde-(\\p{Alnum}+)\\.");
   private static final String DEFAULT_ENV = "unknown";
@@ -65,12 +62,16 @@ public class SentryInitializer {
               options.setDsn(environments.contains(env) ? dsn : "");
               options.setServerName(releaseName);
               options.setRelease(release);
-              // TODO AJ-1621: add cWDS vs dWDS tag
-              // TODO AJ-1621: workspaceId and mrg might be empty
+              // additional tags:
               getTags().forEach(options::setTag);
             });
   }
 
+  /**
+   * Conditionally add tags; don't add any that are blank.
+   *
+   * @return tags to send to Sentry
+   */
   Map<String, String> getTags() {
     Map<String, String> tags = new HashMap<>();
     // workspaceId, used in data plane
@@ -81,7 +82,10 @@ public class SentryInitializer {
     if (StringUtils.isNotBlank(mrg)) {
       tags.put("mrg", mrg);
     }
-
+    // deploymentMode, should be present in both control plane and data plane
+    if (StringUtils.isNotBlank(deploymentMode)) {
+      tags.put("deploymentMode", deploymentMode);
+    }
     return tags;
   }
 

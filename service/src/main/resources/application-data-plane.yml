@@ -1,6 +1,3 @@
-env:
-  wds:
-    deploymentMode: data-plane
 twds:
   tenancy:
     # Should this WDS deployment allow virtual collections, i.e. collections that have no
@@ -15,3 +12,4 @@ sentry:
   mrg: ${LZ_MRG:}
   releasename: ${RELEASE_NAME:}
   env: # intentionally empty
+  deploymentMode: data-plane
