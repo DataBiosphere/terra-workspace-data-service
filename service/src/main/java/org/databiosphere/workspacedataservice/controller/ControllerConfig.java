@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.controller;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -26,7 +25,7 @@ public class ControllerConfig {
   public WebMvcConfigurer corsConfigurer() {
     return new WebMvcConfigurer() {
       @Override
-      public void addCorsMappings(@NonNull CorsRegistry registry) {
+      public void addCorsMappings(CorsRegistry registry) {
         registry
             .addMapping("/**")
             .allowedMethods("DELETE", "GET", "HEAD", "PATCH", "POST", "PUT")
@@ -40,7 +39,7 @@ public class ControllerConfig {
   public WebMvcConfigurer asyncConfigurer() {
     return new WebMvcConfigurer() {
       @Override
-      public void configureAsyncSupport(@NonNull AsyncSupportConfigurer configurer) {
+      public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
         configurer.setDefaultTimeout(-1);
       }
     };
