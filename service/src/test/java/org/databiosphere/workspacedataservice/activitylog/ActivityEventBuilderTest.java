@@ -48,8 +48,7 @@ class ActivityEventBuilderTest extends TestBase {
   @BeforeEach
   void setUp() {
     given(mockSamClientFactory.getUsersApi(any(BearerToken.class))).willReturn(mockUsersApi);
-    given(mockSamClientFactory.getResourcesApi(any(BearerToken.class)))
-        .willReturn(mockResourcesApi);
+    given(mockSamClientFactory.getResourcesApi()).willReturn(mockResourcesApi);
   }
 
   @Test

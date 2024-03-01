@@ -66,8 +66,8 @@ public class HttpSamClientFactory implements SamClientFactory {
    *
    * @return the usable Sam client
    */
-  public ResourcesApi getResourcesApi(BearerToken token) {
-    ApiClient apiClient = getApiClient(token);
+  public ResourcesApi getResourcesApi() {
+    ApiClient apiClient = getApiClient(BearerToken.empty());
     ResourcesApi resourcesApi = new ResourcesApi();
     resourcesApi.setApiClient(apiClient);
     return resourcesApi;

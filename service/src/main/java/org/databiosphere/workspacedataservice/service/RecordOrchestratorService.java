@@ -22,7 +22,6 @@ import org.databiosphere.workspacedataservice.recordsource.PrimaryKeyResolver;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.recordsource.TsvRecordSource;
-import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -33,6 +32,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.BadStreami
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -60,7 +60,6 @@ public class RecordOrchestratorService { // TODO give me a better name
   private final BatchWriteService batchWriteService;
   private final RecordService recordService;
   private final CollectionService collectionService;
-  private final SamDao samDao;
   private final ActivityLogger activityLogger;
 
   private final TsvSupport tsvSupport;
@@ -72,7 +71,6 @@ public class RecordOrchestratorService { // TODO give me a better name
       BatchWriteService batchWriteService,
       RecordService recordService,
       CollectionService collectionService,
-      SamDao samDao,
       ActivityLogger activityLogger,
       TsvSupport tsvSupport) {
     this.recordDao = recordDao;
@@ -81,7 +79,6 @@ public class RecordOrchestratorService { // TODO give me a better name
     this.batchWriteService = batchWriteService;
     this.recordService = recordService;
     this.collectionService = collectionService;
-    this.samDao = samDao;
     this.activityLogger = activityLogger;
     this.tsvSupport = tsvSupport;
   }
@@ -105,7 +102,9 @@ public class RecordOrchestratorService { // TODO give me a better name
     validateVersion(version);
     collectionService.validateCollection(collectionId);
 
-    boolean hasWriteWorkspacePermission = samDao.hasWriteWorkspacePermission();
+    // check that the caller has write permissions on the workspace associated with the collectionId
+    boolean hasWriteWorkspacePermission =
+        collectionService.canWriteCollection(CollectionId.of(collectionId));
     LOGGER.debug("hasWriteWorkspacePermission? {}", hasWriteWorkspacePermission);
 
     if (!hasWriteWorkspacePermission) {
