@@ -12,8 +12,10 @@ import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+@Lazy // only used by a few tests; don't instantiate when not needed
 @Component
 class TdrTestSupport {
   @Autowired private JobDao jobDao;
