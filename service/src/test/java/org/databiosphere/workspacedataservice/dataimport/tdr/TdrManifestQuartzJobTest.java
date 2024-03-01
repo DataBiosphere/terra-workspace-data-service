@@ -19,6 +19,7 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
+import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestExemplarData.AzureSmall;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
@@ -160,6 +161,9 @@ class TdrManifestQuartzJobTest extends TestBase {
         TdrManifestImportException.class,
         () ->
             tdrManifestQuartzJob.importTable(
-                malformedFile, table, workspaceId, ImportMode.BASE_ATTRIBUTES));
+                malformedFile,
+                table,
+                ImportMode.BASE_ATTRIBUTES,
+                new ImportDetails(workspaceId, "tdr")));
   }
 }

@@ -1,10 +1,9 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
-import org.databiosphere.workspacedataservice.dataimport.ImportDestinationDetails;
+import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsRecordSink.RawlsJsonConsumer;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
@@ -40,14 +39,11 @@ public class RawlsRecordSinkFactory implements RecordSinkFactory {
   // TODO(AJ-1589): make prefix assignment dynamic. However, of note: the prefix is currently
   //   ignored for RecordSinkMode.WDS.  In this case, it might be worth adding support for omitting
   //   the prefix as part of supporting the prefix assignment.
-  public RecordSink buildRecordSink(
-      UUID collectionId, String prefix, ImportDestinationDetails importDestinationDetails) {
-    return rawlsRecordSink(prefix, importDestinationDetails);
+  public RecordSink buildRecordSink(ImportDetails importDetails) {
+    return rawlsRecordSink(importDetails);
   }
 
-  private RecordSink rawlsRecordSink(
-      String prefix, ImportDestinationDetails importDestinationDetails) {
-    return new RawlsRecordSink(
-        prefix, mapper, jsonConsumer, storage, pubSub, importDestinationDetails);
+  private RecordSink rawlsRecordSink(ImportDetails importDetails) {
+    return new RawlsRecordSink(mapper, jsonConsumer, storage, pubSub, importDetails);
   }
 }

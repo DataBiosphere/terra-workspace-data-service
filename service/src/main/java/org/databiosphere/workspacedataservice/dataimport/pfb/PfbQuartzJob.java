@@ -22,7 +22,7 @@ import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
-import org.databiosphere.workspacedataservice.dataimport.ImportDestinationDetails;
+import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
@@ -94,8 +94,16 @@ public class PfbQuartzJob extends QuartzJob {
     // Grab the PFB url from the job's data map
     JobDataMap jobDataMap = context.getMergedJobDataMap();
     URL url = getJobDataUrl(jobDataMap, ARG_URL);
-    UUID targetCollection = getJobDataUUID(jobDataMap, ARG_COLLECTION);
 
+    // Collect details needed for import
+    UUID targetCollection = getJobDataUUID(jobDataMap, ARG_COLLECTION);
+    String authToken = getJobDataString(jobDataMap, ARG_TOKEN);
+    // TODO what if it doesn't work
+    String userEmail = samDao.getUserEmail(BearerToken.of(authToken));
+
+    ImportDetails importDetails = new ImportDetails(jobId, userEmail, targetCollection, "pfb");
+    // Import all the tables and rows inside the PFB.
+    //
     // Find all the snapshot ids in the PFB, then create or verify references from the
     // workspace to the snapshot for each of those snapshot ids.
     // This will throw an exception if there are policy conflicts between the workspace
@@ -108,15 +116,6 @@ public class PfbQuartzJob extends QuartzJob {
     logger.info("Linking snapshots...");
     linkSnapshots(snapshotIds);
 
-    // TODO is there a way to only do destination details for Rawls imports?
-    String authToken = getJobDataString(jobDataMap, ARG_TOKEN);
-    // TODO what if it doesn't work
-    String userEmail = samDao.getUserEmail(BearerToken.of(authToken));
-
-    ImportDestinationDetails importDetails =
-        new ImportDestinationDetails(jobId, userEmail, targetCollection);
-    // Import all the tables and rows inside the PFB.
-    //
     // This is HTTP connection #2 to the PFB.
     logger.info("Importing tables and rows from this PFB...");
     withPfbStream(
@@ -164,11 +163,11 @@ public class PfbQuartzJob extends QuartzJob {
       DataFileStream<GenericRecord> dataStream,
       UUID collectionId,
       ImportMode importMode,
-      ImportDestinationDetails importDetails) {
+      ImportDetails importDetails) {
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSourceFactory.forPfb(dataStream, importMode),
-            recordSinkFactory.buildRecordSink(collectionId, /* prefix= */ "pfb", importDetails),
+            recordSinkFactory.buildRecordSink(importDetails),
             /* recordType= */ null, // record type is determined later
             /* primaryKey= */ ID_FIELD); // PFBs currently only use ID_FIELD as primary key
 

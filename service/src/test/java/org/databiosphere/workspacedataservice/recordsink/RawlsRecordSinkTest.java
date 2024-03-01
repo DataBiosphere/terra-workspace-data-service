@@ -25,7 +25,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.dataimport.ImportDestinationDetails;
+import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
@@ -69,12 +69,11 @@ class RawlsRecordSinkTest extends TestBase {
     recordedJson = new StringWriter();
     recordSink =
         new RawlsRecordSink(
-            "prefix",
             mapper,
             json -> recordedJson.append(json),
             storage,
             pubSub,
-            new ImportDestinationDetails(JOB_ID, USER_EMAIL, WORKSPACE_ID));
+            new ImportDetails(JOB_ID, USER_EMAIL, WORKSPACE_ID, "prefix"));
   }
 
   @Test
@@ -195,7 +194,7 @@ class RawlsRecordSinkTest extends TestBase {
 
     String expectedMessage =
         String.format(
-            "{\"workspaceId\": \"%s\", \"userEmail\": \"%s\", \"jobId\": \"%s\", \"upsertFile\": \"%s\", \"isUpsert\": \"true\"}",
+            "{\"workspaceId\": \"%s\", \"userEmail\": \"%s\", \"jobId\": \"%s\", \"upsertFile\": \"%s\", \"isUpsert\": \"true\", \"isCWDS\": \"true\"}",
             WORKSPACE_ID, USER_EMAIL, JOB_ID, JOB_ID + ".rawlsUpsert");
 
     ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);

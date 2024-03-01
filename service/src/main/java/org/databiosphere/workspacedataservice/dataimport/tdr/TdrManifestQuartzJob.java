@@ -29,7 +29,7 @@ import org.apache.parquet.io.InputFile;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
-import org.databiosphere.workspacedataservice.dataimport.ImportDestinationDetails;
+import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
@@ -99,7 +99,11 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // Grab the manifest url from the job's data map
     JobDataMap jobDataMap = context.getMergedJobDataMap();
     URL url = getJobDataUrl(jobDataMap, ARG_URL);
+
+    // Collect details needed for import
     UUID targetCollection = getJobDataUUID(jobDataMap, ARG_COLLECTION);
+
+    ImportDetails importDetails = new ImportDetails(targetCollection, "tdr");
 
     // read manifest
     SnapshotExportResponseModel snapshotExportResponseModel = parseManifest(url);
@@ -124,15 +128,15 @@ public class TdrManifestQuartzJob extends QuartzJob {
         importTables(
             tdrManifestImportTables,
             fileDownloadHelper.getFileMap(),
-            targetCollection,
-            ImportMode.BASE_ATTRIBUTES);
+            ImportMode.BASE_ATTRIBUTES,
+            importDetails);
 
     // add relations to the existing base attributes
     importTables(
         tdrManifestImportTables,
         fileDownloadHelper.getFileMap(),
-        targetCollection,
-        ImportMode.RELATIONS);
+        ImportMode.RELATIONS,
+        importDetails);
 
     // activity logging for import status
     // no specific activity logging for relations since main import is a superset
@@ -157,13 +161,16 @@ public class TdrManifestQuartzJob extends QuartzJob {
    *
    * @param inputFile Parquet file to be imported.
    * @param table info about the table to be imported
-   * @param collectionId collection into which to import
    * @param importMode mode for this invocation
+   * @param importDetails contains collection into which to import and prefix
    * @return statistics on what was imported
    */
   @VisibleForTesting
   BatchWriteResult importTable(
-      InputFile inputFile, TdrManifestImportTable table, UUID collectionId, ImportMode importMode) {
+      InputFile inputFile,
+      TdrManifestImportTable table,
+      ImportMode importMode,
+      ImportDetails importDetails) {
     // upsert this parquet file's contents
     try (ParquetReader<GenericRecord> avroParquetReader =
         AvroParquetReader.<GenericRecord>builder(inputFile)
@@ -172,9 +179,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       logger.info("batch-writing records for file ...");
       return batchWriteService.batchWrite(
           recordSourceFactory.forTdrImport(avroParquetReader, table, importMode),
-          // TODO what to do about importdetails
-          recordSinkFactory.buildRecordSink(
-              collectionId, /* prefix= */ "tdr", ImportDestinationDetails.empty()),
+          recordSinkFactory.buildRecordSink(importDetails),
           table.recordType(),
           table.primaryKey());
     } catch (Throwable t) {
@@ -186,14 +191,14 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * Given the list of tables/data files to be imported, loop through and import each one
    *
    * @param importTables tables to be imported
-   * @param targetCollection collection into which to import
    * @param importMode mode for this invocation
+   * @param importDetails contains collection into which to import and prefix
    */
   private BatchWriteResult importTables(
       List<TdrManifestImportTable> importTables,
       Multimap<String, File> fileMap,
-      UUID targetCollection,
-      ImportMode importMode) {
+      ImportMode importMode,
+      ImportDetails importDetails) {
 
     var combinedResult = BatchWriteResult.empty();
     // loop through the tables that have data files.
@@ -213,8 +218,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
                       // generate the HadoopInputFile
                       InputFile inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
-                      var result =
-                          importTable(inputFile, importTable, targetCollection, importMode);
+                      var result = importTable(inputFile, importTable, importMode, importDetails);
                       if (result != null) {
                         combinedResult.merge(result);
                       }

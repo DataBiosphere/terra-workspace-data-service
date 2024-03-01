@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.dataimport.ImportDestinationDetails;
+import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.PrimaryKeyResolver;
@@ -141,10 +141,8 @@ public class RecordOrchestratorService { // TODO give me a better name
 
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(records.getInputStream(), recordType, primaryKey);
-    // TODO what to do about import details?
     RecordSink recordSink =
-        recordSinkFactory.buildRecordSink(
-            collectionId, /* prefix= */ "tsv", ImportDestinationDetails.empty());
+        recordSinkFactory.buildRecordSink(new ImportDetails(collectionId, "tsv"));
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSource,
@@ -390,8 +388,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSource,
-            recordSinkFactory.buildRecordSink(
-                collectionId, /* prefix= */ "json", ImportDestinationDetails.empty()),
+            recordSinkFactory.buildRecordSink(new ImportDetails(collectionId, "json")),
             recordType,
             primaryKey.orElse(RECORD_ID));
     int qty = result.getUpdatedCount(recordType);
