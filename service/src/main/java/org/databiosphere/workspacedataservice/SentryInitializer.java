@@ -1,11 +1,12 @@
 package org.databiosphere.workspacedataservice;
 
 import io.sentry.Sentry;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -15,8 +16,6 @@ import org.springframework.context.annotation.PropertySource;
 @Configuration
 @PropertySource("classpath:git.properties")
 public class SentryInitializer {
-  private static final Logger LOGGER = LoggerFactory.getLogger(SentryInitializer.class);
-
   @Value("${sentry.dsn}")
   String dsn;
 
@@ -35,6 +34,12 @@ public class SentryInitializer {
   @Value("${sentry.mrg}")
   String mrg;
 
+  @Value("${sentry.env}")
+  String terraEnv;
+
+  @Value("${sentry.deploymentMode}")
+  String deploymentMode;
+
   private static final Pattern SAM_ENV_PATTERN = Pattern.compile("\\.dsde-(\\p{Alnum}+)\\.");
   private static final String DEFAULT_ENV = "unknown";
   // Environments we want to monitor on sentry - don't send errors from local, bees, or Github
@@ -43,7 +48,12 @@ public class SentryInitializer {
 
   @Bean
   public SmartInitializingSingleton initialize() {
-    String env = urlToEnv(samurl);
+    String env;
+    if (StringUtils.isNotBlank(terraEnv)) {
+      env = terraEnv;
+    } else {
+      env = urlToEnv(samurl);
+    }
 
     return () ->
         Sentry.init(
@@ -52,9 +62,31 @@ public class SentryInitializer {
               options.setDsn(environments.contains(env) ? dsn : "");
               options.setServerName(releaseName);
               options.setRelease(release);
-              options.setTag("workspaceId", workspaceId);
-              options.setTag("mrg", mrg);
+              // additional tags:
+              getTags().forEach(options::setTag);
             });
+  }
+
+  /**
+   * Conditionally add tags; don't add any that are blank.
+   *
+   * @return tags to send to Sentry
+   */
+  Map<String, String> getTags() {
+    Map<String, String> tags = new HashMap<>();
+    // workspaceId, used in data plane
+    if (StringUtils.isNotBlank(workspaceId)) {
+      tags.put("workspaceId", workspaceId);
+    }
+    // MRG, used in data plane
+    if (StringUtils.isNotBlank(mrg)) {
+      tags.put("mrg", mrg);
+    }
+    // deploymentMode, should be present in both control plane and data plane
+    if (StringUtils.isNotBlank(deploymentMode)) {
+      tags.put("deploymentMode", deploymentMode);
+    }
+    return tags;
   }
 
   /**

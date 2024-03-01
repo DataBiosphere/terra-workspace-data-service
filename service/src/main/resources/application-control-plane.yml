@@ -1,6 +1,3 @@
-env:
-  wds:
-    deploymentMode: control-plane
 twds:
   tenancy:
     # Should this WDS deployment allow virtual collections, i.e. collections that have no
@@ -13,3 +10,9 @@ twds:
     batch-write-record-sink: "rawls"
     project-id: ${SERVICE_GOOGLE_PROJECT}
     rawls-bucket-name: ${SERVICE_GOOGLE_BUCKET}
+
+sentry:
+  mrg: # intentionally empty
+  releasename: "cWDS"
+  env: ${TERRA_ENV:}
+  deploymentMode: control-plane

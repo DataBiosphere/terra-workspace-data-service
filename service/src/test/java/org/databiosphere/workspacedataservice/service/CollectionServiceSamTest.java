@@ -10,9 +10,8 @@ import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
-import org.databiosphere.workspacedataservice.sam.SamDao;
-import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -47,8 +46,7 @@ class CollectionServiceSamTest extends TestBase {
   @BeforeEach
   void setUp() throws ApiException {
     // return the mock ResourcesApi from the mock SamClientFactory
-    given(mockSamClientFactory.getResourcesApi(any(BearerToken.class)))
-        .willReturn(mockResourcesApi);
+    given(mockSamClientFactory.getResourcesApi()).willReturn(mockResourcesApi);
     // Sam permission check will always return true
     given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
         .willReturn(true);
@@ -94,7 +92,9 @@ class CollectionServiceSamTest extends TestBase {
     callOrder
         .verify(mockResourcesApi)
         .resourcePermissionV2(
-            SamDao.RESOURCE_NAME_WORKSPACE, parentWorkspaceId, SamDao.ACTION_WRITE);
+            SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
+            parentWorkspaceId,
+            SamAuthorizationDao.ACTION_WRITE);
 
     // and that should be the only call we made to Sam
     verifyNoMoreInteractions(mockResourcesApi);
@@ -122,7 +122,9 @@ class CollectionServiceSamTest extends TestBase {
     callOrder
         .verify(mockResourcesApi)
         .resourcePermissionV2(
-            SamDao.RESOURCE_NAME_WORKSPACE, parentWorkspaceId, SamDao.ACTION_DELETE);
+            SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
+            parentWorkspaceId,
+            SamAuthorizationDao.ACTION_DELETE);
 
     // and that should be the only call we made to Sam
     verifyNoMoreInteractions(mockResourcesApi);

@@ -20,7 +20,7 @@ public interface SamClientFactory {
 
   // TODO(jladieu): defer creation of SamClientFactory until when it's needed, then create it with
   //   an injected BearerToken; this will let us drop the BearerToken parameter from the API
-  ResourcesApi getResourcesApi(BearerToken token);
+  ResourcesApi getResourcesApi();
 
   StatusApi getStatusApi(BearerToken token);
 

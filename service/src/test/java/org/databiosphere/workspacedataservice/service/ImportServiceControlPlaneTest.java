@@ -4,18 +4,22 @@ import static org.databiosphere.workspacedataservice.generated.ImportRequestServ
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
-import org.databiosphere.workspacedataservice.sam.SamDao;
+import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
+import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
+import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -29,14 +33,16 @@ import org.springframework.test.context.ActiveProfiles;
  *
  * @see ImportServiceTest
  */
-@ActiveProfiles({"control-plane", "noop-scheduler-dao"})
+@ActiveProfiles({"control-plane", "noop-scheduler-dao", "mock-sam"})
 @DirtiesContext
 @SpringBootTest
 class ImportServiceControlPlaneTest {
 
   @Autowired ImportService importService;
   @MockBean CollectionDao collectionDao;
-  @MockBean SamDao samDao;
+  @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
+
+  private final SamAuthorizationDao samAuthorizationDao = spy(MockSamAuthorizationDao.allowAll());
   private final URI importUri = URI.create("http://does/not/matter");
   private final ImportRequestServerModel importRequest =
       new ImportRequestServerModel(PFB, importUri);
@@ -50,7 +56,7 @@ class ImportServiceControlPlaneTest {
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // sam dao says the user has write permission
-    when(samDao.hasWriteWorkspacePermission(WorkspaceId.of(collectionId.id()))).thenReturn(true);
+    stubWriteWorkspacePermission(WorkspaceId.of(collectionId.id())).thenReturn(true);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -69,7 +75,7 @@ class ImportServiceControlPlaneTest {
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
     // sam dao says the user does not have write permission
-    when(samDao.hasWriteWorkspacePermission(WorkspaceId.of(collectionId.id()))).thenReturn(false);
+    stubWriteWorkspacePermission(WorkspaceId.of(collectionId.id())).thenReturn(false);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -91,9 +97,10 @@ class ImportServiceControlPlaneTest {
     // ARRANGE
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // collection dao says the collection DOES exist, which is an error in the control plane
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(WorkspaceId.of(UUID.randomUUID()));
+    WorkspaceId randomWorkspaceId = WorkspaceId.of(UUID.randomUUID());
+    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(randomWorkspaceId);
     // sam dao says the user does have write permission
-    when(samDao.hasWriteWorkspacePermission(WorkspaceId.of(collectionId.id()))).thenReturn(true);
+    stubWriteWorkspacePermission(randomWorkspaceId).thenReturn(true);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -102,5 +109,11 @@ class ImportServiceControlPlaneTest {
     // perform the import request
     assertThrows(
         CollectionException.class, () -> importService.createImport(collectionUuid, importRequest));
+  }
+
+  private OngoingStubbing<Boolean> stubWriteWorkspacePermission(WorkspaceId workspaceId) {
+    when(samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId))
+        .thenReturn(samAuthorizationDao);
+    return when(samAuthorizationDao.hasWriteWorkspacePermission());
   }
 }

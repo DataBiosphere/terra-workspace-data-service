@@ -33,7 +33,6 @@ import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJo
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
-import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -61,7 +60,6 @@ class ImportServiceTest extends TestBase {
   @Autowired ImportService importService;
   @Autowired CollectionDao collectionDao;
   @Autowired CollectionService collectionService;
-  @Autowired SamDao samDao;
   @Autowired @SingleTenant WorkspaceId workspaceId;
   @SpyBean JobDao jobDao;
   @MockBean SchedulerDao schedulerDao;
@@ -84,8 +82,7 @@ class ImportServiceTest extends TestBase {
     }
 
     // return the mock ResourcesApi from the mock SamClientFactory
-    given(mockSamClientFactory.getResourcesApi(any(BearerToken.class)))
-        .willReturn(mockSamResourcesApi);
+    given(mockSamClientFactory.getResourcesApi()).willReturn(mockSamResourcesApi);
     // Sam permission check will always return true
     given(mockSamResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
         .willReturn(true);
