@@ -4,6 +4,7 @@ import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordCon
 import static org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode.BASE_ATTRIBUTES;
 import static org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode.RELATIONS;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
 import bio.terra.pfb.PfbReader;
@@ -21,15 +22,18 @@ import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dataimport.GcpImportDestinationDetails;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobDataMap;
@@ -55,6 +59,7 @@ public class PfbQuartzJob extends QuartzJob {
   private final RecordSinkFactory recordSinkFactory;
   private final UUID workspaceId;
   private final RestClientRetry restClientRetry;
+  private final SamDao samDao;
 
   public PfbQuartzJob(
       JobDao jobDao,
@@ -65,7 +70,8 @@ public class PfbQuartzJob extends QuartzJob {
       BatchWriteService batchWriteService,
       ActivityLogger activityLogger,
       ObservationRegistry observationRegistry,
-      @Value("${twds.instance.workspace-id}") UUID workspaceId) {
+      @Value("${twds.instance.workspace-id}") UUID workspaceId,
+      SamDao samDao) {
     super(observationRegistry);
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
@@ -75,6 +81,7 @@ public class PfbQuartzJob extends QuartzJob {
     this.workspaceId = workspaceId;
     this.batchWriteService = batchWriteService;
     this.activityLogger = activityLogger;
+    this.samDao = samDao;
   }
 
   @Override
@@ -101,15 +108,23 @@ public class PfbQuartzJob extends QuartzJob {
     logger.info("Linking snapshots...");
     linkSnapshots(snapshotIds);
 
+    // TODO is there a way to only do destination details for Rawls imports?
+    String authToken = getJobDataString(jobDataMap, ARG_TOKEN);
+    // TODO what if it doesn't work
+    String userEmail = samDao.getUserEmail(BearerToken.of(authToken));
+
+    GcpImportDestinationDetails importDetails =
+        new GcpImportDestinationDetails(jobId, userEmail, targetCollection);
     // Import all the tables and rows inside the PFB.
     //
     // This is HTTP connection #2 to the PFB.
     logger.info("Importing tables and rows from this PFB...");
-    withPfbStream(url, stream -> importTables(stream, targetCollection, BASE_ATTRIBUTES));
+    withPfbStream(
+        url, stream -> importTables(stream, targetCollection, BASE_ATTRIBUTES, importDetails));
 
     // This is HTTP connection #3 to the PFB.
     logger.info("Updating tables and rows from this PFB with relations...");
-    withPfbStream(url, stream -> importTables(stream, targetCollection, RELATIONS));
+    withPfbStream(url, stream -> importTables(stream, targetCollection, RELATIONS, importDetails));
 
     // TODO AJ-1453: save the result of importTables and persist the to the job
   }
@@ -146,11 +161,14 @@ public class PfbQuartzJob extends QuartzJob {
    * @param importMode indicating whether to import all data in the tables or only the relations
    */
   BatchWriteResult importTables(
-      DataFileStream<GenericRecord> dataStream, UUID collectionId, ImportMode importMode) {
+      DataFileStream<GenericRecord> dataStream,
+      UUID collectionId,
+      ImportMode importMode,
+      GcpImportDestinationDetails importDetails) {
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSourceFactory.forPfb(dataStream, importMode),
-            recordSinkFactory.buildRecordSink(collectionId, /* prefix= */ "pfb"),
+            recordSinkFactory.buildRecordSink(collectionId, /* prefix= */ "pfb", importDetails),
             /* recordType= */ null, // record type is determined later
             /* primaryKey= */ ID_FIELD); // PFBs currently only use ID_FIELD as primary key
 

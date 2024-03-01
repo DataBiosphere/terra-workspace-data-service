@@ -6,6 +6,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,8 +27,9 @@ class GcsStorageTest {
   @Test
   void testCreateandGetBlobSimple() throws IOException {
     String initialString = "text";
+    UUID jobId = UUID.randomUUID();
     InputStream targetStream = new ByteArrayInputStream(initialString.getBytes());
-    String newBlobName = storage.createGcsFile(targetStream);
+    String newBlobName = storage.createGcsFile(targetStream, jobId);
     assertThat(newBlobName).isNotNull();
 
     String contents =

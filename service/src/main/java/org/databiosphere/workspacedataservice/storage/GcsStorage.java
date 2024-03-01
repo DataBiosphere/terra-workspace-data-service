@@ -13,12 +13,12 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 
 public class GcsStorage {
-  private Storage storage;
+  private final Storage storage;
 
-  private String bucketName;
+  private final String bucketName;
 
   // projectId in GCP (string) is similar to subscriptionId in Azure (UUID)
-  private String projectId;
+  private final String projectId;
 
   // Generates an instance of the storage class using the credentials the current process is running
   // under
@@ -49,9 +49,9 @@ public class GcsStorage {
     return gcsResource.getInputStream();
   }
 
-  public String createGcsFile(InputStream contents) throws IOException {
+  public String createGcsFile(InputStream contents, UUID jobId) throws IOException {
     // create the GCS Resource
-    var blobName = UUID.randomUUID().toString();
+    var blobName = jobId.toString() + ".rawlsUpsert";
     GoogleStorageResource gcsResource =
         new GoogleStorageResource(
             this.storage, String.format("gs://%s/%s", this.bucketName, blobName));

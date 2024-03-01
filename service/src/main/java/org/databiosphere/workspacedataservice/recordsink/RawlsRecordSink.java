@@ -12,9 +12,11 @@ import java.lang.annotation.Target;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.config.ConfigurationException;
+import org.databiosphere.workspacedataservice.dataimport.GcpImportDestinationDetails;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
@@ -40,6 +42,7 @@ public class RawlsRecordSink implements RecordSink {
   private final GcsStorage storage;
   private final Consumer<String> jsonConsumer;
   private final PubSub pubSub;
+  private final GcpImportDestinationDetails importDestinationDetails;
 
   /** Annotates a String consumer for JSON strings emitted by {@link RawlsRecordSink}. */
   @Target({ElementType.PARAMETER, ElementType.METHOD})
@@ -51,12 +54,14 @@ public class RawlsRecordSink implements RecordSink {
       ObjectMapper mapper,
       @RawlsJsonConsumer Consumer<String> jsonConsumer,
       GcsStorage storage,
-      PubSub pubSub) {
+      PubSub pubSub,
+      GcpImportDestinationDetails importDestinationDetails) {
     this.attributePrefix = attributePrefix;
     this.mapper = mapper;
     this.jsonConsumer = jsonConsumer;
     this.storage = storage;
     this.pubSub = pubSub;
+    this.importDestinationDetails = importDestinationDetails;
   }
 
   @Override
@@ -79,18 +84,23 @@ public class RawlsRecordSink implements RecordSink {
     ImmutableList.Builder<Entity> entities = ImmutableList.builder();
     records.stream().map(this::toEntity).forEach(entities::add);
     jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
-    // TODO(AJ-1661) - Would it make sense to propogate the JobId into here so that BlobName can be
-    // named
-    // with JobId as it is today with import service?
+
     if (storage != null) {
-      storage.createGcsFile(new ByteArrayInputStream(mapper.writeValueAsBytes(entities.build())));
+      String fileName =
+          storage.createGcsFile(
+              new ByteArrayInputStream(mapper.writeValueAsBytes(entities.build())),
+              importDestinationDetails.jobId());
+      // AJ-1586 - the name of where in the bucket the file is inside blobName
+      // Now send an alert to the pubsub
+      // get details from gcpDetails
+      publishToPubSub(
+          importDestinationDetails.workspaceId(),
+          importDestinationDetails.userEmail(),
+          importDestinationDetails.jobId(), /*upsertFile*/
+          fileName);
     } else {
       throw new ConfigurationException("GcsStorage is null for cWDS which is unexpected.");
     }
-
-    // AJ-1586 - the name of where in the bucket the file is inside blobName
-    // Now send an alert to the pubsub
-    publishToPubSub("workspaceId", "userEmail", "jobId", "upsertFile");
   }
 
   @Override
@@ -108,7 +118,7 @@ public class RawlsRecordSink implements RecordSink {
       "isUpsert": str(import_details.is_upsert)
   })
        */
-  private void publishToPubSub(String workspaceId, String user, String jobId, String upsertFile) {
+  private void publishToPubSub(UUID workspaceId, String user, UUID jobId, String upsertFile) {
     // TODO jsonize this properly
     String message =
         String.format(
