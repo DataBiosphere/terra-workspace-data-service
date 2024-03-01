@@ -5,6 +5,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.recordsink.RawlsRecordSink.RawlsJsonConsumer;
+import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -17,8 +18,11 @@ public class RawlsRecordSinkFactory implements RecordSinkFactory {
 
   private final ObjectMapper mapper;
 
-  public RawlsRecordSinkFactory(ObjectMapper mapper) {
+  private final GcsStorage storage;
+
+  public RawlsRecordSinkFactory(ObjectMapper mapper, GcsStorage storage) {
     this.mapper = mapper;
+    this.storage = storage;
   }
 
   // jsonConsumer currently only used by tests, so it is optional. If/when this is used consistently
@@ -36,6 +40,6 @@ public class RawlsRecordSinkFactory implements RecordSinkFactory {
   }
 
   private RecordSink rawlsRecordSink(String prefix) {
-    return new RawlsRecordSink(prefix, mapper, jsonConsumer);
+    return new RawlsRecordSink(prefix, mapper, storage, jsonConsumer);
   }
 }
