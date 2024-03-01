@@ -19,9 +19,11 @@ import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerD
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
+@Lazy // only used by a few tests; don't instantiate when not needed
 @Component
 class PfbTestSupport {
   @Autowired private JobDao jobDao;
