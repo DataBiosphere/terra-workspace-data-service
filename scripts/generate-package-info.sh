@@ -49,9 +49,11 @@ generate_package_info() {
     # Generate package-info.java content
     {
       echo "@NonNullApi"
+      echo "@NonNullFields"
       echo "package $package_name;"
       echo ""
       echo "import org.springframework.lang.NonNullApi;"
+      echo "import org.springframework.lang.NonNullFields;"
     } > "$package_info_path"
     echo "Generated package-info.java for package $package_name in $target_dir"
 }
