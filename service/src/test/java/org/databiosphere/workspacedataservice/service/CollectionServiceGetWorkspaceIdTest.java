@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -8,6 +9,7 @@ import static org.mockito.Mockito.when;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,9 +63,14 @@ class CollectionServiceGetWorkspaceIdTest extends TestBase {
         .thenThrow(new EmptyResultDataAccessException("unit test intentional exception", 1));
 
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    // expect getWorkspaceId to return the collection id as the workspace id; this is a virtual
-    // collection
-    assertEquals(collectionId.id(), collectionService.getWorkspaceId(collectionId).id());
+
+    // Act / assert
+    MissingObjectException actual =
+        assertThrows(
+            MissingObjectException.class, () -> collectionService.getWorkspaceId(collectionId));
+
+    // Assert
+    assertThat(actual).hasMessageContaining("Collection does not exist");
   }
 
   @Test

@@ -155,14 +155,9 @@ public class CollectionService {
         throw new CollectionException("Expected a virtual collection");
       }
     } catch (EmptyResultDataAccessException e) {
-      // does this deployment allow for virtual collections?
-      // TODO AJ-1630: enable this error for data-plane WDS, which does not allow virtual
-      // collections
-      /*
       if (!tenancyProperties.getAllowVirtualCollections()) {
         throw new MissingObjectException("Collection");
       }
-      */
     }
 
     // safety check: if we found a workspace id in the db, it indicates we are in a data-plane
