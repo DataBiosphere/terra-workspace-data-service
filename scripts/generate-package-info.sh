@@ -69,6 +69,12 @@ find . -type f -name "*.java" | sed 's|/[^/]*$||' | sort -u | while read -r dir;
     # Convert directory to package name using Bash parameter expansion
     package_name=${clean_dir//\//.}
 
+    # Skip directories whose package name includes 'generated'
+    if [[ $package_name == *"generated"* ]]; then
+        [[ $VERBOSE -eq 1 ]] && echo "Skipping generated package: $package_name"
+        continue
+    fi
+
     # Call function to generate package-info.java
     generate_package_info "$START_DIR_ABS/$clean_dir" "$package_name" "$FORCE" "$VERBOSE"
 done
