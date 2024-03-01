@@ -1,6 +1,3 @@
-env:
-  wds:
-    deploymentMode: control-plane
 twds:
   tenancy:
     # Should this WDS deployment allow virtual collections, i.e. collections that have no
@@ -21,3 +18,9 @@ spring:
 #        project-id: terra-importservice-dev #TODO this is probably the same as data-import project-id
         topic: import-service-notify-local
         enabled: true
+
+sentry:
+  mrg: # intentionally empty
+  releasename: "cWDS"
+  env: ${TERRA_ENV:}
+  deploymentMode: control-plane
