@@ -9,7 +9,7 @@ import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 /** Mock for SamClientFactory, which returns a MockSamResourcesApi. For use in unit tests. */
 public class MockSamClientFactory implements SamClientFactory {
 
-  public ResourcesApi getResourcesApi(BearerToken token) {
+  public ResourcesApi getResourcesApi() {
     return new MockSamResourcesApi();
   }
 

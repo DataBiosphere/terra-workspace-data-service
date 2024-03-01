@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.service;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
@@ -14,7 +13,6 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
-import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.Mockito;
@@ -45,8 +43,7 @@ class CollectionServiceNoPermissionSamTest extends TestBase {
   void testCreateCollectionNoPermission() throws ApiException {
 
     // return the mock ResourcesApi from the mock SamClientFactory
-    given(mockSamClientFactory.getResourcesApi(any(BearerToken.class)))
-        .willReturn(mockResourcesApi);
+    given(mockSamClientFactory.getResourcesApi()).willReturn(mockResourcesApi);
 
     // Call to check permissions in Sam does not throw an exception, but returns false -
     // i.e. the current user does not have permission
@@ -66,8 +63,7 @@ class CollectionServiceNoPermissionSamTest extends TestBase {
   void testDeleteCollectionNoPermission() throws ApiException {
 
     // return the mock ResourcesApi from the mock SamClientFactory
-    given(mockSamClientFactory.getResourcesApi(any(BearerToken.class)))
-        .willReturn(mockResourcesApi);
+    given(mockSamClientFactory.getResourcesApi()).willReturn(mockResourcesApi);
 
     // Call to check permissions in Sam does not throw an exception, but returns false -
     // i.e. the current user does not have permission
