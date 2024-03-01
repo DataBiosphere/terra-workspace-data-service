@@ -18,6 +18,6 @@ spring:
   cloud:
     gcp:
       pubsub:
-        project-id: terra-importservice-dev #TODO this is probably the same as data-import project-id
+#        project-id: terra-importservice-dev #TODO this is probably the same as data-import project-id
         topic: import-service-notify-local
         enabled: true
