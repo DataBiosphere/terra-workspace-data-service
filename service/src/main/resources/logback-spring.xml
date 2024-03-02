@@ -44,26 +44,33 @@
     </appender>
   </springProfile>
 
-  <!-- log everything at INFO level -->
+  <!-- log everything at INFO level by default -->
   <root level="info">
     <appender-ref ref="CONSOLE"/>
     <appender-ref ref="Sentry"/>
   </root>
 
-  <!-- log WDS at DEBUG level -->
-  <logger name="org.databiosphere.workspacedataservice" level="debug" additivity="false">
+  <!-- WDS -->
+  <logger name="org.databiosphere.workspacedataservice" level="info" additivity="false">
     <appender-ref ref="CONSOLE"/>
     <appender-ref ref="Sentry"/>
   </logger>
 
-  <!-- log WDS Sam integration at DEBUG level -->
-  <logger name="org.databiosphere.workspacedataservice.sam" level="debug" additivity="false">
+  <!-- WDS Sam integration -->
+  <logger name="org.databiosphere.workspacedataservice.sam" level="info" additivity="false">
     <appender-ref ref="CONSOLE"/>
     <appender-ref ref="Sentry"/>
   </logger>
 
-  <!-- log org.springframework.web at DEBUG level -->
-  <logger name="org.springframework.web" level="debug" additivity="false">
+  <!-- DispatcherServlet logs request URLs and response codes at DEBUG level -->
+  <logger name="org.springframework.web.servlet.DispatcherServlet" level="debug"
+          additivity="false">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="Sentry"/>
+  </logger>
+
+  <!-- log the remainder of org.springframework.web at INFO level -->
+  <logger name="org.springframework.web" level="info" additivity="false">
     <appender-ref ref="CONSOLE"/>
     <appender-ref ref="Sentry"/>
   </logger>
