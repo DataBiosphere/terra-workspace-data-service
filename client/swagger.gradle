@@ -12,7 +12,7 @@ openApiValidate {
 
 openApiGenerate {
     inputSpec = "$rootDir/service/src/main/resources/static/swagger/openapi-docs.yaml".toString()
-    outputDir = "$buildDir/generated".toString()
+    outputDir = layout.buildDirectory.dir("generated").get().asFile.toString()
     generatorName = 'java'
     library = 'okhttp-gson' // the default
     httpUserAgent = "wds-client/${project.version.toString().replace('-SNAPSHOT', '')}/java"

@@ -182,7 +182,7 @@ boolean spotlessEnabled = true
 
 spotless {
     java {
-        targetExclude "${buildDir}/**"
+        targetExclude "${layout.buildDirectory.asFile}/**"
         targetExclude "**/swagger-code/**"
         targetExclude "**/generated/**"
         googleJavaFormat('1.18.1')
@@ -238,7 +238,7 @@ jacocoTestReport {
 }
 
 test {
-    systemProperties['pact.rootDir'] = "$buildDir/pacts"
+    systemProperties['pact.rootDir'] = layout.buildDirectory.dir("pacts").get().asFile.toString()
     systemProperties['pact.provider.version'] = "$project.version"
     systemProperties['user.timezone'] = "UTC"
 }
