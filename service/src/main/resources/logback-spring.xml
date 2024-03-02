@@ -7,7 +7,6 @@
 
   <!-- import some Spring defaults -->
   <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
-  <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
 
   <!-- Quiet down logback during startup. If you are trying to change or debug logging setup,
            you may want to comment out this line during your development efforts. -->
@@ -21,8 +20,14 @@
     <minimumBreadcrumbLevel>INFO</minimumBreadcrumbLevel>
   </appender>
 
-  <!-- in the data plane, or when running locally, log in plaintext -->
-  <springProfile name="local | data-plane">
+  <!-- when running locally, use the Spring Boot default logging pattern. Note we also include
+         a logging.pattern.correlation override in application-local.yml. -->
+  <springProfile name="local">
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+  </springProfile>
+
+  <!-- in the data plane, log in plaintext (with no colors) -->
+  <springProfile name="!local &amp; data-plane">
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
       <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
         <level>${CONSOLE_LOG_THRESHOLD}</level>
