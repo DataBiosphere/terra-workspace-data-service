@@ -40,8 +40,7 @@
       <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
         <level>${CONSOLE_LOG_THRESHOLD}</level>
       </filter>
-      <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
-      <charset>${CONSOLE_LOG_CHARSET}</charset>
+      <encoder class="net.logstash.logback.encoder.LogstashEncoder" charset="UTF-8"/>
     </appender>
   </springProfile>
 
