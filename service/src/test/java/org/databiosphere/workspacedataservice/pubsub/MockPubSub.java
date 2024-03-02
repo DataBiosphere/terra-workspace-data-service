@@ -2,7 +2,7 @@ package org.databiosphere.workspacedataservice.pubsub;
 
 public class MockPubSub implements PubSub {
 
-  public void publish(String message) {
-    // no-op
+  public String publishSync(String message) {
+    return this.getClass().getName();
   }
 }

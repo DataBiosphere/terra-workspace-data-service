@@ -199,7 +199,7 @@ class RawlsRecordSinkTest extends TestBase {
 
     ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
 
-    verify(pubSub, times(1)).publish(argumentCaptor.capture());
+    verify(pubSub, times(1)).publishSync(argumentCaptor.capture());
 
     assertThat(argumentCaptor.getValue()).isEqualTo(expectedMessage);
   }

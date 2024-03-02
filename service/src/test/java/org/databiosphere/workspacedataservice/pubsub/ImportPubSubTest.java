@@ -13,6 +13,6 @@ public class ImportPubSubTest {
 
   @Test
   void testPubSub() {
-    importPubSub.publish("testing");
+    importPubSub.publishSync("testing");
   }
 }

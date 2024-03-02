@@ -121,7 +121,7 @@ public class RawlsRecordSink implements RecordSink {
         String.format(
             "{\"workspaceId\": \"%s\", \"userEmail\": \"%s\", \"jobId\": \"%s\", \"upsertFile\": \"%s\", \"isUpsert\": \"true\", \"isCWDS\": \"true\"}",
             workspaceId, user, jobId, upsertFile);
-    pubSub.publish(message);
+    pubSub.publishSync(message);
   }
 
   private Entity toEntity(Record record) {
