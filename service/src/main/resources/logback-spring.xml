@@ -40,7 +40,7 @@
   </springProfile>
 
   <!-- in the control plane, log in JSON -->
-  <springProfile name="!local &amp; control-plane ">
+  <springProfile name="!local &amp; control-plane">
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
       <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
         <level>${CONSOLE_LOG_THRESHOLD}</level>
