@@ -190,7 +190,7 @@ public class PostgresJobDao implements JobDao {
     // execute the update
     namedTemplate.update(sb.toString(), params);
 
-    logger.debug("Job {} is now in status {}", jobId, status);
+    logger.info("Job {} is now in status {}", jobId, status);
 
     // return the updated job
     return getJob(jobId);

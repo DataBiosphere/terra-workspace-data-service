@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-  
+
   <!-- inspired by Spring default ${FILE_LOG_PATTERN} from defaults.xml, modified to include requestId -->
   <property name="WDS_LOG_PATTERN"
             value="%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}} ${LOG_LEVEL_PATTERN:-%5p} [%X{requestId}] [%t] %-40.40logger{39} : %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
 
+  <!-- import some Spring defaults -->
   <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
-  <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
 
   <!-- Quiet down logback during startup. If you are trying to change or debug logging setup,
            you may want to comment out this line during your development efforts. -->
   <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
 
+  <!-- Appender, to send errors to Sentry. Note that WDS will internally disable the Sentry dsn based on environment. -->
   <appender name="Sentry" class="io.sentry.logback.SentryAppender">
     <!-- Optionally change minimum Event level. Default for Events is ERROR -->
     <minimumEventLevel>ERROR</minimumEventLevel>
@@ -19,64 +20,64 @@
     <minimumBreadcrumbLevel>INFO</minimumBreadcrumbLevel>
   </appender>
 
-  <springProfile name="!local">
-    <springProfile name="control-plane">
-      <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-          <level>${CONSOLE_LOG_THRESHOLD}</level>
-        </filter>
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
-        <charset>${CONSOLE_LOG_CHARSET}</charset>
-      </appender>
-    </springProfile>
-    <springProfile name="data-plane">
-      <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-          <level>${CONSOLE_LOG_THRESHOLD}</level>
-        </filter>
-        <encoder>
-          <pattern>${WDS_LOG_PATTERN}</pattern>
-          <charset>${CONSOLE_LOG_CHARSET}</charset>
-        </encoder>
-      </appender>
-    </springProfile>
-    <!-- log everything at INFO level -->
-    <root level="info">
-      <appender-ref ref="CONSOLE"/>
-      <appender-ref ref="Sentry"/>
-    </root>
-
-    <!-- log WDS at DEBUG level -->
-    <logger name="org.databiosphere.workspacedataservice" level="debug" additivity="false">
-      <appender-ref ref="CONSOLE"/>
-      <appender-ref ref="Sentry"/>
-    </logger>
-
-    <!-- log WDS Sam integration at DEBUG level -->
-    <logger name="org.databiosphere.workspacedataservice.sam" level="debug" additivity="false">
-      <appender-ref ref="CONSOLE"/>
-      <appender-ref ref="Sentry"/>
-    </logger>
-
-    <!-- log org.springframework.web at DEBUG level -->
-    <logger name="org.springframework.web" level="debug" additivity="false">
-      <appender-ref ref="CONSOLE"/>
-      <appender-ref ref="Sentry"/>
-    </logger>
-  </springProfile>
-
+  <!-- when running locally, use the Spring Boot default logging pattern. Note we also include
+         a logging.pattern.correlation override in application-local.yml. -->
   <springProfile name="local">
-    <root level="info">
-      <appender-ref ref="CONSOLE"/>
-    </root>
-
-    <logger name="org.databiosphere.workspacedataservice" level="debug" additivity="false">
-      <appender-ref ref="CONSOLE"/>
-    </logger>
-
-    <logger name="org.springframework.web" level="debug" additivity="false">
-      <appender-ref ref="CONSOLE"/>
-    </logger>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
   </springProfile>
+
+  <!-- in the data plane, log in plaintext (with no colors) -->
+  <springProfile name="!local &amp; data-plane">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+        <level>${CONSOLE_LOG_THRESHOLD}</level>
+      </filter>
+      <encoder>
+        <pattern>${WDS_LOG_PATTERN}</pattern>
+        <charset>${CONSOLE_LOG_CHARSET}</charset>
+      </encoder>
+    </appender>
+  </springProfile>
+
+  <!-- in the control plane, log in JSON -->
+  <springProfile name="!local &amp; control-plane">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+        <level>${CONSOLE_LOG_THRESHOLD}</level>
+      </filter>
+      <encoder class="net.logstash.logback.encoder.LogstashEncoder" charset="UTF-8"/>
+    </appender>
+  </springProfile>
+
+  <!-- log everything at INFO level by default -->
+  <root level="info">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="Sentry"/>
+  </root>
+
+  <!-- WDS -->
+  <logger name="org.databiosphere.workspacedataservice" level="info" additivity="false">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="Sentry"/>
+  </logger>
+
+  <!-- WDS Sam integration -->
+  <logger name="org.databiosphere.workspacedataservice.sam" level="info" additivity="false">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="Sentry"/>
+  </logger>
+
+  <!-- DispatcherServlet logs request URLs and response codes at DEBUG level -->
+  <logger name="org.springframework.web.servlet.DispatcherServlet" level="debug"
+          additivity="false">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="Sentry"/>
+  </logger>
+
+  <!-- log the remainder of org.springframework.web at INFO level -->
+  <logger name="org.springframework.web" level="info" additivity="false">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="Sentry"/>
+  </logger>
 
 </configuration>
