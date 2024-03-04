@@ -48,3 +48,10 @@ paths:
     $ref: 'openapi-docs.yaml#/paths/~1status'
   /version:
     $ref: 'openapi-docs.yaml#/paths/~1version'
+
+components:
+  # within each group, components should be listed alphabetically.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
