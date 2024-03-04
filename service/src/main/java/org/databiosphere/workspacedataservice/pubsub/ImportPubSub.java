@@ -16,7 +16,7 @@ public class ImportPubSub implements PubSub {
   public ImportPubSub(
       PubSubTemplate pubSubTemplate,
       @Value("${spring.cloud.gcp.pubsub.topic}") String topic,
-      @Value("${twds.data-import.project-id}") String project) {
+      @Value("${spring.cloud.gcp.pubsub.project-id}") String project) {
     this.pubSubTemplate = pubSubTemplate;
     /// projects/[project_name]/topics/[topic_name]
     this.fullTopicName = "projects/" + project + "/topics/" + topic;

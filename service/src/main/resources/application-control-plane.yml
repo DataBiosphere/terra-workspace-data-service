@@ -15,7 +15,11 @@ spring:
   cloud:
     gcp:
       pubsub:
-        topic: import-service-notify-local #TODO what will this be?
+        # Using the import-service project and topic, will be updated to cWDS' own at a later date
+        project-id: import-service-dev
+        topic: import-service-notify-dev #can we programmatically set the env?
+#        project-id: import-service-${var.env}
+#        topic: import-service-notify-${var.env}
         enabled: true
 
 sentry:

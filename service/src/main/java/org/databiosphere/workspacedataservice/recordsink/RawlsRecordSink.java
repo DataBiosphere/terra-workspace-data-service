@@ -82,7 +82,11 @@ public class RawlsRecordSink implements RecordSink {
       ) throws BatchWriteException, IOException {
     ImmutableList.Builder<Entity> entities = ImmutableList.builder();
     records.stream().map(this::toEntity).forEach(entities::add);
-    jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
+    // jsonConsumer is used primarily for testing; this line ensures that it does not break in real
+    // life
+    if (jsonConsumer != null) {
+      jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
+    }
 
     if (storage != null) {
       String upsertFileName =
