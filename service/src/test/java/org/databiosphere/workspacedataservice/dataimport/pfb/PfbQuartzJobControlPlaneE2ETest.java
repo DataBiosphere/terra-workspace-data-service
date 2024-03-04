@@ -46,16 +46,22 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Tests for PFB import that execute "end-to-end" - that is, they go through the whole process of
  * parsing the PFB, and generating the JSON that (will eventually be) stored in a bucket (AJ-1585)
  * and communicated to Rawls via pubsub (AJ-1586).
  */
-@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "control-plane", "mock-pubsub"})
+@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "control-plane"})
 @DirtiesContext
 @SpringBootTest
 @Import(PfbQuartzJobControlPlaneE2ETest.UseStringWriterForJsonConsumer.class)
+@TestPropertySource(
+    properties = {
+      // turn off pubsub autoconfiguration for tests
+      "spring.cloud.gcp.pubsub.enabled=false"
+    })
 class PfbQuartzJobControlPlaneE2ETest {
   @Autowired ObjectMapper mapper;
   @Autowired CollectionService collectionService;
