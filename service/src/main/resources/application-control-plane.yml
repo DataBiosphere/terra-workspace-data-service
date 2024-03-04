@@ -15,8 +15,7 @@ spring:
   cloud:
     gcp:
       pubsub:
-#        project-id: terra-importservice-dev #TODO this is probably the same as data-import project-id
-        topic: import-service-notify-local
+        topic: import-service-notify-local #TODO what will this be?
         enabled: true
 
 sentry:

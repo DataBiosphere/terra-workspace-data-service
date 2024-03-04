@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -35,7 +36,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(profiles = "mock-sam")
-@SpringBootTest
+@SpringBootTest(classes = {WorkspaceManagerConfig.class, RestClientRetry.class})
 class WorkspaceManagerDaoTest extends TestBase {
 
   @Autowired WorkspaceManagerDao workspaceManagerDao;

@@ -384,7 +384,6 @@ public class RecordOrchestratorService { // TODO give me a better name
       throw new BadStreamingWriteRequestException(e);
     }
 
-    // TODO what to do about import details?
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSource,
