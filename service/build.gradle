@@ -90,7 +90,7 @@ dependencies {
     implementation "org.apache.parquet:parquet-avro:$parquet_mr_version"
     implementation "org.apache.parquet:parquet-hadoop:$parquet_mr_version"
 
-    implementation 'com.google.cloud:spring-cloud-gcp-starter-storage:5.0.3'
+    implementation 'com.google.cloud:spring-cloud-gcp-starter-storage:5.0.4'
 
     // we need Hadoop libraries to read Parquet files for TDR import. However, Hadoop brings
     // a boatload of transitive dependencies we don't need, some of which (e.g. com.sun.xml.bind)
