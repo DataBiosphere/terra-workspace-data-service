@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
@@ -46,12 +47,14 @@ public class AzureBlobStorage implements BackUpFileStorage {
     BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId, null);
     LOGGER.info("About to write to blob storage. ");
     // https://learn.microsoft.com/en-us/java/api/overview/azure/storage-blob-readme?view=azure-java-stable#upload-a-blob-via-an-outputstream
-    try (BufferedOutputStream blobOS =
-        new BufferedOutputStream(
-            blobContainerClient
-                .getBlobClient(blobName)
-                .getBlockBlobClient()
-                .getBlobOutputStream())) {
+    try (OutputStreamWriter blobOS =
+        new OutputStreamWriter(
+            new BufferedOutputStream(
+                blobContainerClient
+                    .getBlobClient(blobName)
+                    .getBlockBlobClient()
+                    .getBlobOutputStream()),
+            StandardCharsets.UTF_8.newEncoder())) {
       try (BufferedReader bufferedReader =
           new BufferedReader(new InputStreamReader(fromStream, StandardCharsets.UTF_8))) {
         int line;
