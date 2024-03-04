@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.annotations;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import java.util.Optional;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
@@ -16,19 +15,24 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.bind.annotation.RestController;
 
 @ActiveProfiles(
-    value = {"control-plane", "data-plane", "mock-pubsub"},
+    value = {"control-plane", "data-plane"},
     inheritProfiles = false)
 @DirtiesContext
 @SpringBootTest
+@TestPropertySource(
+    properties = {
+      // turn off pubsub autoconfiguration for tests
+      "spring.cloud.gcp.pubsub.enabled=false"
+    })
 class AnnotatedApisTest extends TestBase {
 
   // Since we're running with both control-plane and data-plane profiles simultaneously, Spring
@@ -46,8 +50,6 @@ class AnnotatedApisTest extends TestBase {
   }
 
   @Autowired private ApplicationContext context;
-
-  @MockBean private PubSubTemplate pubSubTemplate;
 
   @Test
   void controllersMustHaveDeploymentAnnotation() {
