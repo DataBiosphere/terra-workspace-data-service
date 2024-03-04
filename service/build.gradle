@@ -43,7 +43,7 @@ ext {
 
 dependencies {
     // Azure libraries
-    implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.19'
+    implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.5.0'
     implementation 'com.azure:azure-storage-blob:12.25.2'
     implementation 'com.azure:azure-identity-extensions:1.1.13' // postgres password plugin
 
