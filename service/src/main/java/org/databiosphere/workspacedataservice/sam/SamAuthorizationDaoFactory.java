@@ -23,7 +23,7 @@ public class SamAuthorizationDaoFactory {
   }
 
   public SamAuthorizationDao getSamAuthorizationDao(WorkspaceId workspaceId) {
-    LOGGER.info(
+    LOGGER.debug(
         "Sam integration will query type={}, resourceId={}, actions={}",
         SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
         workspaceId,

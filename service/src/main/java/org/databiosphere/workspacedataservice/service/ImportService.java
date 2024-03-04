@@ -68,7 +68,7 @@ public class ImportService {
 
     // TODO: translate the ImportRequestServerModel into a Job
     // for now, just make an example job
-    logger.debug("Data import of type {} requested", importRequest.getType());
+    logger.info("Data import of type {} requested", importRequest.getType());
 
     ImportJobInput importJobInput = ImportJobInput.from(importRequest);
     Job<JobInput, JobResult> job =

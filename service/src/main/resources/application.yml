@@ -99,6 +99,7 @@ spring:
     # It is also not cluster-aware; when WDS runs as a multi-replica cluster, Quartz jobs will
     # always run on the replica where they were created.
     job-store-type: memory
+    wait-for-jobs-to-complete-on-shutdown: true
 
 #   # activate the "local" profile to turn on CORS response headers,
 #   # which may be necessary for local development.
