@@ -46,6 +46,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Tests for PFB import that execute "end-to-end" - that is, they go through the whole process of
@@ -56,6 +57,11 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @SpringBootTest
 @Import(PfbQuartzJobControlPlaneE2ETest.UseStringWriterForJsonConsumer.class)
+@TestPropertySource(
+    properties = {
+      // turn off pubsub autoconfiguration for tests
+      "spring.cloud.gcp.pubsub.enabled=false"
+    })
 class PfbQuartzJobControlPlaneE2ETest {
   @Autowired ObjectMapper mapper;
   @Autowired CollectionService collectionService;

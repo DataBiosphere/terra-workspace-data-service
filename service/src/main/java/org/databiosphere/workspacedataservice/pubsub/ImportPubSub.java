@@ -4,10 +4,8 @@ import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import java.util.concurrent.CompletableFuture;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 @DeploymentMode.ControlPlane
-@Component
 public class ImportPubSub implements PubSub {
 
   private final PubSubTemplate pubSubTemplate;

@@ -29,6 +29,8 @@ import org.springframework.test.context.TestPropertySource;
       // data-plane mode requires a workspace-id to be set
       // example uuid from https://en.wikipedia.org/wiki/Universally_unique_identifier
       "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000",
+      // turn off pubsub autoconfiguration for tests
+      "spring.cloud.gcp.pubsub.enabled=false",
       // aggressive retry settings so unit tests don't run too long
       "rest.retry.maxAttempts=2",
       "rest.retry.backoff.delay=3",
