@@ -27,7 +27,7 @@ public class WdsRecordSinkFactory implements RecordSinkFactory {
   //   ignored for RecordSinkMode.WDS.  In this case, it might be worth adding support for omitting
   //   the prefix as part of supporting the prefix assignment.
   public RecordSink buildRecordSink(ImportDetails importDetails) {
-    return wdsRecordSink(importDetails.workspaceId());
+    return wdsRecordSink(importDetails.collectionId());
   }
 
   private WdsRecordSink wdsRecordSink(UUID collectionId) {

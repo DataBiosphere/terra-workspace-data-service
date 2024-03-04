@@ -95,7 +95,7 @@ public class RawlsRecordSink implements RecordSink {
               importDetails.jobId());
 
       publishToPubSub(
-          importDetails.workspaceId(),
+          importDetails.collectionId(),
           importDetails.userEmail(),
           importDetails.jobId(),
           upsertFileName);
