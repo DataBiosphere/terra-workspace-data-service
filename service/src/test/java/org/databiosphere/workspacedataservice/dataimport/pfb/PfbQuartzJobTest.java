@@ -31,7 +31,6 @@ import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
@@ -62,12 +61,6 @@ class PfbQuartzJobTest extends TestBase {
   @Value("classpath:avro/test.avro")
   Resource testAvroResource;
 
-  @BeforeEach
-  void beforeEach() {
-    when(collectionService.getWorkspaceId(any(CollectionId.class)))
-        .thenReturn(WorkspaceId.of(UUID.randomUUID()));
-  }
-
   @Test
   void linkAllNewSnapshots() {
     // input is a list of 10 UUIDs
@@ -78,12 +71,14 @@ class PfbQuartzJobTest extends TestBase {
         .thenReturn(new ResourceList());
 
     // call linkSnapshots
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     PfbQuartzJob pfbQuartzJob = testSupport.buildPfbQuartzJob();
-    pfbQuartzJob.linkSnapshots(input, WorkspaceId.of(UUID.randomUUID()));
+    pfbQuartzJob.linkSnapshots(input, workspaceId);
     // capture calls
     ArgumentCaptor<SnapshotModel> argumentCaptor = ArgumentCaptor.forClass(SnapshotModel.class);
     // should have called WSM's create-snapshot-reference 10 times
-    verify(wsmDao, times(input.size())).linkSnapshotForPolicy(argumentCaptor.capture());
+    verify(wsmDao, times(input.size()))
+        .linkSnapshotForPolicy(eq(workspaceId), argumentCaptor.capture());
     // those 10 calls should have used our 10 input UUIDs
     List<SnapshotModel> actualModels = argumentCaptor.getAllValues();
     Set<UUID> actualUuids =
@@ -106,10 +101,11 @@ class PfbQuartzJobTest extends TestBase {
         .thenReturn(resourceList);
 
     // call linkSnapshots
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     PfbQuartzJob pfbQuartzJob = testSupport.buildPfbQuartzJob();
-    pfbQuartzJob.linkSnapshots(input, WorkspaceId.of(UUID.randomUUID()));
+    pfbQuartzJob.linkSnapshots(input, workspaceId);
     // should not call WSM's create-snapshot-reference at all
-    verify(wsmDao, times(0)).linkSnapshotForPolicy(any());
+    verify(wsmDao, times(0)).linkSnapshotForPolicy(eq(workspaceId), any());
   }
 
   @Test
@@ -134,13 +130,15 @@ class PfbQuartzJobTest extends TestBase {
         .thenReturn(resourceList);
 
     // call linkSnapshots
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     PfbQuartzJob pfbQuartzJob = testSupport.buildPfbQuartzJob();
-    pfbQuartzJob.linkSnapshots(input, WorkspaceId.of(UUID.randomUUID()));
+    pfbQuartzJob.linkSnapshots(input, workspaceId);
 
     // should call WSM's create-snapshot-reference only for the references that didn't already exist
     int expectedCallCount = input.size() - resourceDescriptions.size();
     ArgumentCaptor<SnapshotModel> argumentCaptor = ArgumentCaptor.forClass(SnapshotModel.class);
-    verify(wsmDao, times(expectedCallCount)).linkSnapshotForPolicy(argumentCaptor.capture());
+    verify(wsmDao, times(expectedCallCount))
+        .linkSnapshotForPolicy(eq(workspaceId), argumentCaptor.capture());
     List<UUID> actual = argumentCaptor.getAllValues().stream().map(SnapshotModel::getId).toList();
     actual.forEach(
         id ->
@@ -152,8 +150,12 @@ class PfbQuartzJobTest extends TestBase {
   @Test
   void doNotFailOnMissingSnapshotId() throws JobExecutionException, IOException {
     UUID jobId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     JobExecutionContext mockContext =
-        stubJobContext(jobId, minimalDataAvroResource, UUID.randomUUID());
+        stubJobContext(jobId, minimalDataAvroResource, collectionId.id());
+
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
@@ -165,7 +167,7 @@ class PfbQuartzJobTest extends TestBase {
     testSupport.buildPfbQuartzJob().execute(mockContext);
 
     // Should not call wsm dao
-    verify(wsmDao, times(0)).linkSnapshotForPolicy(any());
+    verify(wsmDao, times(0)).linkSnapshotForPolicy(eq(workspaceId), any());
     // But job should succeed
     verify(jobDao).succeeded(jobId);
   }
@@ -193,6 +195,12 @@ class PfbQuartzJobTest extends TestBase {
     // verify that snapshot operations use the appropriate workspaceId
     verify(wsmDao, times(1))
         .enumerateDataRepoSnapshotReferences(eq(expectedWorkspaceId.id()), anyInt(), anyInt());
+    // TODO AJ-1673: this test should use something other than minimalDataAvroResource so it
+    //     attempts to link a snapshot. That way we can verify the call to linkSnapshotForPolicy
+    /*
+    verify(wsmDao, times(1))
+        .linkSnapshotForPolicy(eq(expectedWorkspaceId), any(SnapshotModel.class));
+     */
 
     // But job should succeed
     verify(jobDao).succeeded(jobId);
@@ -201,7 +209,11 @@ class PfbQuartzJobTest extends TestBase {
   @Test
   void snapshotIdsAreParsed() throws JobExecutionException, IOException {
     UUID jobId = UUID.randomUUID();
-    JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource, UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource, collectionId.id());
+
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
@@ -216,6 +228,7 @@ class PfbQuartzJobTest extends TestBase {
     // by this unit test
     verify(wsmDao)
         .linkSnapshotForPolicy(
+            eq(workspaceId),
             ArgumentMatchers.argThat(
                 new SnapshotModelMatcher(UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"))));
     // Job should succeed

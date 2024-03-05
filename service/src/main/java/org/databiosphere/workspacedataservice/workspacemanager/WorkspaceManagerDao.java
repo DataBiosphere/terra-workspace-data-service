@@ -10,6 +10,7 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -26,32 +27,30 @@ public class WorkspaceManagerDao {
   public static final String PURPOSE_POLICY = "policy";
 
   private final WorkspaceManagerClientFactory workspaceManagerClientFactory;
-  private final String workspaceId;
   private final RestClientRetry restClientRetry;
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkspaceManagerDao.class);
 
   public WorkspaceManagerDao(
       WorkspaceManagerClientFactory workspaceManagerClientFactory,
-      String workspaceId,
       RestClientRetry restClientRetry) {
     this.workspaceManagerClientFactory = workspaceManagerClientFactory;
-    this.workspaceId = workspaceId;
     this.restClientRetry = restClientRetry;
   }
 
   /** Creates a snapshot reference in workspace manager for the sole purpose of policy linkages. */
-  public void linkSnapshotForPolicy(SnapshotModel snapshotModel) {
+  public void linkSnapshotForPolicy(WorkspaceId workspaceId, SnapshotModel snapshotModel) {
     Properties properties = null;
     Property policyProperty = new Property();
     policyProperty.setKey(PROP_PURPOSE);
     policyProperty.setValue(PURPOSE_POLICY);
     properties = new Properties();
     properties.add(policyProperty);
-    createDataRepoSnapshotReference(snapshotModel, properties);
+    createDataRepoSnapshotReference(workspaceId, snapshotModel, properties);
   }
 
   /* Creates a snapshot reference in workspace manager. */
-  private void createDataRepoSnapshotReference(SnapshotModel snapshotModel, Properties properties) {
+  private void createDataRepoSnapshotReference(
+      WorkspaceId workspaceId, SnapshotModel snapshotModel, Properties properties) {
     final ReferencedGcpResourceApi resourceApi =
         this.workspaceManagerClientFactory.getReferencedGcpResourceApi(null);
     try {
@@ -69,7 +68,7 @@ public class WorkspaceManagerDao {
                               .cloningInstructions(CloningInstructionsEnum.REFERENCE)
                               .properties(properties)
                               .name("%s_%s".formatted(snapshotModel.getName(), timeStamp))),
-                  UUID.fromString(workspaceId));
+                  workspaceId.id());
       restClientRetry.withRetryAndErrorHandling(
           createSnapshotFunction, "WSM.createSnapshotReference");
     } catch (RestException e) {
@@ -123,7 +122,7 @@ public class WorkspaceManagerDao {
         throw new RestException(
             HttpStatus.INTERNAL_SERVER_ERROR,
             "WorkspaceManagerDao: Can't locate a storage resource matching workspace Id "
-                + workspaceUUID.toString());
+                + workspaceUUID);
       }
     } catch (RestException e) {
       throw new WorkspaceManagerException(e);

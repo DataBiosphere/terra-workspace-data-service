@@ -41,6 +41,7 @@ import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
@@ -368,6 +369,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // list existing snapshots linked to this workspace
     WsmSnapshotSupport wsmSnapshotSupport =
         new WsmSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
-    wsmSnapshotSupport.linkSnapshots(snapshotIds);
+    // TODO AJ-1673: don't use the env-var workspaceId here
+    wsmSnapshotSupport.linkSnapshots(WorkspaceId.of(workspaceId), snapshotIds);
   }
 }
