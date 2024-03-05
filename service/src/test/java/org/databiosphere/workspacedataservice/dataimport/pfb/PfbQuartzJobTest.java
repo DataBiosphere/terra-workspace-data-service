@@ -25,8 +25,12 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
@@ -46,6 +50,7 @@ class PfbQuartzJobTest extends TestBase {
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;
   @MockBean BatchWriteService batchWriteService;
+  @MockBean CollectionService collectionService;
   @MockBean ActivityLogger activityLogger;
   @Autowired PfbTestSupport testSupport;
 
@@ -55,6 +60,12 @@ class PfbQuartzJobTest extends TestBase {
 
   @Value("classpath:avro/test.avro")
   Resource testAvroResource;
+
+  @BeforeEach
+  void beforeEach() {
+    when(collectionService.getWorkspaceId(any(CollectionId.class)))
+        .thenReturn(WorkspaceId.of(UUID.randomUUID()));
+  }
 
   @Test
   void linkAllNewSnapshots() {
@@ -67,7 +78,7 @@ class PfbQuartzJobTest extends TestBase {
 
     // call linkSnapshots
     PfbQuartzJob pfbQuartzJob = testSupport.buildPfbQuartzJob();
-    pfbQuartzJob.linkSnapshots(input);
+    pfbQuartzJob.linkSnapshots(input, WorkspaceId.of(UUID.randomUUID()));
     // capture calls
     ArgumentCaptor<SnapshotModel> argumentCaptor = ArgumentCaptor.forClass(SnapshotModel.class);
     // should have called WSM's create-snapshot-reference 10 times
@@ -95,7 +106,7 @@ class PfbQuartzJobTest extends TestBase {
 
     // call linkSnapshots
     PfbQuartzJob pfbQuartzJob = testSupport.buildPfbQuartzJob();
-    pfbQuartzJob.linkSnapshots(input);
+    pfbQuartzJob.linkSnapshots(input, WorkspaceId.of(UUID.randomUUID()));
     // should not call WSM's create-snapshot-reference at all
     verify(wsmDao, times(0)).linkSnapshotForPolicy(any());
   }
@@ -123,7 +134,7 @@ class PfbQuartzJobTest extends TestBase {
 
     // call linkSnapshots
     PfbQuartzJob pfbQuartzJob = testSupport.buildPfbQuartzJob();
-    pfbQuartzJob.linkSnapshots(input);
+    pfbQuartzJob.linkSnapshots(input, WorkspaceId.of(UUID.randomUUID()));
 
     // should call WSM's create-snapshot-reference only for the references that didn't already exist
     int expectedCallCount = input.size() - resourceDescriptions.size();
