@@ -145,9 +145,10 @@ class WsmPactTest {
     var wsmDao = buildWsmDao(mockServer);
     var snapshotModel = buildSnapshotModel();
 
+    WorkspaceId workspaceId = WorkspaceId.of(WORKSPACE_UUID);
     assertThrows(
         WorkspaceManagerException.class,
-        () -> wsmDao.linkSnapshotForPolicy(WorkspaceId.of(WORKSPACE_UUID), snapshotModel));
+        () -> wsmDao.linkSnapshotForPolicy(workspaceId, snapshotModel));
   }
 
   private SnapshotModel buildSnapshotModel() {

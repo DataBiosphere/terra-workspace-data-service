@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport.pfb;
 
+import static org.databiosphere.workspacedataservice.TestTags.SLOW;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,6 +32,7 @@ import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
@@ -173,11 +175,11 @@ class PfbQuartzJobTest extends TestBase {
   }
 
   @Test
+  @Tag(SLOW)
   void useWorkspaceIdFromCollection() throws JobExecutionException, IOException {
     UUID jobId = UUID.randomUUID();
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    JobExecutionContext mockContext =
-        stubJobContext(jobId, minimalDataAvroResource, collectionId.id());
+    JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource, collectionId.id());
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
@@ -195,12 +197,13 @@ class PfbQuartzJobTest extends TestBase {
     // verify that snapshot operations use the appropriate workspaceId
     verify(wsmDao, times(1))
         .enumerateDataRepoSnapshotReferences(eq(expectedWorkspaceId.id()), anyInt(), anyInt());
-    // TODO AJ-1673: this test should use something other than minimalDataAvroResource so it
-    //     attempts to link a snapshot. That way we can verify the call to linkSnapshotForPolicy
-    /*
-    verify(wsmDao, times(1))
-        .linkSnapshotForPolicy(eq(expectedWorkspaceId), any(SnapshotModel.class));
-     */
+    // The "790795c4..." UUID below is the snapshotId found in the "test.avro" resource used
+    // by this unit test
+    verify(wsmDao)
+        .linkSnapshotForPolicy(
+            eq(expectedWorkspaceId),
+            ArgumentMatchers.argThat(
+                new SnapshotModelMatcher(UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"))));
 
     // But job should succeed
     verify(jobDao).succeeded(jobId);

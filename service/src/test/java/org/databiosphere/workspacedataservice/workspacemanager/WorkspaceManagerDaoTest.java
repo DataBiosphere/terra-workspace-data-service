@@ -88,12 +88,11 @@ class WorkspaceManagerDaoTest extends TestBase {
         new SnapshotModel().name("test snapshot").id(UUID.randomUUID());
     given(mockReferencedGcpResourceApi.createDataRepoSnapshotReference(any(), any()))
         .willThrow(new ApiException(statusCode, "Intentional error thrown for unit test"));
+    WorkspaceId wid = WorkspaceId.of(workspaceId);
     var exception =
         assertThrows(
             WorkspaceManagerException.class,
-            () ->
-                workspaceManagerDao.linkSnapshotForPolicy(
-                    WorkspaceId.of(workspaceId), testSnapshot));
+            () -> workspaceManagerDao.linkSnapshotForPolicy(wid, testSnapshot));
     assertEquals(statusCode, exception.getStatusCode().value());
   }
 
