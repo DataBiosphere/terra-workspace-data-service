@@ -39,7 +39,7 @@ boolean spotlessEnabled = true
 
 spotless {
     java {
-        targetExclude "${buildDir}/**"
+        targetExclude "${layout.buildDirectory.asFile}/**"
         targetExclude "**/swagger-code/**"
         targetExclude "**/generated/**"
         googleJavaFormat('1.18.1')

@@ -81,7 +81,7 @@ dependencies {
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-752b4f3'
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'leonardo-client_2.13', version: '1.3.6-22ee00b'
     implementation 'com.squareup.okhttp3:okhttp' // required by Sam client
-    implementation "bio.terra:datarepo-jakarta-client:1.570.0-SNAPSHOT"
+    implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
     implementation "bio.terra:java-pfb-library:0.29.0"
     implementation project(path: ':client')
@@ -184,7 +184,7 @@ boolean spotlessEnabled = true
 
 spotless {
     java {
-        targetExclude "${buildDir}/**"
+        targetExclude "${layout.buildDirectory.asFile}/**"
         targetExclude "**/swagger-code/**"
         targetExclude "**/generated/**"
         googleJavaFormat('1.18.1')
@@ -240,7 +240,7 @@ jacocoTestReport {
 }
 
 test {
-    systemProperties['pact.rootDir'] = "$buildDir/pacts"
+    systemProperties['pact.rootDir'] = layout.buildDirectory.dir("pacts").get().asFile.toString()
     systemProperties['pact.provider.version'] = "$project.version"
     systemProperties['user.timezone'] = "UTC"
 }
