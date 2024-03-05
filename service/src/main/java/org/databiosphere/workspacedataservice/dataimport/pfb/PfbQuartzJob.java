@@ -31,16 +31,18 @@ import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /** Shell/starting point for PFB import via Quartz. */
@@ -54,10 +56,10 @@ public class PfbQuartzJob extends QuartzJob {
   private final JobDao jobDao;
   private final WorkspaceManagerDao wsmDao;
   private final BatchWriteService batchWriteService;
+  private final CollectionService collectionService;
   private final ActivityLogger activityLogger;
   private final RecordSourceFactory recordSourceFactory;
   private final RecordSinkFactory recordSinkFactory;
-  private final UUID workspaceId;
   private final RestClientRetry restClientRetry;
   private final SamDao samDao;
 
@@ -68,18 +70,18 @@ public class PfbQuartzJob extends QuartzJob {
       RecordSourceFactory recordSourceFactory,
       RecordSinkFactory recordSinkFactory,
       BatchWriteService batchWriteService,
+      CollectionService collectionService,
       ActivityLogger activityLogger,
-      ObservationRegistry observationRegistry,
-      @Value("${twds.instance.workspace-id}") UUID workspaceId,
-      SamDao samDao) {
+      SamDao samDao,
+      ObservationRegistry observationRegistry) {
     super(observationRegistry);
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
     this.restClientRetry = restClientRetry;
     this.recordSourceFactory = recordSourceFactory;
     this.recordSinkFactory = recordSinkFactory;
-    this.workspaceId = workspaceId;
     this.batchWriteService = batchWriteService;
+    this.collectionService = collectionService;
     this.activityLogger = activityLogger;
     this.samDao = samDao;
   }
@@ -104,6 +106,9 @@ public class PfbQuartzJob extends QuartzJob {
     ImportDetails importDetails = new ImportDetails(jobId, userEmail, targetCollection, "pfb");
     // Import all the tables and rows inside the PFB.
     //
+    // determine the workspace for the target collection
+    WorkspaceId workspaceId = collectionService.getWorkspaceId(CollectionId.of(targetCollection));
+
     // Find all the snapshot ids in the PFB, then create or verify references from the
     // workspace to the snapshot for each of those snapshot ids.
     // This will throw an exception if there are policy conflicts between the workspace
@@ -111,10 +116,12 @@ public class PfbQuartzJob extends QuartzJob {
     //
     // This is HTTP connection #1 to the PFB.
     logger.info("Finding snapshots in this PFB...");
-    //    Set<UUID> snapshotIds = withPfbStream(url, this::findSnapshots);
-    //
-    //    logger.info("Linking snapshots...");
-    //    linkSnapshots(snapshotIds);
+    Set<UUID> snapshotIds = withPfbStream(url, this::findSnapshots);
+
+    logger.info("Linking snapshots...");
+    linkSnapshots(snapshotIds, workspaceId);
+
+    // Import all the tables and rows inside the PFB.
 
     // This is HTTP connection #2 to the PFB.
     logger.info("Importing tables and rows from this PFB...");
@@ -218,11 +225,11 @@ public class PfbQuartzJob extends QuartzJob {
    *
    * @param snapshotIds the list of snapshot ids to create or verify references.
    */
-  protected void linkSnapshots(Set<UUID> snapshotIds) {
+  protected void linkSnapshots(Set<UUID> snapshotIds, WorkspaceId workspaceId) {
     // list existing snapshots linked to this workspace
     WsmSnapshotSupport wsmSnapshotSupport =
-        new WsmSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
-    wsmSnapshotSupport.linkSnapshots(snapshotIds);
+        new WsmSnapshotSupport(workspaceId.id(), wsmDao, restClientRetry, activityLogger);
+    wsmSnapshotSupport.linkSnapshots(workspaceId, snapshotIds);
   }
 
   private UUID maybeUuid(String input) {

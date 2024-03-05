@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -33,10 +34,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(profiles = "mock-sam")
 @SpringBootTest(classes = {WorkspaceManagerConfig.class, RestClientRetry.class})
+@DirtiesContext
 class WorkspaceManagerDaoTest extends TestBase {
 
   @Autowired WorkspaceManagerDao workspaceManagerDao;
@@ -66,7 +69,7 @@ class WorkspaceManagerDaoTest extends TestBase {
   void testSnapshotReturned() throws ApiException {
     final SnapshotModel testSnapshot =
         new SnapshotModel().name("test snapshot").id(UUID.randomUUID());
-    workspaceManagerDao.linkSnapshotForPolicy(testSnapshot);
+    workspaceManagerDao.linkSnapshotForPolicy(WorkspaceId.of(workspaceId), testSnapshot);
     verify(mockReferencedGcpResourceApi)
         .createDataRepoSnapshotReference(
             argThat(
@@ -86,10 +89,11 @@ class WorkspaceManagerDaoTest extends TestBase {
         new SnapshotModel().name("test snapshot").id(UUID.randomUUID());
     given(mockReferencedGcpResourceApi.createDataRepoSnapshotReference(any(), any()))
         .willThrow(new ApiException(statusCode, "Intentional error thrown for unit test"));
+    WorkspaceId wid = WorkspaceId.of(workspaceId);
     var exception =
         assertThrows(
             WorkspaceManagerException.class,
-            () -> workspaceManagerDao.linkSnapshotForPolicy(testSnapshot));
+            () -> workspaceManagerDao.linkSnapshotForPolicy(wid, testSnapshot));
     assertEquals(statusCode, exception.getStatusCode().value());
   }
 
@@ -150,7 +154,7 @@ class WorkspaceManagerDaoTest extends TestBase {
     UUID snapshotId = UUID.randomUUID();
     SnapshotModel snapshotModel = new SnapshotModel().id(snapshotId);
     // call the create-reference method
-    workspaceManagerDao.linkSnapshotForPolicy(snapshotModel);
+    workspaceManagerDao.linkSnapshotForPolicy(WorkspaceId.of(workspaceId), snapshotModel);
 
     // validate that it sent correct Properties to resourceApi.createDataRepoSnapshotReference
     ArgumentCaptor<CreateDataRepoSnapshotReferenceRequestBody> argumentCaptor =

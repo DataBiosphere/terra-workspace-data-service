@@ -14,6 +14,7 @@ import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.ImportService;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobExecutionContext;
@@ -31,6 +32,7 @@ class PfbTestSupport {
   @Autowired private RecordSourceFactory recordSourceFactory;
   @Autowired private RecordSinkFactory recordSinkFactory;
   @Autowired private BatchWriteService batchWriteService;
+  @Autowired private CollectionService collectionService;
   @Autowired private ActivityLogger activityLogger;
   @Autowired private ObservationRegistry observationRegistry;
   @Autowired private ImportService importService;
@@ -64,9 +66,10 @@ class PfbTestSupport {
         recordSourceFactory,
         recordSinkFactory,
         batchWriteService,
+        collectionService,
         activityLogger,
-        observationRegistry,
         workspaceId,
-        samDao);
+        samDao,
+        observationRegistry);
   }
 }

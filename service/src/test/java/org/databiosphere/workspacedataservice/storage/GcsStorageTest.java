@@ -18,6 +18,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.StreamUtils;
 
 @Component
+@DirtiesContext
 @SpringBootTest
 @ActiveProfiles("control-plane")
 @DirtiesContext

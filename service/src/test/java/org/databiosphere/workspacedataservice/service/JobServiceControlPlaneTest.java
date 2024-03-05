@@ -34,6 +34,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 @ActiveProfiles(profiles = {"control-plane"})
+@DirtiesContext
 @SpringBootTest
 @DirtiesContext
 @TestPropertySource(

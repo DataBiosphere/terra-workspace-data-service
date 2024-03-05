@@ -43,8 +43,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.annotation.DirtiesContext;
 
 @SpringBootTest
+@DirtiesContext
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Import(TestObservationRegistryConfig.class)
 class QuartzJobTest extends TestBase {

@@ -23,6 +23,7 @@ import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,7 +152,7 @@ public class WsmSnapshotSupport {
    *
    * @param snapshotIds the list of snapshot ids to create or verify references.
    */
-  public void linkSnapshots(Set<UUID> snapshotIds) {
+  public void linkSnapshots(WorkspaceId workspaceId, Set<UUID> snapshotIds) {
     // list existing snapshots linked to this workspace
     Set<UUID> existingSnapshotIds = Set.copyOf(existingPolicySnapshotIds(/* pageSize= */ 50));
     // find the snapshots that are not already linked to this workspace
@@ -167,7 +168,7 @@ public class WsmSnapshotSupport {
     for (UUID uuid : newSnapshotIds) {
       try {
         RestClientRetry.VoidRestCall voidRestCall =
-            (() -> wsmDao.linkSnapshotForPolicy(new SnapshotModel().id(uuid)));
+            (() -> wsmDao.linkSnapshotForPolicy(workspaceId, new SnapshotModel().id(uuid)));
         restClientRetry.withRetryAndErrorHandling(
             voidRestCall, "WSM.createDataRepoSnapshotReference");
         activityLogger.saveEventForCurrentUser(

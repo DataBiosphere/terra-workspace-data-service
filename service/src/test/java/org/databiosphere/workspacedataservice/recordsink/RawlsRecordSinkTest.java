@@ -46,8 +46,10 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.util.StreamUtils;
 
+@DirtiesContext
 @SpringBootTest
 @ActiveProfiles(value = "control-plane", inheritProfiles = false)
 class RawlsRecordSinkTest extends TestBase {

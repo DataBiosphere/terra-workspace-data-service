@@ -29,9 +29,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
+@DirtiesContext
 @ActiveProfiles(profiles = {"mock-sam"})
 @Import(TestObservationRegistryConfig.class)
 class RecordServiceTest extends TestBase {
