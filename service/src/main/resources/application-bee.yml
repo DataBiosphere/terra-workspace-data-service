@@ -16,5 +16,5 @@ spring:
     gcp:
       pubsub:
         # Using the import-service project and topic, will be updated to cWDS' own at a later date
-        project-id: terra-importservice-qa
-        topic: import-service-notify-${beename}
+        project-id: broad-dsde-qa
+        topic: rawls-async-import-topic-${beename}

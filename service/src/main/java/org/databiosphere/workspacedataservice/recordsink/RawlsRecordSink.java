@@ -121,10 +121,20 @@ public class RawlsRecordSink implements RecordSink {
        */
   private void publishToPubSub(UUID workspaceId, String user, UUID jobId, String upsertFile) {
     // TODO jsonize this properly
-    String message =
-        String.format(
-            "{\"workspaceId\": \"%s\", \"userEmail\": \"%s\", \"jobId\": \"%s\", \"upsertFile\": \"%s\", \"isUpsert\": \"true\", \"isCWDS\": \"true\"}",
-            workspaceId, user, jobId, upsertFile);
+    Map<String, String> message =
+        Map.of(
+            "workspaceId",
+            workspaceId.toString(),
+            "userEmail",
+            user,
+            "jobId",
+            jobId.toString(),
+            "upsertFile",
+            upsertFile,
+            "isUpsert",
+            "true",
+            "isCWDS",
+            "true");
     pubSub.publishSync(message);
   }
 

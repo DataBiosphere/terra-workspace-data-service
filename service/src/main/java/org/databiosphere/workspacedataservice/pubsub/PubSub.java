@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.pubsub;
 
+import java.util.Map;
+
 public interface PubSub {
 
   /**
@@ -9,5 +11,5 @@ public interface PubSub {
    * @param message the message to publish
    * @return result of the publish call
    */
-  String publishSync(String message);
+  String publishSync(Map<String, String> message);
 }

@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.pubsub;
 
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode;
 
@@ -21,9 +22,11 @@ public class ImportPubSub implements PubSub {
   // would require callers to implement their own callbacks/waits/handlers. We could also create
   // a separate `public CompletableFuture<String> publishAsync(...)` method so callers can
   // choose between sync and async.
-  public String publishSync(String message) {
+  public String publishSync(Map<String, String> message) {
     // PubSubTemplate.publish returns a future
-    CompletableFuture<String> publishFuture = this.pubSubTemplate.publish(fullTopicName, message);
+    // Rawls expects the actual data to be in the headers rather than the payload
+    CompletableFuture<String> publishFuture =
+        this.pubSubTemplate.publish(fullTopicName, "b''", message);
     // we must wait for the future to complete before returning, else we'll have spun off an
     // unwatched thread
     return publishFuture.join();

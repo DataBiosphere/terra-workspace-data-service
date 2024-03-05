@@ -192,12 +192,21 @@ class RawlsRecordSinkTest extends TestBase {
   void sendsPubSub() {
     doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", emptyMap()));
 
-    String expectedMessage =
-        String.format(
-            "{\"workspaceId\": \"%s\", \"userEmail\": \"%s\", \"jobId\": \"%s\", \"upsertFile\": \"%s\", \"isUpsert\": \"true\", \"isCWDS\": \"true\"}",
-            WORKSPACE_ID, USER_EMAIL, JOB_ID, JOB_ID + ".rawlsUpsert");
-
-    ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
+    Map<String, String> expectedMessage =
+        Map.of(
+            "workspaceId",
+            WORKSPACE_ID.toString(),
+            "userEmail",
+            USER_EMAIL,
+            "jobId",
+            JOB_ID.toString(),
+            "upsertFile",
+            JOB_ID + ".rawlsUpsert",
+            "isUpsert",
+            "true",
+            "isCWDS",
+            "true");
+    ArgumentCaptor<Map> argumentCaptor = ArgumentCaptor.forClass(Map.class);
 
     verify(pubSub, times(1)).publishSync(argumentCaptor.capture());
 
