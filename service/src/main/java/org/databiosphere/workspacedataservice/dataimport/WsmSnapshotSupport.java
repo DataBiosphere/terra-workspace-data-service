@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 public class WsmSnapshotSupport {
 
-  private final UUID workspaceId;
+  private final WorkspaceId workspaceId;
   private final WorkspaceManagerDao wsmDao;
   private final RestClientRetry restClientRetry;
   private final ActivityLogger activityLogger;
@@ -40,7 +40,7 @@ public class WsmSnapshotSupport {
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   public WsmSnapshotSupport(
-      UUID workspaceId,
+      WorkspaceId workspaceId,
       WorkspaceManagerDao wsmDao,
       RestClientRetry restClientRetry,
       ActivityLogger activityLogger) {
@@ -93,7 +93,8 @@ public class WsmSnapshotSupport {
     while (offset.get() < hardLimit) {
       // get a page of results from WSM
       RestClientRetry.RestCall<ResourceList> restCall =
-          (() -> wsmDao.enumerateDataRepoSnapshotReferences(workspaceId, offset.get(), pageSize));
+          (() ->
+              wsmDao.enumerateDataRepoSnapshotReferences(workspaceId.id(), offset.get(), pageSize));
       ResourceList thisPage =
           restClientRetry.withRetryAndErrorHandling(
               restCall, "WSM.enumerateDataRepoSnapshotReferences");
@@ -152,7 +153,7 @@ public class WsmSnapshotSupport {
    *
    * @param snapshotIds the list of snapshot ids to create or verify references.
    */
-  public void linkSnapshots(WorkspaceId workspaceId, Set<UUID> snapshotIds) {
+  public void linkSnapshots(Set<UUID> snapshotIds) {
     // list existing snapshots linked to this workspace
     Set<UUID> existingSnapshotIds = Set.copyOf(existingPolicySnapshotIds(/* pageSize= */ 50));
     // find the snapshots that are not already linked to this workspace
