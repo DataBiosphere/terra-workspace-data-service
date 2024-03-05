@@ -93,8 +93,6 @@ dependencies {
 
     implementation "com.google.cloud:spring-cloud-gcp-starter-storage:$spring_cloud_gcp_version"
     implementation "com.google.cloud:spring-cloud-gcp-starter-pubsub:$spring_cloud_gcp_version"
-    implementation 'io.grpc:grpc-netty:1.62.2'
-
 
     // we need Hadoop libraries to read Parquet files for TDR import. However, Hadoop brings
     // a boatload of transitive dependencies we don't need, some of which (e.g. com.sun.xml.bind)

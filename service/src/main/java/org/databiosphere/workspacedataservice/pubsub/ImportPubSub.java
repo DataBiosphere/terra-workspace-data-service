@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.pubsub;
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import java.util.concurrent.CompletableFuture;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode;
-import org.springframework.beans.factory.annotation.Value;
 
 @DeploymentMode.ControlPlane
 public class ImportPubSub implements PubSub {
@@ -11,10 +10,7 @@ public class ImportPubSub implements PubSub {
   private final PubSubTemplate pubSubTemplate;
   private final String fullTopicName;
 
-  public ImportPubSub(
-      PubSubTemplate pubSubTemplate,
-      @Value("${spring.cloud.gcp.pubsub.topic}") String topic,
-      @Value("${spring.cloud.gcp.pubsub.project-id}") String project) {
+  public ImportPubSub(PubSubTemplate pubSubTemplate, String topic, String project) {
     this.pubSubTemplate = pubSubTemplate;
     /// projects/[project_name]/topics/[topic_name]
     this.fullTopicName = "projects/" + project + "/topics/" + topic;
