@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -165,6 +166,34 @@ class PfbQuartzJobTest extends TestBase {
 
     // Should not call wsm dao
     verify(wsmDao, times(0)).linkSnapshotForPolicy(any());
+    // But job should succeed
+    verify(jobDao).succeeded(jobId);
+  }
+
+  @Test
+  void useWorkspaceIdFromCollection() throws JobExecutionException, IOException {
+    UUID jobId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    JobExecutionContext mockContext =
+        stubJobContext(jobId, minimalDataAvroResource, collectionId.id());
+
+    // WSM should report no snapshots already linked to this workspace
+    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
+    // We're not testing this, so it doesn't matter what returns
+    when(batchWriteService.batchWrite(any(), any(), any(), any()))
+        .thenReturn(BatchWriteResult.empty());
+
+    // specify the workspaceId associated with the target collection
+    WorkspaceId expectedWorkspaceId = WorkspaceId.of(UUID.randomUUID());
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(expectedWorkspaceId);
+
+    testSupport.buildPfbQuartzJob().execute(mockContext);
+
+    // verify that snapshot operations use the appropriate workspaceId
+    verify(wsmDao, times(1))
+        .enumerateDataRepoSnapshotReferences(eq(expectedWorkspaceId.id()), anyInt(), anyInt());
+
     // But job should succeed
     verify(jobDao).succeeded(jobId);
   }
