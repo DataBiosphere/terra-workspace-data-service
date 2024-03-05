@@ -17,8 +17,8 @@ spring:
       pubsub:
         # Using the import-service project and topic, will be updated to cWDS' own at a later date
         #TODO what should the default values be?
-        project-id: ${IMPORT_GOOGLE_PROJECT:import-service-dev}
-        topic: ${IMPORT_PUBSUB_TOPIC:import-service-notify-dev}
+#        project-id: ${IMPORT_GOOGLE_PROJECT:import-service-dev}
+#        topic: ${IMPORT_PUBSUB_TOPIC:import-service-notify-dev}
         enabled: true
 
 sentry:
