@@ -62,7 +62,7 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
-    implementation 'io.sentry:sentry-logback:7.4.0'
+    implementation 'io.sentry:sentry-logback:7.5.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
@@ -90,7 +90,7 @@ dependencies {
     implementation "org.apache.parquet:parquet-avro:$parquet_mr_version"
     implementation "org.apache.parquet:parquet-hadoop:$parquet_mr_version"
 
-    implementation 'com.google.cloud:spring-cloud-gcp-starter-storage:5.0.3'
+    implementation 'com.google.cloud:spring-cloud-gcp-starter-storage:5.0.4'
 
     // we need Hadoop libraries to read Parquet files for TDR import. However, Hadoop brings
     // a boatload of transitive dependencies we don't need, some of which (e.g. com.sun.xml.bind)
@@ -117,7 +117,7 @@ dependencies {
     implementation "org.glassfish.jersey.core:jersey-common"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.11.8'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.11.9'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -129,7 +129,7 @@ dependencies {
     testImplementation 'com.google.cloud:google-cloud-nio:0.127.13'
 
     constraints {
-        implementation('org.json:json:20240205') {
+        implementation('org.json:json:20240303') {
             because("CVE-2022-45688")
         }
         // commons-compress required by org.apache.avro:avro:1.11.3, required by java-pfb-library:0.14.0
