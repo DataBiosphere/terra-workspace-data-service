@@ -1,15 +1,25 @@
 package org.databiosphere.workspacedataservice.dataimport.tdr;
 
+import static org.databiosphere.workspacedataservice.TestTags.SLOW;
+import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import bio.terra.datarepo.model.RelationshipModel;
 import bio.terra.datarepo.model.RelationshipTermModel;
 import bio.terra.datarepo.model.SnapshotExportResponseModel;
+import bio.terra.workspace.model.ResourceList;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -18,16 +28,24 @@ import org.apache.parquet.io.InputFile;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestExemplarData.AzureSmall;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
-import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.service.CollectionService;
+import org.databiosphere.workspacedataservice.service.RecordService;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -41,8 +59,11 @@ class TdrManifestQuartzJobTest extends TestBase {
 
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;
-  @Autowired BatchWriteService batchWriteService;
+
+  @MockBean CollectionService collectionService;
   @MockBean ActivityLogger activityLogger;
+  @MockBean RecordService recordService;
+  @MockBean RecordDao recordDao;
   @Autowired RestClientRetry restClientRetry;
   @Autowired ObjectMapper objectMapper;
   @Autowired TdrTestSupport testSupport;
@@ -60,9 +81,23 @@ class TdrManifestQuartzJobTest extends TestBase {
   @Value("classpath:parquet/malformed.parquet")
   Resource malformedParquet;
 
+  @Value("classpath:tdrmanifest/v2f.json")
+  Resource v2fManifestResource;
+
   // this one contains properties not defined in the Java models
   @Value("classpath:tdrmanifest/extra_properties.json")
   Resource manifestWithUnknownProperties;
+
+  @BeforeEach
+  void beforeEach() {
+    // set up recordService and recordDao to be noops
+    when(recordService.addOrUpdateColumnIfNeeded(any(), any(), any(), any(), any()))
+        .thenReturn(Map.of());
+    doNothing().when(recordService).batchUpsert(any(), any(), any(), any(), any());
+
+    when(recordDao.recordTypeExists(any(), any())).thenReturn(false);
+    doNothing().when(recordDao).createRecordType(any(), any(), any(), any(), any());
+  }
 
   @Test
   void extractSnapshotInfo() throws IOException {
@@ -100,7 +135,8 @@ class TdrManifestQuartzJobTest extends TestBase {
                 List.of()));
 
     List<TdrManifestImportTable> actual =
-        tdrManifestQuartzJob.extractTableInfo(snapshotExportResponseModel);
+        tdrManifestQuartzJob.extractTableInfo(
+            snapshotExportResponseModel, WorkspaceId.of(workspaceId));
 
     assertEquals(expected, actual);
   }
@@ -161,5 +197,34 @@ class TdrManifestQuartzJobTest extends TestBase {
         () ->
             tdrManifestQuartzJob.importTable(
                 malformedFile, table, workspaceId, ImportMode.BASE_ATTRIBUTES));
+  }
+
+  @Test
+  @Tag(SLOW)
+  void useWorkspaceIdFromCollection() throws JobExecutionException, IOException {
+    // ARRANGE
+    // set up ids
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    UUID jobId = UUID.randomUUID();
+    // mock collection service to return this workspace id for this collection id
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+    // WSM should report no snapshots already linked to this workspace
+    // note that if enumerateDataRepoSnapshotReferences is called with the wrong workspaceId,
+    // this test will fail
+    when(wsmDao.enumerateDataRepoSnapshotReferences(eq(workspaceId.id()), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
+
+    // set up the job
+    TdrManifestQuartzJob tdrManifestQuartzJob =
+        testSupport.buildTdrManifestQuartzJob(workspaceId.id());
+    JobExecutionContext mockContext = stubJobContext(jobId, v2fManifestResource, collectionId.id());
+
+    // ACT
+    // execute the job
+    tdrManifestQuartzJob.executeInternal(jobId, mockContext);
+
+    // ASSERT
+    verify(wsmDao).enumerateDataRepoSnapshotReferences(eq(workspaceId.id()), anyInt(), anyInt());
   }
 }

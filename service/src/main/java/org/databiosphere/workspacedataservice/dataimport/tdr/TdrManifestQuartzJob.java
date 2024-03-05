@@ -37,9 +37,11 @@ import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMo
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
@@ -47,7 +49,6 @@ import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -57,8 +58,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
   private final WorkspaceManagerDao wsmDao;
   private final RestClientRetry restClientRetry;
   private final RecordSinkFactory recordSinkFactory;
-  private final UUID workspaceId;
   private final BatchWriteService batchWriteService;
+  private final CollectionService collectionService;
   private final ActivityLogger activityLogger;
   private final ObjectMapper mapper;
   private final RecordSourceFactory recordSourceFactory;
@@ -72,8 +73,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
       RecordSourceFactory recordSourceFactory,
       RecordSinkFactory recordSinkFactory,
       BatchWriteService batchWriteService,
+      CollectionService collectionService,
       ActivityLogger activityLogger,
-      @Value("${twds.instance.workspace-id}") UUID workspaceId,
       ObjectMapper mapper,
       ObservationRegistry observationRegistry) {
     super(observationRegistry);
@@ -81,9 +82,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
     this.wsmDao = wsmDao;
     this.restClientRetry = restClientRetry;
     this.recordSinkFactory = recordSinkFactory;
-    this.workspaceId = workspaceId;
     this.recordSourceFactory = recordSourceFactory;
     this.batchWriteService = batchWriteService;
+    this.collectionService = collectionService;
     this.activityLogger = activityLogger;
     this.mapper = mapper;
   }
@@ -101,6 +102,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
     URL url = getJobDataUrl(jobDataMap, ARG_URL);
     UUID targetCollection = getJobDataUUID(jobDataMap, ARG_COLLECTION);
 
+    // determine the workspace for the target collection
+    WorkspaceId workspaceId = collectionService.getWorkspaceId(CollectionId.of(targetCollection));
+
     // read manifest
     SnapshotExportResponseModel snapshotExportResponseModel = parseManifest(url);
 
@@ -109,11 +113,11 @@ public class TdrManifestQuartzJob extends QuartzJob {
     logger.info("Starting import of snapshot {} to collection {}", snapshotId, targetCollection);
 
     // Create snapshot reference
-    linkSnapshots(Set.of(snapshotId));
+    linkSnapshots(Set.of(snapshotId), workspaceId);
 
     // read the manifest and extract the information necessary to perform the import
     List<TdrManifestImportTable> tdrManifestImportTables =
-        extractTableInfo(snapshotExportResponseModel);
+        extractTableInfo(snapshotExportResponseModel, workspaceId);
 
     // get all the parquet files from the manifests
 
@@ -286,10 +290,10 @@ public class TdrManifestQuartzJob extends QuartzJob {
    */
   @VisibleForTesting
   List<TdrManifestImportTable> extractTableInfo(
-      SnapshotExportResponseModel snapshotExportResponseModel) {
+      SnapshotExportResponseModel snapshotExportResponseModel, WorkspaceId workspaceId) {
 
     WsmSnapshotSupport wsmSnapshotSupport =
-        new WsmSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
+        new WsmSnapshotSupport(workspaceId.id(), wsmDao, restClientRetry, activityLogger);
 
     // find all the exported tables in the manifest.
     // This is the format.parquet.location.tables section in the manifest
@@ -365,11 +369,11 @@ public class TdrManifestQuartzJob extends QuartzJob {
    *
    * @param snapshotIds the list of snapshot ids to create or verify references.
    */
-  protected void linkSnapshots(Set<UUID> snapshotIds) {
+  protected void linkSnapshots(Set<UUID> snapshotIds, WorkspaceId workspaceId) {
     // list existing snapshots linked to this workspace
     WsmSnapshotSupport wsmSnapshotSupport =
-        new WsmSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
+        new WsmSnapshotSupport(workspaceId.id(), wsmDao, restClientRetry, activityLogger);
     // TODO AJ-1673: don't use the env-var workspaceId here
-    wsmSnapshotSupport.linkSnapshots(WorkspaceId.of(workspaceId), snapshotIds);
+    wsmSnapshotSupport.linkSnapshots(workspaceId, snapshotIds);
   }
 }
