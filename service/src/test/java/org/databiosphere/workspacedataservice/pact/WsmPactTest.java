@@ -28,6 +28,7 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.BearerTokenFilter;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.HttpWorkspaceManagerClientFactory;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerClientFactory;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
@@ -104,7 +105,8 @@ class WsmPactTest {
     var wsmDao = buildWsmDao(mockServer);
     var snapshotModel = buildSnapshotModel();
 
-    assertDoesNotThrow(() -> wsmDao.linkSnapshotForPolicy(snapshotModel));
+    assertDoesNotThrow(
+        () -> wsmDao.linkSnapshotForPolicy(WorkspaceId.of(WORKSPACE_UUID), snapshotModel));
   }
 
   @Pact(consumer = "wds")
@@ -143,8 +145,10 @@ class WsmPactTest {
     var wsmDao = buildWsmDao(mockServer);
     var snapshotModel = buildSnapshotModel();
 
+    WorkspaceId workspaceId = WorkspaceId.of(WORKSPACE_UUID);
     assertThrows(
-        WorkspaceManagerException.class, () -> wsmDao.linkSnapshotForPolicy(snapshotModel));
+        WorkspaceManagerException.class,
+        () -> wsmDao.linkSnapshotForPolicy(workspaceId, snapshotModel));
   }
 
   private SnapshotModel buildSnapshotModel() {
@@ -530,7 +534,7 @@ class WsmPactTest {
   private static WorkspaceManagerDao buildWsmDao(MockServer mockServer) {
     WorkspaceManagerClientFactory clientFactory =
         new HttpWorkspaceManagerClientFactory(mockServer.getUrl());
-    return new WorkspaceManagerDao(clientFactory, WORKSPACE_UUID.toString(), new RestClientRetry());
+    return new WorkspaceManagerDao(clientFactory, new RestClientRetry());
   }
 
   // headers

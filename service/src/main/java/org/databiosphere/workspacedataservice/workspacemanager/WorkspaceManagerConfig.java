@@ -13,9 +13,6 @@ public class WorkspaceManagerConfig {
   @Value("${workspacemanagerurl:}")
   private String workspaceManagerUrl;
 
-  @Value("${twds.instance.workspace-id:}")
-  private String workspaceId;
-
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkspaceManagerConfig.class);
 
   @Bean
@@ -28,6 +25,6 @@ public class WorkspaceManagerConfig {
   public WorkspaceManagerDao workspaceManagerDao(
       WorkspaceManagerClientFactory workspaceManagerClientFactory,
       RestClientRetry restClientRetry) {
-    return new WorkspaceManagerDao(workspaceManagerClientFactory, workspaceId, restClientRetry);
+    return new WorkspaceManagerDao(workspaceManagerClientFactory, restClientRetry);
   }
 }
