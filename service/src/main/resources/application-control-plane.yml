@@ -16,10 +16,9 @@ spring:
     gcp:
       pubsub:
         # Using the import-service project and topic, will be updated to cWDS' own at a later date
-#        project-id: import-service-dev
-#        topic: import-service-notify-dev #can we programmatically set the env?
-#        project-id: import-service-${var.env}
-#        topic: import-service-notify-${var.env}
+        #TODO what should the default values be?
+        project-id: ${IMPORT_GOOGLE_PROJECT:import-service-dev}
+        topic: ${IMPORT_PUBSUB_TOPIC:import-service-notify-dev}
         enabled: true
 
 sentry:

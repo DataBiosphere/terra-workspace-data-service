@@ -111,10 +111,10 @@ public class PfbQuartzJob extends QuartzJob {
     //
     // This is HTTP connection #1 to the PFB.
     logger.info("Finding snapshots in this PFB...");
-    Set<UUID> snapshotIds = withPfbStream(url, this::findSnapshots);
-
-    logger.info("Linking snapshots...");
-    linkSnapshots(snapshotIds);
+    //    Set<UUID> snapshotIds = withPfbStream(url, this::findSnapshots);
+    //
+    //    logger.info("Linking snapshots...");
+    //    linkSnapshots(snapshotIds);
 
     // This is HTTP connection #2 to the PFB.
     logger.info("Importing tables and rows from this PFB...");
