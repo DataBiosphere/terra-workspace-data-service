@@ -21,7 +21,6 @@ import org.springframework.util.StreamUtils;
 @DirtiesContext
 @SpringBootTest
 @ActiveProfiles("control-plane")
-@DirtiesContext
 @TestPropertySource(
     properties = {
       // turn off pubsub autoconfiguration for tests

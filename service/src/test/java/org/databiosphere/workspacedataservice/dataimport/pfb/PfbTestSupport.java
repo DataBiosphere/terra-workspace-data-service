@@ -68,7 +68,6 @@ class PfbTestSupport {
         batchWriteService,
         collectionService,
         activityLogger,
-        workspaceId,
         samDao,
         observationRegistry);
   }
