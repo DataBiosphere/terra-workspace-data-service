@@ -1,6 +1,6 @@
 samurl: ${SAM_URL:https://sam.dsde-dev.broadinstitute.org/}
 datarepourl: https://jade.datarepo-dev.broadinstitute.org/
-workspacemanagerurl: https://workspace.dsde-dev.broadinstitute.org/
+workspacemanagerurl: ${WORKSPACE_MANAGER_URL:https://workspace.dsde-dev.broadinstitute.org/}
 leoUrl: https://leonardo.dsde-dev.broadinstitute.org/
 
 twds:
@@ -13,6 +13,7 @@ spring:
   output:
     ansi:
       enabled: always
+
 # use the MDC "requestId" as the log correlation pattern. If/when we use Micrometer tracing to
 # create correlation ids, this should be removed.
 logging:

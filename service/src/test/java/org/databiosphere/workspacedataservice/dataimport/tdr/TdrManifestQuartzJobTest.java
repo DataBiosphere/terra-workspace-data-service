@@ -30,6 +30,7 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
+import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestExemplarData.AzureSmall;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
@@ -191,12 +192,13 @@ class TdrManifestQuartzJobTest extends TestBase {
         HadoopInputFile.fromPath(
             new Path(malformedParquet.getURL().toString()), new Configuration());
 
+    ImportDetails importDetails = new ImportDetails(workspaceId, "tdr");
     // Make sure real errors on parsing parquets are not swallowed
     assertThrows(
         TdrManifestImportException.class,
         () ->
             tdrManifestQuartzJob.importTable(
-                malformedFile, table, workspaceId, ImportMode.BASE_ATTRIBUTES));
+                malformedFile, table, ImportMode.BASE_ATTRIBUTES, importDetails));
   }
 
   @Test

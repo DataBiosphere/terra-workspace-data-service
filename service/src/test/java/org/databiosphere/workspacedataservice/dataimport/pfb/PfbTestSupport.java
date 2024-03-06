@@ -12,6 +12,7 @@ import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.ImportService;
@@ -36,6 +37,7 @@ class PfbTestSupport {
   @Autowired private ObservationRegistry observationRegistry;
   @Autowired private ImportService importService;
   @Autowired private WorkspaceManagerDao wsmDao;
+  @Autowired private SamDao samDao;
 
   void executePfbImportQuartzJob(UUID collectionId, Resource pfbResource)
       throws IOException, JobExecutionException {
@@ -66,6 +68,7 @@ class PfbTestSupport {
         batchWriteService,
         collectionService,
         activityLogger,
+        samDao,
         observationRegistry);
   }
 }

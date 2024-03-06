@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
-import java.util.UUID;
+import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 
 public interface RecordSinkFactory {
-  RecordSink buildRecordSink(UUID collectionId, String prefix);
+  RecordSink buildRecordSink(ImportDetails importDetails);
 }

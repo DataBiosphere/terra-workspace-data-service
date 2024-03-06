@@ -7,6 +7,8 @@ import static java.util.stream.Stream.concat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,9 +21,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
+import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
@@ -35,16 +40,21 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.StreamUtils;
 
 @DirtiesContext
 @SpringBootTest
+@ActiveProfiles(value = "control-plane", inheritProfiles = false)
 class RawlsRecordSinkTest extends TestBase {
   @Autowired private ObjectMapper mapper;
+  @MockBean private PubSub pubSub;
   private RecordSink recordSink;
   private StringWriter recordedJson;
 
@@ -52,10 +62,20 @@ class RawlsRecordSinkTest extends TestBase {
   @Autowired
   private GcsStorage storage;
 
+  private final UUID WORKSPACE_ID = UUID.randomUUID();
+  private final UUID JOB_ID = UUID.randomUUID();
+  private final String USER_EMAIL = "userEmail";
+
   @BeforeEach
   void setUp() {
     recordedJson = new StringWriter();
-    recordSink = new RawlsRecordSink("prefix", mapper, storage, json -> recordedJson.append(json));
+    recordSink =
+        new RawlsRecordSink(
+            mapper,
+            json -> recordedJson.append(json),
+            storage,
+            pubSub,
+            new ImportDetails(JOB_ID, USER_EMAIL, WORKSPACE_ID, "prefix"));
   }
 
   @Test
@@ -168,6 +188,27 @@ class RawlsRecordSinkTest extends TestBase {
             UnsupportedOperationException.class,
             () -> recordSink.deleteBatch(ignoredRecordType, ignoredEmptyRecords));
     assertThat(thrown).hasMessageContaining("does not support deleteBatch");
+  }
+
+  @Test
+  void sendsPubSub() {
+    doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", emptyMap()));
+
+    Map<String, String> expectedMessage =
+        new ImmutableMap.Builder<String, String>()
+            .put("workspaceId", WORKSPACE_ID.toString())
+            .put("userEmail", USER_EMAIL)
+            .put("jobId", JOB_ID.toString())
+            .put("upsertFile", JOB_ID + ".rawlsUpsert")
+            .put("isUpsert", "true")
+            .put("isCWDS", "true")
+            .build();
+
+    ArgumentCaptor<Map> argumentCaptor = ArgumentCaptor.forClass(Map.class);
+
+    verify(pubSub, times(1)).publishSync(argumentCaptor.capture());
+
+    assertThat(argumentCaptor.getValue()).isEqualTo(expectedMessage);
   }
 
   private Record makeRecord(String type, String id, Map<String, Object> attributes) {

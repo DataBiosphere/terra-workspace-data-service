@@ -39,6 +39,7 @@ ext {
     parquet_mr_version = "1.13.1"
     hadoop_version = "3.3.6"
     prometheus_rsocket_version = "1.5.3"
+    spring_cloud_gcp_version = "5.0.4"
 }
 
 dependencies {
@@ -90,7 +91,8 @@ dependencies {
     implementation "org.apache.parquet:parquet-avro:$parquet_mr_version"
     implementation "org.apache.parquet:parquet-hadoop:$parquet_mr_version"
 
-    implementation 'com.google.cloud:spring-cloud-gcp-starter-storage:5.0.4'
+    implementation "com.google.cloud:spring-cloud-gcp-starter-storage:$spring_cloud_gcp_version"
+    implementation "com.google.cloud:spring-cloud-gcp-starter-pubsub:$spring_cloud_gcp_version"
 
     // we need Hadoop libraries to read Parquet files for TDR import. However, Hadoop brings
     // a boatload of transitive dependencies we don't need, some of which (e.g. com.sun.xml.bind)

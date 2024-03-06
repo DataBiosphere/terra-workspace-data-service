@@ -31,10 +31,16 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 @ActiveProfiles(profiles = {"control-plane"})
 @DirtiesContext
 @SpringBootTest
+@TestPropertySource(
+    properties = {
+      // turn off pubsub autoconfiguration for tests
+      "spring.cloud.gcp.pubsub.enabled=false"
+    })
 class JobServiceControlPlaneTest extends JobServiceBaseTest {
 
   @Autowired JobService jobService;

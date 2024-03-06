@@ -9,6 +9,7 @@ import org.databiosphere.workspacedataservice.config.DataImportProperties.Record
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
@@ -19,7 +20,10 @@ import org.springframework.test.context.TestPropertySource;
       // TODO(AJ-1656): control-plane should not require instance config in any form, this is a hold
       //   over from direct injection of @Value('twds.instance.workspace-id')
       "twds.instance.workspace-id=",
+      // turn off pubsub autoconfiguration for tests
+      "spring.cloud.gcp.pubsub.enabled=false"
     })
+@DirtiesContext
 class TwdsPropertiesControlPlaneTest {
   @Autowired TwdsProperties twdsProperties;
   @Autowired DataImportProperties dataImportProperties;

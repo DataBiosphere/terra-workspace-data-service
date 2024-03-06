@@ -1,9 +1,10 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
+import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
+import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsRecordSink.RawlsJsonConsumer;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,9 +21,13 @@ public class RawlsRecordSinkFactory implements RecordSinkFactory {
 
   private final GcsStorage storage;
 
-  public RawlsRecordSinkFactory(ObjectMapper mapper, GcsStorage storage) {
+  private final PubSub pubSub;
+
+  public RawlsRecordSinkFactory(ObjectMapper mapper, GcsStorage storage, PubSub pubSub) {
     this.mapper = mapper;
     this.storage = storage;
+    this.pubSub = pubSub;
+    this.jsonConsumer = json -> {};
   }
 
   // jsonConsumer currently only used by tests, so it is optional. If/when this is used consistently
@@ -35,11 +40,11 @@ public class RawlsRecordSinkFactory implements RecordSinkFactory {
   // TODO(AJ-1589): make prefix assignment dynamic. However, of note: the prefix is currently
   //   ignored for RecordSinkMode.WDS.  In this case, it might be worth adding support for omitting
   //   the prefix as part of supporting the prefix assignment.
-  public RecordSink buildRecordSink(UUID collectionId, String prefix) {
-    return rawlsRecordSink(prefix);
+  public RecordSink buildRecordSink(ImportDetails importDetails) {
+    return rawlsRecordSink(importDetails);
   }
 
-  private RecordSink rawlsRecordSink(String prefix) {
-    return new RawlsRecordSink(prefix, mapper, storage, jsonConsumer);
+  private RecordSink rawlsRecordSink(ImportDetails importDetails) {
+    return new RawlsRecordSink(mapper, jsonConsumer, storage, pubSub, importDetails);
   }
 }

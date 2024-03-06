@@ -12,6 +12,8 @@ public interface SamDao {
   // TODO(jladieu): get the token injected during creation and eliminate it from the arg list
   String getUserId(BearerToken token);
 
+  String getUserEmail(BearerToken token);
+
   /** Gets the up/down system status of Sam. */
   Boolean getSystemStatusOk();
 

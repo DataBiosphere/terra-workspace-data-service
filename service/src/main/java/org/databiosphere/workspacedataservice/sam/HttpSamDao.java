@@ -32,6 +32,10 @@ public class HttpSamDao implements SamDao {
     return getUserInfo(token).getUserSubjectId();
   }
 
+  public String getUserEmail(BearerToken token) {
+    return getUserInfo(token).getUserEmail();
+  }
+
   private UserStatusInfo getUserInfo(BearerToken token) {
     LOGGER.debug("Resolving Sam token to UserStatusInfo ...");
     RestCall<UserStatusInfo> samFunction =

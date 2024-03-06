@@ -28,6 +28,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
@@ -92,7 +93,7 @@ class BatchWriteServiceTest extends TestBase {
             () ->
                 batchWriteService.batchWrite(
                     recordSourceFactory.forJson(is),
-                    recordSinkFactory.buildRecordSink(COLLECTION, /* prefix= */ "json"),
+                    recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, "json")),
                     THING_TYPE,
                     RECORD_ID));
 
@@ -122,7 +123,8 @@ class BatchWriteServiceTest extends TestBase {
     // Note that this call to batchWriteTsvStream specifies a non-null RecordType.
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(file.getInputStream(), recordType, Optional.of(primaryKey));
-    RecordSink recordSink = recordSinkFactory.buildRecordSink(COLLECTION, /* prefix= */ "tsv");
+    RecordSink recordSink =
+        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, /* prefix= */ "tsv"));
     batchWriteService.batchWrite(recordSource, recordSink, recordType, primaryKey);
 
     // we should write three batches
@@ -264,7 +266,7 @@ class BatchWriteServiceTest extends TestBase {
       DataFileStream<GenericRecord> pfbStream, String primaryKey, ImportMode importMode) {
     return batchWriteService.batchWrite(
         recordSourceFactory.forPfb(pfbStream, importMode),
-        recordSinkFactory.buildRecordSink(COLLECTION, /* prefix= */ "pfb"),
+        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, /* prefix= */ "pfb")),
         /* recordType= */ null,
         primaryKey);
   }
