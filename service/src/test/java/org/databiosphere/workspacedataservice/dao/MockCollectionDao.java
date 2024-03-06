@@ -71,7 +71,7 @@ public class MockCollectionDao implements CollectionDao {
   }
 
   @Override
-  public WorkspaceId getWorkspaceId(CollectionId instanceId) {
+  public WorkspaceId getWorkspaceId(CollectionId collectionId) {
     return workspaceId;
   }
 
