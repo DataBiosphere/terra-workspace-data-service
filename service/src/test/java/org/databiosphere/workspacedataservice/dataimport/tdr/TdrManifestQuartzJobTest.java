@@ -192,15 +192,13 @@ class TdrManifestQuartzJobTest extends TestBase {
         HadoopInputFile.fromPath(
             new Path(malformedParquet.getURL().toString()), new Configuration());
 
+    ImportDetails importDetails = new ImportDetails(workspaceId, "tdr");
     // Make sure real errors on parsing parquets are not swallowed
     assertThrows(
         TdrManifestImportException.class,
         () ->
             tdrManifestQuartzJob.importTable(
-                malformedFile,
-                table,
-                ImportMode.BASE_ATTRIBUTES,
-                new ImportDetails(workspaceId, "tdr")));
+                malformedFile, table, ImportMode.BASE_ATTRIBUTES, importDetails));
   }
 
   @Test
