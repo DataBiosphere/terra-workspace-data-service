@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.recordsink;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.mu.util.stream.BiStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -82,11 +83,7 @@ public class RawlsRecordSink implements RecordSink {
       ) throws BatchWriteException, IOException {
     ImmutableList.Builder<Entity> entities = ImmutableList.builder();
     records.stream().map(this::toEntity).forEach(entities::add);
-    // jsonConsumer is used primarily for testing; this line ensures that it does not break in real
-    // life
-    if (jsonConsumer != null) {
-      jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
-    }
+    jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
 
     if (storage != null) {
       String upsertFileName =
@@ -111,19 +108,14 @@ public class RawlsRecordSink implements RecordSink {
 
   private void publishToPubSub(UUID workspaceId, String user, UUID jobId, String upsertFile) {
     Map<String, String> message =
-        Map.of(
-            "workspaceId",
-            workspaceId.toString(),
-            "userEmail",
-            user,
-            "jobId",
-            jobId.toString(),
-            "upsertFile",
-            upsertFile,
-            "isUpsert",
-            "true",
-            "isCWDS",
-            "true");
+        new ImmutableMap.Builder<String, String>()
+            .put("workspaceId", workspaceId.toString())
+            .put("userEmail", user)
+            .put("jobId", jobId.toString())
+            .put("upsertFile", upsertFile)
+            .put("isUpsert", "true")
+            .put("isCWDS", "true")
+            .build();
     pubSub.publishSync(message);
   }
 

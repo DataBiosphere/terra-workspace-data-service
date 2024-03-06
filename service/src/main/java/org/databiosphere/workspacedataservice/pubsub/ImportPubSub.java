@@ -3,9 +3,9 @@ package org.databiosphere.workspacedataservice.pubsub;
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import org.databiosphere.workspacedataservice.annotations.DeploymentMode;
+import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 
-@DeploymentMode.ControlPlane
+@ControlPlane
 public class ImportPubSub implements PubSub {
 
   private final PubSubTemplate pubSubTemplate;

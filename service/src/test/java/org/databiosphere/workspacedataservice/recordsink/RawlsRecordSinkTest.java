@@ -195,19 +195,15 @@ class RawlsRecordSinkTest extends TestBase {
     doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", emptyMap()));
 
     Map<String, String> expectedMessage =
-        Map.of(
-            "workspaceId",
-            WORKSPACE_ID.toString(),
-            "userEmail",
-            USER_EMAIL,
-            "jobId",
-            JOB_ID.toString(),
-            "upsertFile",
-            JOB_ID + ".rawlsUpsert",
-            "isUpsert",
-            "true",
-            "isCWDS",
-            "true");
+        new ImmutableMap.Builder<String, String>()
+            .put("workspaceId", WORKSPACE_ID.toString())
+            .put("userEmail", USER_EMAIL)
+            .put("jobId", JOB_ID.toString())
+            .put("upsertFile", JOB_ID + ".rawlsUpsert")
+            .put("isUpsert", "true")
+            .put("isCWDS", "true")
+            .build();
+
     ArgumentCaptor<Map> argumentCaptor = ArgumentCaptor.forClass(Map.class);
 
     verify(pubSub, times(1)).publishSync(argumentCaptor.capture());
