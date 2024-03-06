@@ -33,11 +33,16 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.multipart.MultipartFile;
 
 @ActiveProfiles(profiles = {"mock-sam"})
 @SpringBootTest
 @ExtendWith(OutputCaptureExtension.class)
+@TestPropertySource(
+    properties = {
+      "twds.tenancy.enforce-collections-match-workspace-id=false", // TODO(AJ-1682): get rid of this
+    })
 class LogStatementTest extends TestBase {
 
   private final String VERSION = "v0.2";
