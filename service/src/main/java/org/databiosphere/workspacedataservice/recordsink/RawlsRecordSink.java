@@ -109,18 +109,7 @@ public class RawlsRecordSink implements RecordSink {
     throw new UnsupportedOperationException("RawlsRecordSink does not support deleteBatch");
   }
 
-  /* import-service sends this message:
-      pubsub.publish_rawls({
-      "workspaceNamespace": import_details.workspace_namespace,
-      "workspaceName": import_details.workspace_name,
-      "userEmail": import_details.submitter,
-      "jobId": import_details.id,
-      "upsertFile": dest_file,
-      "isUpsert": str(import_details.is_upsert)
-  })
-       */
   private void publishToPubSub(UUID workspaceId, String user, UUID jobId, String upsertFile) {
-    // TODO jsonize this properly
     Map<String, String> message =
         Map.of(
             "workspaceId",
