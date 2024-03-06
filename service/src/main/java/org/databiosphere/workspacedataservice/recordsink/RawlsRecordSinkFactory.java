@@ -27,7 +27,7 @@ public class RawlsRecordSinkFactory implements RecordSinkFactory {
     this.mapper = mapper;
     this.storage = storage;
     this.pubSub = pubSub;
-    this.jsonConsumer = (json) -> {};
+    this.jsonConsumer = json -> {};
   }
 
   // jsonConsumer currently only used by tests, so it is optional. If/when this is used consistently

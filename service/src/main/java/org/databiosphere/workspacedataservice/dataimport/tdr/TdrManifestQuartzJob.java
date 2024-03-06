@@ -105,6 +105,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // Collect details needed for import
     UUID targetCollection = getJobDataUUID(jobDataMap, ARG_COLLECTION);
 
+    // TDR import is interested in the collectionId (not the workspaceId)
     ImportDetails importDetails = new ImportDetails(targetCollection, "tdr");
 
     // determine the workspace for the target collection
