@@ -17,6 +17,7 @@ import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
+import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -97,7 +98,7 @@ class ImportServiceDataPlaneTest {
 
   /* collection exists, workspace does not match env var */
   @Test
-  void nonDefaultCollection() {
+  void unexpectedWorkspaceId() {
     // ARRANGE
     WorkspaceId nonMatchingWorkspaceId = WorkspaceId.of(UUID.randomUUID());
     // collection dao says the collection exists and returns an unexpected workspace id
@@ -111,7 +112,8 @@ class ImportServiceDataPlaneTest {
     // exception
     UUID collectionUuid = collectionId.id();
     // perform the import request
-    assertDoesNotThrow(() -> importService.createImport(collectionUuid, importRequest));
+    assertThrows(
+        CollectionException.class, () -> importService.createImport(collectionUuid, importRequest));
   }
 
   /* collection does not exist */

@@ -7,6 +7,7 @@ package org.databiosphere.workspacedataservice.config;
 public class TenancyProperties {
   private boolean allowVirtualCollections;
   private boolean requireEnvWorkspace;
+  private boolean enforceCollectionsMatchWorkspaceId;
 
   /**
    * Does this WDS deployment allow virtual collections? That is, does it allow for a collection
@@ -26,8 +27,7 @@ public class TenancyProperties {
 
   /**
    * Does this WDS deployment require a $WORKSPACE_ID environment variable to be set? When this env
-   * var is set, the WDS deployment is tied to a single workspace, and all collections within this
-   * WDS will be associated with that workspace.
+   * var is set, the WDS deployment is tied to a single workspace.
    *
    * @return Does this WDS deployment require a $WORKSPACE_ID environment variable to be set?
    */
@@ -37,5 +37,19 @@ public class TenancyProperties {
 
   void setRequireEnvWorkspace(boolean requireEnvWorkspace) {
     this.requireEnvWorkspace = requireEnvWorkspace;
+  }
+
+  void setEnforceCollectionsMatchWorkspaceId(boolean enforceCollectionsMatchWorkspaceId) {
+    this.enforceCollectionsMatchWorkspaceId = enforceCollectionsMatchWorkspaceId;
+  }
+
+  /**
+   * Does this WDS deployment enforce that all collections within this WDS are associated with the
+   * $WORKSPACE_ID environment variable?
+   *
+   * @return Does this WDS deployment enforce that all collections must match $WORKSPACE_ID?
+   */
+  public boolean getEnforceCollectionsMatchWorkspaceId() {
+    return enforceCollectionsMatchWorkspaceId;
   }
 }

@@ -20,6 +20,7 @@ import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
+import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -125,10 +126,10 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     stubReadWorkspacePermission(nonMatchingWorkspaceId).thenReturn(true);
 
     // Act / assert
-    GenericJobServerModel actual = jobService.getJob(jobId);
+    Exception actual = assertThrows(CollectionException.class, () -> jobService.getJob(jobId));
 
     // Assert
-    assertThat(actual).isEqualTo(expectedJob);
+    assertThat(actual.getMessage()).startsWith("Found unexpected workspaceId for collection");
   }
 
   /**
@@ -244,12 +245,13 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
         .thenReturn(makeJobList(collectionId, 4));
 
     // Act / assert
-    List<GenericJobServerModel> actual =
-        jobService.getJobsForCollection(collectionId, Optional.of(allStatuses));
+    Exception actual =
+        assertThrows(
+            CollectionException.class,
+            () -> jobService.getJobsForCollection(collectionId, Optional.of(allStatuses)));
 
     // Assert
-    // this is verifying workspaceId behavior only; only smoke-testing correctness of the result
-    assertThat(actual).hasSize(4);
+    assertThat(actual.getMessage()).startsWith("Found unexpected workspaceId for collection");
   }
 
   // ==================================================
