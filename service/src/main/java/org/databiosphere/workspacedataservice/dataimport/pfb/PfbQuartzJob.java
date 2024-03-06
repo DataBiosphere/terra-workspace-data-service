@@ -100,7 +100,6 @@ public class PfbQuartzJob extends QuartzJob {
     // Collect details needed for import
     UUID targetCollection = getJobDataUUID(jobDataMap, ARG_COLLECTION);
     String authToken = getJobDataString(jobDataMap, ARG_TOKEN);
-    // TODO what if it doesn't work
     String userEmail = samDao.getUserEmail(BearerToken.of(authToken));
 
     ImportDetails importDetails = new ImportDetails(jobId, userEmail, targetCollection, "pfb");

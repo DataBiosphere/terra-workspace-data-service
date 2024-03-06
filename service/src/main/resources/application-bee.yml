@@ -10,3 +10,4 @@ leoUrl: https://leonardo.${beename}.bee.envs-terra.bio
 management.metrics.export.prometheus.rsocket:
   enabled: true
   host: promproxy.bee.envs-terra.bio
+
