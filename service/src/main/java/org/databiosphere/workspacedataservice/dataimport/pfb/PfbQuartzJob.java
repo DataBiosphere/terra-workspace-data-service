@@ -209,8 +209,8 @@ public class PfbQuartzJob extends QuartzJob {
   protected void linkSnapshots(Set<UUID> snapshotIds, WorkspaceId workspaceId) {
     // list existing snapshots linked to this workspace
     WsmSnapshotSupport wsmSnapshotSupport =
-        new WsmSnapshotSupport(workspaceId.id(), wsmDao, restClientRetry, activityLogger);
-    wsmSnapshotSupport.linkSnapshots(workspaceId, snapshotIds);
+        new WsmSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
+    wsmSnapshotSupport.linkSnapshots(snapshotIds);
   }
 
   private UUID maybeUuid(String input) {

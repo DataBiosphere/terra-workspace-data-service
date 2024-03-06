@@ -10,6 +10,7 @@ import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -24,6 +25,7 @@ class TdrTestSupport {
   @Autowired private RecordSourceFactory recordSourceFactory;
   @Autowired private RecordSinkFactory recordSinkFactory;
   @Autowired private BatchWriteService batchWriteService;
+  @Autowired private CollectionService collectionService;
   @Autowired private ActivityLogger activityLogger;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private ObservationRegistry observationRegistry;
@@ -37,8 +39,8 @@ class TdrTestSupport {
         recordSourceFactory,
         recordSinkFactory,
         batchWriteService,
+        collectionService,
         activityLogger,
-        workspaceId,
         objectMapper,
         observationRegistry) {
       @Override
