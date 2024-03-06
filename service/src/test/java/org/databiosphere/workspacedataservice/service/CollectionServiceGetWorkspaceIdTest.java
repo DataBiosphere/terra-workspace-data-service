@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -74,13 +75,14 @@ class CollectionServiceGetWorkspaceIdTest extends TestBase {
   }
 
   @Test
-  void unexpectedWorkspaceId() {
+  void nonDefaultWorkspaceId() {
     // collection dao returns a value not equal to the workspace id set in $WORKSPACE_ID
+    WorkspaceId mismatchingWorkspaceId = WorkspaceId.of(UUID.randomUUID());
     when(mockCollectionDao.getWorkspaceId(any(CollectionId.class)))
-        .thenReturn(WorkspaceId.of(UUID.randomUUID()));
+        .thenReturn(mismatchingWorkspaceId);
 
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // expect getWorkspaceId to throw, since it found an unexpected workspace id
-    assertThrows(RuntimeException.class, () -> collectionService.getWorkspaceId(collectionId));
+    assertThrows(CollectionException.class, () -> collectionService.getWorkspaceId(collectionId));
   }
 }

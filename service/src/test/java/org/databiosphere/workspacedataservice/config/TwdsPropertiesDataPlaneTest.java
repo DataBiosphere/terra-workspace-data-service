@@ -47,4 +47,9 @@ class TwdsPropertiesDataPlaneTest {
   void requireEnvWorkspace() {
     assertTrue(tenancyProperties.getRequireEnvWorkspace());
   }
+
+  @Test
+  void enforceCollectionsMatchWorkspaceId() {
+    assertTrue(tenancyProperties.getEnforceCollectionsMatchWorkspaceId());
+  }
 }

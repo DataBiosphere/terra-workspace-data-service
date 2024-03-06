@@ -25,32 +25,6 @@ public class HttpSamAuthorizationDao implements SamAuthorizationDao {
   }
 
   /**
-   * Check if the current user has permission to create a collection by writing to the "workspace"
-   * resource in Sam. Implemented as a check for write permission on the workspace which will
-   * contain this collection.
-   *
-   * @return true if the user has permission
-   */
-  @Override
-  public boolean hasCreateCollectionPermission() {
-    return hasPermission(ACTION_WRITE, "Sam.hasCreateCollectionPermission");
-  }
-
-  /**
-   * Check if the current user has permission to delete a collection from the "workspace" resource
-   * in Sam. Implemented as a check for delete permission on the resource.
-   *
-   * @return true if the user has permission
-   */
-  @Override
-  public boolean hasDeleteCollectionPermission() {
-    // TODO(jladieu): rather than check `ACTION_DELETE` on workspace this should check
-    //  `ACTION_WRITE`; this method should cease to exist and be replaced by a method in
-    //  `CollectionService` that calls `hasWriteWorkspacePermission`
-    return hasPermission(ACTION_DELETE, "Sam.hasDeleteCollectionPermission");
-  }
-
-  /**
    * Check if the current user has permission to write to the "workspace" resource from Sam.
    * Implemented as a check for write permission on the resource.
    *
@@ -74,16 +48,12 @@ public class HttpSamAuthorizationDao implements SamAuthorizationDao {
   /** check for permission using the configured {@link WorkspaceId} */
   private boolean hasPermission(String action, String loggerHint) {
     LOGGER.debug(
-        "Checking Sam permission for {}/{}/{} ...",
-        SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
-        workspaceId,
-        action);
+        "Checking Sam permission for {}/{}/{} ...", RESOURCE_NAME_WORKSPACE, workspaceId, action);
     RestCall<Boolean> samFunction =
         () ->
             samClientFactory
                 .getResourcesApi()
-                .resourcePermissionV2(
-                    SamAuthorizationDao.RESOURCE_NAME_WORKSPACE, workspaceId.toString(), action);
+                .resourcePermissionV2(RESOURCE_NAME_WORKSPACE, workspaceId.toString(), action);
     return restClientRetry.withRetryAndErrorHandling(samFunction, loggerHint);
   }
 }

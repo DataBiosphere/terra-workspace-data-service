@@ -132,6 +132,7 @@ twds:
   tenancy:
     allow-virtual-collections: false
     require-env-workspace: true
+    enforce-collections-match-workspace-id: true
   data-import:
     batch-write-record-sink: "wds"
 
