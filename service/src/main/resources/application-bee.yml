@@ -10,11 +10,3 @@ leoUrl: https://leonardo.${beename}.bee.envs-terra.bio
 management.metrics.export.prometheus.rsocket:
   enabled: true
   host: promproxy.bee.envs-terra.bio
-
-spring:
-  cloud:
-    gcp:
-      pubsub:
-        # Using the import-service project and topic, will be updated to cWDS' own at a later date
-        project-id: broad-dsde-qa
-        topic: rawls-async-import-topic-${beename}

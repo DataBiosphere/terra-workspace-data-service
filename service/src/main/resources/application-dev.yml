@@ -2,11 +2,3 @@ samurl: https://sam.dsde-dev.broadinstitute.org/
 datarepourl: https://jade.datarepo-dev.broadinstitute.org/
 workspacemanagerurl: https://workspace.dsde-dev.broadinstitute.org/
 leoUrl: https://leonardo.dsde-dev.broadinstitute.org/
-
-spring:
-  cloud:
-    gcp:
-      pubsub:
-        # Using the import-service project and topic, will be updated to cWDS' own at a later date
-        project-id: import-service-dev
-        topic: import-service-notify-dev

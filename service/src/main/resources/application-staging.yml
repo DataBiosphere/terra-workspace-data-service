@@ -2,11 +2,3 @@ samurl: https://sam.dsde-staging.broadinstitute.org/
 datarepourl: https://data.staging.broadinstitute.org/
 workspacemanagerurl: https://workspace.dsde-staging.broadinstitute.org/
 leoUrl: https://leonardo.dsde-staging.broadinstitute.org/
-
-spring:
-  cloud:
-    gcp:
-      pubsub:
-        # Using the import-service project and topic, will be updated to cWDS' own at a later date
-        project-id: import-service-staging
-        topic: import-service-notify-staging

@@ -13,13 +13,7 @@ spring:
   output:
     ansi:
       enabled: always
-  cloud:
-    gcp:
-      pubsub:
-        #TODO presumably developer will not have permissions here; what should we use?
-        # Using the import-service project and topic, will be updated to cWDS' own at a later date
-        project-id: import-service-dev
-        topic: import-service-notify-dev
+
 # use the MDC "requestId" as the log correlation pattern. If/when we use Micrometer tracing to
 # create correlation ids, this should be removed.
 logging:

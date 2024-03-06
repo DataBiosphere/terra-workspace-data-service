@@ -18,7 +18,7 @@ public class PubSubConfig {
   PubSub applicationDefaultCredentialsPubSub(
       PubSubTemplate pubSubTemplate,
       @Value("${spring.cloud.gcp.pubsub.topic}") String topic,
-      @Value("${spring.cloud.gcp.pubsub.project-id}") String project) {
+      @Value("${twds.data-import.project-id}") String project) {
     return new ImportPubSub(pubSubTemplate, topic, project);
   }
 
