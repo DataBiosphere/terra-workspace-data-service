@@ -66,6 +66,13 @@ manually. The variables that need to be set are described below. You can also ad
 `~/.zshrc` or similar shell profile. However, in order for the app to run correctly, you still
 have to at least specify data-plane or control-plane.
 
+Note that if you are running locally as the `control-plane`, you'll need to be authed to gcp
+in order for pubsub to start up correctly.
+You can do that from the command line with:
+```bash
+gcloud auth application-default login
+```
+
 ##### SAM_URL
 
 WDS contacts Sam for permission checks. You will need to configure Sam's URL by setting an
