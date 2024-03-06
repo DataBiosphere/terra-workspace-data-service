@@ -101,6 +101,7 @@ public class CollectionService {
     }
 
     // create collection schema in Postgres
+    // TODO: this needs to pass the workspaceId argument so the collection is created correctly
     collectionDao.createSchema(collectionId.id());
 
     activityLogger.saveEventForCurrentUser(

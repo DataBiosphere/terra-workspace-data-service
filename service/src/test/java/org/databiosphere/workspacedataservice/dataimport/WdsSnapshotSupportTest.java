@@ -25,6 +25,7 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -76,7 +77,8 @@ class WsmSnapshotSupportTest extends TestBase {
             });
 
     ResourceList actual =
-        new WsmSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry, activityLogger)
+        new WsmSnapshotSupport(
+                WorkspaceId.of(UUID.randomUUID()), wsmDao, restClientRetry, activityLogger)
             .listAllSnapshots(testPageSize);
 
     // assert total size of all results
@@ -238,7 +240,8 @@ class WsmSnapshotSupportTest extends TestBase {
   }
 
   private WsmSnapshotSupport defaultSupport() {
-    return new WsmSnapshotSupport(UUID.randomUUID(), wsmDao, restClientRetry, activityLogger);
+    return new WsmSnapshotSupport(
+        WorkspaceId.of(UUID.randomUUID()), wsmDao, restClientRetry, activityLogger);
   }
 
   private ResourceDescription createResourceDescription(UUID snapshotId) {
