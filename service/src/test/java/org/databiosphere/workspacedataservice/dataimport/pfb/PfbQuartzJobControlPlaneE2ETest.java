@@ -50,8 +50,10 @@ import org.springframework.test.context.TestPropertySource;
 
 /**
  * Tests for PFB import that execute "end-to-end" - that is, they go through the whole process of
- * parsing the PFB, and generating the JSON that (will eventually be) stored in a bucket (AJ-1585)
- * and communicated to Rawls via pubsub (AJ-1586).
+ * parsing the PFB, and generating the JSON that gets stored in a bucket and communicated to Rawls
+ * via pubsub.
+ *
+ * <p>TODO(AJ-1669): Add coverage for bucket storage & pubsub
  */
 @ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "control-plane"})
 @DirtiesContext

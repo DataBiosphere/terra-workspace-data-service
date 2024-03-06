@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport.tdr;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
 import java.net.URL;
@@ -46,7 +48,8 @@ class TdrTestSupport {
       @Override
       protected URL parseUrl(String path) {
         if (path.startsWith("classpath:")) {
-          return getClass().getClassLoader().getResource(path.substring("classpath:".length()));
+          return requireNonNull(
+              getClass().getClassLoader().getResource(path.substring("classpath:".length())));
         }
         return super.parseUrl(path);
       }

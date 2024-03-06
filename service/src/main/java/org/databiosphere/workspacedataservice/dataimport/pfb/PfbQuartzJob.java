@@ -43,6 +43,7 @@ import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 /** Shell/starting point for PFB import via Quartz. */
@@ -177,18 +178,16 @@ public class PfbQuartzJob extends QuartzJob {
             /* recordType= */ null, // record type is determined later
             /* primaryKey= */ ID_FIELD); // PFBs currently only use ID_FIELD as primary key
 
-    if (result != null) {
-      result
-          .entrySet()
-          .forEach(
-              entry -> {
-                RecordType recordType = entry.getKey();
-                int quantity = entry.getValue();
-                activityLogger.saveEventForCurrentUser(
-                    user ->
-                        user.upserted().record().withRecordType(recordType).ofQuantity(quantity));
-              });
-    }
+    result
+        .entrySet()
+        .forEach(
+            entry -> {
+              RecordType recordType = entry.getKey();
+              int quantity = entry.getValue();
+              activityLogger.saveEventForCurrentUser(
+                  user -> user.upserted().record().withRecordType(recordType).ofQuantity(quantity));
+            });
+
     return result;
   }
 
@@ -231,6 +230,7 @@ public class PfbQuartzJob extends QuartzJob {
     wsmSnapshotSupport.linkSnapshots(snapshotIds);
   }
 
+  @Nullable
   private UUID maybeUuid(String input) {
     try {
       return UUID.fromString(input);
