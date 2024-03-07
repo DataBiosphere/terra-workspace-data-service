@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.service;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.TestInstance.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -39,25 +38,19 @@ import org.springframework.test.context.ActiveProfiles;
  * CollectionService.deleteCollection.
  *
  * <p>Both createCollection and deleteCollection call Sam. If Sam returns an exception, we want
- * createCollection and deleteCollection to respond appropriately:
- *
- * <ul>
- *   <li>if Sam returns an ApiException with status code 401, they should throw
- *       AuthenticationException.
- *   <li>if Sam returns an ApiException with status code 403, they should throw
- *       AuthorizationException.
- *   <li>if Sam returns an ApiException with a well-known status code like 404 or 503, they should
- *       throw a RestException with the same status code.
- *   <li>if Sam returns an ApiException with a non-standard status code such as 0, which happens in
- *       the case of a connection failure, they should throw a RestException with a 500 error code.
- *   <li>if Sam returns some other exception such as NullPointerException, they should throw a
- *       RestException with a 500 error code.
- * </ul>
+ * createCollection and deleteCollection to respond appropriately: - if Sam returns an ApiException
+ * with status code 401, they should throw AuthenticationException. - if Sam returns an ApiException
+ * with status code 403, they should throw AuthorizationException. - if Sam returns an ApiException
+ * with a well-known status code like 404 or 503, they should throw a RestException with the same
+ * status code. - if Sam returns an ApiException with a non-standard status code such as 0, which
+ * happens in the case of a connection failure, they should throw a RestException with a 500 error
+ * code. - if Sam returns some other exception such as NullPointerException, they should throw a
+ * RestException with a 500 error code.
  */
 @ActiveProfiles(profiles = "mock-collection-dao")
 @DirtiesContext
 @SpringBootTest
-@TestInstance(Lifecycle.PER_CLASS)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CollectionServiceSamExceptionTest extends TestBase {
 
   @Autowired private CollectionService collectionService;
@@ -255,7 +248,7 @@ class CollectionServiceSamExceptionTest extends TestBase {
         assertThrows(
             RestException.class,
             () -> collectionService.deleteCollection(collectionId, VERSION),
-            "deleteCollection should throw if caller does not have write permission to the workspace resource in Sam");
+            "deleteCollection should throw if caller does not have delete permission to the workspace resource in Sam");
     assertEquals(
         expectedSamExceptionCode,
         samException.getStatusCode().value(),

@@ -97,13 +97,13 @@ class SamPactTest {
   }
 
   @Pact(consumer = "wds", provider = "sam")
-  public RequestResponsePact readPermissionPact(PactDslWithProvider builder) {
+  public RequestResponsePact deletePermissionPact(PactDslWithProvider builder) {
     return builder
-        .given("user has read permission", Map.of("dummyResourceId", dummyResourceId))
-        .uponReceiving("a request for read permission on workspace")
+        .given("user has delete permission", Map.of("dummyResourceId", dummyResourceId))
+        .uponReceiving("a request for delete permission on workspace")
         .pathFromProviderState(
-            "/api/resources/v2/workspace/${dummyResourceId}/action/read",
-            String.format("/api/resources/v2/workspace/%s/action/read", dummyResourceId))
+            "/api/resources/v2/workspace/${dummyResourceId}/action/delete",
+            String.format("/api/resources/v2/workspace/%s/action/delete", dummyResourceId))
         .method("GET")
         .willRespondWith()
         .status(200)
@@ -112,13 +112,13 @@ class SamPactTest {
   }
 
   @Pact(consumer = "wds", provider = "sam")
-  public RequestResponsePact readNoPermissionPact(PactDslWithProvider builder) {
+  public RequestResponsePact deleteNoPermissionPact(PactDslWithProvider builder) {
     return builder
-        .given("user does not have read permission", Map.of("dummyResourceId", dummyResourceId))
-        .uponReceiving("a request for read permission on workspace")
+        .given("user does not have delete permission", Map.of("dummyResourceId", dummyResourceId))
+        .uponReceiving("a request for delete permission on workspace")
         .pathFromProviderState(
-            "/api/resources/v2/workspace/${dummyResourceId}/action/read",
-            String.format("/api/resources/v2/workspace/%s/action/read", dummyResourceId))
+            "/api/resources/v2/workspace/${dummyResourceId}/action/delete",
+            String.format("/api/resources/v2/workspace/%s/action/delete", dummyResourceId))
         .method("GET")
         .willRespondWith()
         .status(200)
@@ -212,21 +212,21 @@ class SamPactTest {
   }
 
   @Test
-  @PactTestFor(pactMethod = "readNoPermissionPact", pactVersion = PactSpecVersion.V3)
-  void testSamReadNoPermission(MockServer mockServer) {
+  @PactTestFor(pactMethod = "deleteNoPermissionPact", pactVersion = PactSpecVersion.V3)
+  void testSamDeleteNoPermission(MockServer mockServer) {
     SamAuthorizationDao samAuthorizationDao =
         getSamAuthorizationDao(mockServer, dummyWorkspaceId());
 
-    assertFalse(samAuthorizationDao.hasReadWorkspacePermission());
+    assertFalse(samAuthorizationDao.hasDeleteCollectionPermission());
   }
 
   @Test
-  @PactTestFor(pactMethod = "readPermissionPact", pactVersion = PactSpecVersion.V3)
-  void testSamReadPermission(MockServer mockServer) {
+  @PactTestFor(pactMethod = "deletePermissionPact", pactVersion = PactSpecVersion.V3)
+  void testSamDeletePermission(MockServer mockServer) {
     SamAuthorizationDao samAuthorizationDao =
         getSamAuthorizationDao(mockServer, dummyWorkspaceId());
 
-    assertTrue(samAuthorizationDao.hasReadWorkspacePermission());
+    assertTrue(samAuthorizationDao.hasDeleteCollectionPermission());
   }
 
   @Test

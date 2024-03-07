@@ -12,8 +12,17 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
+import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.*;
+import org.databiosphere.workspacedataservice.leonardo.LeonardoConfig;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
+import org.databiosphere.workspacedataservice.sam.SamConfig;
+import org.databiosphere.workspacedataservice.service.BackupRestoreService;
+import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceConfig;
+import org.databiosphere.workspacedataservice.storage.AzureBlobStorage;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,11 +47,25 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(
     properties = {"twds.instance.workspace-id=90e1b179-9f83-4a6f-a8c2-db083df4cd03"})
 @DirtiesContext
-@SpringBootTest
+@SpringBootTest(
+    classes = {
+      CollectionInitializerConfig.class,
+      MockCollectionDaoConfig.class,
+      MockRestoreDaoConfig.class,
+      MockBackupDaoConfig.class,
+      LeonardoConfig.class,
+      WorkspaceDataServiceConfig.class,
+      MockCloneDaoConfig.class,
+      BackupRestoreService.class,
+      AzureBlobStorage.class,
+      WorkspaceManagerConfig.class,
+      ActivityLoggerConfig.class,
+      SamConfig.class,
+      MockSamClientFactoryConfig.class,
+      RestClientRetry.class
+    })
 class CollectionInitializerBeanTest extends TestBase {
-  // Don't run the CollectionInitializer on startup, so this test can start with a clean slate.
-  // By making an (empty) mock bean to replace CollectionInitializer, we ensure it is a noop.
-  @MockBean CollectionInitializer collectionInitializer;
+
   @Autowired CollectionInitializerBean collectionInitializerBean;
   @MockBean JdbcLockRegistry registry;
   @SpyBean CollectionDao collectionDao;

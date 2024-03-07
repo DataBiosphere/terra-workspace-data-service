@@ -115,15 +115,15 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
     // Arrange
     UUID jobId = UUID.randomUUID();
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    WorkspaceId nonMatchingWorkspaceId = WorkspaceId.of(UUID.randomUUID());
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     GenericJobServerModel expectedJob = makeJob(jobId, collectionId);
     // job exists
     when(jobDao.getJob(jobId)).thenReturn(expectedJob);
     // collection for this job exists, but is associated with a workspace other than the
     // $WORKSPACE_ID workspace
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(nonMatchingWorkspaceId);
+    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // user has permission to that workspace
-    stubReadWorkspacePermission(nonMatchingWorkspaceId).thenReturn(true);
+    stubReadWorkspacePermission(workspaceId).thenReturn(true);
 
     // Act / assert
     Exception actual = assertThrows(CollectionException.class, () -> jobService.getJob(jobId));
@@ -234,12 +234,12 @@ class JobServiceDataPlaneTest extends JobServiceBaseTest {
   void listJobsNonDefaultCollection() {
     // Arrange
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    WorkspaceId nonMatchingWorkspaceId = WorkspaceId.of(UUID.randomUUID());
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     // collection exists and is associated with a non-default workspace
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(nonMatchingWorkspaceId);
+    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // user has permission to that workspace
-    stubReadWorkspacePermission(nonMatchingWorkspaceId).thenReturn(true);
+    stubReadWorkspacePermission(workspaceId).thenReturn(true);
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 4));

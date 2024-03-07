@@ -23,16 +23,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
 @ActiveProfiles(profiles = "mock-sam")
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@TestPropertySource(
-    properties = {
-      "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000",
-      "twds.tenancy.enforce-collections-match-workspace-id=false",
-    })
 class TsvErrorMessageTest extends TestBase {
 
   @Autowired CollectionService collectionService;

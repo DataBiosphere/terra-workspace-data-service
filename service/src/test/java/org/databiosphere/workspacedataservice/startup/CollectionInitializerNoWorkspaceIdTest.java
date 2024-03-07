@@ -10,8 +10,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.concurrent.locks.Lock;
+import org.databiosphere.workspacedataservice.activitylog.ActivityLoggerConfig;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.dao.*;
+import org.databiosphere.workspacedataservice.leonardo.LeonardoConfig;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.sam.MockSamClientFactoryConfig;
+import org.databiosphere.workspacedataservice.sam.SamConfig;
+import org.databiosphere.workspacedataservice.service.BackupRestoreService;
+import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceConfig;
+import org.databiosphere.workspacedataservice.storage.AzureBlobStorage;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,18 +29,37 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.integration.jdbc.lock.JdbcLockRegistry;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
+@ActiveProfiles({
+  "mock-collection-dao",
+  "mock-backup-dao",
+  "mock-restore-dao",
+  "mock-clone-dao",
+  "local-cors"
+})
 @TestPropertySource(properties = {"twds.instance.workspace-id="})
 @DirtiesContext
-@SpringBootTest
+@SpringBootTest(
+    classes = {
+      CollectionInitializerConfig.class,
+      MockCollectionDaoConfig.class,
+      MockRestoreDaoConfig.class,
+      MockBackupDaoConfig.class,
+      LeonardoConfig.class,
+      WorkspaceDataServiceConfig.class,
+      MockCloneDaoConfig.class,
+      BackupRestoreService.class,
+      AzureBlobStorage.class,
+      WorkspaceManagerConfig.class,
+      ActivityLoggerConfig.class,
+      SamConfig.class,
+      MockSamClientFactoryConfig.class,
+      RestClientRetry.class
+    })
 class CollectionInitializerNoWorkspaceIdTest extends TestBase {
-  // Don't run the CollectionInitializer on startup, so this test can start with a clean slate.
-  // By making an (empty) mock bean to replace CollectionInitializer, we ensure it is a noop.
-  @MockBean CollectionInitializer collectionInitializer;
 
-  // Don't run StartupConfig to bypass the intentional crash on missing WORKSPACE_ID
-  @MockBean StartupConfig startupConfig;
   @Autowired CollectionInitializerBean collectionInitializerBean;
   @MockBean JdbcLockRegistry registry;
   @SpyBean CollectionDao collectionDao;

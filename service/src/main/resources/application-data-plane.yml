@@ -5,8 +5,6 @@ twds:
     allow-virtual-collections: false
     # Should this WDS deployment require a valid $WORKSPACE_ID env var?
     require-env-workspace: true
-    # Should this WDS deployment require collections to belong to the workspace with $WORKSPACE_ID?
-    enforce-collections-match-workspace-id: true
   data-import:
     batch-write-record-sink: "wds"
 

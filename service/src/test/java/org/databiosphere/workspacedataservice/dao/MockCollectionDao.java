@@ -14,10 +14,9 @@ public class MockCollectionDao implements CollectionDao {
 
   // backing "database" for this mock
   private final Set<UUID> collections = ConcurrentHashMap.newKeySet();
-  private final WorkspaceId workspaceId;
 
-  public MockCollectionDao(WorkspaceId workspaceId) {
-    this.workspaceId = workspaceId;
+  public MockCollectionDao() {
+    super();
   }
 
   @Override
@@ -71,8 +70,8 @@ public class MockCollectionDao implements CollectionDao {
   }
 
   @Override
-  public WorkspaceId getWorkspaceId(CollectionId collectionId) {
-    return workspaceId;
+  public WorkspaceId getWorkspaceId(CollectionId instanceId) {
+    return WorkspaceId.of(instanceId.id());
   }
 
   // convenience for unit tests: removes all collections

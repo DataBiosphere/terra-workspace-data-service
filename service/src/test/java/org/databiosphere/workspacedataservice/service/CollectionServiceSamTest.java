@@ -124,7 +124,7 @@ class CollectionServiceSamTest extends TestBase {
         .resourcePermissionV2(
             SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
             parentWorkspaceId,
-            SamAuthorizationDao.ACTION_WRITE);
+            SamAuthorizationDao.ACTION_DELETE);
 
     // and that should be the only call we made to Sam
     verifyNoMoreInteractions(mockResourcesApi);

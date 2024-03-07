@@ -5,8 +5,7 @@ twds:
     allow-virtual-collections: true
     # Should this WDS deployment require a valid $WORKSPACE_ID env var?
     require-env-workspace: false
-    # Should this WDS deployment require collections to belong to the workspace with $WORKSPACE_ID?
-    enforce-collections-match-workspace-id: false
+
   data-import:
     batch-write-record-sink: "rawls"
     project-id: ${SERVICE_GOOGLE_PROJECT}

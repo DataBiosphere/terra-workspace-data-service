@@ -27,13 +27,15 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class CollectionService {
-  private static final Logger LOGGER = LoggerFactory.getLogger(CollectionService.class);
+
   private final CollectionDao collectionDao;
   private final SamAuthorizationDaoFactory samAuthorizationDaoFactory;
   private final ActivityLogger activityLogger;
   private final TenancyProperties tenancyProperties;
 
   @Nullable private WorkspaceId workspaceId;
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(CollectionService.class);
 
   public CollectionService(
       CollectionDao collectionDao,
@@ -86,7 +88,11 @@ public class CollectionService {
     validateVersion(version);
 
     // check that the current user has permission on the parent workspace
-    if (!canCreateCollection(workspaceId)) {
+    boolean hasCreateCollectionPermission =
+        getSamAuthorizationDao(workspaceId).hasCreateCollectionPermission();
+    LOGGER.debug("hasCreateCollectionPermission? {}", hasCreateCollectionPermission);
+
+    if (!hasCreateCollectionPermission) {
       throw new AuthorizationException("Caller does not have permission to create collection.");
     }
 
@@ -106,8 +112,15 @@ public class CollectionService {
     validateVersion(version);
     validateCollection(collectionId);
 
+    // TODO(AJ-1633): call getWorkspaceId(collectionId) to get the workspaceId, rather than relying
+    //   on the WORKSPACE_ID environment variable; test cases that rely on deleteCollection prevent
+    //   this change
     // check that the current user has permission to delete the Sam resource
-    if (!canDeleteCollection(CollectionId.of(collectionId))) {
+    boolean hasDeleteCollectionPermission =
+        getSamAuthorizationDao(workspaceId).hasDeleteCollectionPermission();
+    LOGGER.debug("hasDeleteCollectionPermission? {}", hasDeleteCollectionPermission);
+
+    if (!hasDeleteCollectionPermission) {
       throw new AuthorizationException("Caller does not have permission to delete collection.");
     }
 
@@ -134,14 +147,6 @@ public class CollectionService {
   }
 
   public boolean canWriteCollection(CollectionId collectionId) {
-    return getSamAuthorizationDao(getWorkspaceId(collectionId)).hasWriteWorkspacePermission();
-  }
-
-  private boolean canCreateCollection(WorkspaceId workspaceId) {
-    return getSamAuthorizationDao(workspaceId).hasWriteWorkspacePermission();
-  }
-
-  private boolean canDeleteCollection(CollectionId collectionId) {
     return getSamAuthorizationDao(getWorkspaceId(collectionId)).hasWriteWorkspacePermission();
   }
 
@@ -181,9 +186,7 @@ public class CollectionService {
     // safety check: if we found a workspace id in the db, it indicates we are in a data-plane
     // single-tenant WDS. Verify the workspace matches the $WORKSPACE_ID env var.
     // we must remove this check in a future multi-tenant WDS.
-    if (tenancyProperties.getEnforceCollectionsMatchWorkspaceId()
-        && rowWorkspaceId != null
-        && !rowWorkspaceId.equals(workspaceId)) {
+    if (rowWorkspaceId != null && !rowWorkspaceId.equals(workspaceId)) {
       // log the details, including expected/actual workspace ids
       LOGGER.error(
           "Found unexpected workspaceId for collection {}. Expected {}, got {}.",
@@ -194,6 +197,7 @@ public class CollectionService {
       throw new CollectionException(
           "Found unexpected workspaceId for collection %s.".formatted(collectionId));
     }
+
     return Objects.requireNonNullElseGet(rowWorkspaceId, () -> WorkspaceId.of(collectionId.id()));
   }
 
