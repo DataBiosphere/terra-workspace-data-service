@@ -124,7 +124,7 @@ jobs:
     needs: publish-docker-job
     uses: broadinstitute/sherlock/.github/workflows/client-report-app-version.yaml@main
     with:
-      new-version: ${{ env.newVersion }}
+      new-version: ${{ needs.publish-docker-job.outputs.newVersion }}
       chart-name: 'cwds'
     permissions:
       contents: 'read'
