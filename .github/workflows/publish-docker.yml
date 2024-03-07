@@ -40,6 +40,15 @@ jobs:
           echo $git_short_sha
           echo "git_short_sha=${git_short_sha}" >> $GITHUB_OUTPUT
 
+      - name: Determine new version
+        id: newVersion
+        run: |
+          if [ -n "${{ inputs.new-tag }}" ]; then
+            echo "newVersion=${{ inputs.new-tag }}" >> $GITHUB_ENV
+          else
+            echo "newVersion=${{ steps.setHash.outputs.git_short_sha }}" >> $GITHUB_ENV
+              
+
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v0
 
@@ -108,13 +117,14 @@ jobs:
           --username ${{ secrets.ACR_SP_USER }} \
           --password-stdin
           docker push --all-tags ${{ steps.acr-image-name.outputs.name }}
-  
+
   # Report the new version of cWDS to Sherlock.
   # This enables Sherlock to gather metrics and generate changelogs for deployments.
   cwds-report-to-sherlock:
+    needs: publish-docker-job
     uses: broadinstitute/sherlock/.github/workflows/client-report-app-version.yaml@main
     with:
-      new-version: ${{ inputs.new-tag != '' ? inputs.new-tag : steps.setHash.outputs.git_short_sha }}
+      new-version: ${{ env.newVersion }}
       chart-name: 'cwds'
     permissions:
       contents: 'read'
