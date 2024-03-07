@@ -51,7 +51,6 @@ export SPRING_PROFILES_ACTIVE=local,data-plane
 
 Other profiles that are available are:
 
-- alpha
 - staging
 - dev
 - prod
