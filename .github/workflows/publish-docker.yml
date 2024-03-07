@@ -87,8 +87,8 @@ jobs:
 
       - name: Add version tag to GCR
         run: |
-          if [ -n "${{ inputs.new-tag }}" ]; then
-            docker image tag  ${{ steps.gcr-image-name.outputs.name }}:${{ inputs.new-tag }}
+          if [ ${{ inputs.new-tag != '' }} ]; then
+            docker image tag ${{ steps.gcr-image-name.outputs.name }}:${{ inputs.new-tag }}
           fi
           docker image tag ${{ steps.gcr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} 
             
@@ -106,7 +106,7 @@ jobs:
 
       - name: Add version tag to ACR
         run: |
-          if [ -n "${{ inputs.new-tag }}" ]; then
+          if [ ${{ inputs.new-tag != '' }} ]; then
             docker image tag ${{ steps.acr-image-name.outputs.name }}:${{ inputs.new-tag }}
           fi
           docker image tag ${{ steps.acr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} 
