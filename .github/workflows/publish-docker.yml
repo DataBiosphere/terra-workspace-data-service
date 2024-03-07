@@ -10,6 +10,8 @@ on:
         required: true
       ACR_SP_USER:
         required: true
+  pull_request:
+    branches: [ '**' ]
 
 env:
   SERVICE_NAME: ${{ github.event.repository.name }}
@@ -98,3 +100,14 @@ jobs:
           --username ${{ secrets.ACR_SP_USER }} \
           --password-stdin
           docker push --all-tags ${{ steps.acr-image-name.outputs.name }}
+  
+  # Report the new version of cWDS to Sherlock.
+  # This enables Sherlock to gather metrics and generate changelogs for deployments.
+  cwds-report-to-sherlock:
+    uses: broadinstitute/sherlock/.github/workflows/client-report-app-version.yaml@main
+    with:
+      new-version: ${{ inputs.new-tag }}
+      chart-name: 'cwds'
+    permissions:
+      contents: 'read'
+      id-token: 'write'
