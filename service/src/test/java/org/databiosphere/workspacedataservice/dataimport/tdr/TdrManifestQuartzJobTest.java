@@ -32,6 +32,8 @@ import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestExemplarData.AzureSmall;
+import org.databiosphere.workspacedataservice.recordsink.RecordSink;
+import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.CollectionService;
@@ -65,6 +67,7 @@ class TdrManifestQuartzJobTest extends TestBase {
   @MockBean ActivityLogger activityLogger;
   @MockBean RecordService recordService;
   @MockBean RecordDao recordDao;
+  @Autowired RecordSinkFactory recordSinkFactory;
   @Autowired RestClientRetry restClientRetry;
   @Autowired ObjectMapper objectMapper;
   @Autowired TdrTestSupport testSupport;
@@ -193,12 +196,13 @@ class TdrManifestQuartzJobTest extends TestBase {
             new Path(malformedParquet.getURL().toString()), new Configuration());
 
     ImportDetails importDetails = new ImportDetails(workspaceId, "tdr");
+    RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails);
     // Make sure real errors on parsing parquets are not swallowed
     assertThrows(
         TdrManifestImportException.class,
         () ->
             tdrManifestQuartzJob.importTable(
-                malformedFile, table, ImportMode.BASE_ATTRIBUTES, importDetails));
+                malformedFile, table, recordSink, ImportMode.BASE_ATTRIBUTES));
   }
 
   @Test
