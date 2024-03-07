@@ -25,6 +25,8 @@ jobs:
       contents: 'read'
       id-token: 'write'
     runs-on: ubuntu-latest
+    outputs:
+      newVersion: ${{ steps.newVersion.outputs.newVersion }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
