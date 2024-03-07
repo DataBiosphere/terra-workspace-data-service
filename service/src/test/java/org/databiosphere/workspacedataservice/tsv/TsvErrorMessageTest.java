@@ -31,7 +31,7 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(
     properties = {
       "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000",
-      "twds.tenancy.enforce-collections-match-workspace-id=false", // TODO(AJ-1682): get rid of this
+      "twds.tenancy.enforce-collections-match-workspace-id=false",
     })
 class TsvErrorMessageTest extends TestBase {
 
