@@ -114,6 +114,14 @@ jobs:
           --password-stdin
           docker push --all-tags ${{ steps.acr-image-name.outputs.name }}
 
+  verify-new-version:
+    runs-on: ubuntu-latest
+    needs: publish-docker-job
+    steps:
+      - name: Verify new version
+        run: |
+          echo "The newVersion is: ${{ needs.publish-docker-job.outputs.newVersion }}"
+
   # Report the new version of cWDS to Sherlock.
   # This enables Sherlock to gather metrics and generate changelogs for deployments.
   cwds-report-to-sherlock:
