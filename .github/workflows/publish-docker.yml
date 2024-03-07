@@ -47,7 +47,7 @@ jobs:
             echo "newVersion=${{ inputs.new-tag }}" >> $GITHUB_ENV
           else
             echo "newVersion=${{ steps.setHash.outputs.git_short_sha }}" >> $GITHUB_ENV
-              
+          fi  
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v0
