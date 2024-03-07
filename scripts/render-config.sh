@@ -1,6 +1,6 @@
 # Simple script for pulling local vault credentials. All arguments are optional.
 # Usage is: ./scripts/render-config.sh [wds env] [vault env] [vaulttoken]
-# wds env options are: local, dev, alpha, perf, staging, prod
+# wds env options are: local, dev, perf, staging, prod
 # vault env options are: local, docker
 # vaulttoken: put your vault token here
 
@@ -11,7 +11,7 @@ VAULT_TOKEN=${3:-$(cat "$HOME"/.vault-token)}
 VAULT_ADDR="https://clotho.broadinstitute.org:8200"
 WDS_VAULT_PATH="secret/dsde/$WDS_ENV/workspacedata"
 
-case $VAULT_ENV in 
+case $VAULT_ENV in
     local | docker) ;;
     *)
         echo "Invalid input: Vault env must be docker or local.\n" \

@@ -44,7 +44,7 @@ public class SentryInitializer {
   private static final String DEFAULT_ENV = "unknown";
   // Environments we want to monitor on sentry - don't send errors from local, bees, or Github
   // actions
-  private static final List<String> environments = List.of("prod", "alpha", "staging", "dev");
+  private static final List<String> environments = List.of("prod", "staging", "dev");
 
   @Bean
   public SmartInitializingSingleton initialize() {
