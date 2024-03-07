@@ -44,12 +44,7 @@ jobs:
 
       - name: Determine new version
         id: newVersion
-        run: |
-          if [[ ${{ inputs.new-tag != '' }} ]]; then
-            echo "newVersion=${ inputs.new-tag }" >> $GITHUB_OUTPUT
-          else
-            echo "newVersion=${ steps.setHash.outputs.git_short_sha }" >> $GITHUB_OUTPUT
-          fi  
+        run: echo "newVersion=${{ inputs.new-tag || steps.setHash.outputs.git_short_sha }}" >> "$GITHUB_OUTPUT"
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v0
