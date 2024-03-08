@@ -10,9 +10,11 @@ import java.net.URL;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.service.MDCServletRequestListener;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
+import org.slf4j.MDC;
 
 /**
  * WDS's base class for asynchronous Quartz jobs. Contains convenience methods and an overridable
@@ -49,6 +51,15 @@ public abstract class QuartzJob implements Job {
   public void execute(JobExecutionContext context) throws org.quartz.JobExecutionException {
     // retrieve jobId
     UUID jobId = UUID.fromString(context.getJobDetail().getKey().getName());
+
+    // try to retrieve MDC id from job context and add to this thread; don't fail if this errors out
+    try {
+      String requestId =
+          getJobDataString(context.getMergedJobDataMap(), MDCServletRequestListener.MDC_KEY);
+      MDC.put(MDCServletRequestListener.MDC_KEY, requestId);
+    } catch (Exception e) {
+      // noop
+    }
 
     Observation observation =
         Observation.start("wds.job.execute", observationRegistry)

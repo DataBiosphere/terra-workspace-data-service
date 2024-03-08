@@ -25,6 +25,7 @@ import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.databiosphere.workspacedataservice.shared.model.job.JobType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -87,6 +88,16 @@ public class ImportService {
       arguments.put(ARG_TOKEN, petToken);
       arguments.put(ARG_URL, importRequest.getUrl().toString());
       arguments.put(ARG_COLLECTION, collectionId.toString());
+      // try to put the MDC id into the job context; don't fail if this errors out
+      try {
+        arguments.put(
+            MDCServletRequestListener.MDC_KEY, MDC.get(MDCServletRequestListener.MDC_KEY));
+      } catch (Exception e) {
+        logger.warn(
+            "Could not add MDC requestId to job map for job {}: {}",
+            createdJob.getJobId(),
+            e.getMessage());
+      }
 
       // create the executable job to be scheduled
       Schedulable schedulable =
