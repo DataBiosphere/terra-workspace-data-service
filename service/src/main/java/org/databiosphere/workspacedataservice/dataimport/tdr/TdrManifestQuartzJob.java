@@ -34,6 +34,7 @@ import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
@@ -108,6 +109,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
     UUID targetCollection = getJobDataUUID(jobDataMap, ARG_COLLECTION);
 
     // TDR import is interested in the collectionId (not the workspaceId)
+    // TODO(AJ-1589): make prefix assignment dynamic. However, of note: the prefix is currently
+    //   ignored for RecordSinkMode.WDS.  In this case, it might be worth adding support for
+    //   omitting the prefix as part of supporting the prefix assignment.
     ImportDetails importDetails = new ImportDetails(targetCollection, "tdr");
 
     // determine the workspace for the target collection
@@ -130,6 +134,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // get all the parquet files from the manifests
 
     FileDownloadHelper fileDownloadHelper = getFilesForImport(tdrManifestImportTables);
+    RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails);
 
     // loop through the tables to be imported and upsert base attributes
     var result =
@@ -137,14 +142,11 @@ public class TdrManifestQuartzJob extends QuartzJob {
             tdrManifestImportTables,
             fileDownloadHelper.getFileMap(),
             ImportMode.BASE_ATTRIBUTES,
-            importDetails);
+            recordSink);
 
     // add relations to the existing base attributes
     importTables(
-        tdrManifestImportTables,
-        fileDownloadHelper.getFileMap(),
-        ImportMode.RELATIONS,
-        importDetails);
+        tdrManifestImportTables, fileDownloadHelper.getFileMap(), ImportMode.RELATIONS, recordSink);
 
     // activity logging for import status
     // no specific activity logging for relations since main import is a superset
@@ -168,16 +170,16 @@ public class TdrManifestQuartzJob extends QuartzJob {
    *
    * @param inputFile Parquet file to be imported.
    * @param table info about the table to be imported
+   * @param recordSink {@link RecordSink} that directs the records to their destination
    * @param importMode mode for this invocation
-   * @param importDetails contains collection into which to import and prefix
    * @return statistics on what was imported
    */
   @VisibleForTesting
   BatchWriteResult importTable(
       InputFile inputFile,
       TdrManifestImportTable table,
-      ImportMode importMode,
-      ImportDetails importDetails) {
+      RecordSink recordSink,
+      ImportMode importMode) {
     // upsert this parquet file's contents
     try (ParquetReader<GenericRecord> avroParquetReader =
         AvroParquetReader.<GenericRecord>builder(inputFile)
@@ -186,7 +188,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       logger.info("batch-writing records for file ...");
       return batchWriteService.batchWrite(
           recordSourceFactory.forTdrImport(avroParquetReader, table, importMode),
-          recordSinkFactory.buildRecordSink(importDetails),
+          recordSink,
           table.recordType(),
           table.primaryKey());
     } catch (Throwable t) {
@@ -199,14 +201,13 @@ public class TdrManifestQuartzJob extends QuartzJob {
    *
    * @param importTables tables to be imported
    * @param importMode mode for this invocation
-   * @param importDetails contains collection into which to import and prefix
+   * @param recordSink {@link RecordSink} that directs the records to their destination
    */
   private BatchWriteResult importTables(
       List<TdrManifestImportTable> importTables,
       Multimap<String, File> fileMap,
       ImportMode importMode,
-      ImportDetails importDetails) {
-
+      RecordSink recordSink) {
     var combinedResult = BatchWriteResult.empty();
     // loop through the tables that have data files.
     importTables.forEach(
@@ -225,7 +226,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
                       // generate the HadoopInputFile
                       InputFile inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
-                      var result = importTable(inputFile, importTable, importMode, importDetails);
+                      var result = importTable(inputFile, importTable, recordSink, importMode);
                       combinedResult.merge(result);
                     } catch (IOException e) {
                       throw new TdrManifestImportException(e.getMessage(), e);
