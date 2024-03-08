@@ -132,13 +132,15 @@ public class PfbQuartzJob extends QuartzJob {
 
     // This is HTTP connection #2 to the PFB.
     logger.info("Importing tables and rows from this PFB...");
-    withPfbStream(url, stream -> importTables(stream, recordSink, BASE_ATTRIBUTES));
+    BatchWriteResult result =
+        withPfbStream(url, stream -> importTables(stream, recordSink, BASE_ATTRIBUTES));
 
     // This is HTTP connection #3 to the PFB.
     logger.info("Updating tables and rows from this PFB with relations...");
-    withPfbStream(url, stream -> importTables(stream, recordSink, RELATIONS));
-    // TODO(AJ-1669): Add and use a finalize callback on RecordSink here to take care of post
-    //   processing steps
+    result.merge(withPfbStream(url, stream -> importTables(stream, recordSink, RELATIONS)));
+
+    // Commit results, publish to downstream systems, etc.
+    recordSink.finalizeBatchWrite(result);
     // TODO(AJ-1453): save the result of importTables and persist them to the job
   }
 
