@@ -6,6 +6,7 @@ import io.micrometer.observation.ObservationRegistry;
 import java.io.IOException;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
@@ -38,6 +39,7 @@ class PfbTestSupport {
   @Autowired private ImportService importService;
   @Autowired private WorkspaceManagerDao wsmDao;
   @Autowired private SamDao samDao;
+  @Autowired DataImportProperties dataImportProperties;
 
   void executePfbImportQuartzJob(UUID collectionId, Resource pfbResource)
       throws IOException, JobExecutionException {
@@ -69,6 +71,7 @@ class PfbTestSupport {
         collectionService,
         activityLogger,
         samDao,
-        observationRegistry);
+        observationRegistry,
+        dataImportProperties);
   }
 }

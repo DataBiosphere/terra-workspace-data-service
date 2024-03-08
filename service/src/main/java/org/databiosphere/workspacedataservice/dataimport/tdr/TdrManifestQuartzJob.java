@@ -27,6 +27,7 @@ import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.InputFile;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
@@ -77,8 +78,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
       CollectionService collectionService,
       ActivityLogger activityLogger,
       ObjectMapper mapper,
-      ObservationRegistry observationRegistry) {
-    super(observationRegistry);
+      ObservationRegistry observationRegistry,
+      DataImportProperties dataImportProperties) {
+    super(observationRegistry, dataImportProperties);
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
     this.restClientRetry = restClientRetry;

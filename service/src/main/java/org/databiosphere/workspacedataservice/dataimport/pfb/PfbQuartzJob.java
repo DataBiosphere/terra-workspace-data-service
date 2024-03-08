@@ -21,6 +21,7 @@ import java.util.stream.StreamSupport;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
@@ -73,8 +74,9 @@ public class PfbQuartzJob extends QuartzJob {
       CollectionService collectionService,
       ActivityLogger activityLogger,
       SamDao samDao,
-      ObservationRegistry observationRegistry) {
-    super(observationRegistry);
+      ObservationRegistry observationRegistry,
+      DataImportProperties dataImportProperties) {
+    super(observationRegistry, dataImportProperties);
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
     this.restClientRetry = restClientRetry;
