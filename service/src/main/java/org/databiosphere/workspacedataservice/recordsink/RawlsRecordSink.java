@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -16,7 +18,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.config.ConfigurationException;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
@@ -34,8 +35,6 @@ import org.databiosphere.workspacedataservice.storage.GcsStorage;
 /**
  * {@link RecordSink} implementation that produces Rawls-compatible JSON using {@link RawlsModel}
  * serialization classes.
- *
- * <p>TODO(AJ-1586): integrate with pubsub to notify Rawls when JSON is ready to be processed
  */
 public class RawlsRecordSink implements RecordSink {
   private final String attributePrefix;
@@ -85,20 +84,16 @@ public class RawlsRecordSink implements RecordSink {
     records.stream().map(this::toEntity).forEach(entities::add);
     jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
 
-    if (storage != null) {
-      String upsertFileName =
-          storage.createGcsFile(
-              new ByteArrayInputStream(mapper.writeValueAsBytes(entities.build())),
-              importDetails.jobId());
+    String upsertFileName =
+        storage.createGcsFile(
+            new ByteArrayInputStream(mapper.writeValueAsBytes(entities.build())),
+            requireNonNull(importDetails.jobId()));
 
-      publishToPubSub(
-          importDetails.collectionId(),
-          importDetails.userEmail(),
-          importDetails.jobId(),
-          upsertFileName);
-    } else {
-      throw new ConfigurationException("GcsStorage is null for cWDS which is unexpected.");
-    }
+    publishToPubSub(
+        importDetails.collectionId(),
+        requireNonNull(importDetails.userEmail()),
+        importDetails.jobId(),
+        upsertFileName);
   }
 
   @Override

@@ -151,14 +151,13 @@ public class TdrManifestQuartzJob extends QuartzJob {
     result
         .entrySet()
         .forEach(
-            entry -> {
-              activityLogger.saveEventForCurrentUser(
-                  user ->
-                      user.upserted()
-                          .record()
-                          .withRecordType(entry.getKey())
-                          .ofQuantity(entry.getValue()));
-            });
+            entry ->
+                activityLogger.saveEventForCurrentUser(
+                    user ->
+                        user.upserted()
+                            .record()
+                            .withRecordType(entry.getKey())
+                            .ofQuantity(entry.getValue())));
     // delete temp files after everything else is completed
     // Any failed deletions will be removed if/when pod restarts
     fileDownloadHelper.deleteFileDirectory();
@@ -227,9 +226,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
                       // generate the HadoopInputFile
                       InputFile inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
                       var result = importTable(inputFile, importTable, importMode, importDetails);
-                      if (result != null) {
-                        combinedResult.merge(result);
-                      }
+                      combinedResult.merge(result);
                     } catch (IOException e) {
                       throw new TdrManifestImportException(e.getMessage(), e);
                     }

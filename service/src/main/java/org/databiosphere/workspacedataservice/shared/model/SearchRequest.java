@@ -1,11 +1,13 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
+import org.springframework.lang.Nullable;
+
 public class SearchRequest {
 
   private int limit = 10;
   private int offset = 0;
   private SortDirection sort = SortDirection.ASC;
-  private String sortAttribute = null;
+  @Nullable private String sortAttribute = null;
 
   public SearchRequest(int limit, int offset, SortDirection sort) {
     this.limit = limit;
@@ -46,6 +48,7 @@ public class SearchRequest {
     this.sort = sort;
   }
 
+  @Nullable
   public String getSortAttribute() {
     return sortAttribute;
   }
