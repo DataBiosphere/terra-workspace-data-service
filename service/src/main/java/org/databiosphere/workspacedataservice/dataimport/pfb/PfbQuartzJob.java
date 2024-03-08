@@ -23,6 +23,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
+import org.databiosphere.workspacedataservice.dataimport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
@@ -60,6 +61,7 @@ public class PfbQuartzJob extends QuartzJob {
   private final ActivityLogger activityLogger;
   private final RecordSourceFactory recordSourceFactory;
   private final RecordSinkFactory recordSinkFactory;
+  private final SnapshotSupportFactory snapshotSupportFactory;
   private final RestClientRetry restClientRetry;
   private final SamDao samDao;
 
@@ -73,7 +75,8 @@ public class PfbQuartzJob extends QuartzJob {
       CollectionService collectionService,
       ActivityLogger activityLogger,
       SamDao samDao,
-      ObservationRegistry observationRegistry) {
+      ObservationRegistry observationRegistry,
+      SnapshotSupportFactory snapshotSupportFactory) {
     super(observationRegistry);
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
@@ -84,6 +87,7 @@ public class PfbQuartzJob extends QuartzJob {
     this.collectionService = collectionService;
     this.activityLogger = activityLogger;
     this.samDao = samDao;
+    this.snapshotSupportFactory = snapshotSupportFactory;
   }
 
   @Override

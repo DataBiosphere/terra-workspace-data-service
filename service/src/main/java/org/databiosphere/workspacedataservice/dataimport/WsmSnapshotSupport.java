@@ -28,7 +28,7 @@ import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerD
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WsmSnapshotSupport {
+public class WsmSnapshotSupport implements SnapshotSupport {
 
   private final WorkspaceId workspaceId;
   private final WorkspaceManagerDao wsmDao;
