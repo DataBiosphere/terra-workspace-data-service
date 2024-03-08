@@ -70,17 +70,6 @@ jobs:
   # cWDS (control plane) #
   ########################
 
-  # Report the new version of cWDS to Sherlock.
-  # This enables Sherlock to gather metrics and generate changelogs for deployments.
-  cwds-report-to-sherlock:
-    uses: broadinstitute/sherlock/.github/workflows/client-report-app-version.yaml@main
-    with:
-      new-version: ${{ inputs.new-tag }}
-      chart-name: 'cwds'
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-
   # Deploy the new version of cWDS to the dev environment.
   cwds-set-version-in-dev:
     uses: broadinstitute/sherlock/.github/workflows/client-set-environment-app-version.yaml@main

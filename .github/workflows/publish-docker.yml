@@ -3,13 +3,15 @@ on:
   workflow_call:
     inputs:
       new-tag:
-        required: true
+        required: false
         type: string
     secrets:
       ACR_SP_PASSWORD:
         required: true
       ACR_SP_USER:
         required: true
+  pull_request:
+    branches: [ '**' ]
 
 env:
   SERVICE_NAME: ${{ github.event.repository.name }}
@@ -23,6 +25,8 @@ jobs:
       contents: 'read'
       id-token: 'write'
     runs-on: ubuntu-latest
+    outputs:
+      newVersion: ${{ steps.newVersion.outputs.newVersion }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -37,6 +41,10 @@ jobs:
           git_short_sha=$(git rev-parse --short HEAD)
           echo $git_short_sha
           echo "git_short_sha=${git_short_sha}" >> $GITHUB_OUTPUT
+
+      - name: Determine new version
+        id: newVersion
+        run: echo "newVersion=${{ inputs.new-tag || steps.setHash.outputs.git_short_sha }}" >> "$GITHUB_OUTPUT"
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v0
@@ -75,8 +83,9 @@ jobs:
           -Djib.console=plain
 
       - name: Add version tag to GCR
+        if: ${{ inputs.new-tag != '' }} 
         run: docker image tag ${{ steps.gcr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} ${{ steps.gcr-image-name.outputs.name }}:${{ inputs.new-tag }}
-
+            
       - name: Run Trivy vulnerability scanner
         # Link to the github location of the action https://github.com/broadinstitute/dsp-appsec-trivy-action
         uses: broadinstitute/dsp-appsec-trivy-action@v1
@@ -90,6 +99,7 @@ jobs:
         run: docker tag ${{ steps.gcr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} ${{ steps.acr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }}
 
       - name: Add version tag to ACR
+        if: ${{ inputs.new-tag != '' }}
         run: docker image tag ${{ steps.acr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} ${{ steps.acr-image-name.outputs.name }}:${{ inputs.new-tag }}
 
       - name: Push image to Azure
@@ -98,3 +108,15 @@ jobs:
           --username ${{ secrets.ACR_SP_USER }} \
           --password-stdin
           docker push --all-tags ${{ steps.acr-image-name.outputs.name }}
+
+  # Report the new version of cWDS to Sherlock.
+  # This enables Sherlock to gather metrics and generate changelogs for deployments.
+  cwds-report-to-sherlock:
+    needs: publish-docker-job
+    uses: broadinstitute/sherlock/.github/workflows/client-report-app-version.yaml@main
+    with:
+      new-version: ${{ needs.publish-docker-job.outputs.newVersion }}
+      chart-name: 'cwds'
+    permissions:
+      contents: 'read'
+      id-token: 'write'
