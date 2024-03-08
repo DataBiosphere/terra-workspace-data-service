@@ -41,7 +41,7 @@ class PfbTestSupport {
   @Autowired private SamDao samDao;
   @Autowired DataImportProperties dataImportProperties;
 
-  void executePfbImportQuartzJob(UUID collectionId, Resource pfbResource)
+  UUID executePfbImportQuartzJob(UUID collectionId, Resource pfbResource)
       throws IOException, JobExecutionException {
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(ImportRequestServerModel.TypeEnum.PFB, pfbResource.getURI());
@@ -54,6 +54,8 @@ class PfbTestSupport {
     JobExecutionContext mockContext = stubJobContext(jobId, pfbResource, collectionId);
 
     buildPfbQuartzJob(collectionId).execute(mockContext);
+
+    return jobId;
   }
 
   PfbQuartzJob buildPfbQuartzJob() {

@@ -8,15 +8,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.mu.util.stream.BiStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
@@ -40,24 +35,13 @@ public class RawlsRecordSink implements RecordSink {
   private final String attributePrefix;
   private final ObjectMapper mapper;
   private final GcsStorage storage;
-  private final Consumer<String> jsonConsumer;
   private final PubSub pubSub;
   private final ImportDetails importDetails;
 
-  /** Annotates a String consumer for JSON strings emitted by {@link RawlsRecordSink}. */
-  @Target({ElementType.PARAMETER, ElementType.METHOD})
-  @Retention(RetentionPolicy.RUNTIME)
-  public @interface RawlsJsonConsumer {}
-
   RawlsRecordSink(
-      ObjectMapper mapper,
-      @RawlsJsonConsumer Consumer<String> jsonConsumer,
-      GcsStorage storage,
-      PubSub pubSub,
-      ImportDetails importDetails) {
+      ObjectMapper mapper, GcsStorage storage, PubSub pubSub, ImportDetails importDetails) {
     this.attributePrefix = importDetails.prefix();
     this.mapper = mapper;
-    this.jsonConsumer = jsonConsumer;
     this.storage = storage;
     this.pubSub = pubSub;
     this.importDetails = importDetails;
@@ -82,7 +66,6 @@ public class RawlsRecordSink implements RecordSink {
       ) throws BatchWriteException, IOException {
     ImmutableList.Builder<Entity> entities = ImmutableList.builder();
     records.stream().map(this::toEntity).forEach(entities::add);
-    jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
 
     String upsertFileName =
         storage.createGcsFile(
