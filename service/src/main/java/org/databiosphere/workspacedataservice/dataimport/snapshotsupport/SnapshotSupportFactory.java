@@ -1,4 +1,4 @@
-package org.databiosphere.workspacedataservice.dataimport;
+package org.databiosphere.workspacedataservice.dataimport.snapshotsupport;
 
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 

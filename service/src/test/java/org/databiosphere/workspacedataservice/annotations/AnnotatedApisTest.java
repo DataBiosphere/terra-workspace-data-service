@@ -8,8 +8,8 @@ import org.databiosphere.workspacedataservice.annotations.DeploymentMode.Control
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.dataimport.SnapshotSupportFactory;
-import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupportFactory;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.WsmSnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsink.WdsRecordSinkFactory;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;

@@ -1,29 +1,29 @@
-package org.databiosphere.workspacedataservice.dataimport;
+package org.databiosphere.workspacedataservice.dataimport.snapshotsupport;
 
 import static org.databiosphere.workspacedataservice.annotations.DeploymentMode.*;
 
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
-import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.springframework.stereotype.Component;
 
 @Component
-@ControlPlane
-public class RawlsSnapshotSupportFactory implements SnapshotSupportFactory {
+@DataPlane
+public class WsmSnapshotSupportFactory implements SnapshotSupportFactory {
 
   private final RestClientRetry restClientRetry;
   private final ActivityLogger activityLogger;
-  private final RawlsClient rawlsClient;
+  private final WorkspaceManagerDao wsmDao;
 
-  public RawlsSnapshotSupportFactory(
-      RestClientRetry restClientRetry, ActivityLogger activityLogger, RawlsClient rawlsClient) {
+  public WsmSnapshotSupportFactory(
+      RestClientRetry restClientRetry, ActivityLogger activityLogger, WorkspaceManagerDao wsmDao) {
     this.restClientRetry = restClientRetry;
     this.activityLogger = activityLogger;
-    this.rawlsClient = rawlsClient;
+    this.wsmDao = wsmDao;
   }
 
   public SnapshotSupport buildSnapshotSupport(WorkspaceId workspaceId) {
-    return new RawlsSnapshotSupport(workspaceId, rawlsClient, restClientRetry, activityLogger);
+    return new WsmSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
   }
 }
