@@ -252,7 +252,7 @@ public class RecordDao {
       int pageSize,
       int offset,
       String sortDirection,
-      @Nullable String sortAttribute,
+      @Nullable String sortAttribute, // this comes from SearchRequest, which might not be provided
       UUID collectionId) {
     LOGGER.info("queryForRecords: {}", recordType.getName());
     return namedTemplate

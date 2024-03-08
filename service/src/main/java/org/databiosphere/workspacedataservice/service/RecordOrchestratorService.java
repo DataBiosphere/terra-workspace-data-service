@@ -183,6 +183,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       UUID collectionId,
       RecordType recordType,
       String version,
+      // SearchRequest isn't required in the controller, so it can be null here
       @Nullable SearchRequest searchRequest) {
     validateVersion(version);
     collectionService.validateCollection(collectionId);

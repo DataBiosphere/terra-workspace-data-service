@@ -191,6 +191,7 @@ public class WsmSnapshotSupport {
                 tableModel -> identifyPrimaryKey(tableModel.getPrimaryKey())));
   }
 
+  // snapshotKeys comes from generated code which doesn't guarantee null safety
   String identifyPrimaryKey(@Nullable List<String> snapshotKeys) {
     if (snapshotKeys != null && snapshotKeys.size() == 1) {
       return snapshotKeys.get(0);
