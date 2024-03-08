@@ -21,11 +21,13 @@ import java.util.stream.StreamSupport;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
@@ -44,6 +46,7 @@ import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 /** Shell/starting point for PFB import via Quartz. */
@@ -76,8 +79,9 @@ public class PfbQuartzJob extends QuartzJob {
       ActivityLogger activityLogger,
       SamDao samDao,
       ObservationRegistry observationRegistry,
-      SnapshotSupportFactory snapshotSupportFactory) {
-    super(observationRegistry);
+      SnapshotSupportFactory snapshotSupportFactory,
+      DataImportProperties dataImportProperties) {
+    super(observationRegistry, dataImportProperties);
     this.jobDao = jobDao;
     this.wsmDao = wsmDao;
     this.restClientRetry = restClientRetry;
@@ -106,6 +110,9 @@ public class PfbQuartzJob extends QuartzJob {
     String authToken = getJobDataString(jobDataMap, ARG_TOKEN);
     String userEmail = samDao.getUserEmail(BearerToken.of(authToken));
 
+    // TODO(AJ-1589): make prefix assignment dynamic. However, of note: the prefix is currently
+    //   ignored for RecordSinkMode.WDS.  In this case, it might be worth adding support for
+    //   omitting the prefix as part of supporting the prefix assignment.
     ImportDetails importDetails = new ImportDetails(jobId, userEmail, targetCollection, "pfb");
     // Import all the tables and rows inside the PFB.
     //
@@ -125,17 +132,18 @@ public class PfbQuartzJob extends QuartzJob {
     linkSnapshots(snapshotIds, workspaceId);
 
     // Import all the tables and rows inside the PFB.
+    RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails);
 
     // This is HTTP connection #2 to the PFB.
     logger.info("Importing tables and rows from this PFB...");
-    withPfbStream(
-        url, stream -> importTables(stream, targetCollection, BASE_ATTRIBUTES, importDetails));
+    withPfbStream(url, stream -> importTables(stream, recordSink, BASE_ATTRIBUTES));
 
     // This is HTTP connection #3 to the PFB.
     logger.info("Updating tables and rows from this PFB with relations...");
-    withPfbStream(url, stream -> importTables(stream, targetCollection, RELATIONS, importDetails));
-
-    // TODO AJ-1453: save the result of importTables and persist the to the job
+    withPfbStream(url, stream -> importTables(stream, recordSink, RELATIONS));
+    // TODO(AJ-1669): Add and use a finalize callback on RecordSink here to take care of post
+    //   processing steps
+    // TODO(AJ-1453): save the result of importTables and persist them to the job
   }
 
   /**
@@ -166,33 +174,28 @@ public class PfbQuartzJob extends QuartzJob {
    * Given a DataFileStream representing a PFB, import all the tables and rows inside that PFB.
    *
    * @param dataStream stream representing the PFB.
-   * @param collectionId the UUID of the WDS collection being imported to
+   * @param recordSink the {@link RecordSink} which directs the records to their destination
    * @param importMode indicating whether to import all data in the tables or only the relations
    */
   BatchWriteResult importTables(
-      DataFileStream<GenericRecord> dataStream,
-      UUID collectionId,
-      ImportMode importMode,
-      ImportDetails importDetails) {
+      DataFileStream<GenericRecord> dataStream, RecordSink recordSink, ImportMode importMode) {
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSourceFactory.forPfb(dataStream, importMode),
-            recordSinkFactory.buildRecordSink(importDetails),
+            recordSink,
             /* recordType= */ null, // record type is determined later
             /* primaryKey= */ ID_FIELD); // PFBs currently only use ID_FIELD as primary key
 
-    if (result != null) {
-      result
-          .entrySet()
-          .forEach(
-              entry -> {
-                RecordType recordType = entry.getKey();
-                int quantity = entry.getValue();
-                activityLogger.saveEventForCurrentUser(
-                    user ->
-                        user.upserted().record().withRecordType(recordType).ofQuantity(quantity));
-              });
-    }
+    result
+        .entrySet()
+        .forEach(
+            entry -> {
+              RecordType recordType = entry.getKey();
+              int quantity = entry.getValue();
+              activityLogger.saveEventForCurrentUser(
+                  user -> user.upserted().record().withRecordType(recordType).ofQuantity(quantity));
+            });
+
     return result;
   }
 
@@ -235,6 +238,7 @@ public class PfbQuartzJob extends QuartzJob {
     wsmSnapshotSupport.linkSnapshots(snapshotIds);
   }
 
+  @Nullable
   private UUID maybeUuid(String input) {
     try {
       return UUID.fromString(input);

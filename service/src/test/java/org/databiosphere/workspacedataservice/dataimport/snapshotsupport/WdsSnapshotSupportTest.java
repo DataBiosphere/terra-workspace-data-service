@@ -9,7 +9,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import bio.terra.datarepo.model.TableModel;
-import bio.terra.workspace.client.ApiException;
 import bio.terra.workspace.model.DataRepoSnapshotAttributes;
 import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
@@ -46,7 +45,7 @@ class WsmSnapshotSupportTest extends TestBase {
 
   @ParameterizedTest(name = "paginates through results when WSM has {0} references")
   @ValueSource(ints = {0, 1, 49, 50, 51, 99, 100, 101, 456})
-  void paginateExistingSnapshots(int wsmCount) throws ApiException {
+  void paginateExistingSnapshots(int wsmCount) {
     int testPageSize = 50; // page size to use during this test
 
     List<ResourceDescription> mockResources = new ArrayList<>();

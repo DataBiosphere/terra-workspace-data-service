@@ -11,6 +11,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.LongTaskTimer;
@@ -27,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.observability.TestObservationRegistryConfig;
@@ -35,6 +38,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobKey;
@@ -52,6 +57,7 @@ import org.springframework.test.annotation.DirtiesContext;
 class QuartzJobTest extends TestBase {
 
   @MockBean JobDao jobDao;
+  @MockBean DataImportProperties dataImportProperties;
   @Autowired MeterRegistry meterRegistry;
   // overridden with a TestObservationRegistry
   @Autowired private ObservationRegistry observationRegistry;
@@ -72,6 +78,8 @@ class QuartzJobTest extends TestBase {
     when(jobDao.updateStatus(any(), any())).thenReturn(genericJobServerModel);
     when(jobDao.fail(any(), anyString()))
         .thenThrow(new RuntimeException("test failed via jobDao.fail()"));
+
+    when(dataImportProperties.isSucceedOnCompletion()).thenReturn(true);
   }
 
   /** clear all observations and metrics prior to each test */
@@ -93,7 +101,7 @@ class QuartzJobTest extends TestBase {
     private boolean shouldThrowError = false;
 
     public TestableQuartzJob(String expectedToken, ObservationRegistry registry) {
-      super(registry);
+      super(registry, dataImportProperties);
       this.expectedToken = expectedToken;
     }
 
@@ -228,6 +236,33 @@ class QuartzJobTest extends TestBase {
         .hasError()
         .thenError()
         .hasMessage("Forced job to fail");
+  }
+
+  @ParameterizedTest(
+      name = "Jobs should complete as success or stay running based on isSucceedOnCompletion ({0})")
+  @ValueSource(booleans = {true, false})
+  void jobCompletion(boolean isSucceedOnCompletion) throws org.quartz.JobExecutionException {
+    // override return values from the @BeforeAll
+    when(dataImportProperties.isSucceedOnCompletion()).thenReturn(isSucceedOnCompletion);
+
+    String randomToken = RandomStringUtils.randomAlphanumeric(10);
+    UUID jobUuid = UUID.randomUUID();
+    JobExecutionContext mockContext = setUpTestJob(randomToken, jobUuid.toString());
+
+    // this test requires a TestObservationRegistry
+    TestObservationRegistry testObservationRegistry =
+        assertInstanceOf(TestObservationRegistry.class, observationRegistry);
+
+    // execute the TestableQuartzJob. This will move the job to SUCCESS when
+    // dataImportProperties.isSucceedOnCompletion() is true; else it will leave the job
+    // in RUNNING
+    new TestableQuartzJob(randomToken, observationRegistry, /* shouldThrowError= */ false)
+        .execute(mockContext);
+
+    // assert the job is marked as succeeded ONLY when dataImportProperties.isSucceedOnCompletion()
+    // is true
+    var wantedNumberOfInvocations = isSucceedOnCompletion ? 1 : 0;
+    verify(jobDao, times(wantedNumberOfInvocations)).succeeded(jobUuid);
   }
 
   // sets up a job and returns the job context

@@ -9,6 +9,7 @@ twds:
     enforce-collections-match-workspace-id: true
   data-import:
     batch-write-record-sink: "wds"
+    succeed-on-completion: true
 
 spring:
   cloud:
