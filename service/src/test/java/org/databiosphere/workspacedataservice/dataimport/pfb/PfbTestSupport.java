@@ -13,12 +13,10 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
-import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.ImportService;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +28,6 @@ import org.springframework.stereotype.Component;
 @Component
 class PfbTestSupport {
   @Autowired private JobDao jobDao;
-  @Autowired private RestClientRetry restClientRetry;
   @Autowired private RecordSourceFactory recordSourceFactory;
   @Autowired private RecordSinkFactory recordSinkFactory;
   @Autowired private BatchWriteService batchWriteService;
@@ -38,7 +35,6 @@ class PfbTestSupport {
   @Autowired private ActivityLogger activityLogger;
   @Autowired private ObservationRegistry observationRegistry;
   @Autowired private ImportService importService;
-  @Autowired private WorkspaceManagerDao wsmDao;
   @Autowired private SamDao samDao;
   @Autowired private SnapshotSupportFactory snapshotSupportFactory;
   @Autowired DataImportProperties dataImportProperties;
@@ -67,8 +63,6 @@ class PfbTestSupport {
   private PfbQuartzJob buildPfbQuartzJob(UUID workspaceId) {
     return new PfbQuartzJob(
         jobDao,
-        wsmDao,
-        restClientRetry,
         recordSourceFactory,
         recordSinkFactory,
         batchWriteService,

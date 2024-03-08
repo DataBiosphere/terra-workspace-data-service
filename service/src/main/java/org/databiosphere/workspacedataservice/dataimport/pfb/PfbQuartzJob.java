@@ -24,14 +24,13 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
-import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
-import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
@@ -41,7 +40,6 @@ import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.slf4j.Logger;
@@ -58,20 +56,16 @@ public class PfbQuartzJob extends QuartzJob {
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   private final JobDao jobDao;
-  private final WorkspaceManagerDao wsmDao;
   private final BatchWriteService batchWriteService;
   private final CollectionService collectionService;
   private final ActivityLogger activityLogger;
   private final RecordSourceFactory recordSourceFactory;
   private final RecordSinkFactory recordSinkFactory;
   private final SnapshotSupportFactory snapshotSupportFactory;
-  private final RestClientRetry restClientRetry;
   private final SamDao samDao;
 
   public PfbQuartzJob(
       JobDao jobDao,
-      WorkspaceManagerDao wsmDao,
-      RestClientRetry restClientRetry,
       RecordSourceFactory recordSourceFactory,
       RecordSinkFactory recordSinkFactory,
       BatchWriteService batchWriteService,
@@ -83,8 +77,6 @@ public class PfbQuartzJob extends QuartzJob {
       DataImportProperties dataImportProperties) {
     super(observationRegistry, dataImportProperties);
     this.jobDao = jobDao;
-    this.wsmDao = wsmDao;
-    this.restClientRetry = restClientRetry;
     this.recordSourceFactory = recordSourceFactory;
     this.recordSinkFactory = recordSinkFactory;
     this.batchWriteService = batchWriteService;
@@ -233,9 +225,8 @@ public class PfbQuartzJob extends QuartzJob {
    */
   protected void linkSnapshots(Set<UUID> snapshotIds, WorkspaceId workspaceId) {
     // list existing snapshots linked to this workspace
-    WsmSnapshotSupport wsmSnapshotSupport =
-        new WsmSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
-    wsmSnapshotSupport.linkSnapshots(snapshotIds);
+    SnapshotSupport snapshotSupport = snapshotSupportFactory.buildSnapshotSupport(workspaceId);
+    snapshotSupport.linkSnapshots(snapshotIds);
   }
 
   @Nullable
