@@ -26,6 +26,7 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
@@ -104,7 +105,8 @@ public class PfbQuartzJob extends QuartzJob {
     String authToken = getJobDataString(jobDataMap, ARG_TOKEN);
     String userEmail = samDao.getUserEmail(BearerToken.of(authToken));
 
-    ImportDetails importDetails = new ImportDetails(jobId, userEmail, targetCollection, "pfb");
+    ImportDetails importDetails =
+        new ImportDetails(jobId, userEmail, targetCollection, PrefixStrategy.PFB);
     // Import all the tables and rows inside the PFB.
     //
     // determine the workspace for the target collection

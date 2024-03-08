@@ -34,6 +34,7 @@ import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
@@ -108,7 +109,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     UUID targetCollection = getJobDataUUID(jobDataMap, ARG_COLLECTION);
 
     // TDR import is interested in the collectionId (not the workspaceId)
-    ImportDetails importDetails = new ImportDetails(targetCollection, "tdr");
+    ImportDetails importDetails = new ImportDetails(targetCollection, PrefixStrategy.TDR);
 
     // determine the workspace for the target collection
     WorkspaceId workspaceId = collectionService.getWorkspaceId(CollectionId.of(targetCollection));

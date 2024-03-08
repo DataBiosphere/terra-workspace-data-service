@@ -38,7 +38,7 @@ import org.databiosphere.workspacedataservice.storage.GcsStorage;
  * <p>TODO(AJ-1586): integrate with pubsub to notify Rawls when JSON is ready to be processed
  */
 public class RawlsRecordSink implements RecordSink {
-  private final String attributePrefix;
+  private final RawlsAttributePrefixer attributePrefixer;
   private final ObjectMapper mapper;
   private final GcsStorage storage;
   private final Consumer<String> jsonConsumer;
@@ -56,7 +56,7 @@ public class RawlsRecordSink implements RecordSink {
       GcsStorage storage,
       PubSub pubSub,
       ImportDetails importDetails) {
-    this.attributePrefix = importDetails.prefix();
+    this.attributePrefixer = new RawlsAttributePrefixer(importDetails.prefixStrategy());
     this.mapper = mapper;
     this.jsonConsumer = jsonConsumer;
     this.storage = storage;
@@ -125,7 +125,9 @@ public class RawlsRecordSink implements RecordSink {
 
   private List<? extends AttributeOperation> makeOperations(Record record) {
     return BiStream.from(record.getAttributes().attributeSet())
-        .mapKeys(attributeName -> getAttributeName(record.getRecordType(), attributeName))
+        .mapKeys(
+            attributeName ->
+                attributePrefixer.prefix(attributeName, record.getRecordType().getName()))
         .filterValues(Objects::nonNull)
         .flatMapToObj(this::toOperations)
         .toList();
@@ -139,13 +141,5 @@ public class RawlsRecordSink implements RecordSink {
     }
 
     return Stream.of(new AddUpdateAttribute(name, attributeValue));
-  }
-
-  private String getAttributeName(RecordType recordType, String name) {
-    if (name.equals("name")) {
-      return String.format("%s:%s_name", attributePrefix, recordType);
-    }
-
-    return String.format("%s:%s", attributePrefix, name);
   }
 }

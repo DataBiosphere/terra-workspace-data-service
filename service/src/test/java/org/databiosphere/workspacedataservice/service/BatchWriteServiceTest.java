@@ -30,6 +30,7 @@ import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils;
+import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
@@ -93,7 +94,8 @@ class BatchWriteServiceTest extends TestBase {
             () ->
                 batchWriteService.batchWrite(
                     recordSourceFactory.forJson(is),
-                    recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, "json")),
+                    recordSinkFactory.buildRecordSink(
+                        new ImportDetails(COLLECTION, PrefixStrategy.NONE)),
                     THING_TYPE,
                     RECORD_ID));
 
@@ -124,7 +126,7 @@ class BatchWriteServiceTest extends TestBase {
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(file.getInputStream(), recordType, Optional.of(primaryKey));
     RecordSink recordSink =
-        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, /* prefix= */ "tsv"));
+        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, PrefixStrategy.NONE));
     batchWriteService.batchWrite(recordSource, recordSink, recordType, primaryKey);
 
     // we should write three batches
@@ -266,7 +268,7 @@ class BatchWriteServiceTest extends TestBase {
       DataFileStream<GenericRecord> pfbStream, String primaryKey, ImportMode importMode) {
     return batchWriteService.batchWrite(
         recordSourceFactory.forPfb(pfbStream, importMode),
-        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, /* prefix= */ "pfb")),
+        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, PrefixStrategy.PFB)),
         /* recordType= */ null,
         primaryKey);
   }

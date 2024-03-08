@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
+import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
@@ -75,7 +76,7 @@ class RawlsRecordSinkTest extends TestBase {
             json -> recordedJson.append(json),
             storage,
             pubSub,
-            new ImportDetails(JOB_ID, USER_EMAIL, WORKSPACE_ID, "prefix"));
+            new ImportDetails(JOB_ID, USER_EMAIL, WORKSPACE_ID, PrefixStrategy.NONE));
   }
 
   @Test
