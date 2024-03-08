@@ -158,7 +158,6 @@ class RawlsRecordSinkPrefixingTest extends TestBase {
     RecordSink recordSink =
         new RawlsRecordSink(
             mapper,
-            json -> recordedJson.append(json),
             storage,
             pubSub,
             new ImportDetails(JOB_ID, USER_EMAIL, WORKSPACE_ID, prefixStrategy));
