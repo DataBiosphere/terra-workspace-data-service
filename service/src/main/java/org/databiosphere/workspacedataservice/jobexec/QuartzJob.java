@@ -73,6 +73,9 @@ public abstract class QuartzJob implements Job {
       if (dataImportProperties.isSucceedOnCompletion()) {
         getJobDao().succeeded(jobId);
         observation.lowCardinalityKeyValue("outcome", StatusEnum.SUCCEEDED.getValue());
+      } else {
+        // ensure we give the observation an outcome, even though we left the job running
+        observation.lowCardinalityKeyValue("outcome", StatusEnum.RUNNING.getValue());
       }
     } catch (Exception e) {
       // on any otherwise-unhandled exception, mark the job as failed
