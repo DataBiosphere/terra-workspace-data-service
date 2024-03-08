@@ -253,12 +253,15 @@ class QuartzJobTest extends TestBase {
     TestObservationRegistry testObservationRegistry =
         assertInstanceOf(TestObservationRegistry.class, observationRegistry);
 
-    // execute the TestableQuartzJob, then confirm observation recorded failure
+    // execute the TestableQuartzJob. This will move the job to SUCCESS when
+    // dataImportProperties.isSucceedOnCompletion() is true; else it will leave the job
+    // in RUNNING
     new TestableQuartzJob(randomToken, observationRegistry, /* shouldThrowError= */ false)
         .execute(mockContext);
 
+    // assert the job is marked as succeeded ONLY when dataImportProperties.isSucceedOnCompletion()
+    // is true
     var wantedNumberOfInvocations = isSucceedOnCompletion ? 1 : 0;
-
     verify(jobDao, times(wantedNumberOfInvocations)).succeeded(jobUuid);
   }
 
