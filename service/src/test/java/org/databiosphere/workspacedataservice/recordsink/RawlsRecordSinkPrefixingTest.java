@@ -9,7 +9,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
@@ -25,7 +24,6 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -47,7 +45,6 @@ import org.springframework.util.StreamUtils;
 class RawlsRecordSinkPrefixingTest extends TestBase {
   @Autowired private ObjectMapper mapper;
   @MockBean private PubSub pubSub;
-  private StringWriter recordedJson;
 
   @Qualifier("mockGcsStorage")
   @Autowired
@@ -55,11 +52,6 @@ class RawlsRecordSinkPrefixingTest extends TestBase {
 
   private final UUID WORKSPACE_ID = UUID.randomUUID();
   private final UUID JOB_ID = UUID.randomUUID();
-
-  @BeforeEach
-  void setUp() {
-    recordedJson = new StringWriter();
-  }
 
   // ===== PFB tests =====
   @Test
@@ -173,7 +165,6 @@ class RawlsRecordSinkPrefixingTest extends TestBase {
           /* primaryKey= */ "name" // currently ignored
           );
 
-      assertThat(recordedJson.toString()).isNotNull();
       // look for the blob that was created in a bucket with the appropriate json
       var blobs = storage.getBlobsInBucket();
       // confirm there is only 1
@@ -181,10 +172,10 @@ class RawlsRecordSinkPrefixingTest extends TestBase {
       // get the name of the blob
       blobName = blobs.iterator().next().getName();
       // check that the contents match the expected Json
-      var text = storage.getBlobContents(blobName);
-      String contents = StreamUtils.copyToString(text, StandardCharsets.UTF_8);
-      assertThat(contents).isEqualTo(recordedJson.toString());
-      return mapper.readValue(recordedJson.toString(), new TypeReference<>() {});
+      var contentStream = storage.getBlobContents(blobName);
+      String contents = StreamUtils.copyToString(contentStream, StandardCharsets.UTF_8);
+      assertThat(contents).isNotNull();
+      return mapper.readValue(contents, new TypeReference<>() {});
     } catch (IOException e) {
       throw new RuntimeException(e);
     } finally {
