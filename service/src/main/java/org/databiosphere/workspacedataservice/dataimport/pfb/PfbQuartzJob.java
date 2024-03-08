@@ -27,6 +27,7 @@ import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
+import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
@@ -45,6 +46,7 @@ import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 /** Shell/starting point for PFB import via Quartz. */
@@ -107,6 +109,7 @@ public class PfbQuartzJob extends QuartzJob {
 
     ImportDetails importDetails =
         new ImportDetails(jobId, userEmail, targetCollection, PrefixStrategy.PFB);
+
     // Import all the tables and rows inside the PFB.
     //
     // determine the workspace for the target collection
@@ -125,17 +128,18 @@ public class PfbQuartzJob extends QuartzJob {
     linkSnapshots(snapshotIds, workspaceId);
 
     // Import all the tables and rows inside the PFB.
+    RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails);
 
     // This is HTTP connection #2 to the PFB.
     logger.info("Importing tables and rows from this PFB...");
-    withPfbStream(
-        url, stream -> importTables(stream, targetCollection, BASE_ATTRIBUTES, importDetails));
+    withPfbStream(url, stream -> importTables(stream, recordSink, BASE_ATTRIBUTES));
 
     // This is HTTP connection #3 to the PFB.
     logger.info("Updating tables and rows from this PFB with relations...");
-    withPfbStream(url, stream -> importTables(stream, targetCollection, RELATIONS, importDetails));
-
-    // TODO AJ-1453: save the result of importTables and persist the to the job
+    withPfbStream(url, stream -> importTables(stream, recordSink, RELATIONS));
+    // TODO(AJ-1669): Add and use a finalize callback on RecordSink here to take care of post
+    //   processing steps
+    // TODO(AJ-1453): save the result of importTables and persist them to the job
   }
 
   /**
@@ -166,33 +170,28 @@ public class PfbQuartzJob extends QuartzJob {
    * Given a DataFileStream representing a PFB, import all the tables and rows inside that PFB.
    *
    * @param dataStream stream representing the PFB.
-   * @param collectionId the UUID of the WDS collection being imported to
+   * @param recordSink the {@link RecordSink} which directs the records to their destination
    * @param importMode indicating whether to import all data in the tables or only the relations
    */
   BatchWriteResult importTables(
-      DataFileStream<GenericRecord> dataStream,
-      UUID collectionId,
-      ImportMode importMode,
-      ImportDetails importDetails) {
+      DataFileStream<GenericRecord> dataStream, RecordSink recordSink, ImportMode importMode) {
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSourceFactory.forPfb(dataStream, importMode),
-            recordSinkFactory.buildRecordSink(importDetails),
+            recordSink,
             /* recordType= */ null, // record type is determined later
             /* primaryKey= */ ID_FIELD); // PFBs currently only use ID_FIELD as primary key
 
-    if (result != null) {
-      result
-          .entrySet()
-          .forEach(
-              entry -> {
-                RecordType recordType = entry.getKey();
-                int quantity = entry.getValue();
-                activityLogger.saveEventForCurrentUser(
-                    user ->
-                        user.upserted().record().withRecordType(recordType).ofQuantity(quantity));
-              });
-    }
+    result
+        .entrySet()
+        .forEach(
+            entry -> {
+              RecordType recordType = entry.getKey();
+              int quantity = entry.getValue();
+              activityLogger.saveEventForCurrentUser(
+                  user -> user.upserted().record().withRecordType(recordType).ofQuantity(quantity));
+            });
+
     return result;
   }
 
@@ -235,6 +234,7 @@ public class PfbQuartzJob extends QuartzJob {
     wsmSnapshotSupport.linkSnapshots(snapshotIds);
   }
 
+  @Nullable
   private UUID maybeUuid(String input) {
     try {
       return UUID.fromString(input);

@@ -34,6 +34,7 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,17 +71,10 @@ class ImportServiceTest extends TestBase {
 
   private final URI importUri = URI.create("http://does/not/matter");
 
-  private UUID defaultCollectionId;
-
   private static final String VERSION = "v0.2";
 
   @BeforeEach
   void setUp() throws ApiException {
-    // initialize the default collection id
-    if (defaultCollectionId == null) {
-      defaultCollectionId = workspaceId.id();
-    }
-
     // return the mock ResourcesApi from the mock SamClientFactory
     given(mockSamClientFactory.getResourcesApi()).willReturn(mockSamResourcesApi);
     // Sam permission check will always return true
@@ -141,12 +135,12 @@ class ImportServiceTest extends TestBase {
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
-    collectionService.createCollection(defaultCollectionId, VERSION);
+    collectionService.createCollection(workspaceId, defaultCollectionId(), VERSION);
     // define the import request
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request
     GenericJobServerModel createdJob =
-        importService.createImport(defaultCollectionId, importRequest);
+        importService.createImport(defaultCollectionId().id(), importRequest);
 
     // re-retrieve the job; this double-checks what's actually in the db, in case the return
     // value of importService.createImport has bugs
@@ -163,12 +157,12 @@ class ImportServiceTest extends TestBase {
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
-    collectionService.createCollection(defaultCollectionId, VERSION);
+    collectionService.createCollection(workspaceId, defaultCollectionId(), VERSION);
     // define the import request
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request
     GenericJobServerModel createdJob =
-        importService.createImport(defaultCollectionId, importRequest);
+        importService.createImport(defaultCollectionId().id(), importRequest);
     // assert that importService.createImport properly calls schedulerDao
     ArgumentCaptor<Schedulable> argument = ArgumentCaptor.forClass(Schedulable.class);
     verify(schedulerDao).schedule(argument.capture());
@@ -178,7 +172,7 @@ class ImportServiceTest extends TestBase {
 
     Map<String, Serializable> actualArguments = actual.getArguments();
     assertEquals(
-        defaultCollectionId.toString(),
+        defaultCollectionId().toString(),
         actualArguments.get(ARG_COLLECTION),
         "scheduled job had wrong collection argument");
     assertEquals(
@@ -196,12 +190,12 @@ class ImportServiceTest extends TestBase {
         .when(schedulerDao)
         .schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
-    collectionService.createCollection(defaultCollectionId, VERSION);
+    collectionService.createCollection(workspaceId, defaultCollectionId(), VERSION);
     // define the import request
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request; this will internally hit the exception from the schedulerDao
     GenericJobServerModel createdJob =
-        importService.createImport(defaultCollectionId, importRequest);
+        importService.createImport(defaultCollectionId().id(), importRequest);
 
     // re-retrieve the job; this double-checks what's actually in the db, in case the return
     // value of importService.createImport has bugs
@@ -224,7 +218,7 @@ class ImportServiceTest extends TestBase {
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
     UUID randomCollectionId = UUID.randomUUID();
-    collectionService.createCollection(randomCollectionId, VERSION);
+    collectionService.createCollection(workspaceId, CollectionId.of(randomCollectionId), VERSION);
     // define the import request
 
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
@@ -233,5 +227,9 @@ class ImportServiceTest extends TestBase {
         Exception.class, () -> importService.createImport(randomCollectionId, importRequest));
     // Job should not have been created
     verify(jobDao, times(0)).createJob(any());
+  }
+
+  private CollectionId defaultCollectionId() {
+    return CollectionId.of(workspaceId.id());
   }
 }

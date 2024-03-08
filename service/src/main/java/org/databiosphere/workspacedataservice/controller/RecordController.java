@@ -22,6 +22,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -108,7 +109,7 @@ public class RecordController {
       @PathVariable("instanceid") UUID instanceId,
       @PathVariable("recordType") RecordType recordType,
       @PathVariable("version") String version,
-      @RequestBody(required = false) SearchRequest searchRequest) {
+      @Nullable @RequestBody(required = false) SearchRequest searchRequest) {
     return recordOrchestratorService.queryForRecords(
         instanceId, recordType, version, searchRequest);
   }

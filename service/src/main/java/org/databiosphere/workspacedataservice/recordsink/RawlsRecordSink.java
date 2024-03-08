@@ -1,22 +1,18 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.mu.util.stream.BiStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.config.ConfigurationException;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
@@ -34,31 +30,18 @@ import org.databiosphere.workspacedataservice.storage.GcsStorage;
 /**
  * {@link RecordSink} implementation that produces Rawls-compatible JSON using {@link RawlsModel}
  * serialization classes.
- *
- * <p>TODO(AJ-1586): integrate with pubsub to notify Rawls when JSON is ready to be processed
  */
 public class RawlsRecordSink implements RecordSink {
   private final RawlsAttributePrefixer attributePrefixer;
   private final ObjectMapper mapper;
   private final GcsStorage storage;
-  private final Consumer<String> jsonConsumer;
   private final PubSub pubSub;
   private final ImportDetails importDetails;
 
-  /** Annotates a String consumer for JSON strings emitted by {@link RawlsRecordSink}. */
-  @Target({ElementType.PARAMETER, ElementType.METHOD})
-  @Retention(RetentionPolicy.RUNTIME)
-  public @interface RawlsJsonConsumer {}
-
   RawlsRecordSink(
-      ObjectMapper mapper,
-      @RawlsJsonConsumer Consumer<String> jsonConsumer,
-      GcsStorage storage,
-      PubSub pubSub,
-      ImportDetails importDetails) {
+      ObjectMapper mapper, GcsStorage storage, PubSub pubSub, ImportDetails importDetails) {
     this.attributePrefixer = new RawlsAttributePrefixer(importDetails.prefixStrategy());
     this.mapper = mapper;
-    this.jsonConsumer = jsonConsumer;
     this.storage = storage;
     this.pubSub = pubSub;
     this.importDetails = importDetails;
@@ -83,22 +66,17 @@ public class RawlsRecordSink implements RecordSink {
       ) throws BatchWriteException, IOException {
     ImmutableList.Builder<Entity> entities = ImmutableList.builder();
     records.stream().map(this::toEntity).forEach(entities::add);
-    jsonConsumer.accept(mapper.writeValueAsString(entities.build()));
 
-    if (storage != null) {
-      String upsertFileName =
-          storage.createGcsFile(
-              new ByteArrayInputStream(mapper.writeValueAsBytes(entities.build())),
-              importDetails.jobId());
+    String upsertFileName =
+        storage.createGcsFile(
+            new ByteArrayInputStream(mapper.writeValueAsBytes(entities.build())),
+            requireNonNull(importDetails.jobId()));
 
-      publishToPubSub(
-          importDetails.collectionId(),
-          importDetails.userEmail(),
-          importDetails.jobId(),
-          upsertFileName);
-    } else {
-      throw new ConfigurationException("GcsStorage is null for cWDS which is unexpected.");
-    }
+    publishToPubSub(
+        importDetails.collectionId(),
+        requireNonNull(importDetails.userEmail()),
+        importDetails.jobId(),
+        upsertFileName);
   }
 
   @Override

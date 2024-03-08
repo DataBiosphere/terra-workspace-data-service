@@ -47,7 +47,10 @@ public class BatchWriteService {
    */
   @WriteTransaction
   public BatchWriteResult batchWrite(
-      RecordSource recordSource, RecordSink recordSink, RecordType recordType, String primaryKey) {
+      RecordSource recordSource,
+      RecordSink recordSink,
+      @Nullable RecordType recordType,
+      String primaryKey) {
     try (recordSource) {
       return consumeWriteStream(recordSource, recordSink, recordType, primaryKey);
     } catch (IOException e) {
@@ -121,7 +124,8 @@ public class BatchWriteService {
     return result;
   }
 
-  private static void assertRecordTypesMatch(RecordType recordType, Set<RecordType> recordTypes) {
+  private static void assertRecordTypesMatch(
+      @Nullable RecordType recordType, Set<RecordType> recordTypes) {
     if (recordType != null && !Set.of(recordType).equals(recordTypes)) {
       throw new BadStreamingWriteRequestException(
           "Record Type was specified as argument to BatchWriteService, "

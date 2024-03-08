@@ -16,14 +16,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +50,7 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @SpringBootTest
 class PfbQuartzJobDataPlaneE2ETest {
+  @Autowired @SingleTenant WorkspaceId workspaceId;
   @Autowired RecordOrchestratorService recordOrchestratorService;
   @Autowired CollectionService collectionService;
   @Autowired PfbTestSupport testSupport;
@@ -73,7 +77,7 @@ class PfbQuartzJobDataPlaneE2ETest {
   @BeforeEach
   void beforeEach() {
     collectionId = UUID.randomUUID();
-    collectionService.createCollection(collectionId, "v0.2");
+    collectionService.createCollection(workspaceId, CollectionId.of(collectionId), "v0.2");
     // stub out WSM to report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());

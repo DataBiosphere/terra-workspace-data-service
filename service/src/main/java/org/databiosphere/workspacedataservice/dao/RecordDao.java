@@ -69,6 +69,7 @@ import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -251,7 +252,7 @@ public class RecordDao {
       int pageSize,
       int offset,
       String sortDirection,
-      String sortAttribute,
+      @Nullable String sortAttribute, // this comes from SearchRequest, which might not be provided
       UUID collectionId) {
     LOGGER.info("queryForRecords: {}", recordType.getName());
     return namedTemplate

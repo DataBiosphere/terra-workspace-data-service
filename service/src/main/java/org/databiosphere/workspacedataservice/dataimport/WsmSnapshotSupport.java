@@ -27,6 +27,7 @@ import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 
 public class WsmSnapshotSupport {
 
@@ -122,6 +123,7 @@ public class WsmSnapshotSupport {
    * @param resourceDescription the WSM object in which to find a snapshotId
    * @return the snapshotId if found, else null
    */
+  @Nullable
   protected UUID safeGetSnapshotId(ResourceDescription resourceDescription) {
     ResourceAttributesUnion resourceAttributes = resourceDescription.getResourceAttributes();
     if (resourceAttributes != null) {
@@ -189,7 +191,8 @@ public class WsmSnapshotSupport {
                 tableModel -> identifyPrimaryKey(tableModel.getPrimaryKey())));
   }
 
-  String identifyPrimaryKey(List<String> snapshotKeys) {
+  // snapshotKeys comes from generated code which doesn't guarantee null safety
+  String identifyPrimaryKey(@Nullable List<String> snapshotKeys) {
     if (snapshotKeys != null && snapshotKeys.size() == 1) {
       return snapshotKeys.get(0);
     }

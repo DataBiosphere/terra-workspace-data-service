@@ -44,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -180,7 +181,11 @@ public class RecordOrchestratorService { // TODO give me a better name
 
   @ReadTransaction
   public RecordQueryResponse queryForRecords(
-      UUID collectionId, RecordType recordType, String version, SearchRequest searchRequest) {
+      UUID collectionId,
+      RecordType recordType,
+      String version,
+      // SearchRequest isn't required in the controller, so it can be null here
+      @Nullable SearchRequest searchRequest) {
     validateVersion(version);
     collectionService.validateCollection(collectionId);
     checkRecordTypeExists(collectionId, recordType);
