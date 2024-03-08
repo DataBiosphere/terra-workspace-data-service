@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.recordsink;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.List;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -34,6 +35,11 @@ class RawlsAttributePrefixerTest {
         Arguments.of("name_and_other_stuff", "pfb:name_and_other_stuff"));
   }
 
+  static List<String> noPrefixTestCases() {
+    return List.of(
+        "name", "entityType", RECTYPE + "_id", "notrectype_id", "someattr", "name_and_other_stuff");
+  }
+
   @ParameterizedTest(name = "RawlsAttributePrefixer(TDR) should prefix {0} to {1}")
   @MethodSource("tdrTestCases")
   void tdrPrefixing(String input, String expected) {
@@ -46,5 +52,13 @@ class RawlsAttributePrefixerTest {
   void pfbPrefixing(String input, String expected) {
     RawlsAttributePrefixer prefixer = new RawlsAttributePrefixer(PrefixStrategy.PFB);
     assertEquals(expected, prefixer.prefix(input, RECTYPE));
+  }
+
+  @ParameterizedTest(
+      name = "RawlsAttributePrefixer(NONE) should return attribute name unchanged: {0}")
+  @MethodSource("noPrefixTestCases")
+  void noPrefixing(String input) {
+    RawlsAttributePrefixer prefixer = new RawlsAttributePrefixer(PrefixStrategy.NONE);
+    assertEquals(input, prefixer.prefix(input, RECTYPE));
   }
 }

@@ -89,15 +89,6 @@ class RawlsRecordSinkTest extends TestBase {
   }
 
   @Test
-  void prependsPrefixToAttributeName() {
-    var entities =
-        doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("attrName", "attrValue")));
-
-    var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
-    assertThat(operation.attributeName()).isEqualTo("prefix:attrName");
-  }
-
-  @Test
   void translatesAddUpdateAttribute() {
     var entities =
         doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("someKey", "someValue")));
@@ -134,8 +125,8 @@ class RawlsRecordSinkTest extends TestBase {
     assertThat(operations).hasSize(2);
     assertThat(filterOperations(AddUpdateAttribute.class, operations))
         .containsExactly(
-            new AddUpdateAttribute("prefix:someKey", "someValue"),
-            new AddUpdateAttribute("prefix:someOtherKey", "someOtherValue"));
+            new AddUpdateAttribute("someKey", "someValue"),
+            new AddUpdateAttribute("someOtherKey", "someOtherValue"));
   }
 
   @Test
@@ -159,25 +150,15 @@ class RawlsRecordSinkTest extends TestBase {
 
     assertThat(filterOperations(RemoveAttribute.class, operations))
         .extracting(RemoveAttribute::attributeName)
-        .containsExactly("prefix:arrayKey");
+        .containsExactly("arrayKey");
 
     assertThat(filterOperations(CreateAttributeValueList.class, operations))
         .extracting(CreateAttributeValueList::attributeName)
-        .containsExactly("prefix:arrayKey");
+        .containsExactly("arrayKey");
 
     assertThat(filterOperations(AddListMember.class, operations))
         .containsExactly(
-            new AddListMember("prefix:arrayKey", "value1"),
-            new AddListMember("prefix:arrayKey", "value2"));
-  }
-
-  @Test
-  void renamesNameToIncludeRecordType() {
-    var entities =
-        doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("name", "nameValue")));
-
-    var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
-    assertThat(operation.attributeName()).isEqualTo("prefix:widget_name");
+            new AddListMember("arrayKey", "value1"), new AddListMember("arrayKey", "value2"));
   }
 
   @Test
