@@ -8,6 +8,7 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import java.net.URL;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
@@ -33,9 +34,12 @@ import org.quartz.JobExecutionContext;
 public abstract class QuartzJob implements Job {
 
   private final ObservationRegistry observationRegistry;
+  private final DataImportProperties dataImportProperties;
 
-  protected QuartzJob(ObservationRegistry observationRegistry) {
+  protected QuartzJob(
+      ObservationRegistry observationRegistry, DataImportProperties dataImportProperties) {
     this.observationRegistry = observationRegistry;
+    this.dataImportProperties = dataImportProperties;
   }
 
   /** implementing classes are expected to be beans that inject a JobDao */
@@ -64,9 +68,15 @@ public abstract class QuartzJob implements Job {
       }
       // execute the specifics of this job
       executeInternal(jobId, context);
-      // if we reached here, mark this job as successful
-      getJobDao().succeeded(jobId);
-      observation.lowCardinalityKeyValue("outcome", StatusEnum.SUCCEEDED.getValue());
+
+      // if we reached here, and config says we should, mark this job as successful
+      if (dataImportProperties.isSucceedOnCompletion()) {
+        getJobDao().succeeded(jobId);
+        observation.lowCardinalityKeyValue("outcome", StatusEnum.SUCCEEDED.getValue());
+      } else {
+        // ensure we give the observation an outcome, even though we left the job running
+        observation.lowCardinalityKeyValue("outcome", StatusEnum.RUNNING.getValue());
+      }
     } catch (Exception e) {
       // on any otherwise-unhandled exception, mark the job as failed
       getJobDao().fail(jobId, e);

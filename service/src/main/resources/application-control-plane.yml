@@ -9,8 +9,10 @@ twds:
     enforce-collections-match-workspace-id: false
   data-import:
     batch-write-record-sink: "rawls"
+    succeed-on-completion: false
     project-id: ${SERVICE_GOOGLE_PROJECT}
     rawls-bucket-name: ${SERVICE_GOOGLE_BUCKET}
+
 
 spring:
   cloud:
