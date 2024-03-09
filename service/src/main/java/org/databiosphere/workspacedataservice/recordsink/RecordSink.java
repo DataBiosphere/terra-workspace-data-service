@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.recordsink;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -31,4 +32,10 @@ public interface RecordSink {
   /** Delete the given batch of records. */
   void deleteBatch(RecordType recordType, List<Record> records)
       throws BatchWriteException, IOException;
+
+  /**
+   * Callback invoked at the end of a series of batches operations with the result. Implementers can
+   * commit changes, clean up resources, publish results, etc.
+   */
+  void finalizeBatchWrite(BatchWriteResult result);
 }
