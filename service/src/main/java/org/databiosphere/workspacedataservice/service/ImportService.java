@@ -92,7 +92,7 @@ public class ImportService {
 
       // if we can find an MDC id, add it to the job context
       safeGetMdcId(createdJob.getJobId())
-          .map(requestId -> arguments.put(MDCServletRequestListener.MDC_KEY, requestId));
+          .ifPresent(requestId -> arguments.put(MDCServletRequestListener.MDC_KEY, requestId));
 
       // create the executable job to be scheduled
       Schedulable schedulable =
