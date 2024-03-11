@@ -135,7 +135,7 @@ dependencies {
             because("CVE-2022-45688")
         }
         // commons-compress required by org.apache.avro:avro:1.11.3, required by java-pfb-library:0.14.0
-        implementation('org.apache.commons:commons-compress:1.26.0') {
+        implementation('org.apache.commons:commons-compress:1.26.1') {
             because("CVE-2023-42503")
         }
         implementation('org.xerial.snappy:snappy-java:1.1.10.5') {
