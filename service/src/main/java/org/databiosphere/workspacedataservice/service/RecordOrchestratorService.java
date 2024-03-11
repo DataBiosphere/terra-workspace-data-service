@@ -30,6 +30,7 @@ import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
+import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -133,7 +134,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       RecordType recordType,
       Optional<String> primaryKey,
       MultipartFile records)
-      throws IOException {
+      throws IOException, DataImportException {
     validateAndPermissions(collectionId, version);
     if (recordDao.recordTypeExists(collectionId, recordType)) {
       primaryKey =
@@ -157,9 +158,6 @@ public class RecordOrchestratorService { // TODO give me a better name
       activityLogger.saveEventForCurrentUser(
           user -> user.upserted().record().withRecordType(recordType).ofQuantity(qty));
       return qty;
-    } catch (IOException e) {
-      // TODO: better exception handling?
-      throw new RuntimeException(e);
     }
   }
 
@@ -380,7 +378,8 @@ public class RecordOrchestratorService { // TODO give me a better name
       String version,
       RecordType recordType,
       Optional<String> primaryKey,
-      InputStream is) {
+      InputStream is)
+      throws DataImportException {
     validateAndPermissions(collectionId, version);
     if (recordDao.recordTypeExists(collectionId, recordType)) {
       recordService.validatePrimaryKey(collectionId, recordType, primaryKey);
@@ -402,9 +401,6 @@ public class RecordOrchestratorService { // TODO give me a better name
       activityLogger.saveEventForCurrentUser(
           user -> user.modified().record().withRecordType(recordType).ofQuantity(qty));
       return qty;
-    } catch (IOException e) {
-      // TODO: better exception handling?
-      throw new RuntimeException(e);
     }
   }
 

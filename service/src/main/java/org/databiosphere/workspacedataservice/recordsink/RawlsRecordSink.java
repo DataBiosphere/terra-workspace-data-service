@@ -2,12 +2,14 @@ package org.databiosphere.workspacedataservice.recordsink;
 
 import static java.util.Objects.requireNonNull;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
+import com.google.cloud.spring.storage.GoogleStorageResource;
+import com.google.cloud.storage.Blob;
 import com.google.common.collect.ImmutableMap;
 import com.google.mu.util.stream.BiStream;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -22,9 +24,11 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttrib
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
+import org.springframework.util.function.ThrowingConsumer;
 
 /**
  * {@link RecordSink} implementation that produces Rawls-compatible JSON using {@link RawlsModel}
@@ -32,32 +36,47 @@ import org.databiosphere.workspacedataservice.storage.GcsStorage;
  */
 public class RawlsRecordSink implements RecordSink {
   private final RawlsAttributePrefixer attributePrefixer;
-  private final ObjectMapper mapper;
-  private final GcsStorage storage;
   private final PubSub pubSub;
   private final ImportDetails importDetails;
 
+  private final JsonWriter jsonWriter;
+  private final Blob blob;
+
   RawlsRecordSink(
       RawlsAttributePrefixer attributePrefixer,
-      ObjectMapper mapper,
-      GcsStorage storage,
+      JsonWriter jsonWriter,
       PubSub pubSub,
-      ImportDetails importDetails) {
+      ImportDetails importDetails,
+      Blob blob) {
     this.attributePrefixer = attributePrefixer;
-    this.mapper = mapper;
-    this.storage = storage;
+    this.jsonWriter = jsonWriter;
+
+    // TODO: These three instance variables are used exclusively for pubsub concerns; if we can
+    //   factor the pubsub responsibility out somehow, RawlsRecordSink can be a lot more focused.
     this.pubSub = pubSub;
     this.importDetails = importDetails;
+    this.blob = blob;
   }
 
+  /**
+   * Creates a {@link RawlsRecordSink} that writes a stream of JSON entities to the given {@link
+   * GcsStorage}.
+   *
+   * @param mapper used to generate the stream of JSON entities
+   * @param storage where the JSON stream will be written
+   * @param pubSub to notify upon JSON stream completion
+   * @param importDetails to use for generating the message to send to PubSub
+   */
   public static RawlsRecordSink create(
       ObjectMapper mapper, GcsStorage storage, PubSub pubSub, ImportDetails importDetails) {
+    String blobName = getBlobName(requireNonNull(importDetails.jobId()));
+    Blob blob = storage.createBlob(blobName);
     return new RawlsRecordSink(
         new RawlsAttributePrefixer(importDetails.prefixStrategy()),
-        mapper,
-        storage,
+        JsonWriter.create(storage.getOutputStream(blob), mapper),
         pubSub,
-        importDetails);
+        importDetails,
+        blob);
   }
 
   @Override
@@ -76,20 +95,8 @@ public class RawlsRecordSink implements RecordSink {
       Map<String, DataTypeMapping> schema, // ignored
       List<Record> records,
       String primaryKey // ignored
-      ) throws IOException {
-    ImmutableList.Builder<Entity> entities = ImmutableList.builder();
-    records.stream().map(this::toEntity).forEach(entities::add);
-
-    String upsertFileName =
-        storage.createGcsFile(
-            new ByteArrayInputStream(mapper.writeValueAsBytes(entities.build())),
-            requireNonNull(importDetails.jobId()));
-
-    publishToPubSub(
-        importDetails.collectionId(),
-        requireNonNull(importDetails.userEmail()),
-        importDetails.jobId(),
-        upsertFileName);
+      ) {
+    records.stream().map(this::toEntity).forEach(jsonWriter::writeEntity);
   }
 
   @Override
@@ -99,22 +106,8 @@ public class RawlsRecordSink implements RecordSink {
 
   @Override
   public void close() {
-    // currently a no-op
-    // TODO(AJ-1669): do pubsub here, maybe do GCS cleanup here (assuming a file was reused
-    //   throughout)
-  }
-
-  private void publishToPubSub(UUID workspaceId, String user, UUID jobId, String upsertFile) {
-    Map<String, String> message =
-        new ImmutableMap.Builder<String, String>()
-            .put("workspaceId", workspaceId.toString())
-            .put("userEmail", user)
-            .put("jobId", jobId.toString())
-            .put("upsertFile", storage.getBucketName() + "/" + upsertFile)
-            .put("isUpsert", "true")
-            .put("isCWDS", "true")
-            .build();
-    pubSub.publishSync(message);
+    jsonWriter.close();
+    publishToPubSub(importDetails);
   }
 
   private Entity toEntity(Record record) {
@@ -139,5 +132,97 @@ public class RawlsRecordSink implements RecordSink {
     }
 
     return Stream.of(new AddUpdateAttribute(name, attributeValue));
+  }
+
+  static String getBlobName(UUID jobId) {
+    return "%s.rawlsUpsert".formatted(jobId.toString());
+  }
+
+  private void publishToPubSub(ImportDetails importDetails) {
+    UUID jobId = requireNonNull(importDetails.jobId());
+    UUID workspaceId = importDetails.collectionId();
+    String user = requireNonNull(importDetails.userEmail());
+    Map<String, String> message =
+        new ImmutableMap.Builder<String, String>()
+            .put("workspaceId", workspaceId.toString())
+            .put("userEmail", user)
+            .put("jobId", jobId.toString())
+            .put("upsertFile", blob.getBucket() + "/" + blob.getName())
+            .put("isUpsert", "true")
+            .put("isCWDS", "true")
+            .build();
+    pubSub.publishSync(message);
+  }
+
+  /**
+   * {@link JsonWriter} is responsible for writing JSON to a {@link GoogleStorageResource} and is
+   * intended to encapsulate the logic to get an {@link OutputStream} set up to do that and ensure
+   * the array of entities generated is properly initialized and terminated with "[" tokens.
+   */
+  private static class JsonWriter implements AutoCloseable {
+    private final JsonGenerator jsonGenerator;
+
+    // TODO: consider using a simple state machine here [enum INITIALIZED, WRITING, CLOSED] to
+    //  ensure the array stream is only started and closed once
+    private boolean streamStarted = false;
+
+    private JsonWriter(JsonGenerator jsonGenerator) {
+      this.jsonGenerator = jsonGenerator;
+    }
+
+    /**
+     * Initialize a new {@link JsonWriter} to write to the given {@link GoogleStorageResource} using
+     * the provided {@link ObjectMapper}.
+     */
+    private static JsonWriter create(OutputStream outputStream, ObjectMapper objectMapper) {
+      try {
+        return new JsonWriter(objectMapper.getFactory().createGenerator(outputStream));
+      } catch (IOException e) {
+        throw new JsonWriteException("Failed to create", e);
+      }
+    }
+
+    /** Write a single entity to the JSON array in Google storage. */
+    private void writeEntity(Entity entity) {
+      if (!streamStarted) {
+        writeJson(JsonGenerator::writeStartArray); // write a "[" to begin the array of entities
+        streamStarted = true;
+      }
+
+      writeJson(generator -> generator.writePOJO(entity));
+    }
+
+    /** Terminate the JSON array and close the underlying {@link JsonGenerator}. */
+    @Override
+    public void close() {
+      if (streamStarted) {
+        writeJson(JsonGenerator::writeEndArray); // write a "]" to end the array of entities
+      }
+      try {
+        jsonGenerator.close();
+      } catch (IOException e) {
+        throw new JsonWriteException("Failed to close", e);
+      }
+    }
+
+    private void writeJson(ThrowingConsumer<JsonGenerator> jsonGeneratorConsumer) {
+      jsonGeneratorConsumer.accept(jsonGenerator);
+      try {
+        jsonGenerator.flush();
+      } catch (IOException e) {
+        throw new JsonWriteException("Failed to flush", e);
+      }
+    }
+  }
+
+  /**
+   * This unchecked exception wraps the {@link IOException} that can occur at various stages while
+   * establishing a stream and writing JSON to Google Storage. It extends {@link
+   * DataImportException} so callers don't need to handle it explicitly.
+   */
+  public static class JsonWriteException extends DataImportException {
+    public JsonWriteException(String message, IOException cause) {
+      super(message, cause);
+    }
   }
 }

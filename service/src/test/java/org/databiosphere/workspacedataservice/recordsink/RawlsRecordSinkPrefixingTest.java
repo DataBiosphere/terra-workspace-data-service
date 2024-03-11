@@ -168,8 +168,6 @@ class RawlsRecordSinkPrefixingTest extends TestBase {
           recordList,
           /* primaryKey= */ "name" // currently ignored
           );
-    } catch (IOException e) {
-      throw new RuntimeException(e);
     }
 
     // Assert

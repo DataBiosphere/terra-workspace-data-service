@@ -9,7 +9,6 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 
 import bio.terra.pfb.PfbReader;
 import io.micrometer.observation.ObservationRegistry;
-import java.io.IOException;
 import java.net.URL;
 import java.util.Objects;
 import java.util.Set;
@@ -37,6 +36,8 @@ import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
+import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
+import org.databiosphere.workspacedataservice.service.model.exception.PfbImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -141,9 +142,8 @@ public class PfbQuartzJob extends QuartzJob {
       //   group its merged results under import mode; most notably, relations will be double
       //   counted
       result.merge(withPfbStream(url, stream -> importTables(stream, recordSink, RELATIONS)));
-    } catch (IOException e) {
-      // TODO: better error handling than this?
-      throw new RuntimeException(e);
+    } catch (DataImportException e) {
+      throw new PfbImportException(e.getMessage(), e);
     }
 
     // TODO(AJ-1453): save the result of importTables and persist them to the job
