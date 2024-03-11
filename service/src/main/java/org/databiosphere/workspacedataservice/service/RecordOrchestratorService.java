@@ -391,8 +391,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       throw new BadStreamingWriteRequestException(e);
     }
 
-    RecordSink recordSink =
-        recordSinkFactory.buildRecordSink(new ImportDetails(collectionId));
+    RecordSink recordSink = recordSinkFactory.buildRecordSink(new ImportDetails(collectionId));
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSource, recordSink, recordType, primaryKey.orElse(RECORD_ID));
