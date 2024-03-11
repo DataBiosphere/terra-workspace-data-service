@@ -10,7 +10,7 @@ public record ImportDetails(
     UUID collectionId,
     PrefixStrategy prefixStrategy) {
 
-  public ImportDetails(UUID collectionId, PrefixStrategy prefixStrategy) {
-    this(null, null, collectionId, prefixStrategy);
+  public ImportDetails(UUID collectionId) {
+    this(null, null, collectionId, PrefixStrategy.NONE);
   }
 }

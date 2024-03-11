@@ -90,8 +90,7 @@ class BatchWriteServiceTest extends TestBase {
     InputStream is = new ByteArrayInputStream(streamContents.getBytes());
 
     RecordSource recordSource = recordSourceFactory.forJson(is);
-    RecordSink recordSink =
-        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, PrefixStrategy.NONE));
+    RecordSink recordSink = recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION));
     Exception ex =
         assertThrows(
             BadStreamingWriteRequestException.class,
@@ -123,8 +122,7 @@ class BatchWriteServiceTest extends TestBase {
     // Note that this call to batchWriteTsvStream specifies a non-null RecordType.
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(file.getInputStream(), recordType, Optional.of(primaryKey));
-    RecordSink recordSink =
-        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, PrefixStrategy.NONE));
+    RecordSink recordSink = recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION));
     BatchWriteResult result =
         batchWriteService.batchWrite(recordSource, recordSink, recordType, primaryKey);
     recordSink.finalizeBatchWrite(result);
