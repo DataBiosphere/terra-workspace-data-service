@@ -12,6 +12,9 @@ on:
         required: true
   pull_request:
     branches: [ '**' ]
+  push:
+    branches:
+      - main
 
 env:
   SERVICE_NAME: ${{ github.event.repository.name }}
@@ -47,10 +50,10 @@ jobs:
         run: echo "newVersion=${{ inputs.new-tag || steps.setHash.outputs.git_short_sha }}" >> "$GITHUB_OUTPUT"
 
       - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v0
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Authenticate to Google Cloud
-        uses: 'google-github-actions/auth@v0'
+        uses: google-github-actions/auth@v2
         with:
           # Centralized in dsp-tools-k8s; ask in #dsp-devops-champions for help troubleshooting
           workload_identity_provider: 'projects/1038484894585/locations/global/workloadIdentityPools/github-wi-pool/providers/github-wi-provider'
@@ -83,9 +86,9 @@ jobs:
           -Djib.console=plain
 
       - name: Add version tag to GCR
-        if: ${{ inputs.new-tag != '' }} 
+        if: ${{ inputs.new-tag != '' }}
         run: docker image tag ${{ steps.gcr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} ${{ steps.gcr-image-name.outputs.name }}:${{ inputs.new-tag }}
-            
+
       - name: Run Trivy vulnerability scanner
         # Link to the github location of the action https://github.com/broadinstitute/dsp-appsec-trivy-action
         uses: broadinstitute/dsp-appsec-trivy-action@v1
