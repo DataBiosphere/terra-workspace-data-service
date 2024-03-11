@@ -52,14 +52,8 @@ public abstract class QuartzJob implements Job {
     // retrieve jobId
     UUID jobId = UUID.fromString(context.getJobDetail().getKey().getName());
 
-    // try to retrieve MDC id from job context and add to this thread; don't fail if this errors out
-    try {
-      String requestId =
-          getJobDataString(context.getMergedJobDataMap(), MDCServletRequestListener.MDC_KEY);
-      MDC.put(MDCServletRequestListener.MDC_KEY, requestId);
-    } catch (Exception e) {
-      // noop
-    }
+    // (try to) set the MDC request id based on the originating thread
+    propagateMdc(context);
 
     Observation observation =
         Observation.start("wds.job.execute", observationRegistry)
@@ -100,6 +94,17 @@ public abstract class QuartzJob implements Job {
   }
 
   protected abstract void executeInternal(UUID jobId, JobExecutionContext context);
+
+  // try to retrieve MDC id from job context and add to this thread; don't fail if this errors out
+  private void propagateMdc(JobExecutionContext context) {
+    try {
+      String requestId =
+          getJobDataString(context.getMergedJobDataMap(), MDCServletRequestListener.MDC_KEY);
+      MDC.put(MDCServletRequestListener.MDC_KEY, requestId);
+    } catch (Exception e) {
+      // noop
+    }
+  }
 
   /**
    * Retrieve a String value from a JobDataMap. Throws a JobExecutionException if the value is not
