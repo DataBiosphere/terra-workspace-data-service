@@ -142,8 +142,7 @@ public class RecordOrchestratorService { // TODO give me a better name
 
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(records.getInputStream(), recordType, primaryKey);
-    RecordSink recordSink =
-        recordSinkFactory.buildRecordSink(new ImportDetails(collectionId, "tsv"));
+    RecordSink recordSink = recordSinkFactory.buildRecordSink(new ImportDetails(collectionId));
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSource,
@@ -392,8 +391,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       throw new BadStreamingWriteRequestException(e);
     }
 
-    RecordSink recordSink =
-        recordSinkFactory.buildRecordSink(new ImportDetails(collectionId, "json"));
+    RecordSink recordSink = recordSinkFactory.buildRecordSink(new ImportDetails(collectionId));
     BatchWriteResult result =
         batchWriteService.batchWrite(
             recordSource, recordSink, recordType, primaryKey.orElse(RECORD_ID));
