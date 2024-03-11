@@ -184,7 +184,7 @@ class PfbQuartzJobControlPlaneE2ETest {
         .put("workspaceId", collectionId.toString())
         .put("userEmail", MockSamUsersApi.MOCK_USER_EMAIL)
         .put("jobId", jobId.toString())
-        .put("upsertFile", blobNameFor(jobId))
+        .put("upsertFile", storage.getBucketName() + "/" + blobNameFor(jobId))
         .put("isUpsert", "true")
         .put("isCWDS", "true")
         .build();
