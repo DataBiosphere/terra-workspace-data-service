@@ -30,6 +30,7 @@ import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils;
+import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource;
@@ -89,8 +90,7 @@ class BatchWriteServiceTest extends TestBase {
     InputStream is = new ByteArrayInputStream(streamContents.getBytes());
 
     RecordSource recordSource = recordSourceFactory.forJson(is);
-    RecordSink recordSink =
-        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, "json"));
+    RecordSink recordSink = recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION));
     Exception ex =
         assertThrows(
             BadStreamingWriteRequestException.class,
@@ -122,8 +122,7 @@ class BatchWriteServiceTest extends TestBase {
     // Note that this call to batchWriteTsvStream specifies a non-null RecordType.
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(file.getInputStream(), recordType, Optional.of(primaryKey));
-    RecordSink recordSink =
-        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, /* prefix= */ "tsv"));
+    RecordSink recordSink = recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION));
     BatchWriteResult result =
         batchWriteService.batchWrite(recordSource, recordSink, recordType, primaryKey);
     recordSink.finalizeBatchWrite(result);
@@ -266,7 +265,7 @@ class BatchWriteServiceTest extends TestBase {
   private BatchWriteResult batchWritePfbStream(
       DataFileStream<GenericRecord> pfbStream, String primaryKey, ImportMode importMode) {
     RecordSink recordSink =
-        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, /* prefix= */ "pfb"));
+        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, PrefixStrategy.PFB));
     var result =
         batchWriteService.batchWrite(
             recordSourceFactory.forPfb(pfbStream, importMode),

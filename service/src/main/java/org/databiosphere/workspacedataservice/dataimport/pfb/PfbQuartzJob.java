@@ -26,6 +26,7 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
@@ -106,10 +107,9 @@ public class PfbQuartzJob extends QuartzJob {
     String authToken = getJobDataString(jobDataMap, ARG_TOKEN);
     String userEmail = samDao.getUserEmail(BearerToken.of(authToken));
 
-    // TODO(AJ-1589): make prefix assignment dynamic. However, of note: the prefix is currently
-    //   ignored for RecordSinkMode.WDS.  In this case, it might be worth adding support for
-    //   omitting the prefix as part of supporting the prefix assignment.
-    ImportDetails importDetails = new ImportDetails(jobId, userEmail, targetCollection, "pfb");
+    ImportDetails importDetails =
+        new ImportDetails(jobId, userEmail, targetCollection, PrefixStrategy.PFB);
+
     // Import all the tables and rows inside the PFB.
     //
     // determine the workspace for the target collection
