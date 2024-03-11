@@ -55,7 +55,7 @@ class QuartzSchedulerDaoTest extends TestBase {
 
     // verify contents of the Quartz job that was scheduled
     JobDetail actualJobDetail = jobDetailArgument.getValue();
-    assertEquals("my-id", actualJobDetail.getKey().getName());
+    assertEquals("FAILME", actualJobDetail.getKey().getName());
     assertEquals("my-group", actualJobDetail.getKey().getGroup());
     assertEquals(FakeJob.class, actualJobDetail.getJobClass());
     assertEquals("my-description", actualJobDetail.getDescription());

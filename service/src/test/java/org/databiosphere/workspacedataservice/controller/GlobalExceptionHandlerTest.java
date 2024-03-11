@@ -69,7 +69,7 @@ class GlobalExceptionHandlerTest extends TestBase {
     List<String> actual =
         globalExceptionHandler.gatherNestedErrorMessages(input, new ArrayList<>());
     assertThat(actual).size().isEqualTo(3);
-    assertEquals("one", actual.get(0));
+    assertEquals("FAILME", actual.get(0));
     assertEquals("two", actual.get(1));
     assertEquals("three", actual.get(2));
   }
