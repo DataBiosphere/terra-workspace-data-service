@@ -51,7 +51,7 @@ public class GcsStorage {
 
   public String createGcsFile(InputStream contents, UUID jobId) throws IOException {
     // create the GCS Resource
-    var blobName = jobId.toString() + ".rawlsUpsert";
+    var blobName = jobId + ".rawlsUpsert";
     GoogleStorageResource gcsResource =
         new GoogleStorageResource(
             this.storage, String.format("gs://%s/%s", this.bucketName, blobName));
@@ -60,6 +60,10 @@ public class GcsStorage {
       contents.transferTo(os);
     }
     return gcsResource.getBlobName();
+  }
+
+  public String getBucketName() {
+    return bucketName;
   }
 
   @VisibleForTesting

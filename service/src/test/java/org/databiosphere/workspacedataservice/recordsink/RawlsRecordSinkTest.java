@@ -177,7 +177,7 @@ class RawlsRecordSinkTest extends TestBase {
             .put("workspaceId", WORKSPACE_ID.toString())
             .put("userEmail", USER_EMAIL)
             .put("jobId", JOB_ID.toString())
-            .put("upsertFile", JOB_ID + ".rawlsUpsert")
+            .put("upsertFile", storage.getBucketName() + "/" + JOB_ID + ".rawlsUpsert")
             .put("isUpsert", "true")
             .put("isCWDS", "true")
             .build();

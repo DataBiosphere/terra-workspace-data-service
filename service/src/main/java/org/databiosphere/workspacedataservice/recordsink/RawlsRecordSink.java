@@ -98,7 +98,7 @@ public class RawlsRecordSink implements RecordSink {
             .put("workspaceId", workspaceId.toString())
             .put("userEmail", user)
             .put("jobId", jobId.toString())
-            .put("upsertFile", upsertFile)
+            .put("upsertFile", storage.getBucketName() + "/" + upsertFile)
             .put("isUpsert", "true")
             .put("isCWDS", "true")
             .build();
