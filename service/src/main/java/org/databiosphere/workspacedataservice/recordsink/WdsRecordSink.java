@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RecordService;
+import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -70,5 +71,10 @@ public class WdsRecordSink implements RecordSink {
   @Override
   public void deleteBatch(RecordType recordType, List<Record> records) throws BatchWriteException {
     recordDao.batchDelete(collectionId, recordType, records);
+  }
+
+  @Override
+  public void finalizeBatchWrite(BatchWriteResult result) {
+    // no-op
   }
 }
