@@ -21,6 +21,7 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOpe
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
+import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -82,6 +83,13 @@ public class RawlsRecordSink implements RecordSink {
   @Override
   public void deleteBatch(RecordType recordType, List<Record> records) throws BatchWriteException {
     throw new UnsupportedOperationException("RawlsRecordSink does not support deleteBatch");
+  }
+
+  @Override
+  public void finalizeBatchWrite(BatchWriteResult result) {
+    // currently a no-op
+    // TODO(AJ-1669): do pubsub here, maybe do GCS cleanup here (assuming a file was reused
+    //   throughout)
   }
 
   private void publishToPubSub(UUID workspaceId, String user, UUID jobId, String upsertFile) {

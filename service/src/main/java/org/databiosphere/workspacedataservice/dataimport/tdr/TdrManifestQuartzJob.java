@@ -143,8 +143,12 @@ public class TdrManifestQuartzJob extends QuartzJob {
             recordSink);
 
     // add relations to the existing base attributes
-    importTables(
-        tdrManifestImportTables, fileDownloadHelper.getFileMap(), ImportMode.RELATIONS, recordSink);
+    result.merge(
+        importTables(
+            tdrManifestImportTables,
+            fileDownloadHelper.getFileMap(),
+            ImportMode.RELATIONS,
+            recordSink));
 
     // activity logging for import status
     // no specific activity logging for relations since main import is a superset
@@ -158,6 +162,10 @@ public class TdrManifestQuartzJob extends QuartzJob {
                             .record()
                             .withRecordType(entry.getKey())
                             .ofQuantity(entry.getValue())));
+
+    // Commit results, publish to downstream systems, etc.
+    recordSink.finalizeBatchWrite(result);
+
     // delete temp files after everything else is completed
     // Any failed deletions will be removed if/when pod restarts
     fileDownloadHelper.deleteFileDirectory();

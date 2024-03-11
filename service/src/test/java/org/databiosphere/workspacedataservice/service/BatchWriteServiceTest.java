@@ -33,6 +33,7 @@ import org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
+import org.databiosphere.workspacedataservice.recordsource.RecordSource;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.recordsource.TsvRecordSource;
@@ -83,21 +84,18 @@ class BatchWriteServiceTest extends TestBase {
   }
 
   @Test
-  void testRejectsDuplicateKeys() {
+  void testRejectsDuplicateKeys() throws IOException {
     String streamContents =
         "[{\"operation\": \"upsert\", \"record\": {\"id\": \"1\", \"type\": \"thing\", \"attributes\": {\"key\": \"value1\", \"key\": \"value2\"}}}]";
     InputStream is = new ByteArrayInputStream(streamContents.getBytes());
 
+    RecordSource recordSource = recordSourceFactory.forJson(is);
+    RecordSink recordSink =
+        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, PrefixStrategy.NONE));
     Exception ex =
         assertThrows(
             BadStreamingWriteRequestException.class,
-            () ->
-                batchWriteService.batchWrite(
-                    recordSourceFactory.forJson(is),
-                    recordSinkFactory.buildRecordSink(
-                        new ImportDetails(COLLECTION, PrefixStrategy.NONE)),
-                    THING_TYPE,
-                    RECORD_ID));
+            () -> batchWriteService.batchWrite(recordSource, recordSink, THING_TYPE, RECORD_ID));
 
     String errorMessage = ex.getMessage();
     assertEquals("Duplicate field 'key'", errorMessage);
@@ -127,7 +125,9 @@ class BatchWriteServiceTest extends TestBase {
         recordSourceFactory.forTsv(file.getInputStream(), recordType, Optional.of(primaryKey));
     RecordSink recordSink =
         recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, PrefixStrategy.NONE));
-    batchWriteService.batchWrite(recordSource, recordSink, recordType, primaryKey);
+    BatchWriteResult result =
+        batchWriteService.batchWrite(recordSource, recordSink, recordType, primaryKey);
+    recordSink.finalizeBatchWrite(result);
 
     // we should write three batches
     verify(recordService, times(3))
@@ -266,10 +266,15 @@ class BatchWriteServiceTest extends TestBase {
 
   private BatchWriteResult batchWritePfbStream(
       DataFileStream<GenericRecord> pfbStream, String primaryKey, ImportMode importMode) {
-    return batchWriteService.batchWrite(
-        recordSourceFactory.forPfb(pfbStream, importMode),
-        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, PrefixStrategy.PFB)),
-        /* recordType= */ null,
-        primaryKey);
+    RecordSink recordSink =
+        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, PrefixStrategy.PFB));
+    var result =
+        batchWriteService.batchWrite(
+            recordSourceFactory.forPfb(pfbStream, importMode),
+            recordSink,
+            /* recordType= */ null,
+            primaryKey);
+    recordSink.finalizeBatchWrite(result);
+    return result;
   }
 }

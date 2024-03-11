@@ -157,6 +157,9 @@ public class RecordOrchestratorService { // TODO give me a better name
     int qty = result.getUpdatedCount(recordType);
     activityLogger.saveEventForCurrentUser(
         user -> user.upserted().record().withRecordType(recordType).ofQuantity(qty));
+
+    // Commit results, publish to downstream systems, etc.
+    recordSink.finalizeBatchWrite(result);
     return qty;
   }
 
@@ -390,15 +393,16 @@ public class RecordOrchestratorService { // TODO give me a better name
       throw new BadStreamingWriteRequestException(e);
     }
 
+    RecordSink recordSink =
+        recordSinkFactory.buildRecordSink(new ImportDetails(collectionId, PrefixStrategy.NONE));
     BatchWriteResult result =
         batchWriteService.batchWrite(
-            recordSource,
-            recordSinkFactory.buildRecordSink(new ImportDetails(collectionId, PrefixStrategy.NONE)),
-            recordType,
-            primaryKey.orElse(RECORD_ID));
+            recordSource, recordSink, recordType, primaryKey.orElse(RECORD_ID));
     int qty = result.getUpdatedCount(recordType);
     activityLogger.saveEventForCurrentUser(
         user -> user.modified().record().withRecordType(recordType).ofQuantity(qty));
+    // Commit results, publish to downstream systems, etc.
+    recordSink.finalizeBatchWrite(result);
     return qty;
   }
 
