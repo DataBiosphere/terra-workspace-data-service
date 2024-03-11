@@ -34,8 +34,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.StreamUtils;
 
 /**
- * Smoke-tests a few paths fof attribute prefixing behavior via a full RawlsRecordSink. More
- * coverage of attribute prefixing behavior is in {@link RawlsAttributePrefixerTest}
+ * Smoke-tests a few paths of attribute prefixing behavior via a full RawlsRecordSink. More coverage
+ * of attribute prefixing behavior is in {@link RawlsAttributePrefixerTest}
  *
  * @see RawlsAttributePrefixerTest
  */
