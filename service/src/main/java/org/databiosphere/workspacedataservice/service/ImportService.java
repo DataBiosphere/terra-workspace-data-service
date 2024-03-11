@@ -7,6 +7,7 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
@@ -88,16 +89,10 @@ public class ImportService {
       arguments.put(ARG_TOKEN, petToken);
       arguments.put(ARG_URL, importRequest.getUrl().toString());
       arguments.put(ARG_COLLECTION, collectionId.toString());
-      // try to put the MDC id into the job context; don't fail if this errors out
-      try {
-        arguments.put(
-            MDCServletRequestListener.MDC_KEY, MDC.get(MDCServletRequestListener.MDC_KEY));
-      } catch (Exception e) {
-        logger.warn(
-            "Could not add MDC requestId to job map for job {}: {}",
-            createdJob.getJobId(),
-            e.getMessage());
-      }
+
+      // if we can find an MDC id, add it to the job context
+      safeGetMdcId(createdJob.getJobId())
+          .map(requestId -> arguments.put(MDCServletRequestListener.MDC_KEY, requestId));
 
       // create the executable job to be scheduled
       Schedulable schedulable =
@@ -118,6 +113,17 @@ public class ImportService {
 
     // return the queued job
     return createdJob;
+  }
+
+  // attempt to get the requestId from MDC. We expect this to always succeed, but if it doesn't,
+  // don't fail the import job. We only need the requestId for logging/correlation.
+  private Optional<String> safeGetMdcId(UUID jobId) {
+    try {
+      return Optional.of(MDC.get(MDCServletRequestListener.MDC_KEY));
+    } catch (Exception e) {
+      logger.warn("Could not add MDC requestId to job map for job {}: {}", jobId, e.getMessage());
+      return Optional.empty();
+    }
   }
 
   protected Schedulable createSchedulable(
