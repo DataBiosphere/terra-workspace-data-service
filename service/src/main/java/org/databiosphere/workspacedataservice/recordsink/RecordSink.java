@@ -1,9 +1,9 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -12,7 +12,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
  * Implementations of this interface are responsible for modifying the schema and writing/deleting
  * batches of records.
  */
-public interface RecordSink {
+public interface RecordSink extends Closeable {
   /** Create or modify the schema for a record type and write the records. */
   Map<String, DataTypeMapping> createOrModifyRecordType(
       RecordType recordType,
@@ -35,5 +35,5 @@ public interface RecordSink {
    * Callback invoked at the end of a series of batches operations with the result. Implementers can
    * commit changes, clean up resources, publish results, etc.
    */
-  void finalizeBatchWrite(BatchWriteResult result);
+  void close() throws IOException;
 }

@@ -142,23 +142,25 @@ public class RecordOrchestratorService { // TODO give me a better name
 
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(records.getInputStream(), recordType, primaryKey);
-    RecordSink recordSink = recordSinkFactory.buildRecordSink(new ImportDetails(collectionId));
-    BatchWriteResult result =
-        batchWriteService.batchWrite(
-            recordSource,
-            recordSink,
-            recordType,
-            // the extra cast here isn't exactly necessary, but left here to call out the additional
-            // tangential responsibility of the TsvRecordSource; this can be removed if we
-            // can converge on using PrimaryKeyResolver more generally across all formats.
-            ((PrimaryKeyResolver) recordSource).getPrimaryKey());
-    int qty = result.getUpdatedCount(recordType);
-    activityLogger.saveEventForCurrentUser(
-        user -> user.upserted().record().withRecordType(recordType).ofQuantity(qty));
-
-    // Commit results, publish to downstream systems, etc.
-    recordSink.finalizeBatchWrite(result);
-    return qty;
+    try (RecordSink recordSink =
+        recordSinkFactory.buildRecordSink(new ImportDetails(collectionId))) {
+      BatchWriteResult result =
+          batchWriteService.batchWrite(
+              recordSource,
+              recordSink,
+              recordType,
+              // the extra cast here isn't exactly necessary, but left here to call out the
+              // additional tangential responsibility of the TsvRecordSource; this can be removed if
+              // we can converge on using PrimaryKeyResolver more generally across all formats.
+              ((PrimaryKeyResolver) recordSource).getPrimaryKey());
+      int qty = result.getUpdatedCount(recordType);
+      activityLogger.saveEventForCurrentUser(
+          user -> user.upserted().record().withRecordType(recordType).ofQuantity(qty));
+      return qty;
+    } catch (IOException e) {
+      // TODO: better exception handling?
+      throw new RuntimeException(e);
+    }
   }
 
   // TODO: enable read transaction
@@ -391,16 +393,19 @@ public class RecordOrchestratorService { // TODO give me a better name
       throw new BadStreamingWriteRequestException(e);
     }
 
-    RecordSink recordSink = recordSinkFactory.buildRecordSink(new ImportDetails(collectionId));
-    BatchWriteResult result =
-        batchWriteService.batchWrite(
-            recordSource, recordSink, recordType, primaryKey.orElse(RECORD_ID));
-    int qty = result.getUpdatedCount(recordType);
-    activityLogger.saveEventForCurrentUser(
-        user -> user.modified().record().withRecordType(recordType).ofQuantity(qty));
-    // Commit results, publish to downstream systems, etc.
-    recordSink.finalizeBatchWrite(result);
-    return qty;
+    try (RecordSink recordSink =
+        recordSinkFactory.buildRecordSink(new ImportDetails(collectionId))) {
+      BatchWriteResult result =
+          batchWriteService.batchWrite(
+              recordSource, recordSink, recordType, primaryKey.orElse(RECORD_ID));
+      int qty = result.getUpdatedCount(recordType);
+      activityLogger.saveEventForCurrentUser(
+          user -> user.modified().record().withRecordType(recordType).ofQuantity(qty));
+      return qty;
+    } catch (IOException e) {
+      // TODO: better exception handling?
+      throw new RuntimeException(e);
+    }
   }
 
   private void checkRecordTypeExists(UUID collectionId, RecordType recordType) {

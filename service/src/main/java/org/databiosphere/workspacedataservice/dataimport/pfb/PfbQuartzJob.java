@@ -9,6 +9,7 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 
 import bio.terra.pfb.PfbReader;
 import io.micrometer.observation.ObservationRegistry;
+import java.io.IOException;
 import java.net.URL;
 import java.util.Objects;
 import java.util.Set;
@@ -128,19 +129,23 @@ public class PfbQuartzJob extends QuartzJob {
     linkSnapshots(snapshotIds, workspaceId);
 
     // Import all the tables and rows inside the PFB.
-    RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails);
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails)) {
+      // This is HTTP connection #2 to the PFB.
+      logger.info("Importing tables and rows from this PFB...");
+      BatchWriteResult result =
+          withPfbStream(url, stream -> importTables(stream, recordSink, BASE_ATTRIBUTES));
 
-    // This is HTTP connection #2 to the PFB.
-    logger.info("Importing tables and rows from this PFB...");
-    BatchWriteResult result =
-        withPfbStream(url, stream -> importTables(stream, recordSink, BASE_ATTRIBUTES));
+      // This is HTTP connection #3 to the PFB.
+      logger.info("Updating tables and rows from this PFB with relations...");
+      // TODO: merging batch results may have unexpected behavior until BatchWriteResult can
+      //   group its merged results under import mode; most notably, relations will be double
+      //   counted
+      result.merge(withPfbStream(url, stream -> importTables(stream, recordSink, RELATIONS)));
+    } catch (IOException e) {
+      // TODO: better error handling than this?
+      throw new RuntimeException(e);
+    }
 
-    // This is HTTP connection #3 to the PFB.
-    logger.info("Updating tables and rows from this PFB with relations...");
-    result.merge(withPfbStream(url, stream -> importTables(stream, recordSink, RELATIONS)));
-
-    // Commit results, publish to downstream systems, etc.
-    recordSink.finalizeBatchWrite(result);
     // TODO(AJ-1453): save the result of importTables and persist them to the job
   }
 

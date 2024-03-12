@@ -147,24 +147,33 @@ class RawlsRecordSinkPrefixingTest extends TestBase {
 
   private List<Entity> doUpsert(Record record, PrefixStrategy prefixStrategy) {
     String USER_EMAIL = "userEmail";
-    RecordSink recordSink =
+    var recordList = List.of(record);
+    var recordType = recordList.stream().map(Record::getRecordType).collect(onlyElement());
+    var blobName = "";
+
+    // RecordSink gets its own try block because we need close() to be called before moving to the
+    // assert part of the test.
+
+    // Act
+    try (RecordSink recordSink =
         RawlsRecordSink.create(
             mapper,
             storage,
             pubSub,
-            new ImportDetails(JOB_ID, USER_EMAIL, WORKSPACE_ID, prefixStrategy));
+            new ImportDetails(JOB_ID, USER_EMAIL, WORKSPACE_ID, prefixStrategy))) {
 
-    var recordList = List.of(record);
-    var recordType = recordList.stream().map(Record::getRecordType).collect(onlyElement());
-    var blobName = "";
-    try {
       recordSink.upsertBatch(
           recordType,
           /* schema= */ Map.of(), // currently ignored
           recordList,
           /* primaryKey= */ "name" // currently ignored
           );
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
 
+    // Assert
+    try {
       // look for the blob that was created in a bucket with the appropriate json
       var blobs = storage.getBlobsInBucket();
       // confirm there is only 1

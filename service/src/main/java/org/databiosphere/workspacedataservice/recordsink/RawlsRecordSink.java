@@ -21,7 +21,6 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOpe
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
-import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -99,7 +98,7 @@ public class RawlsRecordSink implements RecordSink {
   }
 
   @Override
-  public void finalizeBatchWrite(BatchWriteResult result) {
+  public void close() {
     // currently a no-op
     // TODO(AJ-1669): do pubsub here, maybe do GCS cleanup here (assuming a file was reused
     //   throughout)
