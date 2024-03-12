@@ -19,11 +19,15 @@ import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
 
 public abstract class SnapshotSupport {
 
   protected static final String DEFAULT_PRIMARY_KEY = "datarepo_row_id";
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(SnapshotSupport.class);
 
   String getDefaultPrimaryKey() {
     return DEFAULT_PRIMARY_KEY;
@@ -78,14 +82,11 @@ public abstract class SnapshotSupport {
     // find the snapshots that are not already linked to this workspace
     Set<UUID> newSnapshotIds = Sets.difference(snapshotIds, existingSnapshotIds);
 
-    // TODO is there a good way to pass this info to the implementing class to log it
-    // Or should the base class have a logger?
-    //    logger.info(
-    //        "Import data contains {} snapshot ids. {} of these are already linked to the
-    // workspace; {} new links will be created.",
-    //        snapshotIds.size(),
-    //        snapshotIds.size() - newSnapshotIds.size(),
-    //        newSnapshotIds.size());
+    LOGGER.info(
+        "Import data contains {} snapshot ids. {} of these are already linked to the workspace; {} new links will be created.",
+        snapshotIds.size(),
+        snapshotIds.size() - newSnapshotIds.size(),
+        newSnapshotIds.size());
 
     // pass snapshotIds to underlying client to link
     for (UUID uuid : newSnapshotIds) {

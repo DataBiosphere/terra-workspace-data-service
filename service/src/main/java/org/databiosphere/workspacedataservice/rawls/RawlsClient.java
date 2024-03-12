@@ -38,6 +38,10 @@ public class RawlsClient {
                   rawlsUrl + "/api/workspaces/" + workspaceId + "/snapshots/v2")
               .queryParam("offset", offset)
               .queryParam("limit", limit);
+      LOGGER.debug(
+          "Listing snapshot references for workspace {} at URL {}",
+          workspaceId,
+          rawlsUrl + "/api/workspaces/" + workspaceId + "/snapshots/v2");
 
       ResponseEntity<ResourceList> response =
           restTemplate.exchange(

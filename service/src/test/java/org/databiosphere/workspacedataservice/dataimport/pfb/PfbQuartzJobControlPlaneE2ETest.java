@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
+import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
@@ -37,7 +38,6 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttrib
 import org.databiosphere.workspacedataservice.sam.MockSamUsersApi;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -75,7 +75,7 @@ class PfbQuartzJobControlPlaneE2ETest {
   @Autowired PfbTestSupport testSupport;
   @Autowired GcsStorage storage;
   @SpyBean PubSub pubSub;
-  @MockBean WorkspaceManagerDao wsmDao;
+  @MockBean RawlsClient rawlsClient;
 
   /** ArgumentCaptor for the message passed to {@link PubSub#publishSync(Map)}. */
   @Captor private ArgumentCaptor<Map<String, String>> pubSubMessageCaptor;
@@ -97,8 +97,8 @@ class PfbQuartzJobControlPlaneE2ETest {
   @BeforeEach
   void setup() {
     collectionId = UUID.randomUUID();
-    // stub out WSM to report no snapshots already linked to this workspace
-    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+    // stub out rawls to report no snapshots already linked to this workspace
+    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
   }
 
