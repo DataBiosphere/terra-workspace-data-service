@@ -32,7 +32,7 @@ public abstract class SnapshotSupport {
   /**
    * Given a ResourceDescription representing a snapshot reference, retrieve that snapshot's UUID.
    *
-   * @param resourceDescription the WSM object in which to find a snapshotId
+   * @param resourceDescription the object in which to find a snapshotId
    * @return the snapshotId if found, else null
    */
   @Nullable
@@ -87,7 +87,7 @@ public abstract class SnapshotSupport {
     //        snapshotIds.size() - newSnapshotIds.size(),
     //        newSnapshotIds.size());
 
-    // pass snapshotIds to WSM
+    // pass snapshotIds to underlying client to link
     for (UUID uuid : newSnapshotIds) {
       try {
         linkSnapshot(uuid);

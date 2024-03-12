@@ -4,6 +4,8 @@ import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.workspace.model.DataRepoSnapshotResource;
 import bio.terra.workspace.model.ResourceList;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +22,6 @@ public class RawlsClient {
 
   private final String rawlsUrl;
   private final RestTemplate restTemplate;
-  private final HttpHeaders headers;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RawlsClient.class);
 
@@ -28,12 +29,10 @@ public class RawlsClient {
   public RawlsClient(String rawlsUrl, RestTemplate restTemplate) {
     this.rawlsUrl = rawlsUrl;
     this.restTemplate = restTemplate;
-    this.headers = new HttpHeaders();
   }
 
   public ResourceList enumerateDataRepoSnapshotReferences(UUID workspaceId, int offset, int limit) {
     try {
-      // TODO add auth headers
       UriComponentsBuilder builder =
           UriComponentsBuilder.fromHttpUrl(
                   rawlsUrl + "/api/workspaces/" + workspaceId + "/snapshots/v2")
@@ -42,7 +41,10 @@ public class RawlsClient {
 
       ResponseEntity<ResourceList> response =
           restTemplate.exchange(
-              builder.toUriString(), HttpMethod.GET, new HttpEntity<>(headers), ResourceList.class);
+              builder.toUriString(),
+              HttpMethod.GET,
+              new HttpEntity<>(getAuthedHeaders()),
+              ResourceList.class);
       if (!response.getStatusCode().is2xxSuccessful()) {
         LOGGER.warn(
             "Unsuccessful response retrieving snapshot references for workspace {}", workspaceId);
@@ -55,13 +57,12 @@ public class RawlsClient {
   }
 
   public void createSnapshotReference(UUID workspaceId, UUID snapshotId) {
-    // TODO add auth headers
     try {
       ResponseEntity<DataRepoSnapshotResource> response =
           restTemplate.exchange(
               rawlsUrl + "/api/workspaces/" + workspaceId + "/snapshots/v2",
               HttpMethod.POST,
-              new HttpEntity<>(new SnapshotModel().id(snapshotId), headers),
+              new HttpEntity<>(new SnapshotModel().id(snapshotId), getAuthedHeaders()),
               DataRepoSnapshotResource.class);
       if (!response.getStatusCode().is2xxSuccessful()) {
         LOGGER.warn(
@@ -73,5 +74,20 @@ public class RawlsClient {
       LOGGER.warn("Error creating snapshot reference", e);
       throw e;
     }
+  }
+
+  private HttpHeaders getAuthedHeaders() {
+    // TODO will we need other headers
+    HttpHeaders headers = new HttpHeaders();
+    BearerToken token = TokenContextUtil.getToken();
+
+    // add the user's bearer token to the client
+    if (token.nonEmpty()) {
+      LOGGER.debug("setting access token for rawls request");
+      headers.setBearerAuth(token.getValue());
+    } else {
+      LOGGER.warn("No access token found for rawls request.");
+    }
+    return headers;
   }
 }
