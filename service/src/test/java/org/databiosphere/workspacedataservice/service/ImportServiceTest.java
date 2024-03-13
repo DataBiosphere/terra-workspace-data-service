@@ -57,7 +57,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(profiles = {"mock-sam", "mock-collection-dao"})
 @DirtiesContext
-@SpringBootTest(properties = {"twds.data-import.allowed-import-sources=*.terra.bio"})
+@SpringBootTest(properties = {"twds.data-import.allowed-hosts=*.terra.bio"})
 class ImportServiceTest extends TestBase {
 
   @Autowired ImportService importService;

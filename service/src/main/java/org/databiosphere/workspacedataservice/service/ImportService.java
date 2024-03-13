@@ -161,8 +161,8 @@ public class ImportService {
 
     boolean isHttpsUrl = importUrl.getScheme().equals("https");
     if (isHttpsUrl
-        && dataImportProperties.getAllowedImportSources().stream()
-            .noneMatch(allowedImportSource -> allowedImportSource.matchesUrl(importUrl))) {
+        && dataImportProperties.getAllowedHosts().stream()
+            .noneMatch(allowedHost -> allowedHost.matchesUrl(importUrl))) {
       throw new ValidationException(
           "Files may not be imported from %s.".formatted(importUrl.getHost()));
     }

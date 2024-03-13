@@ -14,16 +14,16 @@ public class DataImportProperties {
   private String projectId;
   private String rawlsBucketName;
   private boolean succeedOnCompletion;
-  private final Set<AllowedImportSource> defaultAllowedImportSources =
+  private final Set<AllowedHost> defaultAllowedHosts =
       Set.of(
-          new AllowedImportSource("storage.googleapis.com"),
-          new AllowedImportSource("*.core.windows.net"),
+          new AllowedHost("storage.googleapis.com"),
+          new AllowedHost("*.core.windows.net"),
           // S3 allows multiple URL formats
           // https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
-          new AllowedImportSource("s3.amazonaws.com"), // path style legacy global endpoint
-          new AllowedImportSource("*.s3.amazonaws.com") // virtual host style legacy global endpoint
+          new AllowedHost("s3.amazonaws.com"), // path style legacy global endpoint
+          new AllowedHost("*.s3.amazonaws.com") // virtual host style legacy global endpoint
           );
-  private Set<AllowedImportSource> allowedImportSources = Collections.emptySet();
+  private Set<AllowedHost> allowedHosts = Collections.emptySet();
   private boolean fileImportsAllowed = false;
 
   /** Where to write records after import, options are defined by {@link RecordSinkMode} */
@@ -73,17 +73,15 @@ public class DataImportProperties {
    * Accepted sources for imported files. This includes configured sources as well as default /
    * always allowed sources (GCS buckets, Azure storage containers, and S3 buckets).
    */
-  public Set<AllowedImportSource> getAllowedImportSources() {
-    return Sets.union(defaultAllowedImportSources, allowedImportSources);
+  public Set<AllowedHost> getAllowedHosts() {
+    return Sets.union(defaultAllowedHosts, allowedHosts);
   }
 
-  public void setAllowedImportSources(@Nullable String[] allowedImportSources) {
-    this.allowedImportSources =
-        allowedImportSources == null
+  public void setAllowedHosts(@Nullable String[] allowedHosts) {
+    this.allowedHosts =
+        allowedHosts == null
             ? Collections.emptySet()
-            : Arrays.stream(allowedImportSources)
-                .map(AllowedImportSource::new)
-                .collect(Collectors.toSet());
+            : Arrays.stream(allowedHosts).map(AllowedHost::new).collect(Collectors.toSet());
   }
 
   /** Whether files may be imported from file: URLs. This should only be enabled for tests. */
@@ -115,18 +113,18 @@ public class DataImportProperties {
     }
   }
 
-  public class AllowedImportSource {
-    private String hostPattern;
+  public class AllowedHost {
+    private String pattern;
 
-    public AllowedImportSource(String hostPattern) {
-      this.hostPattern = hostPattern;
+    public AllowedHost(String hostPattern) {
+      this.pattern = hostPattern;
     }
 
     public boolean matchesUrl(URI url) {
-      if (hostPattern.startsWith("*")) {
-        return url.getHost().endsWith(hostPattern.substring(1));
+      if (pattern.startsWith("*")) {
+        return url.getHost().endsWith(pattern.substring(1));
       } else {
-        return url.getHost().equals(hostPattern);
+        return url.getHost().equals(pattern);
       }
     }
   }
