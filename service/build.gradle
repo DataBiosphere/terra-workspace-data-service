@@ -39,12 +39,12 @@ ext {
     parquet_mr_version = "1.13.1"
     hadoop_version = "3.3.6"
     prometheus_rsocket_version = "1.5.3"
-    spring_cloud_gcp_version = "5.0.4"
+    spring_cloud_gcp_version = "5.1.0"
 }
 
 dependencies {
     // Azure libraries
-    implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.19'
+    implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.5.1'
     implementation 'com.azure:azure-storage-blob:12.25.2'
     implementation 'com.azure:azure-identity-extensions:1.1.13' // postgres password plugin
 
@@ -119,7 +119,7 @@ dependencies {
     implementation "org.glassfish.jersey.core:jersey-common"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.11.10'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.12.0'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
