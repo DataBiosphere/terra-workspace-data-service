@@ -24,7 +24,7 @@ public class DataImportProperties {
           new AllowedHost("*.s3.amazonaws.com") // virtual host style legacy global endpoint
           );
   private Set<AllowedHost> allowedHosts = Collections.emptySet();
-  private boolean fileImportsAllowed = false;
+  private Set<String> allowedSchemes = Set.of("https");
 
   /** Where to write records after import, options are defined by {@link RecordSinkMode} */
   public RecordSinkMode getBatchWriteRecordSink() {
@@ -84,13 +84,15 @@ public class DataImportProperties {
             : Arrays.stream(allowedHosts).map(AllowedHost::new).collect(Collectors.toSet());
   }
 
-  /** Whether files may be imported from file: URLs. This should only be enabled for tests. */
-  public boolean fileImportsAllowed() {
-    return fileImportsAllowed;
+  public Set<String> getAllowedSchemes() {
+    return allowedSchemes;
   }
 
-  public void setAllowFileImports(boolean allowFileImports) {
-    this.fileImportsAllowed = allowFileImports;
+  public void setAllowedSchemes(@Nullable String[] allowedSchemes) {
+    this.allowedSchemes =
+        allowedSchemes == null
+            ? Collections.emptySet()
+            : Arrays.stream(allowedSchemes).collect(Collectors.toSet());
   }
 
   /** Dictates the sink where BatchWriteService should write records after import. */
