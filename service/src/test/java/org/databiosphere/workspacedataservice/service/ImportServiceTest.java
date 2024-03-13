@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -33,6 +34,7 @@ import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJo
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
+import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
@@ -55,7 +57,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(profiles = {"mock-sam", "mock-collection-dao"})
 @DirtiesContext
-@SpringBootTest
+@SpringBootTest(properties = {"twds.data-import.allowed-import-sources=*.terra.bio"})
 class ImportServiceTest extends TestBase {
 
   @Autowired ImportService importService;
@@ -69,7 +71,8 @@ class ImportServiceTest extends TestBase {
   ResourcesApi mockSamResourcesApi = Mockito.mock(ResourcesApi.class);
   GoogleApi mockSamGoogleApi = Mockito.mock(GoogleApi.class);
 
-  private final URI importUri = URI.create("http://does/not/matter");
+  private final URI importUri =
+      URI.create("https://teststorageaccount.blob.core.windows.net/testcontainer/path/to/file");
 
   private static final String VERSION = "v0.2";
 
@@ -227,6 +230,71 @@ class ImportServiceTest extends TestBase {
         Exception.class, () -> importService.createImport(randomCollectionId, importRequest));
     // Job should not have been created
     verify(jobDao, times(0)).createJob(any());
+  }
+
+  @ParameterizedTest(name = "for import type {0}, should require HTTPS URLs")
+  @EnumSource(TypeEnum.class)
+  void testRequiresHttpsImportUrls(TypeEnum importType) {
+    // Arrange
+    // schedulerDao.schedule(), which returns void, returns successfully
+    doNothing().when(schedulerDao).schedule(any(Schedulable.class));
+    // create collection (in the MockCollectionDao)
+    collectionService.createCollection(workspaceId, defaultCollectionId(), VERSION);
+
+    // Act/Assert
+    URI importUri =
+        URI.create("http://teststorageaccount.blob.core.windows.net/testcontainer/file");
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
+    ValidationException err =
+        assertThrows(
+            ValidationException.class,
+            () -> importService.createImport(defaultCollectionId().id(), importRequest));
+    assertEquals("File URL must be an HTTPS URL.", err.getMessage());
+
+    // No import job should be created.
+    verify(jobDao, never()).createJob(any());
+  }
+
+  @ParameterizedTest(name = "for import type {0}, should accept files from configured sources")
+  @EnumSource(TypeEnum.class)
+  void testAllowsImportsFromConfiguredSources(TypeEnum importType) {
+    // Arrange
+    // schedulerDao.schedule(), which returns void, returns successfully
+    doNothing().when(schedulerDao).schedule(any(Schedulable.class));
+    // create collection (in the MockCollectionDao)
+    collectionService.createCollection(workspaceId, defaultCollectionId(), VERSION);
+
+    // Act
+    URI importUri = URI.create("https://files.terra.bio/file");
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
+    GenericJobServerModel createdJob =
+        importService.createImport(defaultCollectionId().id(), importRequest);
+
+    // Assert
+    GenericJobServerModel actual = jobDao.getJob(createdJob.getJobId());
+    assertEquals(GenericJobServerModel.StatusEnum.QUEUED, actual.getStatus());
+  }
+
+  @ParameterizedTest(name = "for import type {0}, should reject files from other sources")
+  @EnumSource(TypeEnum.class)
+  void testRejectsImportsFromOtherSources(TypeEnum importType) {
+    // Arrange
+    // schedulerDao.schedule(), which returns void, returns successfully
+    doNothing().when(schedulerDao).schedule(any(Schedulable.class));
+    // create collection (in the MockCollectionDao)
+    collectionService.createCollection(workspaceId, defaultCollectionId(), VERSION);
+
+    // Act/Assert
+    URI importUri = URI.create("https://example.com/file");
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
+    ValidationException err =
+        assertThrows(
+            ValidationException.class,
+            () -> importService.createImport(defaultCollectionId().id(), importRequest));
+    assertEquals("Files may not be imported from example.com.", err.getMessage());
+
+    // No import job should be created.
+    verify(jobDao, never()).createJob(any());
   }
 
   private CollectionId defaultCollectionId() {

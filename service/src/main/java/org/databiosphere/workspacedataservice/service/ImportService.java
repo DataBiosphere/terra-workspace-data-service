@@ -5,10 +5,12 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
 import java.io.Serializable;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
@@ -18,6 +20,7 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
+import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
@@ -36,16 +39,19 @@ public class ImportService {
   private final SamDao samDao;
   private final JobDao jobDao;
   private final SchedulerDao schedulerDao;
+  private final DataImportProperties dataImportProperties;
 
   public ImportService(
       CollectionService collectionService,
       SamDao samDao,
       JobDao jobDao,
-      SchedulerDao schedulerDao) {
+      SchedulerDao schedulerDao,
+      DataImportProperties dataImportProperties) {
     this.collectionService = collectionService;
     this.samDao = samDao;
     this.jobDao = jobDao;
     this.schedulerDao = schedulerDao;
+    this.dataImportProperties = dataImportProperties;
   }
 
   public GenericJobServerModel createImport(
@@ -64,6 +70,8 @@ public class ImportService {
       // a non-maskable auth exception.
       throw new AuthenticationMaskableException("Collection");
     }
+
+    validateImportRequest(importRequest);
 
     // get a token to execute the job
     String petToken = samDao.getPetToken();
@@ -135,5 +143,19 @@ public class ImportService {
           jobId.toString(), "TDR manifest import", arguments);
       case PFB -> new PfbSchedulable(jobId.toString(), "TODO: PFB import", arguments);
     };
+  }
+
+  private void validateImportRequest(ImportRequestServerModel importRequest) {
+    URI importUrl = importRequest.getUrl();
+
+    if (!importUrl.getScheme().equals("https")) {
+      throw new ValidationException("File URL must be an HTTPS URL.");
+    }
+
+    if (dataImportProperties.getAllowedImportSources().stream()
+        .noneMatch(allowedImportSource -> allowedImportSource.matchesUrl(importUrl))) {
+      throw new ValidationException(
+          "Files may not be imported from %s.".formatted(importUrl.getHost()));
+    }
   }
 }
