@@ -28,7 +28,8 @@ class ImportControllerMockMvcTest extends MockMvcTestBase {
     collectionDao.createSchema(instanceId);
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(
-            ImportRequestServerModel.TypeEnum.PFB, new URI("https://terra.bio"));
+            ImportRequestServerModel.TypeEnum.PFB,
+            new URI("https://teststorageaccount.blob.core.windows.net/testcontainer/file"));
 
     // calling the API should result in 201 Created
     MvcResult mvcResult =
