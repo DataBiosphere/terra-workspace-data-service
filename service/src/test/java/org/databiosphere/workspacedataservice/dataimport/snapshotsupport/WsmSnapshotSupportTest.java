@@ -29,7 +29,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-public class WsmSnapshotSupportTest extends TestBase {
+class WsmSnapshotSupportTest extends TestBase {
 
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;

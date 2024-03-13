@@ -30,7 +30,7 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @ActiveProfiles(value = "control-plane", inheritProfiles = false)
 @SpringBootTest
-public class RawlsSnapshotSupportTest extends TestBase {
+class RawlsSnapshotSupportTest extends TestBase {
 
   @MockBean RawlsClient rawlsClient;
   @MockBean ActivityLogger activityLogger;

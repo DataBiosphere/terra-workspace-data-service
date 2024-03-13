@@ -165,6 +165,8 @@ class SnapshotSupportTest extends TestBase {
     assertEquals(expected, actual);
   }
 
+  // No need for these methods to implemented, this is used only for testing shared behavior in the
+  // abstract class
   private SnapshotSupport defaultSupport() {
     return new SnapshotSupport() {
       protected void linkSnapshot(UUID snapshotId) {

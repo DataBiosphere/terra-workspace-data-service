@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.rawls;
 import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.workspace.model.DataRepoSnapshotResource;
 import bio.terra.workspace.model.ResourceList;
+import java.util.Objects;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
@@ -34,14 +35,13 @@ public class RawlsClient {
   public ResourceList enumerateDataRepoSnapshotReferences(UUID workspaceId, int offset, int limit) {
     try {
       UriComponentsBuilder builder =
-          UriComponentsBuilder.fromHttpUrl(
-                  rawlsUrl + "/api/workspaces/" + workspaceId + "/snapshots/v2")
+          UriComponentsBuilder.fromHttpUrl(getSnapshotsUrl(workspaceId))
               .queryParam("offset", offset)
               .queryParam("limit", limit);
       LOGGER.debug(
           "Listing snapshot references for workspace {} at URL {}",
           workspaceId,
-          rawlsUrl + "/api/workspaces/" + workspaceId + "/snapshots/v2");
+          getSnapshotsUrl(workspaceId));
 
       ResponseEntity<ResourceList> response =
           restTemplate.exchange(
@@ -49,6 +49,7 @@ public class RawlsClient {
               HttpMethod.GET,
               new HttpEntity<>(getAuthedHeaders()),
               ResourceList.class);
+      // TODO proper error handling
       if (!response.getStatusCode().is2xxSuccessful()) {
         LOGGER.warn(
             "Unsuccessful response retrieving snapshot references for workspace {}", workspaceId);
@@ -64,10 +65,12 @@ public class RawlsClient {
     try {
       ResponseEntity<DataRepoSnapshotResource> response =
           restTemplate.exchange(
-              rawlsUrl + "/api/workspaces/" + workspaceId + "/snapshots/v2",
+              getSnapshotsUrl(workspaceId),
               HttpMethod.POST,
               new HttpEntity<>(new SnapshotModel().id(snapshotId), getAuthedHeaders()),
               DataRepoSnapshotResource.class);
+      // TODO proper error handling
+
       if (!response.getStatusCode().is2xxSuccessful()) {
         LOGGER.warn(
             "Unsuccessful response creating snapshot reference {} for workspace {}",
@@ -88,10 +91,14 @@ public class RawlsClient {
     // add the user's bearer token to the client
     if (token.nonEmpty()) {
       LOGGER.debug("setting access token for rawls request");
-      headers.setBearerAuth(token.getValue());
+      headers.setBearerAuth(Objects.requireNonNull(token.getValue()));
     } else {
       LOGGER.warn("No access token found for rawls request.");
     }
     return headers;
+  }
+
+  private String getSnapshotsUrl(UUID workspaceId) {
+    return rawlsUrl + "/api/workspaces/" + workspaceId + "/snapshots/v2";
   }
 }

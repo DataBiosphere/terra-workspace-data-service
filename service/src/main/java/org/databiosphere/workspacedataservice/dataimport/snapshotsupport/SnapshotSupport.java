@@ -152,7 +152,7 @@ public abstract class SnapshotSupport {
    * Query for the full list of referenced snapshots in this workspace, paginating as necessary.
    * Calls Rawls or WSM depending on implementation of enumerateDataRepoSnapshotReferences
    *
-   * @param pageSize how many references to return in each paginated request to WSM
+   * @param pageSize how many references to return in each paginated request
    * @return the full list of snapshot references in this workspace
    */
   protected ResourceList listAllSnapshots(int pageSize) {
