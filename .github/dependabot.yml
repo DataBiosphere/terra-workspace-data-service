@@ -13,3 +13,9 @@ updates:
       day: "monday"
       time: "08:00"
       timezone: "America/New_York"
+    groups:
+      minor-and-patch-updates:
+        applies-to: "version-updates"
+        update-types:
+          - "minor"
+          - "patch"
