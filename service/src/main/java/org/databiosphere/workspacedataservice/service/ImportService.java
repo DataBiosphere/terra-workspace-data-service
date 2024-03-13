@@ -4,11 +4,13 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
+import com.google.common.collect.Sets;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
@@ -148,12 +150,19 @@ public class ImportService {
   private void validateImportRequest(ImportRequestServerModel importRequest) {
     URI importUrl = importRequest.getUrl();
 
-    if (!importUrl.getScheme().equals("https")) {
-      throw new ValidationException("File URL must be an HTTPS URL.");
+    Set<String> allowedSchemes = Set.of("https");
+    if (dataImportProperties.fileImportsAllowed()) {
+      allowedSchemes = Sets.union(allowedSchemes, Set.of("file"));
+    }
+    if (!allowedSchemes.contains(importUrl.getScheme())) {
+      throw new ValidationException(
+          "Files may not be imported from %s URLs.".formatted(importUrl.getScheme()));
     }
 
-    if (dataImportProperties.getAllowedImportSources().stream()
-        .noneMatch(allowedImportSource -> allowedImportSource.matchesUrl(importUrl))) {
+    boolean isHttpsUrl = importUrl.getScheme().equals("https");
+    if (isHttpsUrl
+        && dataImportProperties.getAllowedImportSources().stream()
+            .noneMatch(allowedImportSource -> allowedImportSource.matchesUrl(importUrl))) {
       throw new ValidationException(
           "Files may not be imported from %s.".formatted(importUrl.getHost()));
     }

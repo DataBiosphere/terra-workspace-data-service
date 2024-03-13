@@ -48,7 +48,7 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "data-plane"})
 @DirtiesContext
-@SpringBootTest
+@SpringBootTest(properties = {"twds.data-import.allow-file-imports=true"})
 class PfbQuartzJobDataPlaneE2ETest {
   @Autowired @SingleTenant WorkspaceId workspaceId;
   @Autowired RecordOrchestratorService recordOrchestratorService;

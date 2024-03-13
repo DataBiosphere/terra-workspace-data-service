@@ -249,7 +249,7 @@ class ImportServiceTest extends TestBase {
         assertThrows(
             ValidationException.class,
             () -> importService.createImport(defaultCollectionId().id(), importRequest));
-    assertEquals("File URL must be an HTTPS URL.", err.getMessage());
+    assertEquals("Files may not be imported from http URLs.", err.getMessage());
 
     // No import job should be created.
     verify(jobDao, never()).createJob(any());
