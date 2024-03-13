@@ -113,8 +113,8 @@ public class DataImportProperties {
     }
   }
 
-  public class AllowedHost {
-    private String pattern;
+  public static class AllowedHost {
+    private final String pattern;
 
     public AllowedHost(String hostPattern) {
       this.pattern = hostPattern;
