@@ -1,13 +1,12 @@
 package org.databiosphere.workspacedataservice.config;
 
-import static org.apache.commons.lang3.StringUtils.isBlank;
-
 import com.google.common.collect.Sets;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.lang.Nullable;
 
 /** Properties that dictate how data import processes should behave. */
 public class DataImportProperties {
@@ -77,11 +76,11 @@ public class DataImportProperties {
     return Sets.union(defaultAllowedImportSources, allowedImportSources);
   }
 
-  public void setAllowedImportSources(String allowedImportSources) {
+  public void setAllowedImportSources(@Nullable String[] allowedImportSources) {
     this.allowedImportSources =
-        isBlank(allowedImportSources)
+        allowedImportSources == null
             ? Collections.emptySet()
-            : Arrays.stream(allowedImportSources.split(","))
+            : Arrays.stream(allowedImportSources)
                 .map(AllowedImportSource::new)
                 .collect(Collectors.toSet());
   }
