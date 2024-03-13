@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
+import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
@@ -68,7 +69,10 @@ class RawlsRecordSinkTest extends TestBase {
   void setUp() {
     recordSink =
         new RawlsRecordSink(
-            mapper, storage, pubSub, new ImportDetails(JOB_ID, USER_EMAIL, WORKSPACE_ID, "prefix"));
+            mapper,
+            storage,
+            pubSub,
+            new ImportDetails(JOB_ID, USER_EMAIL, WORKSPACE_ID, PrefixStrategy.NONE));
   }
 
   @Test
@@ -78,15 +82,6 @@ class RawlsRecordSinkTest extends TestBase {
     var entity = assertSingle(entities);
     assertThat(entity.name()).isEqualTo("id");
     assertThat(entity.entityType()).isEqualTo("widget");
-  }
-
-  @Test
-  void prependsPrefixToAttributeName() {
-    var entities =
-        doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("attrName", "attrValue")));
-
-    var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
-    assertThat(operation.attributeName()).isEqualTo("prefix:attrName");
   }
 
   @Test
@@ -126,8 +121,8 @@ class RawlsRecordSinkTest extends TestBase {
     assertThat(operations).hasSize(2);
     assertThat(filterOperations(AddUpdateAttribute.class, operations))
         .containsExactly(
-            new AddUpdateAttribute("prefix:someKey", "someValue"),
-            new AddUpdateAttribute("prefix:someOtherKey", "someOtherValue"));
+            new AddUpdateAttribute("someKey", "someValue"),
+            new AddUpdateAttribute("someOtherKey", "someOtherValue"));
   }
 
   @Test
@@ -151,25 +146,15 @@ class RawlsRecordSinkTest extends TestBase {
 
     assertThat(filterOperations(RemoveAttribute.class, operations))
         .extracting(RemoveAttribute::attributeName)
-        .containsExactly("prefix:arrayKey");
+        .containsExactly("arrayKey");
 
     assertThat(filterOperations(CreateAttributeValueList.class, operations))
         .extracting(CreateAttributeValueList::attributeName)
-        .containsExactly("prefix:arrayKey");
+        .containsExactly("arrayKey");
 
     assertThat(filterOperations(AddListMember.class, operations))
         .containsExactly(
-            new AddListMember("prefix:arrayKey", "value1"),
-            new AddListMember("prefix:arrayKey", "value2"));
-  }
-
-  @Test
-  void renamesNameToIncludeRecordType() {
-    var entities =
-        doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("name", "nameValue")));
-
-    var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
-    assertThat(operation.attributeName()).isEqualTo("prefix:widget_name");
+            new AddListMember("arrayKey", "value1"), new AddListMember("arrayKey", "value2"));
   }
 
   @Test
@@ -192,7 +177,7 @@ class RawlsRecordSinkTest extends TestBase {
             .put("workspaceId", WORKSPACE_ID.toString())
             .put("userEmail", USER_EMAIL)
             .put("jobId", JOB_ID.toString())
-            .put("upsertFile", JOB_ID + ".rawlsUpsert")
+            .put("upsertFile", storage.getBucketName() + "/" + JOB_ID + ".rawlsUpsert")
             .put("isUpsert", "true")
             .put("isCWDS", "true")
             .build();

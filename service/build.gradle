@@ -63,7 +63,7 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
-    implementation 'io.sentry:sentry-logback:7.5.0'
+    implementation 'io.sentry:sentry-logback:7.6.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
@@ -71,7 +71,7 @@ dependencies {
     implementation 'org.ehcache:ehcache:3.10.8:jakarta'
     implementation 'org.hashids:hashids:1.0.3'
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
-    implementation 'com.google.mug:mug:7.1'
+    implementation 'com.google.mug:mug:7.2'
 
     // required by openapi-generated models and api interfaces
     implementation 'jakarta.validation:jakarta.validation-api'
@@ -119,7 +119,7 @@ dependencies {
     implementation "org.glassfish.jersey.core:jersey-common"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.11.9'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.11.10'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -128,14 +128,14 @@ dependencies {
     testImplementation 'org.junit-pioneer:junit-pioneer:2.2.0'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.13'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.14'
 
     constraints {
         implementation('org.json:json:20240303') {
             because("CVE-2022-45688")
         }
         // commons-compress required by org.apache.avro:avro:1.11.3, required by java-pfb-library:0.14.0
-        implementation('org.apache.commons:commons-compress:1.26.0') {
+        implementation('org.apache.commons:commons-compress:1.26.1') {
             because("CVE-2023-42503")
         }
         implementation('org.xerial.snappy:snappy-java:1.1.10.5') {

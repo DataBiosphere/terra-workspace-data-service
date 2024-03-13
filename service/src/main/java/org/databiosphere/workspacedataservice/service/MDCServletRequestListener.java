@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 public class MDCServletRequestListener implements ServletRequestListener {
 
   // where the unique request id is stored in the MDC context
-  static final String MDC_KEY = "requestId";
+  public static final String MDC_KEY = "requestId";
   // the response header containing the unique request id
   public static final String RESPONSE_HEADER = "x-b3-traceid";
   // the list of request headers, in order, we will search for an incoming unique request id

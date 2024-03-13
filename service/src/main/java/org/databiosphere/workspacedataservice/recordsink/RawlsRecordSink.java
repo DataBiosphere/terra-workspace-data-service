@@ -33,7 +33,7 @@ import org.databiosphere.workspacedataservice.storage.GcsStorage;
  * serialization classes.
  */
 public class RawlsRecordSink implements RecordSink {
-  private final String attributePrefix;
+  private final RawlsAttributePrefixer attributePrefixer;
   private final ObjectMapper mapper;
   private final GcsStorage storage;
   private final PubSub pubSub;
@@ -41,7 +41,7 @@ public class RawlsRecordSink implements RecordSink {
 
   RawlsRecordSink(
       ObjectMapper mapper, GcsStorage storage, PubSub pubSub, ImportDetails importDetails) {
-    this.attributePrefix = importDetails.prefix();
+    this.attributePrefixer = new RawlsAttributePrefixer(importDetails.prefixStrategy());
     this.mapper = mapper;
     this.storage = storage;
     this.pubSub = pubSub;
@@ -98,7 +98,7 @@ public class RawlsRecordSink implements RecordSink {
             .put("workspaceId", workspaceId.toString())
             .put("userEmail", user)
             .put("jobId", jobId.toString())
-            .put("upsertFile", upsertFile)
+            .put("upsertFile", storage.getBucketName() + "/" + upsertFile)
             .put("isUpsert", "true")
             .put("isCWDS", "true")
             .build();
@@ -111,7 +111,9 @@ public class RawlsRecordSink implements RecordSink {
 
   private List<? extends AttributeOperation> makeOperations(Record record) {
     return BiStream.from(record.getAttributes().attributeSet())
-        .mapKeys(attributeName -> getAttributeName(record.getRecordType(), attributeName))
+        .mapKeys(
+            attributeName ->
+                attributePrefixer.prefix(attributeName, record.getRecordType().getName()))
         .filterValues(Objects::nonNull)
         .flatMapToObj(this::toOperations)
         .toList();
@@ -125,13 +127,5 @@ public class RawlsRecordSink implements RecordSink {
     }
 
     return Stream.of(new AddUpdateAttribute(name, attributeValue));
-  }
-
-  private String getAttributeName(RecordType recordType, String name) {
-    if (name.equals("name")) {
-      return String.format("%s:%s_name", attributePrefix, recordType);
-    }
-
-    return String.format("%s:%s", attributePrefix, name);
   }
 }

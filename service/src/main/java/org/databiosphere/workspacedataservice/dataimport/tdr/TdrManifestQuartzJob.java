@@ -35,6 +35,7 @@ import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.Snapsho
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
@@ -105,10 +106,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     UUID targetCollection = getJobDataUUID(jobDataMap, ARG_COLLECTION);
 
     // TDR import is interested in the collectionId (not the workspaceId)
-    // TODO(AJ-1589): make prefix assignment dynamic. However, of note: the prefix is currently
-    //   ignored for RecordSinkMode.WDS.  In this case, it might be worth adding support for
-    //   omitting the prefix as part of supporting the prefix assignment.
-    ImportDetails importDetails = new ImportDetails(targetCollection, "tdr");
+    ImportDetails importDetails = new ImportDetails(targetCollection, PrefixStrategy.TDR);
 
     // determine the workspace for the target collection
     WorkspaceId workspaceId = collectionService.getWorkspaceId(CollectionId.of(targetCollection));
