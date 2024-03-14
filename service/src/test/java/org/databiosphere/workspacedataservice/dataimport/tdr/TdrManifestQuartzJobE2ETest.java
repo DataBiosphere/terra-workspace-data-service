@@ -53,7 +53,7 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao"})
 @DirtiesContext
-@SpringBootTest
+@SpringBootTest(properties = {"twds.data-import.allowed-schemes=file"})
 @AutoConfigureMockMvc
 class TdrManifestQuartzJobE2ETest extends TestBase {
   @Autowired private RecordOrchestratorService recordOrchestratorService;
