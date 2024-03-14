@@ -1,7 +1,7 @@
 samurl: ${SAM_URL:https://sam.dsde-dev.broadinstitute.org/}
-datarepourl: https://jade.datarepo-dev.broadinstitute.org/
+datarepourl: ${DATA_REPO_URL:https://jade.datarepo-dev.broadinstitute.org/}
 workspacemanagerurl: ${WORKSPACE_MANAGER_URL:https://workspace.dsde-dev.broadinstitute.org/}
-leoUrl: https://leonardo.dsde-dev.broadinstitute.org/
+leoUrl: ${LEONARDO_URL:https://leonardo.dsde-dev.broadinstitute.org/}
 
 twds:
   instance:
@@ -19,3 +19,4 @@ spring:
 logging:
   pattern:
     correlation: "%X{requestId} "
+    
