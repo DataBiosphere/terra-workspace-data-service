@@ -88,7 +88,7 @@ jobs:
           export DATA_REPO_URL=http://localhost:9889
           export WORKSPACE_MANAGER_URL=http://localhost:9889
           export WORKSPACE_ID=123e4567-e89b-12d3-a456-426614174000
-          export SPRING_PROFILES_ACTIVE=data-plane
+          export SPRING_PROFILES_ACTIVE=data-plane,local
           ./gradlew --build-cache build -x test
           ./gradlew bootRun &
           count=20
