@@ -70,7 +70,6 @@ jobs:
       - name: Build, assemble, and test
         id: build-test
         run: |
-              export SAM_URL=http://localhost:9889
               export SPRING_PROFILES_ACTIVE=local
               ./gradlew --build-cache --scan test jacocoTestReport
 
