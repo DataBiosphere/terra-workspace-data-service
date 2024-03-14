@@ -23,6 +23,7 @@ jobs:
 
       - name: Build all projects without running tests
         run: |
+              export SAM_URL=http://localhost:9889
               export SPRING_PROFILES_ACTIVE=local
               ./gradlew --build-cache build -x test
 
