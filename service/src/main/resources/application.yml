@@ -165,8 +165,3 @@ api:
     backoff:
       delay: 150
       multiplier: 1.5
-
-samurl: ${SAM_URL:}
-datarepourl: ${DATA_REPO_URL:}
-workspacemanagerurl: ${WORKSPACE_MANAGER_URL:}
-leoUrl: ${LEONARDO_URL:}
