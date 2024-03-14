@@ -22,7 +22,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Build all projects without running tests
-        run: ./gradlew --build-cache build -x test
+        run: ./gradlew --args='--spring.profiles.active=local' --build-cache build -x test
 
   unit-tests:
     needs: [ build ]
