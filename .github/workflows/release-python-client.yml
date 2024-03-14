@@ -90,7 +90,7 @@ jobs:
           export WORKSPACE_ID=123e4567-e89b-12d3-a456-426614174000
           export SPRING_PROFILES_ACTIVE=data-plane
           ./gradlew --build-cache build -x test
-          ./gradlew bootRun &
+          ./gradlew bootRun --args='--twds.data-import.allowed-hosts=localhost --twds.data-import.allowed-schemes=http' &
           count=20
           until $(curl --output /dev/null --silent --head --fail http://localhost:8080/status); do
             printf '.'
