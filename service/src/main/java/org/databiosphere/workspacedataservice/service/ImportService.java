@@ -5,22 +5,20 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
 import java.io.Serializable;
-import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
+import org.databiosphere.workspacedataservice.dataimport.ImportSourceValidator;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbSchedulable;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestSchedulable;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
-import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
@@ -39,19 +37,19 @@ public class ImportService {
   private final SamDao samDao;
   private final JobDao jobDao;
   private final SchedulerDao schedulerDao;
-  private final DataImportProperties dataImportProperties;
+  private final ImportSourceValidator importSourceValidator;
 
   public ImportService(
       CollectionService collectionService,
       SamDao samDao,
       JobDao jobDao,
       SchedulerDao schedulerDao,
-      DataImportProperties dataImportProperties) {
+      ImportSourceValidator importSourceValidator) {
     this.collectionService = collectionService;
     this.samDao = samDao;
     this.jobDao = jobDao;
     this.schedulerDao = schedulerDao;
-    this.dataImportProperties = dataImportProperties;
+    this.importSourceValidator = importSourceValidator;
   }
 
   public GenericJobServerModel createImport(
@@ -71,7 +69,7 @@ public class ImportService {
       throw new AuthenticationMaskableException("Collection");
     }
 
-    validateImportRequest(importRequest);
+    importSourceValidator.validateImportRequest(importRequest);
 
     // get a token to execute the job
     String petToken = samDao.getPetToken();
@@ -143,23 +141,5 @@ public class ImportService {
           jobId.toString(), "TDR manifest import", arguments);
       case PFB -> new PfbSchedulable(jobId.toString(), "TODO: PFB import", arguments);
     };
-  }
-
-  private void validateImportRequest(ImportRequestServerModel importRequest) {
-    URI importUrl = importRequest.getUrl();
-
-    if (!dataImportProperties.getAllowedSchemes().contains(importUrl.getScheme())) {
-      throw new ValidationException(
-          "Files may not be imported from %s URLs.".formatted(importUrl.getScheme()));
-    }
-
-    // File URLs don't have a host to validate.
-    boolean isFileUrl = importUrl.getScheme().equals("file");
-    if (!isFileUrl
-        && dataImportProperties.getAllowedHosts().stream()
-            .noneMatch(allowedHost -> allowedHost.matchesUrl(importUrl))) {
-      throw new ValidationException(
-          "Files may not be imported from %s.".formatted(importUrl.getHost()));
-    }
   }
 }
