@@ -45,20 +45,22 @@ class GcsStorageTest extends TestBase {
     try (OutputStream outputStream = storage.getOutputStream("testBlobName")) {
       outputStream.write(initialString.getBytes());
     }
+    String actualContent = getContentsAsString("testBlobName");
 
-    // Act / Assert
-    assertThat(getContentsAsString("testBlobName")).isEqualTo(initialString);
+    // Assert
+    assertThat(actualContent).isEqualTo(initialString);
   }
 
   @Test
   void createAndGetBlobEmpty() throws IOException {
     // Act
     storage.createBlob("emptyBlob");
+    String actualContent = getContentsAsString("emptyBlob");
 
-    // Act / Assert
+    // Assert
     var onlyBlob = assertSingleBlob();
     assertThat(onlyBlob.getName()).isEqualTo("emptyBlob");
-    assertThat(getContentsAsString("emptyBlob")).isEmpty();
+    assertThat(actualContent).isEmpty();
   }
 
   @Test
@@ -76,7 +78,7 @@ class GcsStorageTest extends TestBase {
 
   @Test
   void getBlobsInBucketSingle() throws IOException {
-    // Act
+    // Arrange
     try (OutputStream outputStream = storage.getOutputStream("testBlobName")) {
       outputStream.write("text".getBytes());
     }
@@ -84,6 +86,7 @@ class GcsStorageTest extends TestBase {
     // Act / Assert
     Blob onlyBlob = assertSingleBlob();
 
+    // Assert
     assertThat(onlyBlob.asBlobInfo())
         .hasFieldOrPropertyWithValue("bucket", storage.getBucketName())
         .hasFieldOrPropertyWithValue("name", "testBlobName");
@@ -91,7 +94,7 @@ class GcsStorageTest extends TestBase {
 
   @Test
   void getBlobsInBucketMultiple() throws IOException {
-    // Act
+    // Arrange
     try (OutputStream outputStream = storage.getOutputStream("testBlobName1")) {
       outputStream.write("text".getBytes());
     }
@@ -102,8 +105,10 @@ class GcsStorageTest extends TestBase {
 
     storage.createBlob("testBlobName3");
 
-    // Act / Assert
+    // Act
     Iterable<Blob> blobsInBucket = storage.getBlobsInBucket();
+
+    // Assert
     assertThat(blobsInBucket).hasSize(3);
     assertThat(stream(blobsInBucket).map(Blob::getName))
         .containsExactlyInAnyOrder("testBlobName1", "testBlobName2", "testBlobName3");
@@ -117,7 +122,7 @@ class GcsStorageTest extends TestBase {
     // Act
     storage.deleteBlob("testBlobName");
 
-    // Act / Assert
+    // Assert
     assertThat(storage.getBlobsInBucket()).isEmpty();
   }
 
@@ -132,7 +137,7 @@ class GcsStorageTest extends TestBase {
     // Act
     storage.deleteBlob("testBlobName");
 
-    // Act / Assert
+    // Assert
     assertThat(storage.getBlobsInBucket()).isEmpty();
   }
 
@@ -147,7 +152,8 @@ class GcsStorageTest extends TestBase {
   }
 
   private Blob assertSingleBlob() {
-    assertThat(storage.getBlobsInBucket()).hasSize(1);
-    return stream(storage.getBlobsInBucket()).collect(onlyElement());
+    Iterable<Blob> blobsInBucket = storage.getBlobsInBucket();
+    assertThat(blobsInBucket).hasSize(1);
+    return stream(blobsInBucket).collect(onlyElement());
   }
 }
