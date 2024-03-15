@@ -7,8 +7,6 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class WsmSnapshotSupport extends SnapshotSupport {
 
@@ -16,8 +14,6 @@ public class WsmSnapshotSupport extends SnapshotSupport {
   private final WorkspaceManagerDao wsmDao;
   private final RestClientRetry restClientRetry;
   private final ActivityLogger activityLogger;
-
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   public WsmSnapshotSupport(
       WorkspaceId workspaceId,

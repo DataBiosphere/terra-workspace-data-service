@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.rawls;
 
+import static org.databiosphere.workspacedataservice.annotations.DeploymentMode.*;
+
 import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.workspace.model.DataRepoSnapshotResource;
 import bio.terra.workspace.model.ResourceList;
@@ -20,6 +22,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Component
+@ControlPlane
 public class RawlsClient {
 
   private final String rawlsUrl;
@@ -53,7 +56,7 @@ public class RawlsClient {
     }
   }
 
-  // TODO: (Blocked by WOR-1567) Add cloning instructions COPY_REFERENCE and a purpose=policy
+  // TODO: (AJ-1705) Add cloning instructions COPY_REFERENCE and a purpose=policy
   // key-value pair to the reference’s properties
   public void createSnapshotReference(UUID workspaceId, UUID snapshotId) {
     try {

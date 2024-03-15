@@ -6,8 +6,6 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class RawlsSnapshotSupport extends SnapshotSupport {
 
@@ -15,8 +13,6 @@ public class RawlsSnapshotSupport extends SnapshotSupport {
   private final RawlsClient rawlsClient;
   private final RestClientRetry restClientRetry;
   private final ActivityLogger activityLogger;
-
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   public RawlsSnapshotSupport(
       WorkspaceId workspaceId,
@@ -37,7 +33,7 @@ public class RawlsSnapshotSupport extends SnapshotSupport {
         user -> user.linked().snapshotReference().withUuid(snapshotId));
   }
 
-  // TODO: Filter out snapshots that do NOT have purpose:policy
+  // TODO (AJ-1705): Filter out snapshots that do NOT have purpose:policy
   protected ResourceList enumerateDataRepoSnapshotReferences(int offset, int pageSize) {
     RestClientRetry.RestCall<ResourceList> restCall =
         (() -> rawlsClient.enumerateDataRepoSnapshotReferences(workspaceId.id(), offset, pageSize));
