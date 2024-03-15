@@ -49,7 +49,8 @@ class ImportServiceControlPlaneTest {
   @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
 
   private final SamAuthorizationDao samAuthorizationDao = spy(MockSamAuthorizationDao.allowAll());
-  private final URI importUri = URI.create("http://does/not/matter");
+  private final URI importUri =
+      URI.create("https://teststorageaccount.blob.core.windows.net/testcontainer/file");
   private final ImportRequestServerModel importRequest =
       new ImportRequestServerModel(PFB, importUri);
 

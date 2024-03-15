@@ -69,7 +69,7 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h 127.0.0.1 -U postgres -f ./local-dev/local-postgres-init.sql
 
-      - name: Mock Sam via command-line docker run
+      - name: Mock APIs via command-line docker run
         run: |
           docker run -v ${{ github.workspace }}/service/src/test/resources/nginx.conf:/etc/nginx/nginx.conf:ro -v ${{ github.workspace }}/service/src/test/resources:/usr/share/nginx/html -p 9889:80 -d nginx:1.23.3
 
@@ -90,7 +90,8 @@ jobs:
           export WORKSPACE_ID=123e4567-e89b-12d3-a456-426614174000
           export SPRING_PROFILES_ACTIVE=data-plane
           ./gradlew --build-cache build -x test
-          ./gradlew bootRun &
+          # Allow http imports from localhost to test with files from resources served by the mock API server
+          ./gradlew bootRun --args='--twds.data-import.allowed-hosts=localhost --twds.data-import.allowed-schemes=http' &
           count=20
           until $(curl --output /dev/null --silent --head --fail http://localhost:8080/status); do
             printf '.'

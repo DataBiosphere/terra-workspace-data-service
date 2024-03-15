@@ -1,11 +1,31 @@
 package org.databiosphere.workspacedataservice.config;
 
+import static java.util.Arrays.stream;
+import static java.util.Collections.emptySet;
+
+import com.google.common.collect.Sets;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 /** Properties that dictate how data import processes should behave. */
 public class DataImportProperties {
+  private static final Set<Pattern> DEFAULT_ALLOWED_HOSTS =
+      Set.of(
+          Pattern.compile("storage\\.googleapis\\.com"),
+          Pattern.compile(".*\\.core\\.windows\\.net"),
+          // S3 allows multiple URL formats
+          // https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
+          Pattern.compile("s3\\.amazonaws\\.com"), // path style legacy global endpoint
+          Pattern.compile(".*\\.s3\\.amazonaws\\.com") // virtual host style legacy global endpoint
+          );
   private RecordSinkMode batchWriteRecordSink;
   private String projectId;
   private String rawlsBucketName;
   private boolean succeedOnCompletion;
+
+  private Set<Pattern> allowedHosts = emptySet();
+  private Set<String> allowedSchemes = Set.of("https");
 
   /** Where to write records after import, options are defined by {@link RecordSinkMode} */
   public RecordSinkMode getBatchWriteRecordSink() {
@@ -48,6 +68,26 @@ public class DataImportProperties {
 
   public void setSucceedOnCompletion(boolean succeedOnCompletion) {
     this.succeedOnCompletion = succeedOnCompletion;
+  }
+
+  /**
+   * Accepted sources for imported files. This includes configured sources as well as default /
+   * always allowed sources (GCS buckets, Azure storage containers, and S3 buckets).
+   */
+  public Set<Pattern> getAllowedHosts() {
+    return Sets.union(DEFAULT_ALLOWED_HOSTS, allowedHosts);
+  }
+
+  public void setAllowedHosts(String[] allowedHosts) {
+    this.allowedHosts = stream(allowedHosts).map(Pattern::compile).collect(Collectors.toSet());
+  }
+
+  public Set<String> getAllowedSchemes() {
+    return allowedSchemes;
+  }
+
+  public void setAllowedSchemes(String[] allowedSchemes) {
+    this.allowedSchemes = stream(allowedSchemes).collect(Collectors.toSet());
   }
 
   /** Dictates the sink where BatchWriteService should write records after import. */

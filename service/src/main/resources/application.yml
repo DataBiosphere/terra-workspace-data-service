@@ -135,6 +135,11 @@ twds:
     enforce-collections-match-workspace-id: true
   data-import:
     batch-write-record-sink: "wds"
+    allowed-hosts:
+      - anvil\.gi\.ucsc\.edu
+      - .*\.singlecell\.gi\.ucsc\.edu,
+      - .*gen3\.biodatacatalyst\.nhlbi\.nih\.gov
+      - .*service\.azul\.data\.humancellatlas\.org
 
   pg_dump:
     path: ${PGDUMP_PATH:/usr/bin/pg_dump}
