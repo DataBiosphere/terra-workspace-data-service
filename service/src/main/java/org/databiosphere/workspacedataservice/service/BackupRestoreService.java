@@ -212,9 +212,10 @@ public class BackupRestoreService {
     } finally {
       // restore the original search path
       if (originalSearchPath != null) {
-        namedTemplate.update(
+        namedTemplate.queryForObject(
             "SELECT pg_catalog.set_config('search_path', :originalSearchPath, false);",
-            Map.of("originalSearchPath", originalSearchPath));
+            Map.of("originalSearchPath", originalSearchPath),
+            String.class);
       }
 
       // clean up
