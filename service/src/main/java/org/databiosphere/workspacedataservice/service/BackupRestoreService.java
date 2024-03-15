@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -39,7 +40,9 @@ public class BackupRestoreService {
   private final CloneDao cloneDao;
   private final BackUpFileStorage storage;
   private final CollectionDao collectionDao;
+  private final NamedParameterJdbcTemplate namedTemplate;
   private final ActivityLogger activityLogger;
+
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
 
   @Value("${twds.instance.workspace-id:}")
@@ -78,12 +81,14 @@ public class BackupRestoreService {
       CollectionDao collectionDao,
       BackUpFileStorage backUpFileStorage,
       CloneDao cloneDao,
+      NamedParameterJdbcTemplate namedTemplate,
       ActivityLogger activityLogger) {
     this.backupDao = backupDao;
     this.restoreDao = restoreDao;
     this.collectionDao = collectionDao;
     this.cloneDao = cloneDao;
     this.storage = backUpFileStorage;
+    this.namedTemplate = namedTemplate;
     this.activityLogger = activityLogger;
   }
 
@@ -151,6 +156,7 @@ public class BackupRestoreService {
       String version, String backupFileName, UUID trackingId, String startupToken) {
     validateVersion(version);
     boolean doCleanup = false;
+    String originalSearchPath = null;
     try {
       LOGGER.info("Starting restore. ");
       // create an entry to track progress of this restore
@@ -159,12 +165,18 @@ public class BackupRestoreService {
           new BackupRestoreRequest(
               UUID.fromString(workspaceId), String.format("Restore from %s", backupFileName)));
 
+      // stash the current Postgres search path
+      originalSearchPath =
+          namedTemplate.queryForObject(
+              "SELECT pg_catalog.current_setting('search_path');", Map.of(), String.class);
+
       // generate psql query
       List<String> commandList = generateCommandList(false);
       Map<String, String> envVars = Map.of("PGPASSWORD", determinePassword());
 
       restoreDao.updateStatus(trackingId, JobStatus.RUNNING);
       LocalProcessLauncher localProcessLauncher = new LocalProcessLauncher();
+      // execute the restore. Note that this overwrites the connection's search path
       localProcessLauncher.launchProcess(commandList, envVars);
 
       LOGGER.info("Grabbing data from the backup file. ");
@@ -198,6 +210,13 @@ public class BackupRestoreService {
       LOGGER.error("process error: {}", ex.getMessage());
       restoreDao.terminateToError(trackingId, ex.getMessage());
     } finally {
+      // restore the original search path
+      if (originalSearchPath != null) {
+        namedTemplate.update(
+            "SELECT pg_catalog.set_config('search_path', :originalSearchPath, false);",
+            Map.of("originalSearchPath", originalSearchPath));
+      }
+
       // clean up
       if (doCleanup) {
         try {
