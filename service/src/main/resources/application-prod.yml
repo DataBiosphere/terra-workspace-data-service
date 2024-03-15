@@ -2,3 +2,11 @@ samurl: https://sam.dsde-prod.broadinstitute.org/
 datarepourl: https://data.terra.bio/
 workspacemanagerurl: https://workspace.dsde-prod.broadinstitute.org/
 leoUrl: https://leonardo.dsde-prod.broadinstitute.org/
+
+twds:
+  data-import:
+    allowed-hosts:
+      - service\.prod\.anvil\.gi\.ucsc\.edu
+      - .*\.singlecell\.gi\.ucsc\.edu,
+      - .*gen3\.biodatacatalyst\.nhlbi\.nih\.gov
+      - .*service\.azul\.data\.humancellatlas\.org
