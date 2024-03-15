@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport.pfb;
 
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.groupingBy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
@@ -24,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -46,6 +49,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -75,7 +79,11 @@ class PfbQuartzJobControlPlaneE2ETest {
   @Autowired ObjectMapper mapper;
   @Autowired CollectionService collectionService;
   @Autowired PfbTestSupport testSupport;
-  @Autowired GcsStorage storage;
+
+  @Autowired
+  @Qualifier("mockGcsStorage")
+  GcsStorage storage;
+
   @SpyBean PubSub pubSub;
   @MockBean WorkspaceManagerDao wsmDao;
 
@@ -93,6 +101,9 @@ class PfbQuartzJobControlPlaneE2ETest {
 
   @Value("classpath:batch-write-rawls/from-data-with-array-pfb.json")
   Resource dataWithArrayExpectedJson;
+
+  @Value("classpath:avro/test.avro")
+  Resource testAvroWithMultipleBatches;
 
   private UUID collectionId;
 
@@ -132,10 +143,10 @@ class PfbQuartzJobControlPlaneE2ETest {
     int expectedAttributes = totalAttributes - nullAttributes;
     assertThat(entity.operations().size()).isEqualTo(expectedAttributes);
 
-    assertAttributeValue(entity, "pfb:md5sum", "bdf121aadba028d57808101cb4455fa7");
-    assertAttributeValue(entity, "pfb:file_size", BigInteger.valueOf(512));
-    assertAttributeValue(entity, "pfb:file_state", "registered");
-    assertAttributeValue(
+    assertSimpleAttributeValue(entity, "pfb:md5sum", "bdf121aadba028d57808101cb4455fa7");
+    assertSimpleAttributeValue(entity, "pfb:file_size", BigInteger.valueOf(512));
+    assertSimpleAttributeValue(entity, "pfb:file_state", "registered");
+    assertSimpleAttributeValue(
         entity,
         "pfb:ga4gh_drs_uri",
         "drs://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa");
@@ -181,6 +192,42 @@ class PfbQuartzJobControlPlaneE2ETest {
     assertThat(actual).isEqualTo(expected);
   }
 
+  @Test
+  @Tag(SLOW)
+  void pfbToRawlsWithMultipleBatches() throws JobExecutionException, IOException {
+    // Arrange / Act
+    UUID jobId = testSupport.executePfbImportQuartzJob(collectionId, testAvroWithMultipleBatches);
+    Map<String, Long> expectedCounts =
+        new ImmutableMap.Builder<String, Long>()
+            .put("activities", 3202L)
+            .put("files", 3202L * 2) // relations get 2 passes, so there will be 2 upserts each
+            .put("donors", 3202L)
+            .put("biosamples", 3202L)
+            .put("datasets", 1L)
+            .build();
+
+    // Assert
+    assertPubSubMessage(expectedPubSubMessageFor(jobId));
+    assertSingleBlobWritten(blobNameFor(jobId));
+    InputStream jsonStream = storage.getBlobContents(blobNameFor(jobId));
+
+    List<Entity> entities = mapper.readValue(jsonStream, new TypeReference<>() {});
+
+    // spot check some sample types
+    Entity sampleActivity = getSampleEntity(entities, "activities");
+    assertListAttributeType(sampleActivity, "pfb:activity_type", String.class);
+
+    Entity sampleFile = getSampleEntity(entities, "files");
+    assertSimpleAttributeType(sampleFile, "pfb:file_format", String.class);
+    assertSimpleAttributeType(sampleFile, "pfb:file_size", BigInteger.class);
+    assertSimpleAttributeType(sampleFile, "pfb:is_supplementary", Boolean.class);
+
+    Map<String, Long> actualCounts =
+        entities.stream().collect(groupingBy(Entity::entityType, counting()));
+
+    assertThat(actualCounts).isEqualTo(expectedCounts);
+  }
+
   private ImmutableMap<String, String> expectedPubSubMessageFor(UUID jobId) {
     return new ImmutableMap.Builder<String, String>()
         .put("workspaceId", collectionId.toString())
@@ -209,15 +256,43 @@ class PfbQuartzJobControlPlaneE2ETest {
     assertThat(blobsWritten.get(0).getName()).isEqualTo(expectedBlobName);
   }
 
-  private void assertAttributeValue(Entity entity, String attributeName, Object expected) {
-    assertThat(
-            filteredOps(entity, ADD_UPDATE_ATTRIBUTE)
-                .map(AddUpdateAttribute.class::cast)
-                .filter(attr -> attr.attributeName().equals(attributeName))
-                .map(AddUpdateAttribute::addUpdateAttribute)
-                .findFirst()
-                .orElseThrow())
+  private void assertSimpleAttributeValue(Entity entity, String attributeName, Object expected) {
+    assertThat(getSimpleAttributeByName(entity, attributeName).addUpdateAttribute())
         .isEqualTo(expected);
+  }
+
+  private void assertSimpleAttributeType(Entity entity, String attributeName, Class<?> expected) {
+    assertThat(getSimpleAttributeByName(entity, attributeName).addUpdateAttribute().getClass())
+        .isEqualTo(expected);
+  }
+
+  private AddUpdateAttribute getSimpleAttributeByName(Entity entity, String attributeName) {
+    return filteredOps(entity, ADD_UPDATE_ATTRIBUTE)
+        .map(AddUpdateAttribute.class::cast)
+        .filter(attr -> attr.attributeName().equals(attributeName))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new AssertionError(
+                    "AddUpdateAttribute %s not found in entity %s"
+                        .formatted(attributeName, entity)));
+  }
+
+  private void assertListAttributeType(Entity entity, String attributeName, Class<?> expected) {
+    assertThat(getListAttributeByName(entity, attributeName).newMember().getClass())
+        .isEqualTo(expected);
+  }
+
+  private AddListMember getListAttributeByName(Entity entity, String attributeName) {
+    return filteredOps(entity, ADD_LIST_MEMBER)
+        .map(AddListMember.class::cast)
+        .filter(attr -> attr.attributeListName().equals(attributeName))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new AssertionError(
+                    "AddListMember attribute %s not found in entity %s"
+                        .formatted(attributeName, entity)));
   }
 
   private Stream<? extends AttributeOperation> filteredOps(Entity entity, Op operation) {
@@ -245,5 +320,12 @@ class PfbQuartzJobControlPlaneE2ETest {
     JsonNode treeActual = mapper.readTree(actualJson);
 
     assertThat(treeActual).isEqualTo(treeExpected);
+  }
+
+  private Entity getSampleEntity(Collection<Entity> allEntities, String typeName) {
+    return allEntities.stream()
+        .filter(entity -> entity.entityType().equals(typeName))
+        .findFirst()
+        .orElseThrow();
   }
 }
