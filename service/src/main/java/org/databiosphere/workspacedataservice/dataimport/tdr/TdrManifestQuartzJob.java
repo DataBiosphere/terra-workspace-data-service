@@ -10,6 +10,7 @@ import bio.terra.datarepo.model.SnapshotExportResponseModelFormatParquetLocation
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import io.micrometer.observation.ObservationRegistry;
 import java.io.File;
 import java.io.IOException;
@@ -320,8 +321,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // find the relations for each table.
     // This is the snapshot.relationships section in the manifest
     Multimap<RecordType, RelationshipModel> relationsByTable =
-        snapshotSupport.identifyRelations(
-            snapshotExportResponseModel.getSnapshot().getRelationships());
+        identifyRelations(snapshotExportResponseModel.getSnapshot().getRelationships());
 
     return tables.stream()
         .map(
@@ -350,6 +350,13 @@ public class TdrManifestQuartzJob extends QuartzJob {
               return new TdrManifestImportTable(recordType, primaryKey, dataFiles, relations);
             })
         .toList();
+  }
+
+  private Multimap<RecordType, RelationshipModel> identifyRelations(
+      List<RelationshipModel> relationshipModels) {
+    return Multimaps.index(
+        relationshipModels,
+        relationshipModel -> RecordType.valueOf(relationshipModel.getFrom().getTable()));
   }
 
   private boolean isValidRelation(

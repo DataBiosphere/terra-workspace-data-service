@@ -1,13 +1,11 @@
 package org.databiosphere.workspacedataservice.dataimport.snapshotsupport;
 
-import bio.terra.datarepo.model.RelationshipModel;
 import bio.terra.datarepo.model.TableModel;
 import bio.terra.workspace.model.DataRepoSnapshotAttributes;
 import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceList;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Map;
@@ -102,8 +100,7 @@ public abstract class SnapshotSupport {
 
   /**
    * Query for the full list of referenced snapshots in this workspace, then return the list of
-   * unique snapshotIds from those references. Calls Rawls or WSM depending on the implementation of
-   * listAllSnapshots
+   * unique snapshotIds from those references. Relies on implementing class for listAllSnapshots
    *
    * @param pageSize how many references to return in each paginated request
    * @return the list of unique ids for all pre-existing snapshot references
@@ -120,20 +117,14 @@ public abstract class SnapshotSupport {
                 tableModel -> identifyPrimaryKey(tableModel.getPrimaryKey())));
   }
 
-  public Multimap<RecordType, RelationshipModel> identifyRelations(
-      List<RelationshipModel> relationshipModels) {
-    return Multimaps.index(
-        relationshipModels,
-        relationshipModel -> RecordType.valueOf(relationshipModel.getFrom().getTable()));
-  }
-
   /**
    * Given a ResourceList, find all the valid ids of referenced snapshots in that list
    *
    * @param resourceList the list in which to look for snapshotIds
    * @return the list of unique ids in the provided list
    */
-  protected List<UUID> extractSnapshotIds(ResourceList resourceList) {
+  @VisibleForTesting
+  List<UUID> extractSnapshotIds(ResourceList resourceList) {
     return resourceList.getResources().stream()
         .map(this::safeGetSnapshotId)
         .filter(Objects::nonNull)
@@ -150,7 +141,7 @@ public abstract class SnapshotSupport {
 
   /**
    * Query for the full list of referenced snapshots in this workspace, paginating as necessary.
-   * Calls Rawls or WSM depending on implementation of enumerateDataRepoSnapshotReferences
+   * Relies on implementing class for enumerateDataRepoSnapshotReferences
    *
    * @param pageSize how many references to return in each paginated request
    * @return the full list of snapshot references in this workspace

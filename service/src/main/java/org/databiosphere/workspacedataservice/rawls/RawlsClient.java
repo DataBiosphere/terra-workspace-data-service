@@ -39,7 +39,8 @@ public class RawlsClient {
   public ResourceList enumerateDataRepoSnapshotReferences(UUID workspaceId, int offset, int limit) {
     try {
       UriComponentsBuilder builder =
-          UriComponentsBuilder.fromHttpUrl(getSnapshotsUrl(workspaceId))
+          UriComponentsBuilder.fromHttpUrl(rawlsUrl)
+              .pathSegment("api", "workspaces", workspaceId.toString(), "snapshots", "v2")
               .queryParam("offset", offset)
               .queryParam("limit", limit);
 
@@ -51,7 +52,6 @@ public class RawlsClient {
               ResourceList.class);
       return response.getBody();
     } catch (RestClientResponseException e) {
-      LOGGER.warn("Error retrieving snapshot references for workspace {}", workspaceId, e);
       throw new RawlsException(e);
     }
   }
@@ -61,16 +61,13 @@ public class RawlsClient {
   public void createSnapshotReference(UUID workspaceId, UUID snapshotId) {
     try {
       restTemplate.exchange(
-          getSnapshotsUrl(workspaceId),
+          UriComponentsBuilder.fromHttpUrl(rawlsUrl)
+              .pathSegment("api", "workspaces", workspaceId.toString(), "snapshots", "v2")
+              .toUriString(),
           HttpMethod.POST,
           new HttpEntity<>(new SnapshotModel().id(snapshotId), getAuthedHeaders()),
           DataRepoSnapshotResource.class);
     } catch (RestClientResponseException e) {
-      LOGGER.warn(
-          "Error creating snapshot reference for snapshotId {} in workspace {}",
-          snapshotId,
-          workspaceId,
-          e);
       throw new RawlsException(e);
     }
   }
@@ -87,9 +84,5 @@ public class RawlsClient {
       LOGGER.warn("No access token found for rawls request.");
     }
     return headers;
-  }
-
-  private String getSnapshotsUrl(UUID workspaceId) {
-    return rawlsUrl + "/api/workspaces/" + workspaceId + "/snapshots/v2";
   }
 }
