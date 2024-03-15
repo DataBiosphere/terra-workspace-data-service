@@ -26,7 +26,7 @@ public class ImportSourceValidator {
     boolean isFileUrl = importUrl.getScheme().equals("file");
     if (!isFileUrl
         && dataImportProperties.getAllowedHosts().stream()
-            .noneMatch(allowedHost -> allowedHost.matchesUrl(importUrl))) {
+            .noneMatch(allowedHost -> allowedHost.matcher(importUrl.getHost()).matches())) {
       throw new ValidationException(
           "Files may not be imported from %s.".formatted(importUrl.getHost()));
     }

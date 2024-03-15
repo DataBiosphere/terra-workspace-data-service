@@ -1,29 +1,31 @@
 package org.databiosphere.workspacedataservice.config;
 
+import static java.util.Arrays.stream;
+import static java.util.Collections.emptySet;
+
 import com.google.common.collect.Sets;
-import java.net.URI;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.springframework.lang.Nullable;
 
 /** Properties that dictate how data import processes should behave. */
 public class DataImportProperties {
+  private static final Set<Pattern> defaultAllowedHosts =
+      Set.of(
+          Pattern.compile("storage\\.googleapis\\.com"),
+          Pattern.compile(".*\\.core\\.windows\\.net"),
+          // S3 allows multiple URL formats
+          // https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
+          Pattern.compile("s3\\.amazonaws\\.com"), // path style legacy global endpoint
+          Pattern.compile(".*\\.s3\\.amazonaws\\.com") // virtual host style legacy global endpoint
+          );
   private RecordSinkMode batchWriteRecordSink;
   private String projectId;
   private String rawlsBucketName;
   private boolean succeedOnCompletion;
-  private final Set<AllowedHost> defaultAllowedHosts =
-      Set.of(
-          new AllowedHost("storage.googleapis.com"),
-          new AllowedHost("*.core.windows.net"),
-          // S3 allows multiple URL formats
-          // https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
-          new AllowedHost("s3.amazonaws.com"), // path style legacy global endpoint
-          new AllowedHost("*.s3.amazonaws.com") // virtual host style legacy global endpoint
-          );
-  private Set<AllowedHost> allowedHosts = Collections.emptySet();
+
+  private Set<Pattern> allowedHosts = emptySet();
   private Set<String> allowedSchemes = Set.of("https");
 
   /** Where to write records after import, options are defined by {@link RecordSinkMode} */
@@ -73,15 +75,15 @@ public class DataImportProperties {
    * Accepted sources for imported files. This includes configured sources as well as default /
    * always allowed sources (GCS buckets, Azure storage containers, and S3 buckets).
    */
-  public Set<AllowedHost> getAllowedHosts() {
+  public Set<Pattern> getAllowedHosts() {
     return Sets.union(defaultAllowedHosts, allowedHosts);
   }
 
   public void setAllowedHosts(@Nullable String[] allowedHosts) {
     this.allowedHosts =
         allowedHosts == null
-            ? Collections.emptySet()
-            : Arrays.stream(allowedHosts).map(AllowedHost::new).collect(Collectors.toSet());
+            ? emptySet()
+            : stream(allowedHosts).map(Pattern::compile).collect(Collectors.toSet());
   }
 
   public Set<String> getAllowedSchemes() {
@@ -90,9 +92,7 @@ public class DataImportProperties {
 
   public void setAllowedSchemes(@Nullable String[] allowedSchemes) {
     this.allowedSchemes =
-        allowedSchemes == null
-            ? Collections.emptySet()
-            : Arrays.stream(allowedSchemes).collect(Collectors.toSet());
+        allowedSchemes == null ? emptySet() : stream(allowedSchemes).collect(Collectors.toSet());
   }
 
   /** Dictates the sink where BatchWriteService should write records after import. */
@@ -112,22 +112,6 @@ public class DataImportProperties {
         }
       }
       throw new RuntimeException("Unknown RecordSinkMode value: %s".formatted(value));
-    }
-  }
-
-  public static class AllowedHost {
-    private final String pattern;
-
-    public AllowedHost(String hostPattern) {
-      this.pattern = hostPattern;
-    }
-
-    public boolean matchesUrl(URI url) {
-      if (pattern.startsWith("*")) {
-        return url.getHost().endsWith(pattern.substring(1));
-      } else {
-        return url.getHost().equals(pattern);
-      }
     }
   }
 }

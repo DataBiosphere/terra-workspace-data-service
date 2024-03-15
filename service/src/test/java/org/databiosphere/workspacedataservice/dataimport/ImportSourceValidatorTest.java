@@ -12,7 +12,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest(properties = {"twds.data-import.allowed-hosts=*.terra.bio"})
+@SpringBootTest(properties = {"twds.data-import.allowed-hosts=.*\\.terra\\.bio"})
 public class ImportSourceValidatorTest {
   @Autowired ImportSourceValidator importSourceValidator;
 
