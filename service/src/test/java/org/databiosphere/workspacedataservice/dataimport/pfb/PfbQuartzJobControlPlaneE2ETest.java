@@ -67,7 +67,9 @@ import org.springframework.util.StreamUtils;
 @TestPropertySource(
     properties = {
       // turn off pubsub autoconfiguration for tests
-      "spring.cloud.gcp.pubsub.enabled=false"
+      "spring.cloud.gcp.pubsub.enabled=false",
+      // Allow file imports to test with files from resources.
+      "twds.data-import.allowed-schemes=file"
     })
 class PfbQuartzJobControlPlaneE2ETest {
   @Autowired ObjectMapper mapper;
