@@ -4,7 +4,6 @@ import java.net.URI;
 import java.util.Set;
 import java.util.regex.Pattern;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
-import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.springframework.stereotype.Component;
 
@@ -18,9 +17,7 @@ public class ImportSourceValidator {
     this.allowedHosts = dataImportProperties.getAllowedHosts();
   }
 
-  public void validateImportRequest(ImportRequestServerModel importRequest) {
-    URI importUrl = importRequest.getUrl();
-
+  public void validateImport(URI importUrl) {
     if (!allowedSchemes.contains(importUrl.getScheme())) {
       throw new ValidationException(
           "Files may not be imported from %s URLs.".formatted(importUrl.getScheme()));

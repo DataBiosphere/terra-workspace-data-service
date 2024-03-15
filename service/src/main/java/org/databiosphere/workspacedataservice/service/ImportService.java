@@ -69,7 +69,7 @@ public class ImportService {
       throw new AuthenticationMaskableException("Collection");
     }
 
-    importSourceValidator.validateImportRequest(importRequest);
+    importSourceValidator.validateImport(importRequest.getUrl());
 
     // get a token to execute the job
     String petToken = samDao.getPetToken();
