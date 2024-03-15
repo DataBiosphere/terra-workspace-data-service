@@ -9,13 +9,11 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @SpringBootTest
 public class GcsStorageConfig {
-  private String bucketName = "test-bucket";
-
-  private String projectId = "test-projectId";
+  private static final String BUCKET_NAME = "test-bucket";
 
   @Bean
   public GcsStorage mockGcsStorage() {
     Storage mockStorage = LocalStorageHelper.getOptions().getService();
-    return new GcsStorage(mockStorage, bucketName, projectId);
+    return new GcsStorage(mockStorage, BUCKET_NAME);
   }
 }

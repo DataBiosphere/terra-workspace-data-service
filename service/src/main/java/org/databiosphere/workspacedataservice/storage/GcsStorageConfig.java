@@ -11,6 +11,6 @@ import org.springframework.context.annotation.Configuration;
 public class GcsStorageConfig {
   @Bean
   public GcsStorage gcsStorage(DataImportProperties properties) throws IOException {
-    return new GcsStorage(properties);
+    return GcsStorage.create(properties);
   }
 }

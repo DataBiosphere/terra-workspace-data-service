@@ -17,29 +17,26 @@ public class GcsStorage {
 
   private final String bucketName;
 
-  // projectId in GCP (string) is similar to subscriptionId in Azure (UUID)
-  private final String projectId;
-
   // Generates an instance of the storage class using the credentials the current process is running
   // under
-  public GcsStorage(DataImportProperties properties) throws IOException {
+  public static GcsStorage create(DataImportProperties properties) throws IOException {
     GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
-    this.bucketName = properties.getRawlsBucketName();
-    this.projectId = properties.getProjectId();
-    StorageOptions storageOptions =
+    String projectId = properties.getProjectId();
+
+    return new GcsStorage(
         StorageOptions.newBuilder()
-            .setProjectId(this.projectId)
+            .setProjectId(projectId)
             .setCredentials(credentials)
-            .build();
-    this.storage = storageOptions.getService();
+            .build()
+            .getService(),
+        properties.getRawlsBucketName());
   }
 
   // primarily here for tests, but also allows this class to be used with values other than
   // the ones provided in the config, if needed
-  public GcsStorage(Storage storage, String bucketName, String projectId) {
+  public GcsStorage(Storage storage, String bucketName) {
     this.storage = storage;
     this.bucketName = bucketName;
-    this.projectId = projectId;
   }
 
   public InputStream getBlobContents(String blobName) throws IOException {

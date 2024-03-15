@@ -148,7 +148,7 @@ class RawlsRecordSinkPrefixingTest extends TestBase {
   private List<Entity> doUpsert(Record record, PrefixStrategy prefixStrategy) {
     String USER_EMAIL = "userEmail";
     RecordSink recordSink =
-        new RawlsRecordSink(
+        RawlsRecordSink.create(
             mapper,
             storage,
             pubSub,

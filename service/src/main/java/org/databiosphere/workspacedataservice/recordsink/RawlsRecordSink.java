@@ -39,12 +39,26 @@ public class RawlsRecordSink implements RecordSink {
   private final ImportDetails importDetails;
 
   RawlsRecordSink(
-      ObjectMapper mapper, GcsStorage storage, PubSub pubSub, ImportDetails importDetails) {
-    this.attributePrefixer = new RawlsAttributePrefixer(importDetails.prefixStrategy());
+      RawlsAttributePrefixer attributePrefixer,
+      ObjectMapper mapper,
+      GcsStorage storage,
+      PubSub pubSub,
+      ImportDetails importDetails) {
+    this.attributePrefixer = attributePrefixer;
     this.mapper = mapper;
     this.storage = storage;
     this.pubSub = pubSub;
     this.importDetails = importDetails;
+  }
+
+  public static RawlsRecordSink create(
+      ObjectMapper mapper, GcsStorage storage, PubSub pubSub, ImportDetails importDetails) {
+    return new RawlsRecordSink(
+        new RawlsAttributePrefixer(importDetails.prefixStrategy()),
+        mapper,
+        storage,
+        pubSub,
+        importDetails);
   }
 
   @Override

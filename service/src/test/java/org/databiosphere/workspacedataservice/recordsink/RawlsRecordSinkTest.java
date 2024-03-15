@@ -68,7 +68,7 @@ class RawlsRecordSinkTest extends TestBase {
   @BeforeEach
   void setUp() {
     recordSink =
-        new RawlsRecordSink(
+        RawlsRecordSink.create(
             mapper,
             storage,
             pubSub,
