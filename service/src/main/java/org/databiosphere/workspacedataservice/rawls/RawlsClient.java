@@ -15,6 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -38,10 +39,6 @@ public class RawlsClient {
           UriComponentsBuilder.fromHttpUrl(getSnapshotsUrl(workspaceId))
               .queryParam("offset", offset)
               .queryParam("limit", limit);
-      LOGGER.debug(
-          "Listing snapshot references for workspace {} at URL {}",
-          workspaceId,
-          getSnapshotsUrl(workspaceId));
 
       ResponseEntity<ResourceList> response =
           restTemplate.exchange(
@@ -49,46 +46,37 @@ public class RawlsClient {
               HttpMethod.GET,
               new HttpEntity<>(getAuthedHeaders()),
               ResourceList.class);
-      // TODO proper error handling
-      if (!response.getStatusCode().is2xxSuccessful()) {
-        LOGGER.warn(
-            "Unsuccessful response retrieving snapshot references for workspace {}", workspaceId);
-      }
       return response.getBody();
-    } catch (Exception e) {
-      LOGGER.warn("Error retrieving snapshot references", e);
-      throw e;
+    } catch (RestClientResponseException e) {
+      LOGGER.warn("Error retrieving snapshot references for workspace {}", workspaceId, e);
+      throw new RawlsException(e);
     }
   }
 
+  // TODO: (Blocked by WOR-1567) Add cloning instructions COPY_REFERENCE and a purpose=policy
+  // key-value pair to the reference’s properties
   public void createSnapshotReference(UUID workspaceId, UUID snapshotId) {
     try {
-      ResponseEntity<DataRepoSnapshotResource> response =
-          restTemplate.exchange(
-              getSnapshotsUrl(workspaceId),
-              HttpMethod.POST,
-              new HttpEntity<>(new SnapshotModel().id(snapshotId), getAuthedHeaders()),
-              DataRepoSnapshotResource.class);
-      // TODO proper error handling
-
-      if (!response.getStatusCode().is2xxSuccessful()) {
-        LOGGER.warn(
-            "Unsuccessful response creating snapshot reference {} for workspace {}",
-            snapshotId,
-            workspaceId);
-      }
-    } catch (Exception e) {
-      LOGGER.warn("Error creating snapshot reference", e);
-      throw e;
+      restTemplate.exchange(
+          getSnapshotsUrl(workspaceId),
+          HttpMethod.POST,
+          new HttpEntity<>(new SnapshotModel().id(snapshotId), getAuthedHeaders()),
+          DataRepoSnapshotResource.class);
+    } catch (RestClientResponseException e) {
+      LOGGER.warn(
+          "Error creating snapshot reference for snapshotId {} in workspace {}",
+          snapshotId,
+          workspaceId,
+          e);
+      throw new RawlsException(e);
     }
   }
 
+  // Get the user's token from the context and attach it to headers
   private HttpHeaders getAuthedHeaders() {
-    // TODO will we need other headers
     HttpHeaders headers = new HttpHeaders();
     BearerToken token = TokenContextUtil.getToken();
 
-    // add the user's bearer token to the client
     if (token.nonEmpty()) {
       LOGGER.debug("setting access token for rawls request");
       headers.setBearerAuth(Objects.requireNonNull(token.getValue()));

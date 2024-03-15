@@ -37,6 +37,7 @@ public class RawlsSnapshotSupport extends SnapshotSupport {
         user -> user.linked().snapshotReference().withUuid(snapshotId));
   }
 
+  // TODO: Filter out snapshots that do NOT have purpose:policy
   protected ResourceList enumerateDataRepoSnapshotReferences(int offset, int pageSize) {
     RestClientRetry.RestCall<ResourceList> restCall =
         (() -> rawlsClient.enumerateDataRepoSnapshotReferences(workspaceId.id(), offset, pageSize));

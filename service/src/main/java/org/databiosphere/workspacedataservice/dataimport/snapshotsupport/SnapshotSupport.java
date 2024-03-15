@@ -105,7 +105,7 @@ public abstract class SnapshotSupport {
    * unique snapshotIds from those references. Calls Rawls or WSM depending on the implementation of
    * listAllSnapshots
    *
-   * @param pageSize how many references to return in each paginated request to WSM
+   * @param pageSize how many references to return in each paginated request
    * @return the list of unique ids for all pre-existing snapshot references
    */
   public List<UUID> existingPolicySnapshotIds(int pageSize) {
@@ -157,8 +157,7 @@ public abstract class SnapshotSupport {
    */
   protected ResourceList listAllSnapshots(int pageSize) {
     final AtomicInteger offset = new AtomicInteger(0);
-    final int hardLimit =
-        10000; // under no circumstances return more than this many snapshots from WSM
+    final int hardLimit = 10000; // under no circumstances return more than this many snapshots
 
     ResourceList finalList = new ResourceList(); // collect our results
 
