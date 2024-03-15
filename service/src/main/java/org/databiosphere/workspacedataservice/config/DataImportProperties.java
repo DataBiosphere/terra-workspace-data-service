@@ -7,7 +7,6 @@ import com.google.common.collect.Sets;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.springframework.lang.Nullable;
 
 /** Properties that dictate how data import processes should behave. */
 public class DataImportProperties {
@@ -79,20 +78,16 @@ public class DataImportProperties {
     return Sets.union(defaultAllowedHosts, allowedHosts);
   }
 
-  public void setAllowedHosts(@Nullable String[] allowedHosts) {
-    this.allowedHosts =
-        allowedHosts == null
-            ? emptySet()
-            : stream(allowedHosts).map(Pattern::compile).collect(Collectors.toSet());
+  public void setAllowedHosts(String[] allowedHosts) {
+    this.allowedHosts = stream(allowedHosts).map(Pattern::compile).collect(Collectors.toSet());
   }
 
   public Set<String> getAllowedSchemes() {
     return allowedSchemes;
   }
 
-  public void setAllowedSchemes(@Nullable String[] allowedSchemes) {
-    this.allowedSchemes =
-        allowedSchemes == null ? emptySet() : stream(allowedSchemes).collect(Collectors.toSet());
+  public void setAllowedSchemes(String[] allowedSchemes) {
+    this.allowedSchemes = stream(allowedSchemes).collect(Collectors.toSet());
   }
 
   /** Dictates the sink where BatchWriteService should write records after import. */
