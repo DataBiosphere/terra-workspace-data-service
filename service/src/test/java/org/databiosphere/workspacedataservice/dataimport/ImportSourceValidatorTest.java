@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.URI;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -13,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(properties = {"twds.data-import.allowed-hosts=.*\\.terra\\.bio"})
-public class ImportSourceValidatorTest {
+public class ImportSourceValidatorTest extends TestBase {
   @Autowired ImportSourceValidator importSourceValidator;
 
   @ParameterizedTest(name = "for import type {0}, should require HTTPS URLs")
