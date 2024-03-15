@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 /** Properties that dictate how data import processes should behave. */
 public class DataImportProperties {
-  private static final Set<Pattern> defaultAllowedHosts =
+  private static final Set<Pattern> DEFAULT_ALLOWED_HOSTS =
       Set.of(
           Pattern.compile("storage\\.googleapis\\.com"),
           Pattern.compile(".*\\.core\\.windows\\.net"),
@@ -75,7 +75,7 @@ public class DataImportProperties {
    * always allowed sources (GCS buckets, Azure storage containers, and S3 buckets).
    */
   public Set<Pattern> getAllowedHosts() {
-    return Sets.union(defaultAllowedHosts, allowedHosts);
+    return Sets.union(DEFAULT_ALLOWED_HOSTS, allowedHosts);
   }
 
   public void setAllowedHosts(String[] allowedHosts) {
