@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -39,6 +40,7 @@ public class BackupRestoreService {
   private final CloneDao cloneDao;
   private final BackUpFileStorage storage;
   private final CollectionDao collectionDao;
+  private final NamedParameterJdbcTemplate namedTemplate;
   private final ActivityLogger activityLogger;
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
 
@@ -78,12 +80,14 @@ public class BackupRestoreService {
       CollectionDao collectionDao,
       BackUpFileStorage backUpFileStorage,
       CloneDao cloneDao,
+      NamedParameterJdbcTemplate namedTemplate,
       ActivityLogger activityLogger) {
     this.backupDao = backupDao;
     this.restoreDao = restoreDao;
     this.collectionDao = collectionDao;
     this.cloneDao = cloneDao;
     this.storage = backUpFileStorage;
+    this.namedTemplate = namedTemplate;
     this.activityLogger = activityLogger;
   }
 
@@ -153,6 +157,7 @@ public class BackupRestoreService {
     boolean doCleanup = false;
     try {
       LOGGER.info("Starting restore. ");
+      logSearchPath("At beginning of restore");
       // create an entry to track progress of this restore
       restoreDao.createEntry(
           trackingId,
@@ -174,6 +179,8 @@ public class BackupRestoreService {
       // grab blob from storage
       storage.streamInputFromBlobStorage(
           localProcessLauncher.getOutputStream(), backupFileName, workspaceId, startupToken);
+
+      logSearchPath("Immediately after restore");
 
       String error = checkForError(localProcessLauncher);
       if (StringUtils.isNotBlank(error)) {
@@ -198,6 +205,9 @@ public class BackupRestoreService {
       LOGGER.error("process error: {}", ex.getMessage());
       restoreDao.terminateToError(trackingId, ex.getMessage());
     } finally {
+      // reset the Postgres search path. Restoring the pg_dump set the search path to empty.
+      namedTemplate.update("SET search_path TO DEFAULT;", Map.of());
+      logSearchPath("After resetting search path in finally block");
       // clean up
       if (doCleanup) {
         try {
@@ -212,6 +222,15 @@ public class BackupRestoreService {
       }
     }
     return restoreDao.getStatus(trackingId);
+  }
+
+  private void logSearchPath(String logPrefix) {
+    try {
+      String searchPath = namedTemplate.queryForObject("SHOW search_path;", Map.of(), String.class);
+      LOGGER.info("{}, the Postgres search path is: {}", logPrefix, searchPath);
+    } catch (Exception e) {
+      // don't fail if there is a problem with logging
+    }
   }
 
   private String determinePassword() throws PSQLException {
