@@ -18,7 +18,7 @@ public class ImportSourceValidatorTest {
 
   @ParameterizedTest(name = "for import type {0}, should require HTTPS URLs")
   @EnumSource(ImportRequestServerModel.TypeEnum.class)
-  void testRequiresHttpsImportUrls(ImportRequestServerModel.TypeEnum importType) {
+  void requiresHttpsImportUrls(ImportRequestServerModel.TypeEnum importType) {
     // Arrange
     URI importUri =
         URI.create("http://teststorageaccount.blob.core.windows.net/testcontainer/file");
@@ -34,7 +34,7 @@ public class ImportSourceValidatorTest {
 
   @ParameterizedTest(name = "for import type {0}, should accept files from configured sources")
   @EnumSource(ImportRequestServerModel.TypeEnum.class)
-  void testAllowsImportsFromConfiguredSources(ImportRequestServerModel.TypeEnum importType) {
+  void allowsImportsFromConfiguredSources(ImportRequestServerModel.TypeEnum importType) {
     // Arrange
     URI importUri = URI.create("https://files.terra.bio/file");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
@@ -45,7 +45,7 @@ public class ImportSourceValidatorTest {
 
   @ParameterizedTest(name = "for import type {0}, should reject files from other sources")
   @EnumSource(ImportRequestServerModel.TypeEnum.class)
-  void testRejectsImportsFromOtherSources(ImportRequestServerModel.TypeEnum importType) {
+  void rejectsImportsFromOtherSources(ImportRequestServerModel.TypeEnum importType) {
     // Arrange
     URI importUri = URI.create("https://example.com/file");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
