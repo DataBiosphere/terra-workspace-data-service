@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
@@ -27,11 +26,10 @@ public interface RecordSink {
       Map<String, DataTypeMapping> schema,
       List<Record> records,
       String primaryKey)
-      throws BatchWriteException, IOException;
+      throws IOException;
 
   /** Delete the given batch of records. */
-  void deleteBatch(RecordType recordType, List<Record> records)
-      throws BatchWriteException, IOException;
+  void deleteBatch(RecordType recordType, List<Record> records) throws IOException;
 
   /**
    * Callback invoked at the end of a series of batches operations with the result. Implementers can

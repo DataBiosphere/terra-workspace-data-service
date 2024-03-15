@@ -23,7 +23,6 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
@@ -64,7 +63,7 @@ public class RawlsRecordSink implements RecordSink {
       Map<String, DataTypeMapping> schema, // ignored
       List<Record> records,
       String primaryKey // ignored
-      ) throws BatchWriteException, IOException {
+      ) throws IOException {
     ImmutableList.Builder<Entity> entities = ImmutableList.builder();
     records.stream().map(this::toEntity).forEach(entities::add);
 
@@ -81,7 +80,7 @@ public class RawlsRecordSink implements RecordSink {
   }
 
   @Override
-  public void deleteBatch(RecordType recordType, List<Record> records) throws BatchWriteException {
+  public void deleteBatch(RecordType recordType, List<Record> records) {
     throw new UnsupportedOperationException("RawlsRecordSink does not support deleteBatch");
   }
 
