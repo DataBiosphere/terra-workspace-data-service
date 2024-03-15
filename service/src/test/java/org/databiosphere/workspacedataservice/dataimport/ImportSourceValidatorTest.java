@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(properties = {"twds.data-import.allowed-hosts=.*\\.terra\\.bio"})
-public class ImportSourceValidatorTest extends TestBase {
+class ImportSourceValidatorTest extends TestBase {
   @Autowired ImportSourceValidator importSourceValidator;
 
   @Test
