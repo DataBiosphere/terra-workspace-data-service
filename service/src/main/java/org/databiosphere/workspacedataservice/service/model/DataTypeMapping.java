@@ -6,6 +6,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 public enum DataTypeMapping {
   NULL(null, "text", false, "?"),
@@ -38,8 +39,7 @@ public enum DataTypeMapping {
 
   private static final Map<String, DataTypeMapping> MAPPING_BY_PG_TYPE = new HashMap<>();
 
-  private static record BaseTypeAndArrayTypePair(
-      DataTypeMapping baseType, DataTypeMapping arrayType) {}
+  private record BaseTypeAndArrayTypePair(DataTypeMapping baseType, DataTypeMapping arrayType) {}
 
   private static final ImmutableList<BaseTypeAndArrayTypePair> BASE_TYPE_AND_ARRAY_TYPE_PAIRS =
       ImmutableList.of(
@@ -51,6 +51,9 @@ public enum DataTypeMapping {
           new BaseTypeAndArrayTypePair(FILE, ARRAY_OF_FILE),
           new BaseTypeAndArrayTypePair(RELATION, ARRAY_OF_RELATION),
           new BaseTypeAndArrayTypePair(JSON, ARRAY_OF_JSON));
+
+  private static final Set<String> QUALIFIED_TYPES =
+      Set.of("file", "relation", "array_of_file", "array_of_relation");
 
   static {
     Arrays.stream(DataTypeMapping.values())
@@ -71,6 +74,13 @@ public enum DataTypeMapping {
   }
 
   public String getPostgresType() {
+    return postgresType;
+  }
+
+  public String getQualifiedPostgresType() {
+    if (QUALIFIED_TYPES.contains(postgresType)) {
+      return "public." + postgresType;
+    }
     return postgresType;
   }
 
