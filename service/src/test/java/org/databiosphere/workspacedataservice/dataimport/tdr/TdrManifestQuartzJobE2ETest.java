@@ -53,7 +53,11 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao"})
 @DirtiesContext
-@SpringBootTest(properties = {"twds.data-import.allowed-schemes=file"})
+@SpringBootTest(
+    properties = {
+      // Allow file imports to test with files from resources.
+      "twds.data-import.allowed-schemes=file"
+    })
 @AutoConfigureMockMvc
 class TdrManifestQuartzJobE2ETest extends TestBase {
   @Autowired private RecordOrchestratorService recordOrchestratorService;
