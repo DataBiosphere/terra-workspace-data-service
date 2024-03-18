@@ -227,7 +227,7 @@ public class BackupRestoreService {
   private void logSearchPath(String logPrefix) {
     try {
       String searchPath = namedTemplate.queryForObject("SHOW search_path;", Map.of(), String.class);
-      LOGGER.info("{}, the Postgres search path is: {}", logPrefix, searchPath);
+      LOGGER.info("{}, the Postgres search path is: [{}]", logPrefix, searchPath);
     } catch (Exception e) {
       // don't fail if there is a problem with logging
     }
