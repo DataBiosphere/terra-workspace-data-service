@@ -243,7 +243,6 @@ test {
     systemProperties['pact.rootDir'] = layout.buildDirectory.dir("pacts").get().asFile.toString()
     systemProperties['pact.provider.version'] = "$project.version"
     systemProperties['user.timezone'] = "UTC"
-    systemProperty("spring.profiles.active", "local")
 }
 
 tasks.register("pactTests", Test) {

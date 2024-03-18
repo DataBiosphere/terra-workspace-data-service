@@ -87,8 +87,8 @@ public class SentryInitializer {
 
   boolean determineIfEnvIsMonitored(String env) {
     for (var sentryEnv : sentryEnvironments) {
-      if(env.contains(sentryEnv)) {
-        return true; 
+      if (env.contains(sentryEnv)) {
+        return true;
       }
     }
 
