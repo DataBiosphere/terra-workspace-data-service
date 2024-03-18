@@ -38,7 +38,6 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +54,6 @@ import org.springframework.util.StreamUtils;
 class RawlsRecordSinkTest extends TestBase {
   @Autowired private ObjectMapper mapper;
   @MockBean private PubSub pubSub;
-  private RecordSink recordSink;
 
   @Qualifier("mockGcsStorage")
   @Autowired
@@ -64,16 +62,6 @@ class RawlsRecordSinkTest extends TestBase {
   private final UUID WORKSPACE_ID = UUID.randomUUID();
   private final UUID JOB_ID = UUID.randomUUID();
   private final String USER_EMAIL = "userEmail";
-
-  @BeforeEach
-  void setUp() {
-    recordSink =
-        new RawlsRecordSink(
-            mapper,
-            storage,
-            pubSub,
-            new ImportDetails(JOB_ID, USER_EMAIL, WORKSPACE_ID, PrefixStrategy.NONE));
-  }
 
   @Test
   void translatesEntityFields() {
@@ -158,14 +146,16 @@ class RawlsRecordSinkTest extends TestBase {
   }
 
   @Test
-  void batchDeleteNotSupported() {
+  void batchDeleteNotSupported() throws IOException {
     RecordType ignoredRecordType = RecordType.valueOf("widget");
     List<Record> ignoredEmptyRecords = List.of();
-    var thrown =
-        assertThrows(
-            UnsupportedOperationException.class,
-            () -> recordSink.deleteBatch(ignoredRecordType, ignoredEmptyRecords));
-    assertThat(thrown).hasMessageContaining("does not support deleteBatch");
+    try (RecordSink recordSink = newRecordSink()) {
+      var thrown =
+          assertThrows(
+              UnsupportedOperationException.class,
+              () -> recordSink.deleteBatch(ignoredRecordType, ignoredEmptyRecords));
+      assertThat(thrown).hasMessageContaining("does not support deleteBatch");
+    }
   }
 
   @Test
@@ -197,14 +187,19 @@ class RawlsRecordSinkTest extends TestBase {
     var recordList = concat(Stream.of(record), stream(additionalRecords)).toList();
     var recordType = recordList.stream().map(Record::getRecordType).collect(onlyElement());
     var blobName = "";
-    try {
+
+    // Act
+    try (RecordSink recordSink = newRecordSink()) {
       recordSink.upsertBatch(
           recordType,
           /* schema= */ Map.of(), // currently ignored
           recordList,
           /* primaryKey= */ "name" // currently ignored
           );
+    }
 
+    // Assert
+    try {
       // look for the blob that was created in a bucket with the appropriate json
       var blobs = storage.getBlobsInBucket();
       // confirm there is only 1
@@ -224,6 +219,14 @@ class RawlsRecordSinkTest extends TestBase {
         storage.deleteBlob(blobName);
       }
     }
+  }
+
+  private RawlsRecordSink newRecordSink() {
+    return RawlsRecordSink.create(
+        mapper,
+        storage,
+        pubSub,
+        new ImportDetails(JOB_ID, USER_EMAIL, WORKSPACE_ID, PrefixStrategy.NONE));
   }
 
   // assert that the given collection has exactly one item, then return it

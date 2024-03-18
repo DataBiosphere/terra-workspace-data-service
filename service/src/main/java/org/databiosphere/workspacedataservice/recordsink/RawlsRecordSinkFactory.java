@@ -31,6 +31,6 @@ public class RawlsRecordSinkFactory implements RecordSinkFactory {
   }
 
   private RecordSink rawlsRecordSink(ImportDetails importDetails) {
-    return new RawlsRecordSink(mapper, storage, pubSub, importDetails);
+    return RawlsRecordSink.create(mapper, storage, pubSub, importDetails);
   }
 }

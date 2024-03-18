@@ -36,6 +36,8 @@ import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
+import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
+import org.databiosphere.workspacedataservice.service.model.exception.PfbImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -128,19 +130,22 @@ public class PfbQuartzJob extends QuartzJob {
     linkSnapshots(snapshotIds, workspaceId);
 
     // Import all the tables and rows inside the PFB.
-    RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails);
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails)) {
+      // This is HTTP connection #2 to the PFB.
+      logger.info("Importing tables and rows from this PFB...");
+      BatchWriteResult result =
+          withPfbStream(url, stream -> importTables(stream, recordSink, BASE_ATTRIBUTES));
 
-    // This is HTTP connection #2 to the PFB.
-    logger.info("Importing tables and rows from this PFB...");
-    BatchWriteResult result =
-        withPfbStream(url, stream -> importTables(stream, recordSink, BASE_ATTRIBUTES));
+      // This is HTTP connection #3 to the PFB.
+      logger.info("Updating tables and rows from this PFB with relations...");
+      // TODO: merging batch results may have unexpected behavior until BatchWriteResult can
+      //   group its merged results under import mode; most notably, relations will be double
+      //   counted
+      result.merge(withPfbStream(url, stream -> importTables(stream, recordSink, RELATIONS)));
+    } catch (DataImportException e) {
+      throw new PfbImportException(e.getMessage(), e);
+    }
 
-    // This is HTTP connection #3 to the PFB.
-    logger.info("Updating tables and rows from this PFB with relations...");
-    result.merge(withPfbStream(url, stream -> importTables(stream, recordSink, RELATIONS)));
-
-    // Commit results, publish to downstream systems, etc.
-    recordSink.finalizeBatchWrite(result);
     // TODO(AJ-1453): save the result of importTables and persist them to the job
   }
 
