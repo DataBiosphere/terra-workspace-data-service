@@ -46,7 +46,7 @@ public class RawlsClient {
 
       ResponseEntity<ResourceList> response =
           restTemplate.exchange(
-              builder.toUriString(),
+              builder.build().toUri(),
               HttpMethod.GET,
               new HttpEntity<>(getAuthedHeaders()),
               ResourceList.class);
@@ -60,10 +60,12 @@ public class RawlsClient {
   // key-value pair to the reference’s properties
   public void createSnapshotReference(UUID workspaceId, UUID snapshotId) {
     try {
-      restTemplate.exchange(
+      UriComponentsBuilder builder =
           UriComponentsBuilder.fromHttpUrl(rawlsUrl)
-              .pathSegment("api", "workspaces", workspaceId.toString(), "snapshots", "v2")
-              .toUriString(),
+              .pathSegment("api", "workspaces", workspaceId.toString(), "snapshots", "v2");
+
+      restTemplate.exchange(
+          builder.build().toUri(),
           HttpMethod.POST,
           new HttpEntity<>(new SnapshotModel().id(snapshotId), getAuthedHeaders()),
           DataRepoSnapshotResource.class);

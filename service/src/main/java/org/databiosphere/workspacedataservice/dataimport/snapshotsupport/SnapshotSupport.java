@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
@@ -47,10 +46,7 @@ public abstract class SnapshotSupport {
         try {
           return UUID.fromString(snapshotIdStr);
         } catch (Exception e) {
-          // TODO The only thing this method requires from the implementing class is workspaceId
-          // Should we therefore create a method that returns workspaceId or otherwise call the
-          // implementing clas
-          // Or just implement it multiple times?
+
           String resourceId = "unknown";
           try {
             resourceId = resourceDescription.getMetadata().getResourceId().toString();
@@ -58,10 +54,9 @@ public abstract class SnapshotSupport {
             // something is exceptionally funky about this resource.
             resourceId = inner.getMessage();
           }
-          //          logger.warn(
-          //              "Processed a ResourceDescription [%s] for workspace %s that did not
-          // contain a valid snapshotId"
-          //                  .formatted(resourceId, workspaceId));
+          LOGGER.warn(
+              "Processed a ResourceDescription [%s] that did not contain a valid snapshotId"
+                  .formatted(resourceId));
         }
       }
     }
@@ -147,14 +142,14 @@ public abstract class SnapshotSupport {
    * @return the full list of snapshot references in this workspace
    */
   protected ResourceList listAllSnapshots(int pageSize) {
-    final AtomicInteger offset = new AtomicInteger(0);
+    int offset = 0;
     final int hardLimit = 10000; // under no circumstances return more than this many snapshots
 
     ResourceList finalList = new ResourceList(); // collect our results
 
-    while (offset.get() < hardLimit) {
+    while (offset < hardLimit) {
       // get a page of results
-      ResourceList thisPage = enumerateDataRepoSnapshotReferences(offset.get(), pageSize);
+      ResourceList thisPage = enumerateDataRepoSnapshotReferences(offset, pageSize);
 
       // add this page of results to our collector
       finalList.getResources().addAll(thisPage.getResources());
@@ -164,7 +159,7 @@ public abstract class SnapshotSupport {
         return finalList;
       } else {
         // bump our offset and request another page of results
-        offset.addAndGet(pageSize);
+        offset += pageSize;
       }
     }
 
