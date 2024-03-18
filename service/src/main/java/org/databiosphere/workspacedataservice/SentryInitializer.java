@@ -36,8 +36,6 @@ public class SentryInitializer {
   @Value("${sentry.deploymentMode}")
   String deploymentMode;
 
-  private static final String DEFAULT_ENV = "unknown";
-
   // Environments we want to monitor on sentry - don't send errors from local, bees, or Github
   // actions
   private static final List<String> sentryEnvironments = List.of("prod", "staging", "dev");
@@ -91,7 +89,6 @@ public class SentryInitializer {
         return true;
       }
     }
-
     return false;
   }
 }
