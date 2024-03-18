@@ -18,6 +18,7 @@ spring:
   cloud:
     gcp:
       pubsub:
+        project-id: ${SERVICE_GOOGLE_PROJECT}
         topic: ${RAWLS_NOTIFY_TOPIC}
         enabled: true
 
