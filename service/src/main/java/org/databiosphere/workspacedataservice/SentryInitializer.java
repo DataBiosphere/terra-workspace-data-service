@@ -2,12 +2,10 @@ package org.databiosphere.workspacedataservice;
 
 import io.sentry.Sentry;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.SmartInitializingSingleton;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,8 +24,6 @@ public class SentryInitializer {
   @Value("${git.commit.id.abbrev}")
   String release;
 
-  @Autowired private Environment environment;
-
   @Value("${sentry.releasename}")
   String releaseName;
 
@@ -40,14 +36,14 @@ public class SentryInitializer {
   @Value("${sentry.deploymentMode}")
   String deploymentMode;
 
-  private static final Pattern SAM_ENV_PATTERN = Pattern.compile("\\.dsde-(\\p{Alnum}+)\\.");
   private static final String DEFAULT_ENV = "unknown";
 
   // Environments we want to monitor on sentry - don't send errors from local, bees, or Github
   // actions
+  private static final List<String> sentryEnvironments = List.of("prod", "staging", "dev");
 
   @Bean
-  public SmartInitializingSingleton initialize() {
+  public SmartInitializingSingleton initialize(Environment environment) {
     String env;
     if (StringUtils.isNotBlank(terraEnv)) {
       env = terraEnv;
@@ -59,7 +55,7 @@ public class SentryInitializer {
         Sentry.init(
             options -> {
               options.setEnvironment(env);
-              options.setDsn(env != DEFAULT_ENV ? dsn : "");
+              options.setDsn(determineIfEnvIsMonitored(env) ? dsn : "");
               options.setServerName(releaseName);
               options.setRelease(release);
               // additional tags:
@@ -89,24 +85,13 @@ public class SentryInitializer {
     return tags;
   }
 
-  /**
-   * Extracts an environment (e.g. "dev" or "prod") from a Sam url. Looks for ".dsde-${env} and
-   * returns ${env} if found. Also looks for BEEs and returns the bee name if found. Else, returns
-   * "unknown".
-   *
-   * @param samUrl the url to Sam
-   * @return the environment as parsed from the Sam url
-   */
-  protected String urlToEnv(String samUrl) {
-    if (samUrl == null) {
-      return DEFAULT_ENV;
+  boolean determineIfEnvIsMonitored(String env) {
+    for (var sentryEnv : sentryEnvironments) {
+      if(env.contains(sentryEnv)) {
+        return true; 
+      }
     }
-    Matcher matcher = SAM_ENV_PATTERN.matcher(samUrl);
-    boolean found = matcher.find();
-    if (found) {
-      return matcher.group(1);
-    } else {
-      return DEFAULT_ENV;
-    }
+
+    return false;
   }
 }
