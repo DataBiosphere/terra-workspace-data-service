@@ -45,6 +45,7 @@ import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
+import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -129,39 +130,38 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // get all the parquet files from the manifests
 
     FileDownloadHelper fileDownloadHelper = getFilesForImport(tdrManifestImportTables);
-    RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails);
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails)) {
+      // loop through the tables to be imported and upsert base attributes
+      var result =
+          importTables(
+              tdrManifestImportTables,
+              fileDownloadHelper.getFileMap(),
+              ImportMode.BASE_ATTRIBUTES,
+              recordSink);
 
-    // loop through the tables to be imported and upsert base attributes
-    var result =
-        importTables(
-            tdrManifestImportTables,
-            fileDownloadHelper.getFileMap(),
-            ImportMode.BASE_ATTRIBUTES,
-            recordSink);
+      // add relations to the existing base attributes
+      result.merge(
+          importTables(
+              tdrManifestImportTables,
+              fileDownloadHelper.getFileMap(),
+              ImportMode.RELATIONS,
+              recordSink));
 
-    // add relations to the existing base attributes
-    result.merge(
-        importTables(
-            tdrManifestImportTables,
-            fileDownloadHelper.getFileMap(),
-            ImportMode.RELATIONS,
-            recordSink));
-
-    // activity logging for import status
-    // no specific activity logging for relations since main import is a superset
-    result
-        .entrySet()
-        .forEach(
-            entry ->
-                activityLogger.saveEventForCurrentUser(
-                    user ->
-                        user.upserted()
-                            .record()
-                            .withRecordType(entry.getKey())
-                            .ofQuantity(entry.getValue())));
-
-    // Commit results, publish to downstream systems, etc.
-    recordSink.finalizeBatchWrite(result);
+      // activity logging for import status
+      // no specific activity logging for relations since main import is a superset
+      result
+          .entrySet()
+          .forEach(
+              entry ->
+                  activityLogger.saveEventForCurrentUser(
+                      user ->
+                          user.upserted()
+                              .record()
+                              .withRecordType(entry.getKey())
+                              .ofQuantity(entry.getValue())));
+    } catch (DataImportException e) {
+      throw new TdrManifestImportException(e.getMessage(), e);
+    }
 
     // delete temp files after everything else is completed
     // Any failed deletions will be removed if/when pod restarts
