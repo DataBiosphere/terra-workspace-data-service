@@ -20,7 +20,6 @@ public class DataImportProperties {
           Pattern.compile(".*\\.s3\\.amazonaws\\.com") // virtual host style legacy global endpoint
           );
   private RecordSinkMode batchWriteRecordSink;
-  private String projectId;
   private String rawlsBucketName;
   private boolean succeedOnCompletion;
 
@@ -34,14 +33,6 @@ public class DataImportProperties {
 
   void setBatchWriteRecordSink(String batchWriteRecordSink) {
     this.batchWriteRecordSink = RecordSinkMode.fromValue(batchWriteRecordSink);
-  }
-
-  public String getProjectId() {
-    return projectId;
-  }
-
-  void setProjectId(String projectId) {
-    this.projectId = projectId;
   }
 
   public String getRawlsBucketName() {

@@ -30,11 +30,12 @@ public class GcsStorage {
 
   // Generates an instance of the storage class using the credentials the current process is running
   // under
-  public static GcsStorage create(DataImportProperties properties) throws IOException {
+  public static GcsStorage create(String projectId, DataImportProperties properties)
+      throws IOException {
     return new GcsStorage(
         StorageOptions.newBuilder()
             // projectId in GCP (string) is similar to subscriptionId in Azure (UUID)
-            .setProjectId(requireNonNull(properties.getProjectId()))
+            .setProjectId(requireNonNull(projectId))
             .setCredentials(GoogleCredentials.getApplicationDefault())
             .build()
             .getService(),

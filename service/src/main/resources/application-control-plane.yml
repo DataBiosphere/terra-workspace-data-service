@@ -10,15 +10,14 @@ twds:
   data-import:
     batch-write-record-sink: "rawls"
     succeed-on-completion: false
-    project-id: ${SERVICE_GOOGLE_PROJECT}
     rawls-bucket-name: ${SERVICE_GOOGLE_BUCKET}
 
 
 spring:
   cloud:
     gcp:
+      project-id: ${SERVICE_GOOGLE_PROJECT}
       pubsub:
-        project-id: ${SERVICE_GOOGLE_PROJECT}
         topic: ${RAWLS_NOTIFY_TOPIC}
         enabled: true
 
