@@ -74,7 +74,9 @@ public class RawlsClient {
   }
 
   private NamedDataRepoSnapshot snapshotIdToNamedDataRepoSnapshot(UUID snapshotId) {
-    return new NamedDataRepoSnapshot(snapshotId.toString(), snapshotId.toString(), snapshotId);
+    String referenceName = "%s-policy".formatted(snapshotId);
+    String referenceDescription = "created at %s".formatted(System.currentTimeMillis());
+    return new NamedDataRepoSnapshot(referenceName, referenceDescription, snapshotId);
   }
 
   // Get the user's token from the context and attach it to headers
@@ -89,17 +91,5 @@ public class RawlsClient {
       LOGGER.warn("No access token found for rawls request.");
     }
     return headers;
-  }
-
-  class NamedDataRepoSnapshot {
-    private final String name;
-    private final String description;
-    private final UUID snapshotId;
-
-    public NamedDataRepoSnapshot(String name, String description, UUID snapshotId) {
-      this.name = name;
-      this.description = description;
-      this.snapshotId = snapshotId;
-    }
   }
 }
