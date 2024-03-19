@@ -122,10 +122,9 @@ class BatchWriteServiceTest extends TestBase {
     // Note that this call to batchWriteTsvStream specifies a non-null RecordType.
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(file.getInputStream(), recordType, Optional.of(primaryKey));
-    RecordSink recordSink = recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION));
-    BatchWriteResult result =
-        batchWriteService.batchWrite(recordSource, recordSink, recordType, primaryKey);
-    recordSink.finalizeBatchWrite(result);
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION))) {
+      batchWriteService.batchWrite(recordSource, recordSink, recordType, primaryKey);
+    }
 
     // we should write three batches
     verify(recordService, times(3))
@@ -263,16 +262,15 @@ class BatchWriteServiceTest extends TestBase {
   }
 
   private BatchWriteResult batchWritePfbStream(
-      DataFileStream<GenericRecord> pfbStream, String primaryKey, ImportMode importMode) {
-    RecordSink recordSink =
-        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, PrefixStrategy.PFB));
-    var result =
-        batchWriteService.batchWrite(
-            recordSourceFactory.forPfb(pfbStream, importMode),
-            recordSink,
-            /* recordType= */ null,
-            primaryKey);
-    recordSink.finalizeBatchWrite(result);
-    return result;
+      DataFileStream<GenericRecord> pfbStream, String primaryKey, ImportMode importMode)
+      throws IOException {
+    try (RecordSink recordSink =
+        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, PrefixStrategy.PFB))) {
+      return batchWriteService.batchWrite(
+          recordSourceFactory.forPfb(pfbStream, importMode),
+          recordSink,
+          /* recordType= */ null,
+          primaryKey);
+    }
   }
 }

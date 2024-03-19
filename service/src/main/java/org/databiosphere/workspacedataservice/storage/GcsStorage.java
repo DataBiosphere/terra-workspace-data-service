@@ -1,6 +1,10 @@
 package org.databiosphere.workspacedataservice.storage;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.BaseWriteChannel;
+import com.google.cloud.WriteChannel;
 import com.google.cloud.spring.storage.GoogleStorageResource;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Storage;
@@ -9,57 +13,76 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.UUID;
+import java.nio.channels.Channels;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
+import org.springframework.util.unit.DataSize;
 
 public class GcsStorage {
   private final Storage storage;
-
   private final String bucketName;
+  private final DataSize blobWriterChunkSize;
 
-  // projectId in GCP (string) is similar to subscriptionId in Azure (UUID)
-  private final String projectId;
+  private static final DataSize MIN_CHUNK_SIZE = DataSize.ofKilobytes(256);
+
+  /** Based on default defined in {@link BaseWriteChannel} */
+  private static final DataSize DEFAULT_CHUNK_SIZE =
+      DataSize.ofBytes(MIN_CHUNK_SIZE.toBytes() * 60);
 
   // Generates an instance of the storage class using the credentials the current process is running
   // under
-  public GcsStorage(DataImportProperties properties) throws IOException {
-    GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
-    this.bucketName = properties.getRawlsBucketName();
-    this.projectId = properties.getProjectId();
-    StorageOptions storageOptions =
+  public static GcsStorage create(String projectId, DataImportProperties properties)
+      throws IOException {
+    return new GcsStorage(
         StorageOptions.newBuilder()
-            .setProjectId(this.projectId)
-            .setCredentials(credentials)
-            .build();
-    this.storage = storageOptions.getService();
+            // projectId in GCP (string) is similar to subscriptionId in Azure (UUID)
+            .setProjectId(requireNonNull(projectId))
+            .setCredentials(GoogleCredentials.getApplicationDefault())
+            .build()
+            .getService(),
+        requireNonNull(properties.getRawlsBucketName()));
   }
 
   // primarily here for tests, but also allows this class to be used with values other than
   // the ones provided in the config, if needed
-  public GcsStorage(Storage storage, String bucketName, String projectId) {
+  GcsStorage(Storage storage, String bucketName, DataSize blobWriterChunkSize) {
     this.storage = storage;
     this.bucketName = bucketName;
-    this.projectId = projectId;
+    this.blobWriterChunkSize = blobWriterChunkSize;
+  }
+
+  GcsStorage(Storage storage, String bucketName) {
+    this(storage, bucketName, DEFAULT_CHUNK_SIZE);
   }
 
   public InputStream getBlobContents(String blobName) throws IOException {
-    GoogleStorageResource gcsResource =
-        new GoogleStorageResource(
-            this.storage, String.format("gs://%s/%s", this.bucketName, blobName));
-    return gcsResource.getInputStream();
+    return getGcsResource(blobName).getInputStream();
   }
 
-  public String createGcsFile(InputStream contents, UUID jobId) throws IOException {
-    // create the GCS Resource
-    var blobName = jobId + ".rawlsUpsert";
-    GoogleStorageResource gcsResource =
-        new GoogleStorageResource(
-            this.storage, String.format("gs://%s/%s", this.bucketName, blobName));
-    // write the data to the resource
-    try (OutputStream os = gcsResource.getOutputStream()) {
-      contents.transferTo(os);
-    }
-    return gcsResource.getBlobName();
+  /**
+   * Creates and returns an {@link OutputStream} to write to the given {@link Blob}.
+   *
+   * @return an {@link OutputStream} to write to the given {@link Blob}
+   */
+  public OutputStream getOutputStream(Blob blob) {
+    return createOutputStream(blob);
+  }
+
+  /**
+   * Creates a {@link Blob} with the given name in the configured bucket.
+   *
+   * @return an {@link OutputStream} to write to the newly created Blob
+   */
+  public OutputStream getOutputStream(String name) {
+    return getOutputStream(createBlob(name));
+  }
+
+  /**
+   * Creates a {@link Blob} with the given name in the configured bucket.
+   *
+   * @return the newly created Blob
+   */
+  public Blob createBlob(String name) {
+    return getGcsResource(name).createBlob();
   }
 
   public String getBucketName() {
@@ -74,5 +97,16 @@ public class GcsStorage {
   @VisibleForTesting
   public void deleteBlob(String blobName) {
     storage.delete(this.bucketName, blobName);
+  }
+
+  private GoogleStorageResource getGcsResource(String blobName) {
+    return new GoogleStorageResource(
+        this.storage, String.format("gs://%s/%s", this.bucketName, blobName));
+  }
+
+  private OutputStream createOutputStream(Blob blob) {
+    WriteChannel writeChannel = blob.writer();
+    writeChannel.setChunkSize((int) blobWriterChunkSize.toBytes());
+    return Channels.newOutputStream(writeChannel);
   }
 }

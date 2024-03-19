@@ -3,14 +3,19 @@ package org.databiosphere.workspacedataservice.annotations;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
+import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.WsmSnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsink.WdsRecordSinkFactory;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RecordService;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -46,6 +51,15 @@ class AnnotatedApisTest extends TestBase {
     RecordSinkFactory overrideRecordSinkFactory(
         RecordService recordService, RecordDao recordDao, DataTypeInferer dataTypeInferer) {
       return new WdsRecordSinkFactory(recordService, recordDao, dataTypeInferer);
+    }
+
+    @Primary
+    @Bean("overrideSnapshotSupportFactory")
+    SnapshotSupportFactory overrideSnapshotSupportFactory(
+        RestClientRetry restClientRetry,
+        ActivityLogger activityLogger,
+        WorkspaceManagerDao wsmDao) {
+      return new WsmSnapshotSupportFactory(restClientRetry, activityLogger, wsmDao);
     }
   }
 

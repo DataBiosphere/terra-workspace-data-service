@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
+import org.databiosphere.workspacedataservice.dataimport.ImportSourceValidator;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbSchedulable;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestSchedulable;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
@@ -36,16 +37,19 @@ public class ImportService {
   private final SamDao samDao;
   private final JobDao jobDao;
   private final SchedulerDao schedulerDao;
+  private final ImportSourceValidator importSourceValidator;
 
   public ImportService(
       CollectionService collectionService,
       SamDao samDao,
       JobDao jobDao,
-      SchedulerDao schedulerDao) {
+      SchedulerDao schedulerDao,
+      ImportSourceValidator importSourceValidator) {
     this.collectionService = collectionService;
     this.samDao = samDao;
     this.jobDao = jobDao;
     this.schedulerDao = schedulerDao;
+    this.importSourceValidator = importSourceValidator;
   }
 
   public GenericJobServerModel createImport(
@@ -64,6 +68,8 @@ public class ImportService {
       // a non-maskable auth exception.
       throw new AuthenticationMaskableException("Collection");
     }
+
+    importSourceValidator.validateImport(importRequest.getUrl());
 
     // get a token to execute the job
     String petToken = samDao.getPetToken();

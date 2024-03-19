@@ -30,6 +30,7 @@ import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
+import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -133,7 +134,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       RecordType recordType,
       Optional<String> primaryKey,
       MultipartFile records)
-      throws IOException {
+      throws IOException, DataImportException {
     validateAndPermissions(collectionId, version);
     if (recordDao.recordTypeExists(collectionId, recordType)) {
       primaryKey =
@@ -142,23 +143,22 @@ public class RecordOrchestratorService { // TODO give me a better name
 
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(records.getInputStream(), recordType, primaryKey);
-    RecordSink recordSink = recordSinkFactory.buildRecordSink(new ImportDetails(collectionId));
-    BatchWriteResult result =
-        batchWriteService.batchWrite(
-            recordSource,
-            recordSink,
-            recordType,
-            // the extra cast here isn't exactly necessary, but left here to call out the additional
-            // tangential responsibility of the TsvRecordSource; this can be removed if we
-            // can converge on using PrimaryKeyResolver more generally across all formats.
-            ((PrimaryKeyResolver) recordSource).getPrimaryKey());
-    int qty = result.getUpdatedCount(recordType);
-    activityLogger.saveEventForCurrentUser(
-        user -> user.upserted().record().withRecordType(recordType).ofQuantity(qty));
-
-    // Commit results, publish to downstream systems, etc.
-    recordSink.finalizeBatchWrite(result);
-    return qty;
+    try (RecordSink recordSink =
+        recordSinkFactory.buildRecordSink(new ImportDetails(collectionId))) {
+      BatchWriteResult result =
+          batchWriteService.batchWrite(
+              recordSource,
+              recordSink,
+              recordType,
+              // the extra cast here isn't exactly necessary, but left here to call out the
+              // additional tangential responsibility of the TsvRecordSource; this can be removed if
+              // we can converge on using PrimaryKeyResolver more generally across all formats.
+              ((PrimaryKeyResolver) recordSource).getPrimaryKey());
+      int qty = result.getUpdatedCount(recordType);
+      activityLogger.saveEventForCurrentUser(
+          user -> user.upserted().record().withRecordType(recordType).ofQuantity(qty));
+      return qty;
+    }
   }
 
   // TODO: enable read transaction
@@ -378,7 +378,8 @@ public class RecordOrchestratorService { // TODO give me a better name
       String version,
       RecordType recordType,
       Optional<String> primaryKey,
-      InputStream is) {
+      InputStream is)
+      throws DataImportException {
     validateAndPermissions(collectionId, version);
     if (recordDao.recordTypeExists(collectionId, recordType)) {
       recordService.validatePrimaryKey(collectionId, recordType, primaryKey);
@@ -391,16 +392,16 @@ public class RecordOrchestratorService { // TODO give me a better name
       throw new BadStreamingWriteRequestException(e);
     }
 
-    RecordSink recordSink = recordSinkFactory.buildRecordSink(new ImportDetails(collectionId));
-    BatchWriteResult result =
-        batchWriteService.batchWrite(
-            recordSource, recordSink, recordType, primaryKey.orElse(RECORD_ID));
-    int qty = result.getUpdatedCount(recordType);
-    activityLogger.saveEventForCurrentUser(
-        user -> user.modified().record().withRecordType(recordType).ofQuantity(qty));
-    // Commit results, publish to downstream systems, etc.
-    recordSink.finalizeBatchWrite(result);
-    return qty;
+    try (RecordSink recordSink =
+        recordSinkFactory.buildRecordSink(new ImportDetails(collectionId))) {
+      BatchWriteResult result =
+          batchWriteService.batchWrite(
+              recordSource, recordSink, recordType, primaryKey.orElse(RECORD_ID));
+      int qty = result.getUpdatedCount(recordType);
+      activityLogger.saveEventForCurrentUser(
+          user -> user.modified().record().withRecordType(recordType).ofQuantity(qty));
+      return qty;
+    }
   }
 
   private void checkRecordTypeExists(UUID collectionId, RecordType recordType) {

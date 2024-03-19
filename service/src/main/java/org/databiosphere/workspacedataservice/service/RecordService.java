@@ -24,12 +24,12 @@ import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.service.model.RelationValue;
 import org.databiosphere.workspacedataservice.service.model.ReservedNames;
-import org.databiosphere.workspacedataservice.service.model.exception.BatchWriteException;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictingPrimaryKeysException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.NewPrimaryKeyException;
+import org.databiosphere.workspacedataservice.service.model.exception.TypeMismatchException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -143,7 +143,7 @@ public class RecordService {
         recordTypeSchemaWithoutId.remove(primaryKey);
         List<String> rowErrors = checkEachRow(records, recordTypeSchemaWithoutId);
         if (!rowErrors.isEmpty()) {
-          throw new BatchWriteException(rowErrors);
+          throw new TypeMismatchException(rowErrors);
         }
       }
       throw e;
