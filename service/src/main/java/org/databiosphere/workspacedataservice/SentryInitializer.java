@@ -46,14 +46,14 @@ public class SentryInitializer {
     if (StringUtils.isNotBlank(terraEnv)) {
       env = terraEnv;
     } else {
-      env = String.join(",", environment.getActiveProfiles());
+      env = getSentryEnvironment(environment.getActiveProfiles());
     }
 
     return () ->
         Sentry.init(
             options -> {
               options.setEnvironment(env);
-              options.setDsn(determineIfEnvIsMonitored(env) ? dsn : "");
+              options.setDsn(env != "" ? dsn : "");
               options.setServerName(releaseName);
               options.setRelease(release);
               // additional tags:
@@ -83,12 +83,12 @@ public class SentryInitializer {
     return tags;
   }
 
-  boolean determineIfEnvIsMonitored(String env) {
-    for (var sentryEnv : sentryEnvironments) {
-      if (env.contains(sentryEnv)) {
-        return true;
+  String getSentryEnvironment(String[] profiles) {
+    for (var profile : profiles) {
+      if (sentryEnvironments.contains(profile)) {
+        return profile;
       }
     }
-    return false;
+    return "";
   }
 }

@@ -13,22 +13,22 @@ class SentryInitializerTest {
     /* Arguments are pairs of input Sam URL and expected environment parsed from that URL
      */
     return Stream.of(
-        Arguments.of("prod, data-plane", true),
-        Arguments.of("staging, data-plane", true),
-        Arguments.of("dev, data-plane", true),
-        Arguments.of("local, data-plane", false),
-        Arguments.of("bee, data-plane", false),
-        Arguments.of("UNDEFINED", false),
-        Arguments.of("", false),
-        Arguments.of("null", false));
+        Arguments.of(new String[]{"prod, data-plane"}, "prod"),
+        Arguments.of(new String[]{"staging, data-plane"}, "staging"),
+        Arguments.of(new String[]{"dev, data-plane"}, "dev"),
+        Arguments.of(new String[]{"local, data-plane"}, ""),
+        Arguments.of(new String[]{"bee, data-plane"}, ""),
+        Arguments.of(new String[]{"UNDEFINED"}, ""),
+        Arguments.of(new String[]{""}, ""),
+        Arguments.of(new String[]{"null"}, ""));
   }
 
   @ParameterizedTest(
       name = "SentryInitializer.urlToEnv parsing for value [{0}] should result in [{1}]")
   @MethodSource("provideProfiles")
-  void parseProdEnv(String profiles, Boolean expected) {
+  void parseProdEnv(String[] profiles, Boolean expected) {
     SentryInitializer sentryInitializer = new SentryInitializer();
-    boolean actual = sentryInitializer.determineIfEnvIsMonitored(profiles);
+    String actual = sentryInitializer.getSentryEnvironment(profiles);
     assertEquals(expected, actual);
   }
 }
