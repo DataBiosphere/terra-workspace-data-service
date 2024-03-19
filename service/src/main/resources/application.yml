@@ -175,3 +175,4 @@ samurl: ${SAM_URL:}
 datarepourl: ${DATA_REPO_URL:}
 workspacemanagerurl: ${WORKSPACE_MANAGER_URL:}
 leoUrl: ${LEONARDO_URL:}
+rawlsUrl: ${RAWLS_URL:}
