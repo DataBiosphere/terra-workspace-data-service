@@ -4,6 +4,7 @@ import io.sentry.Sentry;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,24 +37,21 @@ public class SentryInitializer {
   @Value("${sentry.deploymentMode}")
   String deploymentMode;
 
+  private static final String DEFAULT_ENV = "unknown";
+
   // Environments we want to monitor on sentry - don't send errors from local, bees, or Github
   // actions
   private static final List<String> sentryEnvironments = List.of("prod", "staging", "dev");
 
   @Bean
   public SmartInitializingSingleton initialize(Environment environment) {
-    String env;
-    if (StringUtils.isNotBlank(terraEnv)) {
-      env = terraEnv;
-    } else {
-      env = getSentryEnvironment(environment.getActiveProfiles());
-    }
+    var env = getSentryEnvironment(environment.getActiveProfiles()).orElse(DEFAULT_ENV);
 
     return () ->
         Sentry.init(
             options -> {
               options.setEnvironment(env);
-              options.setDsn(env != "" ? dsn : "");
+              options.setDsn(env != DEFAULT_ENV ? dsn : "");
               options.setServerName(releaseName);
               options.setRelease(release);
               // additional tags:
@@ -83,12 +81,18 @@ public class SentryInitializer {
     return tags;
   }
 
-  String getSentryEnvironment(String[] profiles) {
-    for (var profile : profiles) {
-      if (sentryEnvironments.contains(profile)) {
-        return profile;
+  Optional<String> getSentryEnvironment(String[] profiles) {
+    if (StringUtils.isNotBlank(terraEnv)) {
+      if (sentryEnvironments.contains(terraEnv)) {
+        return Optional.of(terraEnv);
+      }
+    } else {
+      for (var profile : profiles) {
+        if (sentryEnvironments.contains(profile)) {
+          return Optional.of(profile);
+        }
       }
     }
-    return "";
+    return Optional.empty();
   }
 }

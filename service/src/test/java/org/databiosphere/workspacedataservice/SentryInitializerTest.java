@@ -28,7 +28,7 @@ class SentryInitializerTest {
   @MethodSource("provideProfiles")
   void parseProdEnv(String[] profiles, String expected) {
     SentryInitializer sentryInitializer = new SentryInitializer();
-    String actual = sentryInitializer.getSentryEnvironment(profiles);
+    String actual = sentryInitializer.getSentryEnvironment(profiles).orElse("");
     assertEquals(expected, actual);
   }
 }
