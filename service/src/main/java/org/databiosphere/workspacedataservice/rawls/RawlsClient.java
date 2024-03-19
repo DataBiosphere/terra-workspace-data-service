@@ -2,11 +2,13 @@ package org.databiosphere.workspacedataservice.rawls;
 
 import static org.databiosphere.workspacedataservice.annotations.DeploymentMode.*;
 
-import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.workspace.model.DataRepoSnapshotResource;
-import bio.terra.workspace.model.ResourceList;
 import java.util.Objects;
 import java.util.UUID;
+import org.broadinstitute.dsde.rawls.model.DataReferenceDescriptionField;
+import org.broadinstitute.dsde.rawls.model.DataReferenceName;
+import org.broadinstitute.dsde.rawls.model.NamedDataRepoSnapshot;
+import org.broadinstitute.dsde.rawls.model.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.slf4j.Logger;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import scala.Option;
 
 @Component
 @ControlPlane
@@ -36,7 +39,8 @@ public class RawlsClient {
     this.restTemplate = restTemplate;
   }
 
-  public ResourceList enumerateDataRepoSnapshotReferences(UUID workspaceId, int offset, int limit) {
+  public SnapshotListResponse enumerateDataRepoSnapshotReferences(
+      UUID workspaceId, int offset, int limit) {
     try {
       UriComponentsBuilder builder =
           UriComponentsBuilder.fromHttpUrl(rawlsUrl)
@@ -44,12 +48,12 @@ public class RawlsClient {
               .queryParam("offset", offset)
               .queryParam("limit", limit);
 
-      ResponseEntity<ResourceList> response =
+      ResponseEntity<SnapshotListResponse> response =
           restTemplate.exchange(
               builder.build().toUri(),
               HttpMethod.GET,
               new HttpEntity<>(getAuthedHeaders()),
-              ResourceList.class);
+              SnapshotListResponse.class);
       return response.getBody();
     } catch (RestClientResponseException e) {
       throw new RawlsException(e);
@@ -67,11 +71,18 @@ public class RawlsClient {
       restTemplate.exchange(
           builder.build().toUri(),
           HttpMethod.POST,
-          new HttpEntity<>(new SnapshotModel().id(snapshotId), getAuthedHeaders()),
+          new HttpEntity<>(snapshotIdToNamedDataRepoSnapshot(snapshotId), getAuthedHeaders()),
           DataRepoSnapshotResource.class);
     } catch (RestClientResponseException e) {
       throw new RawlsException(e);
     }
+  }
+
+  private NamedDataRepoSnapshot snapshotIdToNamedDataRepoSnapshot(UUID snapshotId) {
+    return new NamedDataRepoSnapshot(
+        new DataReferenceName(snapshotId.toString()),
+        Option.apply(new DataReferenceDescriptionField(snapshotId.toString())),
+        snapshotId);
   }
 
   // Get the user's token from the context and attach it to headers

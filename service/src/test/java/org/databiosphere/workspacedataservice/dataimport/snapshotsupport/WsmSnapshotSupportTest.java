@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport.snapshotsupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.times;
@@ -14,12 +15,14 @@ import bio.terra.workspace.model.ResourceList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,10 +71,7 @@ class WsmSnapshotSupportTest extends TestBase {
               return resourceList;
             });
 
-    ResourceList actual =
-        new WsmSnapshotSupport(
-                WorkspaceId.of(UUID.randomUUID()), wsmDao, restClientRetry, activityLogger)
-            .listAllSnapshots(testPageSize);
+    ResourceList actual = getWsmSupport().listAllSnapshots(testPageSize);
 
     // assert total size of all results
     assertEquals(wsmCount, actual.getResources().size());
@@ -87,5 +87,91 @@ class WsmSnapshotSupportTest extends TestBase {
     double expectedInvocations = Math.floor((double) wsmCount / testPageSize) + 1;
     verify(wsmDao, times((int) expectedInvocations))
         .enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt());
+  }
+
+  @Test
+  void existingPolicySnapshotIds() {
+    List<UUID> expected = IntStream.range(0, 75).mapToObj(i -> UUID.randomUUID()).toList();
+
+    List<ResourceDescription> resourceDescriptions =
+        expected.stream().map(UUID::toString).map(this::createResourceDescription).toList();
+
+    ResourceList resourceList = new ResourceList();
+    resourceList.setResources(resourceDescriptions);
+
+    List<UUID> actual = getWsmSupport().extractSnapshotIds(resourceList);
+
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  void safeGetSnapshotIdNoAttributes() {
+    ResourceDescription resourceDescription = new ResourceDescription();
+    resourceDescription.setResourceAttributes(null);
+
+    UUID actual = getWsmSupport().safeGetSnapshotId(resourceDescription);
+
+    assertNull(actual);
+  }
+
+  @Test
+  void safeGetSnapshotIdNoSnapshotObject() {
+    ResourceAttributesUnion resourceAttributes = new ResourceAttributesUnion();
+    resourceAttributes.setGcpDataRepoSnapshot(null);
+
+    ResourceDescription resourceDescription = new ResourceDescription();
+    resourceDescription.setResourceAttributes(resourceAttributes);
+
+    UUID actual = getWsmSupport().safeGetSnapshotId(resourceDescription);
+
+    assertNull(actual);
+  }
+
+  private WsmSnapshotSupport getWsmSupport() {
+    return new WsmSnapshotSupport(
+        WorkspaceId.of(UUID.randomUUID()), wsmDao, restClientRetry, activityLogger);
+  }
+
+  @Test
+  void safeGetSnapshotId() {
+    UUID snapshotId = UUID.randomUUID();
+    ResourceDescription resourceDescription = createResourceDescription(snapshotId.toString());
+
+    UUID actual = getWsmSupport().safeGetSnapshotId(resourceDescription);
+
+    assertEquals(snapshotId, actual);
+  }
+
+  @Test
+  void safeGetSnapshotIdNonUuid() {
+    String notAUuid = "Hello world";
+
+    ResourceDescription resourceDescription = createResourceDescription(notAUuid);
+
+    UUID actual = getWsmSupport().safeGetSnapshotId(resourceDescription);
+
+    assertNull(actual);
+  }
+
+  @Test
+  void safeGetSnapshotIdNull() {
+    ResourceDescription resourceDescription = createResourceDescription(null);
+
+    UUID actual = getWsmSupport().safeGetSnapshotId(resourceDescription);
+
+    assertNull(actual);
+  }
+
+  private ResourceDescription createResourceDescription(String snapshotId) {
+    DataRepoSnapshotAttributes dataRepoSnapshotAttributes = new DataRepoSnapshotAttributes();
+    dataRepoSnapshotAttributes.setSnapshot(snapshotId);
+
+    ResourceAttributesUnion resourceAttributes = new ResourceAttributesUnion();
+    resourceAttributes.setGcpDataRepoSnapshot(dataRepoSnapshotAttributes);
+
+    ResourceDescription resourceDescription = new ResourceDescription();
+    resourceDescription.setResourceAttributes(resourceAttributes);
+
+    return resourceDescription;
   }
 }

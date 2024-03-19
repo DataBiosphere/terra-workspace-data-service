@@ -1,15 +1,9 @@
 package org.databiosphere.workspacedataservice.dataimport.snapshotsupport;
 
 import bio.terra.datarepo.model.TableModel;
-import bio.terra.workspace.model.DataRepoSnapshotAttributes;
-import bio.terra.workspace.model.ResourceAttributesUnion;
-import bio.terra.workspace.model.ResourceDescription;
-import bio.terra.workspace.model.ResourceList;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -28,39 +22,6 @@ public abstract class SnapshotSupport {
 
   String getDefaultPrimaryKey() {
     return DEFAULT_PRIMARY_KEY;
-  }
-
-  /**
-   * Given a ResourceDescription representing a snapshot reference, retrieve that snapshot's UUID.
-   *
-   * @param resourceDescription the object in which to find a snapshotId
-   * @return the snapshotId if found, else null
-   */
-  @Nullable
-  protected UUID safeGetSnapshotId(ResourceDescription resourceDescription) {
-    ResourceAttributesUnion resourceAttributes = resourceDescription.getResourceAttributes();
-    if (resourceAttributes != null) {
-      DataRepoSnapshotAttributes dataRepoSnapshot = resourceAttributes.getGcpDataRepoSnapshot();
-      if (dataRepoSnapshot != null) {
-        String snapshotIdStr = dataRepoSnapshot.getSnapshot();
-        try {
-          return UUID.fromString(snapshotIdStr);
-        } catch (Exception e) {
-
-          String resourceId = "unknown";
-          try {
-            resourceId = resourceDescription.getMetadata().getResourceId().toString();
-          } catch (Exception inner) {
-            // something is exceptionally funky about this resource.
-            resourceId = inner.getMessage();
-          }
-          LOGGER.warn(
-              "Processed a ResourceDescription [%s] that did not contain a valid snapshotId"
-                  .formatted(resourceId));
-        }
-      }
-    }
-    return null;
   }
 
   /**
@@ -95,14 +56,12 @@ public abstract class SnapshotSupport {
 
   /**
    * Query for the full list of referenced snapshots in this workspace, then return the list of
-   * unique snapshotIds from those references. Relies on implementing class for listAllSnapshots
+   * unique snapshotIds from those references. Relies on implementing class
    *
    * @param pageSize how many references to return in each paginated request
    * @return the list of unique ids for all pre-existing snapshot references
    */
-  public List<UUID> existingPolicySnapshotIds(int pageSize) {
-    return extractSnapshotIds(listAllSnapshots(pageSize));
-  }
+  public abstract List<UUID> existingPolicySnapshotIds(int pageSize);
 
   public Map<RecordType, String> identifyPrimaryKeys(List<TableModel> tables) {
     return tables.stream()
@@ -112,61 +71,10 @@ public abstract class SnapshotSupport {
                 tableModel -> identifyPrimaryKey(tableModel.getPrimaryKey())));
   }
 
-  /**
-   * Given a ResourceList, find all the valid ids of referenced snapshots in that list
-   *
-   * @param resourceList the list in which to look for snapshotIds
-   * @return the list of unique ids in the provided list
-   */
-  @VisibleForTesting
-  List<UUID> extractSnapshotIds(ResourceList resourceList) {
-    return resourceList.getResources().stream()
-        .map(this::safeGetSnapshotId)
-        .filter(Objects::nonNull)
-        .distinct()
-        .toList();
-  }
-
   String identifyPrimaryKey(@Nullable List<String> snapshotKeys) {
     if (snapshotKeys != null && snapshotKeys.size() == 1) {
       return snapshotKeys.get(0);
     }
     return DEFAULT_PRIMARY_KEY;
   }
-
-  /**
-   * Query for the full list of referenced snapshots in this workspace, paginating as necessary.
-   * Relies on implementing class for enumerateDataRepoSnapshotReferences
-   *
-   * @param pageSize how many references to return in each paginated request
-   * @return the full list of snapshot references in this workspace
-   */
-  protected ResourceList listAllSnapshots(int pageSize) {
-    int offset = 0;
-    final int hardLimit = 10000; // under no circumstances return more than this many snapshots
-
-    ResourceList finalList = new ResourceList(); // collect our results
-
-    while (offset < hardLimit) {
-      // get a page of results
-      ResourceList thisPage = enumerateDataRepoSnapshotReferences(offset, pageSize);
-
-      // add this page of results to our collector
-      finalList.getResources().addAll(thisPage.getResources());
-
-      if (thisPage.getResources().size() < pageSize) {
-        // fewer results than we requested; this is the last page of results
-        return finalList;
-      } else {
-        // bump our offset and request another page of results
-        offset += pageSize;
-      }
-    }
-
-    throw new DataImportException(
-        "Exceeded hard limit of %d for number of pre-existing snapshot references"
-            .formatted(hardLimit));
-  }
-
-  protected abstract ResourceList enumerateDataRepoSnapshotReferences(int offset, int limit);
 }
