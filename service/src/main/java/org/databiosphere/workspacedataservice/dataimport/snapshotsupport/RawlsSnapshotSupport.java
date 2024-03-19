@@ -7,16 +7,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import org.broadinstitute.dsde.rawls.model.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
+import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
-import scala.jdk.javaapi.CollectionConverters;
 
 public class RawlsSnapshotSupport extends SnapshotSupport {
 
@@ -114,8 +113,7 @@ public class RawlsSnapshotSupport extends SnapshotSupport {
       // get a page of results
       SnapshotListResponse thisPage = enumerateDataRepoSnapshotReferences(offset, pageSize);
 
-      List<DataRepoSnapshotResource> page =
-          CollectionConverters.asJava(thisPage.gcpDataRepoSnapshots());
+      List<DataRepoSnapshotResource> page = thisPage.gcpDataRepoSnapshots();
 
       // add this page of results to our collector
       finalList.addAll(page);

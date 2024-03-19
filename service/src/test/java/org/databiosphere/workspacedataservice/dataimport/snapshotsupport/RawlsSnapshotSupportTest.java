@@ -14,10 +14,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
-import org.broadinstitute.dsde.rawls.model.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
+import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import scala.jdk.javaapi.CollectionConverters;
 
 @DirtiesContext
 @ActiveProfiles(value = "control-plane", inheritProfiles = false)
@@ -64,7 +63,7 @@ class RawlsSnapshotSupportTest extends TestBase {
                   Math.min(offset + limit, mockResources.size()); // slice may be a partial page
               // calculate the slice to return
               List<DataRepoSnapshotResource> slice = mockResources.subList(offset, sliceEnd);
-              return new SnapshotListResponse(CollectionConverters.asScala(slice).toSeq());
+              return new SnapshotListResponse(slice);
             });
 
     List<DataRepoSnapshotResource> actual = getRawlsSupport().listAllSnapshots(testPageSize);

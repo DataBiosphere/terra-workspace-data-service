@@ -5,10 +5,6 @@ import static org.databiosphere.workspacedataservice.annotations.DeploymentMode.
 import bio.terra.workspace.model.DataRepoSnapshotResource;
 import java.util.Objects;
 import java.util.UUID;
-import org.broadinstitute.dsde.rawls.model.DataReferenceDescriptionField;
-import org.broadinstitute.dsde.rawls.model.DataReferenceName;
-import org.broadinstitute.dsde.rawls.model.NamedDataRepoSnapshot;
-import org.broadinstitute.dsde.rawls.model.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.slf4j.Logger;
@@ -22,7 +18,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-import scala.Option;
 
 @Component
 @ControlPlane
@@ -79,10 +74,7 @@ public class RawlsClient {
   }
 
   private NamedDataRepoSnapshot snapshotIdToNamedDataRepoSnapshot(UUID snapshotId) {
-    return new NamedDataRepoSnapshot(
-        new DataReferenceName(snapshotId.toString()),
-        Option.apply(new DataReferenceDescriptionField(snapshotId.toString())),
-        snapshotId);
+    return new NamedDataRepoSnapshot(snapshotId.toString(), snapshotId.toString(), snapshotId);
   }
 
   // Get the user's token from the context and attach it to headers
@@ -97,5 +89,17 @@ public class RawlsClient {
       LOGGER.warn("No access token found for rawls request.");
     }
     return headers;
+  }
+
+  class NamedDataRepoSnapshot {
+    private final String name;
+    private final String description;
+    private final UUID snapshotId;
+
+    public NamedDataRepoSnapshot(String name, String description, UUID snapshotId) {
+      this.name = name;
+      this.description = description;
+      this.snapshotId = snapshotId;
+    }
   }
 }

@@ -16,7 +16,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import bio.terra.workspace.model.DataRepoSnapshotResource;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -27,14 +26,15 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.broadinstitute.dsde.rawls.model.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
+import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
@@ -60,7 +60,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.StreamUtils;
-import scala.jdk.javaapi.CollectionConverters;
 
 /**
  * Tests for PFB import that execute "end-to-end" - that is, they go through the whole process of
@@ -115,10 +114,7 @@ class PfbQuartzJobControlPlaneE2ETest {
 
     // stub out rawls to report no snapshots already linked to this workspace
     when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(
-            new SnapshotListResponse(
-                CollectionConverters.asScala(new java.util.ArrayList<DataRepoSnapshotResource>())
-                    .toSeq()));
+        .thenReturn(new SnapshotListResponse(Collections.emptyList()));
   }
 
   @AfterEach
