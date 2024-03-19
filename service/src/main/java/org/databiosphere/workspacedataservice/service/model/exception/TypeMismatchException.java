@@ -5,9 +5,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(code = HttpStatus.BAD_REQUEST)
-public class BatchWriteException extends IllegalArgumentException {
+public class TypeMismatchException extends IllegalArgumentException {
 
-  public BatchWriteException(List<String> errorInfo) {
+  public TypeMismatchException(List<String> errorInfo) {
     super(
         "Some of the records in your request don't have the proper data for the record type. "
             + "This is likely not an exhaustive list so please look for records with similar problems in your request: "

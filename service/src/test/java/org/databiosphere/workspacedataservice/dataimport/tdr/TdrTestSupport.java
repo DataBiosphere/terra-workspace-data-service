@@ -9,12 +9,11 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
-import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -23,8 +22,6 @@ import org.springframework.stereotype.Component;
 @Component
 class TdrTestSupport {
   @Autowired private JobDao jobDao;
-  @Autowired private WorkspaceManagerDao wsmDao;
-  @Autowired private RestClientRetry restClientRetry;
   @Autowired private RecordSourceFactory recordSourceFactory;
   @Autowired private RecordSinkFactory recordSinkFactory;
   @Autowired private BatchWriteService batchWriteService;
@@ -33,13 +30,12 @@ class TdrTestSupport {
   @Autowired private ObjectMapper objectMapper;
   @Autowired private ObservationRegistry observationRegistry;
   @Autowired DataImportProperties dataImportProperties;
+  @Autowired private SnapshotSupportFactory snapshotSupportFactory;
 
   /** Returns a TdrManifestQuartzJob that is capable of pulling parquet files from the classpath. */
   TdrManifestQuartzJob buildTdrManifestQuartzJob(UUID workspaceId) {
     return new TdrManifestQuartzJob(
         jobDao,
-        wsmDao,
-        restClientRetry,
         recordSourceFactory,
         recordSinkFactory,
         batchWriteService,
@@ -47,7 +43,8 @@ class TdrTestSupport {
         activityLogger,
         objectMapper,
         observationRegistry,
-        dataImportProperties) {
+        dataImportProperties,
+        snapshotSupportFactory) {
       @Override
       protected URL parseUrl(String path) {
         if (path.startsWith("classpath:")) {

@@ -10,6 +10,7 @@ import bio.terra.datarepo.model.SnapshotExportResponseModelFormatParquetLocation
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import io.micrometer.observation.ObservationRegistry;
 import java.io.File;
 import java.io.IOException;
@@ -31,7 +32,8 @@ import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
-import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
@@ -39,16 +41,15 @@ import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
-import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
+import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.slf4j.Logger;
@@ -59,21 +60,18 @@ import org.springframework.stereotype.Component;
 public class TdrManifestQuartzJob extends QuartzJob {
 
   private final JobDao jobDao;
-  private final WorkspaceManagerDao wsmDao;
-  private final RestClientRetry restClientRetry;
   private final RecordSinkFactory recordSinkFactory;
   private final BatchWriteService batchWriteService;
   private final CollectionService collectionService;
   private final ActivityLogger activityLogger;
   private final ObjectMapper mapper;
   private final RecordSourceFactory recordSourceFactory;
+  private final SnapshotSupportFactory snapshotSupportFactory;
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   public TdrManifestQuartzJob(
       JobDao jobDao,
-      WorkspaceManagerDao wsmDao,
-      RestClientRetry restClientRetry,
       RecordSourceFactory recordSourceFactory,
       RecordSinkFactory recordSinkFactory,
       BatchWriteService batchWriteService,
@@ -81,17 +79,17 @@ public class TdrManifestQuartzJob extends QuartzJob {
       ActivityLogger activityLogger,
       ObjectMapper mapper,
       ObservationRegistry observationRegistry,
-      DataImportProperties dataImportProperties) {
+      DataImportProperties dataImportProperties,
+      SnapshotSupportFactory snapshotSupportFactory) {
     super(observationRegistry, dataImportProperties);
     this.jobDao = jobDao;
-    this.wsmDao = wsmDao;
-    this.restClientRetry = restClientRetry;
     this.recordSinkFactory = recordSinkFactory;
     this.recordSourceFactory = recordSourceFactory;
     this.batchWriteService = batchWriteService;
     this.collectionService = collectionService;
     this.activityLogger = activityLogger;
     this.mapper = mapper;
+    this.snapshotSupportFactory = snapshotSupportFactory;
   }
 
   @Override
@@ -132,39 +130,38 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // get all the parquet files from the manifests
 
     FileDownloadHelper fileDownloadHelper = getFilesForImport(tdrManifestImportTables);
-    RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails);
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails)) {
+      // loop through the tables to be imported and upsert base attributes
+      var result =
+          importTables(
+              tdrManifestImportTables,
+              fileDownloadHelper.getFileMap(),
+              ImportMode.BASE_ATTRIBUTES,
+              recordSink);
 
-    // loop through the tables to be imported and upsert base attributes
-    var result =
-        importTables(
-            tdrManifestImportTables,
-            fileDownloadHelper.getFileMap(),
-            ImportMode.BASE_ATTRIBUTES,
-            recordSink);
+      // add relations to the existing base attributes
+      result.merge(
+          importTables(
+              tdrManifestImportTables,
+              fileDownloadHelper.getFileMap(),
+              ImportMode.RELATIONS,
+              recordSink));
 
-    // add relations to the existing base attributes
-    result.merge(
-        importTables(
-            tdrManifestImportTables,
-            fileDownloadHelper.getFileMap(),
-            ImportMode.RELATIONS,
-            recordSink));
-
-    // activity logging for import status
-    // no specific activity logging for relations since main import is a superset
-    result
-        .entrySet()
-        .forEach(
-            entry ->
-                activityLogger.saveEventForCurrentUser(
-                    user ->
-                        user.upserted()
-                            .record()
-                            .withRecordType(entry.getKey())
-                            .ofQuantity(entry.getValue())));
-
-    // Commit results, publish to downstream systems, etc.
-    recordSink.finalizeBatchWrite(result);
+      // activity logging for import status
+      // no specific activity logging for relations since main import is a superset
+      result
+          .entrySet()
+          .forEach(
+              entry ->
+                  activityLogger.saveEventForCurrentUser(
+                      user ->
+                          user.upserted()
+                              .record()
+                              .withRecordType(entry.getKey())
+                              .ofQuantity(entry.getValue())));
+    } catch (DataImportException e) {
+      throw new TdrManifestImportException(e.getMessage(), e);
+    }
 
     // delete temp files after everything else is completed
     // Any failed deletions will be removed if/when pod restarts
@@ -306,8 +303,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
   List<TdrManifestImportTable> extractTableInfo(
       SnapshotExportResponseModel snapshotExportResponseModel, WorkspaceId workspaceId) {
 
-    WsmSnapshotSupport wsmSnapshotSupport =
-        new WsmSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
+    SnapshotSupport snapshotSupport = snapshotSupportFactory.buildSnapshotSupport(workspaceId);
 
     // find all the exported tables in the manifest.
     // This is the format.parquet.location.tables section in the manifest
@@ -317,8 +313,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // find the primary keys for each table.
     // This is the snapshot.tables section in the manifest
     Map<RecordType, String> primaryKeys =
-        wsmSnapshotSupport.identifyPrimaryKeys(
-            snapshotExportResponseModel.getSnapshot().getTables());
+        snapshotSupport.identifyPrimaryKeys(snapshotExportResponseModel.getSnapshot().getTables());
 
     // TODO(AJ-1536): get the types for each table from the manifest; these will be needed after
     //   Avro deserialization to convert them to the correct types.
@@ -326,8 +321,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // find the relations for each table.
     // This is the snapshot.relationships section in the manifest
     Multimap<RecordType, RelationshipModel> relationsByTable =
-        wsmSnapshotSupport.identifyRelations(
-            snapshotExportResponseModel.getSnapshot().getRelationships());
+        identifyRelations(snapshotExportResponseModel.getSnapshot().getRelationships());
 
     return tables.stream()
         .map(
@@ -358,6 +352,13 @@ public class TdrManifestQuartzJob extends QuartzJob {
         .toList();
   }
 
+  private Multimap<RecordType, RelationshipModel> identifyRelations(
+      List<RelationshipModel> relationshipModels) {
+    return Multimaps.index(
+        relationshipModels,
+        relationshipModel -> RecordType.valueOf(relationshipModel.getFrom().getTable()));
+  }
+
   private boolean isValidRelation(
       RelationshipModel relationshipModel, Map<RecordType, String> primaryKeys) {
     // the target table and column requested by the snapshot model
@@ -385,9 +386,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
    */
   protected void linkSnapshots(Set<UUID> snapshotIds, WorkspaceId workspaceId) {
     // list existing snapshots linked to this workspace
-    WsmSnapshotSupport wsmSnapshotSupport =
-        new WsmSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
+    SnapshotSupport snapshotSupport = snapshotSupportFactory.buildSnapshotSupport(workspaceId);
     // TODO AJ-1673: don't use the env-var workspaceId here
-    wsmSnapshotSupport.linkSnapshots(snapshotIds);
+    snapshotSupport.linkSnapshots(snapshotIds);
   }
 }

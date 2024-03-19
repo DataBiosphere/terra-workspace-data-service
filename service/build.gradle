@@ -39,7 +39,7 @@ ext {
     parquet_mr_version = "1.13.1"
     hadoop_version = "3.3.6"
     prometheus_rsocket_version = "1.5.3"
-    spring_cloud_gcp_version = "5.0.4"
+    spring_cloud_gcp_version = "5.1.0"
 }
 
 dependencies {
@@ -59,7 +59,7 @@ dependencies {
     implementation "io.micrometer.prometheus:prometheus-rsocket-spring:$prometheus_rsocket_version"
     implementation 'org.springframework.integration:spring-integration-jdbc'
     implementation 'org.aspectj:aspectjweaver' // required by spring-retry, not used directly
-    implementation 'com.google.guava:guava:33.0.0-jre'
+    implementation 'com.google.guava:guava:33.1.0-jre'
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
@@ -119,7 +119,7 @@ dependencies {
     implementation "org.glassfish.jersey.core:jersey-common"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.11.10'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.12.0'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'

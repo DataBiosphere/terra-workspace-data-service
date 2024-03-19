@@ -11,7 +11,8 @@ on:
       ACR_SP_USER:
         required: true
   pull_request:
-    branches: [ '**' ]
+    branches-ignore:
+      - 'dependabot/**'
   push:
     branches:
       - main

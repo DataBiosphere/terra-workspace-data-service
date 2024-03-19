@@ -24,24 +24,25 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
-import org.databiosphere.workspacedataservice.dataimport.WsmSnapshotSupport;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
-import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
+import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
+import org.databiosphere.workspacedataservice.service.model.exception.PfbImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.slf4j.Logger;
@@ -58,19 +59,16 @@ public class PfbQuartzJob extends QuartzJob {
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   private final JobDao jobDao;
-  private final WorkspaceManagerDao wsmDao;
   private final BatchWriteService batchWriteService;
   private final CollectionService collectionService;
   private final ActivityLogger activityLogger;
   private final RecordSourceFactory recordSourceFactory;
   private final RecordSinkFactory recordSinkFactory;
-  private final RestClientRetry restClientRetry;
+  private final SnapshotSupportFactory snapshotSupportFactory;
   private final SamDao samDao;
 
   public PfbQuartzJob(
       JobDao jobDao,
-      WorkspaceManagerDao wsmDao,
-      RestClientRetry restClientRetry,
       RecordSourceFactory recordSourceFactory,
       RecordSinkFactory recordSinkFactory,
       BatchWriteService batchWriteService,
@@ -78,17 +76,17 @@ public class PfbQuartzJob extends QuartzJob {
       ActivityLogger activityLogger,
       SamDao samDao,
       ObservationRegistry observationRegistry,
+      SnapshotSupportFactory snapshotSupportFactory,
       DataImportProperties dataImportProperties) {
     super(observationRegistry, dataImportProperties);
     this.jobDao = jobDao;
-    this.wsmDao = wsmDao;
-    this.restClientRetry = restClientRetry;
     this.recordSourceFactory = recordSourceFactory;
     this.recordSinkFactory = recordSinkFactory;
     this.batchWriteService = batchWriteService;
     this.collectionService = collectionService;
     this.activityLogger = activityLogger;
     this.samDao = samDao;
+    this.snapshotSupportFactory = snapshotSupportFactory;
   }
 
   @Override
@@ -128,19 +126,22 @@ public class PfbQuartzJob extends QuartzJob {
     linkSnapshots(snapshotIds, workspaceId);
 
     // Import all the tables and rows inside the PFB.
-    RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails);
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails)) {
+      // This is HTTP connection #2 to the PFB.
+      logger.info("Importing tables and rows from this PFB...");
+      BatchWriteResult result =
+          withPfbStream(url, stream -> importTables(stream, recordSink, BASE_ATTRIBUTES));
 
-    // This is HTTP connection #2 to the PFB.
-    logger.info("Importing tables and rows from this PFB...");
-    BatchWriteResult result =
-        withPfbStream(url, stream -> importTables(stream, recordSink, BASE_ATTRIBUTES));
+      // This is HTTP connection #3 to the PFB.
+      logger.info("Updating tables and rows from this PFB with relations...");
+      // TODO: merging batch results may have unexpected behavior until BatchWriteResult can
+      //   group its merged results under import mode; most notably, relations will be double
+      //   counted
+      result.merge(withPfbStream(url, stream -> importTables(stream, recordSink, RELATIONS)));
+    } catch (DataImportException e) {
+      throw new PfbImportException(e.getMessage(), e);
+    }
 
-    // This is HTTP connection #3 to the PFB.
-    logger.info("Updating tables and rows from this PFB with relations...");
-    result.merge(withPfbStream(url, stream -> importTables(stream, recordSink, RELATIONS)));
-
-    // Commit results, publish to downstream systems, etc.
-    recordSink.finalizeBatchWrite(result);
     // TODO(AJ-1453): save the result of importTables and persist them to the job
   }
 
@@ -231,9 +232,8 @@ public class PfbQuartzJob extends QuartzJob {
    */
   protected void linkSnapshots(Set<UUID> snapshotIds, WorkspaceId workspaceId) {
     // list existing snapshots linked to this workspace
-    WsmSnapshotSupport wsmSnapshotSupport =
-        new WsmSnapshotSupport(workspaceId, wsmDao, restClientRetry, activityLogger);
-    wsmSnapshotSupport.linkSnapshots(snapshotIds);
+    SnapshotSupport snapshotSupport = snapshotSupportFactory.buildSnapshotSupport(workspaceId);
+    snapshotSupport.linkSnapshots(snapshotIds);
   }
 
   @Nullable
