@@ -46,7 +46,7 @@ public class RawlsSnapshotSupport extends SnapshotSupport {
   }
 
   // TODO (AJ-1705): Filter out snapshots that do NOT have purpose:policy
-  protected SnapshotListResponse enumerateDataRepoSnapshotReferences(int offset, int pageSize) {
+  private SnapshotListResponse enumerateDataRepoSnapshotReferences(int offset, int pageSize) {
     RestClientRetry.RestCall<SnapshotListResponse> restCall =
         (() -> rawlsClient.enumerateDataRepoSnapshotReferences(workspaceId.id(), offset, pageSize));
     return restClientRetry.withRetryAndErrorHandling(
@@ -74,6 +74,7 @@ public class RawlsSnapshotSupport extends SnapshotSupport {
    * @return the snapshotId if found, else null
    */
   @Nullable
+  @VisibleForTesting
   protected UUID safeGetSnapshotId(DataRepoSnapshotResource snapshotResource) {
     DataRepoSnapshotAttributes dataRepoSnapshot = snapshotResource.getAttributes();
     if (dataRepoSnapshot != null) {
@@ -103,6 +104,7 @@ public class RawlsSnapshotSupport extends SnapshotSupport {
    * @param pageSize how many references to return in each paginated request
    * @return the full list of snapshot references in this workspace
    */
+  @VisibleForTesting
   protected List<DataRepoSnapshotResource> listAllSnapshots(int pageSize) {
     int offset = 0;
     final int hardLimit = 10000; // under no circumstances return more than this many snapshots

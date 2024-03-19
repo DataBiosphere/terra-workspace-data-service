@@ -38,7 +38,7 @@ public class WsmSnapshotSupport extends SnapshotSupport {
     this.activityLogger = activityLogger;
   }
 
-  protected ResourceList enumerateDataRepoSnapshotReferences(int offset, int pageSize) {
+  private ResourceList enumerateDataRepoSnapshotReferences(int offset, int pageSize) {
     RestClientRetry.RestCall<ResourceList> restCall =
         (() -> wsmDao.enumerateDataRepoSnapshotReferences(workspaceId.id(), offset, pageSize));
     return restClientRetry.withRetryAndErrorHandling(
@@ -63,6 +63,7 @@ public class WsmSnapshotSupport extends SnapshotSupport {
    * @param pageSize how many references to return in each paginated request
    * @return the full list of snapshot references in this workspace
    */
+  @VisibleForTesting
   protected ResourceList listAllSnapshots(int pageSize) {
     int offset = 0;
     final int hardLimit = 10000; // under no circumstances return more than this many snapshots
@@ -112,6 +113,7 @@ public class WsmSnapshotSupport extends SnapshotSupport {
    * @return the snapshotId if found, else null
    */
   @Nullable
+  @VisibleForTesting
   protected UUID safeGetSnapshotId(ResourceDescription resourceDescription) {
     ResourceAttributesUnion resourceAttributes = resourceDescription.getResourceAttributes();
     if (resourceAttributes != null) {
