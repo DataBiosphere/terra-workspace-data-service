@@ -13,14 +13,14 @@ class SentryInitializerTest {
     /* Arguments are pairs of input Sam URL and expected environment parsed from that URL
      */
     return Stream.of(
-        Arguments.of(new String[]{"prod, data-plane"}, "prod"),
-        Arguments.of(new String[]{"staging, data-plane"}, "staging"),
-        Arguments.of(new String[]{"dev, data-plane"}, "dev"),
-        Arguments.of(new String[]{"local, data-plane"}, ""),
-        Arguments.of(new String[]{"bee, data-plane"}, ""),
-        Arguments.of(new String[]{"UNDEFINED"}, ""),
-        Arguments.of(new String[]{""}, ""),
-        Arguments.of(new String[]{"null"}, ""));
+        Arguments.of(new String[] {"prod, data-plane"}, "prod"),
+        Arguments.of(new String[] {"staging, data-plane"}, "staging"),
+        Arguments.of(new String[] {"dev, data-plane"}, "dev"),
+        Arguments.of(new String[] {"local, data-plane"}, ""),
+        Arguments.of(new String[] {"bee, data-plane"}, ""),
+        Arguments.of(new String[] {"UNDEFINED"}, ""),
+        Arguments.of(new String[] {""}, ""),
+        Arguments.of(new String[] {"null"}, ""));
   }
 
   @ParameterizedTest(
