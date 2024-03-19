@@ -26,7 +26,7 @@ class SentryInitializerTest {
   @ParameterizedTest(
       name = "SentryInitializer.urlToEnv parsing for value [{0}] should result in [{1}]")
   @MethodSource("provideProfiles")
-  void parseProdEnv(String[] profiles, Boolean expected) {
+  void parseProdEnv(String[] profiles, String expected) {
     SentryInitializer sentryInitializer = new SentryInitializer();
     String actual = sentryInitializer.getSentryEnvironment(profiles);
     assertEquals(expected, actual);
