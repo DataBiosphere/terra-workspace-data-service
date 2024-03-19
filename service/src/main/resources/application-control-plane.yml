@@ -26,3 +26,8 @@ sentry:
   releasename: "cWDS"
   env: ${TERRA_ENV:}
   deploymentMode: control-plane
+
+server:
+  # since we run behind a proxy in the control plane, we need to respect X-Forwarded-* headers
+  # for example, we need to use X-Forwarded-Host instead of Host for redirects
+  forward-headers-strategy: native
