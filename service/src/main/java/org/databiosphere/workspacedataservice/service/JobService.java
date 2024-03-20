@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
+import org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 import org.databiosphere.workspacedataservice.pubsub.JobStatusUpdate;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -18,11 +19,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class JobService {
-  private static final Set<GenericJobServerModel.StatusEnum> terminalJobStatuses =
-      Set.of(
-          GenericJobServerModel.StatusEnum.SUCCEEDED,
-          GenericJobServerModel.StatusEnum.ERROR,
-          GenericJobServerModel.StatusEnum.CANCELLED);
+  private static final Set<StatusEnum> terminalJobStatuses =
+      Set.of(StatusEnum.SUCCEEDED, StatusEnum.ERROR, StatusEnum.CANCELLED);
 
   JobDao jobDao;
   CollectionService collectionService;
@@ -63,8 +61,8 @@ public class JobService {
     try {
       UUID jobId = update.jobId();
       GenericJobServerModel job = getJob(jobId);
-      GenericJobServerModel.StatusEnum currentStatus = job.getStatus();
-      GenericJobServerModel.StatusEnum newStatus = update.newStatus();
+      StatusEnum currentStatus = job.getStatus();
+      StatusEnum newStatus = update.newStatus();
 
       // Ignore messages that don't change the job's status.
       // Rawls and import service have more granular statuses than CWDS, so the initial update
@@ -79,7 +77,7 @@ public class JobService {
             "Unable to update terminal status for job %s".formatted(jobId));
       }
 
-      if (newStatus.equals(GenericJobServerModel.StatusEnum.ERROR)) {
+      if (newStatus.equals(StatusEnum.ERROR)) {
         jobDao.fail(jobId, firstNonNull(update.errorMessage(), "Unknown error"));
       } else {
         jobDao.updateStatus(jobId, newStatus);
