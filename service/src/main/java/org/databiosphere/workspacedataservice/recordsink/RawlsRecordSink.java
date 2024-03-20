@@ -22,7 +22,9 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAtt
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RecordReference;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
+import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -128,10 +130,19 @@ public class RawlsRecordSink implements RecordSink {
     if (attributeValue instanceof List<?> values) {
       return Stream.concat(
           Stream.of(new RemoveAttribute(name), new CreateAttributeValueList(name)),
-          values.stream().map(value -> new AddListMember(name, value)));
+          values.stream()
+              .map(this::maybeCoerceRelation)
+              .map(value -> new AddListMember(name, value)));
     }
 
-    return Stream.of(new AddUpdateAttribute(name, attributeValue));
+    return Stream.of(new AddUpdateAttribute(name, maybeCoerceRelation(attributeValue)));
+  }
+
+  private Object maybeCoerceRelation(Object originalValue) {
+    if (RelationUtils.isRelationValue(originalValue)) {
+      return RecordReference.fromReferenceString(originalValue.toString());
+    }
+    return originalValue;
   }
 
   static String getBlobName(UUID jobId) {

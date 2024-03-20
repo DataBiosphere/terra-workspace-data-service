@@ -11,6 +11,7 @@ import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.AD
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.ADD_UPDATE_ATTRIBUTE;
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.CREATE_ATTRIBUTE_VALUE_LIST;
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.REMOVE_ATTRIBUTE;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
@@ -27,6 +28,7 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,9 +39,11 @@ import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RecordReference;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
 import org.databiosphere.workspacedataservice.sam.MockSamUsersApi;
 import org.databiosphere.workspacedataservice.service.CollectionService;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -217,11 +221,11 @@ class PfbQuartzJobControlPlaneE2ETest {
     Entity sampleActivity = getSampleEntity(entities, "activities");
     assertListAttributeType(sampleActivity, "pfb:activity_type", String.class);
 
+    // since references get processed last, we reverse the order to get one of the reference
+    // upserts as a sample instead of the original base attribute upsert
+    Collections.reverse(entities);
     Entity sampleFile = getSampleEntity(entities, "files");
-    assertSimpleAttributeType(sampleFile, "pfb:file_format", String.class);
-    assertSimpleAttributeType(sampleFile, "pfb:file_size", BigInteger.class);
-    assertSimpleAttributeType(sampleFile, "pfb:is_supplementary", Boolean.class);
-
+    assertReferenceAttributeType(sampleFile, "pfb:donors", "donors");
     Map<String, Long> actualCounts =
         entities.stream().collect(groupingBy(Entity::entityType, counting()));
 
@@ -264,6 +268,15 @@ class PfbQuartzJobControlPlaneE2ETest {
   private void assertSimpleAttributeType(Entity entity, String attributeName, Class<?> expected) {
     assertThat(getSimpleAttributeByName(entity, attributeName).addUpdateAttribute().getClass())
         .isEqualTo(expected);
+  }
+
+  private void assertReferenceAttributeType(
+      Entity entity, String attributeName, String attributeType) {
+    var value = getSimpleAttributeByName(entity, attributeName).addUpdateAttribute();
+    RecordReference recordReference = assertInstanceOf(RecordReference.class, value);
+
+    assertThat(recordReference.entityType()).isEqualTo(RecordType.valueOf(attributeType));
+    assertThat(recordReference.entityName()).startsWith("%s.".formatted(attributeType));
   }
 
   private AddUpdateAttribute getSimpleAttributeByName(Entity entity, String attributeName) {
