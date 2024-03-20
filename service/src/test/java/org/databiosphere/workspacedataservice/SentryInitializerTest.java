@@ -9,26 +9,26 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class SentryInitializerTest {
 
-  private static Stream<Arguments> provideSamUrls() {
-    /* Arguments are pairs of input Sam URL and expected environment parsed from that URL
+  private static Stream<Arguments> provideProfiles() {
+    /* Arguments are pairs of spring profile value and expected env value to be parsed from them
      */
     return Stream.of(
-        Arguments.of("https://sam.dsde-prod.broadinstitute.org", "prod"),
-        Arguments.of("https://sam.dsde-staging.broadinstitute.org", "staging"),
-        Arguments.of("https://sam.dsde-dev.broadinstitute.org", "dev"),
-        Arguments.of("https://sam.bee-fancy-generated-name.bee.envs-terra.bio", "unknown"),
-        Arguments.of("UNDEFINED", "unknown"),
-        Arguments.of("", "unknown"),
-        Arguments.of("null", "unknown"),
-        Arguments.of(null, "unknown"));
+        Arguments.of(new String[] {"prod", "data-plane"}, "prod"),
+        Arguments.of(new String[] {"staging", "data-plane"}, "staging"),
+        Arguments.of(new String[] {"dev", "data-plane"}, "dev"),
+        Arguments.of(new String[] {"local", "data-plane"}, ""),
+        Arguments.of(new String[] {"bee", "data-plane"}, ""),
+        Arguments.of(new String[] {"UNDEFINED"}, ""),
+        Arguments.of(new String[] {""}, ""),
+        Arguments.of(new String[] {"null"}, ""));
   }
 
   @ParameterizedTest(
       name = "SentryInitializer.urlToEnv parsing for value [{0}] should result in [{1}]")
-  @MethodSource("provideSamUrls")
-  void parseProdEnv(String samUrl, String expected) {
+  @MethodSource("provideProfiles")
+  void parseProdEnv(String[] profiles, String expected) {
     SentryInitializer sentryInitializer = new SentryInitializer();
-    String actual = sentryInitializer.urlToEnv(samUrl);
+    String actual = sentryInitializer.getSentryEnvironment(profiles).orElse("");
     assertEquals(expected, actual);
   }
 }
