@@ -67,17 +67,11 @@ public class RawlsClient {
       restTemplate.exchange(
           builder.build().toUri(),
           HttpMethod.POST,
-          new HttpEntity<>(snapshotIdToNamedDataRepoSnapshot(snapshotId), getAuthedHeaders()),
+          new HttpEntity<>(NamedDataRepoSnapshot.forSnapshotId(snapshotId), getAuthedHeaders()),
           DataRepoSnapshotResource.class);
     } catch (RestClientResponseException e) {
       throw new RawlsException(e);
     }
-  }
-
-  private NamedDataRepoSnapshot snapshotIdToNamedDataRepoSnapshot(UUID snapshotId) {
-    String referenceName = "%s-policy".formatted(snapshotId);
-    String referenceDescription = "created at %s".formatted(System.currentTimeMillis());
-    return new NamedDataRepoSnapshot(referenceName, referenceDescription, snapshotId);
   }
 
   // Get the user's token from the context and attach it to headers

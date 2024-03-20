@@ -9,4 +9,11 @@ import java.util.UUID;
  * @param description description for this reference
  * @param snapshotId the UUID of the snapshot to reference
  */
-public record NamedDataRepoSnapshot(String name, String description, UUID snapshotId) {}
+public record NamedDataRepoSnapshot(String name, String description, UUID snapshotId) {
+
+  public static NamedDataRepoSnapshot forSnapshotId(UUID snapshotId) {
+    String referenceName = "%s-policy".formatted(snapshotId);
+    String referenceDescription = "created at %s".formatted(System.currentTimeMillis());
+    return new NamedDataRepoSnapshot(referenceName, referenceDescription, snapshotId);
+  }
+}
