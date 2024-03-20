@@ -22,7 +22,7 @@ public record JobStatusUpdate(
       case "Upserting" -> StatusEnum.RUNNING;
       case "Done" -> StatusEnum.SUCCEEDED;
       case "Error" -> StatusEnum.ERROR;
-      default -> throw new RuntimeException(
+      default -> throw new IllegalArgumentException(
           "Unknown Rawls import status: %s".formatted(rawlsStatus));
     };
   }
