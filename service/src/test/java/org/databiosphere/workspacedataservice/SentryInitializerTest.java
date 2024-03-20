@@ -10,7 +10,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class SentryInitializerTest {
 
   private static Stream<Arguments> provideProfiles() {
-    /* Arguments are pairs of input Sam URL and expected environment parsed from that URL
+    /* Arguments are pairs of spring profile value and expected env value to be parsed from them
      */
     return Stream.of(
         Arguments.of(new String[] {"prod", "data-plane"}, "prod"),

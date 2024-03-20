@@ -51,7 +51,7 @@ public class SentryInitializer {
         Sentry.init(
             options -> {
               options.setEnvironment(env);
-              options.setDsn(!env.equals(DEFAULT_ENV) ? dsn : "");
+              options.setDsn(env.equals(DEFAULT_ENV) ? "" : dsn);
               options.setServerName(releaseName);
               options.setRelease(release);
               // additional tags:
