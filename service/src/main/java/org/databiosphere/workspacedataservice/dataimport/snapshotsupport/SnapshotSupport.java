@@ -23,7 +23,75 @@ import org.springframework.lang.Nullable;
 public abstract class SnapshotSupport {
 
   private static final String DEFAULT_PRIMARY_KEY = "datarepo_row_id";
+
   private static final Logger LOGGER = LoggerFactory.getLogger(SnapshotSupport.class);
+
+  @VisibleForTesting
+  String getDefaultPrimaryKey() {
+    return DEFAULT_PRIMARY_KEY;
+  }
+
+  /**
+   * Given a ResourceDescription representing a snapshot reference, retrieve that snapshot's UUID.
+   *
+   * @param resourceDescription the object in which to find a snapshotId
+   * @return the snapshotId if found, else null
+   */
+  @Nullable
+  @VisibleForTesting
+  protected UUID safeGetSnapshotId(ResourceDescription resourceDescription) {
+    ResourceAttributesUnion resourceAttributes = resourceDescription.getResourceAttributes();
+    if (resourceAttributes != null) {
+      DataRepoSnapshotAttributes dataRepoSnapshot = resourceAttributes.getGcpDataRepoSnapshot();
+      if (dataRepoSnapshot != null) {
+        String snapshotIdStr = dataRepoSnapshot.getSnapshot();
+        try {
+          return UUID.fromString(snapshotIdStr);
+        } catch (Exception e) {
+
+          String resourceId;
+          try {
+            resourceId = resourceDescription.getMetadata().getResourceId().toString();
+          } catch (Exception inner) {
+            // something is exceptionally funky about this resource.
+            resourceId = inner.getMessage();
+          }
+          LOGGER.warn(
+              "Processed a ResourceDescription [%s] that did not contain a valid snapshotId"
+                  .formatted(resourceId));
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Given a list of snapshot ids, create references from the workspace to the snapshot for each id
+   * that does not already have a reference.
+   *
+   * @param snapshotIds the list of snapshot ids to create or verify references.
+   */
+  public void linkSnapshots(Set<UUID> snapshotIds) {
+    // list existing snapshots linked to this workspace
+    Set<UUID> existingSnapshotIds = Set.copyOf(existingPolicySnapshotIds(/* pageSize= */ 50));
+    // find the snapshots that are not already linked to this workspace
+    Set<UUID> newSnapshotIds = Sets.difference(snapshotIds, existingSnapshotIds);
+
+    LOGGER.info(
+        "Import data contains {} snapshot ids. {} of these are already linked to the workspace; {} new links will be created.",
+        snapshotIds.size(),
+        snapshotIds.size() - newSnapshotIds.size(),
+        newSnapshotIds.size());
+
+    // pass snapshotIds to underlying client to link
+    for (UUID uuid : newSnapshotIds) {
+      try {
+        linkSnapshot(uuid);
+      } catch (RestException re) {
+        throw new DataImportException("Error processing data import: " + re.getMessage(), re);
+      }
+    }
+  }
 
   /**
    * Given a single snapshotId, create a reference to that snapshot from the current workspace.
@@ -31,15 +99,6 @@ public abstract class SnapshotSupport {
    * @param snapshotId id of the snapshot to reference
    */
   protected abstract void linkSnapshot(UUID snapshotId);
-
-  /**
-   * Query a source system (WSM, Rawls) for a single page's worth of snapshot references.
-   *
-   * @param offset pagination offset; used when the current workspace has many references
-   * @param pageSize pagination page size; used when the current workspace has many references
-   * @return the page of references from the source system
-   */
-  protected abstract ResourceList enumerateDataRepoSnapshotReferences(int offset, int pageSize);
 
   /**
    * Get the list of unique snapshotIds referenced by the current workspace.
@@ -50,6 +109,51 @@ public abstract class SnapshotSupport {
   @VisibleForTesting
   public List<UUID> existingPolicySnapshotIds(int pageSize) {
     return extractSnapshotIds(listAllSnapshots(pageSize));
+  }
+
+  /**
+   * Given a list of TDR tables, find the primary keys for those tables.
+   *
+   * @param tables the TDR model to inspect
+   * @return map of table name->primary key
+   */
+  public Map<RecordType, String> identifyPrimaryKeys(List<TableModel> tables) {
+    return tables.stream()
+        .collect(
+            Collectors.toMap(
+                tableModel -> RecordType.valueOf(tableModel.getName()),
+                tableModel -> identifyPrimaryKey(tableModel.getPrimaryKey())));
+  }
+
+  /**
+   * Given a ResourceList, find all the valid ids of referenced snapshots in that list
+   *
+   * @param resourceList the list in which to look for snapshotIds
+   * @return the list of unique ids in the provided list
+   */
+  @VisibleForTesting
+  List<UUID> extractSnapshotIds(ResourceList resourceList) {
+    return resourceList.getResources().stream()
+        .map(this::safeGetSnapshotId)
+        .filter(Objects::nonNull)
+        .distinct()
+        .toList();
+  }
+
+  /**
+   * Given the primary keys specified by a TDR table, return a primary key usable by WDS. WDS
+   * requires a single primary key, while TDR allows compound keys and missing keys. This method
+   * will return a sensible default if the TDR model is not a single key.
+   *
+   * @param snapshotKeys the TDR primary keys to inspect
+   * @return the primary key to be used by WDS
+   */
+  @VisibleForTesting
+  String identifyPrimaryKey(@Nullable List<String> snapshotKeys) {
+    if (snapshotKeys != null && snapshotKeys.size() == 1) {
+      return snapshotKeys.get(0);
+    }
+    return DEFAULT_PRIMARY_KEY;
   }
 
   /**
@@ -88,114 +192,11 @@ public abstract class SnapshotSupport {
   }
 
   /**
-   * Given a ResourceList, find all the valid ids of referenced snapshots in that list
+   * Query a source system (WSM, Rawls) for a single page's worth of snapshot references.
    *
-   * @param resourceList the list in which to look for snapshotIds
-   * @return the list of unique ids in the provided list
+   * @param offset pagination offset; used when the current workspace has many references
+   * @param pageSize pagination page size; used when the current workspace has many references
+   * @return the page of references from the source system
    */
-  @VisibleForTesting
-  List<UUID> extractSnapshotIds(ResourceList resourceList) {
-    return resourceList.getResources().stream()
-        .map(this::safeGetSnapshotId)
-        .filter(Objects::nonNull)
-        .distinct()
-        .toList();
-  }
-
-  @VisibleForTesting
-  String getDefaultPrimaryKey() {
-    return DEFAULT_PRIMARY_KEY;
-  }
-
-  /**
-   * Given the primary keys specified by a TDR table, return a primary key usable by WDS. WDS
-   * requires a single primary key, while TDR allows compound keys and missing keys. This method
-   * will return a sensible default if the TDR model is not a single key.
-   *
-   * @param snapshotKeys the TDR primary keys to inspect
-   * @return the primary key to be used by WDS
-   */
-  @VisibleForTesting
-  String identifyPrimaryKey(@Nullable List<String> snapshotKeys) {
-    if (snapshotKeys != null && snapshotKeys.size() == 1) {
-      return snapshotKeys.get(0);
-    }
-    return DEFAULT_PRIMARY_KEY;
-  }
-
-  /**
-   * Given a list of TDR tables, find the primary keys for those tables.
-   *
-   * @param tables the TDR model to inspect
-   * @return map of table name->primary key
-   */
-  public Map<RecordType, String> identifyPrimaryKeys(List<TableModel> tables) {
-    return tables.stream()
-        .collect(
-            Collectors.toMap(
-                tableModel -> RecordType.valueOf(tableModel.getName()),
-                tableModel -> identifyPrimaryKey(tableModel.getPrimaryKey())));
-  }
-
-  /**
-   * Given a list of snapshot ids, create references from the workspace to the snapshot for each id
-   * that does not already have a reference.
-   *
-   * @param snapshotIds the list of snapshot ids to create or verify references.
-   */
-  public void linkSnapshots(Set<UUID> snapshotIds) {
-    // list existing snapshots linked to this workspace
-    Set<UUID> existingSnapshotIds = Set.copyOf(existingPolicySnapshotIds(/* pageSize= */ 50));
-    // find the snapshots that are not already linked to this workspace
-    Set<UUID> newSnapshotIds = Sets.difference(snapshotIds, existingSnapshotIds);
-
-    LOGGER.info(
-        "Import data contains {} snapshot ids. {} of these are already linked to the workspace; {} new links will be created.",
-        snapshotIds.size(),
-        snapshotIds.size() - newSnapshotIds.size(),
-        newSnapshotIds.size());
-
-    // pass snapshotIds to underlying client to link
-    for (UUID uuid : newSnapshotIds) {
-      try {
-        linkSnapshot(uuid);
-      } catch (RestException re) {
-        throw new DataImportException("Error processing data import: " + re.getMessage(), re);
-      }
-    }
-  }
-
-  /**
-   * Given a ResourceDescription representing a snapshot reference, retrieve that snapshot's UUID.
-   *
-   * @param resourceDescription the object in which to find a snapshotId
-   * @return the snapshotId if found, else null
-   */
-  @Nullable
-  @VisibleForTesting
-  protected UUID safeGetSnapshotId(ResourceDescription resourceDescription) {
-    ResourceAttributesUnion resourceAttributes = resourceDescription.getResourceAttributes();
-    if (resourceAttributes != null) {
-      DataRepoSnapshotAttributes dataRepoSnapshot = resourceAttributes.getGcpDataRepoSnapshot();
-      if (dataRepoSnapshot != null) {
-        String snapshotIdStr = dataRepoSnapshot.getSnapshot();
-        try {
-          return UUID.fromString(snapshotIdStr);
-        } catch (Exception e) {
-
-          String resourceId;
-          try {
-            resourceId = resourceDescription.getMetadata().getResourceId().toString();
-          } catch (Exception inner) {
-            // something is exceptionally funky about this resource.
-            resourceId = inner.getMessage();
-          }
-          LOGGER.warn(
-              "Processed a ResourceDescription [%s] that did not contain a valid snapshotId"
-                  .formatted(resourceId));
-        }
-      }
-    }
-    return null;
-  }
+  protected abstract ResourceList enumerateDataRepoSnapshotReferences(int offset, int pageSize);
 }
