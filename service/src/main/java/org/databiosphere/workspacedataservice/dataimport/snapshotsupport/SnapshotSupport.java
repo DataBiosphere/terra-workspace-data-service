@@ -1,9 +1,15 @@
 package org.databiosphere.workspacedataservice.dataimport.snapshotsupport;
 
 import bio.terra.datarepo.model.TableModel;
+import bio.terra.workspace.model.DataRepoSnapshotAttributes;
+import bio.terra.workspace.model.ResourceAttributesUnion;
+import bio.terra.workspace.model.ResourceDescription;
+import bio.terra.workspace.model.ResourceList;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -20,20 +26,83 @@ public abstract class SnapshotSupport {
   private static final Logger LOGGER = LoggerFactory.getLogger(SnapshotSupport.class);
 
   /**
-   * Get the list of unique snapshotIds referenced by the current workspace.
-   *
-   * @param pageSize how many references to return in each paginated request
-   * @return the list of unique ids for all pre-existing snapshot references
-   */
-  public abstract List<UUID> existingPolicySnapshotIds(int pageSize);
-
-  /**
    * Given a single snapshotId, create a reference to that snapshot from the current workspace.
    *
    * @param snapshotId id of the snapshot to reference
    */
   protected abstract void linkSnapshot(UUID snapshotId);
 
+  /**
+   * Query a source system (WSM, Rawls) for a single page's worth of snapshot references.
+   *
+   * @param offset pagination offset; used when the current workspace has many references
+   * @param pageSize pagination page size; used when the current workspace has many references
+   * @return the page of references from the source system
+   */
+  protected abstract ResourceList enumerateDataRepoSnapshotReferences(int offset, int pageSize);
+
+  /**
+   * Get the list of unique snapshotIds referenced by the current workspace.
+   *
+   * @param pageSize how many references to return in each paginated request
+   * @return the list of unique ids for all pre-existing snapshot references
+   */
+  @VisibleForTesting
+  public List<UUID> existingPolicySnapshotIds(int pageSize) {
+    return extractSnapshotIds(listAllSnapshots(pageSize));
+  }
+
+  /**
+   * Query for the full list of referenced snapshots in this workspace, paginating as necessary.
+   *
+   * @param pageSize how many references to return in each paginated request
+   * @return the full list of snapshot references in this workspace
+   */
+  // TODO (AJ-1705): Filter out snapshots that do NOT have purpose:policy
+  @VisibleForTesting
+  ResourceList listAllSnapshots(int pageSize) {
+    int offset = 0;
+    final int hardLimit = 10000; // under no circumstances return more than this many snapshots
+
+    ResourceList finalList = new ResourceList(); // collect our results
+
+    while (offset < hardLimit) {
+      // get a page of results
+      ResourceList thisPage = enumerateDataRepoSnapshotReferences(offset, pageSize);
+
+      // add this page of results to our collector
+      finalList.getResources().addAll(thisPage.getResources());
+
+      if (thisPage.getResources().size() < pageSize) {
+        // fewer results than we requested; this is the last page of results
+        return finalList;
+      } else {
+        // bump our offset and request another page of results
+        offset += pageSize;
+      }
+    }
+
+    throw new DataImportException(
+        "Exceeded hard limit of %d for number of pre-existing snapshot references"
+            .formatted(hardLimit));
+  }
+
+  /**
+   * Given a ResourceList, find all the valid ids of referenced snapshots in that list
+   *
+   * @param resourceList the list in which to look for snapshotIds
+   * @return the list of unique ids in the provided list
+   */
+  @VisibleForTesting
+  List<UUID> extractSnapshotIds(ResourceList resourceList) {
+    return resourceList.getResources().stream()
+        .map(this::safeGetSnapshotId)
+        .filter(Objects::nonNull)
+        .distinct()
+        .toList();
+  }
+
+  @VisibleForTesting
   String getDefaultPrimaryKey() {
     return DEFAULT_PRIMARY_KEY;
   }
@@ -46,6 +115,7 @@ public abstract class SnapshotSupport {
    * @param snapshotKeys the TDR primary keys to inspect
    * @return the primary key to be used by WDS
    */
+  @VisibleForTesting
   String identifyPrimaryKey(@Nullable List<String> snapshotKeys) {
     if (snapshotKeys != null && snapshotKeys.size() == 1) {
       return snapshotKeys.get(0);
@@ -93,5 +163,39 @@ public abstract class SnapshotSupport {
         throw new DataImportException("Error processing data import: " + re.getMessage(), re);
       }
     }
+  }
+
+  /**
+   * Given a ResourceDescription representing a snapshot reference, retrieve that snapshot's UUID.
+   *
+   * @param resourceDescription the object in which to find a snapshotId
+   * @return the snapshotId if found, else null
+   */
+  @Nullable
+  @VisibleForTesting
+  protected UUID safeGetSnapshotId(ResourceDescription resourceDescription) {
+    ResourceAttributesUnion resourceAttributes = resourceDescription.getResourceAttributes();
+    if (resourceAttributes != null) {
+      DataRepoSnapshotAttributes dataRepoSnapshot = resourceAttributes.getGcpDataRepoSnapshot();
+      if (dataRepoSnapshot != null) {
+        String snapshotIdStr = dataRepoSnapshot.getSnapshot();
+        try {
+          return UUID.fromString(snapshotIdStr);
+        } catch (Exception e) {
+
+          String resourceId;
+          try {
+            resourceId = resourceDescription.getMetadata().getResourceId().toString();
+          } catch (Exception inner) {
+            // something is exceptionally funky about this resource.
+            resourceId = inner.getMessage();
+          }
+          LOGGER.warn(
+              "Processed a ResourceDescription [%s] that did not contain a valid snapshotId"
+                  .formatted(resourceId));
+        }
+      }
+    }
+    return null;
   }
 }

@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.dataimport.snapshotsupport;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import bio.terra.datarepo.model.TableModel;
+import bio.terra.workspace.model.ResourceList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -81,12 +82,16 @@ class SnapshotSupportTest extends TestBase {
   // abstract class
   private SnapshotSupport defaultSupport() {
     return new SnapshotSupport() {
+      @Override
       protected void linkSnapshot(UUID snapshotId) {
         // no-op
       }
 
-      public List<UUID> existingPolicySnapshotIds(int pageSize) {
-        return List.of();
+      @Override
+      protected ResourceList enumerateDataRepoSnapshotReferences(int offset, int pageSize) {
+        ResourceList resourceList = new ResourceList();
+        resourceList.setResources(List.of());
+        return resourceList;
       }
     };
   }
