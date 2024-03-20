@@ -16,12 +16,55 @@ import org.springframework.lang.Nullable;
 
 public abstract class SnapshotSupport {
 
-  protected static final String DEFAULT_PRIMARY_KEY = "datarepo_row_id";
-
+  private static final String DEFAULT_PRIMARY_KEY = "datarepo_row_id";
   private static final Logger LOGGER = LoggerFactory.getLogger(SnapshotSupport.class);
+
+  /**
+   * Get the list of unique snapshotIds referenced by the current workspace.
+   *
+   * @param pageSize how many references to return in each paginated request
+   * @return the list of unique ids for all pre-existing snapshot references
+   */
+  public abstract List<UUID> existingPolicySnapshotIds(int pageSize);
+
+  /**
+   * Given a single snapshotId, create a reference to that snapshot from the current workspace.
+   *
+   * @param snapshotId id of the snapshot to reference
+   */
+  protected abstract void linkSnapshot(UUID snapshotId);
 
   String getDefaultPrimaryKey() {
     return DEFAULT_PRIMARY_KEY;
+  }
+
+  /**
+   * Given the primary keys specified by a TDR table, return a primary key usable by WDS. WDS
+   * requires a single primary key, while TDR allows compound keys and missing keys. This method
+   * will return a sensible default if the TDR model is not a single key.
+   *
+   * @param snapshotKeys the TDR primary keys to inspect
+   * @return the primary key to be used by WDS
+   */
+  String identifyPrimaryKey(@Nullable List<String> snapshotKeys) {
+    if (snapshotKeys != null && snapshotKeys.size() == 1) {
+      return snapshotKeys.get(0);
+    }
+    return DEFAULT_PRIMARY_KEY;
+  }
+
+  /**
+   * Given a list of TDR tables, find the primary keys for those tables.
+   *
+   * @param tables the TDR model to inspect
+   * @return map of table name->primary key
+   */
+  public Map<RecordType, String> identifyPrimaryKeys(List<TableModel> tables) {
+    return tables.stream()
+        .collect(
+            Collectors.toMap(
+                tableModel -> RecordType.valueOf(tableModel.getName()),
+                tableModel -> identifyPrimaryKey(tableModel.getPrimaryKey())));
   }
 
   /**
@@ -50,31 +93,5 @@ public abstract class SnapshotSupport {
         throw new DataImportException("Error processing data import: " + re.getMessage(), re);
       }
     }
-  }
-
-  protected abstract void linkSnapshot(UUID snapshotId);
-
-  /**
-   * Query for the full list of referenced snapshots in this workspace, then return the list of
-   * unique snapshotIds from those references. Relies on implementing class
-   *
-   * @param pageSize how many references to return in each paginated request
-   * @return the list of unique ids for all pre-existing snapshot references
-   */
-  public abstract List<UUID> existingPolicySnapshotIds(int pageSize);
-
-  public Map<RecordType, String> identifyPrimaryKeys(List<TableModel> tables) {
-    return tables.stream()
-        .collect(
-            Collectors.toMap(
-                tableModel -> RecordType.valueOf(tableModel.getName()),
-                tableModel -> identifyPrimaryKey(tableModel.getPrimaryKey())));
-  }
-
-  String identifyPrimaryKey(@Nullable List<String> snapshotKeys) {
-    if (snapshotKeys != null && snapshotKeys.size() == 1) {
-      return snapshotKeys.get(0);
-    }
-    return DEFAULT_PRIMARY_KEY;
   }
 }
