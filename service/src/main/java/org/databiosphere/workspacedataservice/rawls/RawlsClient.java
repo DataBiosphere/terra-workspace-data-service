@@ -24,6 +24,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class RawlsClient {
 
   private final String rawlsUrl;
+  // TODO: consider using RestClient instead of RestTemplate
   private final RestTemplate restTemplate;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RawlsClient.class);
