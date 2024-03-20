@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class JobService {
-  private static final Set<StatusEnum> terminalJobStatuses =
+  private static final Set<StatusEnum> TERMINAL_JOB_STATUSES =
       Set.of(StatusEnum.SUCCEEDED, StatusEnum.ERROR, StatusEnum.CANCELLED);
 
   JobDao jobDao;
@@ -72,7 +72,7 @@ public class JobService {
       }
 
       // Once a job has reached a terminal state, do not update its status again.
-      if (terminalJobStatuses.contains(currentStatus)) {
+      if (TERMINAL_JOB_STATUSES.contains(currentStatus)) {
         throw new ValidationException(
             "Unable to update terminal status for job %s".formatted(jobId));
       }
