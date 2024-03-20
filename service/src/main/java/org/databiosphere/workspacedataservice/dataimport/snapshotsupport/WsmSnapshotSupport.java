@@ -26,6 +26,7 @@ public class WsmSnapshotSupport extends SnapshotSupport {
     this.activityLogger = activityLogger;
   }
 
+  @Override
   protected ResourceList enumerateDataRepoSnapshotReferences(int offset, int pageSize) {
     RestClientRetry.RestCall<ResourceList> restCall =
         (() -> wsmDao.enumerateDataRepoSnapshotReferences(workspaceId.id(), offset, pageSize));
@@ -33,6 +34,7 @@ public class WsmSnapshotSupport extends SnapshotSupport {
         restCall, "WSM.enumerateDataRepoSnapshotReferences");
   }
 
+  @Override
   protected void linkSnapshot(UUID snapshotId) {
     RestClientRetry.VoidRestCall voidRestCall =
         (() -> wsmDao.linkSnapshotForPolicy(workspaceId, new SnapshotModel().id(snapshotId)));

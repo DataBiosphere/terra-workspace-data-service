@@ -22,10 +22,11 @@ import org.springframework.lang.Nullable;
 
 public abstract class SnapshotSupport {
 
-  protected static final String DEFAULT_PRIMARY_KEY = "datarepo_row_id";
+  private static final String DEFAULT_PRIMARY_KEY = "datarepo_row_id";
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SnapshotSupport.class);
 
+  @VisibleForTesting
   String getDefaultPrimaryKey() {
     return DEFAULT_PRIMARY_KEY;
   }
@@ -37,6 +38,7 @@ public abstract class SnapshotSupport {
    * @return the snapshotId if found, else null
    */
   @Nullable
+  @VisibleForTesting
   protected UUID safeGetSnapshotId(ResourceDescription resourceDescription) {
     ResourceAttributesUnion resourceAttributes = resourceDescription.getResourceAttributes();
     if (resourceAttributes != null) {
@@ -47,7 +49,7 @@ public abstract class SnapshotSupport {
           return UUID.fromString(snapshotIdStr);
         } catch (Exception e) {
 
-          String resourceId = "unknown";
+          String resourceId;
           try {
             resourceId = resourceDescription.getMetadata().getResourceId().toString();
           } catch (Exception inner) {
@@ -91,19 +93,30 @@ public abstract class SnapshotSupport {
     }
   }
 
+  /**
+   * Given a single snapshotId, create a reference to that snapshot from the current workspace.
+   *
+   * @param snapshotId id of the snapshot to reference
+   */
   protected abstract void linkSnapshot(UUID snapshotId);
 
   /**
-   * Query for the full list of referenced snapshots in this workspace, then return the list of
-   * unique snapshotIds from those references. Relies on implementing class for listAllSnapshots
+   * Get the list of unique snapshotIds referenced by the current workspace.
    *
    * @param pageSize how many references to return in each paginated request
    * @return the list of unique ids for all pre-existing snapshot references
    */
+  @VisibleForTesting
   public List<UUID> existingPolicySnapshotIds(int pageSize) {
     return extractSnapshotIds(listAllSnapshots(pageSize));
   }
 
+  /**
+   * Given a list of TDR tables, find the primary keys for those tables.
+   *
+   * @param tables the TDR model to inspect
+   * @return map of table name->primary key
+   */
   public Map<RecordType, String> identifyPrimaryKeys(List<TableModel> tables) {
     return tables.stream()
         .collect(
@@ -127,6 +140,15 @@ public abstract class SnapshotSupport {
         .toList();
   }
 
+  /**
+   * Given the primary keys specified by a TDR table, return a primary key usable by WDS. WDS
+   * requires a single primary key, while TDR allows compound keys and missing keys. This method
+   * will return a sensible default if the TDR model is not a single key.
+   *
+   * @param snapshotKeys the TDR primary keys to inspect
+   * @return the primary key to be used by WDS
+   */
+  @VisibleForTesting
   String identifyPrimaryKey(@Nullable List<String> snapshotKeys) {
     if (snapshotKeys != null && snapshotKeys.size() == 1) {
       return snapshotKeys.get(0);
@@ -136,12 +158,13 @@ public abstract class SnapshotSupport {
 
   /**
    * Query for the full list of referenced snapshots in this workspace, paginating as necessary.
-   * Relies on implementing class for enumerateDataRepoSnapshotReferences
    *
    * @param pageSize how many references to return in each paginated request
    * @return the full list of snapshot references in this workspace
    */
-  protected ResourceList listAllSnapshots(int pageSize) {
+  // TODO (AJ-1705): Filter out snapshots that do NOT have purpose:policy
+  @VisibleForTesting
+  ResourceList listAllSnapshots(int pageSize) {
     int offset = 0;
     final int hardLimit = 10000; // under no circumstances return more than this many snapshots
 
@@ -168,5 +191,12 @@ public abstract class SnapshotSupport {
             .formatted(hardLimit));
   }
 
-  protected abstract ResourceList enumerateDataRepoSnapshotReferences(int offset, int limit);
+  /**
+   * Query a source system (WSM, Rawls) for a single page's worth of snapshot references.
+   *
+   * @param offset pagination offset; used when the current workspace has many references
+   * @param pageSize pagination page size; used when the current workspace has many references
+   * @return the page of references from the source system
+   */
+  protected abstract ResourceList enumerateDataRepoSnapshotReferences(int offset, int pageSize);
 }

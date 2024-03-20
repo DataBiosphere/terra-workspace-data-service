@@ -16,7 +16,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import bio.terra.workspace.model.ResourceList;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -27,6 +26,7 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
+import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
@@ -110,9 +111,10 @@ class PfbQuartzJobControlPlaneE2ETest {
   @BeforeEach
   void setup() {
     collectionId = UUID.randomUUID();
+
     // stub out rawls to report no snapshots already linked to this workspace
     when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new ResourceList());
+        .thenReturn(new SnapshotListResponse(Collections.emptyList()));
   }
 
   @AfterEach

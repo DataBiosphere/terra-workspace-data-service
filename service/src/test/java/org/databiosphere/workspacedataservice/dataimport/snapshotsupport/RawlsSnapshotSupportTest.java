@@ -8,8 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import bio.terra.workspace.model.DataRepoSnapshotAttributes;
-import bio.terra.workspace.model.ResourceAttributesUnion;
-import bio.terra.workspace.model.ResourceDescription;
+import bio.terra.workspace.model.DataRepoSnapshotResource;
 import bio.terra.workspace.model.ResourceList;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +16,7 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
+import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,17 +41,15 @@ class RawlsSnapshotSupportTest extends TestBase {
   void paginateExistingSnapshots(int count) {
     int testPageSize = 50; // page size to use during this test
 
-    List<ResourceDescription> mockResources = new ArrayList<>();
+    List<DataRepoSnapshotResource> mockResources = new ArrayList<>();
     // generate the full list of snapshots as known by our mock Rawls
     for (int i = 0; i < count; i++) {
-      ResourceDescription resourceDescription = new ResourceDescription();
-      ResourceAttributesUnion resourceAttributesUnion = new ResourceAttributesUnion();
+      DataRepoSnapshotResource resource = new DataRepoSnapshotResource();
       DataRepoSnapshotAttributes dataRepoSnapshotAttributes = new DataRepoSnapshotAttributes();
       dataRepoSnapshotAttributes.setSnapshot(UUID.randomUUID().toString());
       dataRepoSnapshotAttributes.setInstanceName("index: " + i);
-      resourceAttributesUnion.setGcpDataRepoSnapshot(dataRepoSnapshotAttributes);
-      resourceDescription.setResourceAttributes(resourceAttributesUnion);
-      mockResources.add(resourceDescription);
+      resource.setAttributes(dataRepoSnapshotAttributes);
+      mockResources.add(resource);
     }
     // configure the mock to return the appropriate page of snapshots
     when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
@@ -62,10 +60,8 @@ class RawlsSnapshotSupportTest extends TestBase {
               int sliceEnd =
                   Math.min(offset + limit, mockResources.size()); // slice may be a partial page
               // calculate the slice to return
-              List<ResourceDescription> slice = mockResources.subList(offset, sliceEnd);
-              ResourceList resourceList = new ResourceList();
-              resourceList.setResources(slice);
-              return resourceList;
+              List<DataRepoSnapshotResource> slice = mockResources.subList(offset, sliceEnd);
+              return new SnapshotListResponse(slice);
             });
 
     ResourceList actual =

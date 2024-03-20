@@ -2,9 +2,7 @@ package org.databiosphere.workspacedataservice.rawls;
 
 import static org.databiosphere.workspacedataservice.annotations.DeploymentMode.*;
 
-import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.workspace.model.DataRepoSnapshotResource;
-import bio.terra.workspace.model.ResourceList;
 import java.util.Objects;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
@@ -26,6 +24,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class RawlsClient {
 
   private final String rawlsUrl;
+  // TODO: consider using RestClient instead of RestTemplate
   private final RestTemplate restTemplate;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RawlsClient.class);
@@ -36,7 +35,8 @@ public class RawlsClient {
     this.restTemplate = restTemplate;
   }
 
-  public ResourceList enumerateDataRepoSnapshotReferences(UUID workspaceId, int offset, int limit) {
+  public SnapshotListResponse enumerateDataRepoSnapshotReferences(
+      UUID workspaceId, int offset, int limit) {
     try {
       UriComponentsBuilder builder =
           UriComponentsBuilder.fromHttpUrl(rawlsUrl)
@@ -44,12 +44,12 @@ public class RawlsClient {
               .queryParam("offset", offset)
               .queryParam("limit", limit);
 
-      ResponseEntity<ResourceList> response =
+      ResponseEntity<SnapshotListResponse> response =
           restTemplate.exchange(
               builder.build().toUri(),
               HttpMethod.GET,
               new HttpEntity<>(getAuthedHeaders()),
-              ResourceList.class);
+              SnapshotListResponse.class);
       return response.getBody();
     } catch (RestClientResponseException e) {
       throw new RawlsException(e);
@@ -67,7 +67,7 @@ public class RawlsClient {
       restTemplate.exchange(
           builder.build().toUri(),
           HttpMethod.POST,
-          new HttpEntity<>(new SnapshotModel().id(snapshotId), getAuthedHeaders()),
+          new HttpEntity<>(NamedDataRepoSnapshot.forSnapshotId(snapshotId), getAuthedHeaders()),
           DataRepoSnapshotResource.class);
     } catch (RestClientResponseException e) {
       throw new RawlsException(e);
