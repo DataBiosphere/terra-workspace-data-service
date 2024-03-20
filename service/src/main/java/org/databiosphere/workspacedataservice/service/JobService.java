@@ -77,10 +77,12 @@ public class JobService {
             "Unable to update terminal status for job %s".formatted(jobId));
       }
 
-      if (newStatus.equals(StatusEnum.ERROR)) {
-        jobDao.fail(jobId, requireNonNullElse(update.errorMessage(), "Unknown error"));
-      } else {
-        jobDao.updateStatus(jobId, newStatus);
+      switch (newStatus) {
+        case SUCCEEDED -> jobDao.succeeded(jobId);
+        case ERROR -> jobDao.fail(
+            jobId, requireNonNullElse(update.errorMessage(), "Unknown error"));
+        default -> throw new ValidationException(
+            "Unexpected status from Rawls for job %s: %s".formatted(jobId, newStatus));
       }
     } catch (MissingObjectException e) {
       // Via PubSub, CWDS will receive status updates for both CWDS and import service jobs.

@@ -228,7 +228,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
     jobService.processStatusUpdate(update);
 
     // Assert
-    verify(jobDao, times(1)).updateStatus(jobId, GenericJobServerModel.StatusEnum.SUCCEEDED);
+    verify(jobDao, times(1)).succeeded(jobId);
   }
 
   @Test
@@ -266,7 +266,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
     jobService.processStatusUpdate(update);
 
     // Assert
-    verify(jobDao, never()).updateStatus(eq(jobId), any());
+    verify(jobDao, never()).running(jobId);
   }
 
   @Test
@@ -287,7 +287,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
 
     // Assert
     assertEquals("Unable to update terminal status for job %s".formatted(jobId), e.getMessage());
-    verify(jobDao, never()).updateStatus(eq(jobId), any());
+    verify(jobDao, never()).succeeded(jobId);
   }
 
   @Test
@@ -307,7 +307,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
     jobService.processStatusUpdate(update);
 
     // Assert
-    verify(jobDao, never()).updateStatus(eq(jobId), any());
+    verify(jobDao, never()).succeeded(jobId);
   }
 
   private UUID setupProcessJobStatusUpdateTest(GenericJobServerModel.StatusEnum initialStatus) {

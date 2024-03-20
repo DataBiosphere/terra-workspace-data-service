@@ -112,6 +112,6 @@ class PubSubControllerMockMvcTest extends MockMvcTestBase {
         .andReturn();
 
     // Assert
-    verify(jobDao, times(1)).updateStatus(jobId, GenericJobServerModel.StatusEnum.SUCCEEDED);
+    verify(jobDao, times(1)).succeeded(jobId);
   }
 }
