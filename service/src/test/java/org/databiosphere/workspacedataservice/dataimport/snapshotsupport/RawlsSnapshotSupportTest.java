@@ -82,71 +82,8 @@ class RawlsSnapshotSupportTest extends TestBase {
         .enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt());
   }
 
-  //  @Test
-  //  void existingPolicySnapshotIds() {
-  //    List<UUID> expected = IntStream.range(0, 75).mapToObj(i -> UUID.randomUUID()).toList();
-  //
-  //    List<DataRepoSnapshotResource> snapshotResources =
-  //
-  // expected.stream().map(UUID::toString).map(this::createDataRepoSnapshotResource).toList();
-  //
-  //    List<UUID> actual = getRawlsSupport().extractSnapshotIds(snapshotResources);
-  //
-  //    assertEquals(expected, actual);
-  //  }
-  //
-  //  @Test
-  //  void safeGetSnapshotIdNoSnapshotObject() {
-  //    DataRepoSnapshotResource resource = new DataRepoSnapshotResource();
-  //
-  //    UUID actual = getRawlsSupport().safeGetSnapshotId(resource);
-  //
-  //    assertNull(actual);
-  //  }
-  //
-  //  @Test
-  //  void safeGetSnapshotId() {
-  //    UUID snapshotId = UUID.randomUUID();
-  //    DataRepoSnapshotResource resource = createDataRepoSnapshotResource(snapshotId.toString());
-  //
-  //    UUID actual = getRawlsSupport().safeGetSnapshotId(resource);
-  //
-  //    assertEquals(snapshotId, actual);
-  //  }
-  //
-  //  @Test
-  //  void safeGetSnapshotIdNonUuid() {
-  //    String notAUuid = "Hello world";
-  //
-  //    DataRepoSnapshotResource resource = createDataRepoSnapshotResource(notAUuid);
-  //
-  //    UUID actual = getRawlsSupport().safeGetSnapshotId(resource);
-  //
-  //    assertNull(actual);
-  //  }
-  //
-  //  @Test
-  //  void safeGetSnapshotIdNull() {
-  //    DataRepoSnapshotResource resource = createDataRepoSnapshotResource(null);
-  //
-  //    UUID actual = getRawlsSupport().safeGetSnapshotId(resource);
-  //
-  //    assertNull(actual);
-  //  }
-
   private RawlsSnapshotSupport getRawlsSupport() {
     return new RawlsSnapshotSupport(
         WorkspaceId.of(UUID.randomUUID()), rawlsClient, restClientRetry, activityLogger);
-  }
-
-  private DataRepoSnapshotResource createDataRepoSnapshotResource(String snapshotId) {
-    DataRepoSnapshotResource dataRepoSnapshotResource = new DataRepoSnapshotResource();
-
-    DataRepoSnapshotAttributes resourceAttributes = new DataRepoSnapshotAttributes();
-    resourceAttributes.setSnapshot(snapshotId);
-
-    dataRepoSnapshotResource.setAttributes(resourceAttributes);
-
-    return dataRepoSnapshotResource;
   }
 }
