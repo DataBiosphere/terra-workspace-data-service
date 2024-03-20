@@ -64,7 +64,10 @@ class RawlsSnapshotSupportTest extends TestBase {
               return new SnapshotListResponse(slice);
             });
 
-    ResourceList actual = getRawlsSupport().listAllSnapshots(testPageSize);
+    ResourceList actual =
+        new RawlsSnapshotSupport(
+                WorkspaceId.of(UUID.randomUUID()), rawlsClient, restClientRetry, activityLogger)
+            .listAllSnapshots(testPageSize);
 
     // assert total size of all results
     assertEquals(count, actual.getResources().size());
@@ -80,10 +83,5 @@ class RawlsSnapshotSupportTest extends TestBase {
     double expectedInvocations = Math.floor((double) count / testPageSize) + 1;
     verify(rawlsClient, times((int) expectedInvocations))
         .enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt());
-  }
-
-  private RawlsSnapshotSupport getRawlsSupport() {
-    return new RawlsSnapshotSupport(
-        WorkspaceId.of(UUID.randomUUID()), rawlsClient, restClientRetry, activityLogger);
   }
 }

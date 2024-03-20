@@ -68,7 +68,10 @@ class WsmSnapshotSupportTest extends TestBase {
               return resourceList;
             });
 
-    ResourceList actual = getWsmSupport().listAllSnapshots(testPageSize);
+    ResourceList actual =
+        new WsmSnapshotSupport(
+                WorkspaceId.of(UUID.randomUUID()), wsmDao, restClientRetry, activityLogger)
+            .listAllSnapshots(testPageSize);
 
     // assert total size of all results
     assertEquals(wsmCount, actual.getResources().size());
@@ -84,10 +87,5 @@ class WsmSnapshotSupportTest extends TestBase {
     double expectedInvocations = Math.floor((double) wsmCount / testPageSize) + 1;
     verify(wsmDao, times((int) expectedInvocations))
         .enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt());
-  }
-
-  private WsmSnapshotSupport getWsmSupport() {
-    return new WsmSnapshotSupport(
-        WorkspaceId.of(UUID.randomUUID()), wsmDao, restClientRetry, activityLogger);
   }
 }
