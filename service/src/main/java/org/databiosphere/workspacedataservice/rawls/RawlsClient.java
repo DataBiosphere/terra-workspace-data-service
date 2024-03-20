@@ -1,68 +1,83 @@
 package org.databiosphere.workspacedataservice.rawls;
 
-import static org.databiosphere.workspacedataservice.annotations.DeploymentMode.*;
+import static org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
 
 import bio.terra.workspace.model.DataRepoSnapshotResource;
+import java.net.URI;
 import java.util.Objects;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-@Component
-@ControlPlane
 public class RawlsClient {
 
   private final String rawlsUrl;
   // TODO: consider using RestClient instead of RestTemplate
   private final RestTemplate restTemplate;
+  private final RestClientRetry restClientRetry;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RawlsClient.class);
 
-  @Autowired
-  public RawlsClient(String rawlsUrl, RestTemplate restTemplate) {
+  public RawlsClient(String rawlsUrl, RestTemplate restTemplate, RestClientRetry restClientRetry) {
     this.rawlsUrl = rawlsUrl;
     this.restTemplate = restTemplate;
+    this.restClientRetry = restClientRetry;
   }
 
   public SnapshotListResponse enumerateDataRepoSnapshotReferences(
       UUID workspaceId, int offset, int limit) {
-    UriComponentsBuilder builder =
+    URI targetUri =
         UriComponentsBuilder.fromHttpUrl(rawlsUrl)
             .pathSegment("api", "workspaces", workspaceId.toString(), "snapshots", "v2")
             .queryParam("offset", offset)
-            .queryParam("limit", limit);
+            .queryParam("limit", limit)
+            .build()
+            .toUri();
+
+    HttpEntity<?> requestEntity = new HttpEntity<>(getAuthedHeaders());
+
+    RestCall<ResponseEntity<SnapshotListResponse>> restCall =
+        () ->
+            restTemplate.exchange(
+                targetUri, HttpMethod.GET, requestEntity, SnapshotListResponse.class);
 
     ResponseEntity<SnapshotListResponse> response =
-        restTemplate.exchange(
-            builder.build().toUri(),
-            HttpMethod.GET,
-            new HttpEntity<>(getAuthedHeaders()),
-            SnapshotListResponse.class);
+        restClientRetry.withRetryAndErrorHandling(
+            restCall, "Rawls.enumerateDataRepoSnapshotReferences");
+
     return response.getBody();
+    // TODO: catch exceptions, throw RawlsException
   }
 
   // TODO: (AJ-1705) Add cloning instructions COPY_REFERENCE and a purpose=policy
   // key-value pair to the reference’s properties
   public void createSnapshotReference(UUID workspaceId, UUID snapshotId) {
-    UriComponentsBuilder builder =
+    URI targetUri =
         UriComponentsBuilder.fromHttpUrl(rawlsUrl)
-            .pathSegment("api", "workspaces", workspaceId.toString(), "snapshots", "v2");
+            .pathSegment("api", "workspaces", workspaceId.toString(), "snapshots", "v2")
+            .build()
+            .toUri();
 
-    restTemplate.exchange(
-        builder.build().toUri(),
-        HttpMethod.POST,
-        new HttpEntity<>(NamedDataRepoSnapshot.forSnapshotId(snapshotId), getAuthedHeaders()),
-        DataRepoSnapshotResource.class);
+    HttpEntity<NamedDataRepoSnapshot> requestEntity =
+        new HttpEntity<>(NamedDataRepoSnapshot.forSnapshotId(snapshotId), getAuthedHeaders());
+
+    RestCall<ResponseEntity<DataRepoSnapshotResource>> restCall =
+        () ->
+            restTemplate.exchange(
+                targetUri, HttpMethod.POST, requestEntity, DataRepoSnapshotResource.class);
+
+    // note we do not return the DataRepoSnapshotResource from this method
+    restClientRetry.withRetryAndErrorHandling(restCall, "Rawls.createSnapshotReference");
+    // TODO: catch exceptions, throw RawlsException
   }
 
   // Get the user's token from the context and attach it to headers

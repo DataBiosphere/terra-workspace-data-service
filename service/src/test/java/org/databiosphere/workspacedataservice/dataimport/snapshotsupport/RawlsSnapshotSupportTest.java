@@ -17,11 +17,9 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
-import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
@@ -34,7 +32,6 @@ class RawlsSnapshotSupportTest extends TestBase {
 
   @MockBean RawlsClient rawlsClient;
   @MockBean ActivityLogger activityLogger;
-  @Autowired RestClientRetry restClientRetry;
 
   @ParameterizedTest(name = "paginates through results when Rawls has {0} references")
   @ValueSource(ints = {0, 1, 49, 50, 51, 99, 100, 101, 456})
@@ -65,8 +62,7 @@ class RawlsSnapshotSupportTest extends TestBase {
             });
 
     ResourceList actual =
-        new RawlsSnapshotSupport(
-                WorkspaceId.of(UUID.randomUUID()), rawlsClient, restClientRetry, activityLogger)
+        new RawlsSnapshotSupport(WorkspaceId.of(UUID.randomUUID()), rawlsClient, activityLogger)
             .listAllSnapshots(testPageSize);
 
     // assert total size of all results

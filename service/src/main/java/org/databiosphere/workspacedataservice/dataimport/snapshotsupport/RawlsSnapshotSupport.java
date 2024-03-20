@@ -9,43 +9,32 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
-import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 
 public class RawlsSnapshotSupport extends SnapshotSupport {
 
   private final WorkspaceId workspaceId;
   private final RawlsClient rawlsClient;
-  private final RestClientRetry restClientRetry;
   private final ActivityLogger activityLogger;
 
   public RawlsSnapshotSupport(
-      WorkspaceId workspaceId,
-      RawlsClient rawlsClient,
-      RestClientRetry restClientRetry,
-      ActivityLogger activityLogger) {
+      WorkspaceId workspaceId, RawlsClient rawlsClient, ActivityLogger activityLogger) {
     this.workspaceId = workspaceId;
     this.rawlsClient = rawlsClient;
     this.activityLogger = activityLogger;
-    this.restClientRetry = restClientRetry;
   }
 
   @Override
   protected ResourceList enumerateDataRepoSnapshotReferences(int offset, int pageSize) {
-    RestClientRetry.RestCall<SnapshotListResponse> restCall =
-        (() -> rawlsClient.enumerateDataRepoSnapshotReferences(workspaceId.id(), offset, pageSize));
     SnapshotListResponse snapshotListResponse =
-        restClientRetry.withRetryAndErrorHandling(
-            restCall, "Rawls.enumerateDataRepoSnapshotReferences");
+        rawlsClient.enumerateDataRepoSnapshotReferences(workspaceId.id(), offset, pageSize);
 
     return toResourceList(snapshotListResponse.gcpDataRepoSnapshots());
   }
 
   @Override
   protected void linkSnapshot(UUID snapshotId) {
-    RestClientRetry.VoidRestCall voidRestCall =
-        (() -> rawlsClient.createSnapshotReference(workspaceId.id(), snapshotId));
-    restClientRetry.withRetryAndErrorHandling(voidRestCall, "Rawls.createSnapshotReference");
+    rawlsClient.createSnapshotReference(workspaceId.id(), snapshotId);
     activityLogger.saveEventForCurrentUser(
         user -> user.linked().snapshotReference().withUuid(snapshotId));
   }
