@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 import java.util.List;
 import java.util.Optional;
@@ -78,7 +78,7 @@ public class JobService {
       }
 
       if (newStatus.equals(StatusEnum.ERROR)) {
-        jobDao.fail(jobId, firstNonNull(update.errorMessage(), "Unknown error"));
+        jobDao.fail(jobId, requireNonNullElse(update.errorMessage(), "Unknown error"));
       } else {
         jobDao.updateStatus(jobId, newStatus);
       }
