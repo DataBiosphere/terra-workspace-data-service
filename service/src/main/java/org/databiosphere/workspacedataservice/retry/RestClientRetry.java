@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
 
 @Component
 public class RestClientRetry {
@@ -158,6 +159,11 @@ public class RestClientRetry {
     if (e instanceof org.databiosphere.workspacedata.client.ApiException wdsException) {
       return wdsException.getCode();
     }
+    // Rawls, or anything using RestTemplate
+    if (e instanceof HttpStatusCodeException httpStatusCodeException) {
+      return httpStatusCodeException.getStatusCode().value();
+    }
+
     return Integer.MIN_VALUE;
   }
 }

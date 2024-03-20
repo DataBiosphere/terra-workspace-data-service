@@ -15,7 +15,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -37,41 +36,33 @@ public class RawlsClient {
 
   public SnapshotListResponse enumerateDataRepoSnapshotReferences(
       UUID workspaceId, int offset, int limit) {
-    try {
-      UriComponentsBuilder builder =
-          UriComponentsBuilder.fromHttpUrl(rawlsUrl)
-              .pathSegment("api", "workspaces", workspaceId.toString(), "snapshots", "v2")
-              .queryParam("offset", offset)
-              .queryParam("limit", limit);
+    UriComponentsBuilder builder =
+        UriComponentsBuilder.fromHttpUrl(rawlsUrl)
+            .pathSegment("api", "workspaces", workspaceId.toString(), "snapshots", "v2")
+            .queryParam("offset", offset)
+            .queryParam("limit", limit);
 
-      ResponseEntity<SnapshotListResponse> response =
-          restTemplate.exchange(
-              builder.build().toUri(),
-              HttpMethod.GET,
-              new HttpEntity<>(getAuthedHeaders()),
-              SnapshotListResponse.class);
-      return response.getBody();
-    } catch (RestClientResponseException e) {
-      throw new RawlsException(e);
-    }
+    ResponseEntity<SnapshotListResponse> response =
+        restTemplate.exchange(
+            builder.build().toUri(),
+            HttpMethod.GET,
+            new HttpEntity<>(getAuthedHeaders()),
+            SnapshotListResponse.class);
+    return response.getBody();
   }
 
   // TODO: (AJ-1705) Add cloning instructions COPY_REFERENCE and a purpose=policy
   // key-value pair to the reference’s properties
   public void createSnapshotReference(UUID workspaceId, UUID snapshotId) {
-    try {
-      UriComponentsBuilder builder =
-          UriComponentsBuilder.fromHttpUrl(rawlsUrl)
-              .pathSegment("api", "workspaces", workspaceId.toString(), "snapshots", "v2");
+    UriComponentsBuilder builder =
+        UriComponentsBuilder.fromHttpUrl(rawlsUrl)
+            .pathSegment("api", "workspaces", workspaceId.toString(), "snapshots", "v2");
 
-      restTemplate.exchange(
-          builder.build().toUri(),
-          HttpMethod.POST,
-          new HttpEntity<>(NamedDataRepoSnapshot.forSnapshotId(snapshotId), getAuthedHeaders()),
-          DataRepoSnapshotResource.class);
-    } catch (RestClientResponseException e) {
-      throw new RawlsException(e);
-    }
+    restTemplate.exchange(
+        builder.build().toUri(),
+        HttpMethod.POST,
+        new HttpEntity<>(NamedDataRepoSnapshot.forSnapshotId(snapshotId), getAuthedHeaders()),
+        DataRepoSnapshotResource.class);
   }
 
   // Get the user's token from the context and attach it to headers
