@@ -221,8 +221,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
         new JobStatusUpdate(
             jobId,
             GenericJobServerModel.StatusEnum.RUNNING,
-            GenericJobServerModel.StatusEnum.SUCCEEDED,
-            null);
+            GenericJobServerModel.StatusEnum.SUCCEEDED);
 
     // Act
     jobService.processStatusUpdate(update);
@@ -259,8 +258,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
         new JobStatusUpdate(
             jobId,
             GenericJobServerModel.StatusEnum.RUNNING,
-            GenericJobServerModel.StatusEnum.RUNNING,
-            null);
+            GenericJobServerModel.StatusEnum.RUNNING);
 
     // Act
     jobService.processStatusUpdate(update);
@@ -278,8 +276,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
         new JobStatusUpdate(
             jobId,
             GenericJobServerModel.StatusEnum.SUCCEEDED,
-            GenericJobServerModel.StatusEnum.RUNNING,
-            null);
+            GenericJobServerModel.StatusEnum.RUNNING);
 
     // Act/Assert
     ValidationException e =
@@ -300,8 +297,7 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
         new JobStatusUpdate(
             jobId,
             GenericJobServerModel.StatusEnum.RUNNING,
-            GenericJobServerModel.StatusEnum.SUCCEEDED,
-            null);
+            GenericJobServerModel.StatusEnum.SUCCEEDED);
 
     // Act
     jobService.processStatusUpdate(update);

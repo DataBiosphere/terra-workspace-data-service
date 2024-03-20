@@ -7,6 +7,10 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel.St
 
 public record JobStatusUpdate(
     UUID jobId, StatusEnum currentStatus, StatusEnum newStatus, @Nullable String errorMessage) {
+  public JobStatusUpdate(UUID jobId, StatusEnum currentStatus, StatusEnum newStatus) {
+    this(jobId, currentStatus, newStatus, null);
+  }
+
   public static JobStatusUpdate createFromPubSubMessage(PubSubMessage message) {
     Map<String, String> attributes = message.attributes();
     UUID jobId = UUID.fromString(attributes.get("import_id"));
