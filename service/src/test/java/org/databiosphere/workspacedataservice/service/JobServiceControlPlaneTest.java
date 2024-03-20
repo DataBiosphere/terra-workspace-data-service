@@ -6,21 +6,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
+import org.databiosphere.workspacedataservice.pubsub.JobStatusUpdate;
 import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
@@ -203,6 +210,132 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
 
     // Assert
     assertEquals("Collection", actual.getObjectType());
+  }
+
+  @Test
+  void processJobStatusUpdateSuccess() {
+    // Arrange
+    UUID jobId = setupProcessJobStatusUpdateTest();
+
+    JobStatusUpdate update =
+        new JobStatusUpdate(
+            jobId,
+            GenericJobServerModel.StatusEnum.RUNNING,
+            GenericJobServerModel.StatusEnum.SUCCEEDED,
+            null);
+
+    // Act
+    jobService.processStatusUpdate(update);
+
+    // Assert
+    verify(jobDao, times(1)).updateStatus(jobId, GenericJobServerModel.StatusEnum.SUCCEEDED);
+  }
+
+  @Test
+  void processJobStatusUpdateError() {
+    // Arrange
+    UUID jobId = setupProcessJobStatusUpdateTest();
+
+    JobStatusUpdate update =
+        new JobStatusUpdate(
+            jobId,
+            GenericJobServerModel.StatusEnum.RUNNING,
+            GenericJobServerModel.StatusEnum.ERROR,
+            "Something went wrong");
+
+    // Act
+    jobService.processStatusUpdate(update);
+
+    // Assert
+    verify(jobDao, times(1)).fail(jobId, "Something went wrong");
+  }
+
+  @Test
+  void processJobStatusUpdateNoop() {
+    // Arrange
+    UUID jobId = setupProcessJobStatusUpdateTest();
+
+    JobStatusUpdate update =
+        new JobStatusUpdate(
+            jobId,
+            GenericJobServerModel.StatusEnum.RUNNING,
+            GenericJobServerModel.StatusEnum.RUNNING,
+            null);
+
+    // Act
+    jobService.processStatusUpdate(update);
+
+    // Assert
+    verify(jobDao, never()).updateStatus(eq(jobId), any());
+  }
+
+  @Test
+  void processJobStatusUpdateForTerminalJob() {
+    // Arrange
+    UUID jobId = setupProcessJobStatusUpdateTest(GenericJobServerModel.StatusEnum.SUCCEEDED);
+
+    JobStatusUpdate update =
+        new JobStatusUpdate(
+            jobId,
+            GenericJobServerModel.StatusEnum.SUCCEEDED,
+            GenericJobServerModel.StatusEnum.RUNNING,
+            null);
+
+    // Act/Assert
+    ValidationException e =
+        assertThrows(ValidationException.class, () -> jobService.processStatusUpdate(update));
+
+    // Assert
+    assertEquals("Unable to update terminal status for job %s".formatted(jobId), e.getMessage());
+    verify(jobDao, never()).updateStatus(eq(jobId), any());
+  }
+
+  @Test
+  void processJobStatusUpdateForNonExistentJob() {
+    // Arrange
+    UUID jobId = randomUUID();
+    when(jobDao.getJob(jobId)).thenThrow(MissingObjectException.class);
+
+    JobStatusUpdate update =
+        new JobStatusUpdate(
+            jobId,
+            GenericJobServerModel.StatusEnum.RUNNING,
+            GenericJobServerModel.StatusEnum.SUCCEEDED,
+            null);
+
+    // Act
+    jobService.processStatusUpdate(update);
+
+    // Assert
+    verify(jobDao, never()).updateStatus(eq(jobId), any());
+  }
+
+  private UUID setupProcessJobStatusUpdateTest(GenericJobServerModel.StatusEnum initialStatus) {
+    UUID jobId = randomUUID();
+    // Job exists
+    CollectionId collectionId = CollectionId.of(randomUUID());
+    GenericJobServerModel expectedJob =
+        new GenericJobServerModel(
+            jobId,
+            GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
+            collectionId.id(),
+            initialStatus,
+            // set created and updated to now, but in UTC because that's how Postgres stores it
+            OffsetDateTime.now(ZoneId.of("Z")),
+            OffsetDateTime.now(ZoneId.of("Z")));
+    ;
+    when(jobDao.getJob(jobId)).thenReturn(expectedJob);
+    // Collection does not exist, so virtual collection is used
+    when(collectionDao.getWorkspaceId(collectionId))
+        .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
+    // User has access to the job's collection's workspace
+    stubReadWorkspacePermission(WorkspaceId.of(collectionId.id())).thenReturn(true);
+
+    return jobId;
+  }
+
+  private UUID setupProcessJobStatusUpdateTest() {
+    return setupProcessJobStatusUpdateTest(GenericJobServerModel.StatusEnum.RUNNING);
   }
 
   private OngoingStubbing<Boolean> stubReadWorkspacePermission(WorkspaceId workspaceId) {
