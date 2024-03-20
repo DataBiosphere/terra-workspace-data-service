@@ -35,7 +35,7 @@ public class PubSubController {
           "Received status update for job {}: {} -> {}",
           update.jobId(),
           update.currentStatus(),
-          update.currentStatus());
+          update.newStatus());
       jobService.processStatusUpdate(update);
       return new ResponseEntity<>(HttpStatus.OK);
     } catch (ValidationException e) {
