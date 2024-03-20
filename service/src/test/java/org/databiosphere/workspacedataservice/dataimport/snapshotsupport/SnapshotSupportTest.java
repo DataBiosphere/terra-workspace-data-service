@@ -1,12 +1,17 @@
 package org.databiosphere.workspacedataservice.dataimport.snapshotsupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import bio.terra.datarepo.model.TableModel;
+import bio.terra.workspace.model.DataRepoSnapshotAttributes;
+import bio.terra.workspace.model.ResourceAttributesUnion;
+import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -17,6 +22,88 @@ import org.springframework.test.annotation.DirtiesContext;
 @DirtiesContext
 @SpringBootTest
 class SnapshotSupportTest extends TestBase {
+
+  @Test
+  void safeGetSnapshotId() {
+    UUID snapshotId = UUID.randomUUID();
+    ResourceDescription resourceDescription = createResourceDescription(snapshotId);
+
+    UUID actual = defaultSupport().safeGetSnapshotId(resourceDescription);
+
+    assertEquals(snapshotId, actual);
+  }
+
+  @Test
+  void safeGetSnapshotIdNonUuid() {
+    String notAUuid = "Hello world";
+
+    DataRepoSnapshotAttributes dataRepoSnapshotAttributes = new DataRepoSnapshotAttributes();
+    dataRepoSnapshotAttributes.setSnapshot(notAUuid);
+
+    ResourceAttributesUnion resourceAttributes = new ResourceAttributesUnion();
+    resourceAttributes.setGcpDataRepoSnapshot(dataRepoSnapshotAttributes);
+
+    ResourceDescription resourceDescription = new ResourceDescription();
+    resourceDescription.setResourceAttributes(resourceAttributes);
+
+    UUID actual = defaultSupport().safeGetSnapshotId(resourceDescription);
+
+    assertNull(actual);
+  }
+
+  @Test
+  void safeGetSnapshotIdNull() {
+    DataRepoSnapshotAttributes dataRepoSnapshotAttributes = new DataRepoSnapshotAttributes();
+    dataRepoSnapshotAttributes.setSnapshot(null);
+
+    ResourceAttributesUnion resourceAttributes = new ResourceAttributesUnion();
+    resourceAttributes.setGcpDataRepoSnapshot(dataRepoSnapshotAttributes);
+
+    ResourceDescription resourceDescription = new ResourceDescription();
+    resourceDescription.setResourceAttributes(resourceAttributes);
+
+    UUID actual = defaultSupport().safeGetSnapshotId(resourceDescription);
+
+    assertNull(actual);
+  }
+
+  @Test
+  void safeGetSnapshotIdNoSnapshotObject() {
+    ResourceAttributesUnion resourceAttributes = new ResourceAttributesUnion();
+    resourceAttributes.setGcpDataRepoSnapshot(null);
+
+    ResourceDescription resourceDescription = new ResourceDescription();
+    resourceDescription.setResourceAttributes(resourceAttributes);
+
+    UUID actual = defaultSupport().safeGetSnapshotId(resourceDescription);
+
+    assertNull(actual);
+  }
+
+  @Test
+  void safeGetSnapshotIdNoAttributes() {
+    ResourceDescription resourceDescription = new ResourceDescription();
+    resourceDescription.setResourceAttributes(null);
+
+    UUID actual = defaultSupport().safeGetSnapshotId(resourceDescription);
+
+    assertNull(actual);
+  }
+
+  @Test
+  void existingPolicySnapshotIds() {
+    List<UUID> expected = IntStream.range(0, 75).mapToObj(i -> UUID.randomUUID()).toList();
+
+    List<ResourceDescription> resourceDescriptions =
+        expected.stream().map(this::createResourceDescription).toList();
+
+    ResourceList resourceList = new ResourceList();
+    resourceList.setResources(resourceDescriptions);
+
+    List<UUID> actual = defaultSupport().extractSnapshotIds(resourceList);
+
+    assertEquals(expected, actual);
+  }
 
   @Test
   void defaultPrimaryKey() {
@@ -82,17 +169,26 @@ class SnapshotSupportTest extends TestBase {
   // abstract class
   private SnapshotSupport defaultSupport() {
     return new SnapshotSupport() {
-      @Override
       protected void linkSnapshot(UUID snapshotId) {
         // no-op
       }
 
-      @Override
-      protected ResourceList enumerateDataRepoSnapshotReferences(int offset, int pageSize) {
-        ResourceList resourceList = new ResourceList();
-        resourceList.setResources(List.of());
-        return resourceList;
+      protected ResourceList enumerateDataRepoSnapshotReferences(int offset, int limit) {
+        return new ResourceList();
       }
     };
+  }
+
+  private ResourceDescription createResourceDescription(UUID snapshotId) {
+    DataRepoSnapshotAttributes dataRepoSnapshotAttributes = new DataRepoSnapshotAttributes();
+    dataRepoSnapshotAttributes.setSnapshot(snapshotId.toString());
+
+    ResourceAttributesUnion resourceAttributes = new ResourceAttributesUnion();
+    resourceAttributes.setGcpDataRepoSnapshot(dataRepoSnapshotAttributes);
+
+    ResourceDescription resourceDescription = new ResourceDescription();
+    resourceDescription.setResourceAttributes(resourceAttributes);
+
+    return resourceDescription;
   }
 }
