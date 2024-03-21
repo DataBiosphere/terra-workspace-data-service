@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -13,7 +14,7 @@ public class RelationUtils {
   public static final String RELATION_IDENTIFIER = "terra-wds";
 
   public static RecordType getTypeValue(Object obj) {
-    return RecordType.valueOf(splitRelationIdentifier(obj)[0]);
+    return RecordType.valueOf(splitRelationIdentifier(obj.toString())[0]);
   }
 
   public static RecordType getTypeValueForList(List<?> listVal) {
@@ -48,7 +49,7 @@ public class RelationUtils {
   }
 
   public static String getRelationValue(Object obj) {
-    return splitRelationIdentifier(obj)[1];
+    return splitRelationIdentifier(obj.toString())[1];
   }
 
   /**
@@ -58,7 +59,7 @@ public class RelationUtils {
    * @return true if attribute begins with the REFERENCE_IDENTIFIER
    */
   public static boolean isRelationValue(Object obj) {
-    return obj != null && obj.toString().startsWith(RELATION_IDENTIFIER);
+    return obj instanceof RelationAttribute || obj.toString().startsWith(RELATION_IDENTIFIER);
   }
 
   public static String createRelationString(RecordType targetRecordType, String recordId) {

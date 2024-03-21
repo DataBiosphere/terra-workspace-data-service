@@ -8,11 +8,11 @@ import java.util.List;
 import java.util.Set;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dataimport.AvroRecordConverter;
-import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
 
 /** Logic to convert a TDR Parquet's GenericRecord to WDS's Record */
 public class ParquetRecordConverter extends AvroRecordConverter {
@@ -66,19 +66,18 @@ public class ParquetRecordConverter extends AvroRecordConverter {
             String targetType = relationshipModel.getTo().getTable();
             // is it an array?
             if (value instanceof Collection<?> relArray) {
-              List<String> rels =
+              List<RelationAttribute> rels =
                   relArray.stream()
                       .map(
                           relValue ->
-                              RelationUtils.createRelationString(
+                              new RelationAttribute(
                                   RecordType.valueOf(targetType), relValue.toString()))
                       .toList();
               attributes.putAttribute(attrName, rels);
             } else {
               attributes.putAttribute(
                   attrName,
-                  RelationUtils.createRelationString(
-                      RecordType.valueOf(targetType), value.toString()));
+                  new RelationAttribute(RecordType.valueOf(targetType), value.toString()));
             }
           }
         });
