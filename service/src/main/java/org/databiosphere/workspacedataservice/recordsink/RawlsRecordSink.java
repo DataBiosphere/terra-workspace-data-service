@@ -20,9 +20,10 @@ import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeValue;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RecordReference;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.EntityReference;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -138,11 +139,11 @@ public class RawlsRecordSink implements RecordSink {
     return Stream.of(new AddUpdateAttribute(name, maybeCoerceRelation(attributeValue)));
   }
 
-  private Object maybeCoerceRelation(Object originalValue) {
+  private AttributeValue maybeCoerceRelation(Object originalValue) {
     if (RelationUtils.isRelationValue(originalValue)) {
-      return RecordReference.fromReferenceString(originalValue.toString());
+      return AttributeValue.of(EntityReference.fromReferenceString(originalValue.toString()));
     }
-    return originalValue;
+    return AttributeValue.of(originalValue);
   }
 
   static String getBlobName(UUID jobId) {

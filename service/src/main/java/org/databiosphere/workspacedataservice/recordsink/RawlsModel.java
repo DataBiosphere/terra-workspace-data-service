@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
-import static java.util.Objects.requireNonNull;
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.ADD_LIST_MEMBER;
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.ADD_UPDATE_ATTRIBUTE;
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.CREATE_ATTRIBUTE_ENTITY_REFERENCE_LIST;
@@ -10,6 +9,8 @@ import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.RE
 import static org.databiosphere.workspacedataservice.service.RelationUtils.getRelationValue;
 import static org.databiosphere.workspacedataservice.service.RelationUtils.getTypeValue;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
@@ -17,13 +18,11 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.util.TokenBuffer;
 import java.io.IOException;
 import java.util.List;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -96,10 +95,23 @@ public class RawlsModel {
     Op op();
   }
 
+  @JsonDeserialize(using = AttributeValueDeserializer.class)
+  @JsonInclude(Include.NON_NULL)
+  public record AttributeValue(Object value) {
+    public static AttributeValue of(Object value) {
+      // Here, you could add additional type checks or transformations as needed
+      return new AttributeValue(value);
+    }
+
+    @Override
+    @JsonValue
+    public Object value() {
+      return value;
+    }
+  }
+
   // Concrete subclasses of AttributeOperation
-  public record AddUpdateAttribute(
-      String attributeName,
-      @JsonDeserialize(using = RawlsValueDeserializer.class) Object addUpdateAttribute)
+  public record AddUpdateAttribute(String attributeName, AttributeValue addUpdateAttribute)
       implements AttributeOperation {
 
     @Override
@@ -108,9 +120,7 @@ public class RawlsModel {
     }
   }
 
-  public record AddListMember(
-      String attributeListName,
-      @JsonDeserialize(using = RawlsValueDeserializer.class) Object newMember)
+  public record AddListMember(String attributeListName, AttributeValue newMember)
       implements AttributeOperation {
 
     @Override
@@ -127,9 +137,7 @@ public class RawlsModel {
     }
   }
 
-  public record RemoveListMember(
-      String attributeListName,
-      @JsonDeserialize(using = RawlsValueDeserializer.class) Object removeMember)
+  public record RemoveListMember(String attributeListName, AttributeValue removeMember)
       implements AttributeOperation {
     @Override
     public Op op() {
@@ -156,60 +164,34 @@ public class RawlsModel {
    * A reference to a record in the workspace data service, used to serialize a reference to Rawls
    * upsert JSON.
    */
-  public record RecordReference(RecordType entityType, String entityName) {
+  public record EntityReference(RecordType entityType, String entityName) {
 
-    /** Parse a wds reference string into a {@link RecordReference}. */
-    public static RecordReference fromReferenceString(String referenceString) {
-      return new RecordReference(getTypeValue(referenceString), getRelationValue(referenceString));
+    /** Parse a wds reference string into a {@link EntityReference}. */
+    public static EntityReference fromReferenceString(String referenceString) {
+      return new EntityReference(getTypeValue(referenceString), getRelationValue(referenceString));
     }
   }
 
-  static class RawlsValueDeserializer extends StdDeserializer<Object> {
-    @Nullable private transient JsonDeserializer<Object> defaultDeserializer;
-
-    public RawlsValueDeserializer() {
-      super(Object.class);
-    }
+  static class AttributeValueDeserializer extends JsonDeserializer<AttributeValue> {
 
     @Override
-    public Object deserialize(JsonParser parser, DeserializationContext context)
+    @Nullable
+    public AttributeValue deserialize(JsonParser parser, DeserializationContext context)
         throws IOException {
-      // Temporary tree model to inspect the JSON
-      JsonNode node = parser.getCodec().readTree(parser);
-      if (isReferenceObject(node)) {
-        return toRecordReference(node);
-      }
-      // Delegate to default deserializer
-      return defaultDeserialization(parser, context, node);
-    }
+      JsonToken currentToken = parser.currentToken();
 
-    private boolean isReferenceObject(JsonNode node) {
-      return node.isObject() && node.has("entityType") && node.has("entityName");
-    }
-
-    private RecordReference toRecordReference(JsonNode node) {
-      return new RecordReference(
-          RecordType.valueOf(node.get("entityType").asText()), node.get("entityName").asText());
-    }
-
-    private Object defaultDeserialization(
-        JsonParser parser, DeserializationContext context, JsonNode node) throws IOException {
-      if (defaultDeserializer == null) {
-        defaultDeserializer = getDefaultDeserializer(context);
-      }
-      try (TokenBuffer tokenBuffer =
-          new TokenBuffer(parser.getCodec(), /* hasNativeIds= */ false)) {
-        tokenBuffer.writeTree(node);
-        JsonParser parserForDefaultDeserialization = tokenBuffer.asParser();
-        parserForDefaultDeserialization.nextToken(); // Prepare the parser to read the first token
-
-        return defaultDeserializer.deserialize(parserForDefaultDeserialization, context);
-      }
-    }
-
-    private static JsonDeserializer<Object> getDefaultDeserializer(DeserializationContext context)
-        throws JsonMappingException {
-      return requireNonNull(context.findRootValueDeserializer(context.constructType(Object.class)));
+      return switch (currentToken) {
+        case VALUE_STRING -> AttributeValue.of(parser.getValueAsString());
+        case VALUE_NUMBER_INT -> AttributeValue.of(parser.getIntValue());
+        case VALUE_NUMBER_FLOAT -> AttributeValue.of(parser.getDoubleValue());
+        case VALUE_TRUE, VALUE_FALSE -> AttributeValue.of(parser.getBooleanValue());
+        case VALUE_NULL -> null;
+        case START_OBJECT -> {
+          EntityReference entityReference = parser.readValueAs(EntityReference.class);
+          yield AttributeValue.of(entityReference);
+        }
+        default -> throw new JsonProcessingException("Unexpected JSON token: " + currentToken) {};
+      };
     }
   }
 }
