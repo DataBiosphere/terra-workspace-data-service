@@ -21,7 +21,8 @@ public record JobStatusUpdate(
       String errorMessage = attributes.get("error_message");
       return new JobStatusUpdate(jobId, currentStatus, newStatus, errorMessage);
     } catch (Exception e) {
-      throw new ValidationException("Unable to parse job status update from PubSub message: %s", e);
+      throw new ValidationException(
+          "Unable to parse job status update from PubSub message: %s".formatted(e.getMessage()), e);
     }
   }
 
