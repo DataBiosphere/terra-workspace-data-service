@@ -57,11 +57,6 @@ public class PfbRecordConverter extends AvroRecordConverter {
           // Give the relation column the name of the record type it's linked to
           attributes.putAttribute(
               relationType, new RelationAttribute(RecordType.valueOf(relationType), relationId));
-
-          //          attributes.putAttribute(
-          //              relationType,
-          //              RelationUtils.createRelationString(RecordType.valueOf(relationType),
-          // relationId));
         }
       }
       record.setAttributes(attributes);

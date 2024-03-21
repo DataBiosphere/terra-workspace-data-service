@@ -201,15 +201,6 @@ class PfbQuartzJobDataPlaneE2ETest {
         recordOrchestratorService.describeRecordType(
             collectionId, "v0.2", RecordType.valueOf("data_release"));
 
-    Optional<AttributeSchema> sar =
-        dataReleaseSchema.attributes().stream()
-            .filter(x -> x.name().equals("submitted_aligned_reads"))
-            .findFirst();
-
-    assertThat(sar).isNotEmpty();
-    String sarD = sar.get().datatype();
-    assertEquals(DataTypeMapping.RELATION.toString(), sarD);
-
     assert (dataReleaseSchema
         .attributes()
         .contains(

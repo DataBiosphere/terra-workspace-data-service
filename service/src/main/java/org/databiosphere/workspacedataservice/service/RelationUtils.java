@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -58,7 +59,7 @@ public class RelationUtils {
    * @return true if attribute begins with the REFERENCE_IDENTIFIER
    */
   public static boolean isRelationValue(Object obj) {
-    return obj != null && obj.toString().startsWith(RELATION_IDENTIFIER);
+    return obj instanceof RelationAttribute || obj.toString().startsWith(RELATION_IDENTIFIER);
   }
 
   public static String createRelationString(RecordType targetRecordType, String recordId) {
