@@ -48,7 +48,7 @@ import org.springframework.web.client.RestTemplate;
       // with aggressive delay settings so unit tests don't run too long
       "rest.retry.backoff.delay=3",
     })
-public class RawlsClientRetryTest {
+class RawlsClientRetryTest {
   // create mock for RestTemplate
   @MockBean RestTemplate mockRestTemplate;
 

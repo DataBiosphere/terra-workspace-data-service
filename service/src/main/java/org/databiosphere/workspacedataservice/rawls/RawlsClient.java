@@ -20,7 +20,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /** Client to make REST calls to Rawls */
-class RawlsClient {
+public class RawlsClient {
 
   private final String rawlsUrl;
   // TODO: consider using RestClient instead of RestTemplate
