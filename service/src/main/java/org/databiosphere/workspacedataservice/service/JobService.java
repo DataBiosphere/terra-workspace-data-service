@@ -14,6 +14,8 @@ import org.databiosphere.workspacedataservice.service.model.exception.Authentica
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +23,8 @@ import org.springframework.stereotype.Service;
 public class JobService {
   private static final Set<StatusEnum> TERMINAL_JOB_STATUSES =
       Set.of(StatusEnum.SUCCEEDED, StatusEnum.ERROR, StatusEnum.CANCELLED);
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(JobService.class);
 
   JobDao jobDao;
   CollectionService collectionService;
@@ -58,8 +62,8 @@ public class JobService {
    * control plane (it's exposed through the control plane only PubSubController).
    */
   public void processStatusUpdate(JobStatusUpdate update) {
+    UUID jobId = update.jobId();
     try {
-      UUID jobId = update.jobId();
       GenericJobServerModel job = getJob(jobId);
       StatusEnum currentStatus = job.getStatus();
       StatusEnum newStatus = update.newStatus();
@@ -87,6 +91,7 @@ public class JobService {
     } catch (MissingObjectException e) {
       // Via PubSub, CWDS will receive status updates for both CWDS and import service jobs.
       // If the job is not found in the database (because it's an import service job), ignore it.
+      LOGGER.info("Received status update for unknown job {}", jobId);
     }
   }
 }
