@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.pubsub;
 
-import com.google.cloud.spring.core.GcpProjectIdProvider;
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -17,10 +16,8 @@ public class PubSubConfig {
       havingValue = "true",
       matchIfMissing = true)
   PubSub applicationDefaultCredentialsPubSub(
-      GcpProjectIdProvider projectIdProvider,
-      PubSubTemplate pubSubTemplate,
-      @Value("${spring.cloud.gcp.pubsub.topic}") String topic) {
-    return new ImportPubSub(pubSubTemplate, topic, projectIdProvider.getProjectId());
+      PubSubTemplate pubSubTemplate, @Value("${spring.cloud.gcp.pubsub.topic}") String topic) {
+    return new ImportPubSub(pubSubTemplate, topic);
   }
 
   // when Pub/Sub autoconfiguration is disabled, use a noop bean which has no other dependencies

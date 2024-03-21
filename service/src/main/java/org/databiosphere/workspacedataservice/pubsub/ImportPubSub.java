@@ -7,12 +7,11 @@ import java.util.concurrent.CompletableFuture;
 public class ImportPubSub implements PubSub {
 
   private final PubSubTemplate pubSubTemplate;
-  private final String fullTopicName;
+  private final String topic;
 
-  public ImportPubSub(PubSubTemplate pubSubTemplate, String topic, String project) {
+  public ImportPubSub(PubSubTemplate pubSubTemplate, String topic) {
     this.pubSubTemplate = pubSubTemplate;
-    /// projects/[project_name]/topics/[topic_name]
-    this.fullTopicName = "projects/" + project + "/topics/" + topic;
+    this.topic = topic;
   }
 
   // As noted in the PubSub superclass, this method encapsulates waiting for the pubsub library's
@@ -23,8 +22,7 @@ public class ImportPubSub implements PubSub {
   public String publishSync(Map<String, String> message) {
     // PubSubTemplate.publish returns a future
     // Rawls expects the actual data to be in the headers rather than the payload
-    CompletableFuture<String> publishFuture =
-        this.pubSubTemplate.publish(fullTopicName, "b''", message);
+    CompletableFuture<String> publishFuture = pubSubTemplate.publish(topic, "b''", message);
     // we must wait for the future to complete before returning, else we'll have spun off an
     // unwatched thread
     return publishFuture.join();
