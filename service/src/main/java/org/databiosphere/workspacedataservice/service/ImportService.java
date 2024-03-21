@@ -38,6 +38,7 @@ public class ImportService {
   private final JobDao jobDao;
   private final SchedulerDao schedulerDao;
   private final ImportSourceValidator importSourceValidator;
+  private static final String ARG_PERMISSION_OPTION = "permission_option";
 
   public ImportService(
       CollectionService collectionService,
@@ -95,6 +96,12 @@ public class ImportService {
       arguments.put(ARG_TOKEN, petToken);
       arguments.put(ARG_URL, importRequest.getUrl().toString());
       arguments.put(ARG_COLLECTION, collectionId.toString());
+      // try to retrieve the tdrSyncPermissions option if available
+      arguments.put(
+          ARG_PERMISSION_OPTION,
+          importRequest.getOptions().containsKey("tdrSyncPermissions")
+              ? (boolean) importRequest.getOptions().get("tdrSyncPermissions")
+              : false);
 
       // if we can find an MDC id, add it to the job context
       safeGetMdcId(createdJob.getJobId())

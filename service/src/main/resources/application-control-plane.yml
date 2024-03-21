@@ -11,6 +11,7 @@ twds:
     batch-write-record-sink: "rawls"
     succeed-on-completion: false
     rawls-bucket-name: ${SERVICE_GOOGLE_BUCKET}
+    permission-sync: true
 
 
 spring:
