@@ -6,8 +6,6 @@ import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.CR
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.CREATE_ATTRIBUTE_VALUE_LIST;
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.REMOVE_ATTRIBUTE;
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.REMOVE_LIST_MEMBER;
-import static org.databiosphere.workspacedataservice.service.RelationUtils.getRelationValue;
-import static org.databiosphere.workspacedataservice.service.RelationUtils.getTypeValue;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -166,12 +164,6 @@ public class RawlsModel {
    * upsert JSON.
    */
   public record EntityReference(RecordType entityType, String entityName) {
-
-    /** Parse a wds reference string into a {@link EntityReference}. */
-    public static EntityReference fromReferenceString(String referenceString) {
-      return new EntityReference(getTypeValue(referenceString), getRelationValue(referenceString));
-    }
-
     public static EntityReference fromRelationAttribute(RelationAttribute relationAttribute) {
       return new EntityReference(relationAttribute.targetType(), relationAttribute.targetId());
     }
