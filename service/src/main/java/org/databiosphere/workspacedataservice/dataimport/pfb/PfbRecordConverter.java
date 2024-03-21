@@ -5,10 +5,10 @@ import java.util.Collection;
 import java.util.Set;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dataimport.AvroRecordConverter;
-import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
 
 /** Logic to convert a PFB's GenericRecord to WDS's Record */
 public class PfbRecordConverter extends AvroRecordConverter {
@@ -56,8 +56,12 @@ public class PfbRecordConverter extends AvroRecordConverter {
           String relationId = relation.get(RELATIONS_ID).toString();
           // Give the relation column the name of the record type it's linked to
           attributes.putAttribute(
-              relationType,
-              RelationUtils.createRelationString(RecordType.valueOf(relationType), relationId));
+              relationType, new RelationAttribute(RecordType.valueOf(relationType), relationId));
+
+          //          attributes.putAttribute(
+          //              relationType,
+          //              RelationUtils.createRelationString(RecordType.valueOf(relationType),
+          // relationId));
         }
       }
       record.setAttributes(attributes);

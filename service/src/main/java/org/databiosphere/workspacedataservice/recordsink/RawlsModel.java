@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.io.IOException;
 import java.util.List;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
 import org.springframework.lang.Nullable;
 
 /**
@@ -64,7 +65,7 @@ public class RawlsModel {
 
     @Override
     public String toString() {
-      return String.valueOf(value);
+      return value;
     }
   }
 
@@ -169,6 +170,10 @@ public class RawlsModel {
     /** Parse a wds reference string into a {@link EntityReference}. */
     public static EntityReference fromReferenceString(String referenceString) {
       return new EntityReference(getTypeValue(referenceString), getRelationValue(referenceString));
+    }
+
+    public static EntityReference fromRelationAttribute(RelationAttribute relationAttribute) {
+      return new EntityReference(relationAttribute.targetType(), relationAttribute.targetId());
     }
   }
 

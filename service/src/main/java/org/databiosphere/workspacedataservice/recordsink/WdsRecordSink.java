@@ -9,6 +9,8 @@ import org.databiosphere.workspacedataservice.service.RecordService;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * {@link RecordSink} implementation that records batches of writes/deletes to the Workspace Data
@@ -56,12 +58,15 @@ public class WdsRecordSink implements RecordSink {
     return schema;
   }
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(WdsRecordSink.class);
+
   @Override
   public void upsertBatch(
       RecordType recordType,
       Map<String, DataTypeMapping> schema,
       List<Record> records,
       String primaryKey) {
+
     recordService.batchUpsert(collectionId, recordType, records, schema, primaryKey);
   }
 

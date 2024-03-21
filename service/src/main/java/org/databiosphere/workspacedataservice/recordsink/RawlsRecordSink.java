@@ -25,11 +25,11 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttrib
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.EntityReference;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
-import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.springframework.util.function.ThrowingConsumer;
 
@@ -140,8 +140,8 @@ public class RawlsRecordSink implements RecordSink {
   }
 
   private AttributeValue maybeCoerceRelation(Object originalValue) {
-    if (RelationUtils.isRelationValue(originalValue)) {
-      return AttributeValue.of(EntityReference.fromReferenceString(originalValue.toString()));
+    if (originalValue instanceof RelationAttribute relationAttribute) {
+      return AttributeValue.of(EntityReference.fromRelationAttribute(relationAttribute));
     }
     return AttributeValue.of(originalValue);
   }

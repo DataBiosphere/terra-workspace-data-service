@@ -13,7 +13,7 @@ public class RelationUtils {
   public static final String RELATION_IDENTIFIER = "terra-wds";
 
   public static RecordType getTypeValue(Object obj) {
-    return RecordType.valueOf(splitRelationIdentifier(obj)[0]);
+    return RecordType.valueOf(splitRelationIdentifier(obj.toString())[0]);
   }
 
   public static RecordType getTypeValueForList(List<?> listVal) {
@@ -48,7 +48,7 @@ public class RelationUtils {
   }
 
   public static String getRelationValue(Object obj) {
-    return splitRelationIdentifier(obj)[1];
+    return splitRelationIdentifier(obj.toString())[1];
   }
 
   /**
