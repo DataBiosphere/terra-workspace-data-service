@@ -61,9 +61,9 @@ class PubSubControllerMockMvcTest extends MockMvcTestBase {
         new PubSubRequest(
             new PubSubMessage(
                 Map.of(
-                    "import_id", jobId.toString(),
-                    "current_status", "Upserting",
-                    "new_status", "Done"),
+                    "importId", jobId.toString(),
+                    "currentStatus", "Upserting",
+                    "newStatus", "Done"),
                 null,
                 "123456789",
                 "2024-03-20T10:00:00.000Z"),
