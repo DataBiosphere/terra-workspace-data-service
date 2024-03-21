@@ -165,7 +165,7 @@ public class RawlsModel {
   }
 
   static class RawlsValueDeserializer extends StdDeserializer<Object> {
-    @Nullable private JsonDeserializer<Object> defaultDeserializer;
+    @Nullable private transient JsonDeserializer<Object> defaultDeserializer;
 
     public RawlsValueDeserializer() {
       super(Object.class);
