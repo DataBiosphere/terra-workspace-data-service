@@ -60,6 +60,15 @@ public class RawlsClientRetryTest {
     reset(mockRestTemplate);
   }
 
+  // define a 502 error, thrown by mocks below
+  Exception badGateway =
+      HttpServerErrorException.create(
+          HttpStatusCode.valueOf(HttpStatusCodes.STATUS_CODE_BAD_GATEWAY),
+          "unit test bad gateway",
+          HttpHeaders.EMPTY,
+          new byte[] {},
+          null);
+
   @Test
   void enumerateDoesRetry() {
     // ARRANGE
@@ -68,14 +77,6 @@ public class RawlsClientRetryTest {
     // define the successful REST response payload
     ResponseEntity<SnapshotListResponse> successResponse =
         ResponseEntity.of(Optional.of(new SnapshotListResponse(List.of())));
-    // define a 502 error
-    Exception badGateway =
-        HttpServerErrorException.create(
-            HttpStatusCode.valueOf(HttpStatusCodes.STATUS_CODE_BAD_GATEWAY),
-            "unit test bad gateway",
-            HttpHeaders.EMPTY,
-            new byte[] {},
-            null);
 
     // argument matcher for the rest template target url
     var urlMatcher = new UriMatcher("/api/workspaces/%s/snapshots/v2".formatted(workspaceId));
@@ -106,15 +107,6 @@ public class RawlsClientRetryTest {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     UUID snapshotId = UUID.randomUUID();
 
-    // define a 502 error
-    Exception badGateway =
-        HttpServerErrorException.create(
-            HttpStatusCode.valueOf(HttpStatusCodes.STATUS_CODE_BAD_GATEWAY),
-            "unit test bad gateway",
-            HttpHeaders.EMPTY,
-            new byte[] {},
-            null);
-
     // argument matcher for the rest template target url
     var urlMatcher = new UriMatcher("/api/workspaces/%s/snapshots/v2".formatted(workspaceId));
     // argument matcher for the post payload
@@ -144,8 +136,8 @@ public class RawlsClientRetryTest {
             eq(DataRepoSnapshotResource.class));
   }
 
+  // custom ArgumentMatcher - does a given URI contain the supplied substring?
   static class UriMatcher implements ArgumentMatcher<URI> {
-
     private final String substring;
 
     UriMatcher(String substring) {
@@ -158,6 +150,8 @@ public class RawlsClientRetryTest {
     }
   }
 
+  // custom ArgumentMatcher - does a given NamedDataRepoSnapshot inside a HttpEntity
+  // contain the supplied snapshotId?
   static class NamedDataRepoSnapshotHttpEntityMatcher
       implements ArgumentMatcher<HttpEntity<NamedDataRepoSnapshot>> {
     private final UUID snapshotId;
