@@ -528,10 +528,7 @@ class WsmPactTest {
 
   private WsmSnapshotSupport wsmSnapshotSupport(MockServer mockServer) {
     return new WsmSnapshotSupport(
-        WorkspaceId.of(WORKSPACE_UUID),
-        buildWsmDao(mockServer),
-        new RestClientRetry(),
-        activityLogger);
+        WorkspaceId.of(WORKSPACE_UUID), buildWsmDao(mockServer), activityLogger);
   }
 
   private static WorkspaceManagerDao buildWsmDao(MockServer mockServer) {

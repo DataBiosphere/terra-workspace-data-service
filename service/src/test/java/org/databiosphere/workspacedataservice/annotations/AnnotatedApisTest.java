@@ -12,7 +12,6 @@ import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.Snapsho
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.WsmSnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsink.WdsRecordSinkFactory;
-import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RecordService;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
@@ -56,10 +55,8 @@ class AnnotatedApisTest extends TestBase {
     @Primary
     @Bean("overrideSnapshotSupportFactory")
     SnapshotSupportFactory overrideSnapshotSupportFactory(
-        RestClientRetry restClientRetry,
-        ActivityLogger activityLogger,
-        WorkspaceManagerDao wsmDao) {
-      return new WsmSnapshotSupportFactory(restClientRetry, activityLogger, wsmDao);
+        ActivityLogger activityLogger, WorkspaceManagerDao wsmDao) {
+      return new WsmSnapshotSupportFactory(activityLogger, wsmDao);
     }
   }
 

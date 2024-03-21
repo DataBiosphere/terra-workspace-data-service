@@ -69,8 +69,7 @@ class WsmSnapshotSupportTest extends TestBase {
             });
 
     ResourceList actual =
-        new WsmSnapshotSupport(
-                WorkspaceId.of(UUID.randomUUID()), wsmDao, restClientRetry, activityLogger)
+        new WsmSnapshotSupport(WorkspaceId.of(UUID.randomUUID()), wsmDao, activityLogger)
             .listAllSnapshots(testPageSize);
 
     // assert total size of all results
