@@ -3,6 +3,8 @@ package org.databiosphere.workspacedataservice.rawls;
 import static org.databiosphere.workspacedataservice.annotations.DeploymentMode.*;
 
 import io.micrometer.observation.ObservationRegistry;
+import java.net.MalformedURLException;
+import java.net.URL;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -38,7 +40,13 @@ public class RawlsClientConfig {
   // current observationRegistry for Prometheus metrics
   @Bean
   @ControlPlane
-  public RestClient rawlsRestClient(ObservationRegistry observationRegistry) {
+  public RestClient rawlsRestClient(ObservationRegistry observationRegistry)
+      throws MalformedURLException {
+
+    // validate the Rawls url is well-formed.
+    // this will throw and prevent Spring startup if the Rawls url is invalid.
+    new URL(rawlsUrl);
+
     return RestClient.builder()
         .observationRegistry(observationRegistry)
         .baseUrl(rawlsUrl)
