@@ -30,6 +30,7 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeValue;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op;
@@ -78,7 +79,7 @@ class RawlsRecordSinkTest extends TestBase {
         doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("someKey", "someValue")));
 
     var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
-    assertThat(operation.addUpdateAttribute()).isEqualTo("someValue");
+    assertThat(operation.addUpdateAttribute().value()).isEqualTo("someValue");
   }
 
   @Test
@@ -109,8 +110,8 @@ class RawlsRecordSinkTest extends TestBase {
     assertThat(operations).hasSize(2);
     assertThat(filterOperations(AddUpdateAttribute.class, operations))
         .containsExactly(
-            new AddUpdateAttribute("someKey", "someValue"),
-            new AddUpdateAttribute("someOtherKey", "someOtherValue"));
+            new AddUpdateAttribute("someKey", AttributeValue.of("someValue")),
+            new AddUpdateAttribute("someOtherKey", AttributeValue.of("someOtherValue")));
   }
 
   @Test
@@ -142,7 +143,8 @@ class RawlsRecordSinkTest extends TestBase {
 
     assertThat(filterOperations(AddListMember.class, operations))
         .containsExactly(
-            new AddListMember("arrayKey", "value1"), new AddListMember("arrayKey", "value2"));
+            new AddListMember("arrayKey", AttributeValue.of("value1")),
+            new AddListMember("arrayKey", AttributeValue.of("value2")));
   }
 
   @Test

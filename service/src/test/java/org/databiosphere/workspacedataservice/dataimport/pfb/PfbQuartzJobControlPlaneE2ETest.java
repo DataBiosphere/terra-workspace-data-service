@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,8 +37,9 @@ import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeValue;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RecordReference;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.EntityReference;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
 import org.databiosphere.workspacedataservice.sam.MockSamUsersApi;
 import org.databiosphere.workspacedataservice.service.CollectionService;
@@ -151,7 +151,7 @@ class PfbQuartzJobControlPlaneE2ETest {
     assertThat(entity.operations().size()).isEqualTo(expectedAttributes);
 
     assertSimpleAttributeValue(entity, "pfb:md5sum", "bdf121aadba028d57808101cb4455fa7");
-    assertSimpleAttributeValue(entity, "pfb:file_size", BigInteger.valueOf(512));
+    assertSimpleAttributeValue(entity, "pfb:file_size", 512);
     assertSimpleAttributeValue(entity, "pfb:file_state", "registered");
     assertSimpleAttributeValue(
         entity,
@@ -193,9 +193,10 @@ class PfbQuartzJobControlPlaneE2ETest {
         List.of(
             new RemoveAttribute(arrayProp),
             new CreateAttributeValueList(arrayProp),
-            new AddListMember(arrayProp, "00000000-0000-0000-0000-000000000000"),
-            new AddListMember(arrayProp, "11111111-1111-1111-1111-111111111111"),
-            new AddListMember(arrayProp, "22222222-2222-2222-2222-222222222222"));
+            new AddListMember(arrayProp, AttributeValue.of("00000000-0000-0000-0000-000000000000")),
+            new AddListMember(arrayProp, AttributeValue.of("11111111-1111-1111-1111-111111111111")),
+            new AddListMember(
+                arrayProp, AttributeValue.of("22222222-2222-2222-2222-222222222222")));
     assertThat(actual).isEqualTo(expected);
   }
 
@@ -264,7 +265,7 @@ class PfbQuartzJobControlPlaneE2ETest {
   }
 
   private void assertSimpleAttributeValue(Entity entity, String attributeName, Object expected) {
-    assertThat(getSimpleAttributeByName(entity, attributeName).addUpdateAttribute())
+    assertThat(getSimpleAttributeByName(entity, attributeName).addUpdateAttribute().value())
         .isEqualTo(expected);
   }
 
@@ -275,11 +276,11 @@ class PfbQuartzJobControlPlaneE2ETest {
 
   private void assertReferenceAttributeType(
       Entity entity, String attributeName, String attributeType) {
-    var value = getSimpleAttributeByName(entity, attributeName).addUpdateAttribute();
-    RecordReference recordReference = assertInstanceOf(RecordReference.class, value);
+    var value = getSimpleAttributeByName(entity, attributeName).addUpdateAttribute().value();
+    EntityReference entityReference = assertInstanceOf(EntityReference.class, value);
 
-    assertThat(recordReference.entityType()).isEqualTo(RecordType.valueOf(attributeType));
-    assertThat(recordReference.entityName()).startsWith("%s.".formatted(attributeType));
+    assertThat(entityReference.entityType()).isEqualTo(RecordType.valueOf(attributeType));
+    assertThat(entityReference.entityName()).startsWith("%s.".formatted(attributeType));
   }
 
   private AddUpdateAttribute getSimpleAttributeByName(Entity entity, String attributeName) {
@@ -295,7 +296,7 @@ class PfbQuartzJobControlPlaneE2ETest {
   }
 
   private void assertListAttributeType(Entity entity, String attributeName, Class<?> expected) {
-    assertThat(getListAttributeByName(entity, attributeName).newMember().getClass())
+    assertThat(getListAttributeByName(entity, attributeName).newMember().value().getClass())
         .isEqualTo(expected);
   }
 
