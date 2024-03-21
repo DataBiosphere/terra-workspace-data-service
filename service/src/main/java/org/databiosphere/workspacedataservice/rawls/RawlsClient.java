@@ -5,16 +5,12 @@ import static org.databiosphere.workspacedataservice.retry.RestClientRetry.RestC
 import bio.terra.workspace.model.DataRepoSnapshotResource;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestClientResponseException;
 
 /** Client to make REST calls to Rawls */
 public class RawlsClient {
   private final RawlsApi rawlsApi;
   private final RestClientRetry restClientRetry;
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(RawlsClient.class);
 
   public RawlsClient(RawlsApi rawlsApi, RestClientRetry restClientRetry) {
     this.rawlsApi = rawlsApi;
