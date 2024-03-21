@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
+import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 
 public record JobStatusUpdate(
     UUID jobId, StatusEnum currentStatus, StatusEnum newStatus, @Nullable String errorMessage) {
@@ -12,12 +13,16 @@ public record JobStatusUpdate(
   }
 
   public static JobStatusUpdate createFromPubSubMessage(PubSubMessage message) {
-    Map<String, String> attributes = message.attributes();
-    UUID jobId = UUID.fromString(attributes.get("import_id"));
-    StatusEnum newStatus = rawlsStatusToJobStatus(attributes.get("new_status"));
-    StatusEnum currentStatus = rawlsStatusToJobStatus(attributes.get("current_status"));
-    String errorMessage = attributes.get("error_message");
-    return new JobStatusUpdate(jobId, currentStatus, newStatus, errorMessage);
+    try {
+      Map<String, String> attributes = message.attributes();
+      UUID jobId = UUID.fromString(attributes.get("import_id"));
+      StatusEnum newStatus = rawlsStatusToJobStatus(attributes.get("new_status"));
+      StatusEnum currentStatus = rawlsStatusToJobStatus(attributes.get("current_status"));
+      String errorMessage = attributes.get("error_message");
+      return new JobStatusUpdate(jobId, currentStatus, newStatus, errorMessage);
+    } catch (Exception e) {
+      throw new ValidationException("Unable to parse job status update from PubSub message: %s", e);
+    }
   }
 
   private static StatusEnum rawlsStatusToJobStatus(String rawlsStatus) {

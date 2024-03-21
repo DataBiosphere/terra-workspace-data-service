@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.pubsub.JobStatusUpdate;
 import org.databiosphere.workspacedataservice.pubsub.PubSubMessage;
@@ -19,9 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class PubSubController {
   private static final Logger LOGGER = LoggerFactory.getLogger(PubSubController.class);
   private final JobService jobService;
+  private final ObjectMapper objectMapper;
 
-  public PubSubController(JobService jobService) {
+  public PubSubController(JobService jobService, ObjectMapper objectMapper) {
     this.jobService = jobService;
+    this.objectMapper = objectMapper;
   }
 
   @PostMapping("/pubsub/import-status")
@@ -41,7 +45,12 @@ public class PubSubController {
     } catch (ValidationException e) {
       // Return a successful status for invalid updates to prevent PubSub from retrying the request.
       // https://cloud.google.com/pubsub/docs/push#receive_push
-      LOGGER.error("Error processing status update: {}", e.getMessage());
+      try {
+        String jsonMessage = objectMapper.writeValueAsString(message);
+        LOGGER.error("Error processing status update: %s".formatted(jsonMessage), e);
+      } catch (JsonProcessingException jsonException) {
+        LOGGER.error("Error processing status update", e);
+      }
       return new ResponseEntity<>(HttpStatus.ACCEPTED);
     }
   }
