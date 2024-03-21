@@ -74,7 +74,9 @@ import org.springframework.util.StreamUtils;
       // turn off pubsub autoconfiguration for tests
       "spring.cloud.gcp.pubsub.enabled=false",
       // Allow file imports to test with files from resources.
-      "twds.data-import.allowed-schemes=file"
+      "twds.data-import.allowed-schemes=file",
+      // Rawls url must be valid, else context initialization (Spring startup) will fail
+      "rawlsUrl=https://localhost/"
     })
 class PfbQuartzJobControlPlaneE2ETest {
   @Autowired ObjectMapper mapper;

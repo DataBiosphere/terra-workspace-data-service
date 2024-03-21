@@ -34,6 +34,8 @@ import org.springframework.test.context.TestPropertySource;
       // aggressive retry settings so unit tests don't run too long
       "rest.retry.maxAttempts=2",
       "rest.retry.backoff.delay=3",
+      // Rawls url must be valid, else context initialization (Spring startup) will fail
+      "rawlsUrl=https://localhost/"
     })
 @ExtendWith(ConfigurationExceptionDetector.class)
 public abstract class TestBase {}

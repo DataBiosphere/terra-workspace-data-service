@@ -46,7 +46,9 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(
     properties = {
       // turn off pubsub autoconfiguration for tests
-      "spring.cloud.gcp.pubsub.enabled=false"
+      "spring.cloud.gcp.pubsub.enabled=false",
+      // Rawls url must be valid, else context initialization (Spring startup) will fail
+      "rawlsUrl=https://localhost/"
     })
 class JobServiceControlPlaneTest extends JobServiceBaseTest {
 
@@ -319,7 +321,6 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
             // set created and updated to now, but in UTC because that's how Postgres stores it
             OffsetDateTime.now(ZoneId.of("Z")),
             OffsetDateTime.now(ZoneId.of("Z")));
-    ;
     when(jobDao.getJob(jobId)).thenReturn(expectedJob);
     // Collection does not exist, so virtual collection is used
     when(collectionDao.getWorkspaceId(collectionId))

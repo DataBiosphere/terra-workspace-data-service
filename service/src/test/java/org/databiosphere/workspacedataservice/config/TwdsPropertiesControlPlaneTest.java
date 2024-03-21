@@ -21,7 +21,9 @@ import org.springframework.test.context.TestPropertySource;
       //   over from direct injection of @Value('twds.instance.workspace-id')
       "twds.instance.workspace-id=",
       // turn off pubsub autoconfiguration for tests
-      "spring.cloud.gcp.pubsub.enabled=false"
+      "spring.cloud.gcp.pubsub.enabled=false",
+      // Rawls url must be valid, else context initialization (Spring startup) will fail
+      "rawlsUrl=https://localhost/"
     })
 @DirtiesContext
 class TwdsPropertiesControlPlaneTest {
