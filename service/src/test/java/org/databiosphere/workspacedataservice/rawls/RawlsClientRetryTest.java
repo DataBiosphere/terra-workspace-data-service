@@ -79,11 +79,11 @@ class RawlsClientRetryTest {
         ResponseEntity.of(Optional.of(new SnapshotListResponse(List.of())));
 
     // argument matcher for the rest template target url
-    var urlMatcher = new UriMatcher("/api/workspaces/%s/snapshots/v2".formatted(workspaceId));
+    var uriMatcher = new UriMatcher("/api/workspaces/%s/snapshots/v2".formatted(workspaceId));
 
     // RestTemplate will throw 502 on the first and second attempts, but succeed on the third
     when(mockRestTemplate.exchange(
-            argThat(urlMatcher), eq(HttpMethod.GET), any(), eq(SnapshotListResponse.class)))
+            argThat(uriMatcher), eq(HttpMethod.GET), any(), eq(SnapshotListResponse.class)))
         .thenThrow(badGateway)
         .thenThrow(badGateway)
         .thenReturn(successResponse);
@@ -96,7 +96,7 @@ class RawlsClientRetryTest {
     // ASSERT
     // verify it retried three times, until it got the success
     verify(mockRestTemplate, times(3))
-        .exchange(argThat(urlMatcher), eq(HttpMethod.GET), any(), eq(SnapshotListResponse.class));
+        .exchange(argThat(uriMatcher), eq(HttpMethod.GET), any(), eq(SnapshotListResponse.class));
 
     assertThat(snapshotListResponse.gcpDataRepoSnapshots()).isEmpty();
   }
@@ -108,13 +108,13 @@ class RawlsClientRetryTest {
     UUID snapshotId = UUID.randomUUID();
 
     // argument matcher for the rest template target url
-    var urlMatcher = new UriMatcher("/api/workspaces/%s/snapshots/v2".formatted(workspaceId));
+    var uriMatcher = new UriMatcher("/api/workspaces/%s/snapshots/v2".formatted(workspaceId));
     // argument matcher for the post payload
     var payloadMatcher = new NamedDataRepoSnapshotHttpEntityMatcher(snapshotId);
 
     // RestTemplate will throw 502 on the first and second attempts, but succeed on the third
     when(mockRestTemplate.exchange(
-            argThat(urlMatcher),
+            argThat(uriMatcher),
             eq(HttpMethod.POST),
             argThat(payloadMatcher),
             eq(DataRepoSnapshotResource.class)))
@@ -130,7 +130,7 @@ class RawlsClientRetryTest {
     // verify it retried three times, until it got the success
     verify(mockRestTemplate, times(3))
         .exchange(
-            argThat(urlMatcher),
+            argThat(uriMatcher),
             eq(HttpMethod.POST),
             argThat(payloadMatcher),
             eq(DataRepoSnapshotResource.class));
