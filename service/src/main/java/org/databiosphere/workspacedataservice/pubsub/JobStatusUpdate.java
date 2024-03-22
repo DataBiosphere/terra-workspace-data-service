@@ -16,10 +16,10 @@ public record JobStatusUpdate(
   public static JobStatusUpdate createFromPubSubMessage(PubsubMessage message) {
     try {
       Map<String, String> attributes = message.getAttributesMap();
-      UUID jobId = UUID.fromString(attributes.get("import_id"));
-      StatusEnum newStatus = rawlsStatusToJobStatus(attributes.get("new_status"));
-      StatusEnum currentStatus = rawlsStatusToJobStatus(attributes.get("current_status"));
-      String errorMessage = attributes.get("error_message");
+      UUID jobId = UUID.fromString(attributes.get("importId"));
+      StatusEnum newStatus = rawlsStatusToJobStatus(attributes.get("newStatus"));
+      StatusEnum currentStatus = rawlsStatusToJobStatus(attributes.get("currentStatus"));
+      String errorMessage = attributes.get("errorMessage");
       return new JobStatusUpdate(jobId, currentStatus, newStatus, errorMessage);
     } catch (Exception e) {
       throw new ValidationException(
@@ -28,6 +28,9 @@ public record JobStatusUpdate(
   }
 
   private static StatusEnum rawlsStatusToJobStatus(String rawlsStatus) {
+    if (rawlsStatus == null) {
+      return StatusEnum.UNKNOWN;
+    }
     return switch (rawlsStatus) {
       case "ReadyForUpsert" -> StatusEnum.RUNNING;
       case "Upserting" -> StatusEnum.RUNNING;
