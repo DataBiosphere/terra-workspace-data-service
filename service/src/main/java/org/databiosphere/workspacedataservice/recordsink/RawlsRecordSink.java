@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.spring.storage.GoogleStorageResource;
@@ -71,7 +73,7 @@ public class RawlsRecordSink implements RecordSink {
    */
   public static RawlsRecordSink create(
       ObjectMapper mapper, GcsStorage storage, PubSub pubSub, ImportDetails importDetails) {
-    String blobName = getBlobName(importDetails.jobId());
+    String blobName = getBlobName(requireNonNull(importDetails.jobId()));
     Blob blob = storage.createBlob(blobName);
     return new RawlsRecordSink(
         new RawlsAttributePrefixer(importDetails.prefixStrategy()),
@@ -141,9 +143,13 @@ public class RawlsRecordSink implements RecordSink {
   }
 
   private void publishToPubSub(ImportDetails importDetails) {
-    UUID jobId = importDetails.jobId();
+    UUID jobId = requireNonNull(importDetails.jobId());
     UUID workspaceId = importDetails.collectionId();
-    String user = importDetails.userEmailSupplier().get();
+    String user =
+        requireNonNull(
+                importDetails.userEmailSupplier(),
+                "Expected ImportDetails.userEmailSupplier to be non-null for async imports")
+            .get();
     Map<String, String> message =
         new ImmutableMap.Builder<String, String>()
             .put("workspaceId", workspaceId.toString())

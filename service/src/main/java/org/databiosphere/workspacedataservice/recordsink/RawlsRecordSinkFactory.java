@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
@@ -31,6 +33,11 @@ public class RawlsRecordSinkFactory implements RecordSinkFactory {
   }
 
   private RecordSink rawlsRecordSink(ImportDetails importDetails) {
+    requireNonNull(
+        importDetails.jobId(), "RawlsRecordSink requires ImportDetails.jobId to be non-null");
+    requireNonNull(
+        importDetails.userEmailSupplier(),
+        "RawlsRecordSink requires ImportDetails.userEmailSupplier to be non-null");
     return RawlsRecordSink.create(mapper, storage, pubSub, importDetails);
   }
 }
