@@ -33,6 +33,7 @@ class TdrTestSupport {
   @Autowired private ObservationRegistry observationRegistry;
   @Autowired DataImportProperties dataImportProperties;
   @Autowired private SnapshotSupportFactory snapshotSupportFactory;
+  @Autowired private SamDao samDao;
 
   /** Returns a TdrManifestQuartzJob that is capable of pulling parquet files from the classpath. */
   TdrManifestQuartzJob buildTdrManifestQuartzJob(UUID workspaceId) {

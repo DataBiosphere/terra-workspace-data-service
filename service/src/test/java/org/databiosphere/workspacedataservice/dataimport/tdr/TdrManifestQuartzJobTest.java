@@ -7,8 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +30,7 @@ import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.InputFile;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
@@ -38,6 +41,7 @@ import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordService;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
@@ -60,7 +64,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @DirtiesContext
 @SpringBootTest
-@ActiveProfiles("mock-sam")
+@ActiveProfiles(profiles = {"mock-sam"})
 class TdrManifestQuartzJobTest extends TestBase {
 
   @MockBean JobDao jobDao;
@@ -70,6 +74,8 @@ class TdrManifestQuartzJobTest extends TestBase {
   @MockBean ActivityLogger activityLogger;
   @MockBean RecordService recordService;
   @MockBean RecordDao recordDao;
+  @MockBean DataImportProperties dataImportProperties;
+  @MockBean SamDao samDao;
   @Autowired RecordSinkFactory recordSinkFactory;
   @Autowired RestClientRetry restClientRetry;
   @Autowired ObjectMapper objectMapper;
@@ -237,7 +243,9 @@ class TdrManifestQuartzJobTest extends TestBase {
     // set up the job
     TdrManifestQuartzJob tdrManifestQuartzJob =
         testSupport.buildTdrManifestQuartzJob(workspaceId.id());
-    JobExecutionContext mockContext = stubJobContext(jobId, v2fManifestResource, collectionId.id());
+    JobExecutionContext mockContext =
+        stubJobContext(
+            jobId, v2fManifestResource, collectionId.id(), /*shouldPermissionSync*/ false);
 
     // ACT
     // execute the job
@@ -245,5 +253,41 @@ class TdrManifestQuartzJobTest extends TestBase {
 
     // ASSERT
     verify(wsmDao).enumerateDataRepoSnapshotReferences(eq(workspaceId.id()), anyInt(), anyInt());
+  }
+
+  @Test
+  @Tag(SLOW)
+  /* note: this functionality is control plane only.*/
+  void testSyncPermissions() throws JobExecutionException, IOException {
+    // ARRANGE
+    // set up ids
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    UUID jobId = UUID.randomUUID();
+    // mock collection service to return this workspace id for this collection id
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+    // WSM should report no snapshots already linked to this workspace
+    // note that if enumerateDataRepoSnapshotReferences is called with the wrong workspaceId,
+    // this test will fail
+    when(wsmDao.enumerateDataRepoSnapshotReferences(eq(workspaceId.id()), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
+    // mock property that only gets enabled in application-control-plane.yml
+    when(dataImportProperties.isPermissionSync()).thenReturn(true);
+    // mock sam call
+    doNothing().when(samDao).addMemberPolicy(anyString(), any(), any(), anyString(), any());
+
+    // set up the job
+    TdrManifestQuartzJob tdrManifestQuartzJob =
+        testSupport.buildTdrManifestQuartzJob(workspaceId.id());
+    JobExecutionContext mockContext =
+        stubJobContext(
+            jobId, v2fManifestResource, collectionId.id(), /* shouldPermissionSync= */ true);
+
+    // ACT
+    // execute the job
+    tdrManifestQuartzJob.executeInternal(jobId, mockContext);
+
+    // ASSERT
+    verify(samDao, times(4)).addMemberPolicy(anyString(), any(), any(), anyString(), any());
   }
 }

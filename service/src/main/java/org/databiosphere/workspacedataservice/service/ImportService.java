@@ -32,13 +32,13 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ImportService {
+  public static final String ARG_PERMISSION_OPTION = "permission_option";
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private final CollectionService collectionService;
   private final SamDao samDao;
   private final JobDao jobDao;
   private final SchedulerDao schedulerDao;
   private final ImportSourceValidator importSourceValidator;
-  private static final String ARG_PERMISSION_OPTION = "permission_option";
 
   public ImportService(
       CollectionService collectionService,

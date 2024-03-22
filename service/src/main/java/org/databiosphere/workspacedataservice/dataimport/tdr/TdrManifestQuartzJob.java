@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport.tdr;
 
 import static org.apache.parquet.avro.AvroReadSupport.READ_INT96_AS_FIXED;
+import static org.databiosphere.workspacedataservice.service.ImportService.ARG_PERMISSION_OPTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
@@ -73,7 +74,6 @@ public class TdrManifestQuartzJob extends QuartzJob {
   private final RecordSourceFactory recordSourceFactory;
   private final SnapshotSupportFactory snapshotSupportFactory;
   private final SamDao samDao;
-  private static final String ARG_PERMISSION_OPTION = "permission_option";
   private static final String RESOURCE_TYPE_DATASNAPSHOT = "datasnapshot";
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());

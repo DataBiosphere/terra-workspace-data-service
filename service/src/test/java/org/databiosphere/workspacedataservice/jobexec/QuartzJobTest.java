@@ -101,7 +101,7 @@ class QuartzJobTest extends TestBase {
     private boolean shouldThrowError = false;
 
     public TestableQuartzJob(String expectedToken, ObservationRegistry registry) {
-      super(registry, dataImportProperties);
+      super(registry, QuartzJobTest.this.dataImportProperties);
       this.expectedToken = expectedToken;
     }
 

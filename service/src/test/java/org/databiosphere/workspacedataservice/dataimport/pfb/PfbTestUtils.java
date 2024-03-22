@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.RELATIONS_ID;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.RELATIONS_NAME;
+import static org.databiosphere.workspacedataservice.service.ImportService.ARG_PERMISSION_OPTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
@@ -150,7 +151,8 @@ public class PfbTestUtils {
     return dataFileStream;
   }
 
-  public static JobExecutionContext stubJobContext(UUID jobId, Resource resource, UUID collectionId)
+  public static JobExecutionContext stubJobContext(
+      UUID jobId, Resource resource, UUID collectionId, boolean shouldPermissionSync)
       throws IOException {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
     when(mockContext.getMergedJobDataMap())
@@ -162,7 +164,9 @@ public class PfbTestUtils {
                     ARG_URL,
                     resource.getURL().toString(),
                     ARG_COLLECTION,
-                    collectionId.toString())));
+                    collectionId.toString(),
+                    ARG_PERMISSION_OPTION,
+                    shouldPermissionSync)));
 
     JobDetailImpl jobDetail = new JobDetailImpl();
     jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
