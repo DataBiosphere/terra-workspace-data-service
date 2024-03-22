@@ -65,19 +65,28 @@ manually. The variables that need to be set are described below. You can also ad
 `~/.zshrc` or similar shell profile. However, in order for the app to run correctly, you still
 have to at least specify data-plane or control-plane.
 
-#### Control Plane Setup
-If you are running locally with the `control-plane` profile, you'll need some additional setup
-in order for pubsub to start up correctly.
-1. Make sure you are authed to gcp. You can do that from the command line with:
-```bash
-gcloud auth application-default login
-```
-2. Make sure the GOOGLE_CLOUD_PROJECT and RAWLS_NOTIFY_TOPIC environment variables are set:
-```bash
-export GOOGLE_CLOUD_PROJECT=broad-dsde-dev
-export RAWLS_NOTIFY_TOPIC=rawls-async-notify-topic-dev
-```
-This will report cWDS pubsubs to the dev Rawls; you may want to use a dummy project/topic instead.
+##### Control Plane Setup
+If you are running locally with the `control-plane` profile, you'll need some additional setup to use PubSub.
+
+1. [Set up application default credentials](https://cloud.google.com/docs/authentication/provide-credentials-adc).
+   ```bash
+   gcloud auth application-default login
+   ```
+
+2. Configure a Google Cloud Project for CWDS to use. This can be done by setting a default project
+with `gcloud` or by setting the `GOOGLE_CLOUD_PROJECT` environment variable.
+   ```bash
+   gcloud config set project broad-dsde-dev
+   export GOOGLE_CLOUD_PROJECT=broad-dsde-dev
+   ```
+
+3. Configure PubSub topics by setting environment variables.
+   ```bash
+   export RAWLS_NOTIFY_TOPIC=rawls-async-notify-topic-dev
+   ```
+
+   This will send imports the dev Rawls; you may want to use a dummy project/topic instead.
+
 ##### SAM_URL
 
 WDS contacts Sam for permission checks. You will need to configure Sam's URL by setting an
