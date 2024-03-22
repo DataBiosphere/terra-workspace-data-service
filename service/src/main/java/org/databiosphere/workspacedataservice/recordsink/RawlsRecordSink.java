@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.spring.storage.GoogleStorageResource;
