@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
-import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -73,7 +72,7 @@ public class RawlsRecordSink implements RecordSink {
    */
   public static RawlsRecordSink create(
       ObjectMapper mapper, GcsStorage storage, PubSub pubSub, ImportDetails importDetails) {
-    String blobName = getBlobName(requireNonNull(importDetails.jobId()));
+    String blobName = getBlobName(importDetails.jobId());
     Blob blob = storage.createBlob(blobName);
     return new RawlsRecordSink(
         new RawlsAttributePrefixer(importDetails.prefixStrategy()),
@@ -143,7 +142,7 @@ public class RawlsRecordSink implements RecordSink {
   }
 
   private void publishToPubSub(ImportDetails importDetails) {
-    UUID jobId = requireNonNull(importDetails.jobId());
+    UUID jobId = importDetails.jobId();
     UUID workspaceId = importDetails.collectionId();
     String user = importDetails.userEmailSupplier().get();
     Map<String, String> message =

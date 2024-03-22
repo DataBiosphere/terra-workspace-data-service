@@ -5,6 +5,8 @@ import static org.databiosphere.workspacedataservice.TestTags.SLOW;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import bio.terra.workspace.model.ResourceList;
@@ -17,6 +19,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
+import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -37,6 +40,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -59,6 +63,7 @@ class PfbQuartzJobDataPlaneE2ETest {
   @Autowired CollectionService collectionService;
   @Autowired PfbTestSupport testSupport;
   @MockBean WorkspaceManagerDao wsmDao;
+  @SpyBean SamDao samDao;
 
   // test resources used below
   @Value("classpath:avro/four_rows.avro")
@@ -269,6 +274,17 @@ class PfbQuartzJobDataPlaneE2ETest {
             RecordType.valueOf("data_release"),
             "data_release.4622cdbf-9836-64a2-c743-e17b0708cbb6.2"),
         relatedRecord2.recordAttributes().getAttributeValue("data_release"));
+  }
+
+  /* import four_rows.avro, and validate the tables and row counts it imported. */
+  @Test
+  void noRequestsForUserEmail() throws IOException, JobExecutionException {
+    testSupport.executePfbImportQuartzJob(collectionId, fourRowsAvroResource);
+
+    // IN THE CONTROL PLANE, importing a PFB requires publishing to pubsub, which requires a call to
+    // Sam to get the user's email. Here in the data plane, we should NOT ever make that request
+    // to Sam, since we don't need it.
+    verify(samDao, never()).getUserEmail(any());
   }
 
   private void assertDataType(
