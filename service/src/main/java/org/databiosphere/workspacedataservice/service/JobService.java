@@ -59,7 +59,7 @@ public class JobService {
 
   /**
    * Process a job status update from Rawls received via PubSub. This method is only used in the
-   * control plane (it's exposed through the control plane only PubSubController).
+   * control plane.
    */
   public void processStatusUpdate(JobStatusUpdate update) {
     UUID jobId = update.jobId();
