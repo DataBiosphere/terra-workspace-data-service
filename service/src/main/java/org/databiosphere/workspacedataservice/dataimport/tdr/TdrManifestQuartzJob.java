@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.parquet.avro.AvroParquetReader;
@@ -113,11 +114,11 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // Collect details needed for import
     UUID targetCollection = getJobDataUUID(jobDataMap, ARG_COLLECTION);
     String authToken = getJobDataString(jobDataMap, ARG_TOKEN);
-    String userEmail = samDao.getUserEmail(BearerToken.of(authToken));
+    Supplier<String> userEmailSupplier = () -> samDao.getUserEmail(BearerToken.of(authToken));
 
     // TDR import is interested in the collectionId (not the workspaceId)
     ImportDetails importDetails =
-        new ImportDetails(jobId, userEmail, targetCollection, PrefixStrategy.TDR);
+        new ImportDetails(jobId, userEmailSupplier, targetCollection, PrefixStrategy.TDR);
 
     // determine the workspace for the target collection
     WorkspaceId workspaceId = collectionService.getWorkspaceId(CollectionId.of(targetCollection));
@@ -173,11 +174,11 @@ public class TdrManifestQuartzJob extends QuartzJob {
     } catch (Exception e) {
       logger.error("Unexpected error in TdrManifestQuartzJob: " + e.getMessage(), e);
       throw new TdrManifestImportException(e.getMessage(), e);
+    } finally {
+      // delete temp files after everything else is completed
+      // Any failed deletions will be removed if/when pod restarts
+      fileDownloadHelper.deleteFileDirectory();
     }
-
-    // delete temp files after everything else is completed
-    // Any failed deletions will be removed if/when pod restarts
-    fileDownloadHelper.deleteFileDirectory();
   }
 
   /**

@@ -1,12 +1,16 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 
 public record ImportDetails(
-    UUID jobId, String userEmail, UUID collectionId, PrefixStrategy prefixStrategy) {
+    UUID jobId,
+    Supplier<String> userEmailSupplier,
+    UUID collectionId,
+    PrefixStrategy prefixStrategy) {
 
-  private static final String DEFAULT_EMAIL = "unknown";
+  private static final Supplier<String> DEFAULT_EMAIL = () -> "unknown";
   private static final UUID DEFAULT_JOB_ID =
       UUID.fromString("00000000-0000-0000-0000-000000000000");
 
