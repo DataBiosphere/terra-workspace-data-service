@@ -58,7 +58,8 @@ public class FileDownloadHelper {
       // TODO: this will throw DirectoryNotEmptyException; we need to delete individual files first
       Files.delete(tempFileDir);
     } catch (IOException e) {
-      logger.error("Error deleting temporary files: {} {}", e.getClass().getName(), e.getMessage());
+      logger.error(
+          "Error deleting temporary files: {} {}", e.getClass().getName(), e.getMessage(), e);
     }
   }
 
