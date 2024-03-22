@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
@@ -61,7 +62,7 @@ class RawlsRecordSinkTest extends TestBase {
 
   private final UUID WORKSPACE_ID = UUID.randomUUID();
   private final UUID JOB_ID = UUID.randomUUID();
-  private final String USER_EMAIL = "userEmail";
+  private final Supplier<String> USER_EMAIL = () -> "userEmail";
 
   @Test
   void translatesEntityFields() {
@@ -165,7 +166,7 @@ class RawlsRecordSinkTest extends TestBase {
     Map<String, String> expectedMessage =
         new ImmutableMap.Builder<String, String>()
             .put("workspaceId", WORKSPACE_ID.toString())
-            .put("userEmail", USER_EMAIL)
+            .put("userEmail", USER_EMAIL.get())
             .put("jobId", JOB_ID.toString())
             .put("upsertFile", storage.getBucketName() + "/" + JOB_ID + ".rawlsUpsert")
             .put("isUpsert", "true")

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
@@ -49,7 +50,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -186,6 +186,8 @@ class TdrManifestQuartzJobTest extends TestBase {
   @Test
   void parseMalformedParquet() throws IOException {
     UUID workspaceId = UUID.randomUUID();
+    UUID jobId = UUID.randomUUID();
+    Supplier<String> emailSupplier = () -> "testEmail";
     TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob(workspaceId);
     TdrManifestImportTable table =
         new TdrManifestImportTable(
@@ -198,20 +200,22 @@ class TdrManifestQuartzJobTest extends TestBase {
         HadoopInputFile.fromPath(
             new Path(malformedParquet.getURL().toString()), new Configuration());
 
-    ImportDetails importDetails = new ImportDetails(workspaceId, PrefixStrategy.TDR);
-    RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails);
+    ImportDetails importDetails =
+        new ImportDetails(jobId, emailSupplier, workspaceId, PrefixStrategy.TDR);
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails)) {
 
-    // Make sure real errors on parsing parquets are not swallowed
-    assertThrows(
-        TdrManifestImportException.class,
-        () ->
-            tdrManifestQuartzJob.importTable(
-                malformedFile, table, recordSink, ImportMode.BASE_ATTRIBUTES));
+      // Make sure real errors on parsing parquets are not swallowed
+      assertThrows(
+          TdrManifestImportException.class,
+          () ->
+              tdrManifestQuartzJob.importTable(
+                  malformedFile, table, recordSink, ImportMode.BASE_ATTRIBUTES));
+    }
   }
 
   @Test
   @Tag(SLOW)
-  void useWorkspaceIdFromCollection() throws JobExecutionException, IOException {
+  void useWorkspaceIdFromCollection() throws IOException {
     // ARRANGE
     // set up ids
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
