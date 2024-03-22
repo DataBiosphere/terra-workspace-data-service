@@ -229,7 +229,7 @@ class PfbQuartzJobControlPlaneE2ETest {
     // upserts as a sample instead of the original base attribute upsert
     Collections.reverse(entities);
     Entity sampleFile = getSampleEntity(entities, "files");
-    assertReferenceAttributeType(sampleFile, "pfb:donors", "donors");
+    assertRelationAttributeType(sampleFile, "pfb:donors", "donors");
     Map<String, Long> actualCounts =
         entities.stream().collect(groupingBy(Entity::entityType, counting()));
 
@@ -274,7 +274,7 @@ class PfbQuartzJobControlPlaneE2ETest {
         .isEqualTo(expected);
   }
 
-  private void assertReferenceAttributeType(
+  private void assertRelationAttributeType(
       Entity entity, String attributeName, String attributeType) {
     var value = getSimpleAttributeByName(entity, attributeName).addUpdateAttribute().value();
     EntityReference entityReference = assertInstanceOf(EntityReference.class, value);

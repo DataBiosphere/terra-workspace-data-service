@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import java.io.IOException;
@@ -31,16 +32,20 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMembe
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeValue;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeEntityReferenceList;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
-import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.EntityReference;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -60,6 +65,9 @@ class RawlsRecordSinkTest extends TestBase {
   @Autowired
   private GcsStorage storage;
 
+  /** ArgumentCaptor for the message passed to {@link PubSub#publishSync(Map)}. */
+  @Captor private ArgumentCaptor<Map<String, String>> pubSubMessageCaptor;
+
   private final UUID WORKSPACE_ID = UUID.randomUUID();
   private final UUID JOB_ID = UUID.randomUUID();
   private final String USER_EMAIL = "userEmail";
@@ -73,13 +81,151 @@ class RawlsRecordSinkTest extends TestBase {
     assertThat(entity.entityType()).isEqualTo("widget");
   }
 
+  @AfterEach
+  void teardown() {
+    storage.getBlobsInBucket().forEach(blob -> storage.deleteBlob(blob.getName()));
+  }
+
   @Test
-  void translatesAddUpdateAttribute() {
+  void translatesBooleanAttribute() {
+    var entities =
+        doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("truth", true)));
+    var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
+    assertThat(operation.addUpdateAttribute().value()).isEqualTo(true);
+  }
+
+  @Test
+  void translatesBooleanArrayAttribute() {
+    var entities =
+        doUpsert(
+            makeRecord(
+                /* type= */ "widget",
+                /* id= */ "id",
+                Map.of("booleans", List.of(true, false, true, true))));
+
+    var entity = assertSingle(entities);
+    assertThat(entity.operations())
+        .containsExactlyElementsOf(
+            expectedArrayCreationOperations(
+                new CreateAttributeValueList("booleans"), List.of(true, false, true, true)));
+  }
+
+  @Test
+  void translatesStringAttribute() {
     var entities =
         doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("someKey", "someValue")));
 
     var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
     assertThat(operation.addUpdateAttribute().value()).isEqualTo("someValue");
+  }
+
+  @Test
+  void translatesStringArrayAttribute() {
+    var entities =
+        doUpsert(
+            makeRecord(
+                /* type= */ "widget",
+                /* id= */ "id",
+                Map.of("strings", List.of("value1", "value2"))));
+
+    var entity = assertSingle(entities);
+    assertThat(entity.operations())
+        .containsExactlyElementsOf(
+            expectedArrayCreationOperations(
+                new CreateAttributeValueList("strings"), List.of("value1", "value2")));
+  }
+
+  @Test
+  void translatesIntegerAttribute() {
+    var entities =
+        doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("someKey", 42)));
+
+    var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
+    assertThat(operation.addUpdateAttribute().value()).isEqualTo(42);
+  }
+
+  @Test
+  void translatesIntegerArrayAttribute() {
+    var entities =
+        doUpsert(
+            makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("integers", List.of(1, 2, 3))));
+
+    var entity = assertSingle(entities);
+    assertThat(entity.operations())
+        .containsExactlyElementsOf(
+            expectedArrayCreationOperations(
+                new CreateAttributeValueList("integers"), List.of(1, 2, 3)));
+  }
+
+  @Test
+  void translatesFloatAttribute() {
+    var entities =
+        doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("someKey", 42.0)));
+
+    var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
+    assertThat(operation.addUpdateAttribute().value()).isEqualTo(42.0);
+  }
+
+  @Test
+  void translatesFloatArrayAttribute() {
+    var entities =
+        doUpsert(
+            makeRecord(
+                /* type= */ "widget", /* id= */ "id", Map.of("floats", List.of(1.0, 2.0, 3.0))));
+
+    var entity = assertSingle(entities);
+    assertThat(entity.operations())
+        .containsExactlyElementsOf(
+            expectedArrayCreationOperations(
+                new CreateAttributeValueList("floats"), List.of(1.0, 2.0, 3.0)));
+  }
+
+  @Test
+  void translatesJsonAttribute() {
+    var entities =
+        doUpsert(
+            makeRecord(
+                /* type= */ "widget",
+                /* id= */ "id",
+                Map.of(
+                    "jsonAttribute",
+                    new ImmutableMap.Builder<String, Object>()
+                        .put("key1", "value1")
+                        .put("key2", "value2")
+                        .build())));
+
+    var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
+    assertThat(operation.addUpdateAttribute().value())
+        .isEqualTo("{\"key1\":\"value1\",\"key2\":\"value2\"}");
+  }
+
+  @Test
+  void translatesJsonArrayAttribute() {
+    var entities =
+        doUpsert(
+            makeRecord(
+                /* type= */ "widget",
+                /* id= */ "id",
+                Map.of(
+                    "jsons",
+                    List.of(
+                        new ImmutableMap.Builder<String, Object>()
+                            .put("key1", "value1")
+                            .put("key2", "value2")
+                            .build(),
+                        new ImmutableMap.Builder<String, Object>()
+                            .put("key3", "value3")
+                            .put("key4", "value4")
+                            .build()))));
+
+    var entity = assertSingle(entities);
+    assertThat(entity.operations())
+        .containsExactlyElementsOf(
+            expectedArrayCreationOperations(
+                new CreateAttributeValueList("jsons"),
+                List.of(
+                    "{\"key1\":\"value1\",\"key2\":\"value2\"}",
+                    "{\"key3\":\"value3\",\"key4\":\"value4\"}")));
   }
 
   @Test
@@ -94,7 +240,7 @@ class RawlsRecordSinkTest extends TestBase {
   }
 
   @Test
-  void translatesMultipleAddUpdateAttributes() {
+  void translatesMultipleAttributes() {
     var entities =
         doUpsert(
             makeRecord(
@@ -115,40 +261,45 @@ class RawlsRecordSinkTest extends TestBase {
   }
 
   @Test
-  void translatesArrayAttributes() {
+  void translatesRelationAttribute() {
     var entities =
         doUpsert(
             makeRecord(
                 /* type= */ "widget",
                 /* id= */ "id",
-                Map.of("arrayKey", List.of("value1", "value2"))));
+                Map.of("widgetRelation", relationAttribute("widget", "widget-id"))));
 
-    var entity = assertSingle(entities);
-    var operations = entity.operations();
-    assertThat(operations).hasSize(4);
-    assertThat(operations.stream().map(AttributeOperation::op).toList())
-        .containsExactly(
-            Op.REMOVE_ATTRIBUTE,
-            Op.CREATE_ATTRIBUTE_VALUE_LIST,
-            Op.ADD_LIST_MEMBER,
-            Op.ADD_LIST_MEMBER);
+    var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
 
-    assertThat(filterOperations(RemoveAttribute.class, operations))
-        .extracting(RemoveAttribute::attributeName)
-        .containsExactly("arrayKey");
-
-    assertThat(filterOperations(CreateAttributeValueList.class, operations))
-        .extracting(CreateAttributeValueList::attributeName)
-        .containsExactly("arrayKey");
-
-    assertThat(filterOperations(AddListMember.class, operations))
-        .containsExactly(
-            new AddListMember("arrayKey", AttributeValue.of("value1")),
-            new AddListMember("arrayKey", AttributeValue.of("value2")));
+    assertThat(operation.addUpdateAttribute().value())
+        .isEqualTo(rawlsEntityReference("widget", "widget-id"));
   }
 
   @Test
-  void batchDeleteNotSupported() throws IOException {
+  void translatesRelationArrayAttribute() {
+    var entities =
+        doUpsert(
+            makeRecord(
+                /* type= */ "widget",
+                /* id= */ "id",
+                Map.of(
+                    "widgetRelations",
+                    List.of(
+                        relationAttribute("widget", "widget-id1"),
+                        relationAttribute("widget", "widget-id2")))));
+
+    var entity = assertSingle(entities);
+    assertThat(entity.operations())
+        .containsExactlyElementsOf(
+            expectedArrayCreationOperations(
+                new CreateAttributeEntityReferenceList("widgetRelations"),
+                List.of(
+                    rawlsEntityReference("widget", "widget-id1"),
+                    rawlsEntityReference("widget", "widget-id2"))));
+  }
+
+  @Test
+  void batchDeleteNotSupported() {
     RecordType ignoredRecordType = RecordType.valueOf("widget");
     List<Record> ignoredEmptyRecords = List.of();
     try (RecordSink recordSink = newRecordSink()) {
@@ -174,11 +325,9 @@ class RawlsRecordSinkTest extends TestBase {
             .put("isCWDS", "true")
             .build();
 
-    ArgumentCaptor<Map> argumentCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(pubSub, times(1)).publishSync(pubSubMessageCaptor.capture());
 
-    verify(pubSub, times(1)).publishSync(argumentCaptor.capture());
-
-    assertThat(argumentCaptor.getValue()).isEqualTo(expectedMessage);
+    assertThat(pubSubMessageCaptor.getValue()).isEqualTo(expectedMessage);
   }
 
   private Record makeRecord(String type, String id, Map<String, Object> attributes) {
@@ -248,11 +397,34 @@ class RawlsRecordSinkTest extends TestBase {
     return assertSingleInstanceOf(type, entity.operations());
   }
 
+  private Iterable<? extends AttributeOperation> expectedArrayCreationOperations(
+      AttributeOperation expectedArrayCreationOperation, List<?> expectedElements) {
+    var attributeName = expectedArrayCreationOperation.attributeName();
+    var expectedOperationsBuilder =
+        new ImmutableList.Builder<AttributeOperation>()
+            .add(new RemoveAttribute(attributeName))
+            .add(expectedArrayCreationOperation);
+    expectedElements.forEach(
+        element ->
+            expectedOperationsBuilder.add(
+                new AddListMember(attributeName, AttributeValue.of(element))));
+
+    return expectedOperationsBuilder.build();
+  }
+
   private static <T extends AttributeOperation> List<T> filterOperations(
       Class<T> type, Collection<? extends AttributeOperation> operations) {
     return operations.stream()
         .filter(type::isInstance)
         .map(type::cast)
         .collect(Collectors.toList());
+  }
+
+  private RelationAttribute relationAttribute(String type, String id) {
+    return new RelationAttribute(RecordType.valueOf(type), id);
+  }
+
+  private EntityReference rawlsEntityReference(String type, String id) {
+    return new EntityReference(RecordType.valueOf(type), id);
   }
 }

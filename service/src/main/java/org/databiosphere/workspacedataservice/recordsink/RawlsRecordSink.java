@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.spring.storage.GoogleStorageResource;
 import com.google.cloud.storage.Blob;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.MoreCollectors;
 import com.google.mu.util.stream.BiStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -21,6 +22,7 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMembe
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeValue;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeEntityReferenceList;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.EntityReference;
@@ -117,7 +119,7 @@ public class RawlsRecordSink implements RecordSink {
     return new Entity(record.getId(), record.getRecordType().toString(), makeOperations(record));
   }
 
-  private List<? extends AttributeOperation> makeOperations(Record record) {
+  private List<AttributeOperation> makeOperations(Record record) {
     return BiStream.from(record.getAttributes().attributeSet())
         .mapKeys(
             attributeName ->
@@ -127,16 +129,29 @@ public class RawlsRecordSink implements RecordSink {
         .toList();
   }
 
-  private Stream<? extends AttributeOperation> toOperations(String name, Object attributeValue) {
+  private Stream<AttributeOperation> toOperations(String name, Object attributeValue) {
     if (attributeValue instanceof List<?> values) {
+      var createListCommand =
+          containsRelations(values)
+              ? new CreateAttributeEntityReferenceList(name)
+              : new CreateAttributeValueList(name);
+
       return Stream.concat(
-          Stream.of(new RemoveAttribute(name), new CreateAttributeValueList(name)),
+          Stream.of(new RemoveAttribute(name), createListCommand),
           values.stream()
               .map(this::maybeCoerceRelation)
               .map(value -> new AddListMember(name, value)));
     }
 
     return Stream.of(new AddUpdateAttribute(name, maybeCoerceRelation(attributeValue)));
+  }
+
+  private boolean containsRelations(List<?> values) {
+    return values.stream()
+        .map(Object::getClass)
+        .distinct()
+        .collect(MoreCollectors.onlyElement())
+        .equals(RelationAttribute.class);
   }
 
   private AttributeValue maybeCoerceRelation(Object originalValue) {
