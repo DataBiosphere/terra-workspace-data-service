@@ -48,7 +48,6 @@ import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
-import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -169,10 +168,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
                               .record()
                               .withRecordType(entry.getKey())
                               .ofQuantity(entry.getValue())));
-    } catch (DataImportException e) {
-      throw new TdrManifestImportException(e.getMessage(), e);
     } catch (Exception e) {
-      logger.error("Unexpected error in TdrManifestQuartzJob: " + e.getMessage(), e);
       throw new TdrManifestImportException(e.getMessage(), e);
     } finally {
       // delete temp files after everything else is completed
