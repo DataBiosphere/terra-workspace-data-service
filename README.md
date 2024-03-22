@@ -72,9 +72,9 @@ in order for pubsub to start up correctly.
 ```bash
 gcloud auth application-default login
 ```
-2. Make sure the SERVICE_GOOGLE_PROJECT and RAWLS_NOTIFY_TOPIC environment variables are set:
+2. Make sure the GOOGLE_CLOUD_PROJECT and RAWLS_NOTIFY_TOPIC environment variables are set:
 ```bash
-export SERVICE_GOOGLE_PROJECT=broad-dsde-dev
+export GOOGLE_CLOUD_PROJECT=broad-dsde-dev
 export RAWLS_NOTIFY_TOPIC=rawls-async-notify-topic-dev
 ```
 This will report cWDS pubsubs to the dev Rawls; you may want to use a dummy project/topic instead.

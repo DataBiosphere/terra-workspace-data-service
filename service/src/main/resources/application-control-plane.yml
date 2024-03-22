@@ -18,7 +18,6 @@ spring:
     gcp:
       core:
         enabled: true
-      project-id: ${SERVICE_GOOGLE_PROJECT}
       pubsub:
         topic: ${RAWLS_NOTIFY_TOPIC}
         enabled: true
