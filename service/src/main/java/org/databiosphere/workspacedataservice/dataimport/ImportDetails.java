@@ -23,4 +23,22 @@ public record ImportDetails(
   public ImportDetails(UUID collectionId) {
     this(DEFAULT_JOB_ID, DEFAULT_EMAIL_SUPPLIER, collectionId, PrefixStrategy.NONE);
   }
+
+  /**
+   * Override to ensure we never serialize the userEmailSupplier, which can contain an auth token.
+   *
+   * @return serialized String
+   */
+  @Override
+  public String toString() {
+    return "ImportDetails{"
+        + "jobId="
+        + jobId
+        + ", userEmailSupplier=Supplier<String>"
+        + ", collectionId="
+        + collectionId
+        + ", prefixStrategy="
+        + prefixStrategy
+        + '}';
+  }
 }
