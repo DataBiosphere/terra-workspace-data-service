@@ -56,9 +56,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
 @DirtiesContext
 @SpringBootTest
+@ActiveProfiles("mock-sam")
 class TdrManifestQuartzJobTest extends TestBase {
 
   @MockBean JobDao jobDao;

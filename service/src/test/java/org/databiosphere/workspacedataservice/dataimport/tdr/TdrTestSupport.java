@@ -12,6 +12,7 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
+import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Component;
 @Component
 class TdrTestSupport {
   @Autowired private JobDao jobDao;
+  @Autowired private SamDao samDao;
   @Autowired private RecordSourceFactory recordSourceFactory;
   @Autowired private RecordSinkFactory recordSinkFactory;
   @Autowired private BatchWriteService batchWriteService;
@@ -44,7 +46,8 @@ class TdrTestSupport {
         objectMapper,
         observationRegistry,
         dataImportProperties,
-        snapshotSupportFactory) {
+        snapshotSupportFactory,
+        samDao) {
       @Override
       protected URL parseUrl(String path) {
         if (path.startsWith("classpath:")) {
