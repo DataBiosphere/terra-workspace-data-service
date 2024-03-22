@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.pubsub;
 
-import com.google.cloud.spring.core.GcpProjectIdProvider;
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -14,9 +13,7 @@ public class PubSubConfig {
   @Bean
   @ConditionalOnProperty(name = "spring.cloud.gcp.pubsub.enabled", havingValue = "true")
   PubSub getPubSub(
-      GcpProjectIdProvider projectIdProvider,
-      PubSubTemplate pubSubTemplate,
-      @Value("${spring.cloud.gcp.pubsub.topic}") String topic) {
-    return new ImportPubSub(pubSubTemplate, topic, projectIdProvider.getProjectId());
+      PubSubTemplate pubSubTemplate, @Value("${spring.cloud.gcp.pubsub.topic}") String topic) {
+    return new ImportPubSub(pubSubTemplate, topic);
   }
 }

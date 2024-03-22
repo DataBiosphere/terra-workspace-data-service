@@ -67,6 +67,8 @@ spring:
 
   cloud:
     gcp:
+      core:
+        enabled: false
       storage:
         enabled: false
 
