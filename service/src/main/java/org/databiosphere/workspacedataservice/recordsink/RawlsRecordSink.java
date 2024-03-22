@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.spring.storage.GoogleStorageResource;
 import com.google.cloud.storage.Blob;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.MoreCollectors;
 import com.google.mu.util.stream.BiStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -148,10 +147,9 @@ public class RawlsRecordSink implements RecordSink {
 
   private boolean containsRelations(List<?> values) {
     return values.stream()
+        .filter(Objects::nonNull)
         .map(Object::getClass)
-        .distinct()
-        .collect(MoreCollectors.onlyElement())
-        .equals(RelationAttribute.class);
+        .anyMatch(RelationAttribute.class::equals);
   }
 
   private AttributeValue maybeCoerceRelation(Object originalValue) {
