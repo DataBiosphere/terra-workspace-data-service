@@ -22,7 +22,7 @@ public class ImportPubSub implements PubSub {
   public String publishSync(Map<String, String> message) {
     // PubSubTemplate.publish returns a future
     // Rawls expects the actual data to be in the headers rather than the payload
-    CompletableFuture<String> publishFuture = pubSubTemplate.publish(topic, "b''", message);
+    CompletableFuture<String> publishFuture = pubSubTemplate.publish(topic, "", message);
     // we must wait for the future to complete before returning, else we'll have spun off an
     // unwatched thread
     return publishFuture.join();
