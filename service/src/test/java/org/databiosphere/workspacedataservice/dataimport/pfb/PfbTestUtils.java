@@ -57,6 +57,8 @@ public class PfbTestUtils {
               new Schema.Field("object", OBJECT_SCHEMA),
               new Schema.Field("relations", RELATION_ARRAY_SCHEMA)));
 
+  public static final String BEARER_TOKEN = "expectedToken";
+
   /**
    * Create a GenericRecord with the given id and name and an empty set of object attributes
    *
@@ -156,7 +158,7 @@ public class PfbTestUtils {
             new JobDataMap(
                 Map.of(
                     ARG_TOKEN,
-                    "expectedToken",
+                    BEARER_TOKEN,
                     ARG_URL,
                     resource.getURL().toString(),
                     ARG_COLLECTION,

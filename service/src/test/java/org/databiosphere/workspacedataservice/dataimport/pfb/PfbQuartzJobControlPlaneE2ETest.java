@@ -240,12 +240,13 @@ class PfbQuartzJobControlPlaneE2ETest {
   @Tag(SLOW)
   void pubSubRequestsUserEmail() throws JobExecutionException, IOException {
     // Arrange / Act
-    UUID jobId = testSupport.executePfbImportQuartzJob(collectionId, minimalDataPfb);
+    testSupport.executePfbImportQuartzJob(collectionId, minimalDataPfb);
 
     // importing a PFB requires publishing to pubsub. As part of generating the pubsub message,
     // we query Sam for the user's email. Verify we made that call correctly.
-    // the "expectedToken" is the value from PfbTestUtils.stubJobContext().
-    verify(samDao, times(1)).getUserEmail(BearerToken.of("expectedToken"));
+    // the PfbTestUtils.BEARER_TOKEN is expected here because the job context was created from
+    // PfbTestUtils.stubJobContext().
+    verify(samDao, times(1)).getUserEmail(BearerToken.of(PfbTestUtils.BEARER_TOKEN));
   }
 
   private ImmutableMap<String, String> expectedPubSubMessageFor(UUID jobId) {
