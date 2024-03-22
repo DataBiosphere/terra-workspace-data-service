@@ -11,22 +11,9 @@ public class PubSubConfig {
 
   // when Pub/Sub autoconfiguration is enabled, use the real ImportPubSub bean
   @Bean
-  @ConditionalOnProperty(
-      name = "spring.cloud.gcp.pubsub.enabled",
-      havingValue = "true",
-      matchIfMissing = true)
-  PubSub applicationDefaultCredentialsPubSub(
+  @ConditionalOnProperty(name = "spring.cloud.gcp.pubsub.enabled", havingValue = "true")
+  PubSub getPubSub(
       PubSubTemplate pubSubTemplate, @Value("${spring.cloud.gcp.pubsub.topic}") String topic) {
     return new ImportPubSub(pubSubTemplate, topic);
-  }
-
-  // when Pub/Sub autoconfiguration is disabled, use a noop bean which has no other dependencies
-  @Bean
-  @ConditionalOnProperty(
-      name = "spring.cloud.gcp.pubsub.enabled",
-      havingValue = "false",
-      matchIfMissing = false)
-  PubSub noopPubSub() {
-    return new NoopPubSub();
   }
 }
