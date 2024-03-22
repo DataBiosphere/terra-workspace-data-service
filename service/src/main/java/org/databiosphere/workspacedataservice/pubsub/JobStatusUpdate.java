@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.pubsub;
 
+import com.google.pubsub.v1.PubsubMessage;
 import java.util.Map;
 import java.util.UUID;
 import javax.annotation.Nullable;
@@ -12,9 +13,9 @@ public record JobStatusUpdate(
     this(jobId, currentStatus, newStatus, null);
   }
 
-  public static JobStatusUpdate createFromPubSubMessage(PubSubMessage message) {
+  public static JobStatusUpdate createFromPubSubMessage(PubsubMessage message) {
     try {
-      Map<String, String> attributes = message.attributes();
+      Map<String, String> attributes = message.getAttributesMap();
       UUID jobId = UUID.fromString(attributes.get("import_id"));
       StatusEnum newStatus = rawlsStatusToJobStatus(attributes.get("new_status"));
       StatusEnum currentStatus = rawlsStatusToJobStatus(attributes.get("current_status"));
