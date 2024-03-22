@@ -66,13 +66,11 @@ import org.springframework.util.StreamUtils;
  * parsing the PFB, and generating the JSON that gets stored in a bucket and communicated to Rawls
  * via pubsub.
  */
-@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "control-plane"})
+@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "control-plane", "test"})
 @DirtiesContext
 @SpringBootTest
 @TestPropertySource(
     properties = {
-      // turn off pubsub autoconfiguration for tests
-      "spring.cloud.gcp.pubsub.enabled=false",
       // Allow file imports to test with files from resources.
       "twds.data-import.allowed-schemes=file"
     })

@@ -23,14 +23,12 @@ import org.springframework.test.context.TestPropertySource;
  * which will automatically provide a hint if it detects a test failure due to a {@link
  * ConfigurationException}.
  */
-@ActiveProfiles({"data-plane"})
+@ActiveProfiles({"data-plane", "test"})
 @TestPropertySource(
     properties = {
       // data-plane mode requires a workspace-id to be set
       // example uuid from https://en.wikipedia.org/wiki/Universally_unique_identifier
       "twds.instance.workspace-id=123e4567-e89b-12d3-a456-426614174000",
-      // turn off pubsub autoconfiguration for tests
-      "spring.cloud.gcp.pubsub.enabled=false",
       // aggressive retry settings so unit tests don't run too long
       "rest.retry.maxAttempts=2",
       "rest.retry.backoff.delay=3",

@@ -14,14 +14,12 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
-@ActiveProfiles("control-plane")
+@ActiveProfiles(profiles = {"control-plane", "test"})
 @TestPropertySource(
     properties = {
       // TODO(AJ-1656): control-plane should not require instance config in any form, this is a hold
       //   over from direct injection of @Value('twds.instance.workspace-id')
       "twds.instance.workspace-id=",
-      // turn off pubsub autoconfiguration for tests
-      "spring.cloud.gcp.pubsub.enabled=false"
     })
 @DirtiesContext
 class TwdsPropertiesControlPlaneTest {

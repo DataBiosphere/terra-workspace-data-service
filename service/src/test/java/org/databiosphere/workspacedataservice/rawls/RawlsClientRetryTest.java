@@ -35,14 +35,14 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 @DirtiesContext
-@ActiveProfiles(value = "control-plane", inheritProfiles = false)
+@ActiveProfiles(
+    value = {"control-plane", "test"},
+    inheritProfiles = false)
 @SpringBootTest
 @TestPropertySource(
     properties = {
       // URI parsing requires a valid hostname here, even if we don't contact this host
       "rawlsUrl=https://localhost/",
-      // turn off pubsub autoconfiguration for tests
-      "spring.cloud.gcp.pubsub.enabled=false",
       // allow 3 retry attempts, so we can better verify retries
       "rest.retry.maxAttempts=3",
       // with aggressive delay settings so unit tests don't run too long

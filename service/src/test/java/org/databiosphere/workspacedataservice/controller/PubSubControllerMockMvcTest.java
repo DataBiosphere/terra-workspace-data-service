@@ -21,16 +21,10 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
 @ActiveProfiles(
     inheritProfiles = false,
-    profiles = {"control-plane", "mock-sam"})
-@TestPropertySource(
-    properties = {
-      // turn off pubsub autoconfiguration for tests
-      "spring.cloud.gcp.pubsub.enabled=false"
-    })
+    profiles = {"control-plane", "mock-sam", "test"})
 class PubSubControllerMockMvcTest extends MockMvcTestBase {
   @MockBean private JobDao jobDao;
   @MockBean private CollectionDao collectionDao;
