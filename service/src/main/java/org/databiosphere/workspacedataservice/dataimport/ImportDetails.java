@@ -4,10 +4,12 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 
 public record ImportDetails(
     UUID jobId,
     Supplier<String> userEmailSupplier,
+    WorkspaceId workspaceId,
     CollectionId collectionId,
     PrefixStrategy prefixStrategy) {
 
@@ -22,6 +24,8 @@ public record ImportDetails(
         + "jobId="
         + jobId
         + ", userEmailSupplier=Supplier<String>"
+        + ", workspaceId="
+        + workspaceId
         + ", collectionId="
         + collectionId
         + ", prefixStrategy="

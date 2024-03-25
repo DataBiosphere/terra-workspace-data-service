@@ -43,6 +43,7 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -386,7 +387,12 @@ class RawlsRecordSinkTest extends TestBase {
         mapper,
         storage,
         pubSub,
-        new ImportDetails(JOB_ID, USER_EMAIL, CollectionId.of(WORKSPACE_ID), PrefixStrategy.NONE));
+        new ImportDetails(
+            JOB_ID,
+            USER_EMAIL,
+            WorkspaceId.of(WORKSPACE_ID),
+            CollectionId.of(WORKSPACE_ID),
+            PrefixStrategy.NONE));
   }
 
   // assert that the given collection has exactly one item, then return it

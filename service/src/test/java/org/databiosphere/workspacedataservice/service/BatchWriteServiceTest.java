@@ -22,16 +22,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils;
-import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource;
@@ -266,12 +263,7 @@ class BatchWriteServiceTest extends TestBase {
   private BatchWriteResult batchWritePfbStream(
       DataFileStream<GenericRecord> pfbStream, String primaryKey, ImportMode importMode)
       throws IOException {
-    UUID jobId = UUID.randomUUID();
-    Supplier<String> emailSupplier = () -> "testEmail";
-    try (RecordSink recordSink =
-        recordSinkFactory.buildRecordSink(
-            new ImportDetails(
-                jobId, emailSupplier, CollectionId.of(COLLECTION), PrefixStrategy.PFB))) {
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(CollectionId.of(COLLECTION))) {
       return batchWriteService.batchWrite(
           recordSourceFactory.forPfb(pfbStream, importMode),
           recordSink,
