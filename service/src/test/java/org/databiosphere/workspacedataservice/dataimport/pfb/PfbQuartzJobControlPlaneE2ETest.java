@@ -14,6 +14,7 @@ import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.RE
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -42,7 +43,9 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttrib
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.EntityReference;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
 import org.databiosphere.workspacedataservice.sam.MockSamUsersApi;
+import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.CollectionService;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.junit.jupiter.api.AfterEach;
@@ -91,6 +94,7 @@ class PfbQuartzJobControlPlaneE2ETest {
   GcsStorage storage;
 
   @SpyBean PubSub pubSub;
+  @SpyBean SamDao samDao;
   @MockBean RawlsClient rawlsClient;
 
   /** ArgumentCaptor for the message passed to {@link PubSub#publishSync(Map)}. */
@@ -234,6 +238,19 @@ class PfbQuartzJobControlPlaneE2ETest {
         entities.stream().collect(groupingBy(Entity::entityType, counting()));
 
     assertThat(actualCounts).isEqualTo(expectedCounts);
+  }
+
+  @Test
+  @Tag(SLOW)
+  void pubSubRequestsUserEmail() throws JobExecutionException, IOException {
+    // Arrange / Act
+    testSupport.executePfbImportQuartzJob(collectionId, minimalDataPfb);
+
+    // importing a PFB requires publishing to pubsub. As part of generating the pubsub message,
+    // we query Sam for the user's email. Verify we made that call correctly.
+    // the PfbTestUtils.BEARER_TOKEN is expected here because the job context was created from
+    // PfbTestUtils.stubJobContext().
+    verify(samDao, times(1)).getUserEmail(BearerToken.of(PfbTestUtils.BEARER_TOKEN));
   }
 
   private ImmutableMap<String, String> expectedPubSubMessageFor(UUID jobId) {

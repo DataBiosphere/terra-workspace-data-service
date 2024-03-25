@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -103,10 +104,10 @@ public class PfbQuartzJob extends QuartzJob {
     // Collect details needed for import
     UUID targetCollection = getJobDataUUID(jobDataMap, ARG_COLLECTION);
     String authToken = getJobDataString(jobDataMap, ARG_TOKEN);
-    String userEmail = samDao.getUserEmail(BearerToken.of(authToken));
+    Supplier<String> userEmailSupplier = () -> samDao.getUserEmail(BearerToken.of(authToken));
 
     ImportDetails importDetails =
-        new ImportDetails(jobId, userEmail, targetCollection, PrefixStrategy.PFB);
+        new ImportDetails(jobId, userEmailSupplier, targetCollection, PrefixStrategy.PFB);
 
     // Import all the tables and rows inside the PFB.
     //

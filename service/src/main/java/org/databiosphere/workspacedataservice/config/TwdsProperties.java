@@ -1,13 +1,13 @@
 package org.databiosphere.workspacedataservice.config;
 
 import java.util.Optional;
-import javax.annotation.Nullable;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.lang.Nullable;
 
 /** Top-level ConfigurationProperties class representing the "twds" hierarchy of properties. */
 @Configuration

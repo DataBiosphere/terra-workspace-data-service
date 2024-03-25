@@ -32,6 +32,8 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.function.ThrowingConsumer;
 
 /**
@@ -45,6 +47,8 @@ public class RawlsRecordSink implements RecordSink {
 
   private final JsonWriter jsonWriter;
   private final Blob blob;
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(RawlsRecordSink.class);
 
   RawlsRecordSink(
       RawlsAttributePrefixer attributePrefixer,
@@ -167,7 +171,11 @@ public class RawlsRecordSink implements RecordSink {
   private void publishToPubSub(ImportDetails importDetails) {
     UUID jobId = requireNonNull(importDetails.jobId());
     UUID workspaceId = importDetails.collectionId();
-    String user = requireNonNull(importDetails.userEmail());
+    String user =
+        requireNonNull(
+                importDetails.userEmailSupplier(),
+                "Expected ImportDetails.userEmailSupplier to be non-null for async imports")
+            .get();
     Map<String, String> message =
         new ImmutableMap.Builder<String, String>()
             .put("workspaceId", workspaceId.toString())
@@ -177,7 +185,9 @@ public class RawlsRecordSink implements RecordSink {
             .put("isUpsert", "true")
             .put("isCWDS", "true")
             .build();
-    pubSub.publishSync(message);
+    LOGGER.info("Publishing message to pub/sub for job {} ...", jobId);
+    String publishResult = pubSub.publishSync(message);
+    LOGGER.info("Pub/sub publishing complete for job {}: {}", jobId, publishResult);
   }
 
   /**
