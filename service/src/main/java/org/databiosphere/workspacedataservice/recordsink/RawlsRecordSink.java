@@ -114,15 +114,16 @@ public class RawlsRecordSink implements RecordSink {
     publishToPubSub(importDetails);
   }
 
-  private Entity toEntity(Record record) {
-    return new Entity(record.getId(), record.getRecordType().toString(), makeOperations(record));
+  private Entity toEntity(Record wdsRecord) {
+    return new Entity(
+        wdsRecord.getId(), wdsRecord.getRecordType().toString(), makeOperations(wdsRecord));
   }
 
-  private List<AttributeOperation> makeOperations(Record record) {
-    return BiStream.from(record.getAttributes().attributeSet())
+  private List<AttributeOperation> makeOperations(Record wdsRecord) {
+    return BiStream.from(wdsRecord.getAttributes().attributeSet())
         .mapKeys(
             attributeName ->
-                attributePrefixer.prefix(attributeName, record.getRecordType().getName()))
+                attributePrefixer.prefix(attributeName, wdsRecord.getRecordType().getName()))
         .filterValues(Objects::nonNull)
         .flatMapToObj(this::toOperations)
         .toList();
