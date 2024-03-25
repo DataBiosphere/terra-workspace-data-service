@@ -107,11 +107,10 @@ public class RawlsModel {
       return new AttributeValue(value);
     }
 
-    @Override
+    /** expose {@link #value() as the JSON value} */
     @JsonValue
-    @SuppressWarnings("java:S6207") // allow redundant #value(), which is here for annotation
-    public Object value() {
-      return value;
+    public Object getValue() {
+      return value();
     }
   }
 
