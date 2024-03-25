@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
@@ -146,7 +147,7 @@ class RawlsRecordSinkPrefixingTest extends TestBase {
   }
 
   private List<Entity> doUpsert(Record record, PrefixStrategy prefixStrategy) {
-    String USER_EMAIL = "userEmail";
+    Supplier<String> USER_EMAIL = () -> "userEmail";
     var recordList = List.of(record);
     var recordType = recordList.stream().map(Record::getRecordType).collect(onlyElement());
     var blobName = "";

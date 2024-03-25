@@ -20,14 +20,20 @@ import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeValue;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeEntityReferenceList;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.EntityReference;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.function.ThrowingConsumer;
 
 /**
@@ -41,6 +47,8 @@ public class RawlsRecordSink implements RecordSink {
 
   private final JsonWriter jsonWriter;
   private final Blob blob;
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(RawlsRecordSink.class);
 
   RawlsRecordSink(
       RawlsAttributePrefixer attributePrefixer,
@@ -110,28 +118,50 @@ public class RawlsRecordSink implements RecordSink {
     publishToPubSub(importDetails);
   }
 
-  private Entity toEntity(Record record) {
-    return new Entity(record.getId(), record.getRecordType().toString(), makeOperations(record));
+  private Entity toEntity(Record wdsRecord) {
+    return new Entity(
+        wdsRecord.getId(), wdsRecord.getRecordType().toString(), makeOperations(wdsRecord));
   }
 
-  private List<? extends AttributeOperation> makeOperations(Record record) {
-    return BiStream.from(record.getAttributes().attributeSet())
+  private List<AttributeOperation> makeOperations(Record wdsRecord) {
+    return BiStream.from(wdsRecord.getAttributes().attributeSet())
         .mapKeys(
             attributeName ->
-                attributePrefixer.prefix(attributeName, record.getRecordType().getName()))
+                attributePrefixer.prefix(attributeName, wdsRecord.getRecordType().getName()))
         .filterValues(Objects::nonNull)
         .flatMapToObj(this::toOperations)
         .toList();
   }
 
-  private Stream<? extends AttributeOperation> toOperations(String name, Object attributeValue) {
+  private Stream<AttributeOperation> toOperations(String name, Object attributeValue) {
     if (attributeValue instanceof List<?> values) {
+      var createListCommand =
+          containsRelations(values)
+              ? new CreateAttributeEntityReferenceList(name)
+              : new CreateAttributeValueList(name);
+
       return Stream.concat(
-          Stream.of(new RemoveAttribute(name), new CreateAttributeValueList(name)),
-          values.stream().map(value -> new AddListMember(name, value)));
+          Stream.of(new RemoveAttribute(name), createListCommand),
+          values.stream()
+              .map(this::maybeCoerceRelation)
+              .map(value -> new AddListMember(name, value)));
     }
 
-    return Stream.of(new AddUpdateAttribute(name, attributeValue));
+    return Stream.of(new AddUpdateAttribute(name, maybeCoerceRelation(attributeValue)));
+  }
+
+  private boolean containsRelations(List<?> values) {
+    return values.stream()
+        .filter(Objects::nonNull)
+        .map(Object::getClass)
+        .anyMatch(RelationAttribute.class::equals);
+  }
+
+  private AttributeValue maybeCoerceRelation(Object originalValue) {
+    if (originalValue instanceof RelationAttribute relationAttribute) {
+      return AttributeValue.of(EntityReference.fromRelationAttribute(relationAttribute));
+    }
+    return AttributeValue.of(originalValue);
   }
 
   static String getBlobName(UUID jobId) {
@@ -141,7 +171,11 @@ public class RawlsRecordSink implements RecordSink {
   private void publishToPubSub(ImportDetails importDetails) {
     UUID jobId = requireNonNull(importDetails.jobId());
     UUID workspaceId = importDetails.collectionId();
-    String user = requireNonNull(importDetails.userEmail());
+    String user =
+        requireNonNull(
+                importDetails.userEmailSupplier(),
+                "Expected ImportDetails.userEmailSupplier to be non-null for async imports")
+            .get();
     Map<String, String> message =
         new ImmutableMap.Builder<String, String>()
             .put("workspaceId", workspaceId.toString())
@@ -151,7 +185,9 @@ public class RawlsRecordSink implements RecordSink {
             .put("isUpsert", "true")
             .put("isCWDS", "true")
             .build();
-    pubSub.publishSync(message);
+    LOGGER.info("Publishing message to pub/sub for job {} ...", jobId);
+    String publishResult = pubSub.publishSync(message);
+    LOGGER.info("Pub/sub publishing complete for job {}: {}", jobId, publishResult);
   }
 
   /**

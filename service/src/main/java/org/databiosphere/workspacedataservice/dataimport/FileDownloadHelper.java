@@ -57,7 +57,8 @@ public class FileDownloadHelper {
     try {
       FileUtils.deleteDirectory(tempFileDir.toFile());
     } catch (IOException e) {
-      logger.error("Error deleting temporary files: {}", e.getMessage());
+      logger.error(
+          "Error deleting temporary files: {} {}", e.getClass().getName(), e.getMessage(), e);
     }
   }
 

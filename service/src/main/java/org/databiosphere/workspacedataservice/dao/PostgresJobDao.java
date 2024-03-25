@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
 
 /** Read/write jobs via the sys_wds.job Postgres table */
@@ -129,6 +130,7 @@ public class PostgresJobDao implements JobDao {
    */
   @Override
   public GenericJobServerModel fail(UUID jobId, String errorMessage) {
+    logger.error("Job {} failed: {}", jobId, errorMessage);
     return update(jobId, StatusEnum.ERROR, errorMessage, null);
   }
 
@@ -154,11 +156,15 @@ public class PostgresJobDao implements JobDao {
    */
   @Override
   public GenericJobServerModel fail(UUID jobId, String errorMessage, Exception e) {
+    logger.error("Job {} failed: {}", jobId, errorMessage, e);
     return update(jobId, StatusEnum.ERROR, errorMessage, e.getStackTrace());
   }
 
   private GenericJobServerModel update(
-      UUID jobId, StatusEnum status, String errorMessage, StackTraceElement[] stackTrace) {
+      UUID jobId,
+      StatusEnum status,
+      @Nullable String errorMessage,
+      @Nullable StackTraceElement[] stackTrace) {
 
     // start our sql statement and map of params
     StringBuilder sb = new StringBuilder("update sys_wds.job set status = :status");

@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
@@ -264,8 +265,11 @@ class BatchWriteServiceTest extends TestBase {
   private BatchWriteResult batchWritePfbStream(
       DataFileStream<GenericRecord> pfbStream, String primaryKey, ImportMode importMode)
       throws IOException {
+    UUID jobId = UUID.randomUUID();
+    Supplier<String> emailSupplier = () -> "testEmail";
     try (RecordSink recordSink =
-        recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION, PrefixStrategy.PFB))) {
+        recordSinkFactory.buildRecordSink(
+            new ImportDetails(jobId, emailSupplier, COLLECTION, PrefixStrategy.PFB))) {
       return batchWriteService.batchWrite(
           recordSourceFactory.forPfb(pfbStream, importMode),
           recordSink,

@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dataimport.tdr;
 
 import static org.apache.parquet.avro.AvroReadSupport.READ_INT96_AS_FIXED;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
+import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
 import bio.terra.datarepo.model.RelationshipModel;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.parquet.avro.AvroParquetReader;
@@ -41,12 +43,13 @@ import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
+import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
-import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
+import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -67,6 +70,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
   private final ObjectMapper mapper;
   private final RecordSourceFactory recordSourceFactory;
   private final SnapshotSupportFactory snapshotSupportFactory;
+  private final SamDao samDao;
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -80,7 +84,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
       ObjectMapper mapper,
       ObservationRegistry observationRegistry,
       DataImportProperties dataImportProperties,
-      SnapshotSupportFactory snapshotSupportFactory) {
+      SnapshotSupportFactory snapshotSupportFactory,
+      SamDao samDao) {
     super(observationRegistry, dataImportProperties);
     this.jobDao = jobDao;
     this.recordSinkFactory = recordSinkFactory;
@@ -90,6 +95,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     this.activityLogger = activityLogger;
     this.mapper = mapper;
     this.snapshotSupportFactory = snapshotSupportFactory;
+    this.samDao = samDao;
   }
 
   @Override
@@ -106,9 +112,12 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
     // Collect details needed for import
     UUID targetCollection = getJobDataUUID(jobDataMap, ARG_COLLECTION);
+    String authToken = getJobDataString(jobDataMap, ARG_TOKEN);
+    Supplier<String> userEmailSupplier = () -> samDao.getUserEmail(BearerToken.of(authToken));
 
     // TDR import is interested in the collectionId (not the workspaceId)
-    ImportDetails importDetails = new ImportDetails(targetCollection, PrefixStrategy.TDR);
+    ImportDetails importDetails =
+        new ImportDetails(jobId, userEmailSupplier, targetCollection, PrefixStrategy.TDR);
 
     // determine the workspace for the target collection
     WorkspaceId workspaceId = collectionService.getWorkspaceId(CollectionId.of(targetCollection));
@@ -159,13 +168,13 @@ public class TdrManifestQuartzJob extends QuartzJob {
                               .record()
                               .withRecordType(entry.getKey())
                               .ofQuantity(entry.getValue())));
-    } catch (DataImportException e) {
+    } catch (Exception e) {
       throw new TdrManifestImportException(e.getMessage(), e);
+    } finally {
+      // delete temp files after everything else is completed
+      // Any failed deletions will be removed if/when pod restarts
+      fileDownloadHelper.deleteFileDirectory();
     }
-
-    // delete temp files after everything else is completed
-    // Any failed deletions will be removed if/when pod restarts
-    fileDownloadHelper.deleteFileDirectory();
   }
 
   /**
