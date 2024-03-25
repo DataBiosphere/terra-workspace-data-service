@@ -100,14 +100,20 @@ class QuartzJobTest extends TestBase {
     private final String expectedToken;
     private boolean shouldThrowError = false;
 
-    public TestableQuartzJob(String expectedToken, ObservationRegistry registry) {
-      super(registry, QuartzJobTest.this.dataImportProperties);
+    public TestableQuartzJob(
+        String expectedToken,
+        ObservationRegistry registry,
+        DataImportProperties dataImportProperties) {
+      super(registry, dataImportProperties);
       this.expectedToken = expectedToken;
     }
 
     public TestableQuartzJob(
-        String expectedToken, ObservationRegistry registry, boolean shouldThrowError) {
-      this(expectedToken, registry);
+        String expectedToken,
+        ObservationRegistry registry,
+        boolean shouldThrowError,
+        DataImportProperties dataImportProperties) {
+      this(expectedToken, registry, dataImportProperties);
       this.shouldThrowError = shouldThrowError;
     }
 
@@ -135,7 +141,8 @@ class QuartzJobTest extends TestBase {
         TokenContextUtil.getToken().isEmpty(), "no token should exist before running the job");
     // execute the TestableQuartzJob, which asserts that the token passed properly from the
     // JobDataMap into job context and is therefore retrievable via TokenContextUtil
-    new TestableQuartzJob(expectedToken, observationRegistry).execute(mockContext);
+    new TestableQuartzJob(expectedToken, observationRegistry, dataImportProperties)
+        .execute(mockContext);
     // assert that the token is cleaned up and no longer reachable via TokenContextUtil
     assertTrue(
         TokenContextUtil.getToken().isEmpty(), "no token should exist after running the job");
@@ -152,7 +159,8 @@ class QuartzJobTest extends TestBase {
         assertInstanceOf(TestObservationRegistry.class, observationRegistry);
 
     // execute the TestableQuartzJob, then use testObservationRegistry to confirm observation
-    new TestableQuartzJob(randomToken, testObservationRegistry).execute(mockContext);
+    new TestableQuartzJob(randomToken, testObservationRegistry, dataImportProperties)
+        .execute(mockContext);
 
     TestObservationRegistryAssert.assertThat(testObservationRegistry)
         .doesNotHaveAnyRemainingCurrentObservation()
@@ -176,7 +184,8 @@ class QuartzJobTest extends TestBase {
     assertNull(meterRegistry.find("wds.job.execute").timer());
 
     // execute the TestableQuartzJob, then confirm metrics provisioned correctly
-    new TestableQuartzJob(randomToken, observationRegistry).execute(mockContext);
+    new TestableQuartzJob(randomToken, observationRegistry, dataImportProperties)
+        .execute(mockContext);
 
     // metrics provisioned should be longTaskTimer and a Timer, confirm both ran
     LongTaskTimer longTaskTimer = meterRegistry.find("wds.job.execute.active").longTaskTimer();
@@ -201,7 +210,8 @@ class QuartzJobTest extends TestBase {
     // and the timer total
     double previousTotal = timer.totalTime(TimeUnit.SECONDS);
     for (int i = 2; i < 10; i++) {
-      new TestableQuartzJob(randomToken, observationRegistry).execute(mockContext);
+      new TestableQuartzJob(randomToken, observationRegistry, dataImportProperties)
+          .execute(mockContext);
       assertEquals(i, timer.count());
       // current total should be greater than previous total
       assertThat(timer.totalTime(TimeUnit.SECONDS)).isGreaterThan(previousTotal);
@@ -220,7 +230,8 @@ class QuartzJobTest extends TestBase {
         assertInstanceOf(TestObservationRegistry.class, observationRegistry);
 
     // execute the TestableQuartzJob, then confirm observation recorded failure
-    new TestableQuartzJob(randomToken, observationRegistry, /* shouldThrowError= */ true)
+    new TestableQuartzJob(
+            randomToken, observationRegistry, /* shouldThrowError= */ true, dataImportProperties)
         .execute(mockContext);
 
     TestObservationRegistryAssert.assertThat(testObservationRegistry)
@@ -256,7 +267,8 @@ class QuartzJobTest extends TestBase {
     // execute the TestableQuartzJob. This will move the job to SUCCESS when
     // dataImportProperties.isSucceedOnCompletion() is true; else it will leave the job
     // in RUNNING
-    new TestableQuartzJob(randomToken, observationRegistry, /* shouldThrowError= */ false)
+    new TestableQuartzJob(
+            randomToken, observationRegistry, /* shouldThrowError= */ false, dataImportProperties)
         .execute(mockContext);
 
     // assert the job is marked as succeeded ONLY when dataImportProperties.isSucceedOnCompletion()

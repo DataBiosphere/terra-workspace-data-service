@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport.tdr;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -53,6 +54,7 @@ import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerD
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.quartz.JobExecutionContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -258,7 +260,7 @@ class TdrManifestQuartzJobTest extends TestBase {
   @Test
   @Tag(SLOW)
   /* note: this functionality is control plane only.*/
-  void testSyncPermissions() throws JobExecutionException, IOException {
+  void testSyncPermissions() throws IOException {
     // ARRANGE
     // set up ids
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
@@ -288,6 +290,10 @@ class TdrManifestQuartzJobTest extends TestBase {
     tdrManifestQuartzJob.executeInternal(jobId, mockContext);
 
     // ASSERT
-    verify(samDao, times(4)).addMemberPolicy(anyString(), any(), any(), anyString(), any());
+    ArgumentCaptor<String> roleCaptor = ArgumentCaptor.forClass(String.class);
+    verify(samDao, times(4))
+        .addMemberPolicy(anyString(), any(), any(), roleCaptor.capture(), any());
+    assertThat(roleCaptor.getAllValues())
+        .containsExactlyInAnyOrder("reader", "writer", "owner", "project-owner");
   }
 }
