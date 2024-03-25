@@ -107,7 +107,8 @@ public class PfbQuartzJob extends QuartzJob {
     Supplier<String> userEmailSupplier = () -> samDao.getUserEmail(BearerToken.of(authToken));
 
     ImportDetails importDetails =
-        new ImportDetails(jobId, userEmailSupplier, targetCollection, PrefixStrategy.PFB);
+        new ImportDetails(
+            jobId, userEmailSupplier, CollectionId.of(targetCollection), PrefixStrategy.PFB);
 
     // Import all the tables and rows inside the PFB.
     //

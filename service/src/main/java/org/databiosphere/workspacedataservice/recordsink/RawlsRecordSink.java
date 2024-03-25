@@ -31,6 +31,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.DataImport
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -170,7 +171,9 @@ public class RawlsRecordSink implements RecordSink {
 
   private void publishToPubSub(ImportDetails importDetails) {
     UUID jobId = requireNonNull(importDetails.jobId());
-    UUID workspaceId = importDetails.collectionId();
+    // TODO: do a lookup of CollectionId to get WorkspaceId rather than assuming it's the same,
+    //   or pass the WorkspaceId from where ImportDetails is created
+    WorkspaceId workspaceId = WorkspaceId.of(importDetails.collectionId().id());
     String user =
         requireNonNull(
                 importDetails.userEmailSupplier(),

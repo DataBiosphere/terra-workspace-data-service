@@ -40,6 +40,7 @@ import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.recordsource.TsvRecordSource;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.AfterEach;
@@ -91,14 +92,14 @@ class BatchWriteServiceTest extends TestBase {
     InputStream is = new ByteArrayInputStream(streamContents.getBytes());
 
     RecordSource recordSource = recordSourceFactory.forJson(is);
-    RecordSink recordSink = recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION));
-    Exception ex =
-        assertThrows(
-            BadStreamingWriteRequestException.class,
-            () -> batchWriteService.batchWrite(recordSource, recordSink, THING_TYPE, RECORD_ID));
-
-    String errorMessage = ex.getMessage();
-    assertEquals("Duplicate field 'key'", errorMessage);
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(CollectionId.of(COLLECTION))) {
+      Exception ex =
+          assertThrows(
+              BadStreamingWriteRequestException.class,
+              () -> batchWriteService.batchWrite(recordSource, recordSink, THING_TYPE, RECORD_ID));
+      String errorMessage = ex.getMessage();
+      assertEquals("Duplicate field 'key'", errorMessage);
+    }
   }
 
   // when batchWriteTsvStream is called with a single specified RecordType, we should infer the
@@ -123,7 +124,7 @@ class BatchWriteServiceTest extends TestBase {
     // Note that this call to batchWriteTsvStream specifies a non-null RecordType.
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(file.getInputStream(), recordType, Optional.of(primaryKey));
-    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(new ImportDetails(COLLECTION))) {
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(CollectionId.of(COLLECTION))) {
       batchWriteService.batchWrite(recordSource, recordSink, recordType, primaryKey);
     }
 
@@ -269,7 +270,8 @@ class BatchWriteServiceTest extends TestBase {
     Supplier<String> emailSupplier = () -> "testEmail";
     try (RecordSink recordSink =
         recordSinkFactory.buildRecordSink(
-            new ImportDetails(jobId, emailSupplier, COLLECTION, PrefixStrategy.PFB))) {
+            new ImportDetails(
+                jobId, emailSupplier, CollectionId.of(COLLECTION), PrefixStrategy.PFB))) {
       return batchWriteService.batchWrite(
           recordSourceFactory.forPfb(pfbStream, importMode),
           recordSink,

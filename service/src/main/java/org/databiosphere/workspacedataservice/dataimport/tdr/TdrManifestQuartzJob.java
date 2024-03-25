@@ -117,7 +117,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
     // TDR import is interested in the collectionId (not the workspaceId)
     ImportDetails importDetails =
-        new ImportDetails(jobId, userEmailSupplier, targetCollection, PrefixStrategy.TDR);
+        new ImportDetails(
+            jobId, userEmailSupplier, CollectionId.of(targetCollection), PrefixStrategy.TDR);
 
     // determine the workspace for the target collection
     WorkspaceId workspaceId = collectionService.getWorkspaceId(CollectionId.of(targetCollection));
