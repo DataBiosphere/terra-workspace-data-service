@@ -151,6 +151,11 @@ public class PfbTestUtils {
     return dataFileStream;
   }
 
+  public static JobExecutionContext stubJobContext(UUID jobId, Resource resource, UUID collectionId)
+      throws IOException {
+    return stubJobContext(jobId, resource, collectionId, false);
+  }
+
   public static JobExecutionContext stubJobContext(
       UUID jobId, Resource resource, UUID collectionId, boolean shouldPermissionSync)
       throws IOException {

@@ -96,12 +96,10 @@ public class ImportService {
       arguments.put(ARG_TOKEN, petToken);
       arguments.put(ARG_URL, importRequest.getUrl().toString());
       arguments.put(ARG_COLLECTION, collectionId.toString());
-      // try to retrieve the tdrSyncPermissions option if available
-      arguments.put(
-          ARG_PERMISSION_OPTION,
-          importRequest.getOptions().containsKey("tdrSyncPermissions")
-              ? (boolean) importRequest.getOptions().get("tdrSyncPermissions")
-              : false);
+      // try to retrieve the tdrSyncPermissions option if available (first as string, then bool)
+      String tdrSyncPermissions =
+          importRequest.getOptions().getOrDefault("tdrSyncPermissions", "false").toString();
+      arguments.put(ARG_PERMISSION_OPTION, Boolean.parseBoolean(tdrSyncPermissions));
 
       // if we can find an MDC id, add it to the job context
       safeGetMdcId(createdJob.getJobId())

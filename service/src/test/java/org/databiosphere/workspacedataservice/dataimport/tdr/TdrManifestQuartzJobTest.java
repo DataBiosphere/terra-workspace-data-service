@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.dataimport.tdr;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
+import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.READER_ROLES;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -276,7 +277,7 @@ class TdrManifestQuartzJobTest extends TestBase {
     // mock property that only gets enabled in application-control-plane.yml
     when(dataImportProperties.isPermissionSync()).thenReturn(true);
     // mock sam call
-    doNothing().when(samDao).addMemberPolicy(anyString(), any(), any(), anyString(), any());
+    doNothing().when(samDao).addMemberPolicy(anyString(), any(), any(), anyString());
 
     // set up the job
     TdrManifestQuartzJob tdrManifestQuartzJob =
@@ -291,9 +292,7 @@ class TdrManifestQuartzJobTest extends TestBase {
 
     // ASSERT
     ArgumentCaptor<String> roleCaptor = ArgumentCaptor.forClass(String.class);
-    verify(samDao, times(4))
-        .addMemberPolicy(anyString(), any(), any(), roleCaptor.capture(), any());
-    assertThat(roleCaptor.getAllValues())
-        .containsExactlyInAnyOrder("reader", "writer", "owner", "project-owner");
+    verify(samDao, times(4)).addMemberPolicy(anyString(), any(), any(), roleCaptor.capture());
+    assertThat(roleCaptor.getAllValues()).containsExactlyInAnyOrder(READER_ROLES);
   }
 }

@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport.tdr;
 
 import static org.apache.parquet.avro.AvroReadSupport.READ_INT96_AS_FIXED;
+import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.READER_ROLES;
 import static org.databiosphere.workspacedataservice.service.ImportService.ARG_PERMISSION_OPTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
@@ -49,7 +50,6 @@ import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
-import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
@@ -74,6 +74,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
   private final RecordSourceFactory recordSourceFactory;
   private final SnapshotSupportFactory snapshotSupportFactory;
   private final SamDao samDao;
+  private final DataImportProperties dataImportProperties;
   private static final String RESOURCE_TYPE_DATASNAPSHOT = "datasnapshot";
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -100,6 +101,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     this.mapper = mapper;
     this.snapshotSupportFactory = snapshotSupportFactory;
     this.samDao = samDao;
+    this.dataImportProperties = dataImportProperties;
   }
 
   @Override
@@ -172,8 +174,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
                               .withRecordType(entry.getKey())
                               .ofQuantity(entry.getValue())));
       // sync permissions if running in control-plane
-      if (dataImportProperties.isPermissionSync()) {
-        syncPermissions(jobDataMap, workspaceId, snapshotId, authToken);
+      if (dataImportProperties.isPermissionSync() && jobDataMap.getBoolean(ARG_PERMISSION_OPTION)) {
+        syncPermissions(jobDataMap, workspaceId, snapshotId);
       }
     } catch (Exception e) {
       throw new TdrManifestImportException(e.getMessage(), e);
@@ -414,37 +416,21 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @param workspaceId current workspace
    * @param snapshotId id of the TDR snapshot
    */
-  private void syncPermissions(JobDataMap jobDataMap, WorkspaceId workspaceId, UUID snapshotId, String authToken) {
-    try {
-      // only proceed if we have permission syncing enabled
-      if (!jobDataMap.getBoolean(ARG_PERMISSION_OPTION)) {
-        return;
-      }
-    } catch (Exception e) {
-      // don't throw an exception if we can't get values, just return
-      logger.error(
-          permissionFailureErrorMessage(
-              snapshotId, workspaceId, "failed to retrieve arguments from job"));
-      return;
-    }
-    String[] readerRoles = {"reader", "writer", "owner", "project-owner"};
-    for (String role : readerRoles) {
+  private void syncPermissions(JobDataMap jobDataMap, WorkspaceId workspaceId, UUID snapshotId) {
+
+    for (String role : READER_ROLES) {
       try {
-        samDao.addMemberPolicy(
-            RESOURCE_TYPE_DATASNAPSHOT, workspaceId, snapshotId, role, BearerToken.of(authToken));
+        samDao.addMemberPolicy(RESOURCE_TYPE_DATASNAPSHOT, workspaceId, snapshotId, role);
       } catch (RestException e) {
         throw new TdrManifestImportException(
-            permissionFailureErrorMessage(snapshotId, workspaceId, "RestException on role " + role),
+            "Failed to sync permissions for TDR snapshot "
+                + snapshotId
+                + " into workspace "
+                + workspaceId.toString()
+                + "RestException on role "
+                + role,
             e);
       }
     }
-  }
-
-  /** Convenience function for easy formatting for permission failure. */
-  private String permissionFailureErrorMessage(
-      UUID snapshotId, WorkspaceId workspaceId, String error) {
-    return String.format(
-        "Failed to sync permissions for TDR snapshot %s into workspace %s: %s",
-        snapshotId.toString(), workspaceId.id(), error);
   }
 }

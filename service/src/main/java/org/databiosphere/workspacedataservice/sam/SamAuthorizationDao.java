@@ -13,6 +13,9 @@ public interface SamAuthorizationDao {
   /** Sam policy name for read permission */
   String READER_POLICY_NAME = "reader";
 
+  /** All roles to add reader policy */
+  String[] READER_ROLES = {"reader", "writer", "owner", "project-owner"};
+
   /**
    * Check if the current user has permission to read the workspace resource from Sam
    *

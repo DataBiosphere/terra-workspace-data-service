@@ -10,7 +10,6 @@ import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
  * HttpSamDao.
  */
 public interface SamDao {
-
   // TODO(jladieu): get the token injected during creation and eliminate it from the arg list
   String getUserId(BearerToken token);
 
@@ -27,9 +26,5 @@ public interface SamDao {
 
   /** Add reader policy to workspace. */
   void addMemberPolicy(
-      String resourceTypeName,
-      WorkspaceId workspaceId,
-      UUID snapshotId,
-      String readerRole,
-      BearerToken token);
+      String resourceTypeName, WorkspaceId workspaceId, UUID snapshotId, String readerRole);
 }

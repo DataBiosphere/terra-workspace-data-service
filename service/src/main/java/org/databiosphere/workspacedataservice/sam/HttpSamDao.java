@@ -76,11 +76,7 @@ public class HttpSamDao implements SamDao {
   }
 
   public void addMemberPolicy(
-      String resourceTypeName,
-      WorkspaceId workspaceId,
-      UUID snapshotId,
-      String readerRole,
-      BearerToken token) {
+      String resourceTypeName, WorkspaceId workspaceId, UUID snapshotId, String readerRole) {
     restClientRetry.withRetryAndErrorHandling(
         () ->
             samClientFactory
@@ -92,7 +88,7 @@ public class HttpSamDao implements SamDao {
                     RESOURCE_NAME_WORKSPACE,
                     workspaceId.toString(),
                     readerRole,
-                    token),
-        "Sam.addMemberPolicy");
+                    null),
+        "Sam.addWorkspaceReaderPolicyToResource");
   }
 }

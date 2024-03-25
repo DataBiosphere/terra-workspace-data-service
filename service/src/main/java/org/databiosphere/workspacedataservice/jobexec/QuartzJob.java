@@ -36,7 +36,7 @@ import org.slf4j.MDC;
 public abstract class QuartzJob implements Job {
 
   private final ObservationRegistry observationRegistry;
-  protected final DataImportProperties dataImportProperties;
+  private final DataImportProperties dataImportProperties;
 
   protected QuartzJob(
       ObservationRegistry observationRegistry, DataImportProperties dataImportProperties) {
