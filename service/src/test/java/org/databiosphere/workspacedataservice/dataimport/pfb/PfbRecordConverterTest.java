@@ -27,9 +27,9 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.service.JsonConfig;
-import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -207,7 +207,7 @@ class PfbRecordConverterTest extends TestBase {
     Record actual = converter.convert(input, ImportMode.RELATIONS);
 
     assertEquals(
-        RelationUtils.createRelationString(RecordType.valueOf("relation_table"), "relation_id"),
+        new RelationAttribute(RecordType.valueOf("relation_table"), "relation_id"),
         actual.getAttributeValue("relation_table"));
   }
 
