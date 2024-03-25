@@ -11,6 +11,7 @@ import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.AD
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.ADD_UPDATE_ATTRIBUTE;
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.CREATE_ATTRIBUTE_VALUE_LIST;
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.REMOVE_ATTRIBUTE;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
@@ -23,7 +24,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,10 +37,13 @@ import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeValue;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttributeValueList;
+import org.databiosphere.workspacedataservice.recordsink.RawlsModel.EntityReference;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
 import org.databiosphere.workspacedataservice.sam.MockSamUsersApi;
 import org.databiosphere.workspacedataservice.service.CollectionService;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -148,7 +151,7 @@ class PfbQuartzJobControlPlaneE2ETest {
     assertThat(entity.operations().size()).isEqualTo(expectedAttributes);
 
     assertSimpleAttributeValue(entity, "pfb:md5sum", "bdf121aadba028d57808101cb4455fa7");
-    assertSimpleAttributeValue(entity, "pfb:file_size", BigInteger.valueOf(512));
+    assertSimpleAttributeValue(entity, "pfb:file_size", 512);
     assertSimpleAttributeValue(entity, "pfb:file_state", "registered");
     assertSimpleAttributeValue(
         entity,
@@ -190,9 +193,10 @@ class PfbQuartzJobControlPlaneE2ETest {
         List.of(
             new RemoveAttribute(arrayProp),
             new CreateAttributeValueList(arrayProp),
-            new AddListMember(arrayProp, "00000000-0000-0000-0000-000000000000"),
-            new AddListMember(arrayProp, "11111111-1111-1111-1111-111111111111"),
-            new AddListMember(arrayProp, "22222222-2222-2222-2222-222222222222"));
+            new AddListMember(arrayProp, AttributeValue.of("00000000-0000-0000-0000-000000000000")),
+            new AddListMember(arrayProp, AttributeValue.of("11111111-1111-1111-1111-111111111111")),
+            new AddListMember(
+                arrayProp, AttributeValue.of("22222222-2222-2222-2222-222222222222")));
     assertThat(actual).isEqualTo(expected);
   }
 
@@ -221,11 +225,11 @@ class PfbQuartzJobControlPlaneE2ETest {
     Entity sampleActivity = getSampleEntity(entities, "activities");
     assertListAttributeType(sampleActivity, "pfb:activity_type", String.class);
 
+    // since references get processed last, we reverse the order to get one of the reference
+    // upserts as a sample instead of the original base attribute upsert
+    Collections.reverse(entities);
     Entity sampleFile = getSampleEntity(entities, "files");
-    assertSimpleAttributeType(sampleFile, "pfb:file_format", String.class);
-    assertSimpleAttributeType(sampleFile, "pfb:file_size", BigInteger.class);
-    assertSimpleAttributeType(sampleFile, "pfb:is_supplementary", Boolean.class);
-
+    assertRelationAttributeType(sampleFile, "pfb:donors", "donors");
     Map<String, Long> actualCounts =
         entities.stream().collect(groupingBy(Entity::entityType, counting()));
 
@@ -261,13 +265,22 @@ class PfbQuartzJobControlPlaneE2ETest {
   }
 
   private void assertSimpleAttributeValue(Entity entity, String attributeName, Object expected) {
-    assertThat(getSimpleAttributeByName(entity, attributeName).addUpdateAttribute())
+    assertThat(getSimpleAttributeByName(entity, attributeName).addUpdateAttribute().value())
         .isEqualTo(expected);
   }
 
   private void assertSimpleAttributeType(Entity entity, String attributeName, Class<?> expected) {
     assertThat(getSimpleAttributeByName(entity, attributeName).addUpdateAttribute().getClass())
         .isEqualTo(expected);
+  }
+
+  private void assertRelationAttributeType(
+      Entity entity, String attributeName, String attributeType) {
+    var value = getSimpleAttributeByName(entity, attributeName).addUpdateAttribute().value();
+    EntityReference entityReference = assertInstanceOf(EntityReference.class, value);
+
+    assertThat(entityReference.entityType()).isEqualTo(RecordType.valueOf(attributeType));
+    assertThat(entityReference.entityName()).startsWith("%s.".formatted(attributeType));
   }
 
   private AddUpdateAttribute getSimpleAttributeByName(Entity entity, String attributeName) {
@@ -283,7 +296,7 @@ class PfbQuartzJobControlPlaneE2ETest {
   }
 
   private void assertListAttributeType(Entity entity, String attributeName, Class<?> expected) {
-    assertThat(getListAttributeByName(entity, attributeName).newMember().getClass())
+    assertThat(getListAttributeByName(entity, attributeName).newMember().value().getClass())
         .isEqualTo(expected);
   }
 

@@ -18,9 +18,9 @@ import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.WriteStreamInfo;
-import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -176,21 +176,21 @@ class PfbRecordSourceTest extends TestBase {
       // this record has 4 relations
       assertEquals(4, secondRecord.attributeSet().size());
       assertEquals(
-          RelationUtils.createRelationString(
+          new RelationAttribute(
               RecordType.valueOf("activities"),
               "activities.34f8be82-2973-52c8-ad95-ba79416c51ab.3"),
           secondRecord.getAttributeValue("activities"));
       assertEquals(
-          RelationUtils.createRelationString(
+          new RelationAttribute(
               RecordType.valueOf("biosamples"),
               "biosamples.30a60040-fdca-5473-b2d5-cd3839e983c7.1"),
           secondRecord.getAttributeValue("biosamples"));
       assertEquals(
-          RelationUtils.createRelationString(
+          new RelationAttribute(
               RecordType.valueOf("datasets"), "datasets.cd90e9d7-4b3c-5705-bcbf-d477af2c4f7d.1"),
           secondRecord.getAttributeValue("datasets"));
       assertEquals(
-          RelationUtils.createRelationString(
+          new RelationAttribute(
               RecordType.valueOf("donors"), "donors.cce44986-0d04-54ea-8343-83748cd7225a.1"),
           secondRecord.getAttributeValue("donors"));
     } catch (IOException e) {
