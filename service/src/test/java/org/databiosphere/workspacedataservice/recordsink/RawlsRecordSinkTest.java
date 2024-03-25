@@ -89,8 +89,9 @@ class RawlsRecordSinkTest extends TestBase {
   @Test
   void translatesBooleanAttribute() {
     var entities =
-        doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("truth", true)));
+        doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("booleanKey", true)));
     var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
+    assertThat(operation.attributeName()).isEqualTo("booleanKey");
     assertThat(operation.addUpdateAttribute().value()).isEqualTo(true);
   }
 
@@ -113,9 +114,11 @@ class RawlsRecordSinkTest extends TestBase {
   @Test
   void translatesStringAttribute() {
     var entities =
-        doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("someKey", "someValue")));
+        doUpsert(
+            makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("stringKey", "someValue")));
 
     var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
+    assertThat(operation.attributeName()).isEqualTo("stringKey");
     assertThat(operation.addUpdateAttribute().value()).isEqualTo("someValue");
   }
 
@@ -138,9 +141,10 @@ class RawlsRecordSinkTest extends TestBase {
   @Test
   void translatesIntegerAttribute() {
     var entities =
-        doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("someKey", 42)));
+        doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("integerKey", 42)));
 
     var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
+    assertThat(operation.attributeName()).isEqualTo("integerKey");
     assertThat(operation.addUpdateAttribute().value()).isEqualTo(42);
   }
 
@@ -160,9 +164,10 @@ class RawlsRecordSinkTest extends TestBase {
   @Test
   void translatesFloatAttribute() {
     var entities =
-        doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("someKey", 42.0)));
+        doUpsert(makeRecord(/* type= */ "widget", /* id= */ "id", Map.of("floatKey", 42.0)));
 
     var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
+    assertThat(operation.attributeName()).isEqualTo("floatKey");
     assertThat(operation.addUpdateAttribute().value()).isEqualTo(42.0);
   }
 
@@ -188,13 +193,14 @@ class RawlsRecordSinkTest extends TestBase {
                 /* type= */ "widget",
                 /* id= */ "id",
                 Map.of(
-                    "jsonAttribute",
+                    "jsonKey",
                     new ImmutableMap.Builder<String, Object>()
                         .put("key1", "value1")
                         .put("key2", "value2")
                         .build())));
 
     var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
+    assertThat(operation.attributeName()).isEqualTo("jsonKey");
     assertThat(operation.addUpdateAttribute().value())
         .isEqualTo("{\"key1\":\"value1\",\"key2\":\"value2\"}");
   }
@@ -267,10 +273,11 @@ class RawlsRecordSinkTest extends TestBase {
             makeRecord(
                 /* type= */ "widget",
                 /* id= */ "id",
-                Map.of("widgetRelation", relationAttribute("widget", "widget-id"))));
+                Map.of("relationKey", relationAttribute("widget", "widget-id"))));
 
     var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
 
+    assertThat(operation.attributeName()).isEqualTo("relationKey");
     assertThat(operation.addUpdateAttribute().value())
         .isEqualTo(rawlsEntityReference("widget", "widget-id"));
   }
