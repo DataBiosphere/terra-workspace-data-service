@@ -38,7 +38,7 @@ public class PubSubConfig {
     return new PubSubClient(pubSubAdmin);
   }
 
-  @Bean
+  @Bean(name = "importStatusUpdateMessageChannel")
   public MessageChannel getImportStatusUpdateMessageChannel() {
     return new DirectChannel();
   }
@@ -47,7 +47,7 @@ public class PubSubConfig {
   public PubSubInboundChannelAdapter getInboundChannelAdapter(
       PubSubClient pubSubClient,
       PubSubTemplate pubSubTemplate,
-      @Qualifier("getImportStatusUpdateMessageChannel") MessageChannel messageChannel,
+      @Qualifier("importStatusUpdateMessageChannel") MessageChannel messageChannel,
       @Value("${twds.data-import.status-updates.topic}") String topicName,
       @Value("${twds.data-import.status-updates.subscription}") String subscriptionName) {
     Subscription subscription = pubSubClient.getOrCreateSubscription(topicName, subscriptionName);
@@ -61,7 +61,7 @@ public class PubSubConfig {
   }
 
   @Bean
-  @ServiceActivator(inputChannel = "getImportStatusUpdateMessageChannel")
+  @ServiceActivator(inputChannel = "importStatusUpdateMessageChannel")
   public MessageHandler getImportStatusUpdateHandler() {
     return springMessage -> {
       BasicAcknowledgeablePubsubMessage originalMessage =
