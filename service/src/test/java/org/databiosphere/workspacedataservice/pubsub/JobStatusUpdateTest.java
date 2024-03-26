@@ -8,7 +8,7 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 import org.junit.jupiter.api.Test;
 
-public class JobStatusUpdateTest {
+class JobStatusUpdateTest {
   @Test
   void createFromPubSubMessageSuccess() {
     // Arrange
