@@ -1,7 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import com.google.pubsub.v1.PubsubMessage;
-import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.pubsub.JobStatusUpdate;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
@@ -22,9 +22,7 @@ public class PubSubService {
     LOGGER.info(
         "Received PubSub message: {} {}",
         message.getMessageId(),
-        message.getAttributesMap().entrySet().stream()
-            .map(e -> "%s: %s".formatted(e.getKey(), e.getValue()))
-            .collect(Collectors.joining(", ")));
+        StringUtils.join(message.getAttributesMap()));
 
     try {
       JobStatusUpdate update = JobStatusUpdate.createFromPubSubMessage(message);
