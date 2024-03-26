@@ -49,8 +49,7 @@ class PfbTestSupport {
         importService.createImport(collectionId, importRequest);
 
     UUID jobId = genericJobServerModel.getJobId();
-    JobExecutionContext mockContext =
-        stubJobContext(jobId, pfbResource, collectionId, /* shouldPermissionSync= */ false);
+    JobExecutionContext mockContext = stubJobContext(jobId, pfbResource, collectionId);
 
     buildPfbQuartzJob(collectionId).execute(mockContext);
 

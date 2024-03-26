@@ -92,8 +92,7 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
     var genericJobServerModel = importService.createImport(collectionId, importRequest);
 
     UUID jobId = genericJobServerModel.getJobId();
-    JobExecutionContext mockContext =
-        stubJobContext(jobId, v2fManifestResource, collectionId, /* shouldPermissionSync= */ false);
+    JobExecutionContext mockContext = stubJobContext(jobId, v2fManifestResource, collectionId);
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
