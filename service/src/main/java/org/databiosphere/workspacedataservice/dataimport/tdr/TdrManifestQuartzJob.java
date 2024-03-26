@@ -175,7 +175,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
                               .ofQuantity(entry.getValue())));
       // sync permissions if running in control-plane
       if (dataImportProperties.isPermissionSync() && jobDataMap.getBoolean(ARG_PERMISSION_OPTION)) {
-        syncPermissions(jobDataMap, workspaceId, snapshotId);
+        syncPermissions(workspaceId, snapshotId);
       }
     } catch (Exception e) {
       throw new TdrManifestImportException(e.getMessage(), e);
@@ -416,7 +416,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
    * @param workspaceId current workspace
    * @param snapshotId id of the TDR snapshot
    */
-  private void syncPermissions(JobDataMap jobDataMap, WorkspaceId workspaceId, UUID snapshotId) {
+  private void syncPermissions(WorkspaceId workspaceId, UUID snapshotId) {
 
     for (String role : READER_ROLES) {
       try {
