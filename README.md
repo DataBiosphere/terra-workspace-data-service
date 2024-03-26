@@ -82,7 +82,7 @@ with `gcloud` or by setting the `GOOGLE_CLOUD_PROJECT` environment variable.
 
 3. Configure PubSub topics by setting environment variables.
    ```bash
-   export RAWLS_NOTIFY_TOPIC=rawls-async-notify-topic-dev
+   export RAWLS_NOTIFY_TOPIC=rawls-async-import-topic-dev
    ```
 
    This will send imports the dev Rawls; you may want to use a dummy project/topic instead.
