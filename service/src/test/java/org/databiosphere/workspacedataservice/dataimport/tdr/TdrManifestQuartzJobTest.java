@@ -201,7 +201,12 @@ class TdrManifestQuartzJobTest extends TestBase {
             new Path(malformedParquet.getURL().toString()), new Configuration());
 
     ImportDetails importDetails =
-        new ImportDetails(jobId, emailSupplier, workspaceId, PrefixStrategy.TDR);
+        new ImportDetails(
+            jobId,
+            emailSupplier,
+            WorkspaceId.of(workspaceId),
+            CollectionId.of(workspaceId),
+            PrefixStrategy.TDR);
     try (RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails)) {
 
       // Make sure real errors on parsing parquets are not swallowed

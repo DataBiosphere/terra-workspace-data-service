@@ -115,12 +115,11 @@ public class TdrManifestQuartzJob extends QuartzJob {
     String authToken = getJobDataString(jobDataMap, ARG_TOKEN);
     Supplier<String> userEmailSupplier = () -> samDao.getUserEmail(BearerToken.of(authToken));
 
-    // TDR import is interested in the collectionId (not the workspaceId)
-    ImportDetails importDetails =
-        new ImportDetails(jobId, userEmailSupplier, targetCollection, PrefixStrategy.TDR);
-
     // determine the workspace for the target collection
-    WorkspaceId workspaceId = collectionService.getWorkspaceId(CollectionId.of(targetCollection));
+    CollectionId collectionId = CollectionId.of(targetCollection);
+    WorkspaceId workspaceId = collectionService.getWorkspaceId(collectionId);
+    ImportDetails importDetails =
+        new ImportDetails(jobId, userEmailSupplier, workspaceId, collectionId, PrefixStrategy.TDR);
 
     // read manifest
     SnapshotExportResponseModel snapshotExportResponseModel = parseManifest(url);

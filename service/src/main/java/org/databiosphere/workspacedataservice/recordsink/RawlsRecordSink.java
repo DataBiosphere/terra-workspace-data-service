@@ -170,7 +170,6 @@ public class RawlsRecordSink implements RecordSink {
 
   private void publishToPubSub(ImportDetails importDetails) {
     UUID jobId = requireNonNull(importDetails.jobId());
-    UUID workspaceId = importDetails.collectionId();
     String user =
         requireNonNull(
                 importDetails.userEmailSupplier(),
@@ -178,7 +177,7 @@ public class RawlsRecordSink implements RecordSink {
             .get();
     Map<String, String> message =
         new ImmutableMap.Builder<String, String>()
-            .put("workspaceId", workspaceId.toString())
+            .put("workspaceId", importDetails.workspaceId().toString())
             .put("userEmail", user)
             .put("jobId", jobId.toString())
             .put("upsertFile", blob.getBucket() + "/" + blob.getName())

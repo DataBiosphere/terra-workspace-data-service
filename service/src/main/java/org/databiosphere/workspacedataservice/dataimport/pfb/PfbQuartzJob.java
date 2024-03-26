@@ -106,13 +106,13 @@ public class PfbQuartzJob extends QuartzJob {
     String authToken = getJobDataString(jobDataMap, ARG_TOKEN);
     Supplier<String> userEmailSupplier = () -> samDao.getUserEmail(BearerToken.of(authToken));
 
-    ImportDetails importDetails =
-        new ImportDetails(jobId, userEmailSupplier, targetCollection, PrefixStrategy.PFB);
-
     // Import all the tables and rows inside the PFB.
     //
     // determine the workspace for the target collection
-    WorkspaceId workspaceId = collectionService.getWorkspaceId(CollectionId.of(targetCollection));
+    CollectionId collectionId = CollectionId.of(targetCollection);
+    WorkspaceId workspaceId = collectionService.getWorkspaceId(collectionId);
+    ImportDetails importDetails =
+        new ImportDetails(jobId, userEmailSupplier, workspaceId, collectionId, PrefixStrategy.PFB);
 
     // Find all the snapshot ids in the PFB, then create or verify references from the
     // workspace to the snapshot for each of those snapshot ids.
