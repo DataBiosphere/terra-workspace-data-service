@@ -20,7 +20,8 @@ public class PubSubClient {
     // In live environments, the topic for import status updates should already exist,
     // since it has been Terraformed. In BEEs, either CWDS or Import Service (whichever
     // starts first) needs to create a topic for the BEE.
-    LOGGER.info("Using PubSub topic {} for status updates", topicName);
+    LOGGER.info(
+        "Subscribing to PubSub topic {} using subscription {}", topicName, subscriptionName);
     Topic topic = admin.getTopic(topicName);
     if (topic == null) {
       LOGGER.info("Topic {} not found, creating...", topicName);
@@ -28,7 +29,6 @@ public class PubSubClient {
     }
 
     // Get or create a pull subscription for the import status updates topic.
-    LOGGER.info("Using PubSub subscription {} for status updates", subscriptionName);
     Subscription subscription = admin.getSubscription(subscriptionName);
     if (subscription == null) {
       LOGGER.info("Subscription {} not found, creating...", subscriptionName);

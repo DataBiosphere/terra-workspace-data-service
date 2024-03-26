@@ -7,6 +7,7 @@ import com.google.cloud.spring.pubsub.integration.inbound.PubSubInboundChannelAd
 import com.google.cloud.spring.pubsub.support.BasicAcknowledgeablePubsubMessage;
 import com.google.cloud.spring.pubsub.support.GcpPubSubHeaders;
 import com.google.pubsub.v1.Subscription;
+import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.service.PubSubService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,9 +49,11 @@ public class PubSubConfig {
       PubSubClient pubSubClient,
       PubSubTemplate pubSubTemplate,
       @Qualifier("importStatusUpdateMessageChannel") MessageChannel messageChannel,
-      @Value("${twds.data-import.status-updates.topic}") String topicName,
-      @Value("${twds.data-import.status-updates.subscription}") String subscriptionName) {
-    Subscription subscription = pubSubClient.getOrCreateSubscription(topicName, subscriptionName);
+      DataImportProperties dataImportProperties) {
+    Subscription subscription =
+        pubSubClient.getOrCreateSubscription(
+            dataImportProperties.getStatusUpdatesTopic(),
+            dataImportProperties.getStatusUpdatesSubscription());
 
     PubSubInboundChannelAdapter adapter =
         new PubSubInboundChannelAdapter(pubSubTemplate, subscription.getName());
