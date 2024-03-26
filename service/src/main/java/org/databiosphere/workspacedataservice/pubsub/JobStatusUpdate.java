@@ -3,9 +3,9 @@ package org.databiosphere.workspacedataservice.pubsub;
 import com.google.pubsub.v1.PubsubMessage;
 import java.util.Map;
 import java.util.UUID;
-import javax.annotation.Nullable;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
+import org.springframework.lang.Nullable;
 
 public record JobStatusUpdate(
     UUID jobId, StatusEnum currentStatus, StatusEnum newStatus, @Nullable String errorMessage) {
@@ -27,7 +27,7 @@ public record JobStatusUpdate(
     }
   }
 
-  private static StatusEnum rawlsStatusToJobStatus(String rawlsStatus) {
+  private static StatusEnum rawlsStatusToJobStatus(@Nullable String rawlsStatus) {
     if (rawlsStatus == null) {
       return StatusEnum.UNKNOWN;
     }
