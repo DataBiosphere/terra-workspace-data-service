@@ -25,6 +25,8 @@ public class DataImportProperties {
 
   private Set<Pattern> allowedHosts = emptySet();
   private Set<String> allowedSchemes = Set.of("https");
+  private String statusUpdatesTopic;
+  private String statusUpdatesSubscription;
 
   /** Where to write records after import, options are defined by {@link RecordSinkMode} */
   public RecordSinkMode getBatchWriteRecordSink() {
@@ -79,6 +81,22 @@ public class DataImportProperties {
 
   public void setAllowedSchemes(String[] allowedSchemes) {
     this.allowedSchemes = stream(allowedSchemes).collect(Collectors.toSet());
+  }
+
+  public String getStatusUpdatesTopic() {
+    return statusUpdatesTopic;
+  }
+
+  public void setStatusUpdatesTopic(String statusUpdatesTopic) {
+    this.statusUpdatesTopic = statusUpdatesTopic;
+  }
+
+  public String getStatusUpdatesSubscription() {
+    return statusUpdatesSubscription;
+  }
+
+  public void setStatusUpdatesSubscription(String statusUpdatesSubscription) {
+    this.statusUpdatesSubscription = statusUpdatesSubscription;
   }
 
   /** Dictates the sink where BatchWriteService should write records after import. */
