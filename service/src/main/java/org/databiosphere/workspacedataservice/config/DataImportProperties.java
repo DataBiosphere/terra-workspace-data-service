@@ -22,7 +22,7 @@ public class DataImportProperties {
   private RecordSinkMode batchWriteRecordSink;
   private String rawlsBucketName;
   private boolean succeedOnCompletion;
-  private boolean permissionSync;
+  private boolean enableTdrPermissionSync = false;
 
   private Set<Pattern> allowedHosts = emptySet();
   private Set<String> allowedSchemes = Set.of("https");
@@ -70,12 +70,12 @@ public class DataImportProperties {
    * @see org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJob
    * @return the configured value
    */
-  public boolean isPermissionSync() {
-    return permissionSync;
+  public boolean isTdrPermissionSyncingEnabled() {
+    return enableTdrPermissionSync;
   }
 
-  public void setPermissionSync(boolean permissionSync) {
-    this.permissionSync = permissionSync;
+  public void setTdrPermissionSync(boolean enableTdrPermissionSync) {
+    this.enableTdrPermissionSync = enableTdrPermissionSync;
   }
 
   /**

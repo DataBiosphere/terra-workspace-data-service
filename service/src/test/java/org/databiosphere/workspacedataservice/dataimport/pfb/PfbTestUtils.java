@@ -2,7 +2,7 @@ package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.RELATIONS_ID;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.RELATIONS_NAME;
-import static org.databiosphere.workspacedataservice.service.ImportService.ARG_PERMISSION_OPTION;
+import static org.databiosphere.workspacedataservice.service.ImportService.ARG_TDR_SYNC_PERMISSION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
@@ -170,7 +170,7 @@ public class PfbTestUtils {
                     resource.getURL().toString(),
                     ARG_COLLECTION,
                     collectionId.toString(),
-                    ARG_PERMISSION_OPTION,
+                    ARG_TDR_SYNC_PERMISSION,
                     shouldPermissionSync)));
 
     JobDetailImpl jobDetail = new JobDetailImpl();

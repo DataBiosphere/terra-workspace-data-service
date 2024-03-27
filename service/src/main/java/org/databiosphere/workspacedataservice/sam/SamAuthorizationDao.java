@@ -13,8 +13,11 @@ public interface SamAuthorizationDao {
   /** Sam policy name for read permission */
   String READER_POLICY_NAME = "reader";
 
+  /* Resource type to specify when adding Sam member policies */
+  String TDR_SNAPSHOT_RESOURCE_TYPE = "datasnapshot";
+
   /** All roles to add reader policy */
-  String[] READER_ROLES = {"reader", "writer", "owner", "project-owner"};
+  String[] WORKSPACE_ROLES = {"reader", "writer", "owner", "project-owner"};
 
   /**
    * Check if the current user has permission to read the workspace resource from Sam

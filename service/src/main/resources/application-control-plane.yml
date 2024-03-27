@@ -11,7 +11,7 @@ twds:
     batch-write-record-sink: "rawls"
     succeed-on-completion: false
     rawls-bucket-name: ${SERVICE_GOOGLE_BUCKET}
-    permission-sync: true
+    enable-tdr-permission-sync: true
     # Name of PubSub topic for incoming import status notifications from Rawls.
     status-updates-topic: ${IMPORT_STATUS_UPDATES_TOPIC}
     # In live environments, there should only be one subscription per project, so it can use

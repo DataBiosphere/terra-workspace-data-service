@@ -10,7 +10,6 @@ twds:
   data-import:
     batch-write-record-sink: "wds"
     succeed-on-completion: true
-    permission-sync: false
 
 spring:
   cloud:

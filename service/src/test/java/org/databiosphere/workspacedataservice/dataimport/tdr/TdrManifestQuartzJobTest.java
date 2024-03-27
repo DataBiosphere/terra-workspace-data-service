@@ -3,7 +3,7 @@ package org.databiosphere.workspacedataservice.dataimport.tdr;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
-import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.READER_ROLES;
+import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.WORKSPACE_ROLES;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -246,9 +246,7 @@ class TdrManifestQuartzJobTest extends TestBase {
     // set up the job
     TdrManifestQuartzJob tdrManifestQuartzJob =
         testSupport.buildTdrManifestQuartzJob(workspaceId.id());
-    JobExecutionContext mockContext =
-        stubJobContext(
-            jobId, v2fManifestResource, collectionId.id(), /*shouldPermissionSync*/ false);
+    JobExecutionContext mockContext = stubJobContext(jobId, v2fManifestResource, collectionId.id());
 
     // ACT
     // execute the job
@@ -267,6 +265,8 @@ class TdrManifestQuartzJobTest extends TestBase {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     UUID jobId = UUID.randomUUID();
+    // snapshotId of the v2fManifestResource
+    UUID snapshotId = UUID.fromString("e3638824-9ed9-408e-b3f5-cba7585658a3");
     // mock collection service to return this workspace id for this collection id
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // WSM should report no snapshots already linked to this workspace
@@ -275,9 +275,9 @@ class TdrManifestQuartzJobTest extends TestBase {
     when(wsmDao.enumerateDataRepoSnapshotReferences(eq(workspaceId.id()), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
     // mock property that only gets enabled in application-control-plane.yml
-    when(dataImportProperties.isPermissionSync()).thenReturn(true);
+    when(dataImportProperties.isTdrPermissionSyncingEnabled()).thenReturn(true);
     // mock sam call
-    doNothing().when(samDao).addMemberPolicy(anyString(), any(), any(), anyString());
+    doNothing().when(samDao).addMemberPolicy(any(), any(), anyString());
 
     // set up the job
     TdrManifestQuartzJob tdrManifestQuartzJob =
@@ -292,7 +292,13 @@ class TdrManifestQuartzJobTest extends TestBase {
 
     // ASSERT
     ArgumentCaptor<String> roleCaptor = ArgumentCaptor.forClass(String.class);
-    verify(samDao, times(4)).addMemberPolicy(anyString(), any(), any(), roleCaptor.capture());
-    assertThat(roleCaptor.getAllValues()).containsExactlyInAnyOrder(READER_ROLES);
+    ArgumentCaptor<WorkspaceId> workspaceCaptor = ArgumentCaptor.forClass(WorkspaceId.class);
+    ArgumentCaptor<UUID> snapshotIdCaptor = ArgumentCaptor.forClass(UUID.class);
+    verify(samDao, times(4))
+        .addMemberPolicy(
+            workspaceCaptor.capture(), snapshotIdCaptor.capture(), roleCaptor.capture());
+    assertThat(roleCaptor.getAllValues()).containsExactlyInAnyOrder(WORKSPACE_ROLES);
+    assertThat(workspaceCaptor.getAllValues()).containsOnly(workspaceId).hasSize(4);
+    assertThat(snapshotIdCaptor.getAllValues()).containsOnly(snapshotId).hasSize(4);
   }
 }

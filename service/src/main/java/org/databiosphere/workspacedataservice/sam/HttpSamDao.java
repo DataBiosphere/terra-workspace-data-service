@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.sam;
 
 import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.READER_POLICY_NAME;
 import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.RESOURCE_NAME_WORKSPACE;
+import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.TDR_SNAPSHOT_RESOURCE_TYPE;
 
 import java.util.List;
 import java.util.UUID;
@@ -75,20 +76,20 @@ public class HttpSamDao implements SamDao {
     return restClientRetry.withRetryAndErrorHandling(samFunction, "Sam.getPetToken");
   }
 
-  public void addMemberPolicy(
-      String resourceTypeName, WorkspaceId workspaceId, UUID snapshotId, String readerRole) {
+  /** Called only for for syncing data snapshot reader permissions */
+  public void addMemberPolicy(WorkspaceId workspaceId, UUID snapshotId, String readerRole) {
     restClientRetry.withRetryAndErrorHandling(
         () ->
             samClientFactory
                 .getResourcesApi()
                 .addMemberPolicyV2(
-                    resourceTypeName,
+                    TDR_SNAPSHOT_RESOURCE_TYPE,
                     snapshotId.toString(),
                     READER_POLICY_NAME,
                     RESOURCE_NAME_WORKSPACE,
                     workspaceId.toString(),
                     readerRole,
                     null),
-        "Sam.addWorkspaceReaderPolicyToResource");
+        "Sam.addWorkspacePoliciesAsSnapshotReader");
   }
 }
