@@ -60,6 +60,9 @@ public class JobService {
   public void processStatusUpdate(JobStatusUpdate update) {
     UUID jobId = update.jobId();
     try {
+      // JobService's getJob method checks permissions via Sam. Since this method is not run
+      // as part of a user request, there is no token available to make requests to Sam with.
+      // Thus, we must use jobDao's getJob here.
       GenericJobServerModel job = jobDao.getJob(jobId);
       StatusEnum currentStatus = job.getStatus();
       StatusEnum newStatus = update.newStatus();
