@@ -37,7 +37,7 @@ import org.springframework.test.context.TestPropertySource;
       // with aggressive delay settings so unit tests don't run too long
       "rest.retry.backoff.delay=3",
     })
-public class RawlsClientTest {
+class RawlsClientTest {
   @MockBean RawlsApi mockRawlsApi;
 
   @Autowired RawlsClient rawlsClient;
