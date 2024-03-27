@@ -87,6 +87,11 @@ with `gcloud` or by setting the `GOOGLE_CLOUD_PROJECT` environment variable.
 
    This will send imports the dev Rawls; you may want to use a dummy project/topic instead.
 
+4. Configure the Google Cloud Storage bucket to write Rawls JSON to.
+   ```bash
+   export SERVICE_GOOGLE_BUCKET=cwds-batchupsert-dev
+   ```
+
 ##### SAM_URL
 
 WDS contacts Sam for permission checks. You will need to configure Sam's URL by setting an
