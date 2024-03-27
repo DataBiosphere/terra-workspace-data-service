@@ -82,7 +82,11 @@ with `gcloud` or by setting the `GOOGLE_CLOUD_PROJECT` environment variable.
 
 3. Configure PubSub topics by setting environment variables.
    ```bash
+   # Topic for outgoing notifications to Rawls
    export RAWLS_NOTIFY_TOPIC=rawls-async-import-topic-dev
+   # Topic for incoming notifications from Rawls
+   # Since this topic is in a different GCP project, we need the fully qualified name
+   export IMPORT_STATUS_UPDATES_TOPIC=projects/terra-importservice-dev/topics/import-service-notify-dev
    ```
 
    This will send imports the dev Rawls; you may want to use a dummy project/topic instead.
