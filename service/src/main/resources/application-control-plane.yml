@@ -11,13 +11,13 @@ twds:
     batch-write-record-sink: "rawls"
     succeed-on-completion: false
     rawls-bucket-name: ${SERVICE_GOOGLE_BUCKET}
+    enable-tdr-permission-sync: true
     # Name of PubSub topic for incoming import status notifications from Rawls.
     status-updates-topic: ${IMPORT_STATUS_UPDATES_TOPIC}
     # In live environments, there should only be one subscription per project, so it can use
     # a preset name. For BEEs, each BEE will have its own subscription, so the subscription
     # name needs to be set to something unique to the BEE.
     status-updates-subscription: ${IMPORT_STATUS_UPDATES_SUBSCRIPTION:cwds-import-status-updates}
-
 
 spring:
   cloud:

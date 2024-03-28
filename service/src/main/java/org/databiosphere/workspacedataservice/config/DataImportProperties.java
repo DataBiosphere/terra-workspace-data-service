@@ -22,6 +22,7 @@ public class DataImportProperties {
   private RecordSinkMode batchWriteRecordSink;
   private String rawlsBucketName;
   private boolean succeedOnCompletion;
+  private boolean enableTdrPermissionSync = false;
 
   private Set<Pattern> allowedHosts = emptySet();
   private Set<String> allowedSchemes = Set.of("https");
@@ -61,6 +62,20 @@ public class DataImportProperties {
 
   public void setSucceedOnCompletion(boolean succeedOnCompletion) {
     this.succeedOnCompletion = succeedOnCompletion;
+  }
+
+  /**
+   * Permissions syncing on TDR import jobs is only enabled on the control plane.
+   *
+   * @see org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJob
+   * @return the configured value
+   */
+  public boolean isTdrPermissionSyncingEnabled() {
+    return enableTdrPermissionSync;
+  }
+
+  public void setEnableTdrPermissionSync(boolean enableTdrPermissionSync) {
+    this.enableTdrPermissionSync = enableTdrPermissionSync;
   }
 
   /**

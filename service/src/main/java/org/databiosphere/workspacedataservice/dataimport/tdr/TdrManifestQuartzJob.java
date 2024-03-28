@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.dataimport.tdr;
 
 import static org.apache.parquet.avro.AvroReadSupport.READ_INT96_AS_FIXED;
+import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.WORKSPACE_ROLES;
+import static org.databiosphere.workspacedataservice.service.ImportService.ARG_TDR_SYNC_PERMISSION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
@@ -48,6 +50,7 @@ import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
+import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -71,6 +74,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
   private final RecordSourceFactory recordSourceFactory;
   private final SnapshotSupportFactory snapshotSupportFactory;
   private final SamDao samDao;
+  private final boolean isTdrPermissionSyncingEnabled;
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -96,6 +100,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     this.mapper = mapper;
     this.snapshotSupportFactory = snapshotSupportFactory;
     this.samDao = samDao;
+    this.isTdrPermissionSyncingEnabled = dataImportProperties.isTdrPermissionSyncingEnabled();
   }
 
   @Override
@@ -167,6 +172,10 @@ public class TdrManifestQuartzJob extends QuartzJob {
                               .record()
                               .withRecordType(entry.getKey())
                               .ofQuantity(entry.getValue())));
+      // sync permissions if option is enabled and we're running in the control-plane
+      if (isTdrPermissionSyncingEnabled && jobDataMap.getBoolean(ARG_TDR_SYNC_PERMISSION)) {
+        syncPermissions(workspaceId, snapshotId);
+      }
     } catch (Exception e) {
       throw new TdrManifestImportException(e.getMessage(), e);
     } finally {
@@ -397,5 +406,25 @@ public class TdrManifestQuartzJob extends QuartzJob {
     SnapshotSupport snapshotSupport = snapshotSupportFactory.buildSnapshotSupport(workspaceId);
     // TODO AJ-1673: don't use the env-var workspaceId here
     snapshotSupport.linkSnapshots(snapshotIds);
+  }
+
+  /**
+   * Sync permissions with SAM.
+   *
+   * @param workspaceId current workspace
+   * @param snapshotId id of the TDR snapshot
+   */
+  private void syncPermissions(WorkspaceId workspaceId, UUID snapshotId) {
+
+    for (String role : WORKSPACE_ROLES) {
+      try {
+        samDao.addWorkspacePoliciesAsSnapshotReader(workspaceId, snapshotId, role);
+      } catch (RestException e) {
+        throw new TdrManifestImportException(
+            "Failed to sync permissions for TDR snapshot %s into workspace %s. RestException on role %s"
+                .formatted(snapshotId, workspaceId.toString(), role),
+            e);
+      }
+    }
   }
 }

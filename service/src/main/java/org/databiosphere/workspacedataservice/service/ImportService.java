@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ImportService {
+  public static final String ARG_TDR_SYNC_PERMISSION = "tdrSyncPermissions";
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private final CollectionService collectionService;
   private final SamDao samDao;
@@ -95,6 +96,10 @@ public class ImportService {
       arguments.put(ARG_TOKEN, petToken);
       arguments.put(ARG_URL, importRequest.getUrl().toString());
       arguments.put(ARG_COLLECTION, collectionId.toString());
+      // try to retrieve the tdrSyncPermissions option if available (first as string, then bool)
+      String tdrSyncPermissions =
+          importRequest.getOptions().getOrDefault(ARG_TDR_SYNC_PERMISSION, "false").toString();
+      arguments.put(ARG_TDR_SYNC_PERMISSION, Boolean.parseBoolean(tdrSyncPermissions));
 
       // if we can find an MDC id, add it to the job context
       safeGetMdcId(createdJob.getJobId())
