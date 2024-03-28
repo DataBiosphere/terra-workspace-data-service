@@ -58,7 +58,6 @@ class RawlsClientTest {
     rawlsClient.createSnapshotReference(workspaceId.id(), snapshotId);
 
     // ASSERT
-    // verify it retried three times, until it got the success
     verify(mockRawlsApi)
         .createDataRepoSnapshotByWorkspaceId(
             eq(workspaceId.id()), namedDataRepoSnapshotCaptor.capture());
