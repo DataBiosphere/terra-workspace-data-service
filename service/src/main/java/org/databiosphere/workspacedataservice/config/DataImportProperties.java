@@ -74,7 +74,7 @@ public class DataImportProperties {
     return enableTdrPermissionSync;
   }
 
-  public void setTdrPermissionSync(boolean enableTdrPermissionSync) {
+  public void setEnableTdrPermissionSync(boolean enableTdrPermissionSync) {
     this.enableTdrPermissionSync = enableTdrPermissionSync;
   }
 

@@ -277,7 +277,7 @@ class TdrManifestQuartzJobTest extends TestBase {
     // mock property that only gets enabled in application-control-plane.yml
     when(dataImportProperties.isTdrPermissionSyncingEnabled()).thenReturn(true);
     // mock sam call
-    doNothing().when(samDao).addMemberPolicy(any(), any(), anyString());
+    doNothing().when(samDao).addWorkspacePoliciesAsSnapshotReader(any(), any(), anyString());
 
     // set up the job
     TdrManifestQuartzJob tdrManifestQuartzJob =
@@ -295,7 +295,7 @@ class TdrManifestQuartzJobTest extends TestBase {
     ArgumentCaptor<WorkspaceId> workspaceCaptor = ArgumentCaptor.forClass(WorkspaceId.class);
     ArgumentCaptor<UUID> snapshotIdCaptor = ArgumentCaptor.forClass(UUID.class);
     verify(samDao, times(4))
-        .addMemberPolicy(
+        .addWorkspacePoliciesAsSnapshotReader(
             workspaceCaptor.capture(), snapshotIdCaptor.capture(), roleCaptor.capture());
     assertThat(roleCaptor.getAllValues()).containsExactlyInAnyOrder(WORKSPACE_ROLES);
     assertThat(workspaceCaptor.getAllValues()).containsOnly(workspaceId).hasSize(4);

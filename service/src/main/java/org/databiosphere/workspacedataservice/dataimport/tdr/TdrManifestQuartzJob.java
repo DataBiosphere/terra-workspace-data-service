@@ -74,7 +74,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
   private final RecordSourceFactory recordSourceFactory;
   private final SnapshotSupportFactory snapshotSupportFactory;
   private final SamDao samDao;
-  private final DataImportProperties dataImportProperties;
+  private final boolean isTdrPermissionSyncingEnabled;
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -100,7 +100,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     this.mapper = mapper;
     this.snapshotSupportFactory = snapshotSupportFactory;
     this.samDao = samDao;
-    this.dataImportProperties = dataImportProperties;
+    this.isTdrPermissionSyncingEnabled = dataImportProperties.isTdrPermissionSyncingEnabled();
   }
 
   @Override
@@ -173,8 +173,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
                               .withRecordType(entry.getKey())
                               .ofQuantity(entry.getValue())));
       // sync permissions if option is enabled and we're running in the control-plane
-      if (dataImportProperties.isTdrPermissionSyncingEnabled()
-          && jobDataMap.getBoolean(ARG_TDR_SYNC_PERMISSION)) {
+      if (isTdrPermissionSyncingEnabled && jobDataMap.getBoolean(ARG_TDR_SYNC_PERMISSION)) {
         syncPermissions(workspaceId, snapshotId);
       }
     } catch (Exception e) {
@@ -410,7 +409,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
   }
 
   /**
-   * Sync permissions with SAM if option is provided.
+   * Sync permissions with SAM.
    *
    * @param workspaceId current workspace
    * @param snapshotId id of the TDR snapshot
@@ -419,7 +418,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
     for (String role : WORKSPACE_ROLES) {
       try {
-        samDao.addMemberPolicy(workspaceId, snapshotId, role);
+        samDao.addWorkspacePoliciesAsSnapshotReader(workspaceId, snapshotId, role);
       } catch (RestException e) {
         throw new TdrManifestImportException(
             "Failed to sync permissions for TDR snapshot %s into workspace %s. RestException on role %s"

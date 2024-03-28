@@ -25,5 +25,6 @@ public interface SamDao {
   String getPetToken();
 
   /** Add reader policy to workspace. */
-  void addMemberPolicy(WorkspaceId workspaceId, UUID snapshotId, String readerRole);
+  void addWorkspacePoliciesAsSnapshotReader(
+      WorkspaceId workspaceId, UUID snapshotId, String readerRole);
 }

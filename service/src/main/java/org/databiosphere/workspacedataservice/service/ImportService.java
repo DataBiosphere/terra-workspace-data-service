@@ -98,7 +98,7 @@ public class ImportService {
       arguments.put(ARG_COLLECTION, collectionId.toString());
       // try to retrieve the tdrSyncPermissions option if available (first as string, then bool)
       String tdrSyncPermissions =
-          importRequest.getOptions().getOrDefault("tdrSyncPermissions", "false").toString();
+          importRequest.getOptions().getOrDefault(ARG_TDR_SYNC_PERMISSION, "false").toString();
       arguments.put(ARG_TDR_SYNC_PERMISSION, Boolean.parseBoolean(tdrSyncPermissions));
 
       // if we can find an MDC id, add it to the job context
