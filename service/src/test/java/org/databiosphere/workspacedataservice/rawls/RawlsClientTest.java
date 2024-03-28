@@ -24,7 +24,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 @DirtiesContext
-@ActiveProfiles(value = "control-plane", inheritProfiles = false)
+@ActiveProfiles(value = "control-plane")
 @SpringBootTest
 @TestPropertySource(
     properties = {
@@ -32,10 +32,6 @@ import org.springframework.test.context.TestPropertySource;
       "rawlsUrl=https://localhost/",
       // turn off pubsub autoconfiguration for tests
       "spring.cloud.gcp.pubsub.enabled=false",
-      // allow 3 retry attempts, so we can better verify retries
-      "rest.retry.maxAttempts=3",
-      // with aggressive delay settings so unit tests don't run too long
-      "rest.retry.backoff.delay=3",
     })
 class RawlsClientTest {
   @MockBean RawlsApi mockRawlsApi;
