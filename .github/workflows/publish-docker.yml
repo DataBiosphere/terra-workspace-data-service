@@ -11,8 +11,6 @@ on:
       ACR_SP_USER:
         required: true
   pull_request:
-    branches-ignore:
-      - 'dependabot/**'
   push:
     branches:
       - main
@@ -25,6 +23,7 @@ env:
 
 jobs:
   publish-docker-job:
+    if: github.actor != 'dependabot[bot]'
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -116,6 +115,7 @@ jobs:
   # Report the new version of cWDS to Sherlock.
   # This enables Sherlock to gather metrics and generate changelogs for deployments.
   cwds-report-to-sherlock:
+    if: github.actor != 'dependabot[bot]'
     needs: publish-docker-job
     uses: broadinstitute/sherlock/.github/workflows/client-report-app-version.yaml@main
     with:
