@@ -1,11 +1,17 @@
 package org.databiosphere.workspacedataservice.sam;
 
+import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.READER_POLICY_NAME;
+import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.RESOURCE_NAME_TDR_SNAPSHOT;
+import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.RESOURCE_NAME_WORKSPACE;
+
 import java.util.List;
+import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserStatusInfo;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
@@ -68,5 +74,23 @@ public class HttpSamDao implements SamDao {
                         "https://www.googleapis.com/auth/userinfo.email",
                         "https://www.googleapis.com/auth/userinfo.profile"));
     return restClientRetry.withRetryAndErrorHandling(samFunction, "Sam.getPetToken");
+  }
+
+  /** Called only for for syncing data snapshot reader permissions */
+  public void addWorkspacePoliciesAsSnapshotReader(
+      WorkspaceId workspaceId, UUID snapshotId, String readerRole) {
+    restClientRetry.withRetryAndErrorHandling(
+        () ->
+            samClientFactory
+                .getResourcesApi()
+                .addMemberPolicyV2(
+                    RESOURCE_NAME_TDR_SNAPSHOT,
+                    snapshotId.toString(),
+                    READER_POLICY_NAME,
+                    RESOURCE_NAME_WORKSPACE,
+                    workspaceId.toString(),
+                    readerRole,
+                    null),
+        "Sam.addWorkspacePoliciesAsSnapshotReader");
   }
 }
