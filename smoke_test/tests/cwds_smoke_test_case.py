@@ -8,6 +8,7 @@ from urllib.parse import urljoin
 
 class CwdsSmokeTestCase(TestCase):
   CWDS_HOST = None
+  WORKSPACE_ID = None
   USER_TOKEN = None
 
   @staticmethod

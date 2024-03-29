@@ -27,13 +27,14 @@ def gather_tests(is_authenticated: bool = False) -> TestSuite:
   suite.addTests(version_tests)
 
   if is_authenticated:
+    print("user_token and workspace_id both provided.  Running additional authenticated tests.")
     user_info_tests = unittest.defaultTestLoader.loadTestsFromTestCase(CwdsJobListingTests)
     resource_types_tests = unittest.defaultTestLoader.loadTestsFromTestCase(CwdsJobStatusTests)
 
     suite.addTests(user_info_tests)
     suite.addTests(resource_types_tests)
   else:
-    print("No User Token provided.  Skipping authenticated tests.")
+    print("user_token and/or workspace_id not provided.  Skipping authenticated tests.")
 
   return suite
 
@@ -43,9 +44,10 @@ def main(main_args):
     verify_user_token(main_args.user_token)
 
   CwdsSmokeTestCase.CWDS_HOST = main_args.CWDS_HOST
+  CwdsSmokeTestCase.WORKSPACE_ID = main_args.workspace_id
   CwdsSmokeTestCase.USER_TOKEN = main_args.user_token
 
-  test_suite = gather_tests(main_args.user_token)
+  test_suite = gather_tests(main_args.user_token and main_args.workspace_id)
 
   runner = unittest.TextTestRunner(verbosity=main_args.verbosity)
   result = runner.run(test_suite)
@@ -82,10 +84,16 @@ if __name__ == "__main__":
     help="domain with optional port number of the cWDS host you want to test"
   )
   parser.add_argument(
+    "workspace_id",
+    nargs='?',
+    default=None,
+    help="Optional; workspace id against which tests run. If this and user_token are present, enables additional tests."
+  )
+  parser.add_argument(
     "user_token",
     nargs='?',
     default=None,
-    help="Optional. If present, will test additional authenticated endpoints using the specified token"
+    help="Optional; auth token for authenticated tests. If this and workspace_id are present, enables additional tests."
   )
 
   args = parser.parse_args()
