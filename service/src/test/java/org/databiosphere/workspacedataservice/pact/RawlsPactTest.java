@@ -15,6 +15,7 @@ import au.com.dius.pact.core.model.RequestResponsePact;
 import au.com.dius.pact.core.model.annotations.Pact;
 import au.com.dius.pact.provider.spring.SpringRestPactRunner;
 import io.micrometer.observation.ObservationRegistry;
+import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.observability.TestObservationRegistryConfig;
 import org.databiosphere.workspacedataservice.rawls.BearerAuthRequestInitializer;
@@ -70,9 +71,12 @@ public class RawlsPactTest {
             .closeObject()
             .closeArray();
     return builder
-        .given("one snapshot in the given workspace")
+        .given("one snapshot in the given workspace", Map.of("workspaceId", WORKSPACE_UUID))
         .uponReceiving("a request for the workspace's snapshots")
-        .path(String.format("/api/workspaces/%s/snapshots/v2", WORKSPACE_UUID))
+        .pathFromProviderState(
+            "/api/workspaces/${workspaceId}/snapshots/v2",
+            String.format("/api/workspaces/%s/snapshots/v2", WORKSPACE_UUID))
+        //        .path(String.format("/api/workspaces/%s/snapshots/v2", WORKSPACE_UUID))
         .matchQuery("offset", "0")
         .matchQuery("limit", "10")
         .method("GET")
