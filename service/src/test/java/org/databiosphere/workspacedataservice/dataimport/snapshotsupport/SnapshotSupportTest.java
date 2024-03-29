@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -91,16 +92,13 @@ class SnapshotSupportTest extends TestBase {
   }
 
   @Test
-  void existingPolicySnapshotIds() {
+  void extractSnapshotIds() {
     List<UUID> expected = IntStream.range(0, 75).mapToObj(i -> UUID.randomUUID()).toList();
 
-    List<ResourceDescription> resourceDescriptions =
-        expected.stream().map(this::createResourceDescription).toList();
+    Stream<ResourceDescription> resourceDescriptions =
+        expected.stream().map(this::createResourceDescription);
 
-    ResourceList resourceList = new ResourceList();
-    resourceList.setResources(resourceDescriptions);
-
-    List<UUID> actual = defaultSupport().extractSnapshotIds(resourceList);
+    List<UUID> actual = defaultSupport().extractSnapshotIds(resourceDescriptions).toList();
 
     assertEquals(expected, actual);
   }

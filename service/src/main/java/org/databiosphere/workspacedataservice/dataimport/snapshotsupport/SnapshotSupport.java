@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -108,7 +109,8 @@ public abstract class SnapshotSupport {
    */
   @VisibleForTesting
   public List<UUID> existingPolicySnapshotIds(int pageSize) {
-    return extractSnapshotIds(listAllSnapshots(pageSize));
+    List<ResourceDescription> allSnapshots = listAllSnapshots(pageSize).getResources();
+    return extractSnapshotIds(allSnapshots.stream()).toList();
   }
 
   /**
@@ -126,18 +128,15 @@ public abstract class SnapshotSupport {
   }
 
   /**
-   * Given a ResourceList, find all the valid ids of referenced snapshots in that list
+   * Given a stream of ResourceDescriptions for snapshot references, find all the valid ids of
+   * referenced snapshots in the stream.
    *
-   * @param resourceList the list in which to look for snapshotIds
-   * @return the list of unique ids in the provided list
+   * @param snapshots a stream of snapshot references
+   * @return unique snapshot ids in the provided snapshot references
    */
   @VisibleForTesting
-  List<UUID> extractSnapshotIds(ResourceList resourceList) {
-    return resourceList.getResources().stream()
-        .map(this::safeGetSnapshotId)
-        .filter(Objects::nonNull)
-        .distinct()
-        .toList();
+  Stream<UUID> extractSnapshotIds(Stream<ResourceDescription> snapshots) {
+    return snapshots.map(this::safeGetSnapshotId).filter(Objects::nonNull).distinct();
   }
 
   /**
