@@ -82,4 +82,6 @@ by passing a verbosity argument to `smoke_test.py`. For example to print more in
 tests being
 run:
 
-```python -v 2 smoke_test.py {CWDS_HOST}```
+```python smoke_test.py {CWDS_HOST} -v 2```
+or
+```python smoke_test.py {CWDS_HOST} $(gcloud auth print-access-token) -v 2```

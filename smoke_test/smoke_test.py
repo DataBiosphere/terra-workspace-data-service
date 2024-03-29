@@ -90,9 +90,5 @@ if __name__ == "__main__":
 
   args = parser.parse_args()
 
-  # Need to pop off sys.argv values to avoid messing with args passed to unittest.main()
-  for _ in range(len(sys.argv[1:])):
-    sys.argv.pop()
-
   main(args)
   sys.exit(0)
