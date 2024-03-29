@@ -19,7 +19,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -30,7 +29,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.mu.util.stream.BiStream;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
-import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import java.io.IOException;
 import java.io.InputStream;
@@ -108,8 +106,7 @@ class PfbQuartzJobControlPlaneE2ETest {
   @Autowired PfbTestSupport testSupport;
   @Autowired MockMvc mockMvc;
   @Autowired MeterRegistry meterRegistry;
-  // overridden with a TestObservationRegistry
-  @Autowired ObservationRegistry observationRegistry;
+  @Autowired TestObservationRegistry observationRegistry;
 
   @Autowired
   @Qualifier("mockGcsStorage")
@@ -153,7 +150,7 @@ class PfbQuartzJobControlPlaneE2ETest {
     storage.getBlobsInBucket().forEach(blob -> storage.deleteBlob(blob.getName()));
     meterRegistry.clear();
     Metrics.globalRegistry.clear();
-    ((TestObservationRegistry) observationRegistry).clear();
+    observationRegistry.clear();
   }
 
   /* import test.avro, and validate the tables and row counts it imported. */
