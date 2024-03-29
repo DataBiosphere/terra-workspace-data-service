@@ -17,7 +17,6 @@ import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
@@ -34,9 +33,9 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.quartz.JobDataMap;
@@ -50,7 +49,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @SpringBootTest
 @DirtiesContext
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestInstance(Lifecycle.PER_CLASS)
 @WithTestObservationRegistry
 class QuartzJobTest extends TestBase {
 
@@ -77,14 +76,6 @@ class QuartzJobTest extends TestBase {
         .thenThrow(new RuntimeException("test failed via jobDao.fail()"));
 
     when(dataImportProperties.isSucceedOnCompletion()).thenReturn(true);
-  }
-
-  /** clear all observations and metrics prior to each test */
-  @BeforeEach
-  void beforeEach() {
-    meterRegistry.clear();
-    Metrics.globalRegistry.clear();
-    observationRegistry.clear();
   }
 
   /**

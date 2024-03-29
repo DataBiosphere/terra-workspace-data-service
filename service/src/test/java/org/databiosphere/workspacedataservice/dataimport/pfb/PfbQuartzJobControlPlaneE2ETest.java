@@ -27,9 +27,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.mu.util.stream.BiStream;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.observation.tck.TestObservationRegistry;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -104,8 +101,6 @@ class PfbQuartzJobControlPlaneE2ETest {
   @Autowired CollectionService collectionService;
   @Autowired PfbTestSupport testSupport;
   @Autowired MockMvc mockMvc;
-  @Autowired MeterRegistry meterRegistry;
-  @Autowired TestObservationRegistry observationRegistry;
 
   @Autowired
   @Qualifier("mockGcsStorage")
@@ -147,9 +142,6 @@ class PfbQuartzJobControlPlaneE2ETest {
   @AfterEach
   void teardown() {
     storage.getBlobsInBucket().forEach(blob -> storage.deleteBlob(blob.getName()));
-    meterRegistry.clear();
-    Metrics.globalRegistry.clear();
-    observationRegistry.clear();
   }
 
   /* import test.avro, and validate the tables and row counts it imported. */
