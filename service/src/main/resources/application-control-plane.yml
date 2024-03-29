@@ -12,6 +12,8 @@ twds:
     succeed-on-completion: false
     rawls-bucket-name: ${SERVICE_GOOGLE_BUCKET}
     enable-tdr-permission-sync: true
+    # Name of PubSub topic to notify Rawls of JSON files ready for import.
+    rawls-notifications-topic: ${RAWLS_NOTIFY_TOPIC}
     # Name of PubSub topic for incoming import status notifications from Rawls.
     status-updates-topic: ${IMPORT_STATUS_UPDATES_TOPIC}
     # In live environments, there should only be one subscription per project, so it can use
@@ -25,7 +27,6 @@ spring:
       core:
         enabled: true
       pubsub:
-        topic: ${RAWLS_NOTIFY_TOPIC}
         enabled: true
 
 sentry:
