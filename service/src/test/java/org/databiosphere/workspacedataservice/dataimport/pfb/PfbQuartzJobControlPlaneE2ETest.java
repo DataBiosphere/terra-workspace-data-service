@@ -41,7 +41,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.databiosphere.workspacedataservice.observability.TestObservationRegistryConfig;
+import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
@@ -71,7 +71,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -98,7 +97,7 @@ import org.springframework.util.StreamUtils;
       "rawlsUrl=https://localhost/",
       "management.prometheus.metrics.export.enabled=true"
     })
-@Import(TestObservationRegistryConfig.class)
+@WithTestObservationRegistry
 @AutoConfigureMockMvc
 class PfbQuartzJobControlPlaneE2ETest {
   @Autowired ObjectMapper mapper;
