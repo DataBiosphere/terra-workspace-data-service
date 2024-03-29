@@ -40,6 +40,7 @@ public class RawlsPactTest {
 
   private static final UUID WORKSPACE_UUID =
       UUID.fromString("facade00-0000-4000-a000-000000000000");
+  private static final UUID RESOURCE_UUID = UUID.fromString("5ca1ab1e-0000-4000-a000-000000000000");
 
   @Pact(consumer = "wds", provider = "rawls")
   public RequestResponsePact enumerateSnapshotsPact(PactDslWithProvider builder) {
@@ -48,17 +49,19 @@ public class RawlsPactTest {
             .array("gcpDataRepoSnapshots")
             .object()
             .object("metadata")
-            .stringType(
-                "workspaceId") // TODO which of the fields in metadata do we actually care about
-            .stringType("resourceId")
-            .stringType("name")
-            .stringType("description")
-            .stringType("resourceType")
-            .stringType("stewardshipType")
-            .stringType("cloudPlatform")
-            .stringType("cloningInstructions")
-            .object("properties")
-            .closeObject() // TODO what do we want in properties
+            .uuid(
+                "workspaceId",
+                WORKSPACE_UUID) // TODO which of the fields in metadata do we actually
+            // care about
+            .uuid("resourceId", RESOURCE_UUID)
+            //            .stringType("name")
+            //            .stringType("description")
+            //            .stringType("resourceType")
+            //            .stringType("stewardshipType")
+            //            .stringType("cloudPlatform")
+            //            .stringType("cloningInstructions")
+            .array("properties")
+            .closeArray() // TODO what do we want in properties
             .closeObject()
             .object("attributes")
             .stringType("instanceName")
