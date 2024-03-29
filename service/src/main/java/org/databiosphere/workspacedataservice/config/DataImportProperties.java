@@ -26,6 +26,7 @@ public class DataImportProperties {
 
   private Set<Pattern> allowedHosts = emptySet();
   private Set<String> allowedSchemes = Set.of("https");
+  private String rawlsNotificationsTopic;
   private String statusUpdatesTopic;
   private String statusUpdatesSubscription;
 
@@ -96,6 +97,14 @@ public class DataImportProperties {
 
   public void setAllowedSchemes(String[] allowedSchemes) {
     this.allowedSchemes = stream(allowedSchemes).collect(Collectors.toSet());
+  }
+
+  public String getRawlsNotificationsTopic() {
+    return rawlsNotificationsTopic;
+  }
+
+  public void setRawlsNotificationsTopic(String rawlsNotificationsTopic) {
+    this.rawlsNotificationsTopic = rawlsNotificationsTopic;
   }
 
   public String getStatusUpdatesTopic() {

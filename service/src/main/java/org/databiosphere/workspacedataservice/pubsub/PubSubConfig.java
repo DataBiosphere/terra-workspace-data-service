@@ -10,7 +10,6 @@ import com.google.pubsub.v1.Subscription;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.service.PubSubService;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,9 +28,8 @@ public class PubSubConfig {
   }
 
   @Bean
-  PubSub getPubSub(
-      PubSubTemplate pubSubTemplate, @Value("${spring.cloud.gcp.pubsub.topic}") String topic) {
-    return new ImportPubSub(pubSubTemplate, topic);
+  PubSub getPubSub(PubSubTemplate pubSubTemplate, DataImportProperties dataImportProperties) {
+    return new ImportPubSub(pubSubTemplate, dataImportProperties.getRawlsNotificationsTopic());
   }
 
   @Bean
