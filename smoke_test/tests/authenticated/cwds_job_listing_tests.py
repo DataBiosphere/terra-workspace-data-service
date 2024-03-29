@@ -12,7 +12,7 @@ class CwdsJobListingTests(CwdsSmokeTestCase):
     return urljoin(CwdsSmokeTestCase.build_cwds_url("/job/v1/instance/"), str(collection_id))
 
   def test_status_code_is_404(self):
-    """Call the job-listing url; it should return 404 since we are specifying a random collection"""
+    """Call the job-listing url; it should return 200 and the response should be an array"""
     response = CwdsSmokeTestCase.call_cwds(self.job_listing_url(CwdsSmokeTestCase.WORKSPACE_ID),
                                            CwdsSmokeTestCase.USER_TOKEN)
     self.assertEqual(response.status_code, 200,
