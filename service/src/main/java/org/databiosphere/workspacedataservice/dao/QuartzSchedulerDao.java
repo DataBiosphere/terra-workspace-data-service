@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.dao;
 import static org.quartz.TriggerBuilder.newTrigger;
 
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
-import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
 import org.quartz.Scheduler;
@@ -23,17 +22,8 @@ public class QuartzSchedulerDao implements SchedulerDao {
   }
 
   public void schedule(Schedulable schedulable) {
-    JobKey jobKey = new JobKey(schedulable.getId(), schedulable.getGroup());
-
-    JobDetail jobDetail =
-        JobBuilder.newJob()
-            .ofType(schedulable.getImplementation())
-            .withIdentity(jobKey)
-            .setJobData(schedulable.getArgumentsAsJobDataMap())
-            .storeDurably(false) // delete from the quartz table after the job finishes
-            .withDescription(schedulable.getDescription())
-            .build();
-
+    JobDetail jobDetail = schedulable.getJobDetail();
+    JobKey jobKey = jobDetail.getKey();
     // tell Quartz to run the job: run only once, start immediately
     Trigger trigger = newTrigger().forJob(jobKey).startNow().build();
     try {
