@@ -8,9 +8,7 @@ import static org.databiosphere.workspacedataservice.service.RecordService.TAG_N
 import static org.databiosphere.workspacedataservice.service.RecordService.TAG_OLD_DATATYPE;
 import static org.databiosphere.workspacedataservice.service.RecordService.TAG_RECORD_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import java.math.BigDecimal;
 import java.util.Map;
@@ -41,8 +39,7 @@ class RecordServiceTest extends TestBase {
   @Autowired DataTypeInferer inferer;
   @Autowired CollectionService collectionService;
   @Autowired RecordDao recordDao;
-  // overridden by TestObservationRegistryConfig with a TestObservationRegistry
-  @Autowired private ObservationRegistry observationRegistry;
+  @Autowired TestObservationRegistry observationRegistry;
 
   private UUID collectionId;
 
@@ -59,13 +56,11 @@ class RecordServiceTest extends TestBase {
 
   @Test
   void schemaChangesIncrementMetricsCounter() {
-    TestObservationRegistry testObservationRegistry =
-        assertInstanceOf(TestObservationRegistry.class, observationRegistry);
     // create record service that uses the simple meter registry
-    RecordService recordService = new RecordService(recordDao, inferer, testObservationRegistry);
+    RecordService recordService = new RecordService(recordDao, inferer, observationRegistry);
 
     // assert the observation registry has no observations
-    assertThat(testObservationRegistry).hasNumberOfObservationsEqualTo(0);
+    assertThat(observationRegistry).hasNumberOfObservationsEqualTo(0);
 
     // insert a simple record; this will create "myAttr" as numeric
     RecordType recordType = RecordType.valueOf("myType");
@@ -83,7 +78,7 @@ class RecordServiceTest extends TestBase {
 
     // assert the observation registry still has no counters; we only create an observation when
     // altering a column, and we just created a table but didn't issue any alters
-    assertThat(testObservationRegistry).hasNumberOfObservationsEqualTo(0);
+    assertThat(observationRegistry).hasNumberOfObservationsEqualTo(0);
 
     // insert another record, which will update the "myAttr" to be a string
     recordService.upsertSingleRecord(
@@ -99,7 +94,7 @@ class RecordServiceTest extends TestBase {
         recordDao.getExistingTableSchema(collectionId, recordType));
 
     // we should have created an observation
-    assertThat(testObservationRegistry)
+    assertThat(observationRegistry)
         .doesNotHaveAnyRemainingCurrentObservation()
         .hasNumberOfObservationsWithNameEqualTo(METRIC_COL_CHANGE, 1)
         .hasObservationWithNameEqualTo(METRIC_COL_CHANGE)

@@ -19,7 +19,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -28,10 +27,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.mu.util.stream.BiStream;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.observation.ObservationRegistry;
-import io.micrometer.observation.tck.TestObservationRegistry;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -43,7 +38,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.databiosphere.workspacedataservice.observability.TestObservationRegistryConfig;
+import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
@@ -73,7 +68,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -100,16 +94,13 @@ import org.springframework.util.StreamUtils;
       "rawlsUrl=https://localhost/",
       "management.prometheus.metrics.export.enabled=true"
     })
-@Import(TestObservationRegistryConfig.class)
+@WithTestObservationRegistry
 @AutoConfigureMockMvc
 class PfbQuartzJobControlPlaneE2ETest {
   @Autowired ObjectMapper mapper;
   @Autowired CollectionService collectionService;
   @Autowired PfbTestSupport testSupport;
   @Autowired MockMvc mockMvc;
-  @Autowired MeterRegistry meterRegistry;
-  // overridden with a TestObservationRegistry
-  @Autowired ObservationRegistry observationRegistry;
 
   @Autowired
   @Qualifier("mockGcsStorage")
@@ -151,9 +142,6 @@ class PfbQuartzJobControlPlaneE2ETest {
   @AfterEach
   void teardown() {
     storage.getBlobsInBucket().forEach(blob -> storage.deleteBlob(blob.getName()));
-    meterRegistry.clear();
-    Metrics.globalRegistry.clear();
-    ((TestObservationRegistry) observationRegistry).clear();
   }
 
   /* import test.avro, and validate the tables and row counts it imported. */

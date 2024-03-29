@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.observability;
 
-import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -16,7 +15,7 @@ import org.springframework.context.annotation.Bean;
 @TestConfiguration
 public class TestObservationRegistryConfig {
   @Bean
-  ObservationRegistry testObservationRegistry() {
+  TestObservationRegistry testObservationRegistry() {
     return TestObservationRegistry.create();
   }
 }
