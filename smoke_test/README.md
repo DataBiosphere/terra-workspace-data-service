@@ -24,7 +24,7 @@ Python 3.10.3 or higher
 
 **_All code examples throughout this README assume you are in the `smoke_test` directory!_**
 
-Recommended, but optional, create and active a Python virtual env
+Recommended, but optional, create and activate a Python virtual env
 
 ```
 python -m venv venv
