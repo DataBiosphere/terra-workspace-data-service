@@ -87,6 +87,8 @@ with `gcloud` or by setting the `GOOGLE_CLOUD_PROJECT` environment variable.
    # Topic for incoming notifications from Rawls
    # Since this topic is in a different GCP project, we need the fully qualified name
    export IMPORT_STATUS_UPDATES_TOPIC=projects/terra-importservice-dev/topics/import-service-notify-dev
+   # Create a subscription dedicated to your local CWDS
+   export IMPORT_STATUS_UPDATES_SUBSCRIPTION=cwds-import-status-updates-local-$(whoami)
    ```
 
    This will send imports the dev Rawls; you may want to use a dummy project/topic instead.
