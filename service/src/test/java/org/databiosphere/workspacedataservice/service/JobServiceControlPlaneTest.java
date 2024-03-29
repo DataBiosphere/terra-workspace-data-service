@@ -50,7 +50,7 @@ import org.springframework.test.context.TestPropertySource;
       // Rawls url must be valid, else context initialization (Spring startup) will fail
       "rawlsUrl=https://localhost/"
     })
-class JobServiceControlPlaneTest extends JobServiceBaseTest {
+class JobServiceControlPlaneTest extends JobServiceTestBase {
 
   @Autowired JobService jobService;
   @MockBean JobDao jobDao;
