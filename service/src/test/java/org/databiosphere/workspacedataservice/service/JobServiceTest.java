@@ -18,6 +18,7 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel.St
 import org.databiosphere.workspacedataservice.pubsub.JobStatusUpdate;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,8 +40,7 @@ public class JobServiceTest extends JobServiceTestBase {
   @Test
   void processJobStatusUpdateSuccess() {
     // Arrange
-    UUID jobId = setupProcessJobStatusUpdateTest();
-
+    UUID jobId = stubJob(makeJob(StatusEnum.RUNNING));
     JobStatusUpdate update = new JobStatusUpdate(jobId, StatusEnum.RUNNING, StatusEnum.SUCCEEDED);
 
     // Act
@@ -53,8 +53,7 @@ public class JobServiceTest extends JobServiceTestBase {
   @Test
   void processJobStatusUpdateError() {
     // Arrange
-    UUID jobId = setupProcessJobStatusUpdateTest();
-
+    UUID jobId = stubJob(makeJob(StatusEnum.RUNNING));
     JobStatusUpdate update =
         new JobStatusUpdate(jobId, StatusEnum.RUNNING, StatusEnum.ERROR, "Something went wrong");
 
@@ -68,8 +67,7 @@ public class JobServiceTest extends JobServiceTestBase {
   @Test
   void processJobStatusUpdateNoop() {
     // Arrange
-    UUID jobId = setupProcessJobStatusUpdateTest();
-
+    UUID jobId = stubJob(makeJob(StatusEnum.RUNNING));
     JobStatusUpdate update = new JobStatusUpdate(jobId, StatusEnum.RUNNING, StatusEnum.RUNNING);
 
     // Act
@@ -82,8 +80,7 @@ public class JobServiceTest extends JobServiceTestBase {
   @Test
   void processJobStatusUpdateForTerminalJob() {
     // Arrange
-    UUID jobId = setupProcessJobStatusUpdateTest(StatusEnum.SUCCEEDED);
-
+    UUID jobId = stubJob(makeJob(StatusEnum.SUCCEEDED));
     JobStatusUpdate update = new JobStatusUpdate(jobId, StatusEnum.SUCCEEDED, StatusEnum.RUNNING);
 
     // Act/Assert
@@ -111,24 +108,26 @@ public class JobServiceTest extends JobServiceTestBase {
     verify(jobDao, never()).succeeded(jobId);
   }
 
-  private UUID setupProcessJobStatusUpdateTest(StatusEnum initialStatus) {
-    UUID jobId = randomUUID();
-    // Job exists
-    GenericJobServerModel expectedJob =
-        new GenericJobServerModel(
-            jobId,
-            JobTypeEnum.DATA_IMPORT,
-            randomUUID(),
-            initialStatus,
-            // set created and updated to now, but in UTC because that's how Postgres stores it
-            OffsetDateTime.now(ZoneId.of("Z")),
-            OffsetDateTime.now(ZoneId.of("Z")));
-    when(jobDao.getJob(jobId)).thenReturn(expectedJob);
+  @Disabled
+  void processJobStatusUpdateMeasuresDurationSinceCreation() {}
 
-    return jobId;
+  @Disabled
+  void processJobStatusUpdateSkipsMeasurementOnNoChange() {}
+
+  private UUID stubJob(GenericJobServerModel job) {
+    when(jobDao.getJob(job.getJobId())).thenReturn(job);
+    return job.getJobId();
   }
 
-  private UUID setupProcessJobStatusUpdateTest() {
-    return setupProcessJobStatusUpdateTest(StatusEnum.RUNNING);
+  private static GenericJobServerModel makeJob(StatusEnum initialStatus) {
+    // Use UTC because that's how Postgres stores it
+    OffsetDateTime now = OffsetDateTime.now(ZoneId.of("Z"));
+    return new GenericJobServerModel(
+        /* jobId= */ randomUUID(),
+        JobTypeEnum.DATA_IMPORT,
+        /* instanceId= */ randomUUID(),
+        initialStatus,
+        /* created= */ now,
+        /* updated= */ now);
   }
 }
