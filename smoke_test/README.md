@@ -16,11 +16,13 @@ Python 3.10.3 or higher
 
 ## Setup
 
+**_All code examples throughout this README assume you are in the `smoke_test` directory!_**
+
 Recommended, but optional, create and active a Python virtual env
 
 ```
-python - m venv venv
-source venv / bin / activate
+python -m venv venv
+source venv/bin/activate
 ```
 
 You will need to install required pip libraries:
@@ -32,15 +34,24 @@ You will need to install required pip libraries:
 The smoke tests have 2 different modes that they can run in: authenticated or unauthenticated. The
 mode will be automatically selected based on the arguments you pass to `smoke_test.py`.
 
-To run the _unauthenticated_ smoke tests:
+### To run the _unauthenticated_ smoke tests:
 
-```python smoke_test.py {CWDS_HOST}```
+syntax: python smoke_test.py {CWDS_HOST}
+
+example to run tests against dev:
 
 ```python smoke_test.py cwds.dsde-dev.broadinstitute.org```
 
-To run all (_authenticated_ and _unauthenticated_) smoke tests:
+### To run all (_authenticated_ and _unauthenticated_) smoke tests:
 
-```python smoke_test.py {CWDS_HOST} $(gcloud auth print-access-token)```
+first, `gcloud auth login` as a registered user in the environment against which you are running
+tests.
+
+next, run tests.
+
+syntax: python smoke_test.py {CWDS_HOST} $(gcloud auth print-access-token)
+
+example to run tests against dev:
 
 ```python smoke_test.py cwds.dsde-dev.broadinstitute.org $(gcloud auth print-access-token)```
 
