@@ -1,3 +1,9 @@
+"""
+cWDS Smoke Test
+Enter the host (domain and optional port) of the cWDS instance you want to test.
+This test will ensure that the cWDS instance running on that host is minimally functional.
+"""
+
 import argparse
 import requests
 import sys
@@ -9,12 +15,6 @@ from tests.authenticated.cwds_job_status_tests import CwdsJobStatusTests
 from tests.cwds_smoke_test_case import CwdsSmokeTestCase
 from tests.unauthenticated.cwds_status_tests import CwdsStatusTests
 from tests.unauthenticated.cwds_version_tests import CwdsVersionTests
-
-DESCRIPTION = """
-cWDS Smoke Test
-Enter the host (domain and optional port) of the cWDS instance you want to to test.
-This test will ensure that the cWDS instance running on that host is minimally functional.
-"""
 
 
 def gather_tests(is_authenticated: bool = False) -> TestSuite:
@@ -63,7 +63,7 @@ def verify_user_token(user_token: str) -> bool:
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(
-    description=DESCRIPTION,
+    description=__doc__,
     formatter_class=argparse.RawTextHelpFormatter
   )
   parser.add_argument(

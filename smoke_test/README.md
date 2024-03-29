@@ -10,6 +10,12 @@ possible, should not make any changes to the state of the service or its data.
 _These tests are valid for cWDS in the control plane. They have not been evaluated against WDS as an
 app in the data plane._
 
+## Quickstart
+
+```
+python smoke_test.py -h
+```
+
 ## Requirements
 
 Python 3.10.3 or higher
@@ -82,6 +88,6 @@ by passing a verbosity argument to `smoke_test.py`. For example to print more in
 tests being
 run:
 
-```python smoke_test.py {CWDS_HOST} -v 2```
+```python smoke_test.py -v 2 {CWDS_HOST}```
 or
-```python smoke_test.py {CWDS_HOST} $(gcloud auth print-access-token) -v 2```
+```python smoke_test.py -v 2 {CWDS_HOST} $(gcloud auth print-access-token)```
