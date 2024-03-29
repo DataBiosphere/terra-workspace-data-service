@@ -55,11 +55,12 @@ tests.
 
 next, run tests.
 
-syntax: python smoke_test.py {CWDS_HOST} $(gcloud auth print-access-token)
+syntax: python smoke_test.py {CWDS_HOST} {WORKSPACE_ID} $(gcloud auth print-access-token)
 
 example to run tests against dev:
 
-```python smoke_test.py cwds.dsde-dev.broadinstitute.org $(gcloud auth print-access-token)```
+```python smoke_test.py cwds.dsde-dev.broadinstitute.org 123e4567-e89b-12d3-a456-426614174000 $(gcloud auth print-access-token)```
+_(replace the example workspace uuid with a real workspace's uuid)_
 
 ## Required and Optional Arguments
 
