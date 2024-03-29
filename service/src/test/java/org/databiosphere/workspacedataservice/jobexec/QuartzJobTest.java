@@ -144,7 +144,7 @@ class QuartzJobTest extends TestBase {
         .hasObservationWithNameEqualTo("wds.job.execute")
         .that()
         .hasHighCardinalityKeyValue("jobId", jobUuid)
-        .hasLowCardinalityKeyValue("jobType", "TestableQuartzJob")
+        .hasLowCardinalityKeyValue("jobType", "jobGroup")
         .hasLowCardinalityKeyValue("outcome", StatusEnum.SUCCEEDED.getValue())
         .hasBeenStarted()
         .hasBeenStopped();
@@ -209,7 +209,7 @@ class QuartzJobTest extends TestBase {
         .hasObservationWithNameEqualTo("wds.job.execute")
         .that()
         .hasHighCardinalityKeyValue("jobId", jobUuid)
-        .hasLowCardinalityKeyValue("jobType", "TestableQuartzJob")
+        .hasLowCardinalityKeyValue("jobType", "jobGroup")
         .hasLowCardinalityKeyValue("outcome", StatusEnum.ERROR.getValue())
         .hasBeenStarted()
         .hasBeenStopped()
@@ -243,12 +243,11 @@ class QuartzJobTest extends TestBase {
 
   // sets up a job and returns the job context
   private JobExecutionContext setUpTestJob(String randomToken, String jobUuid) {
-    // String jobUuid = UUID.randomUUID().toString();
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
     when(mockContext.getMergedJobDataMap())
         .thenReturn(new JobDataMap(Map.of(ARG_TOKEN, randomToken)));
     JobDetailImpl jobDetail = new JobDetailImpl();
-    jobDetail.setKey(new JobKey(jobUuid, "bar"));
+    jobDetail.setKey(new JobKey(jobUuid, "jobGroup"));
     when(mockContext.getJobDetail()).thenReturn(jobDetail);
     return mockContext;
   }

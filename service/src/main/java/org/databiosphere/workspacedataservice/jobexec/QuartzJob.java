@@ -14,6 +14,7 @@ import org.databiosphere.workspacedataservice.service.MDCServletRequestListener;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
+import org.quartz.JobKey;
 import org.slf4j.MDC;
 
 /**
@@ -50,7 +51,8 @@ public abstract class QuartzJob implements Job {
   @Override
   public void execute(JobExecutionContext context) throws org.quartz.JobExecutionException {
     // retrieve jobId
-    UUID jobId = UUID.fromString(context.getJobDetail().getKey().getName());
+    JobKey jobKey = context.getJobDetail().getKey();
+    UUID jobId = UUID.fromString(jobKey.getName());
 
     // (try to) set the MDC request id based on the originating thread
     propagateMdc(context);
@@ -58,7 +60,7 @@ public abstract class QuartzJob implements Job {
     Observation observation =
         Observation.start("wds.job.execute", observationRegistry)
             .contextualName("job-execution")
-            .lowCardinalityKeyValue("jobType", getClass().getSimpleName())
+            .lowCardinalityKeyValue("jobType", jobKey.getGroup())
             .highCardinalityKeyValue("jobId", jobId.toString());
     try {
       // mark this job as running

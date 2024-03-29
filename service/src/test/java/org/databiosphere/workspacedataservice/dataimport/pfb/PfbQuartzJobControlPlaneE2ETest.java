@@ -299,7 +299,7 @@ class PfbQuartzJobControlPlaneE2ETest {
     // Arrange / Act
     ImmutableMap<String, String> successTags =
         new ImmutableMap.Builder<String, String>()
-            .put("jobType", "PfbQuartzJob")
+            .put("jobType", "PFB")
             .put("outcome", "RUNNING")
             .put("error", "none")
             .build();
@@ -316,8 +316,7 @@ class PfbQuartzJobControlPlaneE2ETest {
     assertMetric(metrics, "wds_job_execute_active_seconds_max", "0.0");
 
     // (counter) we should have counted one job.execute event regardless of outcome
-    assertMetric(
-        metrics, "wds_job_execute_job_running_total", "1.0", Map.of("jobType", "PfbQuartzJob"));
+    assertMetric(metrics, "wds_job_execute_job_running_total", "1.0", Map.of("jobType", "PFB"));
 
     // (counter) of job.execute events
     assertMetric(metrics, "wds_job_execute_seconds_count", "1.0", successTags);
@@ -335,7 +334,7 @@ class PfbQuartzJobControlPlaneE2ETest {
     // Arrange / Act
     ImmutableMap<String, String> failureTags =
         new ImmutableMap.Builder<String, String>()
-            .put("jobType", "PfbQuartzJob")
+            .put("jobType", "PFB")
             .put("outcome", "ERROR")
             .put("error", "RuntimeException")
             .build();
@@ -353,8 +352,7 @@ class PfbQuartzJobControlPlaneE2ETest {
     assertMetric(metrics, "wds_job_execute_active_seconds_max", "0.0");
 
     // (counter) we should have counted one job.execute event regardless of outcome
-    assertMetric(
-        metrics, "wds_job_execute_job_running_total", "1.0", Map.of("jobType", "PfbQuartzJob"));
+    assertMetric(metrics, "wds_job_execute_job_running_total", "1.0", Map.of("jobType", "PFB"));
 
     // (counter) of job.execute events
     assertMetric(metrics, "wds_job_execute_seconds_count", "1.0", failureTags);
