@@ -62,42 +62,37 @@ def verify_user_token(user_token: str) -> bool:
 
 
 if __name__ == "__main__":
-  try:
-    parser = argparse.ArgumentParser(
-      description=DESCRIPTION,
-      formatter_class=argparse.RawTextHelpFormatter
-    )
-    parser.add_argument(
-      "-v",
-      "--verbosity",
-      type=int,
-      choices=[0, 1, 2],
-      default=1,
-      help="""Python unittest verbosity setting:
-0: Quiet - Prints only number of tests executed
-1: Minimal - (default) Prints number of tests executed plus a dot for each success and an F for each failure
-2: Verbose - Help string and its result will be printed for each test"""
-    )
-    parser.add_argument(
-      "CWDS_HOST",
-      help="domain with optional port number of the cWDS host you want to test"
-    )
-    parser.add_argument(
-      "user_token",
-      nargs='?',
-      default=None,
-      help="Optional. If present, will test additional authenticated endpoints using the specified token"
-    )
+  parser = argparse.ArgumentParser(
+    description=DESCRIPTION,
+    formatter_class=argparse.RawTextHelpFormatter
+  )
+  parser.add_argument(
+    "-v",
+    "--verbosity",
+    type=int,
+    choices=[0, 1, 2],
+    default=1,
+    help="""Python unittest verbosity setting:
+  0: Quiet - Prints only number of tests executed
+  1: Minimal - (default) Prints number of tests executed plus a dot for each success and an F for each failure
+  2: Verbose - Help string and its result will be printed for each test"""
+  )
+  parser.add_argument(
+    "CWDS_HOST",
+    help="domain with optional port number of the cWDS host you want to test"
+  )
+  parser.add_argument(
+    "user_token",
+    nargs='?',
+    default=None,
+    help="Optional. If present, will test additional authenticated endpoints using the specified token"
+  )
 
-    args = parser.parse_args()
+  args = parser.parse_args()
 
-    # Need to pop off sys.argv values to avoid messing with args passed to unittest.main()
-    for _ in range(len(sys.argv[1:])):
-      sys.argv.pop()
+  # Need to pop off sys.argv values to avoid messing with args passed to unittest.main()
+  for _ in range(len(sys.argv[1:])):
+    sys.argv.pop()
 
-    main(args)
-    sys.exit(0)
-
-  except Exception as e:
-    print(e)
-    sys.exit(1)
+  main(args)
+  sys.exit(0)
