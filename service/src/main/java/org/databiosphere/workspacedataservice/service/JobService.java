@@ -1,8 +1,16 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static java.time.OffsetDateTime.now;
 import static java.util.Objects.requireNonNullElse;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -14,20 +22,33 @@ import org.databiosphere.workspacedataservice.service.model.exception.Authentica
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 @Service
 public class JobService {
   private static final Set<StatusEnum> TERMINAL_JOB_STATUSES =
       Set.of(StatusEnum.SUCCEEDED, StatusEnum.ERROR, StatusEnum.CANCELLED);
+  private static final String UNKNOWN = "UNKNOWN";
+  private static final Logger logger = LoggerFactory.getLogger(JobService.class);
 
-  JobDao jobDao;
-  CollectionService collectionService;
+  private final JobDao jobDao;
+  private final CollectionService collectionService;
+  private final MeterRegistry meterRegistry;
+  private final ObservationRegistry observationRegistry;
 
-  public JobService(JobDao jobDao, CollectionService collectionService) {
+  public JobService(
+      JobDao jobDao,
+      CollectionService collectionService,
+      MeterRegistry meterRegistry,
+      ObservationRegistry observationRegistry) {
     this.jobDao = jobDao;
     this.collectionService = collectionService;
+    this.meterRegistry = meterRegistry;
+    this.observationRegistry = observationRegistry;
   }
 
   public GenericJobServerModel getJob(UUID jobId) {
@@ -59,18 +80,25 @@ public class JobService {
    */
   public void processStatusUpdate(JobStatusUpdate update) {
     UUID jobId = update.jobId();
+    StatusEnum newStatus = update.newStatus();
+    Observation observation =
+        Observation.start("wds.job.update", observationRegistry)
+            .highCardinalityKeyValue("jobId", jobId.toString())
+            .lowCardinalityKeyValue("newStatus", newStatus.toString());
+
+    GenericJobServerModel job = null;
     try {
       // JobService's getJob method checks permissions via Sam. Since this method is not run
       // as part of a user request, there is no token available to make requests to Sam with.
       // Thus, we must use jobDao's getJob here.
-      GenericJobServerModel job = jobDao.getJob(jobId);
+      job = jobDao.getJob(jobId);
       StatusEnum currentStatus = job.getStatus();
-      StatusEnum newStatus = update.newStatus();
 
       // Ignore messages that don't change the job's status.
       // Rawls and import service have more granular statuses than CWDS, so the initial update
       // will be from "ReadyToUpsert" to "Upserting", which both translate to "RUNNING" in CWDS.
       if (currentStatus.equals(newStatus)) {
+        observation.lowCardinalityKeyValue("noop", "true");
         return;
       }
 
@@ -87,8 +115,47 @@ public class JobService {
         default -> throw new ValidationException(
             "Unexpected status from Rawls for job %s: %s".formatted(jobId, newStatus));
       }
-    } catch (EmptyResultDataAccessException e) {
-      throw new MissingObjectException("Job");
+    } catch (Exception e) {
+      observation.error(e);
+      if (e instanceof EmptyResultDataAccessException) {
+        throw new MissingObjectException("Job");
+      }
+      throw e;
+    } finally {
+      finalizeJobObservation(job, observation);
     }
+  }
+
+  private void finalizeJobObservation(
+      @Nullable GenericJobServerModel job, Observation observation) {
+    observation
+        .lowCardinalityKeyValue("jobType", job != null ? getJobType(job) : UNKNOWN)
+        .lowCardinalityKeyValue("oldStatus", job != null ? job.getStatus().toString() : UNKNOWN);
+
+    if (job != null) {
+      meterRegistry
+          .timer("wds.job.elapsed", getTags(observation))
+          .record(Duration.between(job.getCreated(), now()));
+    }
+    observation.stop();
+  }
+
+  private static String getJobType(GenericJobServerModel job) {
+    try {
+      Map<String, Object> jobInput = (Map<String, Object>) job.getInput();
+      if (jobInput != null) {
+        return requireNonNullElse(jobInput.get("importType"), UNKNOWN).toString();
+      }
+    } catch (Exception e) {
+      logger.atWarn().log("Failed to get job type for job {}", job.getJobId());
+    }
+    return UNKNOWN;
+  }
+
+  private static Tags getTags(Observation observation) {
+    return Tags.of(
+        observation.getContext().getLowCardinalityKeyValues().stream()
+            .map(keyValue -> Tag.of(keyValue.getKey(), keyValue.getValue()))
+            .toList());
   }
 }
