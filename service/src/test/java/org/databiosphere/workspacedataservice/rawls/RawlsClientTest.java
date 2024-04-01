@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import bio.terra.workspace.model.CloningInstructionsEnum;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -65,6 +66,7 @@ class RawlsClientTest {
     assertEquals(snapshotId, snapshotReference.snapshotId());
     assertEquals("%s-policy".formatted(snapshotId), snapshotReference.name());
     assertEquals(CloningInstructionsEnum.REFERENCE, snapshotReference.cloningInstructions());
-    assertThat(snapshotReference.properties()).containsEntry("purpose", "policy");
+    assertThat(snapshotReference.properties())
+        .containsEntry(WorkspaceManagerDao.PROP_PURPOSE, WorkspaceManagerDao.PURPOSE_POLICY);
   }
 }

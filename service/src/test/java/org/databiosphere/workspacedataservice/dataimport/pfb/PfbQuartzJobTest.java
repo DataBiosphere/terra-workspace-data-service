@@ -265,8 +265,8 @@ class PfbQuartzJobTest extends TestBase {
 
     ResourceMetadata resourceMetadata = new ResourceMetadata();
     Property purposeProperty = new Property();
-    purposeProperty.setKey("purpose");
-    purposeProperty.setValue("policy");
+    purposeProperty.setKey(WorkspaceManagerDao.PROP_PURPOSE);
+    purposeProperty.setValue(WorkspaceManagerDao.PURPOSE_POLICY);
     Properties properties = new Properties();
     properties.add(purposeProperty);
     resourceMetadata.setProperties(properties);

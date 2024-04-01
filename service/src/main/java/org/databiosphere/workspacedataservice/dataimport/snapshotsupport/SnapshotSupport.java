@@ -20,6 +20,7 @@ import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
@@ -129,8 +130,10 @@ public abstract class SnapshotSupport {
                       && properties.stream()
                           .anyMatch(
                               property ->
-                                  property.getKey().equals("purpose")
-                                      && property.getValue().equals("policy"));
+                                  property.getKey().equals(WorkspaceManagerDao.PROP_PURPOSE)
+                                      && property
+                                          .getValue()
+                                          .equals(WorkspaceManagerDao.PURPOSE_POLICY));
                 });
     return extractSnapshotIds(policySnapshots).toList();
   }
