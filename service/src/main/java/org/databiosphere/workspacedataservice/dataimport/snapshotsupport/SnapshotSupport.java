@@ -1,10 +1,13 @@
 package org.databiosphere.workspacedataservice.dataimport.snapshotsupport;
 
 import bio.terra.datarepo.model.TableModel;
+import bio.terra.workspace.model.CloningInstructionsEnum;
 import bio.terra.workspace.model.DataRepoSnapshotAttributes;
+import bio.terra.workspace.model.Properties;
 import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceList;
+import bio.terra.workspace.model.ResourceMetadata;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import java.util.List;
@@ -110,7 +113,26 @@ public abstract class SnapshotSupport {
   @VisibleForTesting
   public List<UUID> existingPolicySnapshotIds(int pageSize) {
     List<ResourceDescription> allSnapshots = listAllSnapshots(pageSize).getResources();
-    return extractSnapshotIds(allSnapshots.stream()).toList();
+    Stream<ResourceDescription> policySnapshots =
+        allSnapshots.stream()
+            .filter(
+                snapshot -> {
+                  ResourceMetadata metadata = snapshot.getMetadata();
+                  if (metadata == null) {
+                    return false;
+                  }
+                  CloningInstructionsEnum cloningInstructions = metadata.getCloningInstructions();
+                  Properties properties = metadata.getProperties();
+                  return cloningInstructions != null
+                      && cloningInstructions.equals(CloningInstructionsEnum.REFERENCE)
+                      && properties != null
+                      && properties.stream()
+                          .anyMatch(
+                              property ->
+                                  property.getKey().equals("purpose")
+                                      && property.getValue().equals("policy"));
+                });
+    return extractSnapshotIds(policySnapshots).toList();
   }
 
   /**
