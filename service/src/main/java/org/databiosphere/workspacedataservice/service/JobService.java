@@ -116,6 +116,8 @@ public class JobService {
             "Unexpected status from Rawls for job %s: %s".formatted(jobId, newStatus));
       }
     } catch (Exception e) {
+      // catchall for any exceptions that occur during the status update (including those explicitly
+      // thrown in the try block); in all such cases, mark the observation as having an error
       observation.error(e);
       if (e instanceof EmptyResultDataAccessException) {
         throw new MissingObjectException("Job");
