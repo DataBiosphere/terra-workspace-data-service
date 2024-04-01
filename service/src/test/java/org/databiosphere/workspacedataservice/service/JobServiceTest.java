@@ -39,10 +39,15 @@ import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(
     profiles = {
-      "data-plane", // need _a_ profile even if this test only contains tests for common behavior
+      "control-plane", // need _a_ profile even if this test only contains tests for common behavior
     })
 @DirtiesContext
-@SpringBootTest(properties = {"twds.instance.workspace-id=f01dab1e-0000-1111-2222-000011112222"})
+@SpringBootTest(
+    properties = {
+      "spring.cloud.gcp.pubsub.enabled=false",
+      // Rawls url must be valid, else context initialization (Spring startup) will fail
+      "rawlsUrl=https://localhost/"
+    })
 @WithTestObservationRegistry
 class JobServiceTest extends JobServiceTestBase {
   @Autowired JobService jobService;
