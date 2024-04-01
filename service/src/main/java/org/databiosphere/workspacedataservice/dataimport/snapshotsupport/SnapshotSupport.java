@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.dataimport.snapshotsupport;
 import bio.terra.datarepo.model.TableModel;
 import bio.terra.workspace.model.CloningInstructionsEnum;
 import bio.terra.workspace.model.DataRepoSnapshotAttributes;
-import bio.terra.workspace.model.Properties;
 import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceList;
@@ -13,6 +12,7 @@ import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -116,26 +116,33 @@ public abstract class SnapshotSupport {
     List<ResourceDescription> allSnapshots = listAllSnapshots(pageSize).getResources();
     Stream<ResourceDescription> policySnapshots =
         allSnapshots.stream()
-            .filter(
-                snapshot -> {
-                  ResourceMetadata metadata = snapshot.getMetadata();
-                  if (metadata == null) {
-                    return false;
-                  }
-                  CloningInstructionsEnum cloningInstructions = metadata.getCloningInstructions();
-                  Properties properties = metadata.getProperties();
-                  return cloningInstructions != null
-                      && cloningInstructions.equals(CloningInstructionsEnum.REFERENCE)
-                      && properties != null
-                      && properties.stream()
-                          .anyMatch(
-                              property ->
-                                  property.getKey().equals(WorkspaceManagerDao.PROP_PURPOSE)
-                                      && property
-                                          .getValue()
-                                          .equals(WorkspaceManagerDao.PURPOSE_POLICY));
-                });
+            .filter(this::isResourceReferenceForPolicy)
+            .filter(this::isResourceReferenceCloned);
     return extractSnapshotIds(policySnapshots).toList();
+  }
+
+  /** Does the given resource have cloning instructions set to "COPY_REFERENCE". */
+  private boolean isResourceReferenceCloned(ResourceDescription resource) {
+    return Optional.of(resource)
+        .map(ResourceDescription::getMetadata)
+        .map(ResourceMetadata::getCloningInstructions)
+        .map(CloningInstructionsEnum.REFERENCE::equals)
+        .orElse(false);
+  }
+
+  /** Does the given resource have a "purpose: policy" property? */
+  private boolean isResourceReferenceForPolicy(ResourceDescription resource) {
+    return Optional.of(resource)
+        .map(ResourceDescription::getMetadata)
+        .map(ResourceMetadata::getProperties)
+        .map(
+            properties ->
+                properties.stream()
+                    .anyMatch(
+                        property ->
+                            WorkspaceManagerDao.PROP_PURPOSE.equals(property.getKey())
+                                && WorkspaceManagerDao.PURPOSE_POLICY.equals(property.getValue())))
+        .orElse(false);
   }
 
   /**
