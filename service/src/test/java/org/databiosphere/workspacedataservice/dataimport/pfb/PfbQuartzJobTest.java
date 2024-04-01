@@ -12,10 +12,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import bio.terra.datarepo.model.SnapshotModel;
+import bio.terra.workspace.model.CloningInstructionsEnum;
 import bio.terra.workspace.model.DataRepoSnapshotAttributes;
+import bio.terra.workspace.model.Properties;
+import bio.terra.workspace.model.Property;
 import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceList;
+import bio.terra.workspace.model.ResourceMetadata;
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;
@@ -258,6 +262,16 @@ class PfbQuartzJobTest extends TestBase {
 
     ResourceDescription resourceDescription = new ResourceDescription();
     resourceDescription.setResourceAttributes(resourceAttributes);
+
+    ResourceMetadata resourceMetadata = new ResourceMetadata();
+    Property purposeProperty = new Property();
+    purposeProperty.setKey("purpose");
+    purposeProperty.setValue("policy");
+    Properties properties = new Properties();
+    properties.add(purposeProperty);
+    resourceMetadata.setProperties(properties);
+    resourceMetadata.setCloningInstructions(CloningInstructionsEnum.REFERENCE);
+    resourceDescription.setMetadata(resourceMetadata);
 
     return resourceDescription;
   }
