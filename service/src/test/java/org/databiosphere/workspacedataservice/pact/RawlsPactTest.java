@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.pact;
 import static org.databiosphere.workspacedataservice.TestTags.PACT_TEST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.when;
 
 import au.com.dius.pact.consumer.MockServer;
 import au.com.dius.pact.consumer.dsl.PactDslJsonBody;
@@ -14,7 +13,7 @@ import au.com.dius.pact.core.model.PactSpecVersion;
 import au.com.dius.pact.core.model.RequestResponsePact;
 import au.com.dius.pact.core.model.annotations.Pact;
 import au.com.dius.pact.provider.spring.SpringRestPactRunner;
-import io.micrometer.observation.ObservationRegistry;
+import bio.terra.workspace.model.CloningInstructionsEnum;
 import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.observability.TestObservationRegistryConfig;
@@ -27,7 +26,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
 import org.springframework.context.annotation.Import;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
@@ -39,9 +37,8 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 @Import(TestObservationRegistryConfig.class)
 public class RawlsPactTest {
 
-  private static final UUID WORKSPACE_UUID =
-      UUID.fromString("facade00-0000-4000-a000-000000000000");
-  private static final UUID RESOURCE_UUID = UUID.fromString("5ca1ab1e-0000-4000-a000-000000000000");
+  private static final String WORKSPACE_UUID = "facade00-0000-4000-a000-000000000000";
+  private static final String RESOURCE_UUID = "5ca1ab1e-0000-4000-a000-000000000000";
 
   @Pact(consumer = "wds", provider = "rawls")
   public RequestResponsePact enumerateSnapshotsPact(PactDslWithProvider builder) {
@@ -50,17 +47,18 @@ public class RawlsPactTest {
             .array("gcpDataRepoSnapshots")
             .object()
             .object("metadata")
-            .uuid(
+            .stringValue(
                 "workspaceId",
                 WORKSPACE_UUID) // TODO which of the fields in metadata do we actually
             // care about
-            .uuid("resourceId", RESOURCE_UUID)
-            //            .stringType("name")
-            //            .stringType("description")
-            //            .stringType("resourceType")
-            //            .stringType("stewardshipType")
-            //            .stringType("cloudPlatform")
-            //            .stringType("cloningInstructions")
+            .stringValue("resourceId", RESOURCE_UUID)
+            //            .stringValue("name", "testName")
+            //            .stringValue("description", "testDescription")
+            .stringType("name")
+            .stringType("description")
+            .stringType("resourceType")
+            .stringType("stewardshipType")
+            .stringValue("cloningInstructions", CloningInstructionsEnum.NOTHING.toString())
             .array("properties")
             .closeArray() // TODO what do we want in properties
             .closeObject()
@@ -76,7 +74,6 @@ public class RawlsPactTest {
         .pathFromProviderState(
             "/api/workspaces/${workspaceId}/snapshots/v2",
             String.format("/api/workspaces/%s/snapshots/v2", WORKSPACE_UUID))
-        //        .path(String.format("/api/workspaces/%s/snapshots/v2", WORKSPACE_UUID))
         .matchQuery("offset", "0")
         .matchQuery("limit", "10")
         .method("GET")
@@ -91,20 +88,14 @@ public class RawlsPactTest {
   void testRawlsEnumerateSnapshots(MockServer mockServer) {
     RawlsClient rawlsClient = getRawlsClient(mockServer);
     SnapshotListResponse snapshots =
-        rawlsClient.enumerateDataRepoSnapshotReferences(WORKSPACE_UUID, 0, 10);
+        rawlsClient.enumerateDataRepoSnapshotReferences(UUID.fromString(WORKSPACE_UUID), 0, 10);
     assertNotNull(snapshots);
     assertEquals(1, snapshots.gcpDataRepoSnapshots().size());
   }
 
   private RawlsClient getRawlsClient(MockServer mockServer) {
-    // TODO copied from RawlsClientConfig; can I autowire instead?
-    ObservationRegistry observationRegistry = Mockito.mock(ObservationRegistry.class);
-    when(observationRegistry.observationConfig())
-        .thenReturn(new ObservationRegistry.ObservationConfig());
-
     RestClient restClient =
         RestClient.builder()
-            //            .observationRegistry(observationRegistry)
             .baseUrl(mockServer.getUrl())
             .requestInitializer(new BearerAuthRequestInitializer())
             .build();
