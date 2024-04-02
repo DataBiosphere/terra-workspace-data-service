@@ -2,19 +2,28 @@ package org.databiosphere.workspacedataservice.dataimport.snapshotsupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 import bio.terra.datarepo.model.TableModel;
+import bio.terra.workspace.model.CloningInstructionsEnum;
 import bio.terra.workspace.model.DataRepoSnapshotAttributes;
+import bio.terra.workspace.model.Properties;
+import bio.terra.workspace.model.Property;
 import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceList;
+import bio.terra.workspace.model.ResourceMetadata;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
@@ -91,18 +100,72 @@ class SnapshotSupportTest extends TestBase {
   }
 
   @Test
-  void existingPolicySnapshotIds() {
+  void extractSnapshotIds() {
     List<UUID> expected = IntStream.range(0, 75).mapToObj(i -> UUID.randomUUID()).toList();
 
-    List<ResourceDescription> resourceDescriptions =
-        expected.stream().map(this::createResourceDescription).toList();
+    Stream<ResourceDescription> resourceDescriptions =
+        expected.stream().map(this::createResourceDescription);
 
-    ResourceList resourceList = new ResourceList();
-    resourceList.setResources(resourceDescriptions);
-
-    List<UUID> actual = defaultSupport().extractSnapshotIds(resourceList);
+    List<UUID> actual = defaultSupport().extractSnapshotIds(resourceDescriptions).toList();
 
     assertEquals(expected, actual);
+  }
+
+  @Test
+  void existingPolicySnapshotIds() {
+    // Arrange
+    SnapshotSupport support = spy(defaultSupport());
+
+    UUID policySnapshotId = UUID.randomUUID();
+    UUID firstOtherSnapshotId = UUID.randomUUID();
+    UUID secondOtherSnapshotId = UUID.randomUUID();
+
+    // This snapshot reference has cloning instructions set to reference and a purpose: policy
+    // property.
+    ResourceDescription policySnapshotResourceDescription =
+        createResourceDescription(policySnapshotId);
+    ResourceMetadata policySnapshotResourceMetadata = new ResourceMetadata();
+    Property policySnapshotPurposeProperty = new Property();
+    policySnapshotPurposeProperty.setKey(WorkspaceManagerDao.PROP_PURPOSE);
+    policySnapshotPurposeProperty.setValue(WorkspaceManagerDao.PURPOSE_POLICY);
+    Properties policySnapshotProperties = new Properties();
+    policySnapshotProperties.add(policySnapshotPurposeProperty);
+    policySnapshotResourceMetadata.setProperties(policySnapshotProperties);
+    policySnapshotResourceMetadata.setCloningInstructions(CloningInstructionsEnum.REFERENCE);
+    policySnapshotResourceDescription.setMetadata(policySnapshotResourceMetadata);
+
+    // This snapshot reference has a purpose: policy property, but cloning instructions set to copy
+    // nothing.
+    ResourceDescription firstOtherSnapshotResourceDescription =
+        createResourceDescription(firstOtherSnapshotId);
+    ResourceMetadata firstOtherSnapshotResourceMetadata = new ResourceMetadata();
+    Property firstOtherSnapshotPurposeProperty = new Property();
+    firstOtherSnapshotPurposeProperty.setKey(WorkspaceManagerDao.PROP_PURPOSE);
+    firstOtherSnapshotPurposeProperty.setValue(WorkspaceManagerDao.PURPOSE_POLICY);
+    Properties firstOtherSnapshotProperties = new Properties();
+    firstOtherSnapshotProperties.add(firstOtherSnapshotPurposeProperty);
+    firstOtherSnapshotResourceMetadata.setProperties(firstOtherSnapshotProperties);
+    firstOtherSnapshotResourceMetadata.setCloningInstructions(CloningInstructionsEnum.NOTHING);
+    firstOtherSnapshotResourceDescription.setMetadata(firstOtherSnapshotResourceMetadata);
+
+    // This snapshot reference has no metadata at all
+    ResourceDescription secondOtherSnapshotResourceDescription =
+        createResourceDescription(secondOtherSnapshotId);
+
+    ResourceList resourceList = new ResourceList();
+    resourceList.setResources(
+        List.of(
+            policySnapshotResourceDescription,
+            firstOtherSnapshotResourceDescription,
+            secondOtherSnapshotResourceDescription));
+
+    when(support.enumerateDataRepoSnapshotReferences(anyInt(), anyInt())).thenReturn(resourceList);
+
+    // Act
+    List<UUID> policySnapshotIds = support.existingPolicySnapshotIds(5);
+
+    // Assert
+    assertEquals(List.of(policySnapshotId), policySnapshotIds);
   }
 
   @Test

@@ -179,8 +179,8 @@ class WsmPactTest {
                         /* minSize= */ 1,
                         /* maxSize= */ 1,
                         p -> {
-                          p.stringValue("key", "purpose");
-                          p.stringValue("value", "policy");
+                          p.stringValue("key", WorkspaceManagerDao.PROP_PURPOSE);
+                          p.stringValue("value", WorkspaceManagerDao.PURPOSE_POLICY);
                         });
                   });
             })
@@ -373,6 +373,19 @@ class WsmPactTest {
                                 "metadata",
                                 metadata -> {
                                   metadata.uuid("resourceId");
+                                  metadata.stringValue(
+                                      "cloningInstructions",
+                                      CloningInstructionsEnum.REFERENCE.toString());
+                                  // expect exactly one property, declaring the snapshot as being
+                                  // for policy only
+                                  metadata.minMaxArrayLike(
+                                      "properties",
+                                      /* minSize= */ 1,
+                                      /* maxSize= */ 1,
+                                      p -> {
+                                        p.stringValue("key", WorkspaceManagerDao.PROP_PURPOSE);
+                                        p.stringValue("value", WorkspaceManagerDao.PURPOSE_POLICY);
+                                      });
                                 });
                             resource.object(
                                 "resourceAttributes",

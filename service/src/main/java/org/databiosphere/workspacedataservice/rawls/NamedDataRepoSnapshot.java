@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.rawls;
 import bio.terra.workspace.model.CloningInstructionsEnum;
 import java.util.Map;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 
 /**
  * Represents a snapshot reference to be created in a GCP workspace via the Rawls API
@@ -28,6 +29,6 @@ public record NamedDataRepoSnapshot(
         referenceDescription,
         snapshotId,
         CloningInstructionsEnum.REFERENCE,
-        Map.of("purpose", "policy"));
+        Map.of(WorkspaceManagerDao.PROP_PURPOSE, WorkspaceManagerDao.PURPOSE_POLICY));
   }
 }
