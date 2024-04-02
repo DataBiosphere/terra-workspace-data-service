@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport.pfb;
 
+import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -17,12 +18,15 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import com.google.mu.util.stream.BiStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -31,8 +35,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
@@ -58,6 +64,7 @@ import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -65,6 +72,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.util.StreamUtils;
 
 /**
@@ -82,12 +91,16 @@ import org.springframework.util.StreamUtils;
       // Allow file imports to test with files from resources.
       "twds.data-import.allowed-schemes=file",
       // Rawls url must be valid, else context initialization (Spring startup) will fail
-      "rawlsUrl=https://localhost/"
+      "rawlsUrl=https://localhost/",
+      "management.prometheus.metrics.export.enabled=true"
     })
+@WithTestObservationRegistry
+@AutoConfigureMockMvc
 class PfbQuartzJobControlPlaneE2ETest {
   @Autowired ObjectMapper mapper;
   @Autowired CollectionService collectionService;
   @Autowired PfbTestSupport testSupport;
+  @Autowired MockMvc mockMvc;
 
   @Autowired
   @Qualifier("mockGcsStorage")
@@ -161,6 +174,33 @@ class PfbQuartzJobControlPlaneE2ETest {
         entity,
         "pfb:ga4gh_drs_uri",
         "drs://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa");
+  }
+
+  /** Pattern to match a prometheus scrape string with the given name and value. */
+  private static void assertMetric(
+      Collection<String> metrics,
+      String metricName,
+      String metricValue,
+      Map<String, String> expectedTags) {
+
+    String matchingMetric =
+        metrics.stream()
+            .filter(
+                metric ->
+                    Pattern.compile("^%s\\{.*?} %s$".formatted(metricName, metricValue))
+                        .matcher(metric)
+                        .matches())
+            .findAny()
+            .orElseThrow(() -> new AssertionError("No matching metric found"));
+
+    BiStream.from(expectedTags)
+        .mapToObj("%s=\"%s\""::formatted)
+        .forEach(expectedRegex -> assertThat(matchingMetric).contains(expectedRegex));
+  }
+
+  private static void assertMetric(
+      Collection<String> metrics, String metricName, String metricValue) {
+    assertMetric(metrics, metricName, metricValue, /* expectedTags= */ Map.of());
   }
 
   @Test
@@ -253,6 +293,79 @@ class PfbQuartzJobControlPlaneE2ETest {
     verify(samDao, times(1)).getUserEmail(BearerToken.of(PfbTestUtils.BEARER_TOKEN));
   }
 
+  @Test
+  @Tag(SLOW)
+  void jobSuccessMetrics() throws Exception {
+    // Arrange / Act
+    ImmutableMap<String, String> successTags =
+        new ImmutableMap.Builder<String, String>()
+            .put("jobType", "PfbQuartzJob")
+            .put("outcome", "RUNNING")
+            .put("error", "none")
+            .build();
+
+    testSupport.executePfbImportQuartzJob(collectionId, minimalDataPfb);
+
+    // Assert
+    List<String> metrics = getWdsMetrics();
+
+    // by the time we get here, there are no currently running jobs and so the _active_ metrics
+    // should all be zero.
+    assertMetric(metrics, "wds_job_execute_active_seconds_active_count", "0.0");
+    assertMetric(metrics, "wds_job_execute_active_seconds_duration_sum", "0.0");
+    assertMetric(metrics, "wds_job_execute_active_seconds_max", "0.0");
+
+    // (counter) we should have counted one job.execute event regardless of outcome
+    assertMetric(
+        metrics, "wds_job_execute_job_running_total", "1.0", Map.of("jobType", "PfbQuartzJob"));
+
+    // (counter) of job.execute events
+    assertMetric(metrics, "wds_job_execute_seconds_count", "1.0", successTags);
+
+    // (summary) sum of all job durations, and when divided by count, can get the average
+    assertMetric(metrics, "wds_job_execute_seconds_sum", ".*", successTags);
+
+    // (gauge) maximum duration tracked
+    assertMetric(metrics, "wds_job_execute_seconds_max", ".*", successTags);
+  }
+
+  @Test
+  @Tag(SLOW)
+  void jobFailureMetrics() throws Exception {
+    // Arrange / Act
+    ImmutableMap<String, String> failureTags =
+        new ImmutableMap.Builder<String, String>()
+            .put("jobType", "PfbQuartzJob")
+            .put("outcome", "ERROR")
+            .put("error", "RuntimeException")
+            .build();
+    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenThrow(new RuntimeException("Fake exception for unit test"));
+    testSupport.executePfbImportQuartzJob(collectionId, minimalDataPfb);
+
+    // Assert
+    List<String> metrics = getWdsMetrics();
+
+    // by the time we get here, there are no currently running jobs and so the _active_ metrics
+    // should all be zero.
+    assertMetric(metrics, "wds_job_execute_active_seconds_active_count", "0.0");
+    assertMetric(metrics, "wds_job_execute_active_seconds_duration_sum", "0.0");
+    assertMetric(metrics, "wds_job_execute_active_seconds_max", "0.0");
+
+    // (counter) we should have counted one job.execute event regardless of outcome
+    assertMetric(
+        metrics, "wds_job_execute_job_running_total", "1.0", Map.of("jobType", "PfbQuartzJob"));
+
+    // (counter) of job.execute events
+    assertMetric(metrics, "wds_job_execute_seconds_count", "1.0", failureTags);
+
+    // (summary) sum of all job durations, and when divided by count, can get the average
+    assertMetric(metrics, "wds_job_execute_seconds_sum", ".*", failureTags);
+
+    // (gauge) maximum duration tracked
+    assertMetric(metrics, "wds_job_execute_seconds_max", ".*", failureTags);
+  }
+
   private ImmutableMap<String, String> expectedPubSubMessageFor(UUID jobId) {
     return new ImmutableMap.Builder<String, String>()
         .put("workspaceId", collectionId.toString())
@@ -283,11 +396,6 @@ class PfbQuartzJobControlPlaneE2ETest {
 
   private void assertSimpleAttributeValue(Entity entity, String attributeName, Object expected) {
     assertThat(getSimpleAttributeByName(entity, attributeName).addUpdateAttribute().value())
-        .isEqualTo(expected);
-  }
-
-  private void assertSimpleAttributeType(Entity entity, String attributeName, Class<?> expected) {
-    assertThat(getSimpleAttributeByName(entity, attributeName).addUpdateAttribute().getClass())
         .isEqualTo(expected);
   }
 
@@ -361,5 +469,12 @@ class PfbQuartzJobControlPlaneE2ETest {
         .filter(entity -> entity.entityType().equals(typeName))
         .findFirst()
         .orElseThrow();
+  }
+
+  private List<String> getWdsMetrics() throws Exception {
+    MvcResult result = mockMvc.perform(get("/prometheus")).andExpect(status().isOk()).andReturn();
+    String content = result.getResponse().getContentAsString();
+
+    return stream(content.split("\n")).filter(line -> line.startsWith("wds")).toList();
   }
 }

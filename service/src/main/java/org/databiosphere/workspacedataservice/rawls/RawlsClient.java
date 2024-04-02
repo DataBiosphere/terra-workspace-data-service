@@ -30,8 +30,6 @@ public class RawlsClient {
     }
   }
 
-  // TODO: (AJ-1705) Add cloning instructions COPY_REFERENCE and a purpose=policy
-  //     key-value pair to the reference’s properties
   public void createSnapshotReference(UUID workspaceId, UUID snapshotId) {
     try {
       NamedDataRepoSnapshot namedDataRepoSnapshot = NamedDataRepoSnapshot.forSnapshotId(snapshotId);

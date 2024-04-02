@@ -21,9 +21,11 @@ import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -161,7 +163,12 @@ class RawlsRecordSinkPrefixingTest extends TestBase {
             mapper,
             storage,
             pubSub,
-            new ImportDetails(JOB_ID, USER_EMAIL, WORKSPACE_ID, prefixStrategy))) {
+            new ImportDetails(
+                JOB_ID,
+                USER_EMAIL,
+                WorkspaceId.of(WORKSPACE_ID),
+                CollectionId.of(WORKSPACE_ID),
+                prefixStrategy))) {
 
       recordSink.upsertBatch(
           recordType,

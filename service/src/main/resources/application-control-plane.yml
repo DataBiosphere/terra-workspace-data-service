@@ -11,7 +11,13 @@ twds:
     batch-write-record-sink: "rawls"
     succeed-on-completion: false
     rawls-bucket-name: ${SERVICE_GOOGLE_BUCKET}
-
+    enable-tdr-permission-sync: true
+    # Name of PubSub topic to notify Rawls of JSON files ready for import.
+    rawls-notifications-topic: ${RAWLS_NOTIFY_TOPIC}
+    # Name of PubSub topic for incoming import status notifications from Rawls.
+    status-updates-topic: ${IMPORT_STATUS_UPDATES_TOPIC}
+    # Name of PubSub subscription used to subscribe to the status-updates-topic.
+    status-updates-subscription: ${IMPORT_STATUS_UPDATES_SUBSCRIPTION}
 
 spring:
   cloud:
@@ -19,7 +25,6 @@ spring:
       core:
         enabled: true
       pubsub:
-        topic: ${RAWLS_NOTIFY_TOPIC}
         enabled: true
 
 sentry:

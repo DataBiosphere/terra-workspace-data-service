@@ -1,11 +1,11 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
-import static java.util.Objects.requireNonNull;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.NotImplementedException;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.springframework.stereotype.Component;
 
@@ -32,12 +32,13 @@ public class RawlsRecordSinkFactory implements RecordSinkFactory {
     return rawlsRecordSink(importDetails);
   }
 
+  @Override
+  public RecordSink buildRecordSink(CollectionId collectionId) {
+    throw new NotImplementedException(
+        "RawlsRecordSinkFactory does not support building a RecordSink from a CollectionId");
+  }
+
   private RecordSink rawlsRecordSink(ImportDetails importDetails) {
-    requireNonNull(
-        importDetails.jobId(), "RawlsRecordSink requires ImportDetails.jobId to be non-null");
-    requireNonNull(
-        importDetails.userEmailSupplier(),
-        "RawlsRecordSink requires ImportDetails.userEmailSupplier to be non-null");
     return RawlsRecordSink.create(mapper, storage, pubSub, importDetails);
   }
 }

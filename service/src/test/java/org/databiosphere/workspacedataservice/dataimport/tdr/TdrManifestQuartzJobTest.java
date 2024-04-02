@@ -1,14 +1,18 @@
 package org.databiosphere.workspacedataservice.dataimport.tdr;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
+import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.WORKSPACE_ROLES;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +32,7 @@ import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.InputFile;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
@@ -38,6 +43,7 @@ import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordService;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
@@ -49,6 +55,7 @@ import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerD
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.quartz.JobExecutionContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -60,7 +67,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @DirtiesContext
 @SpringBootTest
-@ActiveProfiles("mock-sam")
+@ActiveProfiles(profiles = {"mock-sam"})
 class TdrManifestQuartzJobTest extends TestBase {
 
   @MockBean JobDao jobDao;
@@ -70,6 +77,8 @@ class TdrManifestQuartzJobTest extends TestBase {
   @MockBean ActivityLogger activityLogger;
   @MockBean RecordService recordService;
   @MockBean RecordDao recordDao;
+  @MockBean DataImportProperties dataImportProperties;
+  @MockBean SamDao samDao;
   @Autowired RecordSinkFactory recordSinkFactory;
   @Autowired RestClientRetry restClientRetry;
   @Autowired ObjectMapper objectMapper;
@@ -201,7 +210,12 @@ class TdrManifestQuartzJobTest extends TestBase {
             new Path(malformedParquet.getURL().toString()), new Configuration());
 
     ImportDetails importDetails =
-        new ImportDetails(jobId, emailSupplier, workspaceId, PrefixStrategy.TDR);
+        new ImportDetails(
+            jobId,
+            emailSupplier,
+            WorkspaceId.of(workspaceId),
+            CollectionId.of(workspaceId),
+            PrefixStrategy.TDR);
     try (RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails)) {
 
       // Make sure real errors on parsing parquets are not swallowed
@@ -240,5 +254,51 @@ class TdrManifestQuartzJobTest extends TestBase {
 
     // ASSERT
     verify(wsmDao).enumerateDataRepoSnapshotReferences(eq(workspaceId.id()), anyInt(), anyInt());
+  }
+
+  @Test
+  @Tag(SLOW)
+  /* note: this functionality is control plane only.*/
+  void testSyncPermissions() throws IOException {
+    // ARRANGE
+    // set up ids
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    UUID jobId = UUID.randomUUID();
+    // snapshotId of the v2fManifestResource
+    UUID snapshotId = UUID.fromString("e3638824-9ed9-408e-b3f5-cba7585658a3");
+    // mock collection service to return this workspace id for this collection id
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+    // WSM should report no snapshots already linked to this workspace
+    // note that if enumerateDataRepoSnapshotReferences is called with the wrong workspaceId,
+    // this test will fail
+    when(wsmDao.enumerateDataRepoSnapshotReferences(eq(workspaceId.id()), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
+    // mock property that only gets enabled in application-control-plane.yml
+    when(dataImportProperties.isTdrPermissionSyncingEnabled()).thenReturn(true);
+    // mock sam call
+    doNothing().when(samDao).addWorkspacePoliciesAsSnapshotReader(any(), any(), anyString());
+
+    // set up the job
+    TdrManifestQuartzJob tdrManifestQuartzJob =
+        testSupport.buildTdrManifestQuartzJob(workspaceId.id());
+    JobExecutionContext mockContext =
+        stubJobContext(
+            jobId, v2fManifestResource, collectionId.id(), /* shouldPermissionSync= */ true);
+
+    // ACT
+    // execute the job
+    tdrManifestQuartzJob.executeInternal(jobId, mockContext);
+
+    // ASSERT
+    ArgumentCaptor<String> roleCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<WorkspaceId> workspaceCaptor = ArgumentCaptor.forClass(WorkspaceId.class);
+    ArgumentCaptor<UUID> snapshotIdCaptor = ArgumentCaptor.forClass(UUID.class);
+    verify(samDao, times(4))
+        .addWorkspacePoliciesAsSnapshotReader(
+            workspaceCaptor.capture(), snapshotIdCaptor.capture(), roleCaptor.capture());
+    assertThat(roleCaptor.getAllValues()).containsExactlyInAnyOrder(WORKSPACE_ROLES);
+    assertThat(workspaceCaptor.getAllValues()).containsOnly(workspaceId).hasSize(4);
+    assertThat(snapshotIdCaptor.getAllValues()).containsOnly(snapshotId).hasSize(4);
   }
 }

@@ -1,21 +1,26 @@
 package org.databiosphere.workspacedataservice.dataimport.snapshotsupport;
 
 import bio.terra.datarepo.model.TableModel;
+import bio.terra.workspace.model.CloningInstructionsEnum;
 import bio.terra.workspace.model.DataRepoSnapshotAttributes;
 import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceList;
+import bio.terra.workspace.model.ResourceMetadata;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
@@ -108,7 +113,36 @@ public abstract class SnapshotSupport {
    */
   @VisibleForTesting
   public List<UUID> existingPolicySnapshotIds(int pageSize) {
-    return extractSnapshotIds(listAllSnapshots(pageSize));
+    List<ResourceDescription> allSnapshots = listAllSnapshots(pageSize).getResources();
+    Stream<ResourceDescription> policySnapshots =
+        allSnapshots.stream()
+            .filter(this::isResourceReferenceForPolicy)
+            .filter(this::isResourceReferenceCloned);
+    return extractSnapshotIds(policySnapshots).toList();
+  }
+
+  /** Does the given resource have cloning instructions set to "COPY_REFERENCE". */
+  private boolean isResourceReferenceCloned(ResourceDescription resource) {
+    return Optional.of(resource)
+        .map(ResourceDescription::getMetadata)
+        .map(ResourceMetadata::getCloningInstructions)
+        .map(CloningInstructionsEnum.REFERENCE::equals)
+        .orElse(false);
+  }
+
+  /** Does the given resource have a "purpose: policy" property? */
+  private boolean isResourceReferenceForPolicy(ResourceDescription resource) {
+    return Optional.of(resource)
+        .map(ResourceDescription::getMetadata)
+        .map(ResourceMetadata::getProperties)
+        .map(
+            properties ->
+                properties.stream()
+                    .anyMatch(
+                        property ->
+                            WorkspaceManagerDao.PROP_PURPOSE.equals(property.getKey())
+                                && WorkspaceManagerDao.PURPOSE_POLICY.equals(property.getValue())))
+        .orElse(false);
   }
 
   /**
@@ -126,18 +160,15 @@ public abstract class SnapshotSupport {
   }
 
   /**
-   * Given a ResourceList, find all the valid ids of referenced snapshots in that list
+   * Given a stream of ResourceDescriptions for snapshot references, find all the valid ids of
+   * referenced snapshots in the stream.
    *
-   * @param resourceList the list in which to look for snapshotIds
-   * @return the list of unique ids in the provided list
+   * @param snapshots a stream of snapshot references
+   * @return unique snapshot ids in the provided snapshot references
    */
   @VisibleForTesting
-  List<UUID> extractSnapshotIds(ResourceList resourceList) {
-    return resourceList.getResources().stream()
-        .map(this::safeGetSnapshotId)
-        .filter(Objects::nonNull)
-        .distinct()
-        .toList();
+  Stream<UUID> extractSnapshotIds(Stream<ResourceDescription> snapshots) {
+    return snapshots.map(this::safeGetSnapshotId).filter(Objects::nonNull).distinct();
   }
 
   /**

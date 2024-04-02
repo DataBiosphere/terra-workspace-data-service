@@ -293,7 +293,8 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
   void processJobStatusUpdateForNonExistentJob() {
     // Arrange
     UUID jobId = randomUUID();
-    when(jobDao.getJob(jobId)).thenThrow(MissingObjectException.class);
+    when(jobDao.getJob(jobId))
+        .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
 
     JobStatusUpdate update =
         new JobStatusUpdate(
@@ -301,8 +302,8 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
             GenericJobServerModel.StatusEnum.RUNNING,
             GenericJobServerModel.StatusEnum.SUCCEEDED);
 
-    // Act
-    jobService.processStatusUpdate(update);
+    // Act/Assert
+    assertThrows(MissingObjectException.class, () -> jobService.processStatusUpdate(update));
 
     // Assert
     verify(jobDao, never()).succeeded(jobId);
@@ -311,22 +312,16 @@ class JobServiceControlPlaneTest extends JobServiceBaseTest {
   private UUID setupProcessJobStatusUpdateTest(GenericJobServerModel.StatusEnum initialStatus) {
     UUID jobId = randomUUID();
     // Job exists
-    CollectionId collectionId = CollectionId.of(randomUUID());
     GenericJobServerModel expectedJob =
         new GenericJobServerModel(
             jobId,
             GenericJobServerModel.JobTypeEnum.DATA_IMPORT,
-            collectionId.id(),
+            randomUUID(),
             initialStatus,
             // set created and updated to now, but in UTC because that's how Postgres stores it
             OffsetDateTime.now(ZoneId.of("Z")),
             OffsetDateTime.now(ZoneId.of("Z")));
     when(jobDao.getJob(jobId)).thenReturn(expectedJob);
-    // Collection does not exist, so virtual collection is used
-    when(collectionDao.getWorkspaceId(collectionId))
-        .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
-    // User has access to the job's collection's workspace
-    stubReadWorkspacePermission(WorkspaceId.of(collectionId.id())).thenReturn(true);
 
     return jobId;
   }

@@ -1,10 +1,10 @@
 package org.databiosphere.workspacedataservice.jobexec;
 
+import static io.micrometer.observation.tck.TestObservationRegistryAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,27 +17,25 @@ import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
-import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
-import org.databiosphere.workspacedataservice.observability.TestObservationRegistryConfig;
 import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.quartz.JobDataMap;
@@ -47,20 +45,18 @@ import org.quartz.impl.JobDetailImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 
 @SpringBootTest
 @DirtiesContext
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Import(TestObservationRegistryConfig.class)
+@TestInstance(Lifecycle.PER_CLASS)
+@WithTestObservationRegistry
 class QuartzJobTest extends TestBase {
 
   @MockBean JobDao jobDao;
   @MockBean DataImportProperties dataImportProperties;
   @Autowired MeterRegistry meterRegistry;
-  // overridden with a TestObservationRegistry
-  @Autowired private ObservationRegistry observationRegistry;
+  @Autowired TestObservationRegistry observationRegistry;
 
   @BeforeAll
   void beforeAll() {
@@ -80,14 +76,6 @@ class QuartzJobTest extends TestBase {
         .thenThrow(new RuntimeException("test failed via jobDao.fail()"));
 
     when(dataImportProperties.isSucceedOnCompletion()).thenReturn(true);
-  }
-
-  /** clear all observations and metrics prior to each test */
-  @BeforeEach
-  void beforeEach() {
-    meterRegistry.clear();
-    Metrics.globalRegistry.clear();
-    ((TestObservationRegistry) observationRegistry).clear();
   }
 
   /**
@@ -147,14 +135,10 @@ class QuartzJobTest extends TestBase {
     String jobUuid = UUID.randomUUID().toString();
     JobExecutionContext mockContext = setUpTestJob(randomToken, jobUuid);
 
-    // this test requires a TestObservationRegistry
-    TestObservationRegistry testObservationRegistry =
-        assertInstanceOf(TestObservationRegistry.class, observationRegistry);
+    // execute the TestableQuartzJob, then use observationRegistry to confirm observation
+    new TestableQuartzJob(randomToken, observationRegistry).execute(mockContext);
 
-    // execute the TestableQuartzJob, then use testObservationRegistry to confirm observation
-    new TestableQuartzJob(randomToken, testObservationRegistry).execute(mockContext);
-
-    TestObservationRegistryAssert.assertThat(testObservationRegistry)
+    assertThat(observationRegistry)
         .doesNotHaveAnyRemainingCurrentObservation()
         .hasNumberOfObservationsWithNameEqualTo("wds.job.execute", 1)
         .hasObservationWithNameEqualTo("wds.job.execute")
@@ -215,15 +199,11 @@ class QuartzJobTest extends TestBase {
     String jobUuid = UUID.randomUUID().toString();
     JobExecutionContext mockContext = setUpTestJob(randomToken, jobUuid);
 
-    // this test requires a TestObservationRegistry
-    TestObservationRegistry testObservationRegistry =
-        assertInstanceOf(TestObservationRegistry.class, observationRegistry);
-
     // execute the TestableQuartzJob, then confirm observation recorded failure
     new TestableQuartzJob(randomToken, observationRegistry, /* shouldThrowError= */ true)
         .execute(mockContext);
 
-    TestObservationRegistryAssert.assertThat(testObservationRegistry)
+    assertThat(observationRegistry)
         .doesNotHaveAnyRemainingCurrentObservation()
         .hasNumberOfObservationsWithNameEqualTo("wds.job.execute", 1)
         .hasObservationWithNameEqualTo("wds.job.execute")
@@ -248,10 +228,6 @@ class QuartzJobTest extends TestBase {
     String randomToken = RandomStringUtils.randomAlphanumeric(10);
     UUID jobUuid = UUID.randomUUID();
     JobExecutionContext mockContext = setUpTestJob(randomToken, jobUuid.toString());
-
-    // this test requires a TestObservationRegistry
-    TestObservationRegistry testObservationRegistry =
-        assertInstanceOf(TestObservationRegistry.class, observationRegistry);
 
     // execute the TestableQuartzJob. This will move the job to SUCCESS when
     // dataImportProperties.isSucceedOnCompletion() is true; else it will leave the job

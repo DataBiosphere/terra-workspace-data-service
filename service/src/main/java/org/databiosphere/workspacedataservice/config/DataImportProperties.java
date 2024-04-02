@@ -22,9 +22,13 @@ public class DataImportProperties {
   private RecordSinkMode batchWriteRecordSink;
   private String rawlsBucketName;
   private boolean succeedOnCompletion;
+  private boolean enableTdrPermissionSync = false;
 
   private Set<Pattern> allowedHosts = emptySet();
   private Set<String> allowedSchemes = Set.of("https");
+  private String rawlsNotificationsTopic;
+  private String statusUpdatesTopic;
+  private String statusUpdatesSubscription;
 
   /** Where to write records after import, options are defined by {@link RecordSinkMode} */
   public RecordSinkMode getBatchWriteRecordSink() {
@@ -62,6 +66,20 @@ public class DataImportProperties {
   }
 
   /**
+   * Permissions syncing on TDR import jobs is only enabled on the control plane.
+   *
+   * @see org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJob
+   * @return the configured value
+   */
+  public boolean isTdrPermissionSyncingEnabled() {
+    return enableTdrPermissionSync;
+  }
+
+  public void setEnableTdrPermissionSync(boolean enableTdrPermissionSync) {
+    this.enableTdrPermissionSync = enableTdrPermissionSync;
+  }
+
+  /**
    * Accepted sources for imported files. This includes configured sources as well as default /
    * always allowed sources (GCS buckets, Azure storage containers, and S3 buckets).
    */
@@ -79,6 +97,30 @@ public class DataImportProperties {
 
   public void setAllowedSchemes(String[] allowedSchemes) {
     this.allowedSchemes = stream(allowedSchemes).collect(Collectors.toSet());
+  }
+
+  public String getRawlsNotificationsTopic() {
+    return rawlsNotificationsTopic;
+  }
+
+  public void setRawlsNotificationsTopic(String rawlsNotificationsTopic) {
+    this.rawlsNotificationsTopic = rawlsNotificationsTopic;
+  }
+
+  public String getStatusUpdatesTopic() {
+    return statusUpdatesTopic;
+  }
+
+  public void setStatusUpdatesTopic(String statusUpdatesTopic) {
+    this.statusUpdatesTopic = statusUpdatesTopic;
+  }
+
+  public String getStatusUpdatesSubscription() {
+    return statusUpdatesSubscription;
+  }
+
+  public void setStatusUpdatesSubscription(String statusUpdatesSubscription) {
+    this.statusUpdatesSubscription = statusUpdatesSubscription;
   }
 
   /** Dictates the sink where BatchWriteService should write records after import. */

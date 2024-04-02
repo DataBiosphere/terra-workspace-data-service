@@ -2,11 +2,11 @@ package org.databiosphere.workspacedataservice.recordsink;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RecordService;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
@@ -19,13 +19,13 @@ public class WdsRecordSink implements RecordSink {
   private final RecordService recordService;
   private final RecordDao recordDao;
   private final DataTypeInferer inferer;
-  private final UUID collectionId;
+  private final CollectionId collectionId;
 
   WdsRecordSink(
       RecordService recordService,
       RecordDao recordDao,
       DataTypeInferer inferer,
-      UUID collectionId) {
+      CollectionId collectionId) {
     this.recordService = recordService;
     this.recordDao = recordDao;
     this.inferer = inferer;
@@ -38,19 +38,19 @@ public class WdsRecordSink implements RecordSink {
       Map<String, DataTypeMapping> schema,
       List<Record> records,
       String recordTypePrimaryKey) {
-    if (!recordDao.recordTypeExists(collectionId, recordType)) {
+    if (!recordDao.recordTypeExists(collectionId.id(), recordType)) {
       recordDao.createRecordType(
-          collectionId,
+          collectionId.id(),
           schema,
           recordType,
           inferer.findRelations(records, schema),
           recordTypePrimaryKey);
     } else {
       return recordService.addOrUpdateColumnIfNeeded(
-          collectionId,
+          collectionId.id(),
           recordType,
           schema,
-          recordDao.getExistingTableSchemaLessPrimaryKey(collectionId, recordType),
+          recordDao.getExistingTableSchemaLessPrimaryKey(collectionId.id(), recordType),
           records);
     }
     return schema;
@@ -62,12 +62,12 @@ public class WdsRecordSink implements RecordSink {
       Map<String, DataTypeMapping> schema,
       List<Record> records,
       String primaryKey) {
-    recordService.batchUpsert(collectionId, recordType, records, schema, primaryKey);
+    recordService.batchUpsert(collectionId.id(), recordType, records, schema, primaryKey);
   }
 
   @Override
   public void deleteBatch(RecordType recordType, List<Record> records) {
-    recordDao.batchDelete(collectionId, recordType, records);
+    recordDao.batchDelete(collectionId.id(), recordType, records);
   }
 
   @Override

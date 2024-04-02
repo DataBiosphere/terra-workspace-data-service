@@ -46,5 +46,9 @@ out/
 # Ignore generated credentials from google-github-actions/auth
 gha-creds-*.json
 
+# Ignore virtual Python environments for smoke tests and pycaches
+/smoke_test/venv
+**/__pycache__/**
+
 service/backup.sql
 /service/.openapi-generator/

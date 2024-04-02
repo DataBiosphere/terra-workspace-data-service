@@ -1,11 +1,11 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
-import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RecordService;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.springframework.stereotype.Component;
 
 /** RecordSinkFactory implementation for the data plane */
@@ -23,14 +23,12 @@ public class WdsRecordSinkFactory implements RecordSinkFactory {
     this.dataTypeInferer = dataTypeInferer;
   }
 
-  // TODO(AJ-1589): make prefix assignment dynamic. However, of note: the prefix is currently
-  //   ignored for RecordSinkMode.WDS.  In this case, it might be worth adding support for omitting
-  //   the prefix as part of supporting the prefix assignment.
   public RecordSink buildRecordSink(ImportDetails importDetails) {
-    return wdsRecordSink(importDetails.collectionId());
+    return buildRecordSink(importDetails.collectionId());
   }
 
-  private WdsRecordSink wdsRecordSink(UUID collectionId) {
+  @Override
+  public RecordSink buildRecordSink(CollectionId collectionId) {
     return new WdsRecordSink(recordService, recordDao, dataTypeInferer, collectionId);
   }
 }

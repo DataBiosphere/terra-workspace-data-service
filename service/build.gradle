@@ -8,7 +8,7 @@ plugins {
     id 'org.openapi.generator'
     id 'com.diffplug.spotless'
     id 'jacoco'
-    id "au.com.dius.pact" version "4.6.7"
+    id "au.com.dius.pact" version "4.6.8"
     id 'jvm-test-suite'
 }
 
@@ -37,16 +37,16 @@ jib {
 
 ext {
     parquet_mr_version = "1.13.1"
-    hadoop_version = "3.3.6"
+    hadoop_version = "3.4.0"
     prometheus_rsocket_version = "1.5.3"
-    spring_cloud_gcp_version = "5.1.0"
+    spring_cloud_gcp_version = "5.1.2"
 }
 
 dependencies {
     // Azure libraries
     implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.19'
-    implementation 'com.azure:azure-storage-blob:12.25.2'
-    implementation 'com.azure:azure-identity-extensions:1.1.13' // postgres password plugin
+    implementation 'com.azure:azure-storage-blob:12.25.3'
+    implementation 'com.azure:azure-identity-extensions:1.1.14' // postgres password plugin
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
@@ -75,7 +75,7 @@ dependencies {
 
     // required by openapi-generated models and api interfaces
     implementation 'jakarta.validation:jakarta.validation-api'
-    implementation 'io.swagger.core.v3:swagger-annotations:2.2.20'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.21'
 
     // Terra libraries
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-752b4f3'
@@ -119,17 +119,17 @@ dependencies {
     implementation "org.glassfish.jersey.core:jersey-common"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.12.0'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.13.0'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation project(':client')
-    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.7'
     testImplementation 'au.com.dius.pact.provider:spring:4.6.7'
+    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.8'
     testImplementation 'org.junit-pioneer:junit-pioneer:2.2.0'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.14'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.15'
 
     constraints {
         implementation('org.json:json:20240303') {

@@ -3,23 +3,15 @@ package org.databiosphere.workspacedataservice.dataimport;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
-import org.springframework.lang.Nullable;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 
 public record ImportDetails(
-    @Nullable UUID jobId,
-    @Nullable Supplier<String> userEmailSupplier,
-    UUID collectionId,
+    UUID jobId,
+    Supplier<String> userEmailSupplier,
+    WorkspaceId workspaceId,
+    CollectionId collectionId,
     PrefixStrategy prefixStrategy) {
-
-  /**
-   * Convenience constructor that sets jobId and userEmail to defaults, and sets prefixStrategy to
-   * NONE. Used by TSV and JSON APIs, which are not async and thus do not have job ids
-   *
-   * @param collectionId target collection
-   */
-  public ImportDetails(UUID collectionId) {
-    this(null, null, collectionId, PrefixStrategy.NONE);
-  }
 
   /**
    * Override to ensure we never serialize the userEmailSupplier, which can contain an auth token.
@@ -32,6 +24,8 @@ public record ImportDetails(
         + "jobId="
         + jobId
         + ", userEmailSupplier=Supplier<String>"
+        + ", workspaceId="
+        + workspaceId
         + ", collectionId="
         + collectionId
         + ", prefixStrategy="

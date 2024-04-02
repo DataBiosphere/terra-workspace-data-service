@@ -14,8 +14,6 @@ import org.databiosphere.workspacedataservice.service.model.exception.Authentica
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
@@ -23,8 +21,6 @@ import org.springframework.stereotype.Service;
 public class JobService {
   private static final Set<StatusEnum> TERMINAL_JOB_STATUSES =
       Set.of(StatusEnum.SUCCEEDED, StatusEnum.ERROR, StatusEnum.CANCELLED);
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(JobService.class);
 
   JobDao jobDao;
   CollectionService collectionService;
@@ -59,12 +55,15 @@ public class JobService {
 
   /**
    * Process a job status update from Rawls received via PubSub. This method is only used in the
-   * control plane (it's exposed through the control plane only PubSubController).
+   * control plane.
    */
   public void processStatusUpdate(JobStatusUpdate update) {
     UUID jobId = update.jobId();
     try {
-      GenericJobServerModel job = getJob(jobId);
+      // JobService's getJob method checks permissions via Sam. Since this method is not run
+      // as part of a user request, there is no token available to make requests to Sam with.
+      // Thus, we must use jobDao's getJob here.
+      GenericJobServerModel job = jobDao.getJob(jobId);
       StatusEnum currentStatus = job.getStatus();
       StatusEnum newStatus = update.newStatus();
 
@@ -88,10 +87,8 @@ public class JobService {
         default -> throw new ValidationException(
             "Unexpected status from Rawls for job %s: %s".formatted(jobId, newStatus));
       }
-    } catch (MissingObjectException e) {
-      // Via PubSub, CWDS will receive status updates for both CWDS and import service jobs.
-      // If the job is not found in the database (because it's an import service job), ignore it.
-      LOGGER.info("Received status update for unknown job {}", jobId);
+    } catch (EmptyResultDataAccessException e) {
+      throw new MissingObjectException("Job");
     }
   }
 }
