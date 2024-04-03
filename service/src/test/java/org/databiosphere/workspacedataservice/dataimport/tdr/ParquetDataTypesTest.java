@@ -84,7 +84,7 @@ class ParquetDataTypesTest extends TestBase {
           .forEach(
               attributeName ->
                   assertThat(getColumnValues(records, attributeName))
-                      .withFailMessage("for attribute %s", attributeName)
+                      .describedAs("for column %s", attributeName)
                       .containsExactlyInAnyOrder(0, 0.01, 0.22));
     }
   }
