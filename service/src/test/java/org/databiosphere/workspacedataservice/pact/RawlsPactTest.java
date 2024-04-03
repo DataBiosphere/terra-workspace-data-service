@@ -16,6 +16,7 @@ import au.com.dius.pact.core.model.RequestResponsePact;
 import au.com.dius.pact.core.model.annotations.Pact;
 import au.com.dius.pact.provider.spring.SpringRestPactRunner;
 import bio.terra.workspace.model.CloningInstructionsEnum;
+import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.observability.TestObservationRegistryConfig;
@@ -99,6 +100,7 @@ public class RawlsPactTest {
   @Pact(consumer = "wds", provider = "rawls")
   public RequestResponsePact createSnapshotPact(PactDslWithProvider builder) {
     return builder
+        .given("a workspace with the given {id} exists", ImmutableMap.of("id", WORKSPACE_UUID))
         .given("policies allowing snapshot reference creation")
         .uponReceiving("a request to create a snapshot reference")
         .pathFromProviderState(
