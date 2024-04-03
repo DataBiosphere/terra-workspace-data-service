@@ -75,7 +75,7 @@ class ParquetDataTypesTest extends TestBase {
 
       // ASSERT
       // the expected number of records
-      assertThat(records.size()).isEqualTo(3);
+      assertThat(records).hasSize(3);
 
       // Each column in numeric.parquet has the same values, but
       // each column has a different schema. The [0, 0.01, 0.22] values are the expected
