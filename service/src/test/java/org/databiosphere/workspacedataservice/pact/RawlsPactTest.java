@@ -98,35 +98,14 @@ public class RawlsPactTest {
 
   @Pact(consumer = "wds", provider = "rawls")
   public RequestResponsePact createSnapshotPact(PactDslWithProvider builder) {
-    //    DslPart snapshotCreateRequest =
-    //        newJsonBody(
-    //                body -> {
-    //                  body.stringValue("snapshotId", RESOURCE_UUID);
-    //                  body.stringValue(
-    //                      "cloningInstructions", CloningInstructionsEnum.REFERENCE.toString());
-    //                  // expect exactly one property, declaring the snapshot as being for policy
-    // only
-    //                  body.minMaxArrayLike(
-    //                      "properties",
-    //                      /* minSize= */ 1,
-    //                      /* maxSize= */ 1,
-    //                      p -> {
-    //                        p.stringValue("key", WorkspaceManagerDao.PROP_PURPOSE);
-    //                        p.stringValue("value", WorkspaceManagerDao.PURPOSE_POLICY);
-    //                      });
-    //                })
-    //            .build();
     return builder
-        //        .given("a workspace with the given {id} exists", ImmutableMap.of("id",
-        // WORKSPACE_UUID))
         .given("policies allowing snapshot reference creation")
         .uponReceiving("a request to create a snapshot reference")
         .pathFromProviderState(
             "/api/workspaces/${workspaceId}/snapshots/v2",
             String.format("/api/workspaces/%s/snapshots/v2", WORKSPACE_UUID))
         .method("POST")
-        //        .headers(PactTestSupport.acceptJson())
-        //        .body(snapshotCreateRequest)
+        .headers(PactTestSupport.contentTypeJson())
         .body(
             new PactDslJsonBody()
                 .stringValue("snapshotId", RESOURCE_UUID)
@@ -138,14 +117,8 @@ public class RawlsPactTest {
                 .closeObject())
         .willRespondWith()
         .status(HttpStatus.OK.value())
-        //        .headers(PactTestSupport.contentTypeJson())
-        .body(
-            newJsonBody(
-                    body -> {
-                      // put expectations here if we ever start reading fields in the code under
-                      // test
-                    })
-                .build())
+        .headers(PactTestSupport.contentTypeJson())
+        .body(newJsonBody(body -> {}).build())
         .toPact();
   }
 

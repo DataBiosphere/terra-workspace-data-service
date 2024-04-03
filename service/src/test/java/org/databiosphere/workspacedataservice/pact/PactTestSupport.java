@@ -18,7 +18,7 @@ public class PactTestSupport {
     // pact will automatically assume an expected Content-Type of "application/json; charset=UTF-8"
     // unless we explicitly tell it otherwise
     return new ImmutableMap.Builder<String, String>()
-        .put("Content-Type", "application/json; charset=UTF-8")
+        .put("Content-Type", "application/json")
         .build();
   }
 
