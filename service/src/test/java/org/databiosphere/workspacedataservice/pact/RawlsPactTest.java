@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.pact;
 
+import static au.com.dius.pact.consumer.dsl.LambdaDsl.newJsonBody;
 import static org.databiosphere.workspacedataservice.TestTags.PACT_TEST;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
@@ -91,6 +94,69 @@ public class RawlsPactTest {
         rawlsClient.enumerateDataRepoSnapshotReferences(UUID.fromString(WORKSPACE_UUID), 0, 10);
     assertNotNull(snapshots);
     assertEquals(1, snapshots.gcpDataRepoSnapshots().size());
+  }
+
+  @Pact(consumer = "wds", provider = "rawls")
+  public RequestResponsePact createSnapshotPact(PactDslWithProvider builder) {
+    //    DslPart snapshotCreateRequest =
+    //        newJsonBody(
+    //                body -> {
+    //                  body.stringValue("snapshotId", RESOURCE_UUID);
+    //                  body.stringValue(
+    //                      "cloningInstructions", CloningInstructionsEnum.REFERENCE.toString());
+    //                  // expect exactly one property, declaring the snapshot as being for policy
+    // only
+    //                  body.minMaxArrayLike(
+    //                      "properties",
+    //                      /* minSize= */ 1,
+    //                      /* maxSize= */ 1,
+    //                      p -> {
+    //                        p.stringValue("key", WorkspaceManagerDao.PROP_PURPOSE);
+    //                        p.stringValue("value", WorkspaceManagerDao.PURPOSE_POLICY);
+    //                      });
+    //                })
+    //            .build();
+    return builder
+        //        .given("a workspace with the given {id} exists", ImmutableMap.of("id",
+        // WORKSPACE_UUID))
+        .given("policies allowing snapshot reference creation")
+        .uponReceiving("a request to create a snapshot reference")
+        .pathFromProviderState(
+            "/api/workspaces/${workspaceId}/snapshots/v2",
+            String.format("/api/workspaces/%s/snapshots/v2", WORKSPACE_UUID))
+        .method("POST")
+        //        .headers(PactTestSupport.acceptJson())
+        //        .body(snapshotCreateRequest)
+        .body(
+            new PactDslJsonBody()
+                .stringValue("snapshotId", RESOURCE_UUID)
+                .stringType("name")
+                .stringType("description")
+                .stringValue("cloningInstructions", CloningInstructionsEnum.REFERENCE.toString())
+                .object("properties")
+                .stringValue("purpose", "policy")
+                .closeObject())
+        .willRespondWith()
+        .status(HttpStatus.OK.value())
+        //        .headers(PactTestSupport.contentTypeJson())
+        .body(
+            newJsonBody(
+                    body -> {
+                      // put expectations here if we ever start reading fields in the code under
+                      // test
+                    })
+                .build())
+        .toPact();
+  }
+
+  @Test
+  @PactTestFor(pactMethod = "createSnapshotPact", pactVersion = PactSpecVersion.V3)
+  void testCreateSnapshot(MockServer mockServer) {
+    RawlsClient rawlsClient = getRawlsClient(mockServer);
+    assertDoesNotThrow(
+        () ->
+            rawlsClient.createSnapshotReference(
+                UUID.fromString(WORKSPACE_UUID), UUID.fromString(RESOURCE_UUID)));
   }
 
   private RawlsClient getRawlsClient(MockServer mockServer) {

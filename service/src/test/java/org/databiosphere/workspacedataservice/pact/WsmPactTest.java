@@ -22,7 +22,6 @@ import bio.terra.workspace.model.CloningInstructionsEnum;
 import bio.terra.workspace.model.ResourceType;
 import bio.terra.workspace.model.StewardshipType;
 import com.google.common.collect.ImmutableMap;
-import java.util.Arrays;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.WsmSnapshotSupport;
@@ -61,7 +60,7 @@ class WsmPactTest {
   private static final String USER_EMAIL = "fake.user@e.mail";
   private static final int NUM_SNAPSHOTS_THAT_EXIST = 3;
   private static final int NUM_SNAPSHOTS_REQUESTED = NUM_SNAPSHOTS_THAT_EXIST + 2;
-  private static final String BEARER_TOKEN = "fakebearertoken";
+  //  private static final String BEARER_TOKEN = "fakebearertoken";
   @MockBean ActivityLogger activityLogger;
 
   @BeforeEach
@@ -69,7 +68,7 @@ class WsmPactTest {
     // mock all requests to be authorized by the given bearer token
     var requestAttributes = new ServletRequestAttributes(new MockHttpServletRequest());
     requestAttributes.setAttribute(
-        BearerTokenFilter.ATTRIBUTE_NAME_TOKEN, BEARER_TOKEN, SCOPE_REQUEST);
+        BearerTokenFilter.ATTRIBUTE_NAME_TOKEN, PactTestSupport.BEARER_TOKEN, SCOPE_REQUEST);
     RequestContextHolder.setRequestAttributes(requestAttributes);
   }
 
@@ -84,11 +83,11 @@ class WsmPactTest {
         .uponReceiving("a request to create a snapshot reference")
         .method(HttpMethod.POST.name())
         .matchPath(snapshotPath(UUID_REGEX_PATTERN), snapshotPath(WORKSPACE_UUID.toString()))
-        .headers(mergeHeaders(authorization(BEARER_TOKEN), contentTypeJson()))
+        .headers(PactTestSupport.authorizedJsonHeaders())
         .body(createSnapshotReferenceBody(SNAPSHOT_NAME))
         .willRespondWith()
         .status(HttpStatus.OK.value())
-        .headers(contentTypeJson())
+        .headers(PactTestSupport.contentTypeJson())
         .body(
             newJsonBody(
                     body -> {
@@ -120,11 +119,11 @@ class WsmPactTest {
         .uponReceiving("a request to create a snapshot reference")
         .method(HttpMethod.POST.name())
         .matchPath(snapshotPath(UUID_REGEX_PATTERN), snapshotPath(WORKSPACE_UUID.toString()))
-        .headers(mergeHeaders(authorization(BEARER_TOKEN), contentTypeJson()))
+        .headers(PactTestSupport.authorizedJsonHeaders())
         .body(createSnapshotReferenceBody(SNAPSHOT_NAME))
         .willRespondWith()
         .status(HttpStatus.CONFLICT.value())
-        .headers(contentTypeJson())
+        .headers(PactTestSupport.contentTypeJson())
         .body(
             newJsonBody(
                     body ->
@@ -211,10 +210,10 @@ class WsmPactTest {
             ResourceType.AZURE_STORAGE_CONTAINER.toString())
         .matchQuery("offset", /* regex= */ "[0-9]+", /* example= */ "0")
         .matchQuery("limit", /* regex= */ "[1-9](0-9)*", /* example= */ "1")
-        .headers(mergeHeaders(authorization(BEARER_TOKEN), acceptJson()))
+        .headers(PactTestSupport.authorizedJsonHeaders())
         .willRespondWith()
         .status(HttpStatus.OK.value())
-        .headers(contentTypeJson())
+        .headers(PactTestSupport.contentTypeJson())
         .body(
             newJsonBody(
                     body -> {
@@ -251,10 +250,10 @@ class WsmPactTest {
             "limit",
             String.valueOf(NUM_SNAPSHOTS_REQUESTED),
             String.valueOf(NUM_SNAPSHOTS_REQUESTED))
-        .headers(mergeHeaders(authorization(BEARER_TOKEN), acceptJson()))
+        .headers(PactTestSupport.authorizedJsonHeaders())
         .willRespondWith()
         .status(HttpStatus.OK.value())
-        .headers(contentTypeJson())
+        .headers(PactTestSupport.contentTypeJson())
         .body(
             newJsonBody(
                     body -> {
@@ -313,10 +312,10 @@ class WsmPactTest {
             "limit",
             String.valueOf(NUM_SNAPSHOTS_REQUESTED),
             String.valueOf(NUM_SNAPSHOTS_REQUESTED))
-        .headers(mergeHeaders(authorization(BEARER_TOKEN), acceptJson()))
+        .headers(PactTestSupport.authorizedJsonHeaders())
         .willRespondWith()
         .status(HttpStatus.OK.value())
-        .headers(contentTypeJson())
+        .headers(PactTestSupport.contentTypeJson())
         .body(
             newJsonBody(
                     body -> {
@@ -357,10 +356,10 @@ class WsmPactTest {
             "limit",
             String.valueOf(NUM_SNAPSHOTS_REQUESTED),
             String.valueOf(NUM_SNAPSHOTS_REQUESTED))
-        .headers(mergeHeaders(authorization(BEARER_TOKEN), acceptJson()))
+        .headers(PactTestSupport.authorizedJsonHeaders())
         .willRespondWith()
         .status(HttpStatus.OK.value())
-        .headers(contentTypeJson())
+        .headers(PactTestSupport.contentTypeJson())
         .body(
             newJsonBody(
                     body -> {
@@ -424,10 +423,10 @@ class WsmPactTest {
         .pathFromProviderState(
             sasTokenPath(WORKSPACE_UUID.toString(), "${storageContainerResourceId}"),
             sasTokenPath(WORKSPACE_UUID.toString(), RESOURCE_UUID.toString()))
-        .headers(mergeHeaders(authorization(BEARER_TOKEN), contentTypeJson()))
+        .headers(PactTestSupport.authorizedJsonHeaders())
         .willRespondWith()
         .status(HttpStatus.OK.value())
-        .headers(contentTypeJson())
+        .headers(PactTestSupport.contentTypeJson())
         .body(
             newJsonBody(
                     body -> {
@@ -450,7 +449,8 @@ class WsmPactTest {
   void getBlobStorageUrl_ok(MockServer mockServer) {
     var wsmDao = buildWsmDao(mockServer);
 
-    var blobStorageUrl = wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), BEARER_TOKEN);
+    var blobStorageUrl =
+        wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), PactTestSupport.BEARER_TOKEN);
 
     assertNotNull(blobStorageUrl);
     // TODO: the sas URL has some pretty strict formatting requirements and making some assertions
@@ -480,7 +480,7 @@ class WsmPactTest {
         .pathFromProviderState(
             sasTokenPath(WORKSPACE_UUID.toString(), "${storageContainerResourceId}"),
             sasTokenPath(WORKSPACE_UUID.toString(), RESOURCE_UUID.toString()))
-        .headers(mergeHeaders(authorization(BEARER_TOKEN), contentTypeJson()))
+        .headers(PactTestSupport.authorizedJsonHeaders())
         .willRespondWith()
         .status(HttpStatus.FORBIDDEN.value())
         .toPact();
@@ -499,7 +499,8 @@ class WsmPactTest {
     var thrown =
         assertThrows(
             WorkspaceManagerException.class,
-            () -> wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), BEARER_TOKEN));
+            () ->
+                wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), PactTestSupport.BEARER_TOKEN));
     assertEquals(HttpStatus.FORBIDDEN, thrown.getStatusCode());
   }
 
@@ -513,7 +514,8 @@ class WsmPactTest {
     var thrown =
         assertThrows(
             WorkspaceManagerException.class,
-            () -> wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), BEARER_TOKEN));
+            () ->
+                wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), PactTestSupport.BEARER_TOKEN));
     assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, thrown.getStatusCode());
   }
 
@@ -548,34 +550,6 @@ class WsmPactTest {
     WorkspaceManagerClientFactory clientFactory =
         new HttpWorkspaceManagerClientFactory(mockServer.getUrl());
     return new WorkspaceManagerDao(clientFactory, new RestClientRetry());
-  }
-
-  // headers
-  private static ImmutableMap<String, String> authorization(String bearerToken) {
-    return new ImmutableMap.Builder<String, String>()
-        .put("Authorization", String.format("Bearer %s", bearerToken))
-        .build();
-  }
-
-  private static ImmutableMap<String, String> contentTypeJson() {
-    // pact will automatically assume an expected Content-Type of "application/json; charset=UTF-8"
-    // unless we explicitly tell it otherwise
-    return new ImmutableMap.Builder<String, String>()
-        .put("Content-Type", "application/json")
-        .build();
-  }
-
-  private static ImmutableMap<String, String> acceptJson() {
-    return new ImmutableMap.Builder<String, String>().put("Accept", "application/json").build();
-  }
-
-  @SafeVarargs
-  private static ImmutableMap<String, String> mergeHeaders(
-      ImmutableMap<String, String>... headerMaps) {
-    return Arrays.stream(headerMaps)
-        .map(map -> new ImmutableMap.Builder<String, String>().putAll(map))
-        .reduce(new ImmutableMap.Builder<>(), (first, second) -> first.putAll(second.build()))
-        .build();
   }
 
   // paths
