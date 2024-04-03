@@ -207,13 +207,11 @@ public abstract class AvroRecordConverter {
 
       // now, try to turn the BigDecimal back into an int or a double; this truncates the
       // precision to the actual value. Example: 0.220000000 will become 0.22
-      Object returnValue;
       try {
-        returnValue = bigDecimal.intValueExact();
+        return bigDecimal.intValueExact();
       } catch (ArithmeticException ae) {
-        returnValue = bigDecimal.doubleValue();
+        return bigDecimal.doubleValue();
       }
-      return returnValue;
     }
 
     // here, we could handle other logical types such as date or the various timestamps
