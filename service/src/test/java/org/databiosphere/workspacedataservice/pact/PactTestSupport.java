@@ -34,7 +34,11 @@ public class PactTestSupport {
         .build();
   }
 
-  static ImmutableMap<String, String> authorizedJsonHeaders() {
+  static ImmutableMap<String, String> authorizedJsonContentTypeHeaders() {
     return mergeHeaders(authorization(BEARER_TOKEN), contentTypeJson());
+  }
+
+  static ImmutableMap<String, String> authorizedAcceptJsonHeaders() {
+    return mergeHeaders(authorization(BEARER_TOKEN), acceptJson());
   }
 }

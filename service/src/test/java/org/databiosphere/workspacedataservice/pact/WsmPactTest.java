@@ -83,7 +83,7 @@ class WsmPactTest {
         .uponReceiving("a request to create a snapshot reference")
         .method(HttpMethod.POST.name())
         .matchPath(snapshotPath(UUID_REGEX_PATTERN), snapshotPath(WORKSPACE_UUID.toString()))
-        .headers(PactTestSupport.authorizedJsonHeaders())
+        .headers(PactTestSupport.authorizedJsonContentTypeHeaders())
         .body(createSnapshotReferenceBody(SNAPSHOT_NAME))
         .willRespondWith()
         .status(HttpStatus.OK.value())
@@ -119,7 +119,7 @@ class WsmPactTest {
         .uponReceiving("a request to create a snapshot reference")
         .method(HttpMethod.POST.name())
         .matchPath(snapshotPath(UUID_REGEX_PATTERN), snapshotPath(WORKSPACE_UUID.toString()))
-        .headers(PactTestSupport.authorizedJsonHeaders())
+        .headers(PactTestSupport.authorizedJsonContentTypeHeaders())
         .body(createSnapshotReferenceBody(SNAPSHOT_NAME))
         .willRespondWith()
         .status(HttpStatus.CONFLICT.value())
@@ -210,7 +210,7 @@ class WsmPactTest {
             ResourceType.AZURE_STORAGE_CONTAINER.toString())
         .matchQuery("offset", /* regex= */ "[0-9]+", /* example= */ "0")
         .matchQuery("limit", /* regex= */ "[1-9](0-9)*", /* example= */ "1")
-        .headers(PactTestSupport.authorizedJsonHeaders())
+        .headers(PactTestSupport.authorizedAcceptJsonHeaders())
         .willRespondWith()
         .status(HttpStatus.OK.value())
         .headers(PactTestSupport.contentTypeJson())
@@ -250,7 +250,7 @@ class WsmPactTest {
             "limit",
             String.valueOf(NUM_SNAPSHOTS_REQUESTED),
             String.valueOf(NUM_SNAPSHOTS_REQUESTED))
-        .headers(PactTestSupport.authorizedJsonHeaders())
+        .headers(PactTestSupport.authorizedAcceptJsonHeaders())
         .willRespondWith()
         .status(HttpStatus.OK.value())
         .headers(PactTestSupport.contentTypeJson())
@@ -312,7 +312,7 @@ class WsmPactTest {
             "limit",
             String.valueOf(NUM_SNAPSHOTS_REQUESTED),
             String.valueOf(NUM_SNAPSHOTS_REQUESTED))
-        .headers(PactTestSupport.authorizedJsonHeaders())
+        .headers(PactTestSupport.authorizedAcceptJsonHeaders())
         .willRespondWith()
         .status(HttpStatus.OK.value())
         .headers(PactTestSupport.contentTypeJson())
@@ -356,7 +356,7 @@ class WsmPactTest {
             "limit",
             String.valueOf(NUM_SNAPSHOTS_REQUESTED),
             String.valueOf(NUM_SNAPSHOTS_REQUESTED))
-        .headers(PactTestSupport.authorizedJsonHeaders())
+        .headers(PactTestSupport.authorizedAcceptJsonHeaders())
         .willRespondWith()
         .status(HttpStatus.OK.value())
         .headers(PactTestSupport.contentTypeJson())
@@ -423,7 +423,7 @@ class WsmPactTest {
         .pathFromProviderState(
             sasTokenPath(WORKSPACE_UUID.toString(), "${storageContainerResourceId}"),
             sasTokenPath(WORKSPACE_UUID.toString(), RESOURCE_UUID.toString()))
-        .headers(PactTestSupport.authorizedJsonHeaders())
+        .headers(PactTestSupport.authorizedJsonContentTypeHeaders())
         .willRespondWith()
         .status(HttpStatus.OK.value())
         .headers(PactTestSupport.contentTypeJson())
@@ -480,7 +480,7 @@ class WsmPactTest {
         .pathFromProviderState(
             sasTokenPath(WORKSPACE_UUID.toString(), "${storageContainerResourceId}"),
             sasTokenPath(WORKSPACE_UUID.toString(), RESOURCE_UUID.toString()))
-        .headers(PactTestSupport.authorizedJsonHeaders())
+        .headers(PactTestSupport.authorizedJsonContentTypeHeaders())
         .willRespondWith()
         .status(HttpStatus.FORBIDDEN.value())
         .toPact();
