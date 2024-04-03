@@ -81,7 +81,7 @@ class RestClientRetryTest extends TestBase {
     int code = 401;
     Exception apiException =
         clazz.getDeclaredConstructor(int.class, String.class).newInstance(code, "");
-    RestCall<Boolean> RestCall =
+    RestCall<Boolean> restCall =
         () -> {
           throw apiException;
         };
@@ -91,8 +91,8 @@ class RestClientRetryTest extends TestBase {
         };
     assertThrows(
         AuthenticationException.class,
-        () -> restClientRetry.withRetryAndErrorHandling(RestCall, "AuthenticationException"),
-        "RestCall should throw AuthenticationException");
+        () -> restClientRetry.withRetryAndErrorHandling(restCall, "AuthenticationException"),
+        "restCall should throw AuthenticationException");
     assertThrows(
         AuthenticationException.class,
         () -> restClientRetry.withRetryAndErrorHandling(voidRestCall, "AuthenticationException"),
@@ -111,7 +111,7 @@ class RestClientRetryTest extends TestBase {
     int code = 403;
     Exception apiException =
         clazz.getDeclaredConstructor(int.class, String.class).newInstance(code, "");
-    RestCall<Boolean> RestCall =
+    RestCall<Boolean> restCall =
         () -> {
           throw apiException;
         };
@@ -121,8 +121,8 @@ class RestClientRetryTest extends TestBase {
         };
     assertThrows(
         AuthorizationException.class,
-        () -> restClientRetry.withRetryAndErrorHandling(RestCall, "AuthorizationException"),
-        "RestCall should throw AuthorizationException");
+        () -> restClientRetry.withRetryAndErrorHandling(restCall, "AuthorizationException"),
+        "restCall should throw AuthorizationException");
     assertThrows(
         AuthorizationException.class,
         () -> restClientRetry.withRetryAndErrorHandling(voidRestCall, "AuthorizationException"),
@@ -133,7 +133,7 @@ class RestClientRetryTest extends TestBase {
       "When REST target throws a NullPointerException, restClientRetry should throw RestException(500)")
   @Test
   void nullPointerException() {
-    RestCall<Boolean> RestCall =
+    RestCall<Boolean> restCall =
         () -> {
           throw new NullPointerException();
         };
@@ -141,7 +141,7 @@ class RestClientRetryTest extends TestBase {
         () -> {
           throw new NullPointerException();
         };
-    expectRestExceptionWithStatusCode(500, RestCall);
+    expectRestExceptionWithStatusCode(500, restCall);
     expectRestExceptionWithStatusCode(500, voidRestCall);
   }
 
@@ -149,7 +149,7 @@ class RestClientRetryTest extends TestBase {
       "When REST target throws a RuntimeException, restClientRetry should throw RestException(500)")
   @Test
   void runtimeException() {
-    RestCall<Boolean> RestCall =
+    RestCall<Boolean> restCall =
         () -> {
           throw new RuntimeException();
         };
@@ -157,7 +157,7 @@ class RestClientRetryTest extends TestBase {
         () -> {
           throw new RuntimeException();
         };
-    expectRestExceptionWithStatusCode(500, RestCall);
+    expectRestExceptionWithStatusCode(500, restCall);
     expectRestExceptionWithStatusCode(500, voidRestCall);
   }
 
@@ -173,7 +173,7 @@ class RestClientRetryTest extends TestBase {
           IllegalAccessException {
     Exception apiException =
         clazz.getDeclaredConstructor(int.class, String.class).newInstance(code, "");
-    RestCall<Boolean> RestCall =
+    RestCall<Boolean> restCall =
         () -> {
           throw apiException;
         };
@@ -181,7 +181,7 @@ class RestClientRetryTest extends TestBase {
         () -> {
           throw apiException;
         };
-    expectRestExceptionWithStatusCode(500, RestCall);
+    expectRestExceptionWithStatusCode(500, restCall);
     expectRestExceptionWithStatusCode(500, voidRestCall);
   }
 
@@ -198,7 +198,7 @@ class RestClientRetryTest extends TestBase {
     Exception apiException =
         clazz.getDeclaredConstructor(int.class, String.class).newInstance(code, "");
 
-    RestCall<Boolean> RestCall =
+    RestCall<Boolean> restCall =
         () -> {
           throw apiException;
         };
@@ -206,7 +206,7 @@ class RestClientRetryTest extends TestBase {
         () -> {
           throw apiException;
         };
-    expectRestExceptionWithStatusCode(code, RestCall);
+    expectRestExceptionWithStatusCode(code, restCall);
     expectRestExceptionWithStatusCode(code, voidRestCall);
   }
 
@@ -222,7 +222,7 @@ class RestClientRetryTest extends TestBase {
     Exception apiException =
         clazz.getDeclaredConstructor(int.class, String.class).newInstance(code, "");
 
-    RestCall<Boolean> RestCall =
+    RestCall<Boolean> restCall =
         () -> {
           counter.incrementAndGet();
           throw apiException;
@@ -231,10 +231,10 @@ class RestClientRetryTest extends TestBase {
     // this test doesn't care what exception is thrown; other tests verify that
     assertThrows(
         Exception.class,
-        () -> restClientRetry.withRetryAndErrorHandling(RestCall, "retryableExceptions"));
+        () -> restClientRetry.withRetryAndErrorHandling(restCall, "retryableExceptions"));
     // with current settings, will retry 5 times. Any retry means we'll have more than
     // one invocation.
-    assertTrue(counter.get() > 1, "RestCall should have retried");
+    assertTrue(counter.get() > 1, "restCall should have retried");
 
     // reset counter
     counter.set(0);
@@ -250,7 +250,7 @@ class RestClientRetryTest extends TestBase {
         () -> restClientRetry.withRetryAndErrorHandling(voidRestCall, "retryableExceptions"));
     // with current settings, will retry 5 times. Any retry means we'll have more than
     // one invocation.
-    assertTrue(counter.get() > 1, "VoidRestCall should have retried");
+    assertTrue(counter.get() > 1, "voidRestCall should have retried");
   }
 
   @CartesianTest(
@@ -267,7 +267,7 @@ class RestClientRetryTest extends TestBase {
     Exception apiException =
         clazz.getDeclaredConstructor(int.class, String.class).newInstance(code, "");
 
-    RestCall<Boolean> RestCall =
+    RestCall<Boolean> restCall =
         () -> {
           counter.incrementAndGet();
           throw apiException;
@@ -276,9 +276,9 @@ class RestClientRetryTest extends TestBase {
     // this test doesn't care what exception is thrown; other tests verify that
     assertThrows(
         Exception.class,
-        () -> restClientRetry.withRetryAndErrorHandling(RestCall, "retryableExceptions"));
+        () -> restClientRetry.withRetryAndErrorHandling(restCall, "retryableExceptions"));
     // this test does care how many times the RestCall was invoked
-    assertEquals(1, counter.get(), "RestCall should not have retried");
+    assertEquals(1, counter.get(), "restCall should not have retried");
 
     // reset counter
     counter.set(0);
@@ -293,20 +293,20 @@ class RestClientRetryTest extends TestBase {
         Exception.class,
         () -> restClientRetry.withRetryAndErrorHandling(voidRestCall, "retryableExceptions"));
     // this test does care how many times the RestCall was invoked
-    assertEquals(1, counter.get(), "VoidRestCall should not have retried");
+    assertEquals(1, counter.get(), "voidRestCall should not have retried");
   }
 
-  private void expectRestExceptionWithStatusCode(int expectedStatusCode, RestCall<?> RestCall) {
+  private void expectRestExceptionWithStatusCode(int expectedStatusCode, RestCall<?> restCall) {
     RestException actual =
         assertThrows(
             RestException.class,
-            () -> restClientRetry.withRetryAndErrorHandling(RestCall, "RestCall-unittest"),
-            "RestCall should throw RestException");
+            () -> restClientRetry.withRetryAndErrorHandling(restCall, "RestCall-unittest"),
+            "restCall should throw RestException");
 
     assertEquals(
         expectedStatusCode,
         actual.getStatusCode().value(),
-        "RestCall: Incorrect status code in RestException");
+        "restCall: Incorrect status code in RestException");
   }
 
   private void expectRestExceptionWithStatusCode(
