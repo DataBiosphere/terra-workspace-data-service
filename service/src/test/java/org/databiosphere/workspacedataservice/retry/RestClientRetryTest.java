@@ -1,13 +1,18 @@
 package org.databiosphere.workspacedataservice.retry;
+;
+import static io.micrometer.observation.tck.TestObservationRegistryAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import io.micrometer.observation.tck.TestObservationRegistry;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry.VoidRestCall;
@@ -27,15 +32,16 @@ import org.springframework.test.annotation.DirtiesContext;
 /** Tests for @see RestClientRetry */
 @DirtiesContext
 @SpringBootTest(
-    classes = {RestClientRetry.class, RetryLoggingListener.class},
     properties = {
       "rest.retry.maxAttempts=2",
       "rest.retry.backoff.delay=10"
     }) // aggressive retry settings so unit test doesn't run too long
 @EnableRetry
+@WithTestObservationRegistry
 class RestClientRetryTest extends TestBase {
 
-  @Autowired RestClientRetry restClientRetry;
+  @Autowired private RestClientRetry restClientRetry;
+  @Autowired private TestObservationRegistry observations;
 
   /**
    * reusable annotation for @CartesianTest that supplies all the exceptions we care about.
@@ -294,6 +300,50 @@ class RestClientRetryTest extends TestBase {
         () -> restClientRetry.withRetryAndErrorHandling(voidRestCall, "retryableExceptions"));
     // this test does care how many times the RestCall was invoked
     assertEquals(1, counter.get(), "voidRestCall should not have retried");
+  }
+
+  @Test
+  void outboundHttpMeasurementOnSuccess() {
+    // arrange
+    VoidRestCall voidRestCall = () -> {}; // no-op
+
+    // act
+    restClientRetry.withRetryAndErrorHandling(voidRestCall, "RestCall-unittest");
+
+    // assert
+    assertThat(observations)
+        .hasNumberOfObservationsWithNameEqualTo("wds.outbound", 1)
+        .hasObservationWithNameEqualTo("wds.outbound")
+        .that()
+        .hasLowCardinalityKeyValue("hint", "RestCall-unittest")
+        .hasLowCardinalityKeyValue("outcome", "SUCCEEDED");
+  }
+
+  @Test
+  void outboundHttpMeasurementOnFailure() {
+    // arrange
+    VoidRestCall voidRestCall =
+        () -> {
+          throw new bio.terra.workspace.client.ApiException(404, "Not Found");
+        }; // no-op
+
+    // act
+    assertThrows(
+        RestException.class,
+        () -> restClientRetry.withRetryAndErrorHandling(voidRestCall, "RestCall-unittest"));
+
+    // assert
+    assertThat(observations)
+        .hasNumberOfObservationsWithNameEqualTo("wds.outbound", 1)
+        .hasObservationWithNameEqualTo("wds.outbound")
+        .that()
+        .hasLowCardinalityKeyValue("hint", "RestCall-unittest")
+        .hasLowCardinalityKeyValue("responseCode", "404")
+        .hasLowCardinalityKeyValue("outcome", "ERROR")
+        .hasBeenStarted()
+        .hasError()
+        .thenError()
+        .hasMessage("Not Found");
   }
 
   private void expectRestExceptionWithStatusCode(int expectedStatusCode, RestCall<?> restCall) {
