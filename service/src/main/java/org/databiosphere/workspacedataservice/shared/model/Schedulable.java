@@ -1,9 +1,13 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.Serializable;
 import java.util.Map;
 import org.quartz.Job;
+import org.quartz.JobBuilder;
 import org.quartz.JobDataMap;
+import org.quartz.JobDetail;
+import org.quartz.JobKey;
 
 public class Schedulable {
 
@@ -36,29 +40,38 @@ public class Schedulable {
     this.arguments = arguments;
   }
 
+  @VisibleForTesting
   public String getGroup() {
     return group;
   }
 
+  @VisibleForTesting
   public String getId() {
     return id;
   }
 
+  @VisibleForTesting
   public String getDescription() {
     return description;
   }
 
+  @VisibleForTesting
   public Class<? extends Job> getImplementation() {
     return implementation;
   }
 
+  @VisibleForTesting
   public Map<String, Serializable> getArguments() {
     return arguments;
   }
 
-  public JobDataMap getArgumentsAsJobDataMap() {
-    JobDataMap jobDataMap = new JobDataMap();
-    jobDataMap.putAll(arguments);
-    return jobDataMap;
+  public JobDetail getJobDetail() {
+    return JobBuilder.newJob()
+        .ofType(getImplementation())
+        .withIdentity(new JobKey(id, group))
+        .setJobData(new JobDataMap(arguments))
+        .storeDurably(false) // delete from the quartz table after the job finishes
+        .withDescription(getDescription())
+        .build();
   }
 }

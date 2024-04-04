@@ -1,13 +1,16 @@
 package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.ID_FIELD;
+import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum.PFB;
 import static org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode.BASE_ATTRIBUTES;
 import static org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode.RELATIONS;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
+import static org.databiosphere.workspacedataservice.shared.model.job.JobType.DATA_IMPORT;
 
 import bio.terra.pfb.PfbReader;
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import java.net.URL;
 import java.util.Objects;
@@ -93,6 +96,12 @@ public class PfbQuartzJob extends QuartzJob {
   @Override
   protected JobDao getJobDao() {
     return this.jobDao;
+  }
+
+  @Override
+  protected void annotateObservation(Observation observation) {
+    observation.lowCardinalityKeyValue("jobType", DATA_IMPORT.toString());
+    observation.lowCardinalityKeyValue("importType", PFB.toString());
   }
 
   @Override

@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import java.time.OffsetDateTime;
@@ -105,6 +106,13 @@ class QuartzJobTest extends TestBase {
     }
 
     @Override
+    protected void annotateObservation(Observation observation) {
+      observation
+          .lowCardinalityKeyValue("extraKey1", "extraValue1")
+          .lowCardinalityKeyValue("extraKey2", "extraValue2");
+    }
+
+    @Override
     protected void executeInternal(UUID jobId, JobExecutionContext context) {
       assertEquals(expectedToken, TokenContextUtil.getToken().getValue());
       if (shouldThrowError) {
@@ -144,7 +152,8 @@ class QuartzJobTest extends TestBase {
         .hasObservationWithNameEqualTo("wds.job.execute")
         .that()
         .hasHighCardinalityKeyValue("jobId", jobUuid)
-        .hasLowCardinalityKeyValue("jobType", "TestableQuartzJob")
+        .hasLowCardinalityKeyValue("extraKey1", "extraValue1")
+        .hasLowCardinalityKeyValue("extraKey2", "extraValue2")
         .hasLowCardinalityKeyValue("outcome", StatusEnum.SUCCEEDED.getValue())
         .hasBeenStarted()
         .hasBeenStopped();
@@ -209,7 +218,8 @@ class QuartzJobTest extends TestBase {
         .hasObservationWithNameEqualTo("wds.job.execute")
         .that()
         .hasHighCardinalityKeyValue("jobId", jobUuid)
-        .hasLowCardinalityKeyValue("jobType", "TestableQuartzJob")
+        .hasLowCardinalityKeyValue("extraKey1", "extraValue1")
+        .hasLowCardinalityKeyValue("extraKey2", "extraValue2")
         .hasLowCardinalityKeyValue("outcome", StatusEnum.ERROR.getValue())
         .hasBeenStarted()
         .hasBeenStopped()
@@ -243,12 +253,11 @@ class QuartzJobTest extends TestBase {
 
   // sets up a job and returns the job context
   private JobExecutionContext setUpTestJob(String randomToken, String jobUuid) {
-    // String jobUuid = UUID.randomUUID().toString();
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
     when(mockContext.getMergedJobDataMap())
         .thenReturn(new JobDataMap(Map.of(ARG_TOKEN, randomToken)));
     JobDetailImpl jobDetail = new JobDetailImpl();
-    jobDetail.setKey(new JobKey(jobUuid, "bar"));
+    jobDetail.setKey(new JobKey(jobUuid, "testJobType"));
     when(mockContext.getJobDetail()).thenReturn(jobDetail);
     return mockContext;
   }
