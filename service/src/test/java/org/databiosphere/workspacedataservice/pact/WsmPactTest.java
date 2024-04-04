@@ -22,6 +22,7 @@ import bio.terra.workspace.model.CloningInstructionsEnum;
 import bio.terra.workspace.model.ResourceType;
 import bio.terra.workspace.model.StewardshipType;
 import com.google.common.collect.ImmutableMap;
+import io.micrometer.observation.tck.TestObservationRegistry;
 import java.util.Arrays;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
@@ -547,7 +548,8 @@ class WsmPactTest {
   private static WorkspaceManagerDao buildWsmDao(MockServer mockServer) {
     WorkspaceManagerClientFactory clientFactory =
         new HttpWorkspaceManagerClientFactory(mockServer.getUrl());
-    return new WorkspaceManagerDao(clientFactory, new RestClientRetry());
+    return new WorkspaceManagerDao(
+        clientFactory, new RestClientRetry(TestObservationRegistry.create()));
   }
 
   // headers
