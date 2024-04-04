@@ -60,7 +60,6 @@ class WsmPactTest {
   private static final String USER_EMAIL = "fake.user@e.mail";
   private static final int NUM_SNAPSHOTS_THAT_EXIST = 3;
   private static final int NUM_SNAPSHOTS_REQUESTED = NUM_SNAPSHOTS_THAT_EXIST + 2;
-  //  private static final String BEARER_TOKEN = "fakebearertoken";
   @MockBean ActivityLogger activityLogger;
 
   @BeforeEach

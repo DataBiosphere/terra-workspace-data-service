@@ -25,6 +25,7 @@ import org.databiosphere.workspacedataservice.rawls.RawlsApi;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,20 +52,15 @@ public class RawlsPactTest {
             .array("gcpDataRepoSnapshots")
             .object()
             .object("metadata")
-            .stringValue(
-                "workspaceId",
-                WORKSPACE_UUID) // TODO which of the fields in metadata do we actually
-            // care about
+            .stringValue("workspaceId", WORKSPACE_UUID)
             .stringValue("resourceId", RESOURCE_UUID)
-            //            .stringValue("name", "testName")
-            //            .stringValue("description", "testDescription")
             .stringType("name")
             .stringType("description")
             .stringType("resourceType")
             .stringType("stewardshipType")
             .stringValue("cloningInstructions", CloningInstructionsEnum.NOTHING.toString())
             .array("properties")
-            .closeArray() // TODO what do we want in properties
+            .closeArray()
             .closeObject()
             .object("attributes")
             .stringType("instanceName")
@@ -99,8 +95,20 @@ public class RawlsPactTest {
 
   @Pact(consumer = "wds", provider = "rawls")
   public RequestResponsePact createSnapshotPact(PactDslWithProvider builder) {
+
+    var snapshotRequest =
+        new PactDslJsonBody()
+            .stringValue("snapshotId", RESOURCE_UUID)
+            .stringType("name")
+            .stringType("description")
+            .stringValue("cloningInstructions", CloningInstructionsEnum.REFERENCE.toString())
+            .object("properties")
+            .stringValue(WorkspaceManagerDao.PROP_PURPOSE, WorkspaceManagerDao.PURPOSE_POLICY)
+            .closeObject();
     return builder
-        .given("a workspace with the given {id} exists", ImmutableMap.of("id", WORKSPACE_UUID))
+        .given(
+            "a workspace with the given {workspaceId} exists",
+            ImmutableMap.of("workspaceId", WORKSPACE_UUID))
         .given("policies allowing snapshot reference creation")
         .uponReceiving("a request to create a snapshot reference")
         .pathFromProviderState(
@@ -108,17 +116,9 @@ public class RawlsPactTest {
             String.format("/api/workspaces/%s/snapshots/v2", WORKSPACE_UUID))
         .method("POST")
         .headers(PactTestSupport.contentTypeJson())
-        .body(
-            new PactDslJsonBody()
-                .stringValue("snapshotId", RESOURCE_UUID)
-                .stringType("name")
-                .stringType("description")
-                .stringValue("cloningInstructions", CloningInstructionsEnum.REFERENCE.toString())
-                .object("properties")
-                .stringValue("purpose", "policy")
-                .closeObject())
+        .body(snapshotRequest)
         .willRespondWith()
-        .status(HttpStatus.OK.value())
+        .status(HttpStatus.CREATED.value())
         .headers(PactTestSupport.contentTypeJson())
         .body(newJsonBody(body -> {}).build())
         .toPact();
