@@ -201,10 +201,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       RecordSink recordSink,
       ImportMode importMode) {
     // upsert this parquet file's contents
-    try (ParquetReader<GenericRecord> avroParquetReader =
-        AvroParquetReader.<GenericRecord>builder(inputFile)
-            .set(READ_INT96_AS_FIXED, "true")
-            .build()) {
+    try (ParquetReader<GenericRecord> avroParquetReader = readerForFile(inputFile)) {
       logger.info("batch-writing records for file ...");
       return batchWriteService.batchWrite(
           recordSourceFactory.forTdrImport(avroParquetReader, table, importMode),
@@ -214,6 +211,22 @@ public class TdrManifestQuartzJob extends QuartzJob {
     } catch (Throwable t) {
       throw new TdrManifestImportException(t.getMessage(), t);
     }
+  }
+
+  /**
+   * Creates an AvroParquetReader for a given input file. This should only be called from within a
+   * try-with-resources. It exists as a standalone method to allow unit tests to work with the same
+   * AvroParquetReader as used by this class.
+   *
+   * @param inputFile the file to read
+   * @return the reader
+   * @throws IOException on problem creating the reader
+   */
+  @VisibleForTesting
+  static ParquetReader<GenericRecord> readerForFile(InputFile inputFile) throws IOException {
+    return AvroParquetReader.<GenericRecord>builder(inputFile)
+        .set(READ_INT96_AS_FIXED, "true")
+        .build();
   }
 
   /**
