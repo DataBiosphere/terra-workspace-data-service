@@ -36,7 +36,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(profiles = {"data-plane"})
 @DirtiesContext
 @SpringBootTest(properties = {"twds.instance.workspace-id=f01dab1e-0000-1111-2222-000011112222"})
-class JobServiceDataPlaneTest extends JobServiceBaseTest {
+class JobServiceDataPlaneTest extends JobServiceTestBase {
 
   @Autowired JobService jobService;
   @Autowired @SingleTenant WorkspaceId workspaceId;

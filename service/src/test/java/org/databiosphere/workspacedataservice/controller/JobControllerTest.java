@@ -1,24 +1,30 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import static java.util.UUID.randomUUID;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.JobTypeEnum;
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 import static org.databiosphere.workspacedataservice.shared.model.job.Job.newJob;
+import static org.databiosphere.workspacedataservice.shared.model.job.JobType.DATA_IMPORT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import org.databiosphere.workspacedata.model.ImportRequest.TypeEnum;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
+import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
-import org.databiosphere.workspacedataservice.shared.model.job.Job;
-import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
-import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
-import org.databiosphere.workspacedataservice.shared.model.job.JobType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -41,30 +47,27 @@ import org.springframework.test.context.ActiveProfiles;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class JobControllerTest extends TestBase {
+  private static final String TEST_IMPORT_URI = "http://some/uri";
+
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
-
   @Autowired private TestRestTemplate restTemplate;
-
   @Autowired private JobDao jobDao;
-
   @MockBean private CollectionDao collectionDao;
 
-  private final CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-
+  private final CollectionId collectionId = CollectionId.of(randomUUID());
   private UUID jobId;
 
   @BeforeAll
   void beforeAll() {
     // push jobs into the db, one of different collectionId
-    Job<JobInput, JobResult> testJob1 = newJob(collectionId, JobType.DATA_IMPORT, JobInput.empty());
-    Job<JobInput, JobResult> testJob2 = newJob(collectionId, JobType.DATA_IMPORT, JobInput.empty());
-    Job<JobInput, JobResult> testJob3 =
-        newJob(CollectionId.of(UUID.randomUUID()), JobType.DATA_IMPORT, JobInput.empty());
+    var testJob1 = newJob(collectionId, DATA_IMPORT, makePfbJobInput());
+    var testJob2 = newJob(collectionId, DATA_IMPORT, makePfbJobInput());
+    var testJob3 = newJob(CollectionId.of(randomUUID()), DATA_IMPORT, makePfbJobInput());
 
     // save one of the jobIds
     jobId = testJob1.getJobId();
 
-    // insert 2 jobs of status "created"
+    // insert 3 jobs of status "created"
     jobDao.createJob(testJob1);
     jobDao.createJob(testJob2);
     jobDao.createJob(testJob3);
@@ -91,8 +94,14 @@ class JobControllerTest extends TestBase {
     assertNotNull(jobList);
     // 3 jobs inserted in beforeAll, only 2 for this instanceId
     assertEquals(2, jobList.size());
-    assertEquals(StatusEnum.CREATED, jobList.get(0).getStatus());
-    assertEquals(JobTypeEnum.DATA_IMPORT, jobList.get(0).getJobType());
+
+    for (GenericJobServerModel job : jobList) {
+      assertEquals(StatusEnum.CREATED, job.getStatus());
+      assertEquals(JobTypeEnum.DATA_IMPORT, job.getJobType());
+      Map<String, String> map = assertInstanceOf(Map.class, job.getInput());
+      assertThat(map).containsEntry("uri", TEST_IMPORT_URI);
+      assertThat(map).containsEntry("importType", TypeEnum.PFB.toString());
+    }
   }
 
   @Test
@@ -137,5 +146,13 @@ class JobControllerTest extends TestBase {
     assertEquals(2, jobList.size());
     assertEquals(StatusEnum.CREATED, jobList.get(0).getStatus());
     assertEquals(StatusEnum.CANCELLED, jobList.get(1).getStatus());
+  }
+
+  private static ImportJobInput makePfbJobInput() {
+    try {
+      return new ImportJobInput(new URI(TEST_IMPORT_URI), ImportRequestServerModel.TypeEnum.PFB);
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

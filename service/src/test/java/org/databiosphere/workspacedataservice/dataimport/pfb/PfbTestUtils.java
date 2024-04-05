@@ -9,7 +9,9 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -21,11 +23,11 @@ import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
+import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.service.ImportService;
 import org.mockito.Mockito;
-import org.quartz.JobDataMap;
+import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
-import org.quartz.JobKey;
-import org.quartz.impl.JobDetailImpl;
 import org.springframework.core.io.Resource;
 
 public class PfbTestUtils {
@@ -160,21 +162,20 @@ public class PfbTestUtils {
       UUID jobId, Resource resource, UUID collectionId, boolean shouldPermissionSync)
       throws IOException {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
-    when(mockContext.getMergedJobDataMap())
-        .thenReturn(
-            new JobDataMap(
-                Map.of(
-                    ARG_TOKEN,
-                    BEARER_TOKEN,
-                    ARG_URL,
-                    resource.getURL().toString(),
-                    ARG_COLLECTION,
-                    collectionId.toString(),
-                    ARG_TDR_SYNC_PERMISSION,
-                    shouldPermissionSync)));
 
-    JobDetailImpl jobDetail = new JobDetailImpl();
-    jobDetail.setKey(new JobKey(jobId.toString(), "bar"));
+    var schedulable =
+        ImportService.createSchedulable(
+            ImportRequestServerModel.TypeEnum.PFB,
+            jobId,
+            new ImmutableMap.Builder<String, Serializable>()
+                .put(ARG_TOKEN, BEARER_TOKEN)
+                .put(ARG_URL, resource.getURL().toString())
+                .put(ARG_COLLECTION, collectionId.toString())
+                .put(ARG_TDR_SYNC_PERMISSION, shouldPermissionSync)
+                .build());
+
+    JobDetail jobDetail = schedulable.getJobDetail();
+    when(mockContext.getMergedJobDataMap()).thenReturn(jobDetail.getJobDataMap());
     when(mockContext.getJobDetail()).thenReturn(jobDetail);
 
     return mockContext;

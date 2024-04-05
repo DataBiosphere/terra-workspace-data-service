@@ -10,7 +10,7 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 
-public abstract class JobServiceBaseTest {
+public abstract class JobServiceTestBase {
 
   List<String> allStatuses = Arrays.stream(StatusEnum.values()).map(StatusEnum::toString).toList();
 
