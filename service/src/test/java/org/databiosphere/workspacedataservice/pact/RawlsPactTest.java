@@ -6,6 +6,8 @@ import static org.databiosphere.workspacedataservice.pact.PactTestSupport.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import au.com.dius.pact.consumer.MockServer;
 import au.com.dius.pact.consumer.dsl.PactDslJsonBody;
@@ -18,11 +20,10 @@ import au.com.dius.pact.core.model.annotations.Pact;
 import au.com.dius.pact.provider.spring.SpringRestPactRunner;
 import bio.terra.workspace.model.CloningInstructionsEnum;
 import com.google.common.collect.ImmutableMap;
+import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import java.util.Map;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
-import org.databiosphere.workspacedataservice.observability.TestObservationRegistryConfig;
 import org.databiosphere.workspacedataservice.rawls.BearerAuthRequestInitializer;
 import org.databiosphere.workspacedataservice.rawls.RawlsApi;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
@@ -33,9 +34,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
@@ -44,12 +42,7 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 @Tag(PACT_TEST)
 @ExtendWith(PactConsumerTestExt.class)
 @RunWith(SpringRestPactRunner.class)
-@WithTestObservationRegistry
-@Import(TestObservationRegistryConfig.class)
-@SpringBootTest
 class RawlsPactTest {
-
-  @Autowired TestObservationRegistry observationRegistry;
 
   private static final String WORKSPACE_UUID = "facade00-0000-4000-a000-000000000000";
   private static final String RESOURCE_UUID = "5ca1ab1e-0000-4000-a000-000000000000";
@@ -144,9 +137,13 @@ class RawlsPactTest {
   }
 
   private RawlsClient getRawlsClient(MockServer mockServer) {
+    TestObservationRegistry observationRegistry = mock(TestObservationRegistry.class);
+    when(observationRegistry.observationConfig())
+        .thenReturn(new ObservationRegistry.ObservationConfig());
     RestClient restClient =
         RestClient.builder()
             .baseUrl(mockServer.getUrl())
+            .observationRegistry(observationRegistry)
             .requestInitializer(new BearerAuthRequestInitializer())
             .build();
     HttpServiceProxyFactory httpServiceProxyFactory =
