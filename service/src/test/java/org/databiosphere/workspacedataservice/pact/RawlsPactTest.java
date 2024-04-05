@@ -18,8 +18,10 @@ import au.com.dius.pact.core.model.annotations.Pact;
 import au.com.dius.pact.provider.spring.SpringRestPactRunner;
 import bio.terra.workspace.model.CloningInstructionsEnum;
 import com.google.common.collect.ImmutableMap;
+import io.micrometer.observation.tck.TestObservationRegistry;
 import java.util.Map;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
 import org.databiosphere.workspacedataservice.observability.TestObservationRegistryConfig;
 import org.databiosphere.workspacedataservice.rawls.BearerAuthRequestInitializer;
 import org.databiosphere.workspacedataservice.rawls.RawlsApi;
@@ -31,6 +33,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.RestClient;
@@ -40,8 +44,12 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 @Tag(PACT_TEST)
 @ExtendWith(PactConsumerTestExt.class)
 @RunWith(SpringRestPactRunner.class)
+@WithTestObservationRegistry
 @Import(TestObservationRegistryConfig.class)
+@SpringBootTest
 class RawlsPactTest {
+
+  @Autowired TestObservationRegistry observationRegistry;
 
   private static final String WORKSPACE_UUID = "facade00-0000-4000-a000-000000000000";
   private static final String RESOURCE_UUID = "5ca1ab1e-0000-4000-a000-000000000000";
@@ -145,6 +153,6 @@ class RawlsPactTest {
         HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient)).build();
 
     RawlsApi rawlsApi = httpServiceProxyFactory.createClient(RawlsApi.class);
-    return new RawlsClient(rawlsApi, new RestClientRetry());
+    return new RawlsClient(rawlsApi, new RestClientRetry(observationRegistry));
   }
 }
