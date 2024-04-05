@@ -24,7 +24,6 @@ import bio.terra.workspace.model.ResourceType;
 import bio.terra.workspace.model.StewardshipType;
 import com.google.common.collect.ImmutableMap;
 import io.micrometer.observation.tck.TestObservationRegistry;
-import java.util.Arrays;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.WsmSnapshotSupport;
