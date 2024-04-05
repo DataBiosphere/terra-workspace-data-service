@@ -3,9 +3,12 @@ package org.databiosphere.workspacedataservice.pact;
 import static au.com.dius.pact.consumer.dsl.LambdaDsl.newJsonBody;
 import static bio.terra.workspace.model.CloningInstructionsEnum.NOTHING;
 import static org.databiosphere.workspacedataservice.TestTags.PACT_TEST;
+import static org.databiosphere.workspacedataservice.pact.PactTestSupport.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import au.com.dius.pact.consumer.MockServer;
 import au.com.dius.pact.consumer.dsl.DslPart;
@@ -19,9 +22,10 @@ import au.com.dius.pact.core.model.annotations.Pact;
 import au.com.dius.pact.provider.spring.SpringRestPactRunner;
 import bio.terra.workspace.model.CloningInstructionsEnum;
 import com.google.common.collect.ImmutableMap;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistry;
 import java.util.Map;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.observability.TestObservationRegistryConfig;
 import org.databiosphere.workspacedataservice.rawls.BearerAuthRequestInitializer;
 import org.databiosphere.workspacedataservice.rawls.RawlsApi;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
@@ -32,7 +36,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
@@ -41,14 +44,13 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 @Tag(PACT_TEST)
 @ExtendWith(PactConsumerTestExt.class)
 @RunWith(SpringRestPactRunner.class)
-@Import(TestObservationRegistryConfig.class)
-public class RawlsPactTest {
+class RawlsPactTest {
 
   private static final String WORKSPACE_UUID = "facade00-0000-4000-a000-000000000000";
   private static final String RESOURCE_UUID = "5ca1ab1e-0000-4000-a000-000000000000";
 
   @Pact(consumer = "wds", provider = "rawls")
-  public RequestResponsePact enumerateSnapshotsPact(PactDslWithProvider builder) {
+  RequestResponsePact enumerateSnapshotsPact(PactDslWithProvider builder) {
     return builder
         .given("one snapshot in the given workspace", Map.of("workspaceId", WORKSPACE_UUID))
         .uponReceiving("a request for the workspace's snapshots")
@@ -105,7 +107,7 @@ public class RawlsPactTest {
   }
 
   @Pact(consumer = "wds", provider = "rawls")
-  public RequestResponsePact createSnapshotPact(PactDslWithProvider builder) {
+  RequestResponsePact createSnapshotPact(PactDslWithProvider builder) {
 
     var snapshotRequest =
         new PactDslJsonBody()
@@ -126,11 +128,11 @@ public class RawlsPactTest {
             "/api/workspaces/${workspaceId}/snapshots/v2",
             String.format("/api/workspaces/%s/snapshots/v2", WORKSPACE_UUID))
         .method("POST")
-        .headers(PactTestSupport.contentTypeJson())
+        .headers(contentTypeJson())
         .body(snapshotRequest)
         .willRespondWith()
         .status(HttpStatus.CREATED.value())
-        .headers(PactTestSupport.contentTypeJson())
+        .headers(contentTypeJson())
         .body(newJsonBody(body -> {}).build())
         .toPact();
   }
@@ -146,15 +148,19 @@ public class RawlsPactTest {
   }
 
   private RawlsClient getRawlsClient(MockServer mockServer) {
+    TestObservationRegistry observationRegistry = mock(TestObservationRegistry.class);
+    when(observationRegistry.observationConfig())
+        .thenReturn(new ObservationRegistry.ObservationConfig());
     RestClient restClient =
         RestClient.builder()
             .baseUrl(mockServer.getUrl())
+            .observationRegistry(observationRegistry)
             .requestInitializer(new BearerAuthRequestInitializer())
             .build();
     HttpServiceProxyFactory httpServiceProxyFactory =
         HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient)).build();
 
     RawlsApi rawlsApi = httpServiceProxyFactory.createClient(RawlsApi.class);
-    return new RawlsClient(rawlsApi, new RestClientRetry());
+    return new RawlsClient(rawlsApi, new RestClientRetry(observationRegistry));
   }
 }
