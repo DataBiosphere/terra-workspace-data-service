@@ -67,6 +67,9 @@ class RawlsPactTest {
   }
 
   private static DslPart getListSnapshotsBody() {
+    // This response needs to be turned into a ResourceList, so the important thing is that it has:
+    // - a list of DataRepoSnapshotResources called "gcpDataRepoSnapshots"
+    // - each of which has an "attributes" object and a "metadata" object
     return newJsonBody(
             body ->
                 body.array(
@@ -106,6 +109,23 @@ class RawlsPactTest {
     assertEquals(1, snapshots.gcpDataRepoSnapshots().size());
   }
 
+  private static DslPart getSnapshotRequestBody() {
+    return newJsonBody(
+            body ->
+                body.stringValue("snapshotId", RESOURCE_UUID)
+                    .stringType("name")
+                    .stringType("description")
+                    .stringValue(
+                        "cloningInstructions", CloningInstructionsEnum.REFERENCE.toString())
+                    .object(
+                        "properties",
+                        properties ->
+                            properties.stringValue(
+                                WorkspaceManagerDao.PROP_PURPOSE,
+                                WorkspaceManagerDao.PURPOSE_POLICY)))
+        .build();
+  }
+
   @Pact(consumer = "wds", provider = "rawls")
   RequestResponsePact createSnapshotPact(PactDslWithProvider builder) {
 
@@ -129,7 +149,7 @@ class RawlsPactTest {
             String.format("/api/workspaces/%s/snapshots/v2", WORKSPACE_UUID))
         .method("POST")
         .headers(contentTypeJson())
-        .body(snapshotRequest)
+        .body(getSnapshotRequestBody())
         .willRespondWith()
         .status(HttpStatus.CREATED.value())
         .headers(contentTypeJson())
