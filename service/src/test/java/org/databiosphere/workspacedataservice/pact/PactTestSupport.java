@@ -3,7 +3,7 @@ package org.databiosphere.workspacedataservice.pact;
 import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 
-public class PactTestSupport {
+class PactTestSupport {
 
   static final String BEARER_TOKEN = "fakebearertoken";
 

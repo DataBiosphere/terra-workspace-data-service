@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.pact;
 
 import static au.com.dius.pact.consumer.dsl.LambdaDsl.newJsonBody;
 import static org.databiosphere.workspacedataservice.TestTags.PACT_TEST;
+import static org.databiosphere.workspacedataservice.pact.PactTestSupport.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -67,7 +68,7 @@ class WsmPactTest {
     // mock all requests to be authorized by the given bearer token
     var requestAttributes = new ServletRequestAttributes(new MockHttpServletRequest());
     requestAttributes.setAttribute(
-        BearerTokenFilter.ATTRIBUTE_NAME_TOKEN, PactTestSupport.BEARER_TOKEN, SCOPE_REQUEST);
+        BearerTokenFilter.ATTRIBUTE_NAME_TOKEN, BEARER_TOKEN, SCOPE_REQUEST);
     RequestContextHolder.setRequestAttributes(requestAttributes);
   }
 
@@ -82,11 +83,11 @@ class WsmPactTest {
         .uponReceiving("a request to create a snapshot reference")
         .method(HttpMethod.POST.name())
         .matchPath(snapshotPath(UUID_REGEX_PATTERN), snapshotPath(WORKSPACE_UUID.toString()))
-        .headers(PactTestSupport.authorizedJsonContentTypeHeaders())
+        .headers(authorizedJsonContentTypeHeaders())
         .body(createSnapshotReferenceBody(SNAPSHOT_NAME))
         .willRespondWith()
         .status(HttpStatus.OK.value())
-        .headers(PactTestSupport.contentTypeJson())
+        .headers(contentTypeJson())
         .body(
             newJsonBody(
                     body -> {
@@ -118,11 +119,11 @@ class WsmPactTest {
         .uponReceiving("a request to create a snapshot reference")
         .method(HttpMethod.POST.name())
         .matchPath(snapshotPath(UUID_REGEX_PATTERN), snapshotPath(WORKSPACE_UUID.toString()))
-        .headers(PactTestSupport.authorizedJsonContentTypeHeaders())
+        .headers(authorizedJsonContentTypeHeaders())
         .body(createSnapshotReferenceBody(SNAPSHOT_NAME))
         .willRespondWith()
         .status(HttpStatus.CONFLICT.value())
-        .headers(PactTestSupport.contentTypeJson())
+        .headers(contentTypeJson())
         .body(
             newJsonBody(
                     body ->
@@ -209,10 +210,10 @@ class WsmPactTest {
             ResourceType.AZURE_STORAGE_CONTAINER.toString())
         .matchQuery("offset", /* regex= */ "[0-9]+", /* example= */ "0")
         .matchQuery("limit", /* regex= */ "[1-9](0-9)*", /* example= */ "1")
-        .headers(PactTestSupport.authorizedAcceptJsonHeaders())
+        .headers(authorizedAcceptJsonHeaders())
         .willRespondWith()
         .status(HttpStatus.OK.value())
-        .headers(PactTestSupport.contentTypeJson())
+        .headers(contentTypeJson())
         .body(
             newJsonBody(
                     body -> {
@@ -249,10 +250,10 @@ class WsmPactTest {
             "limit",
             String.valueOf(NUM_SNAPSHOTS_REQUESTED),
             String.valueOf(NUM_SNAPSHOTS_REQUESTED))
-        .headers(PactTestSupport.authorizedAcceptJsonHeaders())
+        .headers(authorizedAcceptJsonHeaders())
         .willRespondWith()
         .status(HttpStatus.OK.value())
-        .headers(PactTestSupport.contentTypeJson())
+        .headers(contentTypeJson())
         .body(
             newJsonBody(
                     body -> {
@@ -311,10 +312,10 @@ class WsmPactTest {
             "limit",
             String.valueOf(NUM_SNAPSHOTS_REQUESTED),
             String.valueOf(NUM_SNAPSHOTS_REQUESTED))
-        .headers(PactTestSupport.authorizedAcceptJsonHeaders())
+        .headers(authorizedAcceptJsonHeaders())
         .willRespondWith()
         .status(HttpStatus.OK.value())
-        .headers(PactTestSupport.contentTypeJson())
+        .headers(contentTypeJson())
         .body(
             newJsonBody(
                     body -> {
@@ -355,10 +356,10 @@ class WsmPactTest {
             "limit",
             String.valueOf(NUM_SNAPSHOTS_REQUESTED),
             String.valueOf(NUM_SNAPSHOTS_REQUESTED))
-        .headers(PactTestSupport.authorizedAcceptJsonHeaders())
+        .headers(authorizedAcceptJsonHeaders())
         .willRespondWith()
         .status(HttpStatus.OK.value())
-        .headers(PactTestSupport.contentTypeJson())
+        .headers(contentTypeJson())
         .body(
             newJsonBody(
                     body -> {
@@ -422,10 +423,10 @@ class WsmPactTest {
         .pathFromProviderState(
             sasTokenPath(WORKSPACE_UUID.toString(), "${storageContainerResourceId}"),
             sasTokenPath(WORKSPACE_UUID.toString(), RESOURCE_UUID.toString()))
-        .headers(PactTestSupport.authorizedJsonContentTypeHeaders())
+        .headers(authorizedJsonContentTypeHeaders())
         .willRespondWith()
         .status(HttpStatus.OK.value())
-        .headers(PactTestSupport.contentTypeJson())
+        .headers(contentTypeJson())
         .body(
             newJsonBody(
                     body -> {
@@ -448,8 +449,7 @@ class WsmPactTest {
   void getBlobStorageUrl_ok(MockServer mockServer) {
     var wsmDao = buildWsmDao(mockServer);
 
-    var blobStorageUrl =
-        wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), PactTestSupport.BEARER_TOKEN);
+    var blobStorageUrl = wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), BEARER_TOKEN);
 
     assertNotNull(blobStorageUrl);
     // TODO: the sas URL has some pretty strict formatting requirements and making some assertions
@@ -479,7 +479,7 @@ class WsmPactTest {
         .pathFromProviderState(
             sasTokenPath(WORKSPACE_UUID.toString(), "${storageContainerResourceId}"),
             sasTokenPath(WORKSPACE_UUID.toString(), RESOURCE_UUID.toString()))
-        .headers(PactTestSupport.authorizedJsonContentTypeHeaders())
+        .headers(authorizedJsonContentTypeHeaders())
         .willRespondWith()
         .status(HttpStatus.FORBIDDEN.value())
         .toPact();
@@ -498,8 +498,7 @@ class WsmPactTest {
     var thrown =
         assertThrows(
             WorkspaceManagerException.class,
-            () ->
-                wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), PactTestSupport.BEARER_TOKEN));
+            () -> wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), BEARER_TOKEN));
     assertEquals(HttpStatus.FORBIDDEN, thrown.getStatusCode());
   }
 
@@ -513,8 +512,7 @@ class WsmPactTest {
     var thrown =
         assertThrows(
             WorkspaceManagerException.class,
-            () ->
-                wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), PactTestSupport.BEARER_TOKEN));
+            () -> wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), BEARER_TOKEN));
     assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, thrown.getStatusCode());
   }
 

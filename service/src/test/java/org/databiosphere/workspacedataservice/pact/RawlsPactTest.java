@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.pact;
 
 import static au.com.dius.pact.consumer.dsl.LambdaDsl.newJsonBody;
 import static org.databiosphere.workspacedataservice.TestTags.PACT_TEST;
+import static org.databiosphere.workspacedataservice.pact.PactTestSupport.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -40,13 +41,13 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 @ExtendWith(PactConsumerTestExt.class)
 @RunWith(SpringRestPactRunner.class)
 @Import(TestObservationRegistryConfig.class)
-public class RawlsPactTest {
+class RawlsPactTest {
 
   private static final String WORKSPACE_UUID = "facade00-0000-4000-a000-000000000000";
   private static final String RESOURCE_UUID = "5ca1ab1e-0000-4000-a000-000000000000";
 
   @Pact(consumer = "wds", provider = "rawls")
-  public RequestResponsePact enumerateSnapshotsPact(PactDslWithProvider builder) {
+  RequestResponsePact enumerateSnapshotsPact(PactDslWithProvider builder) {
     var snapshotListResponse =
         new PactDslJsonBody()
             .array("gcpDataRepoSnapshots")
@@ -94,7 +95,7 @@ public class RawlsPactTest {
   }
 
   @Pact(consumer = "wds", provider = "rawls")
-  public RequestResponsePact createSnapshotPact(PactDslWithProvider builder) {
+  RequestResponsePact createSnapshotPact(PactDslWithProvider builder) {
 
     var snapshotRequest =
         new PactDslJsonBody()
@@ -115,11 +116,11 @@ public class RawlsPactTest {
             "/api/workspaces/${workspaceId}/snapshots/v2",
             String.format("/api/workspaces/%s/snapshots/v2", WORKSPACE_UUID))
         .method("POST")
-        .headers(PactTestSupport.contentTypeJson())
+        .headers(contentTypeJson())
         .body(snapshotRequest)
         .willRespondWith()
         .status(HttpStatus.CREATED.value())
-        .headers(PactTestSupport.contentTypeJson())
+        .headers(contentTypeJson())
         .body(newJsonBody(body -> {}).build())
         .toPact();
   }
