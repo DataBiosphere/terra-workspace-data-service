@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.pact;
 
 import static au.com.dius.pact.consumer.dsl.LambdaDsl.newJsonBody;
+import static bio.terra.workspace.model.CloningInstructionsEnum.NOTHING;
 import static org.databiosphere.workspacedataservice.TestTags.PACT_TEST;
 import static org.databiosphere.workspacedataservice.pact.PactTestSupport.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -10,6 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import au.com.dius.pact.consumer.MockServer;
+import au.com.dius.pact.consumer.dsl.DslPart;
 import au.com.dius.pact.consumer.dsl.PactDslJsonBody;
 import au.com.dius.pact.consumer.dsl.PactDslWithProvider;
 import au.com.dius.pact.consumer.junit5.PactConsumerTestExt;
@@ -49,27 +51,6 @@ class RawlsPactTest {
 
   @Pact(consumer = "wds", provider = "rawls")
   RequestResponsePact enumerateSnapshotsPact(PactDslWithProvider builder) {
-    var snapshotListResponse =
-        new PactDslJsonBody()
-            .array("gcpDataRepoSnapshots")
-            .object()
-            .object("metadata")
-            .stringValue("workspaceId", WORKSPACE_UUID)
-            .stringValue("resourceId", RESOURCE_UUID)
-            .stringType("name")
-            .stringType("description")
-            .stringType("resourceType")
-            .stringType("stewardshipType")
-            .stringValue("cloningInstructions", CloningInstructionsEnum.NOTHING.toString())
-            .array("properties")
-            .closeArray()
-            .closeObject()
-            .object("attributes")
-            .stringType("instanceName")
-            .stringType("snapshot")
-            .closeObject()
-            .closeObject()
-            .closeArray();
     return builder
         .given("one snapshot in the given workspace", Map.of("workspaceId", WORKSPACE_UUID))
         .uponReceiving("a request for the workspace's snapshots")
@@ -81,8 +62,38 @@ class RawlsPactTest {
         .method("GET")
         .willRespondWith()
         .status(200)
-        .body(snapshotListResponse)
+        .body(getListSnapshotsBody())
         .toPact();
+  }
+
+  private static DslPart getListSnapshotsBody() {
+    return newJsonBody(
+            body ->
+                body.array(
+                    "gcpDataRepoSnapshots",
+                    snapshots ->
+                        snapshots.object(
+                            o ->
+                                o.object(
+                                        "metadata",
+                                        metadata ->
+                                            metadata
+                                                .stringValue("workspaceId", WORKSPACE_UUID)
+                                                .stringValue("resourceId", RESOURCE_UUID)
+                                                .stringType("name")
+                                                .stringType("description")
+                                                .stringType("resourceType")
+                                                .stringType("stewardshipType")
+                                                .stringValue(
+                                                    "cloningInstructions", NOTHING.toString())
+                                                .array("properties", emptyArray -> {}))
+                                    .object(
+                                        "attributes",
+                                        attributes ->
+                                            attributes
+                                                .stringType("instanceName")
+                                                .stringType("snapshot")))))
+        .build();
   }
 
   @Test
