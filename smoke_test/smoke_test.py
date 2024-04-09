@@ -12,29 +12,41 @@ from unittest import TestSuite
 
 from tests.authenticated.cwds_job_listing_tests import CwdsJobListingTests
 from tests.authenticated.cwds_job_status_tests import CwdsJobStatusTests
+from tests.authenticated.orchestration_tests import OrchestrationTests
 from tests.cwds_smoke_test_case import CwdsSmokeTestCase
 from tests.unauthenticated.cwds_status_tests import CwdsStatusTests
 from tests.unauthenticated.cwds_version_tests import CwdsVersionTests
 
 
-def gather_tests(is_authenticated: bool = False) -> TestSuite:
+def gather_tests(main_args) -> TestSuite:
+  is_authenticated = main_args.user_token and main_args.workspace_id
+
   suite = unittest.TestSuite()
 
-  status_tests = unittest.defaultTestLoader.loadTestsFromTestCase(CwdsStatusTests)
-  version_tests = unittest.defaultTestLoader.loadTestsFromTestCase(CwdsVersionTests)
+  CwdsSmokeTestCase.CWDS_HOST = main_args.CWDS_HOST
+  CwdsSmokeTestCase.WORKSPACE_ID = main_args.workspace_id
+  CwdsSmokeTestCase.USER_TOKEN = main_args.user_token
 
-  suite.addTests(status_tests)
-  suite.addTests(version_tests)
+  add_tests_to_suite(suite, CwdsStatusTests)
+  add_tests_to_suite(suite, CwdsVersionTests)
 
   if is_authenticated:
     print("user_token and workspace_id both provided.  Running additional authenticated tests.")
-    user_info_tests = unittest.defaultTestLoader.loadTestsFromTestCase(CwdsJobListingTests)
-    resource_types_tests = unittest.defaultTestLoader.loadTestsFromTestCase(CwdsJobStatusTests)
-
-    suite.addTests(user_info_tests)
-    suite.addTests(resource_types_tests)
+    add_tests_to_suite(suite, CwdsJobListingTests)
+    add_tests_to_suite(suite, CwdsJobStatusTests)
   else:
     print("user_token and/or workspace_id not provided.  Skipping authenticated tests.")
+
+  if main_args.orchestration_host:
+    if main_args.user_token and main_args.workspace_namespace and main_args.workspace_name:
+      print("Running orchestration tests.")
+      OrchestrationTests.ORCHESTRATION_HOST = main_args.orchestration_host
+      OrchestrationTests.WORKSPACE_NAMESPACE = main_args.workspace_namespace
+      OrchestrationTests.WORKSPACE_NAME = main_args.workspace_name
+      OrchestrationTests.ACCESS_TOKEN = main_args.user_token
+      add_tests_to_suite(suite, OrchestrationTests)
+    else:
+      print("user_token, workspace_namespace, or workspace_name are missing.  Skipping orchestration tests.")
 
   return suite
 
@@ -43,19 +55,17 @@ def main(main_args):
   if main_args.user_token:
     verify_user_token(main_args.user_token)
 
-  CwdsSmokeTestCase.CWDS_HOST = main_args.CWDS_HOST
-  CwdsSmokeTestCase.WORKSPACE_ID = main_args.workspace_id
-  CwdsSmokeTestCase.USER_TOKEN = main_args.user_token
-
-  test_suite = gather_tests(main_args.user_token and main_args.workspace_id)
+  suite = gather_tests(main_args)
 
   runner = unittest.TextTestRunner(verbosity=main_args.verbosity)
-  result = runner.run(test_suite)
+  result = runner.run(suite)
 
   # system exit if any tests fail
   if result.failures or result.errors:
     sys.exit(1)
 
+def add_tests_to_suite(suite, testCaseClass):
+  suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(testCaseClass))
 
 def verify_user_token(user_token: str) -> bool:
   response = requests.get(
@@ -94,6 +104,21 @@ if __name__ == "__main__":
     nargs='?',
     default=None,
     help="Optional; auth token for authenticated tests. If this and workspace_id are present, enables additional tests."
+  )
+  parser.add_argument(
+    "--orchestration-host",
+    default=None,
+    help="Optional; domain with optional port number of the orchestration host you want to test."
+  )
+  parser.add_argument(
+    "--workspace-namespace",
+    default=None,
+    help="Optional; workspace namespace against which orchestration tests run. Required for orchestration tests to run."
+  )
+  parser.add_argument(
+    "--workspace-name",
+    default=None,
+    help="Optional; workspace name against which orchestration tests run. Required for orchestration tests to run."
   )
 
   args = parser.parse_args()

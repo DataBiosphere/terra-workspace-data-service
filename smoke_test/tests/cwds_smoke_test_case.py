@@ -13,7 +13,7 @@ class CwdsSmokeTestCase(TestCase):
 
   @staticmethod
   def build_cwds_url(path: str) -> str:
-    assert CwdsSmokeTestCase.CWDS_HOST, "ERROR - CwdsSmokeTests.CWDS_HOST not properly set"
+    assert CwdsSmokeTestCase.CWDS_HOST, "ERROR - CwdsSmokeTestCase.CWDS_HOST not properly set"
     if re.match(r"^\s*https?://", CwdsSmokeTestCase.CWDS_HOST):
       return urljoin(CwdsSmokeTestCase.CWDS_HOST, path)
     else:
